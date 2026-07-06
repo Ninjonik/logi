@@ -1,10 +1,8 @@
 "use client"
 
 import {
-  CreditCard,
   EllipsisVertical,
   LogOut,
-  BellDot,
   CircleUser,
 } from "lucide-react"
 import Link from "next/link"
@@ -28,12 +26,14 @@ import {
 
 export function NavUser({
   user,
+  locale = "en",
 }: {
   user: {
     name: string
     email: string
     avatar: string
   }
+  locale?: string
 }) {
   const { isMobile } = useSidebar()
 
@@ -80,27 +80,15 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/settings/account">
+                <Link href={`/${locale}/dashboard/settings/user`}>
                   <CircleUser />
-                  Account
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/settings/billing">
-                  <CreditCard />
-                  Billing
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/settings/notifications">
-                  <BellDot />
-                  Notifications
+                  Settings
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild className="cursor-pointer">
-              <Link href="/sign-in">
+              <Link href={`/${locale}/login`}>
                 <LogOut />
                 Log out
               </Link>

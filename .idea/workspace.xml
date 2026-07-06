@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="kept nextjs version only">
+      <change beforePath="$PROJECT_DIR$/bun.lock" beforeDir="false" afterPath="$PROJECT_DIR$/bun.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/errors/forbidden/components/forbidden-error.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/errors/forbidden/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/errors/internal-server-error/components/internal-server-error.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/errors/internal-server-error/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/errors/not-found/components/not-found-error.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/errors/not-found/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/errors/unauthorized/components/unauthorized-error.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/errors/unauthorized/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/errors/under-maintenance/components/under-maintenance-error.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/errors/under-maintenance/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/forgot-password-2/components/forgot-password-form-2.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/forgot-password-2/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/forgot-password-3/components/forgot-password-form-3.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/forgot-password-3/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/forgot-password/components/forgot-password-form-1.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/forgot-password/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/layout.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-in-2/components/login-form-2.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-in-2/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-in-3/components/login-form-3.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-in-3/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-in/components/login-form-1.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-in/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-up-2/components/signup-form-2.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-up-2/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-up-3/components/signup-form-3.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-up-3/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-up/components/signup-form-1.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/sign-up/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/components/calendar-main.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/components/calendar-sidebar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/components/calendar-unified.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/components/calendar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/components/calendars.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/components/date-picker.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/components/event-form.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/components/quick-actions.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/data.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/data/calendars.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/data/event-dates.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/data/events.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/types.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/use-calendar.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/components/chat-header.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/components/chat.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/components/conversation-list-new.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/components/conversation-list.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/components/message-input.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/components/message-list.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/data/conversations.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/data/messages.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/data/users.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/chat/use-chat.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard-2/components/customer-insights.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard-2/components/dashboard-header.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard-2/components/metrics-overview.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard-2/components/quick-actions.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard-2/components/recent-transactions.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard-2/components/revenue-breakdown.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard-2/components/sales-chart.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard-2/components/top-products.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard-2/data/dashboard-data.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard-2/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard/components/chart-area-interactive.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard/components/data-table.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard/components/section-cards.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard/data/data.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard/data/focus-documents-data.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard/data/key-personnel-data.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard/data/past-performance-data.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/dashboard/schemas/task-schema.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/faqs/components/faq-list.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/faqs/components/features-grid.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/faqs/data/categories.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/faqs/data/faqs.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/faqs/data/features.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/faqs/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/layout.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/mail/components/account-switcher.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/mail/components/mail-display.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/mail/components/mail-list.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/mail/components/mail.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/mail/components/nav.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/mail/data.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/mail/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/mail/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/mail/use-mail.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/pricing/components/faq-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/pricing/components/features-grid.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/pricing/data/faqs.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/pricing/data/features.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/pricing/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/settings/account/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/settings/appearance/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/settings/billing/components/billing-history-card.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/settings/billing/components/current-plan-card.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/settings/billing/data/billing-history.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/settings/billing/data/current-plan.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/settings/billing/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/settings/connections/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/settings/notifications/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/settings/user/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/components/add-task-modal.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/components/columns.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/components/data-table-column-header.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/components/data-table-faceted-filter.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/components/data-table-pagination.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/components/data-table-row-actions.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/components/data-table-toolbar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/components/data-table-view-options.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/components/data-table.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/components/user-nav.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/data/data.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/data/schema.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/data/tasks.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/tasks/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/users/components/data-table.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/users/components/stat-cards.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/users/components/user-form-dialog.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/users/data.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/users/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/about-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/blog-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/contact-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/cta-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/faq-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/features-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/footer.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/hero-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/landing-theme-customizer.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/logo-carousel.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/navbar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/pricing-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/stats-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/team-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/components/testimonials-section.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/landing-page-content.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/landing/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app-sidebar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/command-search.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/layouts/base-layout.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/nav-user.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/nav-user.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/pricing-plans.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/sidebar-notification.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/site-footer.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/site-header.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/chart.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/upgrade-to-pro-button.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/middleware.ts" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_C:/Users/admin/WebstormProjects/logi" value="3G8Mxjfv2d8jL4uYQPvQDfkeOcj" />
+    </persistenceIdMap>
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="557" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "Ninjonik"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Ninjonik/logi.git",
+    "accountId": "9ba1adb5-e293-494f-a5be-bf1e53d2e76e"
+  }
+}]]></component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 4
+}]]></component>
+  <component name="ProjectId" id="3G8Mxjfv2d8jL4uYQPvQDfkeOcj" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "copilot.chat.legacySessionMetadata.migrated": "true",
+    "git-widget-placeholder": "main",
+    "javascript.preferred.runtime.type.id": "node",
+    "junie.onboarding.icon.badge.shown": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "pnpm",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\Users\\admin\\WebstormProjects\\logi\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\admin\WebstormProjects\logi" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.31033.133" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="" />
+      <created>1783348990948</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1783348990948</updated>
+      <workItem from="1783348992035" duration="4196000" />
+    </task>
+    <task id="LOCAL-00001" summary="kept nextjs version only">
+      <option name="closed" value="true" />
+      <created>1783349277979</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1783349277979</updated>
+    </task>
+    <task id="LOCAL-00002" summary="kept nextjs version only">
+      <option name="closed" value="true" />
+      <created>1783349289101</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1783349289101</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
+    <option name="CHECK_NEW_TODO" value="false" />
+    <MESSAGE value="kept nextjs version only" />
+    <option name="LAST_COMMIT_MESSAGE" value="kept nextjs version only" />
+  </component>
+</project>

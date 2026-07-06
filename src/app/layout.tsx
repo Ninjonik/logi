@@ -6,8 +6,20 @@ import { SidebarConfigProvider } from "@/contexts/sidebar-context";
 import { inter } from "@/lib/fonts";
 
 export const metadata: Metadata = {
-  title: "Shadcn Dashboard",
-  description: "A dashboard built with Next.js and shadcn/ui",
+  metadataBase: new URL("https://logi.local"),
+  title: {
+    default: "Logi | Hell Let Loose event organizer",
+    template: "%s | Logi",
+  },
+  description:
+    "Frontend preview for a Hell Let Loose event organizer built for clans, rosters, briefings, and operations.",
+  openGraph: {
+    title: "Logi",
+    description:
+      "Prepare clan events, squad presets, topic briefings, and publish rosters from one dashboard.",
+    siteName: "Logi",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
