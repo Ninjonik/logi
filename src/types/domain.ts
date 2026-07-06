@@ -33,6 +33,14 @@ export type Guild = {
   updatedAt: Timestamp;
 };
 
+export type Group = {
+  name: string;
+  roleId: string;
+  description?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
 export type EventRecord = {
   id: string;
   guildId: string;
@@ -50,6 +58,10 @@ export type EventRecord = {
   gameEnd: Timestamp;
   pingClan: boolean;
   topicPresetId?: string;
+  signUps: {
+    userId: string;
+    group?: string | null;
+  }[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };

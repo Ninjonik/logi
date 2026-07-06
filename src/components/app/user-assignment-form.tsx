@@ -61,11 +61,11 @@ export function UserAssignmentForm({
   return (
     <Card className="rounded-2xl border-border/60">
       <CardHeader>
-        <CardTitle>{createMode ? "Add player" : "Edit assignment"}</CardTitle>
+        <CardTitle>{createMode ? dictionary.userManagement.addPlayer : dictionary.userManagement.editAssignment}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-3">
-          <Label>Player search</Label>
+          <Label>{dictionary.userManagement.playerSearch}</Label>
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -95,14 +95,14 @@ export function UserAssignmentForm({
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{user.name}</div>
-                  <div className="truncate text-xs text-muted-foreground">Main clan: {user.guildId ?? "None"}</div>
+                  <div className="truncate text-xs text-muted-foreground">{dictionary.userManagement.mainClan}: {user.guildId ?? dictionary.userManagement.none}</div>
                 </div>
                 <div className="flex gap-2">
                   <Badge variant={canJoinAsMember ? "default" : "secondary"} className="rounded-full px-2.5">
-                    Member
+                    {dictionary.userManagement.memberLabel}
                   </Badge>
                   <Badge variant={canJoinAsMercenary ? "default" : "secondary"} className="rounded-full px-2.5">
-                    Merc
+                    {dictionary.userManagement.mercLabel}
                   </Badge>
                 </div>
               </button>
@@ -116,7 +116,7 @@ export function UserAssignmentForm({
         {selected ? (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Assignment type</Label>
+              <Label>{dictionary.userManagement.assignmentType}</Label>
               <Select value={type} onValueChange={(value: "member" | "mercenary") => setType(value)}>
                 <SelectTrigger className="rounded-xl">
                   <SelectValue />
@@ -132,34 +132,34 @@ export function UserAssignmentForm({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Group</Label>
+              <Label>{dictionary.userManagement.tableGroup}</Label>
               <Input value={group} onChange={(event) => setGroup(event.target.value)} className="rounded-xl" />
             </div>
             <div className="space-y-2 md:col-span-2">
               <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
                 <div>
-                  <div className="font-medium">Pause membership</div>
-                  <div className="text-sm text-muted-foreground">Use this for inactivity or temporary absence.</div>
+                  <div className="font-medium">{dictionary.userManagement.pauseMembership}</div>
+                  <div className="text-sm text-muted-foreground">{dictionary.userManagement.pauseHelp}</div>
                 </div>
                 <Switch checked={paused} onCheckedChange={setPaused} />
               </div>
             </div>
             {paused ? (
               <div className="space-y-2 md:col-span-2">
-                <Label>Pause note</Label>
+                <Label>{dictionary.userManagement.pauseNote}</Label>
                 <Textarea value={pausedNote} onChange={(event) => setPausedNote(event.target.value)} className="min-h-24 rounded-xl" />
               </div>
             ) : null}
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-border/80 px-4 py-10 text-center text-sm text-muted-foreground">
-            Pick a player from the in-system search list first.
+            {dictionary.userManagement.pickPlayerFirst}
           </div>
         )}
 
         <div className="flex flex-wrap gap-3">
-          <Button className="rounded-xl">Save assignment</Button>
-          {!createMode ? <Button variant="destructive" className="rounded-xl">Remove assignment</Button> : null}
+          <Button className="rounded-xl">{dictionary.common.saveAssignment}</Button>
+          {!createMode ? <Button variant="destructive" className="rounded-xl">{dictionary.common.removeAssignment}</Button> : null}
         </div>
       </CardContent>
     </Card>

@@ -11,11 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { Dictionary } from "@/i18n/dictionaries";
 
 export function ResourceTable<T extends { id: string }>({
   columns,
   rows,
   getHref,
+  dictionary,
 }: {
   columns: Array<{
     key: string;
@@ -24,6 +26,7 @@ export function ResourceTable<T extends { id: string }>({
   }>;
   rows: T[];
   getHref: (row: T) => string;
+  dictionary: Dictionary;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border/60 bg-card">
@@ -33,7 +36,7 @@ export function ResourceTable<T extends { id: string }>({
             {columns.map((column) => (
               <TableHead key={column.key}>{column.title}</TableHead>
             ))}
-            <TableHead className="w-[120px] text-right">Open</TableHead>
+            <TableHead className="w-[120px] text-right">{dictionary.common.actions}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -45,7 +48,7 @@ export function ResourceTable<T extends { id: string }>({
               <TableCell className="text-right">
                 <Button asChild variant="ghost" size="sm">
                   <Link href={getHref(row)}>
-                    Open
+                    {dictionary.shared.openColumn}
                     <ArrowRight className="size-4" />
                   </Link>
                 </Button>
@@ -56,7 +59,7 @@ export function ResourceTable<T extends { id: string }>({
       </Table>
       {!rows.length ? (
         <div className="border-t px-6 py-12 text-center text-sm text-muted-foreground">
-          Nothing has been created in this section yet.
+          {dictionary.shared.nothingCreatedYet}
         </div>
       ) : null}
     </div>

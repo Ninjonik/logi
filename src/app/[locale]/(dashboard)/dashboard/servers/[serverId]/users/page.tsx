@@ -17,8 +17,8 @@ export async function generateMetadata({
   const { serverId } = await params;
   const context = getServerContext(serverId);
   return {
-    title: `${context.server?.name ?? "Server"} users`,
-    description: "Manage server members and mercenaries from the known user system.",
+    title: `${context.server?.name ?? "Clan"} ${getDictionary("en").userManagement.title}`,
+    description: getDictionary("en").userManagement.description,
   };
 }
 
@@ -42,12 +42,13 @@ export default async function ServerUsersPage({
         description={dictionary.userManagement.description}
         actions={
           <Button asChild className="rounded-xl">
-            <a href={`/${locale}/dashboard/servers/${serverId}/users/create`}>Add player</a>
+            <a href={`/${locale}/dashboard/servers/${serverId}/users/create`}>{dictionary.userManagement.addPlayer}</a>
           </Button>
         }
       />
       <div className="px-4 lg:px-6">
         <ResourceTable
+          dictionary={dictionary}
           rows={assignments}
           getHref={(assignment) => `/${locale}/dashboard/servers/${serverId}/users/${assignment.id}`}
           columns={[
@@ -56,7 +57,7 @@ export default async function ServerUsersPage({
               title: dictionary.userManagement.tablePlayer,
               render: (assignment) => {
                 const user = getAssignmentUser(assignment);
-                if (!user) return "Unknown user";
+                if (!user) return dictionary.common.unknown;
                 return (
                   <div className="flex items-center gap-3">
                     <Avatar className="size-9 rounded-lg">
@@ -79,7 +80,7 @@ export default async function ServerUsersPage({
             {
               key: "group",
               title: dictionary.userManagement.tableGroup,
-              render: (assignment) => assignment.group ?? "None",
+              render: (assignment) => assignment.group ?? dictionary.userManagement.none,
             },
             {
               key: "state",

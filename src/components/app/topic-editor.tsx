@@ -38,7 +38,7 @@ export function TopicEditor({
   function addTopic() {
     setDraftTopics((current) => [
       ...current,
-      { id: `topic-${current.length + 1}`, title: "New topic", body: "", attachments: [] },
+      { id: `topic-${current.length + 1}`, title: dictionary.presets.newTopic, body: "", attachments: [] },
     ]);
   }
 
@@ -50,9 +50,9 @@ export function TopicEditor({
     <Card className="rounded-2xl border-border/60">
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
-          <CardTitle>Topics</CardTitle>
+          <CardTitle>{dictionary.presets.topics}</CardTitle>
           <p className="mt-2 text-sm text-muted-foreground">
-            Briefing topics are editable in the same admin edit flow as the preset details.
+            {dictionary.presets.topicEditorDescription}
           </p>
         </div>
         {canEdit ? (
@@ -64,7 +64,7 @@ export function TopicEditor({
             {isEditing ? (
               <Button variant="outline" className="rounded-xl" onClick={addTopic}>
                 <Plus className="size-4" />
-                Add topic
+                {dictionary.presets.addTopic}
               </Button>
             ) : null}
           </div>
@@ -100,7 +100,7 @@ export function TopicEditor({
                     )
                   }
                   className="min-h-20 rounded-xl"
-                  placeholder="One attachment URL per line"
+                  placeholder={dictionary.presets.attachmentPlaceholder}
                 />
               </div>
             ) : (
@@ -108,7 +108,7 @@ export function TopicEditor({
                 <div className="font-medium">{topic.title}</div>
                 <p className="mt-2 text-sm text-muted-foreground">{topic.body}</p>
                 {topic.attachments.length ? (
-                  <div className="mt-3 text-xs text-muted-foreground">{topic.attachments.length} attachment(s)</div>
+                  <div className="mt-3 text-xs text-muted-foreground">{topic.attachments.length} {dictionary.presets.attachmentCountSuffix}</div>
                 ) : null}
               </>
             )}

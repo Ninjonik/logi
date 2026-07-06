@@ -4,7 +4,8 @@ import { PageHeader } from "@/components/app/page-header";
 import { ServerCard } from "@/components/app/server-card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
-import { getCurrentUser, getGuild, mockGuilds } from "@/lib/mock-data";
+import { getCurrentPlayer } from "@/lib/auth";
+import { getGuild, mockGuilds } from "@/lib/mock-data";
 
 export async function generateMetadata({
   params,
@@ -27,7 +28,11 @@ export default async function DashboardHomePage({
   const { locale } = await params;
   const safeLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(safeLocale);
-  const user = getCurrentUser();
+  const user = await getCurrentPlayer();
+
+  if (!user) {
+    return null;
+  }
 
   const mainServer = user.guildId ? getGuild(user.guildId) : undefined;
   const managedServers = mockGuilds.filter((guild) => user.managedGuildIds.includes(guild.id));
@@ -43,7 +48,7 @@ export default async function DashboardHomePage({
               {dictionary.dashboard.homeServer}
             </h2>
             <div className="grid gap-4 xl:grid-cols-2">
-              <ServerCard locale={safeLocale} guild={mainServer} label={dictionary.dashboard.homeServer} />
+              <ServerCard locale={safeLocale} guild={mainServer} label={dictionary.dashboard.homeServer} dictionary={dictionary} />
             </div>
           </section>
         ) : null}
@@ -54,7 +59,7 @@ export default async function DashboardHomePage({
             </h2>
             <div className="grid gap-4 xl:grid-cols-2">
               {managedServers.map((guild) => (
-                <ServerCard key={guild.id} locale={safeLocale} guild={guild} label={dictionary.dashboard.managedServers} />
+                <ServerCard key={guild.id} locale={safeLocale} guild={guild} label={dictionary.dashboard.managedServers} dictionary={dictionary} />
               ))}
             </div>
           </section>
@@ -66,7 +71,7 @@ export default async function DashboardHomePage({
             </h2>
             <div className="grid gap-4 xl:grid-cols-2">
               {mercenaryServers.map((guild) => (
-                <ServerCard key={guild.id} locale={safeLocale} guild={guild} label={dictionary.dashboard.mercenaryServers} />
+                <ServerCard key={guild.id} locale={safeLocale} guild={guild} label={dictionary.dashboard.mercenaryServers} dictionary={dictionary} />
               ))}
             </div>
           </section>

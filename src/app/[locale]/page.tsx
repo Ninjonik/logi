@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { mockIsAuthenticated } from "@/lib/mock-data";
 import { defaultLocale } from "@/i18n/config";
+import { getCurrentPlayer } from "@/lib/auth";
 
 export default async function LocaleHomePage({
   params,
@@ -10,6 +10,7 @@ export default async function LocaleHomePage({
 }) {
   const { locale } = await params;
   const resolvedLocale = locale || defaultLocale;
+  const isAuthenticated = Boolean(await getCurrentPlayer());
 
-  redirect(`/${resolvedLocale}/${mockIsAuthenticated ? "dashboard" : "login"}`);
+  redirect(`/${resolvedLocale}/${isAuthenticated ? "dashboard" : "login"}`);
 }

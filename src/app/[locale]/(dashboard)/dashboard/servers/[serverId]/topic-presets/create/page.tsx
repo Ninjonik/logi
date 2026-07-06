@@ -16,20 +16,20 @@ export default async function CreateTopicPresetPage({
 
   return (
     <>
-      <PageHeader title="Create topic preset" description="Create and edit topic structure in one place." />
+      <PageHeader title={dictionary.presets.createTopicTitle} description={dictionary.presets.createTopicDescription} />
       <div className="grid gap-6 px-4 xl:grid-cols-[1.2fr_1fr] lg:px-6">
         <EditableResourceDetail
-          title="Preset details"
-          description="Create mode starts directly in edit mode."
+          title={dictionary.presets.presetDetails}
+          description={dictionary.shared.createMode}
           canEdit={canAdmin}
           dictionary={dictionary}
           startInEditMode
           fields={[
-            { label: "Name", value: "" },
-            { label: "Map", value: "" },
-            { label: "Side", value: "" },
-            { label: "Cap", value: "" },
-            { label: "Notes", value: "", multiline: true },
+            { label: dictionary.presets.fields.name, value: "" },
+            { label: dictionary.presets.fields.map, value: "" },
+            { label: dictionary.presets.fields.side, value: "" },
+            { label: dictionary.presets.fields.cap, value: "" },
+            { label: dictionary.presets.fields.notes, value: "", multiline: true },
           ]}
         />
         <TopicEditor topics={[]} canEdit={canAdmin} dictionary={dictionary} startInEditMode />

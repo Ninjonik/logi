@@ -47,7 +47,7 @@ export function RosterBoard({
     return (
       <Card className="rounded-2xl border-dashed border-border/80">
         <CardContent className="py-16 text-center text-muted-foreground">
-          Roster has not been assigned to an event yet.
+          {dictionary.roster.rosterNotAssigned}
         </CardContent>
       </Card>
     );
@@ -57,7 +57,7 @@ export function RosterBoard({
     return (
       <Card className="rounded-2xl border-dashed border-border/80">
         <CardContent className="py-16 text-center text-muted-foreground">
-          Roster has not been created yet.
+          {dictionary.roster.rosterNotCreated}
         </CardContent>
       </Card>
     );
@@ -67,7 +67,7 @@ export function RosterBoard({
     return (
       <Card className="rounded-2xl border-dashed border-border/80">
         <CardContent className="py-16 text-center text-muted-foreground">
-          Roster not yet available.
+          {dictionary.roster.rosterNotAvailable}
         </CardContent>
       </Card>
     );
@@ -241,7 +241,7 @@ export function RosterBoard({
       <Card className="rounded-2xl border-border/60 bg-card text-card-foreground">
         <CardHeader className="flex flex-col gap-5 border-b border-border/70 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
-            <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Roster</div>
+            <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{dictionary.roster.title}</div>
             <CardTitle className="text-2xl">
               {event.name} - {new Date(event.gameStart).toLocaleDateString("en-GB")}
             </CardTitle>
@@ -257,11 +257,11 @@ export function RosterBoard({
               <div className="flex flex-wrap gap-2">
                 <Button variant={editMode ? "default" : "outline"} className="rounded-xl" onClick={() => setEditMode((value) => !value)}>
                   <Settings2 className="size-4" />
-                  {editMode ? "Editing enabled" : "Edit roster"}
+                  {editMode ? dictionary.roster.editingEnabled : dictionary.roster.editRoster}
                 </Button>
                 <Button variant="default" className="rounded-xl">
                   <Send className="size-4" />
-                  {board.published ? "Update published roster" : "Publish roster"}
+                  {board.published ? dictionary.roster.updatePublished : dictionary.roster.publishRoster}
                 </Button>
               </div>
             ) : null}
@@ -270,10 +270,10 @@ export function RosterBoard({
         <CardContent className="p-4 lg:p-5">
           <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)_300px]">
             <div className="space-y-4">
-              <RosterInfoCard label="Match time" value={formatDateTime(event.meetingStart)} />
-              <RosterInfoCard label="Opponent" value={event.name.split("vs")[1]?.trim() ?? "TBD"} />
-              <RosterInfoCard label="Map & side" value={`${event.map ?? "TBD"} • ${event.side ?? "TBD"}`} />
-              <RosterInfoCard label="Notes" value={event.notes ?? "No extra notes yet."} />
+              <RosterInfoCard label={dictionary.roster.matchTime} value={formatDateTime(event.meetingStart)} />
+              <RosterInfoCard label={dictionary.roster.opponent} value={event.name.split("vs")[1]?.trim() ?? dictionary.common.unknown} />
+              <RosterInfoCard label={dictionary.roster.mapSide} value={`${event.map ?? "TBD"} • ${event.side ?? "TBD"}`} />
+              <RosterInfoCard label={dictionary.roster.notes} value={event.notes ?? dictionary.roster.noExtraNotes} />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -281,7 +281,7 @@ export function RosterBoard({
                 <div className="md:col-span-2">
                   <Button variant="outline" className="rounded-xl" onClick={addRosterSquad}>
                     <Plus className="size-4" />
-                    Add squad
+                    {dictionary.roster.addSquad}
                   </Button>
                 </div>
               ) : null}
@@ -298,7 +298,7 @@ export function RosterBoard({
                       {editMode ? (
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-2">
-                            <div className="text-sm font-medium">Squad setup</div>
+                            <div className="text-sm font-medium">{dictionary.roster.squadSetup}</div>
                             <div className="flex items-center gap-2">
                               <Button variant="ghost" size="icon" className="size-8 rounded-xl" onClick={() => removeRosterSquad(squadIndex)}>
                                 <Trash2 className="size-4" />
@@ -350,7 +350,7 @@ export function RosterBoard({
                                   className="h-8 rounded-lg text-xs"
                                 />
                               ) : (
-                                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{player.roleName ?? "Role"}</div>
+                                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{player.roleName ?? dictionary.roster.role}</div>
                               )}
                               {editMode ? (
                                 <Button variant="ghost" size="icon" className="size-8 rounded-xl" onClick={() => removeRosterSlot(squadIndex, playerIndex)}>
@@ -373,7 +373,7 @@ export function RosterBoard({
                                   </Avatar>
                                   <div className="min-w-0 flex-1">
                                     <div className="truncate font-medium">{slotUser.name}</div>
-                                    <div className="truncate text-xs text-muted-foreground">{player.note ?? "Ready for assignment"}</div>
+                                    <div className="truncate text-xs text-muted-foreground">{player.note ?? ""}</div>
                                   </div>
                                   {player.ack ? <CheckCircle2 className="size-4 text-emerald-500" /> : <Radio className="size-4 text-amber-500" />}
                                 </div>
@@ -381,7 +381,7 @@ export function RosterBoard({
                                   <Input
                                     value={player.note ?? ""}
                                     onChange={(event) => updatePlayerField(squadIndex, playerIndex, "note", event.target.value)}
-                                    placeholder="Player note"
+                                    placeholder={dictionary.common.playerNote}
                                     className="rounded-lg"
                                   />
                                 ) : null}
@@ -389,13 +389,13 @@ export function RosterBoard({
                             ) : (
                               <div className="space-y-2">
                                 <div className="rounded-xl border border-dashed border-border/80 px-3 py-4 text-sm text-muted-foreground">
-                                  {player.note ?? "Open slot"}
+                                  {player.note ?? dictionary.common.openSlot}
                                 </div>
                                 {editMode ? (
                                   <Input
                                     value={player.note ?? ""}
                                     onChange={(event) => updatePlayerField(squadIndex, playerIndex, "note", event.target.value)}
-                                    placeholder="Slot note"
+                                    placeholder={dictionary.common.slotNote}
                                     className="rounded-lg"
                                   />
                                 ) : null}
@@ -407,7 +407,7 @@ export function RosterBoard({
                       {editMode ? (
                         <Button variant="outline" className="w-full rounded-xl" onClick={() => addRosterSlot(squadIndex)}>
                           <Plus className="size-4" />
-                          Add slot
+                          {dictionary.roster.addSlot}
                         </Button>
                       ) : null}
                     </CardContent>
@@ -421,7 +421,7 @@ export function RosterBoard({
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search reserves..."
+                  placeholder={dictionary.common.searchReserves}
                   className="rounded-xl"
                 />
               </CardHeader>
@@ -447,14 +447,14 @@ export function RosterBoard({
                           </Avatar>
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-medium">{user.name}</div>
-                            <div className="text-xs text-muted-foreground">Score {user.score}</div>
+                            <div className="text-xs text-muted-foreground">{user.score} {dictionary.navUser.scoreSuffix}</div>
                           </div>
                         </div>
                       </div>
                     ))}
                     {!reserveUsers.length ? (
                       <div className="rounded-xl border border-dashed border-border/80 px-3 py-6 text-center text-sm text-muted-foreground">
-                        No reserves match this filter.
+                        {dictionary.userManagement.noResults}
                       </div>
                     ) : null}
                   </div>

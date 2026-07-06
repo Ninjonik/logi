@@ -1,21 +1,25 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Bell, Languages } from "lucide-react";
+import { Bell } from "lucide-react";
 
+import { LocaleSwitcher } from "@/components/app/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Guild } from "@/types/domain";
 import type { AppUser } from "@/types/domain";
 
 export function SiteHeader({
+  locale,
   dictionary,
   servers,
   user,
 }: {
+  locale: Locale;
   dictionary: Dictionary;
   servers: Guild[];
   user: AppUser;
@@ -40,10 +44,9 @@ export function SiteHeader({
             {activeServer?.description ?? dictionary.dashboard.description}
           </div>
         </div>
-        <Badge variant="secondary" className="hidden rounded-full px-3 sm:inline-flex">
-          <Languages className="mr-1 size-3.5" />
-          EN ready
-        </Badge>
+        <div className="hidden sm:block">
+          <LocaleSwitcher locale={locale} dictionary={dictionary} />
+        </div>
         <Badge variant={canAdmin ? "default" : "secondary"} className="rounded-full px-3">
           {canAdmin ? dictionary.common.adminOnly : dictionary.common.membersOnly}
         </Badge>

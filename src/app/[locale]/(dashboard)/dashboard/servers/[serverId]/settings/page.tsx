@@ -15,8 +15,8 @@ export async function generateMetadata({
   const { serverId } = await params;
   const context = getServerContext(serverId);
   return {
-    title: `${context.server?.name ?? "Server"} settings`,
-    description: "Guild settings page for avatar, description, and membership management.",
+    title: `${context.server?.name ?? "Clan"} settings`,
+    description: "Clan settings page for avatar, description, and membership management.",
   };
 }
 
@@ -36,23 +36,23 @@ export default async function ServerSettingsPage({
       <div className="grid gap-6 px-4 xl:grid-cols-[1.2fr_1fr] lg:px-6">
         <EditableResourceDetail
           title={server.name}
-          description="Frontend-only guild configuration for now."
+          description={dictionary.serverSettings.frontendOnlyDescription}
           canEdit={canAdmin}
           dictionary={dictionary}
           fields={[
-            { label: "Server name", value: server.name },
-            { label: "Avatar URL", value: server.avatar },
-            { label: "Description", value: server.description, multiline: true },
+            { label: dictionary.serverSettings.clanName, value: server.name },
+            { label: dictionary.userSettings.avatarUrl, value: server.avatar },
+            { label: dictionary.event.fields.description, value: server.description, multiline: true },
           ]}
         />
         <Card className="rounded-2xl border-border/60">
           <CardHeader>
-            <CardTitle>Access model</CardTitle>
+            <CardTitle>{dictionary.serverSettings.accessModel}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Admins: full access to events, presets, rosters, and server settings.</p>
-            <p>Members and mercenaries: calendar visibility plus published rosters only.</p>
-            <p>Later backend work can connect these rules to Discord roles and Convex queries.</p>
+            <p>{dictionary.serverSettings.accessAdmins}</p>
+            <p>{dictionary.serverSettings.accessMembers}</p>
+            <p>{dictionary.serverSettings.accessBackend}</p>
           </CardContent>
         </Card>
       </div>

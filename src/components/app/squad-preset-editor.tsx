@@ -66,11 +66,11 @@ export function SquadPresetEditor({
     setDraftSquads((current) => [
       ...current,
       {
-        name: "New squad",
+        name: dictionary.presets.newSquad,
         group: "Infantry Squad",
         order: current.length,
         color: "#64748b",
-        roles: [{ name: "Rifleman", color: "#64748b", icon: "users", count: 1 }],
+        roles: [{ name: dictionary.presets.newRole, color: "#64748b", icon: "users", count: 1 }],
       },
     ]);
   }
@@ -85,7 +85,7 @@ export function SquadPresetEditor({
         index === squadIndex
           ? {
               ...squad,
-              roles: [...squad.roles, { name: "New role", color: squad.color, icon: "users", count: 1 }],
+              roles: [...squad.roles, { name: dictionary.presets.newRole, color: squad.color, icon: "users", count: 1 }],
             }
           : squad,
       ),
@@ -106,9 +106,9 @@ export function SquadPresetEditor({
     <Card className="rounded-2xl border-border/60">
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
-          <CardTitle>Preset setup</CardTitle>
+          <CardTitle>{dictionary.presets.presetSetup}</CardTitle>
           <p className="mt-2 text-sm text-muted-foreground">
-            Preset information and squad structure live in one editor so the whole setup stays together.
+            {dictionary.presets.presetSetupDescription}
           </p>
         </div>
         {canEdit ? (
@@ -120,7 +120,7 @@ export function SquadPresetEditor({
             {isEditing ? (
               <Button variant="outline" className="rounded-xl" onClick={addSquad}>
                 <Plus className="size-4" />
-                Add squad
+                {dictionary.common.addSquad}
               </Button>
             ) : null}
           </div>
@@ -128,11 +128,11 @@ export function SquadPresetEditor({
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <div className="mb-2 text-sm font-medium">Preset name</div>
+          <div className="mb-2 text-sm font-medium">{dictionary.presets.presetName}</div>
           {isEditing ? (
             <Input value={draftName} onChange={(event) => setDraftName(event.target.value)} className="rounded-xl" />
           ) : (
-            <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">{draftName || "Untitled preset"}</div>
+            <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">{draftName || dictionary.presets.untitledPreset}</div>
           )}
         </div>
 
@@ -142,7 +142,7 @@ export function SquadPresetEditor({
               {isEditing ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-medium">Squad block</div>
+                    <div className="text-sm font-medium">{dictionary.presets.squadBlock}</div>
                     <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => removeSquad(squadIndex)}>
                       <Trash2 className="size-4" />
                     </Button>
@@ -165,7 +165,7 @@ export function SquadPresetEditor({
                     {squad.roles.map((role, roleIndex) => (
                       <div key={`${role.name}-${roleIndex}`} className="rounded-xl border border-border/60 p-3">
                         <div className="mb-3 flex items-center justify-between gap-2">
-                          <div className="text-sm font-medium">Role</div>
+                          <div className="text-sm font-medium">{dictionary.presets.role}</div>
                           <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => removeRole(squadIndex, roleIndex)}>
                             <Trash2 className="size-4" />
                           </Button>
@@ -180,13 +180,13 @@ export function SquadPresetEditor({
                           value={role.note ?? ""}
                           onChange={(event) => updateRole(squadIndex, roleIndex, "note", event.target.value)}
                           className="mt-3 min-h-20 rounded-xl"
-                          placeholder="Role note"
+                          placeholder={dictionary.presets.roleNote}
                         />
                       </div>
                     ))}
                     <Button variant="outline" className="rounded-xl" onClick={() => addRole(squadIndex)}>
                       <Plus className="size-4" />
-                      Add role
+                      {dictionary.presets.addRole}
                     </Button>
                   </div>
                 </div>

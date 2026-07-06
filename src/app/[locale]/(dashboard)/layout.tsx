@@ -4,7 +4,9 @@ import { AppSidebar } from "@/components/app/app-sidebar";
 import { SiteFooter } from "@/components/app/site-footer";
 import { SiteHeader } from "@/components/app/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { getCurrentUser, mockGuilds } from "@/lib/mock-data";
+import { getCurrentPlayer } from "@/lib/auth";
+import { mockGuilds } from "@/lib/mock-data";
+import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({
   children,
@@ -16,7 +18,10 @@ export default async function DashboardLayout({
   const { locale } = await params;
   const safeLocale = (isLocale(locale) ? locale : "en") as Locale;
   const dictionary = getDictionary(safeLocale);
-  const user = getCurrentUser();
+  const user = await getCurrentPlayer();
+  if (!user) {
+    redirect(`/${safeLocale}/login`);
+  }
   const visibleServers = mockGuilds.filter(
     (guild) =>
       guild.id === user.guildId ||
@@ -43,7 +48,7 @@ export default async function DashboardLayout({
         canAdmin={false}
       />
       <SidebarInset className="bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)]">
-        <SiteHeader dictionary={dictionary} servers={visibleServers} user={user} />
+        <SiteHeader locale={safeLocale} dictionary={dictionary} servers={visibleServers} user={user} />
         <div className="flex flex-1 flex-col gap-6 py-6">{children}</div>
         <SiteFooter dictionary={dictionary} />
       </SidebarInset>

@@ -20,9 +20,10 @@ export async function generateMetadata({
   const { locale, serverId } = await params;
   const safeLocale = isLocale(locale) ? locale : "en";
   const context = getServerContext(serverId);
+  const dictionary = getDictionary(safeLocale);
 
   return {
-    title: `${context.server?.name ?? "Server"} overview`,
+    title: `${context.server?.name ?? "Clan"} ${dictionary.sidebar.overview}`,
     description: context.server?.description,
     alternates: { canonical: `/${safeLocale}/dashboard/servers/${serverId}` },
   };
@@ -49,17 +50,17 @@ export default async function ServerOverviewPage({
 
   return (
     <>
-      <PageHeader title={server.name} description={server.description} badge={canAdmin ? "Admin access" : "Member access"} />
+      <PageHeader title={server.name} description={server.description} badge={canAdmin ? dictionary.clan.adminAccess : dictionary.clan.memberAccess} />
       <div className="grid gap-4 px-4 md:grid-cols-2 xl:grid-cols-4 lg:px-6">
-        <StatCard title="Upcoming events" value={events.length} description="Calendar, event pages, and briefing flow ready." icon={CalendarDays} />
-        <StatCard title="Published rosters" value={publishedRosters.length} description="Visible to members and mercenaries." icon={Radio} />
-        <StatCard title="Members" value={server.memberIds.length} description="Core server membership synced later from Discord." icon={Users} />
-        <StatCard title="Presets" value={server.id ? `${events.length + rosters.length}` : 0} description="Hybrid copied-reference workflow prepared." icon={ClipboardList} />
+        <StatCard title={dictionary.clan.upcomingEvents} value={events.length} description={dictionary.calendarPage.description} icon={CalendarDays} />
+        <StatCard title={dictionary.clan.publishedRosters} value={publishedRosters.length} description={dictionary.clan.visibilityBody} icon={Radio} />
+        <StatCard title={dictionary.clan.members} value={server.memberIds.length} description={dictionary.userManagement.description} icon={Users} />
+        <StatCard title={dictionary.clan.presets} value={server.id ? `${events.length + rosters.length}` : 0} description={dictionary.clan.backendBody} icon={ClipboardList} />
       </div>
       <div className="grid gap-6 px-4 xl:grid-cols-[1.4fr_.9fr] lg:px-6">
         <Card className="rounded-2xl border-border/60">
           <CardHeader>
-            <CardTitle>Members and groups</CardTitle>
+            <CardTitle>{dictionary.clan.membersAndGroups}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
             {members.map((member) => (
@@ -73,7 +74,7 @@ export default async function ServerOverviewPage({
                   <div className="truncate text-sm text-muted-foreground">{member.group}</div>
                 </div>
                 <Badge variant="secondary" className="rounded-full px-3">
-                  Joined {member.joinedAt ? formatDate(member.joinedAt) : "Unknown"}
+                  {dictionary.clan.joined} {member.joinedAt ? formatDate(member.joinedAt) : dictionary.common.unknown}
                 </Badge>
               </div>
             ))}
@@ -81,25 +82,25 @@ export default async function ServerOverviewPage({
         </Card>
         <Card className="rounded-2xl border-border/60">
           <CardHeader>
-            <CardTitle>Server snapshot</CardTitle>
+            <CardTitle>{dictionary.clan.snapshot}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
-              <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Who can see what</div>
+              <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{dictionary.clan.visibilityTitle}</div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Calendar is visible to logged-in users in this server. Events, presets, and unpublished rosters remain admin-only.
+                {dictionary.clan.visibilityBody}
               </p>
             </div>
             <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
-              <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Backend prep</div>
+              <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{dictionary.clan.backendTitle}</div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Pages are wired around mock data and typed for Convex documents so we can drop in real queries later.
+                {dictionary.clan.backendBody}
               </p>
             </div>
             <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
-              <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Language</div>
+              <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{dictionary.clan.languageTitle}</div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Locale routing is active with English dictionaries, so additional languages can be added without rewriting page structure.
+                {dictionary.clan.languageBody}
               </p>
             </div>
           </CardContent>

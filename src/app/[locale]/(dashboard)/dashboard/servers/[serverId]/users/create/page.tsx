@@ -7,11 +7,6 @@ import { isLocale } from "@/i18n/config";
 import { getServerContext } from "@/lib/server-context";
 import { getEligibleUsersForServer, getServerUserAssignments } from "@/lib/server-user-management";
 
-export const metadata: Metadata = {
-  title: "Add player",
-  description: "Add a player as a clan member or mercenary from the in-system user list.",
-};
-
 export default async function CreateServerUserPage({
   params,
 }: {
@@ -28,7 +23,7 @@ export default async function CreateServerUserPage({
 
   return (
     <>
-      <PageHeader title="Add player" description="Search known users, choose member or mercenary, set group, and optionally pause the assignment." />
+      <PageHeader title={dictionary.userManagement.addPlayer} description={dictionary.userManagement.description} />
       <div className="px-4 lg:px-6">
         <UserAssignmentForm server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} createMode />
       </div>

@@ -71,7 +71,7 @@ export function EditableResourceDetail({
                 )
               ) : (
                 <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
-                  {String(field.value ?? "Not set")}
+                  {String(field.value ?? dictionary.shared.notSet)}
                 </div>
               )}
             </div>

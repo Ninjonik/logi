@@ -19,6 +19,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import type { Dictionary } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 import type { Locale } from "@/i18n/config";
 import type { EventRecord } from "@/types/domain";
@@ -29,10 +30,12 @@ export function MonthCalendarView({
   locale,
   serverId,
   events,
+  dictionary,
 }: {
   locale: Locale;
   serverId: string;
   events: EventRecord[];
+  dictionary: Dictionary;
 }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     if (events[0]) return startOfMonth(parseISO(events[0].meetingStart));
@@ -59,14 +62,14 @@ export function MonthCalendarView({
       <div className="flex items-center justify-between border-b border-border/60 px-4 py-4">
         <div>
           <div className="text-xl font-semibold">{format(currentMonth, "MMMM yyyy")}</div>
-          <div className="text-sm text-muted-foreground">Monthly operations view</div>
+          <div className="text-sm text-muted-foreground">{dictionary.calendarPage.monthView}</div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="icon" className="rounded-xl" onClick={() => setCurrentMonth((value) => subMonths(value, 1))}>
             <ChevronLeft className="size-4" />
           </Button>
           <Button variant="outline" className="rounded-xl" onClick={() => setCurrentMonth(startOfMonth(new Date()))}>
-            Today
+            {dictionary.common.today}
           </Button>
           <Button variant="outline" size="icon" className="rounded-xl" onClick={() => setCurrentMonth((value) => addMonths(value, 1))}>
             <ChevronRight className="size-4" />
@@ -125,7 +128,9 @@ export function MonthCalendarView({
                     </Link>
                   ))}
                   {dayEvents.length > 4 ? (
-                    <div className="px-1 text-[11px] text-muted-foreground">+{dayEvents.length - 4} more events</div>
+                    <div className="px-1 text-[11px] text-muted-foreground">
+                      +{dayEvents.length - 4} {dictionary.calendarPage.moreEvents}
+                    </div>
                   ) : null}
                 </div>
               </div>

@@ -2,11 +2,11 @@
 
 import {
   EllipsisVertical,
-  LogOut,
   CircleUser,
 } from "lucide-react"
 import Link from "next/link"
 
+import { SignOutButton } from "@/components/auth/sign-out-button"
 import { Logo } from "@/components/logo"
 import {
   DropdownMenu,
@@ -23,10 +23,12 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import type { Dictionary } from "@/i18n/dictionaries"
 
 export function NavUser({
   user,
   locale = "en",
+  dictionary,
 }: {
   user: {
     name: string
@@ -34,6 +36,7 @@ export function NavUser({
     avatar: string
   }
   locale?: string
+  dictionary: Dictionary
 }) {
   const { isMobile } = useSidebar()
 
@@ -82,17 +85,12 @@ export function NavUser({
               <DropdownMenuItem asChild className="cursor-pointer">
                 <Link href={`/${locale}/dashboard/settings/user`}>
                   <CircleUser />
-                  Settings
+                  {dictionary.common.settings}
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link href={`/${locale}/login`}>
-                <LogOut />
-                Log out
-              </Link>
-            </DropdownMenuItem>
+            <SignOutButton label={dictionary.common.logout} />
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

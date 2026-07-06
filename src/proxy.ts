@@ -1,29 +1,27 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import createMiddleware from "next-intl/middleware";
 
-import { defaultLocale, isLocale } from "@/i18n/config";
+import {routing} from "@/i18n/routing";
 
-export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+const handleI18nRouting = createMiddleware(routing);
 
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.includes(".")
-  ) {
-    return NextResponse.next();
+export default async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const localeMatch = pathname.match(/^\/([a-zA-Z-]+)(\/.*)?$/);
+  const locale = localeMatch?.[1] ?? "en";
+  const localizedLogin = `/${locale}/login`;
+  const localizedDashboard = `/${locale}/dashboard`;
+  const isDashboardRoute =
+    pathname === localizedDashboard || pathname.startsWith(`${localizedDashboard}/`);
+  const hasSessionCookie = Boolean(request.cookies.get("token")?.value);
+
+  if (isDashboardRoute && !hasSessionCookie) {
+    return Response.redirect(new URL(localizedLogin, request.url));
   }
 
-  const [, maybeLocale] = pathname.split("/");
-  if (isLocale(maybeLocale)) {
-    return NextResponse.next();
-  }
-
-  const url = request.nextUrl.clone();
-  url.pathname = `/${defaultLocale}${pathname === "/" ? "" : pathname}`;
-  return NextResponse.redirect(url);
+  return handleI18nRouting(request);
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|\\.well-known).*)"],
 };

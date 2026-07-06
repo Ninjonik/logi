@@ -22,29 +22,29 @@ export function EventFormPanel({
 
   return (
     <EditableResourceDetail
-      title={createMode ? "Create event" : "Event information"}
+      title={createMode ? dictionary.event.createTitle : dictionary.event.infoTitle}
       description={
         createMode
-          ? "This create flow intentionally matches the edit screen so backend wiring later can stay DRY."
-          : "This page stays view-first for everyone, and admins can toggle it into edit mode without changing routes."
+          ? dictionary.event.createDescription
+          : dictionary.event.infoDescription
       }
       canEdit={canEdit}
       dictionary={dictionary}
       startInEditMode={createMode}
       fields={[
-        { label: "Name", value: draft.name },
-        { label: "Description", value: draft.description, multiline: true },
-        { label: "Server", value: draft.server },
-        { label: "Server password", value: draft.serverPassword ?? "" },
-        { label: "Map", value: draft.map },
-        { label: "Side", value: draft.side },
-        { label: "Cap mode", value: draft.cap },
-        { label: "Registration end", value: formatDateTime(draft.registrationEnd) },
-        { label: "Meeting start", value: formatDateTime(draft.meetingStart) },
-        { label: "Game start", value: formatDateTime(draft.gameStart) },
-        { label: "Game end", value: formatDateTime(draft.gameEnd) },
-        { label: "Notes", value: draft.notes, multiline: true },
-        { label: "Ping clan", value: draft.pingClan },
+        { label: dictionary.event.fields.name, value: draft.name },
+        { label: dictionary.event.fields.description, value: draft.description, multiline: true },
+        { label: dictionary.event.fields.server, value: draft.server },
+        { label: dictionary.event.fields.serverPassword, value: draft.serverPassword ?? "" },
+        { label: dictionary.event.fields.map, value: draft.map },
+        { label: dictionary.event.fields.side, value: draft.side },
+        { label: dictionary.event.fields.capMode, value: draft.cap },
+        { label: dictionary.event.fields.registrationEnd, value: formatDateTime(draft.registrationEnd) },
+        { label: dictionary.event.fields.meetingStart, value: formatDateTime(draft.meetingStart) },
+        { label: dictionary.event.fields.gameStart, value: formatDateTime(draft.gameStart) },
+        { label: dictionary.event.fields.gameEnd, value: formatDateTime(draft.gameEnd) },
+        { label: dictionary.event.fields.notes, value: draft.notes, multiline: true },
+        { label: dictionary.event.fields.pingClan, value: draft.pingClan },
       ]}
     />
   );

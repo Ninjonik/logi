@@ -21,8 +21,8 @@ export async function generateMetadata({
   const assignment = getServerUserAssignment(serverId, assignmentId);
   const user = assignment ? getAssignmentUser(assignment) : undefined;
   return {
-    title: user ? `${user.name} assignment` : "User assignment",
-    description: "Edit clan membership, mercenary role, group, and pause state.",
+    title: user ? `${user.name} ${getDictionary("en").userManagement.assignmentTitleSuffix}` : getDictionary("en").userManagement.editAssignment,
+    description: getDictionary("en").userManagement.assignmentMetaDescription,
   };
 }
 
@@ -48,7 +48,7 @@ export default async function ServerUserDetailPage({
     <>
       <PageHeader
         title={user.name}
-        description="Edit assignment type, group, paused membership state, or remove the player from this server."
+        description={dictionary.userManagement.assignmentDescription}
       />
       <div className="px-4 lg:px-6">
         <UserAssignmentForm server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} assignment={assignment} />

@@ -171,10 +171,11 @@ export function AppSidebar({
         <NavUser
           user={{
             name: user.name,
-            email: `${user.score} score`,
+            email: `${user.score} ${dictionary.navUser.scoreSuffix}`,
             avatar: user.avatar,
           }}
           locale={locale}
+          dictionary={dictionary}
         />
       </SidebarFooter>
     </Sidebar>

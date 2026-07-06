@@ -15,7 +15,7 @@ export async function generateMetadata({
   const { serverId, eventId } = await params;
   const event = getServerContext(serverId).events.find((item) => item.id === eventId);
   return {
-    title: event?.name ?? "Event details",
+    title: event?.name ?? "Event",
     description: event?.description,
   };
 }
@@ -43,7 +43,7 @@ export default async function EventDetailPage({
         actions={
           roster?.published ? (
             <Button asChild variant="outline" className="rounded-xl">
-              <a href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}>Show roster</a>
+              <a href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}>{dictionary.event.showRoster}</a>
             </Button>
           ) : undefined
         }

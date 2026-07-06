@@ -37,16 +37,16 @@ export default async function TopicPresetDetailPage({
       <PageHeader title={preset.name} description={preset.notes} />
       <div className="grid gap-6 px-4 xl:grid-cols-[1.2fr_1fr] lg:px-6">
         <EditableResourceDetail
-          title="Preset details"
-          description="Same structure as events, but focused on reusable briefing content."
+          title={dictionary.presets.presetDetails}
+          description={dictionary.presets.topicPresetPageDescription}
           canEdit={canAdmin}
           dictionary={dictionary}
           fields={[
-            { label: "Name", value: preset.name },
-            { label: "Map", value: preset.map },
-            { label: "Side", value: preset.side },
-            { label: "Cap", value: preset.cap },
-            { label: "Notes", value: preset.notes, multiline: true },
+            { label: dictionary.presets.fields.name, value: preset.name },
+            { label: dictionary.presets.fields.map, value: preset.map },
+            { label: dictionary.presets.fields.side, value: preset.side },
+            { label: dictionary.presets.fields.cap, value: preset.cap },
+            { label: dictionary.presets.fields.notes, value: preset.notes, multiline: true },
           ]}
         />
         <TopicEditor topics={preset.topics} canEdit={canAdmin} dictionary={dictionary} />

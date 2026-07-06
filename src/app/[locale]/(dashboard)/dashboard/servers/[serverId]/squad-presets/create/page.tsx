@@ -15,7 +15,7 @@ export default async function CreateSquadPresetPage({
 
   return (
     <>
-      <PageHeader title="Create squad preset" description="Create and reshape the preset structure in one place." />
+      <PageHeader title={dictionary.presets.createSquadTitle} description={dictionary.presets.createSquadDescription} />
       <div className="px-4 lg:px-6">
         <SquadPresetEditor name="" squads={[]} canEdit={canAdmin} dictionary={dictionary} startInEditMode />
       </div>

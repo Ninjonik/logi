@@ -33,7 +33,7 @@ export default async function SquadPresetDetailPage({
 
   return (
     <>
-      <PageHeader title={preset.name} description="Preset squads and roles that can be copied into event rosters." />
+      <PageHeader title={preset.name} description={dictionary.presets.squadPresetPageDescription} />
       <div className="px-4 lg:px-6">
         <SquadPresetEditor name={preset.name} squads={preset.squads} canEdit={canAdmin} dictionary={dictionary} />
       </div>

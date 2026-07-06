@@ -6,11 +6,6 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getServerContext } from "@/lib/server-context";
 
-export const metadata: Metadata = {
-  title: "Create event",
-  description: "Create a new event using the same UI structure as the edit page.",
-};
-
 export default async function CreateEventPage({
   params,
 }: {
@@ -36,13 +31,14 @@ export default async function CreateEventPage({
     gameStart: "2026-07-12T15:00:00.000Z",
     gameEnd: "2026-07-12T17:00:00.000Z",
     pingClan: false,
+    signUps: [],
     createdAt: "2026-07-06T18:00:00.000Z",
     updatedAt: "2026-07-06T18:00:00.000Z",
   };
 
   return (
     <>
-      <PageHeader title="Create event" description="New event flow using the same fields and edit mechanics as the detail page." />
+      <PageHeader title={dictionary.event.createTitle} description={dictionary.event.createPageDescription} />
       <div className="px-4 lg:px-6">
         <EventFormPanel event={draftEvent} canEdit={canAdmin} dictionary={dictionary} createMode />
       </div>

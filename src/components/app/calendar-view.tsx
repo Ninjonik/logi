@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MonthCalendarView } from "@/components/app/month-calendar-view";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Dictionary } from "@/i18n/dictionaries";
 import type { EventRecord, Roster } from "@/types/domain";
 import type { Locale } from "@/i18n/config";
 import { formatDateTime } from "@/lib/format";
@@ -13,11 +14,13 @@ export function CalendarView({
   serverId,
   events,
   rosters,
+  dictionary,
 }: {
   locale: Locale;
   serverId: string;
   events: EventRecord[];
   rosters: Roster[];
+  dictionary: Dictionary;
 }) {
   const highlightedEvents = [...events]
     .sort((a, b) => new Date(a.meetingStart).getTime() - new Date(b.meetingStart).getTime())
@@ -25,7 +28,7 @@ export function CalendarView({
 
   return (
     <div className="space-y-6">
-      <MonthCalendarView locale={locale} serverId={serverId} events={events} />
+      <MonthCalendarView locale={locale} serverId={serverId} events={events} dictionary={dictionary} />
       <div className="grid gap-4 xl:grid-cols-3">
         {highlightedEvents.map((event) => {
           const roster = rosters.find((item) => item.eventId === event.id);
@@ -38,17 +41,17 @@ export function CalendarView({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3">
-                  <InfoTile label="Registration ends" value={formatDateTime(event.registrationEnd)} />
-                  <InfoTile label="Meeting" value={formatDateTime(event.meetingStart)} />
-                  <InfoTile label="Map" value={`${event.map ?? "TBD"} • ${event.side ?? "TBD"}`} />
+                  <InfoTile label={dictionary.calendarCards.registrationEnds} value={formatDateTime(event.registrationEnd)} />
+                  <InfoTile label={dictionary.calendarCards.meeting} value={formatDateTime(event.meetingStart)} />
+                  <InfoTile label={dictionary.calendarCards.map} value={`${event.map ?? "TBD"} • ${event.side ?? "TBD"}`} />
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Button asChild className="rounded-xl">
-                    <Link href={`/${locale}/dashboard/servers/${serverId}/events/${event.id}`}>View event</Link>
+                    <Link href={`/${locale}/dashboard/servers/${serverId}/events/${event.id}`}>{dictionary.common.viewDetails}</Link>
                   </Button>
                   {roster?.published ? (
                     <Button asChild variant="outline" className="rounded-xl">
-                      <Link href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}>Show roster</Link>
+                      <Link href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}>{dictionary.calendarCards.showRoster}</Link>
                     </Button>
                   ) : null}
                 </div>
