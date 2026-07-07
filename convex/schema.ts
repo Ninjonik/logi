@@ -53,6 +53,12 @@ const signUp = v.object({
   group: v.optional(v.union(v.string(), v.null())),
 });
 
+const discordGroupLink = v.object({
+  groupId: v.id("groups"),
+  roleId: v.optional(v.string()),
+  emoji: v.optional(v.string()),
+});
+
 const rosterPlayer = v.object({
   id: v.optional(v.string()),
   ack: v.boolean(),
@@ -100,6 +106,17 @@ export default defineSchema({
     createdAt: v.string(),
     updatedAt: v.string(),
   }).index("id", ["id"]),
+  discordConfigs: defineTable({
+    guildId: v.string(),
+    timezone: v.string(),
+    announcementsChannelId: v.optional(v.string()),
+    forumChannelId: v.optional(v.string()),
+    clanRoleId: v.optional(v.string()),
+    dashboardAdminRoleId: v.optional(v.string()),
+    groupLinks: v.array(discordGroupLink),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  }).index("guildId", ["guildId"]),
   groups: defineTable({
     guildId: v.string(),
     name: v.string(),
@@ -161,5 +178,34 @@ export default defineSchema({
     createdAt: v.string(),
     updatedAt: v.string(),
   }).index("eventId", ["eventId"]),
+  discordEventSyncs: defineTable({
+    eventId: v.id("events"),
+    guildId: v.string(),
+    announcementChannelId: v.optional(v.string()),
+    announcementMessageId: v.optional(v.string()),
+    forumChannelId: v.optional(v.string()),
+    forumThreadId: v.optional(v.string()),
+    infoMessageId: v.optional(v.string()),
+    topicMessageIds: v.array(v.string()),
+    lastSyncedAt: v.optional(v.string()),
+    lastEventUpdatedAt: v.optional(v.string()),
+    lastConfigUpdatedAt: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("eventId", ["eventId"])
+    .index("guildId", ["guildId"]),
+  discordMemberAccess: defineTable({
+    guildId: v.string(),
+    userId: v.string(),
+    roleIds: v.array(v.string()),
+    isAdmin: v.boolean(),
+    hasDashboardAccess: v.boolean(),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("guildId", ["guildId"])
+    .index("userId", ["userId"])
+    .index("guildId_userId", ["guildId", "userId"]),
   userAssignments,
 });

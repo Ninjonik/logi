@@ -48,23 +48,30 @@ export const getServerContext = query({
       return null;
     }
 
+    const discordAccess = await ctx.db
+      .query("discordMemberAccess")
+      .withIndex("guildId_userId", (q) => q.eq("guildId", args.serverId).eq("userId", args.userId))
+      .unique();
+
     const canAccess =
       user.guildId === server.id ||
       user.managedGuildIds.includes(server.id) ||
-      user.mercenaryGuildIds.includes(server.id);
+      user.mercenaryGuildIds.includes(server.id) ||
+      Boolean(discordAccess?.hasDashboardAccess);
 
     if (!canAccess) {
       return null;
     }
 
-    const canAdmin = server.adminIds.includes(user.id);
-    const [events, topicPresets, squadPresets, rosters, groups, assignments] = await Promise.all([
+    const canAdmin = server.adminIds.includes(user.id) || Boolean(discordAccess?.isAdmin);
+    const [events, topicPresets, squadPresets, rosters, groups, assignments, discordConfig] = await Promise.all([
       ctx.db.query("events").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
       ctx.db.query("topicPresets").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
       ctx.db.query("squadPresets").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
       ctx.db.query("rosters").collect(),
       ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
       ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", server.id)).collect(),
+      ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", server.id)).unique(),
     ]);
 
     const relevantRosters = rosters.filter((roster) => {
@@ -84,6 +91,7 @@ export const getServerContext = query({
       rosters: relevantRosters.map(normalizeDoc),
       groups: groups.map(normalizeDoc),
       assignments: assignments.map((assignment) => normalizeAssignmentDoc(assignment, groupNameById)),
+      discordConfig: discordConfig ? normalizeDoc(discordConfig) : null,
     };
   },
 });

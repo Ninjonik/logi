@@ -31,7 +31,7 @@ export default async function RosterDetailPage({
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { rosters, events, canAdmin, assignments = [], groups = [] } = context;
+  const { rosters, events, canAdmin, assignments = [], groups = [], discordConfig } = context;
   const roster = rosters.find((item) => item.id === rosterId);
   const event = events.find((item) => item.id === roster?.eventId);
   const users = await getUsersByIds(assignments.map((assignment) => assignment.userId));
@@ -42,7 +42,7 @@ export default async function RosterDetailPage({
         title={event ? `${event.name} roster` : "Roster"}
       />
       <div className="px-4 lg:px-6">
-        <RosterBoard roster={roster} event={event} users={users} userAssignments={assignments} groups={groups} canAdmin={canAdmin} dictionary={dictionary} serverId={serverId} locale={locale} defaultEditMode={false} />
+        <RosterBoard roster={roster} event={event} users={users} userAssignments={assignments} groups={groups} canAdmin={canAdmin} dictionary={dictionary} serverId={serverId} locale={locale} timezone={discordConfig?.timezone} defaultEditMode={false} />
       </div>
     </>
   );

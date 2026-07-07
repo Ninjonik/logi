@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Guild } from "@/types/domain";
 import type { Locale } from "@/i18n/config";
+import { buildDiscordBotInviteUrl } from "@/lib/discord";
 
 export function ServerCard({
   locale,
@@ -64,12 +65,21 @@ export function ServerCard({
         </div>
       </CardContent>
       <CardFooter>
-        <Button asChild className="w-full rounded-xl">
-          <Link href={`/${locale}/dashboard/servers/${guild.id}`}>
-            {dictionary.dashboard.openServer}
-            <ArrowRight className="size-4" />
-          </Link>
-        </Button>
+        {guild.botInside ? (
+          <Button asChild className="w-full rounded-xl">
+            <Link href={`/${locale}/dashboard/servers/${guild.id}`}>
+              {dictionary.dashboard.openServer}
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        ) : (
+          <Button asChild className="w-full rounded-xl">
+            <Link href={buildDiscordBotInviteUrl(guild.id)}>
+              {dictionary.dashboard.inviteBot}
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

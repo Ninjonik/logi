@@ -14,12 +14,14 @@ export function CalendarView({
   serverId,
   events,
   rosters,
+  timezone,
   dictionary,
 }: {
   locale: Locale;
   serverId: string;
   events: EventRecord[];
   rosters: Roster[];
+  timezone?: string;
   dictionary: Dictionary;
 }) {
   const highlightedEvents = [...events]
@@ -28,7 +30,7 @@ export function CalendarView({
 
   return (
     <div className="space-y-6">
-      <MonthCalendarView locale={locale} serverId={serverId} events={events} dictionary={dictionary} />
+      <MonthCalendarView locale={locale} serverId={serverId} events={events} timezone={timezone} dictionary={dictionary} />
       <div className="grid gap-4 xl:grid-cols-3">
         {highlightedEvents.map((event) => {
           const roster = rosters.find((item) => item.eventId === event.id);
@@ -41,8 +43,8 @@ export function CalendarView({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3">
-                  <InfoTile label={dictionary.calendarCards.registrationEnds} value={formatDateTime(event.registrationEnd)} />
-                  <InfoTile label={dictionary.calendarCards.meeting} value={formatDateTime(event.meetingStart)} />
+                  <InfoTile label={dictionary.calendarCards.registrationEnds} value={formatDateTime(event.registrationEnd, timezone)} />
+                  <InfoTile label={dictionary.calendarCards.meeting} value={formatDateTime(event.meetingStart, timezone)} />
                   <InfoTile label={dictionary.calendarCards.map} value={`${event.map ?? "TBD"} • ${event.side ?? "TBD"}`} />
                 </div>
                 <div className="flex flex-wrap gap-3">

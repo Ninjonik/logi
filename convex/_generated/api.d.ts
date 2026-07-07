@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as discord from "../discord.js";
 import type * as events from "../events.js";
 import type * as groups from "../groups.js";
 import type * as guilds from "../guilds.js";
@@ -24,6 +25,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  discord: typeof discord;
   events: typeof events;
   groups: typeof groups;
   guilds: typeof guilds;

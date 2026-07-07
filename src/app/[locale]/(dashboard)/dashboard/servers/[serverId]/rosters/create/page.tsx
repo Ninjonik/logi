@@ -14,7 +14,7 @@ export default async function CreateRosterPage({
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { events, rosters, squadPresets, canAdmin, assignments = [], groups = [] } = context;
+  const { events, rosters, squadPresets, canAdmin, assignments = [], groups = [], discordConfig } = context;
   const reserveUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
 
   return (
@@ -35,6 +35,7 @@ export default async function CreateRosterPage({
           dictionary={dictionary}
           serverId={serverId}
           locale={locale}
+          timezone={discordConfig?.timezone}
         />
       </div>
     </>

@@ -65,6 +65,7 @@ export function RosterBoard({
   dictionary,
   serverId,
   locale,
+  timezone,
   defaultEditMode = false,
 }: {
   roster?: Roster;
@@ -76,6 +77,7 @@ export function RosterBoard({
   dictionary: Dictionary;
   serverId: string;
   locale: string;
+  timezone?: string;
   defaultEditMode: boolean;
 }) {
   const router = useRouter();
@@ -594,7 +596,7 @@ export function RosterBoard({
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{dictionary.roster.title}</div>
             <CardTitle className="text-2xl">
-              {event.name} - {new Date(event.gameStart).toLocaleDateString()}
+              {event.name} - {formatDateTime(event.gameStart, timezone)}
             </CardTitle>
             <div className="text-sm text-muted-foreground">
               {event.map} • {event.side} • {assignedCount}/{totalSlots} {dictionary.common.assigned}
@@ -635,7 +637,7 @@ export function RosterBoard({
         <CardContent className="p-4 lg:p-5">
           <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)_300px]">
             <div className="space-y-4">
-              <RosterInfoCard label={dictionary.roster.matchTime} value={formatDateTime(event.meetingStart)} />
+              <RosterInfoCard label={dictionary.roster.matchTime} value={formatDateTime(event.meetingStart, timezone)} />
               <RosterInfoCard label={dictionary.roster.opponent} value={event.name.split(dictionary.roster.versusDelimiter)[1]?.trim() ?? dictionary.common.unknown} />
               <RosterInfoCard label={dictionary.roster.mapSide} value={`${event.map ?? dictionary.common.unknown} • ${event.side ?? dictionary.common.unknown}`} />
               <RosterInfoCard label={dictionary.roster.notes} value={event.notes ?? dictionary.roster.noExtraNotes} />

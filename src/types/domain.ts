@@ -28,10 +28,41 @@ export type Guild = {
   avatar: string;
   description?: string;
   botInside: boolean;
+  canAdmin?: boolean;
   adminIds: string[];
   memberIds: string[];
   members: GuildMember[];
   mercenaryIds: string[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
+export type DiscordGroupLink = {
+  groupId: string;
+  roleId?: string;
+  emoji?: string;
+};
+
+export type DiscordConfig = {
+  id: string;
+  guildId: string;
+  timezone: string;
+  announcementsChannelId?: string;
+  forumChannelId?: string;
+  clanRoleId?: string;
+  dashboardAdminRoleId?: string;
+  groupLinks: DiscordGroupLink[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
+export type DiscordMemberAccess = {
+  id: string;
+  guildId: string;
+  userId: string;
+  roleIds: string[];
+  isAdmin: boolean;
+  hasDashboardAccess: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };

@@ -82,3 +82,34 @@ export const getById = query({
     return event ? { ...event, id: String(event._id) } : null;
   },
 });
+
+export const toggleSignUp = mutation({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+    userId: v.string(),
+    group: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      throw new Error("Event not found.");
+    }
+
+    const existing = event.signUps.find((signUp) => signUp.userId === args.userId);
+    let signUps = event.signUps.filter((signUp) => signUp.userId !== args.userId);
+
+    if (!existing || existing.group !== args.group) {
+      signUps = [...signUps, { userId: args.userId, group: args.group }];
+    }
+
+    await ctx.db.patch(args.eventId, {
+      signUps,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return signUps;
+  },
+});

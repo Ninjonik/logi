@@ -31,7 +31,7 @@ export default async function EventsPage({
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { events, canAdmin } = context;
+  const { events, canAdmin, discordConfig } = context;
 
   return (
     <>
@@ -47,7 +47,7 @@ export default async function EventsPage({
           getHref={(event) => `/${locale}/dashboard/servers/${serverId}/events/${event.id}`}
           columns={[
             { key: "name", title: dictionary.tables.event, render: (event) => <div className="font-medium">{event.name}</div> },
-            { key: "meetingStart", title: dictionary.tables.meeting, render: (event) => formatDateTime(event.meetingStart) },
+            { key: "meetingStart", title: dictionary.tables.meeting, render: (event) => formatDateTime(event.meetingStart, discordConfig?.timezone) },
             { key: "map", title: dictionary.calendarCards.map, render: (event) => `${event.map ?? "TBD"} • ${event.side ?? "TBD"}` },
             {
               key: "pingClan",

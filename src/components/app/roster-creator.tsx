@@ -21,6 +21,7 @@ export function RosterCreator({
   dictionary,
   serverId,
   locale,
+  timezone,
 }: {
   events: EventRecord[];
   rosters: Roster[];
@@ -32,6 +33,7 @@ export function RosterCreator({
   dictionary: Dictionary;
   serverId: string;
   locale: string;
+  timezone?: string;
 }) {
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
@@ -97,7 +99,7 @@ export function RosterCreator({
               <SelectContent className="rounded-xl">
                 {availableEvents.map((event) => (
                   <SelectItem key={event.id} value={event.id}>
-                    {event.name} ({formatDateTime(event.meetingStart)})
+                    {event.name} ({formatDateTime(event.meetingStart, timezone)})
                   </SelectItem>
                 ))}
                 {availableEvents.length === 0 && (
@@ -138,6 +140,7 @@ export function RosterCreator({
           dictionary={dictionary}
           serverId={serverId}
           locale={locale}
+          timezone={timezone}
           defaultEditMode={true}
         />
       ) : (

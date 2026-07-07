@@ -28,8 +28,30 @@ export const visibleForUser = query({
     for (const id of user.managedGuildIds) ids.add(id);
     for (const id of user.mercenaryGuildIds) ids.add(id);
 
+    const discordAccess = await ctx.db
+      .query("discordMemberAccess")
+      .withIndex("userId", (q) => q.eq("userId", args.userId))
+      .collect();
+    for (const access of discordAccess) {
+      if (access.hasDashboardAccess) {
+        ids.add(access.guildId);
+      }
+    }
+
+    const adminGuildIds = new Set<string>(user.managedGuildIds);
+    for (const access of discordAccess) {
+      if (access.isAdmin) {
+        adminGuildIds.add(access.guildId);
+      }
+    }
+
     const guilds = await ctx.db.query("guilds").collect();
-    return guilds.filter((guild) => ids.has(guild.id));
+    return guilds
+      .filter((guild) => ids.has(guild.id))
+      .map((guild) => ({
+        ...guild,
+        canAdmin: guild.adminIds.includes(args.userId) || adminGuildIds.has(guild.id),
+      }));
   },
 });
 

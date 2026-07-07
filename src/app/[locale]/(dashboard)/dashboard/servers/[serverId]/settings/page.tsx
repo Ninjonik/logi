@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 
-import { EditableResourceDetail } from "@/components/app/editable-resource-detail";
+import { DiscordSettingsForm } from "@/components/app/discord-settings-form";
 import { PageHeader } from "@/components/app/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getServerContext } from "@/lib/server-context";
+import { getDiscordConfigByGuild } from "@/lib/server-discord-settings";
 
 export async function generateMetadata({
   params,
@@ -29,24 +30,32 @@ export default async function ServerSettingsPage({
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { server, canAdmin } = context;
+  const { server, canAdmin, groups = [] } = context;
+  const discordConfig = await getDiscordConfigByGuild(serverId);
 
   return (
     <>
       <PageHeader title={dictionary.serverSettings.title} description={dictionary.serverSettings.description} />
-      <div className="px-4">
-        <EditableResourceDetail
-          title={server.name}
-          description={dictionary.serverSettings.frontendOnlyDescription}
-          canEdit={canAdmin}
-          dictionary={dictionary}
-          fields={[
-            { label: dictionary.serverSettings.clanName, value: server.name },
-            { label: dictionary.userSettings.avatarUrl, value: server.avatar },
-            { label: dictionary.event.fields.description, value: server.description, multiline: true },
-          ]}
-          createMode={false}
-        />
+      <div className="space-y-6 px-4 lg:px-6">
+        <Card className="rounded-2xl border-border/60">
+          <CardHeader>
+            <CardTitle>{server.name}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <div>{dictionary.serverSettings.frontendOnlyDescription}</div>
+            <div>{dictionary.serverSettings.clanName}: {server.name}</div>
+            <div>{dictionary.userSettings.avatarUrl}: {server.avatar}</div>
+            {server.description ? <div>{dictionary.event.fields.description}: {server.description}</div> : null}
+          </CardContent>
+        </Card>
+        {canAdmin ? (
+          <DiscordSettingsForm
+            serverId={serverId}
+            dictionary={dictionary}
+            groups={groups}
+            config={discordConfig}
+          />
+        ) : null}
       </div>
     </>
   );

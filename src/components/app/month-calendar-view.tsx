@@ -23,6 +23,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 import type { Locale } from "@/i18n/config";
 import type { EventRecord } from "@/types/domain";
+import { formatDateKey, formatTime } from "@/lib/format";
 
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -30,11 +31,13 @@ export function MonthCalendarView({
   locale,
   serverId,
   events,
+  timezone,
   dictionary,
 }: {
   locale: Locale;
   serverId: string;
   events: EventRecord[];
+  timezone?: string;
   dictionary: Dictionary;
 }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -51,11 +54,11 @@ export function MonthCalendarView({
   const eventsByDate = useMemo(() => {
     const grouped = new Map<string, EventRecord[]>();
     for (const event of events) {
-      const key = format(parseISO(event.meetingStart), "yyyy-MM-dd");
+      const key = formatDateKey(event.meetingStart, timezone);
       grouped.set(key, [...(grouped.get(key) ?? []), event]);
     }
     return grouped;
-  }, [events]);
+  }, [events, timezone]);
 
   return (
     <Card className="overflow-hidden rounded-2xl border-border/60">
@@ -86,7 +89,7 @@ export function MonthCalendarView({
         </div>
         <div className="grid grid-cols-7">
           {monthDays.map((day) => {
-            const key = format(day, "yyyy-MM-dd");
+            const key = formatDateKey(day.toISOString(), timezone);
             const dayEvents = eventsByDate.get(key) ?? [];
 
             return (
@@ -123,7 +126,7 @@ export function MonthCalendarView({
                     >
                       <div className="truncate text-xs font-semibold">{event.name}</div>
                       <div className="mt-1 text-[11px] text-muted-foreground">
-                        {format(parseISO(event.meetingStart), "HH:mm")} • {event.map}
+                        {formatTime(event.meetingStart, timezone)} • {event.map}
                       </div>
                     </Link>
                   ))}
