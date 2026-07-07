@@ -1,12 +1,13 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import type { z } from "zod";
 import { toast } from "sonner";
 
+import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,11 @@ import {
 import type { Dictionary } from "@/i18n/dictionaries";
 import { groupSchema, type GroupInput } from "@/lib/validation/group";
 import type { Group } from "@/types/domain";
+
+type DiscordMetadata = {
+  roles: DiscordSelectOption[];
+  emojis: Array<DiscordSelectOption & { value?: string }>;
+};
 
 export function GroupForm({
   serverId,
@@ -40,6 +46,7 @@ export function GroupForm({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
   const form = useForm<z.input<typeof groupSchema>, unknown, GroupInput>({
     resolver: zodResolver(groupSchema),
     defaultValues: {
@@ -48,8 +55,17 @@ export function GroupForm({
       order: group?.order ?? 0,
       parentId: group?.parentId ?? undefined,
       description: group?.description ?? "",
+      discordRoleId: group?.discordRoleId ?? "",
+      discordEmoji: group?.discordEmoji ?? "",
     },
   });
+
+  useEffect(() => {
+    fetch(`/api/servers/${serverId}/discord-metadata`)
+      .then((response) => response.json())
+      .then((body) => setMetadata(body))
+      .catch(() => setMetadata(null));
+  }, [serverId]);
 
   const filteredParentGroups = availableGroups.filter(
     (g) => g.id !== group?.id && !g.parentId,
@@ -160,6 +176,44 @@ export function GroupForm({
           <div className="space-y-2">
             <Label>{dictionary.groups.descriptionLabel}</Label>
             <Textarea {...form.register("description")} className="min-h-28 rounded-xl" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{dictionary.serverSettings.requiredRoleId}</Label>
+              <Controller
+                control={form.control}
+                name="discordRoleId"
+                render={({ field }) => (
+                  <DiscordEntitySelect
+                    value={field.value}
+                    onChange={(value) => field.onChange(value ?? "")}
+                    options={metadata?.roles ?? []}
+                    placeholder={dictionary.serverSettings.requiredRoleId}
+                    noneLabel={dictionary.serverSettings.noGroupRole}
+                  />
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{dictionary.serverSettings.groupEmoji}</Label>
+              <Controller
+                control={form.control}
+                name="discordEmoji"
+                render={({ field }) => (
+                  <DiscordEntitySelect
+                    value={field.value}
+                    onChange={(value) => field.onChange(value ?? "")}
+                    options={(metadata?.emojis ?? []).map((emoji) => ({
+                      id: emoji.id,
+                      name: emoji.name,
+                      imageUrl: emoji.imageUrl,
+                    }))}
+                    placeholder={dictionary.serverSettings.groupEmoji}
+                    noneLabel={dictionary.groups.none}
+                  />
+                )}
+              />
+            </div>
           </div>
           {form.formState.errors.root ? <p className="text-sm text-destructive">{form.formState.errors.root.message}</p> : null}
           <div className="flex flex-wrap gap-3">

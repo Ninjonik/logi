@@ -56,9 +56,16 @@ export function AppSidebar({
   const pathServerId = pathname?.match(/\/servers\/([^/]+)/)?.[1];
   const selectedWorkspaceId = searchParams.get("workspace") ?? undefined;
   const resolvedServerId = pathServerId ?? selectedWorkspaceId ?? activeServerId;
-  const resolvedCanAdmin = Boolean(resolvedServerId && servers.find((server) => server.id === resolvedServerId)?.canAdmin);
   const resolvedServer = resolvedServerId ? servers.find((server) => server.id === resolvedServerId) : undefined;
-  const workspaceEnabled = Boolean(resolvedServer?.botInside);
+  const resolvedCanAdmin = Boolean(
+    resolvedServerId &&
+      (
+        resolvedServer?.canAdmin ||
+        resolvedServer?.adminIds.includes(user.id) ||
+        canAdmin
+      ),
+  );
+  const workspaceEnabled = Boolean(resolvedServer?.botInside || pathServerId);
   const base = resolvedServerId
     ? `/${locale}/dashboard/servers/${resolvedServerId}`
     : `/${locale}/dashboard`;

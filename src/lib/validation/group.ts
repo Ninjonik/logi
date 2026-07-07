@@ -6,6 +6,8 @@ export const groupSchema = z.object({
   order: z.coerce.number().int().default(0),
   parentId: z.string().optional(),
   description: z.string().trim().optional(),
+  discordRoleId: z.string().trim().optional(),
+  discordEmoji: z.string().trim().optional(),
 });
 
 export type GroupInput = z.infer<typeof groupSchema>;

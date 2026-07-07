@@ -155,3 +155,34 @@ export const getById = query({
       .unique();
   },
 });
+
+export const updateFrontendSettings = mutation({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    name: v.string(),
+    avatar: v.string(),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const guild = await ctx.db
+      .query("guilds")
+      .withIndex("id", (q) => q.eq("id", args.guildId))
+      .unique();
+
+    if (!guild) {
+      throw new Error("Server not found.");
+    }
+
+    await ctx.db.patch(guild._id, {
+      name: args.name.trim(),
+      avatar: args.avatar.trim(),
+      description: args.description?.trim() || undefined,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return String(guild._id);
+  },
+});

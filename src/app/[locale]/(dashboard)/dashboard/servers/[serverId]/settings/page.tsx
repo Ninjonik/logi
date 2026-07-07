@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import { DiscordSettingsForm } from "@/components/app/discord-settings-form";
 import { PageHeader } from "@/components/app/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DiscordServerSettingsForm } from "@/components/app/discord-server-settings-form";
+import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getServerContext } from "@/lib/server-context";
@@ -30,29 +30,18 @@ export default async function ServerSettingsPage({
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { server, canAdmin, groups = [] } = context;
+  const { server, canAdmin } = context;
   const discordConfig = await getDiscordConfigByGuild(serverId);
 
   return (
     <>
       <PageHeader title={dictionary.serverSettings.title} description={dictionary.serverSettings.description} />
       <div className="space-y-6 px-4 lg:px-6">
-        <Card className="rounded-2xl border-border/60">
-          <CardHeader>
-            <CardTitle>{server.name}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <div>{dictionary.serverSettings.frontendOnlyDescription}</div>
-            <div>{dictionary.serverSettings.clanName}: {server.name}</div>
-            <div>{dictionary.userSettings.avatarUrl}: {server.avatar}</div>
-            {server.description ? <div>{dictionary.event.fields.description}: {server.description}</div> : null}
-          </CardContent>
-        </Card>
+        {canAdmin ? <ServerFrontendSettingsForm server={server} dictionary={dictionary} /> : null}
         {canAdmin ? (
-          <DiscordSettingsForm
+          <DiscordServerSettingsForm
             serverId={serverId}
             dictionary={dictionary}
-            groups={groups}
             config={discordConfig}
           />
         ) : null}

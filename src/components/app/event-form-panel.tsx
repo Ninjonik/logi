@@ -14,21 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { supportedTimezones } from "@/lib/discord-timezones";
+import { fromDateTimeLocalInTimeZone, toDateTimeLocalInTimeZone } from "@/lib/timezone-datetime";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
 import type { EventRecord, TopicPreset } from "@/types/domain";
-
-function toDateTimeLocal(value?: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const offset = date.getTimezoneOffset();
-  const localDate = new Date(date.getTime() - offset * 60_000);
-  return localDate.toISOString().slice(0, 16);
-}
-
-function fromDateTimeLocal(value: string) {
-  return new Date(value).toISOString();
-}
 
 function FieldLabel({
                       label,
@@ -50,6 +39,7 @@ export function EventFormPanel({
   serverId,
   locale,
   topicPresets,
+  timezone = "UTC",
   canEdit,
   dictionary,
   createMode = false,
@@ -58,6 +48,7 @@ export function EventFormPanel({
   serverId: string;
   locale: string;
   topicPresets: TopicPreset[];
+  timezone?: string;
   canEdit: boolean;
   dictionary: Dictionary;
   createMode?: boolean;
@@ -76,10 +67,10 @@ export function EventFormPanel({
       map: event.map ?? "",
       cap: event.cap ?? "",
       notes: event.notes ?? "",
-      registrationEnd: toDateTimeLocal(event.registrationEnd),
-      meetingStart: toDateTimeLocal(event.meetingStart),
-      gameStart: toDateTimeLocal(event.gameStart),
-      gameEnd: toDateTimeLocal(event.gameEnd),
+      registrationEnd: toDateTimeLocalInTimeZone(event.registrationEnd, timezone),
+      meetingStart: toDateTimeLocalInTimeZone(event.meetingStart, timezone),
+      gameStart: toDateTimeLocalInTimeZone(event.gameStart, timezone),
+      gameEnd: toDateTimeLocalInTimeZone(event.gameEnd, timezone),
       pingClan: event.pingClan,
       topicPresetId: event.topicPresetId ?? "",
     },
@@ -88,10 +79,10 @@ export function EventFormPanel({
   async function submit(values: EventInput) {
     const payload = {
       ...values,
-      registrationEnd: fromDateTimeLocal(values.registrationEnd),
-      meetingStart: fromDateTimeLocal(values.meetingStart),
-      gameStart: fromDateTimeLocal(values.gameStart),
-      gameEnd: fromDateTimeLocal(values.gameEnd),
+      registrationEnd: fromDateTimeLocalInTimeZone(values.registrationEnd, timezone),
+      meetingStart: fromDateTimeLocalInTimeZone(values.meetingStart, timezone),
+      gameStart: fromDateTimeLocalInTimeZone(values.gameStart, timezone),
+      gameEnd: fromDateTimeLocalInTimeZone(values.gameEnd, timezone),
       topicPresetId: values.topicPresetId || undefined,
     };
 
@@ -139,6 +130,11 @@ export function EventFormPanel({
             <div>
               <FieldLabel label={dictionary.event.fields.map}  />
               <Input {...form.register("map")} className="rounded-xl" />
+            </div>
+            <div className="md:col-span-2">
+              <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                {dictionary.serverSettings.timezone}: {supportedTimezones.includes(timezone as (typeof supportedTimezones)[number]) ? timezone : "UTC"}
+              </div>
             </div>
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.description}  />

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bot } from "lucide-react";
 
 import { PageHeader } from "@/components/app/page-header";
+import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-button";
 import { ServerCard } from "@/components/app/server-card";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -72,6 +73,7 @@ export default async function DashboardHomePage({
               </div>
               {managedServersMissingBot.length ? (
                 <div className="flex flex-wrap gap-2">
+                  <RefreshBotStatusButton dictionary={dictionary} />
                   {managedServersMissingBot.map((guild) => (
                     <Button key={guild.id} asChild variant="outline" className="rounded-full">
                       <a href={buildDiscordBotInviteUrl(guild.id)} target="_blank" rel="noreferrer">

@@ -53,12 +53,6 @@ const signUp = v.object({
   group: v.optional(v.union(v.string(), v.null())),
 });
 
-const discordGroupLink = v.object({
-  groupId: v.id("groups"),
-  roleId: v.optional(v.string()),
-  emoji: v.optional(v.string()),
-});
-
 const rosterPlayer = v.object({
   id: v.optional(v.string()),
   ack: v.boolean(),
@@ -110,10 +104,9 @@ export default defineSchema({
     guildId: v.string(),
     timezone: v.string(),
     announcementsChannelId: v.optional(v.string()),
-    forumChannelId: v.optional(v.string()),
+    forumCategoryId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),
     dashboardAdminRoleId: v.optional(v.string()),
-    groupLinks: v.array(discordGroupLink),
     createdAt: v.string(),
     updatedAt: v.string(),
   }).index("guildId", ["guildId"]),
@@ -124,6 +117,8 @@ export default defineSchema({
     order: v.number(),
     parentId: v.optional(v.id("groups")),
     description: v.optional(v.string()),
+    discordRoleId: v.optional(v.string()),
+    discordEmoji: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.string(),
   })

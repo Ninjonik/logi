@@ -46,6 +46,8 @@ export const upsert = mutation({
     order: v.number(),
     parentId: v.optional(v.id("groups")),
     description: v.optional(v.string()),
+    discordRoleId: v.optional(v.string()),
+    discordEmoji: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -73,6 +75,8 @@ export const upsert = mutation({
         order: args.order,
         parentId: args.parentId,
         description: args.description,
+        discordRoleId: args.discordRoleId?.trim() || undefined,
+        discordEmoji: args.discordEmoji?.trim() || undefined,
         updatedAt: now,
       });
       return String(args.groupId);
@@ -85,6 +89,8 @@ export const upsert = mutation({
       order: args.order,
       parentId: args.parentId,
       description: args.description,
+      discordRoleId: args.discordRoleId?.trim() || undefined,
+      discordEmoji: args.discordEmoji?.trim() || undefined,
       createdAt: now,
       updatedAt: now,
     });

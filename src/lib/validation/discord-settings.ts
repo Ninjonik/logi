@@ -12,16 +12,9 @@ const discordIdField = z
 export const discordSettingsSchema = z.object({
   timezone: z.enum(supportedTimezones),
   announcementsChannelId: discordIdField,
-  forumChannelId: discordIdField,
+  forumCategoryId: discordIdField,
   clanRoleId: discordIdField,
   dashboardAdminRoleId: discordIdField,
-  groupLinks: z.array(
-    z.object({
-      groupId: z.string().min(1),
-      roleId: discordIdField,
-      emoji: z.string().trim().optional().transform((value) => value || undefined),
-    }),
-  ),
 });
 
 export type DiscordSettingsInput = z.infer<typeof discordSettingsSchema>;

@@ -1,4 +1,7 @@
-import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import dotenv from "dotenv";
 
 import {
   ActionRowBuilder,
@@ -11,25 +14,28 @@ import {
   Events,
   ForumChannel,
   GatewayIntentBits,
+  GuildBasedChannel,
   GuildMember,
   TextChannel,
 } from "discord.js";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, "..", "..");
+
+dotenv.config({ path: path.join(repoRoot, ".env.local") });
+dotenv.config();
+
 type DiscordConfig = {
   id: string;
   guildId: string;
   timezone: string;
   announcementsChannelId?: string;
-  forumChannelId?: string;
+  forumCategoryId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
-  groupLinks: Array<{
-    groupId: string;
-    roleId?: string;
-    emoji?: string;
-  }>;
   updatedAt: string;
 };
 
@@ -37,6 +43,8 @@ type Group = {
   id: string;
   name: string;
   color: string;
+  discordRoleId?: string;
+  discordEmoji?: string;
 };
 
 type TopicPreset = {
@@ -206,70 +214,95 @@ async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncS
   if (!guild) return;
 
   let announcementMessageId = state?.announcementMessageId;
+  let forumChannelId = state?.forumChannelId;
   let forumThreadId = state?.forumThreadId;
   let infoMessageId = state?.infoMessageId;
   let topicMessageIds = state?.topicMessageIds ?? [];
+
+  let stateNeedsMutationUpdate = false;
 
   if (payload.config.announcementsChannelId) {
     const channel = await guild.channels.fetch(payload.config.announcementsChannelId).catch(() => null);
     if (channel?.isTextBased() && channel.type === ChannelType.GuildText) {
       const textChannel = channel as TextChannel;
       const { embed, components } = buildAnnouncementMessage(payload, event);
+
+      // Try to find the existing tracking message
       const existingMessage = announcementMessageId
         ? await textChannel.messages.fetch(announcementMessageId).catch(() => null)
         : null;
 
       if (existingMessage) {
+        // Only update the existing message in-place
         await existingMessage.edit({ embeds: [embed], components });
       } else {
+        // If it truly doesn't exist, send it ONCE and capture the ID
         const created = await textChannel.send({ embeds: [embed], components });
         announcementMessageId = created.id;
+        stateNeedsMutationUpdate = true; // Flag that we have a brand new ID to commit
       }
     }
   }
 
-  if (payload.config.forumChannelId) {
-    const channel = await guild.channels.fetch(payload.config.forumChannelId).catch(() => null);
-    if (channel?.type === ChannelType.GuildForum) {
-      const forumChannel = channel as ForumChannel;
-      const topicPreset = payload.topicPresets.find((preset) => preset.id === event.topicPresetId);
-      const thread = forumThreadId
-        ? await guild.channels.fetch(forumThreadId).catch(() => null)
-        : null;
-      const infoEmbed = buildForumInfoEmbed(payload.config, event);
+  if (payload.config.forumCategoryId) {
+    const topicPreset = payload.topicPresets.find((preset) => preset.id === event.topicPresetId);
+    const existingForumChannel = forumChannelId
+      ? await guild.channels.fetch(forumChannelId).catch(() => null)
+      : null;
+    const infoEmbed = buildForumInfoEmbed(payload.config, event);
 
-      if (thread?.isThread()) {
-        await thread.edit({ name: buildForumThreadName(payload.config, event) });
-        const starter = await thread.fetchStarterMessage().catch(() => null);
-        if (starter) {
-          await starter.edit({ embeds: [infoEmbed] });
-          infoMessageId = starter.id;
-        }
-        if (!topicMessageIds.length) {
-          topicMessageIds = await ensureTopicMessages(thread, topicPreset);
-        }
-      } else {
-        const created = await forumChannel.threads.create({
-          name: buildForumThreadName(payload.config, event),
-          message: {
-            embeds: [infoEmbed],
-          },
-        });
-        forumThreadId = created.id;
-        const starter = await created.fetchStarterMessage().catch(() => null);
-        infoMessageId = starter?.id;
-        topicMessageIds = await ensureTopicMessages(created, topicPreset);
+    let forumChannel: ForumChannel | null = null;
+    if (existingForumChannel?.type === ChannelType.GuildForum) {
+      forumChannel = existingForumChannel as ForumChannel;
+      await forumChannel.edit({
+        name: buildForumThreadName(payload.config, event),
+        parent: payload.config.forumCategoryId,
+      });
+    } else {
+      forumChannel = (await guild.channels.create({
+        name: buildForumThreadName(payload.config, event),
+        type: ChannelType.GuildForum,
+        parent: payload.config.forumCategoryId,
+      })) as ForumChannel;
+      forumChannelId = forumChannel.id;
+      stateNeedsMutationUpdate = true;
+    }
+
+    const activePosts = await forumChannel.threads.fetchActive().catch(() => null);
+    const existingPosts = activePosts?.threads ? [...activePosts.threads.values()] : [];
+    const matchInformationPost = existingPosts.find((post) => post.name === "Match information");
+
+    if (matchInformationPost) {
+      const starter = await matchInformationPost.fetchStarterMessage().catch(() => null);
+      if (starter) {
+        await starter.edit({ embeds: [infoEmbed] });
+        infoMessageId = starter.id;
       }
+    } else {
+      const createdPost = await forumChannel.threads.create({
+        name: "Match information",
+        message: { embeds: [infoEmbed] },
+      });
+      const starter = await createdPost.fetchStarterMessage().catch(() => null);
+      infoMessageId = starter?.id;
+      stateNeedsMutationUpdate = true;
+    }
+
+    if (!topicMessageIds.length) {
+      topicMessageIds = await ensureForumTopicPosts(forumChannel, topicPreset);
+      stateNeedsMutationUpdate = true;
     }
   }
 
+  // Always update Convex if something changed, OR if a new ID was generated
+  // to ensure the DB knows about the Discord message identities instantly.
   await convex.mutation(updateEventSyncStateReference, {
     secret: internalSecret,
     eventId: event.id as never,
     guildId: payload.config.guildId,
     announcementChannelId: payload.config.announcementsChannelId,
     announcementMessageId,
-    forumChannelId: payload.config.forumChannelId,
+    forumChannelId,
     forumThreadId,
     infoMessageId,
     topicMessageIds,
@@ -277,31 +310,27 @@ async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncS
     lastConfigUpdatedAt: payload.config.updatedAt,
     lastSyncedAt: new Date().toISOString(),
   });
-}
-
-async function ensureTopicMessages(thread: any, topicPreset?: TopicPreset) {
+}async function ensureForumTopicPosts(forumChannel: ForumChannel, topicPreset?: TopicPreset) {
   const topicMessages: string[] = [];
-  const matchInformation = await thread.send({
-    embeds: [
-      new EmbedBuilder()
-        .setTitle("Match information")
-        .setDescription("This channel stays in sync with the dashboard event settings."),
-    ],
-  });
-  topicMessages.push(matchInformation.id);
 
   for (const topic of topicPreset?.topics ?? []) {
-    const message = await thread.send({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle(topic.title)
-          .setDescription(topic.body || "No extra notes yet.")
-          .setFooter({
-            text: topic.attachments.length ? topic.attachments.join(" | ") : "No attachments",
-          }),
-      ],
+    const createdPost = await forumChannel.threads.create({
+      name: topic.title,
+      message: {
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(topic.title)
+            .setDescription(topic.body || "No extra notes yet.")
+            .setFooter({
+              text: topic.attachments.length ? topic.attachments.join(" | ") : "No attachments",
+            }),
+        ],
+      },
     });
-    topicMessages.push(message.id);
+    const starter = await createdPost.fetchStarterMessage().catch(() => null);
+    if (starter) {
+      topicMessages.push(starter.id);
+    }
   }
 
   return topicMessages;
@@ -333,8 +362,7 @@ async function handleSignupInteraction(interaction: ButtonInteraction) {
     return;
   }
 
-  const roleLink = context.config.groupLinks.find((link) => link.groupId === groupId);
-  if (selectedGroup && roleLink?.roleId && !member.roles.cache.has(roleLink.roleId)) {
+  if (selectedGroup && selectedGroup.discordRoleId && !member.roles.cache.has(selectedGroup.discordRoleId)) {
     await interaction.reply({ content: "You do not have the required Discord role for this signup.", ephemeral: true });
     return;
   }
@@ -349,19 +377,34 @@ async function handleSignupInteraction(interaction: ButtonInteraction) {
   queuedEventIds.add(eventId);
   setTimeout(() => {
     void pollLoop();
-  }, 5000);
+  }, 2000);
 
   await interaction.reply({
     content: selectedGroup
-      ? `Signup updated to ${selectedGroup.name}.`
+      ? `Signup updated.`
       : "Marked as not attending.",
     ephemeral: true,
   });
 }
 
+// Helper to generate a Google Calendar link from event times
+function generateCalendarUrl(event: EventRecord): string {
+  const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";
+  const title = encodeURIComponent(event.name);
+
+  // Format ISO strings to Google's preferred compact format (YYYYMMDDTHHmmSSZ)
+  const formatTime = (isoStr: string) => new Date(isoStr).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+  const dates = `${formatTime(event.gameStart)}/${formatTime(event.gameEnd)}`;
+  const details = encodeURIComponent(event.description || "Operation briefing from Logi.");
+  const location = encodeURIComponent(event.server ?? "Discord");
+
+  return `${base}&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+}
+
 function buildAnnouncementMessage(payload: SyncPayload, event: EventRecord) {
   const embed = buildEventEmbed(payload.config, payload.groups, event);
-  const signupButtons = buildSignupButtons(payload.config, payload.groups, event.id);
+  const signupButtons = buildSignupButtons(payload.config, payload.groups, event.id, event);
   return { embed, components: signupButtons };
 }
 
@@ -374,34 +417,94 @@ function buildEventEmbed(config: DiscordConfig, groups: Group[], event: EventRec
     signupsByGroup.set(key, list);
   }
 
-  const fields = [
-    { name: "Map", value: event.map ?? "Not set", inline: true },
-    { name: "Side", value: event.side ?? "Not set", inline: true },
-    { name: "Start", value: formatInTimezone(event.gameStart, config.timezone), inline: true },
-    { name: "Meeting", value: formatInTimezone(event.meetingStart, config.timezone), inline: true },
-    { name: "Registration", value: formatInTimezone(event.registrationEnd, config.timezone), inline: true },
-  ];
+  // Convert your ISO strings to Unix timestamps for Discord's clean dynamic timers
+  const gameStartUnix = Math.floor(new Date(event.gameStart).getTime() / 1000);
+  const meetingUnix = Math.floor(new Date(event.meetingStart).getTime() / 1000);
+  const regEndUnix = Math.floor(new Date(event.registrationEnd).getTime() / 1000);
 
+  const descriptionLines: string[] = [];
+
+  // --- Conditional Core Info ---
+  if (event.map) descriptionLines.push(`**🗺️ Map:** ${event.map}`);
+  if (event.side) descriptionLines.push(`**⚔️ Side:** ${event.side}`);
+  if (event.cap) descriptionLines.push(`**🧢 Cap:** ${event.cap}`);
+  if (event.server) descriptionLines.push(`**🖥️ Server:** ${event.server}`);
+  if (event.serverPassword) descriptionLines.push(`**🔑 Password:** \`${event.serverPassword}\``);
+
+  if (event.description || event.notes) {
+    descriptionLines.push(`**📝 Description:** ${event.notes || event.description}`);
+  }
+
+  // Add a clean divider if we actually printed any details above
+  if (descriptionLines.length > 0) {
+    descriptionLines.push(`----------------------------------------`);
+  }
+
+  // --- Schedule (Always Included) ---
+  descriptionLines.push(`**⏰ Registration Ends:** <t:${regEndUnix}:R> (<t:${regEndUnix}:f>)`);
+  descriptionLines.push(`**📢 Headcount / Meeting:** <t:${meetingUnix}:t>`);
+  descriptionLines.push(`**🚀 Match Start:** <t:${gameStartUnix}:F>`);
+
+  const embed = new EmbedBuilder()
+    .setTitle(`📅 ${event.name}`)
+    .setDescription(descriptionLines.join("\n"))
+    .setColor("#FFB000")
+    .setFooter({ text: `Managed via Logi • Times adapt to your device` });
+
+  // Add Group sign-ups as clean field sections
   for (const group of groups) {
     const members = signupsByGroup.get(group.name) ?? [];
-    fields.push({
-      name: group.name,
-      value: members.length ? members.join("\n") : "No signups yet",
+    embed.addFields({
+      name: `${group.discordEmoji ?? "👥"} ${group.name} (${members.length})`,
+      value: members.length ? members.join(", ") : "*Nobody yet*",
       inline: false,
     });
   }
 
-  fields.push({
-    name: "Not attending",
-    value: (signupsByGroup.get(SIGNUP_NOT_ATTENDING) ?? []).join("\n") || "Nobody yet",
+  // Add Absences
+  const nonAttending = signupsByGroup.get(SIGNUP_NOT_ATTENDING) ?? [];
+  embed.addFields({
+    name: `❌ Not Attending (${nonAttending.length})`,
+    value: nonAttending.length ? nonAttending.join(", ") : "*Nobody yet*",
     inline: false,
   });
 
-  return new EmbedBuilder()
-    .setTitle(event.name)
-    .setDescription(event.description || "Operation briefing from Logi.")
-    .addFields(fields)
-    .setFooter({ text: `Timezone: ${config.timezone}` });
+  return embed;
+}
+
+function buildSignupButtons(config: DiscordConfig, groups: Group[], eventId: string, event: EventRecord) {
+  const allButtons = [
+    ...groups.map((group) => {
+      const button = new ButtonBuilder()
+        .setCustomId(`signup:${eventId}:${encodeURIComponent(group.id)}`)
+        .setStyle(pickButtonStyle(group.color));
+      if (group.discordEmoji) {
+        button.setEmoji(group.discordEmoji);
+      } else {
+        button.setLabel(group.name.slice(0, 20));
+      }
+      return button;
+    }),
+
+    // Decline button
+    new ButtonBuilder()
+      .setCustomId(`signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`)
+      .setStyle(ButtonStyle.Danger)
+      .setLabel("Decline"),
+
+    // Add to Calendar Link Button
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Link)
+      .setLabel("Add to Calendar")
+      .setEmoji("➕")
+      .setURL(generateCalendarUrl(event)),
+  ];
+
+  const rows: Array<ActionRowBuilder<ButtonBuilder>> = [];
+  for (let index = 0; index < allButtons.length; index += 5) {
+    rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(allButtons.slice(index, index + 5)));
+  }
+  return rows;
 }
 
 function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord) {
@@ -423,39 +526,59 @@ function buildForumThreadName(config: DiscordConfig, event: EventRecord) {
   return `${event.name} ${formatShortDate(event.gameStart, config.timezone)}`.slice(0, 100);
 }
 
-function buildSignupButtons(config: DiscordConfig, groups: Group[], eventId: string) {
-  const allButtons = [
-    ...groups.map((group) => {
-      const link = config.groupLinks.find((item) => item.groupId === group.id);
-      const button = new ButtonBuilder()
-        .setCustomId(`signup:${eventId}:${encodeURIComponent(group.id)}`)
-        .setStyle(pickButtonStyle(group.color));
-      if (link?.emoji) {
-        button.setEmoji(link.emoji);
-      } else {
-        button.setLabel(group.name.slice(0, 20));
-      }
-      return button;
-    }),
-    new ButtonBuilder()
-      .setCustomId(`signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`)
-      .setStyle(ButtonStyle.Secondary)
-      .setLabel("NA"),
-  ];
-
-  const rows: Array<ActionRowBuilder<ButtonBuilder>> = [];
-  for (let index = 0; index < allButtons.length; index += 5) {
-    rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(allButtons.slice(index, index + 5)));
-  }
-  return rows;
-}
-
 function pickButtonStyle(color: string) {
-  const normalized = color.toLowerCase();
-  if (normalized.includes("dc2626") || normalized.includes("ef4444")) return ButtonStyle.Danger;
-  if (normalized.includes("16a34a") || normalized.includes("22c55e")) return ButtonStyle.Success;
-  if (normalized.includes("2563eb") || normalized.includes("0f766e")) return ButtonStyle.Primary;
-  return ButtonStyle.Secondary;
+  // Clean the hex string (remove '#' if present)
+  const hex = color.replace(/^#/, "").trim();
+
+  // Parse RGB components
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // Fallback to Secondary if the hex string isn't valid
+  if (isNaN(r) || isNaN(g) || isNaN(b)) {
+    return ButtonStyle.Secondary;
+  }
+
+  // Define target RGBs for Discord's native button colors
+  // Danger (Red), Success (Green), Primary (Blurple/Blue)
+  const targets = {
+    [ButtonStyle.Danger]:  { r: 220, g: 38,  b: 38  }, // #dc2626
+    [ButtonStyle.Success]: { r: 22,  g: 163, b: 74  }, // #16a34a
+    [ButtonStyle.Primary]: { r: 37,  g: 99,  b: 235 }, // #2563eb
+  };
+
+  let closestStyle = ButtonStyle.Secondary;
+  let minDistance = Infinity;
+
+  // Calculate the distance to each standard button color
+  for (const [styleStr, target] of Object.entries(targets)) {
+    const style = Number(styleStr) as ButtonStyle;
+
+    // Standard Euclidean distance formula in 3D color space
+    const distance = Math.sqrt(
+      Math.pow(r - target.r, 2) +
+      Math.pow(g - target.g, 2) +
+      Math.pow(b - target.b, 2)
+    );
+
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestStyle = style;
+    }
+  }
+
+  // If the color is a heavy neutral tone (gray/black/white)
+  // or just too far from all targets, keep it clean with Secondary (Gray)
+  const maxRGB = Math.max(r, g, b);
+  const minRGB = Math.min(r, g, b);
+  const saturation = maxRGB - minRGB;
+
+  if (saturation < 30 || minDistance > 160) {
+    return ButtonStyle.Secondary;
+  }
+
+  return closestStyle;
 }
 
 function formatInTimezone(timestamp: string, timezone: string) {

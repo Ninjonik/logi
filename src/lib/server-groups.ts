@@ -25,6 +25,8 @@ export async function saveServerGroup(input: {
   order: number;
   parentId?: string;
   description?: string;
+  discordRoleId?: string;
+  discordEmoji?: string;
 }) {
   return await fetchMutation(upsertGroupReference, {
     secret: getInternalAuthSecret(),
@@ -35,6 +37,8 @@ export async function saveServerGroup(input: {
     order: input.order,
     parentId: input.parentId,
     description: input.description,
+    discordRoleId: input.discordRoleId,
+    discordEmoji: input.discordEmoji,
   });
 }
 

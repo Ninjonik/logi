@@ -36,16 +36,9 @@ export const upsertConfig = mutation({
     guildId: v.string(),
     timezone: v.string(),
     announcementsChannelId: v.optional(v.string()),
-    forumChannelId: v.optional(v.string()),
+    forumCategoryId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),
     dashboardAdminRoleId: v.optional(v.string()),
-    groupLinks: v.array(
-      v.object({
-        groupId: v.id("groups"),
-        roleId: v.optional(v.string()),
-        emoji: v.optional(v.string()),
-      }),
-    ),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -55,25 +48,13 @@ export const upsertConfig = mutation({
       throw new Error("Server not found.");
     }
 
-    const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", args.guildId)).collect();
-    const validGroupIds = new Set(groups.map((group) => String(group._id)));
-
-    if (args.groupLinks.some((link) => !validGroupIds.has(String(link.groupId)))) {
-      throw new Error("One of the selected groups does not belong to this server.");
-    }
-
     const now = new Date().toISOString();
     const payload = {
       timezone: args.timezone,
       announcementsChannelId: args.announcementsChannelId?.trim() || undefined,
-      forumChannelId: args.forumChannelId?.trim() || undefined,
+      forumCategoryId: args.forumCategoryId?.trim() || undefined,
       clanRoleId: args.clanRoleId?.trim() || undefined,
       dashboardAdminRoleId: args.dashboardAdminRoleId?.trim() || undefined,
-      groupLinks: args.groupLinks.map((link) => ({
-        groupId: link.groupId,
-        roleId: link.roleId?.trim() || undefined,
-        emoji: link.emoji?.trim() || undefined,
-      })),
       updatedAt: now,
     };
 

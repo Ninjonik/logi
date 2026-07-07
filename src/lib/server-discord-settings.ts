@@ -15,23 +15,17 @@ export async function saveDiscordConfig(input: {
   guildId: string;
   timezone: string;
   announcementsChannelId?: string;
-  forumChannelId?: string;
+  forumCategoryId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
-  groupLinks: { groupId: string; roleId?: string; emoji?: string }[];
 }) {
   return await fetchMutation(upsertConfigReference, {
     secret: getInternalAuthSecret(),
     guildId: input.guildId,
     timezone: input.timezone,
     announcementsChannelId: input.announcementsChannelId,
-    forumChannelId: input.forumChannelId,
+    forumCategoryId: input.forumCategoryId,
     clanRoleId: input.clanRoleId,
     dashboardAdminRoleId: input.dashboardAdminRoleId,
-    groupLinks: input.groupLinks.map((link) => ({
-      groupId: link.groupId as never,
-      roleId: link.roleId,
-      emoji: link.emoji,
-    })),
   });
 }

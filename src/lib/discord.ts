@@ -16,6 +16,27 @@ export type DiscordGuild = {
   permissions: string;
 };
 
+export type DiscordRole = {
+  id: string;
+  name: string;
+  color: number;
+  position: number;
+  managed: boolean;
+};
+
+export type DiscordChannel = {
+  id: string;
+  name: string;
+  type: number;
+  parent_id?: string | null;
+};
+
+export type DiscordEmoji = {
+  id: string | null;
+  name: string | null;
+  animated?: boolean;
+};
+
 export function getDiscordAvatarUrl(user: DiscordUser) {
   if (!user.avatar) {
     return "https://cdn.discordapp.com/embed/avatars/0.png";
@@ -129,4 +150,36 @@ export async function isBotInsideDiscordGuild(guildId: string) {
   });
 
   return response.ok;
+}
+
+async function fetchDiscordBotJson<T>(path: string) {
+  const botToken = getDiscordBotToken();
+  if (!botToken) {
+    throw new Error("Discord bot token is missing.");
+  }
+
+  const response = await fetch(`https://discord.com/api/v10${path}`, {
+    headers: {
+      Authorization: `Bot ${botToken}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Discord API request failed for ${path}.`);
+  }
+
+  return (await response.json()) as T;
+}
+
+export async function fetchDiscordGuildRoles(guildId: string) {
+  return await fetchDiscordBotJson<DiscordRole[]>(`/guilds/${guildId}/roles`);
+}
+
+export async function fetchDiscordGuildChannels(guildId: string) {
+  return await fetchDiscordBotJson<DiscordChannel[]>(`/guilds/${guildId}/channels`);
+}
+
+export async function fetchDiscordGuildEmojis(guildId: string) {
+  return await fetchDiscordBotJson<DiscordEmoji[]>(`/guilds/${guildId}/emojis`);
 }

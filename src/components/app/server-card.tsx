@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Bot, ShieldCheck, Users } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -73,12 +74,15 @@ export function ServerCard({
             </Link>
           </Button>
         ) : (
-          <Button asChild className="w-full rounded-xl">
-            <Link href={buildDiscordBotInviteUrl(guild.id)}>
-              {dictionary.dashboard.inviteBot}
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
+          <div className="flex w-full gap-2">
+            <Button asChild className="flex-1 rounded-xl">
+              <Link href={buildDiscordBotInviteUrl(guild.id)}>
+                {dictionary.dashboard.inviteBot}
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+            <RefreshBotStatusButton dictionary={dictionary} />
+          </div>
         )}
       </CardFooter>
     </Card>

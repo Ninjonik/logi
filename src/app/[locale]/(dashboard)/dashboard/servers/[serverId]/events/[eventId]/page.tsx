@@ -31,7 +31,7 @@ export default async function EventDetailPage({
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { events, rosters, canAdmin, topicPresets } = context;
+  const { events, rosters, canAdmin, topicPresets, discordConfig } = context;
   const event = events.find((item) => item.id === eventId);
   const roster = rosters.find((item) => item.eventId === eventId);
 
@@ -52,7 +52,7 @@ export default async function EventDetailPage({
         }
       />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} canEdit={canAdmin} dictionary={dictionary} createMode={false} />
+        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} />
       </div>
     </>
   );

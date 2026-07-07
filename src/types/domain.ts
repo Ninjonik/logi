@@ -48,10 +48,9 @@ export type DiscordConfig = {
   guildId: string;
   timezone: string;
   announcementsChannelId?: string;
-  forumChannelId?: string;
+  forumCategoryId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
-  groupLinks: DiscordGroupLink[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
@@ -75,6 +74,8 @@ export type Group = {
   order: number;
   parentId?: string;
   description?: string;
+  discordRoleId?: string;
+  discordEmoji?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };

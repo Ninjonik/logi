@@ -3,17 +3,37 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
+  <component name="BackgroundAgentGlobalSettings">
+    <option name="selectedModelId" value="auto" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="improvements">
-      <change beforePath="$PROJECT_DIR$/convex/_generated/api.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/_generated/api.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/events.ts" afterDir="false" />
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="qol improvements">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bun.lock" beforeDir="false" afterPath="$PROJECT_DIR$/bun.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/groups.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/groups.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/guilds.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/guilds.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/discord-settings-form.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/group-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/group-form.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/app/server-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/server-card.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/site-footer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/site-footer.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/sonner.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/sonner.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/discord.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/server-groups.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-groups.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/validation/group.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/group.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -67,7 +87,7 @@
         <option name="modeId" value="Agent" />
         <option name="model">
           <model>
-            <option name="modelType" value="builtin_family" />
+            <option name="modelType" value="builtin_id" />
             <option name="modelValue" value="auto" />
           </model>
         </option>
@@ -150,7 +170,7 @@
       <workItem from="1783404865696" duration="13990000" />
       <workItem from="1783419384201" duration="1003000" />
       <workItem from="1783420423002" duration="106000" />
-      <workItem from="1783423976557" duration="4754000" />
+      <workItem from="1783423976557" duration="9499000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -208,7 +228,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783428733090</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="basic bot added + discord integrations">
+      <option name="closed" value="true" />
+      <created>1783429560228</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1783429560228</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -222,6 +250,8 @@
     <MESSAGE value="some other better stuff, gotta compeltley rework the auth" />
     <MESSAGE value="basic auth system + oath for discord and steam done" />
     <MESSAGE value="improvements" />
-    <option name="LAST_COMMIT_MESSAGE" value="improvements" />
+    <MESSAGE value="basic bot added + discord integrations" />
+    <MESSAGE value="qol improvements" />
+    <option name="LAST_COMMIT_MESSAGE" value="qol improvements" />
   </component>
 </project>
