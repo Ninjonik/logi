@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Sword, Users } from "lucide-react";
+import { ArrowRight, Bot, ShieldCheck, Users } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -55,10 +55,12 @@ export function ServerCard({
         </div>
         <div className="rounded-xl border border-border/60 p-3">
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            <Sword className="size-3.5" />
-            {dictionary.userManagement.mercLabel}
+            <Bot className="size-3.5" />
+            {dictionary.dashboard.botStatus}
           </div>
-          <div className="mt-2 text-lg font-semibold">{guild.mercenaryIds.length}</div>
+          <div className="mt-2 text-lg font-semibold">
+            {guild.botInside ? dictionary.dashboard.botInstalled : dictionary.dashboard.botMissing}
+          </div>
         </div>
       </CardContent>
       <CardFooter>

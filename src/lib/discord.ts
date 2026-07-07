@@ -1,9 +1,19 @@
-import { getDiscordClientId, getDiscordClientSecret, getDiscordRedirectUri } from "@/lib/env";
+import { getDiscordBotToken, getDiscordClientId, getDiscordClientSecret, getDiscordRedirectUri } from "@/lib/env";
+
+const ADMINISTRATOR_PERMISSION = BigInt(8);
 
 export type DiscordUser = {
   id: string;
   username: string;
   avatar: string | null;
+};
+
+export type DiscordGuild = {
+  id: string;
+  name: string;
+  icon: string | null;
+  owner: boolean;
+  permissions: string;
 };
 
 export function getDiscordAvatarUrl(user: DiscordUser) {
@@ -14,13 +24,30 @@ export function getDiscordAvatarUrl(user: DiscordUser) {
   return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
 }
 
+export function getDiscordGuildIconUrl(guild: Pick<DiscordGuild, "id" | "icon">) {
+  if (!guild.icon) {
+    return "https://cdn.discordapp.com/embed/avatars/0.png";
+  }
+
+  return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=256`;
+}
+
 export function buildDiscordAuthorizationUrl(state: string) {
   const url = new URL("https://discord.com/oauth2/authorize");
   url.searchParams.set("client_id", getDiscordClientId());
   url.searchParams.set("redirect_uri", getDiscordRedirectUri());
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", "identify");
+  url.searchParams.set("scope", "identify guilds");
   url.searchParams.set("state", state);
+  return url.toString();
+}
+
+export function buildDiscordBotInviteUrl(guildId: string) {
+  const url = new URL("https://discord.com/oauth2/authorize");
+  url.searchParams.set("client_id", getDiscordClientId());
+  url.searchParams.set("scope", "bot applications.commands");
+  url.searchParams.set("guild_id", guildId);
+  url.searchParams.set("disable_guild_select", "true");
   return url.toString();
 }
 
@@ -62,4 +89,44 @@ export async function fetchDiscordUser(accessToken: string) {
   }
 
   return (await response.json()) as DiscordUser;
+}
+
+export async function fetchDiscordGuilds(accessToken: string) {
+  const response = await fetch("https://discord.com/api/v10/users/@me/guilds", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch Discord guilds.");
+  }
+
+  return (await response.json()) as DiscordGuild[];
+}
+
+export function isDiscordGuildAdmin(guild: DiscordGuild) {
+  if (guild.owner) {
+    return true;
+  }
+
+  const permissions = BigInt(guild.permissions);
+  return (permissions & ADMINISTRATOR_PERMISSION) === ADMINISTRATOR_PERMISSION;
+}
+
+export async function isBotInsideDiscordGuild(guildId: string) {
+  const botToken = getDiscordBotToken();
+  if (!botToken) {
+    return false;
+  }
+
+  const response = await fetch(`https://discord.com/api/v10/guilds/${guildId}`, {
+    headers: {
+      Authorization: `Bot ${botToken}`,
+    },
+    cache: "no-store",
+  });
+
+  return response.ok;
 }

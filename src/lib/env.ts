@@ -20,14 +20,6 @@ export function getSiteUrl() {
   return process.env.SITE_URL ?? "http://localhost:3000";
 }
 
-export function getAuthIssuer() {
-  return process.env.AUTH_JWT_ISSUER ?? getSiteUrl();
-}
-
-export function getAuthAudience() {
-  return process.env.AUTH_JWT_AUDIENCE ?? "convex";
-}
-
 export function getDiscordClientId() {
   return getFirstEnv("DISCORD_CLIENT_ID", "AUTH_DISCORD_ID") ?? requireEnv("DISCORD_CLIENT_ID");
 }
@@ -40,14 +32,14 @@ export function getDiscordRedirectUri() {
   return process.env.DISCORD_REDIRECT_URI ?? `${getSiteUrl()}/api/auth/callback/discord`;
 }
 
-export function getAuthPrivateKeyPem() {
-  return getFirstEnv("AUTH_PRIVATE_KEY", "JWT_PRIVATE_KEY") ?? requireEnv("AUTH_PRIVATE_KEY");
+export function getDiscordBotToken() {
+  return process.env.DISCORD_BOT_TOKEN;
 }
 
-export function getAuthKeyId() {
-  return process.env.AUTH_JWT_KID ?? "logi-main";
+export function getJwtSecret() {
+  return getFirstEnv("JWT_SECRET", "AUTH_PRIVATE_KEY") ?? requireEnv("JWT_SECRET");
 }
 
-export function getAuthJwksJson() {
-  return getFirstEnv("AUTH_JWKS_JSON", "JWKS") ?? requireEnv("AUTH_JWKS_JSON");
+export function getInternalAuthSecret() {
+  return process.env.INTERNAL_AUTH_SECRET ?? getJwtSecret();
 }

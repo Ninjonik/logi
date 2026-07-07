@@ -14,7 +14,8 @@ const users = defineTable({
   createdAt: v.string(),
   updatedAt: v.string(),
 })
-  .index("id", ["id"]);
+  .index("id", ["id"])
+  .index("steamId", ["steamId"]);
 
 const guildMember = v.object({
   id: v.string(),
@@ -70,6 +71,7 @@ export default defineSchema({
     name: v.string(),
     avatar: v.string(),
     description: v.optional(v.string()),
+    botInside: v.boolean(),
     adminIds: v.array(v.string()),
     memberIds: v.array(v.string()),
     members: v.array(guildMember),

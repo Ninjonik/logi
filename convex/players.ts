@@ -1,6 +1,14 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
+
+function assertInternalSecret(secret: string) {
+  if (secret !== INTERNAL_AUTH_SECRET) {
+    throw new Error("Unauthorized.");
+  }
+}
+
 function toPlayer(user: {
   id: string;
   steamId?: string;
@@ -20,39 +28,75 @@ function toPlayer(user: {
   };
 }
 
-export const current = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity?.subject) {
-      return null;
-    }
-
+export const getById = query({
+  args: {
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("id", (q) => q.eq("id", identity.subject!))
+      .withIndex("id", (q) => q.eq("id", args.userId))
       .unique();
-    if (!user) {
-      return null;
+
+    return user ? toPlayer(user) : null;
+  },
+});
+
+export const syncDiscordProfile = mutation({
+  args: {
+    secret: v.string(),
+    id: v.string(),
+    name: v.string(),
+    avatar: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const now = new Date().toISOString();
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("id", (q) => q.eq("id", args.id))
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        name: args.name,
+        avatar: args.avatar,
+        updatedAt: now,
+      });
+
+      return existing.id;
     }
 
-    return toPlayer(user);
+    await ctx.db.insert("users", {
+      id: args.id,
+      name: args.name,
+      avatar: args.avatar,
+      managedGuildIds: [],
+      guildId: undefined,
+      mercenaryGuildIds: [],
+      isStreamer: false,
+      score: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return args.id;
   },
 });
 
 export const linkSteam = mutation({
   args: {
+    secret: v.string(),
+    userId: v.string(),
     steamId: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity?.subject) {
-      throw new Error("You must be signed in to link Steam.");
-    }
+    assertInternalSecret(args.secret);
 
     const user = await ctx.db
       .query("users")
-      .withIndex("id", (q) => q.eq("id", identity.subject!))
+      .withIndex("id", (q) => q.eq("id", args.userId))
       .unique();
     if (!user) {
       throw new Error("Player not found.");
@@ -60,8 +104,8 @@ export const linkSteam = mutation({
 
     const duplicateSteam = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("steamId"), args.steamId))
-      .first();
+      .withIndex("steamId", (q) => q.eq("steamId", args.steamId))
+      .unique();
 
     if (duplicateSteam && duplicateSteam._id !== user._id) {
       throw new Error("This Steam account is already linked to another player.");
@@ -75,16 +119,16 @@ export const linkSteam = mutation({
 });
 
 export const unlinkSteam = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity?.subject) {
-      throw new Error("You must be signed in to unlink Steam.");
-    }
+  args: {
+    secret: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
 
     const user = await ctx.db
       .query("users")
-      .withIndex("id", (q) => q.eq("id", identity.subject!))
+      .withIndex("id", (q) => q.eq("id", args.userId))
       .unique();
     if (!user) {
       throw new Error("Player not found.");
@@ -93,47 +137,6 @@ export const unlinkSteam = mutation({
     await ctx.db.patch(user._id, {
       steamId: undefined,
       updatedAt: new Date().toISOString(),
-    });
-  },
-});
-
-export const syncDiscordProfile = mutation({
-  args: {
-    name: v.string(),
-    avatar: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity?.subject) {
-      throw new Error("You must be signed in to sync your profile.");
-    }
-
-    const now = new Date().toISOString();
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("id", (q) => q.eq("id", identity.subject!))
-      .unique();
-
-    if (existing) {
-      await ctx.db.patch(existing._id, {
-        name: args.name,
-        avatar: args.avatar,
-        updatedAt: now,
-      });
-      return existing._id;
-    }
-
-    return await ctx.db.insert("users", {
-      id: identity.subject,
-      name: args.name,
-      avatar: args.avatar,
-      managedGuildIds: [],
-      guildId: undefined,
-      mercenaryGuildIds: [],
-      isStreamer: false,
-      score: 0,
-      createdAt: now,
-      updatedAt: now,
     });
   },
 });

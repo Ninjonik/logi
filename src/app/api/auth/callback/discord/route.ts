@@ -1,8 +1,16 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-import { createSessionToken, setSessionToken, syncCurrentPlayerFromDiscord } from "@/lib/auth";
-import { exchangeDiscordCode, fetchDiscordUser, getDiscordAvatarUrl } from "@/lib/discord";
+import { createSessionToken, setSessionToken, syncCurrentPlayerFromDiscord, syncManagedGuildsForCurrentPlayer } from "@/lib/auth";
+import {
+  exchangeDiscordCode,
+  fetchDiscordGuilds,
+  fetchDiscordUser,
+  getDiscordAvatarUrl,
+  getDiscordGuildIconUrl,
+  isBotInsideDiscordGuild,
+  isDiscordGuildAdmin,
+} from "@/lib/discord";
 import { getSiteUrl } from "@/lib/env";
 
 const STATE_COOKIE = "discord_oauth_state";
@@ -28,15 +36,28 @@ export async function GET(request: NextRequest) {
   try {
     const tokenResponse = await exchangeDiscordCode(code);
     const discordUser = await fetchDiscordUser(tokenResponse.access_token);
+    const discordGuilds = await fetchDiscordGuilds(tokenResponse.access_token);
+    const userId = discordUser.id;
     const session = {
-      sub: discordUser.id,
+      sub: userId,
       name: discordUser.username,
       avatar: getDiscordAvatarUrl(discordUser),
     };
 
+    await syncCurrentPlayerFromDiscord(session);
+    const managedGuilds = await Promise.all(
+      discordGuilds
+        .filter(isDiscordGuildAdmin)
+        .map(async (guild) => ({
+          id: guild.id,
+          name: guild.name,
+          avatar: getDiscordGuildIconUrl(guild),
+          botInside: await isBotInsideDiscordGuild(guild.id),
+        })),
+    );
+    await syncManagedGuildsForCurrentPlayer(userId, managedGuilds);
     const sessionToken = await createSessionToken(session);
     await setSessionToken(sessionToken);
-    await syncCurrentPlayerFromDiscord(session, sessionToken);
     cleanOauthCookies(cookieStore);
 
     return NextResponse.redirect(new URL(redirectTo, getSiteUrl()));

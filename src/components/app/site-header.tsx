@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Bell } from "lucide-react";
 
 import { LocaleSwitcher } from "@/components/app/locale-switcher";
@@ -25,10 +25,10 @@ export function SiteHeader({
   user: AppUser;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const pathServerId = pathname?.match(/\/servers\/([^/]+)/)?.[1];
-  const activeServer =
-    servers.find((server) => server.id === pathServerId) ??
-    servers.find((server) => server.id === user.guildId);
+  const selectedWorkspaceId = searchParams.get("workspace") ?? undefined;
+  const activeServer = servers.find((server) => server.id === (pathServerId ?? selectedWorkspaceId));
   const canAdmin = Boolean(activeServer?.adminIds.includes(user.id));
 
   return (
@@ -48,7 +48,11 @@ export function SiteHeader({
           <LocaleSwitcher locale={locale} dictionary={dictionary} />
         </div>
         <Badge variant={canAdmin ? "default" : "secondary"} className="rounded-full px-3">
-          {canAdmin ? dictionary.common.adminOnly : dictionary.common.membersOnly}
+          {activeServer
+            ? canAdmin
+              ? dictionary.common.adminOnly
+              : dictionary.common.membersOnly
+            : dictionary.sidebar.workspace}
         </Badge>
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="size-4" />

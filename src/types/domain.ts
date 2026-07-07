@@ -25,6 +25,7 @@ export type Guild = {
   name: string;
   avatar: string;
   description?: string;
+  botInside: boolean;
   adminIds: string[];
   memberIds: string[];
   members: GuildMember[];

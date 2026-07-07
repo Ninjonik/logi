@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   ClipboardList,
@@ -47,11 +47,16 @@ export function AppSidebar({
   canAdmin: boolean;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const pathServerId = pathname?.match(/\/servers\/([^/]+)/)?.[1];
-  const resolvedServerId = pathServerId ?? activeServerId;
+  const selectedWorkspaceId = searchParams.get("workspace") ?? undefined;
+  const resolvedServerId = pathServerId ?? selectedWorkspaceId ?? activeServerId;
   const resolvedCanAdmin = Boolean(resolvedServerId && servers.find((server) => server.id === resolvedServerId)?.adminIds.includes(user.id));
   const base = resolvedServerId
     ? `/${locale}/dashboard/servers/${resolvedServerId}`
+    : `/${locale}/dashboard`;
+  const homeUrl = resolvedServerId
+    ? `/${locale}/dashboard?workspace=${encodeURIComponent(resolvedServerId)}`
     : `/${locale}/dashboard`;
 
   const navGroups = [
@@ -60,7 +65,7 @@ export function AppSidebar({
       items: [
         {
           title: dictionary.sidebar.home,
-          url: `/${locale}/dashboard`,
+          url: homeUrl,
           icon: LayoutDashboard,
         },
         ...(resolvedServerId
@@ -150,7 +155,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild isActive={pathname === `/${locale}/dashboard`}>
-              <Link href={`/${locale}/dashboard`}>
+              <Link href={homeUrl}>
                 <AppLogo />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{dictionary.app.name}</span>

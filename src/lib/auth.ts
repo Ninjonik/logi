@@ -1,12 +1,16 @@
 import { cookies } from "next/headers";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
-import { createLocalJWKSet, importPKCS8, jwtVerify, SignJWT } from "jose";
+import { jwtVerify, SignJWT } from "jose";
+import { redirect } from "next/navigation";
 
-import { getAuthAudience, getAuthIssuer, getAuthJwksJson, getAuthKeyId, getAuthPrivateKeyPem } from "@/lib/env";
+import { getInternalAuthSecret, getJwtSecret } from "@/lib/env";
+import type { AppUser, Guild } from "@/types/domain";
 
-const currentPlayerReference = makeFunctionReference<"query">("players:current");
+const getUserByIdReference = makeFunctionReference<"query">("players:getById");
+const getVisibleGuildsReference = makeFunctionReference<"query">("guilds:visibleForUser");
 const syncDiscordProfileReference = makeFunctionReference<"mutation">("players:syncDiscordProfile");
+const syncManagedGuildsReference = makeFunctionReference<"mutation">("guilds:syncManagedGuilds");
 const linkSteamReference = makeFunctionReference<"mutation">("players:linkSteam");
 const unlinkSteamReference = makeFunctionReference<"mutation">("players:unlinkSteam");
 
@@ -19,17 +23,11 @@ export type SessionClaims = {
   avatar: string;
 };
 
-async function getSigningKey() {
-  return importPKCS8(getAuthPrivateKeyPem(), "RS256");
-}
-
-function getVerificationKeySet() {
-  const jwks = JSON.parse(getAuthJwksJson());
-  return createLocalJWKSet(jwks);
+function getSessionSecret() {
+  return new TextEncoder().encode(getJwtSecret());
 }
 
 export async function createSessionToken(claims: SessionClaims) {
-  const key = await getSigningKey();
   const now = Math.floor(Date.now() / 1000);
 
   return await new SignJWT({
@@ -37,24 +35,18 @@ export async function createSessionToken(claims: SessionClaims) {
     avatar: claims.avatar,
   })
     .setProtectedHeader({
-      alg: "RS256",
+      alg: "HS256",
       typ: "JWT",
-      kid: getAuthKeyId(),
     })
-    .setIssuer(getAuthIssuer())
-    .setAudience(getAuthAudience())
     .setSubject(claims.sub)
     .setIssuedAt(now)
     .setExpirationTime(now + SESSION_MAX_AGE_SECONDS)
-    .sign(key);
+    .sign(getSessionSecret());
 }
 
-export async function verifySessionToken(token: string) {
+export async function verifySessionToken(token: string): Promise<SessionClaims | null> {
   try {
-    const { payload } = await jwtVerify(token, getVerificationKeySet(), {
-      issuer: getAuthIssuer(),
-      audience: getAuthAudience(),
-    });
+    const { payload } = await jwtVerify(token, getSessionSecret());
 
     if (
       typeof payload.sub !== "string" ||
@@ -68,7 +60,7 @@ export async function verifySessionToken(token: string) {
       sub: payload.sub,
       name: payload.name,
       avatar: payload.avatar,
-    } satisfies SessionClaims;
+    };
   } catch {
     return null;
   }
@@ -104,49 +96,86 @@ export async function getSession() {
   return await verifySessionToken(token);
 }
 
-export async function getCurrentPlayer() {
-  const token = await getSessionToken();
-  if (!token) {
-    return null;
-  }
-
-  const session = await verifySessionToken(token);
+export async function getLoggedInUser(): Promise<AppUser | null> {
+  const session = await getSession();
   if (!session) {
     return null;
   }
 
   try {
-    return await fetchQuery(currentPlayerReference, {}, { token });
+    return await fetchQuery(getUserByIdReference, { userId: session.sub });
   } catch {
     return null;
   }
 }
 
-export async function syncCurrentPlayerFromDiscord(session: SessionClaims, token: string) {
-  return await fetchMutation(
-    syncDiscordProfileReference,
-    {
-      name: session.name,
-      avatar: session.avatar,
-    },
-    { token },
-  );
+export const getCurrentPlayer = getLoggedInUser;
+
+export async function getVisibleGuildsForLoggedInUser(): Promise<Guild[]> {
+  const user = await getLoggedInUser();
+  if (!user) {
+    return [];
+  }
+
+  try {
+    return (await fetchQuery(getVisibleGuildsReference, { userId: user.id })) as Guild[];
+  } catch {
+    return [];
+  }
+}
+
+export async function handleIfNotLoggedIn(redirectUrl: string) {
+  const user = await getLoggedInUser();
+  if (!user) {
+    redirect(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+  }
+
+  return user;
+}
+
+export async function syncCurrentPlayerFromDiscord(session: SessionClaims) {
+  return await fetchMutation(syncDiscordProfileReference, {
+    secret: getInternalAuthSecret(),
+    id: session.sub,
+    name: session.name,
+    avatar: session.avatar,
+  });
+}
+
+export async function syncManagedGuildsForCurrentPlayer(userId: string, guilds: {
+  id: string;
+  name: string;
+  avatar: string;
+  botInside: boolean;
+}[]) {
+  return await fetchMutation(syncManagedGuildsReference, {
+    secret: getInternalAuthSecret(),
+    userId,
+    guilds,
+  });
 }
 
 export async function linkSteamForCurrentPlayer(steamId: string) {
-  const token = await getSessionToken();
-  if (!token) {
+  const session = await getSession();
+  if (!session) {
     throw new Error("You must be signed in.");
   }
 
-  return await fetchMutation(linkSteamReference, { steamId }, { token });
+  return await fetchMutation(linkSteamReference, {
+    secret: getInternalAuthSecret(),
+    userId: session.sub,
+    steamId,
+  });
 }
 
 export async function unlinkSteamForCurrentPlayer() {
-  const token = await getSessionToken();
-  if (!token) {
+  const session = await getSession();
+  if (!session) {
     throw new Error("You must be signed in.");
   }
 
-  return await fetchMutation(unlinkSteamReference, {}, { token });
+  return await fetchMutation(unlinkSteamReference, {
+    secret: getInternalAuthSecret(),
+    userId: session.sub,
+  });
 }

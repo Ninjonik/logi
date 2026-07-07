@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import { Bot } from "lucide-react";
 
 import { PageHeader } from "@/components/app/page-header";
 import { ServerCard } from "@/components/app/server-card";
+import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
-import { getCurrentPlayer } from "@/lib/auth";
-import { getGuild, mockGuilds } from "@/lib/mock-data";
+import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth";
+import { buildDiscordBotInviteUrl } from "@/lib/discord";
 
 export async function generateMetadata({
   params,
@@ -34,9 +36,12 @@ export default async function DashboardHomePage({
     return null;
   }
 
-  const mainServer = user.guildId ? getGuild(user.guildId) : undefined;
-  const managedServers = mockGuilds.filter((guild) => user.managedGuildIds.includes(guild.id));
-  const mercenaryServers = mockGuilds.filter((guild) => user.mercenaryGuildIds.includes(guild.id));
+  const visibleGuilds = await getVisibleGuildsForLoggedInUser();
+  const mainServer = user.guildId ? visibleGuilds.find((guild) => guild.id === user.guildId) : undefined;
+  const managedServers = visibleGuilds.filter((guild) => user.managedGuildIds.includes(guild.id));
+  const readyManagedServers = managedServers.filter((guild) => guild.botInside);
+  const managedServersMissingBot = managedServers.filter((guild) => !guild.botInside);
+  const mercenaryServers = visibleGuilds.filter((guild) => user.mercenaryGuildIds.includes(guild.id));
 
   return (
     <>
@@ -54,14 +59,37 @@ export default async function DashboardHomePage({
         ) : null}
         {managedServers.length ? (
           <section className="space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-              {dictionary.dashboard.managedServers}
-            </h2>
-            <div className="grid gap-4 xl:grid-cols-2">
-              {managedServers.map((guild) => (
-                <ServerCard key={guild.id} locale={safeLocale} guild={guild} label={dictionary.dashboard.managedServers} dictionary={dictionary} />
-              ))}
+            <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                  {dictionary.dashboard.managedServers}
+                </h2>
+                {managedServersMissingBot.length ? (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {dictionary.dashboard.inviteBotHint}
+                  </p>
+                ) : null}
+              </div>
+              {managedServersMissingBot.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {managedServersMissingBot.map((guild) => (
+                    <Button key={guild.id} asChild variant="outline" className="rounded-full">
+                      <a href={buildDiscordBotInviteUrl(guild.id)} target="_blank" rel="noreferrer">
+                        <Bot className="size-4" />
+                        {guild.name}
+                      </a>
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
             </div>
+            {readyManagedServers.length ? (
+              <div className="grid gap-4 xl:grid-cols-2">
+                {readyManagedServers.map((guild) => (
+                  <ServerCard key={guild.id} locale={safeLocale} guild={guild} label={dictionary.dashboard.managedServers} dictionary={dictionary} />
+                ))}
+              </div>
+            ) : null}
           </section>
         ) : null}
         {mercenaryServers.length ? (

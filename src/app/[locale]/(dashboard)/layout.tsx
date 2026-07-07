@@ -4,8 +4,7 @@ import { AppSidebar } from "@/components/app/app-sidebar";
 import { SiteFooter } from "@/components/app/site-footer";
 import { SiteHeader } from "@/components/app/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { getCurrentPlayer } from "@/lib/auth";
-import { mockGuilds } from "@/lib/mock-data";
+import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({
@@ -22,12 +21,7 @@ export default async function DashboardLayout({
   if (!user) {
     redirect(`/${safeLocale}/login`);
   }
-  const visibleServers = mockGuilds.filter(
-    (guild) =>
-      guild.id === user.guildId ||
-      user.managedGuildIds.includes(guild.id) ||
-      user.mercenaryGuildIds.includes(guild.id),
-  );
+  const visibleServers = await getVisibleGuildsForLoggedInUser();
 
   return (
     <SidebarProvider
@@ -44,7 +38,7 @@ export default async function DashboardLayout({
         dictionary={dictionary}
         user={user}
         servers={visibleServers}
-        activeServerId={user.guildId}
+        activeServerId={undefined}
         canAdmin={false}
       />
       <SidebarInset className="bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)]">

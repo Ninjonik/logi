@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,11 @@ export function ServerSwitcher({
   activeServerId?: string;
 }) {
   const pathname = usePathname();
-  const activeServer = servers.find((server) => server.id === activeServerId) ?? servers[0];
+  const searchParams = useSearchParams();
+  const selectedServerId = activeServerId ?? searchParams.get("workspace") ?? undefined;
+  const activeServer = selectedServerId
+    ? servers.find((server) => server.id === selectedServerId)
+    : undefined;
 
   return (
     <DropdownMenu>
@@ -34,11 +38,13 @@ export function ServerSwitcher({
           <div className="flex min-w-0 items-center gap-3">
             <Avatar className="size-8 rounded-lg">
               <AvatarImage src={activeServer?.avatar} alt={activeServer?.name} />
-              <AvatarFallback>{activeServer?.name.slice(0, 2)}</AvatarFallback>
+              <AvatarFallback>{activeServer?.name?.slice(0, 2) ?? "WS"}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 text-left">
-              <div className="truncate text-sm font-semibold">{activeServer?.name ?? "Select server"}</div>
-              <div className="truncate text-xs text-muted-foreground">Active workspace</div>
+              <div className="truncate text-sm font-semibold">{activeServer?.name ?? "Select workspace"}</div>
+              <div className="truncate text-xs text-muted-foreground">
+                {activeServer ? "Active workspace" : "No workspace selected"}
+              </div>
             </div>
           </div>
           <ChevronsUpDown className="size-4 text-muted-foreground" />
@@ -47,8 +53,8 @@ export function ServerSwitcher({
       <DropdownMenuContent className="w-72 rounded-xl">
         {servers.map((server) => {
           const target =
-            pathname?.includes("/servers/") && pathname.includes(`/${activeServerId}/`)
-              ? pathname.replace(`/servers/${activeServerId}`, `/servers/${server.id}`)
+            pathname?.includes("/servers/") && selectedServerId && pathname.includes(`/${selectedServerId}/`)
+              ? pathname.replace(`/servers/${selectedServerId}`, `/servers/${server.id}`)
               : `/${locale}/dashboard/servers/${server.id}`;
 
           return (

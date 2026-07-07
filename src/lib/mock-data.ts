@@ -93,6 +93,7 @@ export const mockGuilds: Guild[] = [
     avatar: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=300&q=80",
     description:
       "Competitive Hell Let Loose unit running weekly campaigns, briefings, and structured combined-arms rosters.",
+    botInside: true,
     adminIds: ["210000000000001"],
     memberIds: ["210000000000001", "210000000000002", "210000000000003", "210000000000005", "210000000000006"],
     members: [
@@ -112,6 +113,7 @@ export const mockGuilds: Guild[] = [
     avatar: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=300&q=80",
     description:
       "Allied event partner focused on large-scale public and inter-clan operations.",
+    botInside: false,
     adminIds: [],
     memberIds: ["210000000000004"],
     members: [{ id: "210000000000004", group: "Infantry", joinedAt: "2026-02-28T12:00:00.000Z" }],
@@ -125,6 +127,7 @@ export const mockGuilds: Guild[] = [
     avatar: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=300&q=80",
     description:
       "Shared staff workspace for cross-unit training nights and campaign planning.",
+    botInside: true,
     adminIds: ["210000000000001"],
     memberIds: ["210000000000001", "210000000000003"],
     members: [
