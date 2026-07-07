@@ -1,6 +1,7 @@
 export type Timestamp = string;
 
 export type AppUser = {
+  _reserveSection: string;
   id: string;
   steamId?: string;
   name: string;
@@ -16,7 +17,8 @@ export type AppUser = {
 
 export type GuildMember = {
   id: string;
-  group: string;
+  primaryGroup?: string;
+  secondaryGroups: string[];
   joinedAt?: Timestamp;
 };
 
@@ -35,8 +37,12 @@ export type Guild = {
 };
 
 export type Group = {
+  id: string;
+  guildId: string;
   name: string;
-  roleId: string;
+  color: string;
+  order: number;
+  parentId?: string;
   description?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -100,6 +106,7 @@ export type SquadPresetSquad = {
   group: string;
   order: number;
   color: string;
+  icon: string;
   roles: SquadRole[];
 };
 
@@ -124,6 +131,7 @@ export type RosterSquad = {
   group: string;
   order: number;
   color: string;
+  icon?: string;
   players: RosterPlayer[];
 };
 
@@ -134,6 +142,7 @@ export type Roster = {
   squadPresetId?: string;
   squads: RosterSquad[];
   reservePlayerIds: string[];
+  notAttendingPlayerIds: string[];
   streamerId?: string;
   published: boolean;
   createdAt: Timestamp;

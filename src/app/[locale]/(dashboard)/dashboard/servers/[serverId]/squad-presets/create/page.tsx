@@ -11,13 +11,15 @@ export default async function CreateSquadPresetPage({
 }) {
   const { locale, serverId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const { canAdmin } = getServerContext(serverId);
+  const context = await getServerContext(serverId);
+  const canAdmin = context?.canAdmin ?? false;
+  const groups = context?.groups ?? [];
 
   return (
     <>
       <PageHeader title={dictionary.presets.createSquadTitle} description={dictionary.presets.createSquadDescription} />
       <div className="px-4 lg:px-6">
-        <SquadPresetEditor name="" squads={[]} canEdit={canAdmin} dictionary={dictionary} startInEditMode />
+        <SquadPresetEditor name="" squads={[]} groups={groups} canEdit={canAdmin} dictionary={dictionary} startInEditMode />
       </div>
     </>
   );

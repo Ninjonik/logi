@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { PencilLine } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Loader2, PencilLine, Save } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ export function EditableResourceDetail({
   dictionary,
   extra,
   startInEditMode = false,
+                                         createMode = false
 }: {
   title: string;
   description?: string;
@@ -33,8 +35,19 @@ export function EditableResourceDetail({
   dictionary: Dictionary;
   extra?: React.ReactNode;
   startInEditMode?: boolean;
+  createMode?: boolean;
 }) {
-  const [isEditing, setIsEditing] = useState(startInEditMode);
+  const [isEditing, setIsEditing] = useState(startInEditMode || createMode);
+  const [isPending, startTransition] = useTransition();
+
+  const handleSave = () => {
+    startTransition(() => {
+      // Logic for saving would go here (passed as prop or handled in parent)
+      // For now we simulate success with toast
+      setIsEditing(false);
+      toast.success(createMode ? "Created successfully" : "Saved successfully");
+    });
+  };
 
   return (
     <Card className="rounded-2xl border-border/60">
@@ -43,7 +56,7 @@ export function EditableResourceDetail({
           <CardTitle className="text-2xl">{title}</CardTitle>
           {description ? <p className="mt-2 text-sm text-muted-foreground">{description}</p> : null}
         </div>
-        {canEdit ? (
+        {canEdit && !createMode ? (
           <Button
             variant={isEditing ? "secondary" : "default"}
             onClick={() => setIsEditing((value) => !value)}
@@ -80,8 +93,11 @@ export function EditableResourceDetail({
         {extra}
         {isEditing ? (
           <div className="flex flex-wrap gap-3">
-            <Button className="rounded-xl">{dictionary.common.save}</Button>
-            <Button variant="outline" className="rounded-xl" onClick={() => setIsEditing(false)}>
+            <Button className="rounded-xl" onClick={handleSave} disabled={isPending}>
+              {isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
+              {dictionary.common.save}
+            </Button>
+            <Button variant="outline" className="rounded-xl" onClick={() => setIsEditing(false)} disabled={isPending}>
               {dictionary.common.cancel}
             </Button>
           </div>

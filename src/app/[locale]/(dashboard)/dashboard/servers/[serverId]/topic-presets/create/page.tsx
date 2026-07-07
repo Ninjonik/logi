@@ -12,7 +12,8 @@ export default async function CreateTopicPresetPage({
 }) {
   const { locale, serverId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const { canAdmin } = getServerContext(serverId);
+  const context = await getServerContext(serverId);
+  const canAdmin = context?.canAdmin ?? false;
 
   return (
     <>
@@ -31,6 +32,7 @@ export default async function CreateTopicPresetPage({
             { label: dictionary.presets.fields.cap, value: "" },
             { label: dictionary.presets.fields.notes, value: "", multiline: true },
           ]}
+          createMode={true}
         />
         <TopicEditor topics={[]} canEdit={canAdmin} dictionary={dictionary} startInEditMode />
       </div>

@@ -1,78 +1,56 @@
-import { mockUsers } from "@/lib/mock-data";
+import { fetchMutation, fetchQuery } from "convex/nextjs";
+import { makeFunctionReference } from "convex/server";
+
+import { getInternalAuthSecret } from "@/lib/env";
 import type { AppUser, Guild } from "@/types/domain";
+
+const listAssignmentsReference = makeFunctionReference<"query">("userAssignments:listForServer");
+const getAssignmentByIdReference = makeFunctionReference<"query">("userAssignments:getById");
+const getUsersByIdsReference = makeFunctionReference<"query">("serverData:getUsersByIds");
+const listUsersReference = makeFunctionReference<"query">("serverData:listUsers");
+const upsertAssignmentReference = makeFunctionReference<"mutation">("userAssignments:upsert");
+const removeAssignmentReference = makeFunctionReference<"mutation">("userAssignments:remove");
 
 export type ServerUserAssignment = {
   id: string;
   userId: string;
   serverId: string;
   type: "member" | "mercenary";
-  group?: string;
+  primaryGroupId?: string;
+  secondaryGroupIds: string[];
   paused: boolean;
   pausedNote?: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export const mockServerUserAssignments: ServerUserAssignment[] = [
-  {
-    id: "assign-82ad-clover",
-    userId: "210000000000001",
-    serverId: "82ad",
-    type: "member",
-    group: "Command",
-    paused: false,
-    createdAt: "2026-02-01T12:00:00.000Z",
-    updatedAt: "2026-07-06T18:00:00.000Z",
-  },
-  {
-    id: "assign-82ad-swellboy",
-    userId: "210000000000002",
-    serverId: "82ad",
-    type: "member",
-    group: "Infantry",
-    paused: false,
-    createdAt: "2026-02-11T12:00:00.000Z",
-    updatedAt: "2026-07-06T18:00:00.000Z",
-  },
-  {
-    id: "assign-82ad-mjolk",
-    userId: "210000000000003",
-    serverId: "82ad",
-    type: "member",
-    group: "Recon",
-    paused: true,
-    pausedNote: "Inactive until campaign relaunch.",
-    createdAt: "2026-03-02T12:00:00.000Z",
-    updatedAt: "2026-07-06T18:00:00.000Z",
-  },
-  {
-    id: "assign-82ad-luca",
-    userId: "210000000000004",
-    serverId: "82ad",
-    type: "mercenary",
-    group: "Merc Pool",
-    paused: false,
-    createdAt: "2026-03-20T12:00:00.000Z",
-    updatedAt: "2026-07-06T18:00:00.000Z",
-  },
-];
-
-export function getServerUserAssignments(serverId: string) {
-  return mockServerUserAssignments.filter((assignment) => assignment.serverId === serverId);
+export async function getServerUserAssignments(serverId: string): Promise<ServerUserAssignment[]> {
+  return (await fetchQuery(listAssignmentsReference, { serverId })) as ServerUserAssignment[];
 }
 
-export function getServerUserAssignment(serverId: string, assignmentId: string) {
-  return mockServerUserAssignments.find(
-    (assignment) => assignment.serverId === serverId && assignment.id === assignmentId,
-  );
+export async function getServerUserAssignment(assignmentId: string) {
+  return (await fetchQuery(getAssignmentByIdReference, {
+    assignmentId: assignmentId as never,
+  })) as ServerUserAssignment | null;
 }
 
-export function getAssignmentUser(assignment: ServerUserAssignment) {
-  return mockUsers.find((user) => user.id === assignment.userId);
+export async function getUsersByIds(userIds: string[]) {
+  return (await fetchQuery(getUsersByIdsReference, { userIds })) as AppUser[];
 }
 
-export function getEligibleUsersForServer(server: Guild, assignments: ServerUserAssignment[]) {
-  return mockUsers.map((user) => {
+export async function listUsers() {
+  return (await fetchQuery(listUsersReference, {})) as AppUser[];
+}
+
+export async function getAssignmentUser(assignment: ServerUserAssignment) {
+  const users = await getUsersByIds([assignment.userId]);
+  return users[0];
+}
+
+export async function getEligibleUsersForServer(server: Guild, assignments: ServerUserAssignment[]) {
+  const currentUsers = await listUsers();
+
+  return currentUsers.map((user) => {
     const existingHere = assignments.find((assignment) => assignment.userId === user.id);
     const canJoinAsMember = (!user.guildId || user.guildId === server.id) && existingHere?.type !== "mercenary";
     const canJoinAsMercenary = existingHere?.type !== "member";
@@ -83,5 +61,35 @@ export function getEligibleUsersForServer(server: Guild, assignments: ServerUser
       canJoinAsMember,
       canJoinAsMercenary,
     };
+  });
+}
+
+export async function saveServerUserAssignment(input: {
+  assignmentId?: string;
+  userId: string;
+  serverId: string;
+  type: "member" | "mercenary";
+  primaryGroupId?: string;
+  secondaryGroupIds: string[];
+  paused: boolean;
+  pausedNote?: string;
+}) {
+  return await fetchMutation(upsertAssignmentReference, {
+    secret: getInternalAuthSecret(),
+    assignmentId: input.assignmentId as never,
+    userId: input.userId,
+    serverId: input.serverId,
+    type: input.type,
+    primaryGroupId: input.primaryGroupId as never,
+    secondaryGroupIds: input.secondaryGroupIds as never,
+    paused: input.paused,
+    pausedNote: input.pausedNote,
+  });
+}
+
+export async function deleteServerUserAssignment(assignmentId: string) {
+  return await fetchMutation(removeAssignmentReference, {
+    secret: getInternalAuthSecret(),
+    assignmentId: assignmentId as never,
   });
 }

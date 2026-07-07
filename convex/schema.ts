@@ -19,7 +19,9 @@ const users = defineTable({
 
 const guildMember = v.object({
   id: v.string(),
-  group: v.string(),
+  group: v.optional(v.string()),
+  primaryGroup: v.optional(v.string()),
+  secondaryGroups: v.optional(v.array(v.string())),
   joinedAt: v.optional(v.string()),
 });
 
@@ -42,6 +44,7 @@ const squadPresetSquad = v.object({
   group: v.string(),
   order: v.number(),
   color: v.string(),
+  icon: v.string(),
   roles: v.array(squadRole),
 });
 
@@ -54,6 +57,7 @@ const rosterPlayer = v.object({
   id: v.optional(v.string()),
   ack: v.boolean(),
   note: v.optional(v.string()),
+  roleName: v.optional(v.string()),
 });
 
 const rosterSquad = v.object({
@@ -61,8 +65,25 @@ const rosterSquad = v.object({
   group: v.string(),
   order: v.number(),
   color: v.string(),
+  icon: v.optional(v.string()),
   players: v.array(rosterPlayer),
 });
+
+const userAssignments = defineTable({
+  userId: v.string(),
+  serverId: v.string(),
+  type: v.union(v.literal("member"), v.literal("mercenary")),
+  primaryGroupId: v.optional(v.id("groups")),
+  secondaryGroupIds: v.optional(v.array(v.id("groups"))),
+  group: v.optional(v.string()),
+  paused: v.boolean(),
+  pausedNote: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+})
+  .index("serverId", ["serverId"])
+  .index("userId", ["userId"])
+  .index("serverId_userId", ["serverId", "userId"]);
 
 export default defineSchema({
   users,
@@ -80,12 +101,17 @@ export default defineSchema({
     updatedAt: v.string(),
   }).index("id", ["id"]),
   groups: defineTable({
+    guildId: v.string(),
     name: v.string(),
-    roleId: v.string(),
+    color: v.string(),
+    order: v.number(),
+    parentId: v.optional(v.id("groups")),
     description: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.string(),
-  }).index("roleId", ["roleId"]),
+  })
+    .index("guildId", ["guildId"])
+    .index("guildId_name", ["guildId", "name"]),
   events: defineTable({
     guildId: v.string(),
     name: v.string(),
@@ -129,9 +155,11 @@ export default defineSchema({
     squadPresetId: v.optional(v.id("squadPresets")),
     squads: v.array(rosterSquad),
     reservePlayerIds: v.array(v.string()),
+    notAttendingPlayerIds: v.array(v.string()),
     streamerId: v.optional(v.string()),
     published: v.boolean(),
     createdAt: v.string(),
     updatedAt: v.string(),
   }).index("eventId", ["eventId"]),
+  userAssignments,
 });

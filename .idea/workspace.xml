@@ -4,28 +4,79 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="some other better stuff, gotta compeltley rework the auth">
-      <change afterPath="$PROJECT_DIR$/src/components/auth/user-avatar.tsx" afterDir="false" />
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="basic auth system + oath for discord and steam done">
+      <change afterPath="$PROJECT_DIR$/convex/groups.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/convex/serverData.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/convex/serverSetup.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/convex/userAssignments.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_Rifleman.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_anti-tank.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_assault.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_autorifleman.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_commander.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_eng.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_medic.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_mg.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_officer.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_recon.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_sniper.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_support.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_tankCommand.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/img/roles/icn_tankCrew.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/groups/[groupId]/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/groups/create/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/groups/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/groups/[groupId]/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/groups/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/helper-data/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/app/group-form.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/app/helper-data-actions.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lib/group-defaults.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lib/server-groups.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lib/server-setup.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lib/squad-preset-templates.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lib/validation/group.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/auth.config.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/_generated/api.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/_generated/api.d.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/guilds.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/guilds.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/players.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/players.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/.well-known/jwks.json/route.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/auth/callback/discord/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/auth/callback/discord/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/calendar/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/calendar/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/[rosterId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/[rosterId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/create/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/squad-presets/[presetId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/squad-presets/[presetId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/squad-presets/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/squad-presets/create/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/squad-presets/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/squad-presets/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/topic-presets/[presetId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/topic-presets/[presetId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/topic-presets/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/topic-presets/create/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/topic-presets/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/topic-presets/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/create/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/server-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/server-card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/site-footer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/site-footer.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/nav-user.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/nav-user.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/editable-resource-detail.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/editable-resource-detail.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/server-switcher.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/server-switcher.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/site-header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/site-header.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/squad-preset-editor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/squad-preset-editor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/sonner.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/sonner.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/discord.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/env.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/env.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/mock-data.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/mock-data.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/mock-data.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/server-context.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-context.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/server-user-management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-user-management.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/proxy.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/proxy.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -39,7 +90,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="200" />
+    <option name="cachedIndexableFilesCount" value="243" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -108,6 +159,7 @@
     &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
     &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/admin/WebstormProjects/logi/public&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -119,7 +171,11 @@
   }
 }</component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\admin\WebstormProjects\logi\public" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\admin\WebstormProjects\logi\public\img" />
       <recent name="C:\Users\admin\WebstormProjects\logi" />
     </key>
   </component>
@@ -154,7 +210,8 @@
       <updated>1783348990948</updated>
       <workItem from="1783348992035" duration="4849000" />
       <workItem from="1783357044406" duration="6443000" />
-      <workItem from="1783404865696" duration="2189000" />
+      <workItem from="1783404865696" duration="13990000" />
+      <workItem from="1783419384201" duration="540000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -188,7 +245,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783364166546</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="basic auth system + oath for discord and steam done">
+      <option name="closed" value="true" />
+      <created>1783407315625</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1783407315625</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -200,6 +265,7 @@
     <MESSAGE value="kept nextjs version only" />
     <MESSAGE value="initial version, frontend logic only with mock data, no backend" />
     <MESSAGE value="some other better stuff, gotta compeltley rework the auth" />
-    <option name="LAST_COMMIT_MESSAGE" value="some other better stuff, gotta compeltley rework the auth" />
+    <MESSAGE value="basic auth system + oath for discord and steam done" />
+    <option name="LAST_COMMIT_MESSAGE" value="basic auth system + oath for discord and steam done" />
   </component>
 </project>

@@ -13,9 +13,9 @@ export async function generateMetadata({
   params: Promise<{ serverId: string }>;
 }): Promise<Metadata> {
   const { serverId } = await params;
-  const context = getServerContext(serverId);
+  const context = await getServerContext(serverId);
   return {
-    title: `${context.server?.name ?? "Clan"} settings`,
+    title: `${context?.server?.name ?? "Clan"} settings`,
     description: "Clan settings page for avatar, description, and membership management.",
   };
 }
@@ -27,8 +27,9 @@ export default async function ServerSettingsPage({
 }) {
   const { locale, serverId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const { server, canAdmin } = getServerContext(serverId);
-  if (!server) return null;
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { server, canAdmin } = context;
 
   return (
     <>
@@ -44,6 +45,7 @@ export default async function ServerSettingsPage({
             { label: dictionary.userSettings.avatarUrl, value: server.avatar },
             { label: dictionary.event.fields.description, value: server.description, multiline: true },
           ]}
+          createMode={false}
         />
         <Card className="rounded-2xl border-border/60">
           <CardHeader>

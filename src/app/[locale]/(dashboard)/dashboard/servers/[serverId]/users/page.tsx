@@ -15,9 +15,9 @@ export async function generateMetadata({
   params: Promise<{ locale: string; serverId: string }>;
 }): Promise<Metadata> {
   const { serverId } = await params;
-  const context = getServerContext(serverId);
+  const context = await getServerContext(serverId);
   return {
-    title: `${context.server?.name ?? "Clan"} ${getDictionary("en").userManagement.title}`,
+    title: `${context?.server?.name ?? "Clan"} ${getDictionary("en").userManagement.title}`,
     description: getDictionary("en").userManagement.description,
   };
 }
@@ -30,10 +30,17 @@ export default async function ServerUsersPage({
   const { locale, serverId } = await params;
   const safeLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(safeLocale);
-  const { server } = getServerContext(serverId);
-  const assignments = getServerUserAssignments(serverId);
-
-  if (!server) return null;
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { server, groups } = context;
+  const assignments = await getServerUserAssignments(serverId);
+  const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
+  const assignmentUsers = await Promise.all(
+    assignments.map(async (assignment) => ({
+      assignmentId: assignment.id,
+      user: await getAssignmentUser(assignment),
+    })),
+  );
 
   return (
     <>
@@ -56,7 +63,7 @@ export default async function ServerUsersPage({
               key: "player",
               title: dictionary.userManagement.tablePlayer,
               render: (assignment) => {
-                const user = getAssignmentUser(assignment);
+                const user = assignmentUsers.find((item) => item.assignmentId === assignment.id)?.user;
                 if (!user) return dictionary.common.unknown;
                 return (
                   <div className="flex items-center gap-3">
@@ -80,7 +87,7 @@ export default async function ServerUsersPage({
             {
               key: "group",
               title: dictionary.userManagement.tableGroup,
-              render: (assignment) => assignment.group ?? dictionary.userManagement.none,
+              render: (assignment) => assignment.primaryGroupId ? groupNameById.get(assignment.primaryGroupId) ?? dictionary.userManagement.none : dictionary.userManagement.none,
             },
             {
               key: "state",

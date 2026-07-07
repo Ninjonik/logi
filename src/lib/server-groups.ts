@@ -1,0 +1,46 @@
+import { fetchMutation, fetchQuery } from "convex/nextjs";
+import { makeFunctionReference } from "convex/server";
+
+import { getInternalAuthSecret } from "@/lib/env";
+import type { Group } from "@/types/domain";
+
+const listGroupsReference = makeFunctionReference<"query">("groups:listForGuild");
+const getGroupByIdReference = makeFunctionReference<"query">("groups:getById");
+const upsertGroupReference = makeFunctionReference<"mutation">("groups:upsert");
+const removeGroupReference = makeFunctionReference<"mutation">("groups:remove");
+
+export async function getServerGroups(serverId: string) {
+  return (await fetchQuery(listGroupsReference, { guildId: serverId })) as Group[];
+}
+
+export async function getServerGroup(groupId: string) {
+  return (await fetchQuery(getGroupByIdReference, { groupId: groupId as never })) as Group | null;
+}
+
+export async function saveServerGroup(input: {
+  serverId: string;
+  groupId?: string;
+  name: string;
+  color: string;
+  order: number;
+  parentId?: string;
+  description?: string;
+}) {
+  return await fetchMutation(upsertGroupReference, {
+    secret: getInternalAuthSecret(),
+    guildId: input.serverId,
+    groupId: input.groupId as never,
+    name: input.name,
+    color: input.color,
+    order: input.order,
+    parentId: input.parentId,
+    description: input.description,
+  });
+}
+
+export async function deleteServerGroup(groupId: string) {
+  return await fetchMutation(removeGroupReference, {
+    secret: getInternalAuthSecret(),
+    groupId: groupId as never,
+  });
+}

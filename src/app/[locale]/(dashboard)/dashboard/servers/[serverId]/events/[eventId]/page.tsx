@@ -13,7 +13,8 @@ export async function generateMetadata({
   params: Promise<{ locale: string; serverId: string; eventId: string }>;
 }): Promise<Metadata> {
   const { serverId, eventId } = await params;
-  const event = getServerContext(serverId).events.find((item) => item.id === eventId);
+  const context = await getServerContext(serverId);
+  const event = context?.events.find((item) => item.id === eventId);
   return {
     title: event?.name ?? "Event",
     description: event?.description,
@@ -28,7 +29,9 @@ export default async function EventDetailPage({
   const { locale, serverId, eventId } = await params;
   const safeLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(safeLocale);
-  const { events, rosters, canAdmin } = getServerContext(serverId);
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { events, rosters, canAdmin, topicPresets } = context;
   const event = events.find((item) => item.id === eventId);
   const roster = rosters.find((item) => item.eventId === eventId);
 
@@ -49,7 +52,7 @@ export default async function EventDetailPage({
         }
       />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={event} canEdit={canAdmin} dictionary={dictionary} />
+        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} canEdit={canAdmin} dictionary={dictionary} createMode={false} />
       </div>
     </>
   );

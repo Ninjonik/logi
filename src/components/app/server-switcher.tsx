@@ -19,10 +19,16 @@ export function ServerSwitcher({
   locale,
   servers,
   activeServerId,
+  labels,
 }: {
   locale: Locale;
   servers: Guild[];
   activeServerId?: string;
+  labels: {
+    selectWorkspace: string;
+    activeWorkspace: string;
+    noWorkspaceSelected: string;
+  };
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -41,9 +47,9 @@ export function ServerSwitcher({
               <AvatarFallback>{activeServer?.name?.slice(0, 2) ?? "WS"}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 text-left">
-              <div className="truncate text-sm font-semibold">{activeServer?.name ?? "Select workspace"}</div>
+              <div className="truncate text-sm font-semibold">{activeServer?.name ?? labels.selectWorkspace}</div>
               <div className="truncate text-xs text-muted-foreground">
-                {activeServer ? "Active workspace" : "No workspace selected"}
+                {activeServer ? labels.activeWorkspace : labels.noWorkspaceSelected}
               </div>
             </div>
           </div>

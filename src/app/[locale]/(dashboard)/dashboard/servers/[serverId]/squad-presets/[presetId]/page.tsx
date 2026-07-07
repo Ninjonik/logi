@@ -12,7 +12,8 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; presetId: string }>;
 }): Promise<Metadata> {
   const { serverId, presetId } = await params;
-  const preset = getServerContext(serverId).squadPresets.find((item) => item.id === presetId);
+  const context = await getServerContext(serverId);
+  const preset = context?.squadPresets.find((item) => item.id === presetId);
   return {
     title: preset?.name ?? "Squad preset",
     description: "Preset squad structure for new rosters.",
@@ -26,7 +27,9 @@ export default async function SquadPresetDetailPage({
 }) {
   const { locale, serverId, presetId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const { squadPresets, canAdmin } = getServerContext(serverId);
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { squadPresets, canAdmin, groups = [] } = context;
   const preset = squadPresets.find((item) => item.id === presetId);
 
   if (!preset) return null;
@@ -35,7 +38,7 @@ export default async function SquadPresetDetailPage({
     <>
       <PageHeader title={preset.name} description={dictionary.presets.squadPresetPageDescription} />
       <div className="px-4 lg:px-6">
-        <SquadPresetEditor name={preset.name} squads={preset.squads} canEdit={canAdmin} dictionary={dictionary} />
+        <SquadPresetEditor name={preset.name} squads={preset.squads} groups={groups} canEdit={canAdmin} dictionary={dictionary} />
       </div>
     </>
   );

@@ -13,7 +13,8 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; presetId: string }>;
 }): Promise<Metadata> {
   const { serverId, presetId } = await params;
-  const preset = getServerContext(serverId).topicPresets.find((item) => item.id === presetId);
+  const context = await getServerContext(serverId);
+  const preset = context?.topicPresets.find((item) => item.id === presetId);
   return {
     title: preset?.name ?? "Topic preset",
     description: preset?.notes,
@@ -27,7 +28,9 @@ export default async function TopicPresetDetailPage({
 }) {
   const { locale, serverId, presetId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const { topicPresets, canAdmin } = getServerContext(serverId);
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { topicPresets, canAdmin } = context;
   const preset = topicPresets.find((item) => item.id === presetId);
 
   if (!preset) return null;
@@ -48,6 +51,7 @@ export default async function TopicPresetDetailPage({
             { label: dictionary.presets.fields.cap, value: preset.cap },
             { label: dictionary.presets.fields.notes, value: preset.notes, multiline: true },
           ]}
+          createMode={false}
         />
         <TopicEditor topics={preset.topics} canEdit={canAdmin} dictionary={dictionary} />
       </div>

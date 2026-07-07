@@ -13,7 +13,9 @@ export default async function CreateEventPage({
 }) {
   const { locale, serverId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const { canAdmin } = getServerContext(serverId);
+  const context = await getServerContext(serverId);
+  const canAdmin = context?.canAdmin ?? false;
+  const topicPresets = context?.topicPresets ?? [];
 
   const draftEvent = {
     id: "draft-event",
@@ -40,7 +42,7 @@ export default async function CreateEventPage({
     <>
       <PageHeader title={dictionary.event.createTitle} description={dictionary.event.createPageDescription} />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={draftEvent} canEdit={canAdmin} dictionary={dictionary} createMode />
+        <EventFormPanel event={draftEvent} serverId={serverId} locale={locale} topicPresets={topicPresets} canEdit={canAdmin} dictionary={dictionary} createMode />
       </div>
     </>
   );

@@ -18,8 +18,8 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; assignmentId: string }>;
 }): Promise<Metadata> {
   const { serverId, assignmentId } = await params;
-  const assignment = getServerUserAssignment(serverId, assignmentId);
-  const user = assignment ? getAssignmentUser(assignment) : undefined;
+  const assignment = await getServerUserAssignment(assignmentId);
+  const user = assignment ? await getAssignmentUser(assignment) : undefined;
   return {
     title: user ? `${user.name} ${getDictionary("en").userManagement.assignmentTitleSuffix}` : getDictionary("en").userManagement.editAssignment,
     description: getDictionary("en").userManagement.assignmentMetaDescription,
@@ -34,13 +34,14 @@ export default async function ServerUserDetailPage({
   const { locale, serverId, assignmentId } = await params;
   const safeLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(safeLocale);
-  const { server } = getServerContext(serverId);
-  if (!server) return null;
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { server, groups = [] } = context;
 
-  const assignments = getServerUserAssignments(serverId);
-  const assignment = getServerUserAssignment(serverId, assignmentId);
-  const user = assignment ? getAssignmentUser(assignment) : undefined;
-  const eligibleUsers = getEligibleUsersForServer(server, assignments);
+  const assignments = await getServerUserAssignments(serverId);
+  const assignment = await getServerUserAssignment(assignmentId);
+  const user = assignment ? await getAssignmentUser(assignment) : undefined;
+  const eligibleUsers = await getEligibleUsersForServer(server, assignments);
 
   if (!assignment || !user) return null;
 
@@ -51,7 +52,7 @@ export default async function ServerUserDetailPage({
         description={dictionary.userManagement.assignmentDescription}
       />
       <div className="px-4 lg:px-6">
-        <UserAssignmentForm server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} assignment={assignment} />
+        <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} assignment={assignment} />
       </div>
     </>
   );

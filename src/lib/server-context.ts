@@ -1,30 +1,36 @@
-import {
-  getCurrentUser,
-  getGuild,
-  getGuildEvents,
-  getGuildRosters,
-  getGuildSquadPresets,
-  getGuildTopicPresets,
-  isGuildAdmin,
-  mockGuilds,
-} from "@/lib/mock-data";
+import { fetchQuery } from "convex/nextjs";
+import { makeFunctionReference } from "convex/server";
 
-export function getServerContext(serverId?: string) {
-  const user = getCurrentUser();
-  const server =
-    (serverId ? getGuild(serverId) : undefined) ??
-    (user.guildId ? getGuild(user.guildId) : undefined) ??
-    mockGuilds[0];
+import { getLoggedInUser } from "@/lib/auth";
+import type { AppUser, EventRecord, Group, Guild, Roster, SquadPreset, TopicPreset } from "@/types/domain";
+import type { ServerUserAssignment } from "@/lib/server-user-management";
 
-  const canAdmin = server ? isGuildAdmin(server.id, user.id) : false;
+const getServerContextReference = makeFunctionReference<"query">("serverData:getServerContext");
 
-  return {
-    user,
-    server,
-    canAdmin,
-    events: server ? getGuildEvents(server.id) : [],
-    topicPresets: server ? getGuildTopicPresets(server.id) : [],
-    squadPresets: server ? getGuildSquadPresets(server.id) : [],
-    rosters: server ? getGuildRosters(server.id) : [],
-  };
+export type ServerContext = {
+  user: AppUser;
+  server: Guild;
+  canAdmin: boolean;
+  events: EventRecord[];
+  topicPresets: TopicPreset[];
+  squadPresets: SquadPreset[];
+  rosters: Roster[];
+  groups: Group[];
+  assignments: ServerUserAssignment[];
+};
+
+export async function getServerContext(serverId: string): Promise<ServerContext | null> {
+  const user = await getLoggedInUser();
+  if (!user) {
+    return null;
+  }
+
+  try {
+    return (await fetchQuery(getServerContextReference, {
+      userId: user.id,
+      serverId,
+    })) as ServerContext;
+  } catch {
+    return null;
+  }
 }

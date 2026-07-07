@@ -12,10 +12,10 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; locale: string }>;
 }): Promise<Metadata> {
   const { serverId, locale } = await params;
-  const context = getServerContext(serverId);
+  const context = await getServerContext(serverId);
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context.server?.name ?? "Clan"} ${dictionary.calendarPage.title}`,
+    title: `${context?.server?.name ?? "Clan"} ${dictionary.calendarPage.title}`,
     description: dictionary.calendarPage.description,
   };
 }
@@ -27,8 +27,9 @@ export default async function ServerCalendarPage({
 }) {
   const { locale, serverId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const { server, events, rosters } = getServerContext(serverId);
-  if (!server) return null;
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { server, events, rosters } = context;
 
   return (
     <>

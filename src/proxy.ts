@@ -7,6 +7,15 @@ const handleI18nRouting = createMiddleware(routing);
 
 export default async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const isStaticAsset =
+    pathname.startsWith("/img/") ||
+    /^\/[a-zA-Z-]+\/img\//.test(pathname) ||
+    /\.[a-zA-Z0-9]+$/.test(pathname);
+
+  if (isStaticAsset) {
+    return;
+  }
+
   const localeMatch = pathname.match(/^\/([a-zA-Z-]+)(\/.*)?$/);
   const locale = localeMatch?.[1] ?? "en";
   const localizedLogin = `/${locale}/login`;
@@ -23,5 +32,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|\\.well-known).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|\\.well-known|img).*)"],
 };

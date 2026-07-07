@@ -6,10 +6,15 @@ import {
   CalendarDays,
   ClipboardList,
   FolderKanban,
+  Home,
   LayoutDashboard,
   Settings,
   Shield,
+  UserCog,
   Users,
+  LayoutGrid,
+  FileText,
+  ListTodo,
 } from "lucide-react";
 
 import { AppLogo } from "@/components/app/app-logo";
@@ -61,31 +66,32 @@ export function AppSidebar({
 
   const navGroups = [
     {
-      label: dictionary.sidebar.workspace,
+      label: dictionary.sidebar.home,
       items: [
         {
           title: dictionary.sidebar.home,
           url: homeUrl,
-          icon: LayoutDashboard,
+          icon: Home,
         },
-        ...(resolvedServerId
-          ? [
+      ],
+    },
+    ...(resolvedServerId
+      ? [
+          {
+            label: dictionary.sidebar.workspace,
+            items: [
               {
                 title: dictionary.sidebar.overview,
                 url: base,
-                icon: Shield,
+                icon: LayoutDashboard,
               },
               {
                 title: dictionary.sidebar.calendar,
                 url: `${base}/calendar`,
                 icon: CalendarDays,
               },
-            ]
-          : []),
-      ],
-    },
-    ...(resolvedServerId
-      ? [
+            ],
+          },
           {
             label: dictionary.sidebar.operations,
             items: [
@@ -94,57 +100,57 @@ export function AppSidebar({
                     {
                       title: dictionary.sidebar.events,
                       url: `${base}/events`,
-                      icon: ClipboardList,
-                    },
-                    {
-                      title: dictionary.sidebar.topicPresets,
-                      url: `${base}/topic-presets`,
-                      icon: FolderKanban,
-                    },
-                    {
-                      title: dictionary.sidebar.users,
-                      url: `${base}/users`,
-                      icon: Users,
-                    },
-                    {
-                      title: dictionary.sidebar.squadPresets,
-                      url: `${base}/squad-presets`,
-                      icon: Users,
+                      icon: ListTodo,
                     },
                     {
                       title: dictionary.sidebar.rosters,
                       url: `${base}/rosters`,
-                      icon: Shield,
+                      icon: ClipboardList,
                     },
                   ]
                 : [
                     {
                       title: dictionary.sidebar.rosters,
                       url: `${base}/rosters`,
-                      icon: Shield,
+                      icon: ClipboardList,
                     },
                   ]),
             ],
           },
-          {
-            label: dictionary.sidebar.configuration,
-            items: [
-              {
-                title: dictionary.sidebar.userSettings,
-                url: `/${locale}/dashboard/settings/user`,
-                icon: Settings,
-              },
-              ...(resolvedCanAdmin
-                ? [
+          ...(resolvedCanAdmin
+            ? [
+                {
+                  label: dictionary.sidebar.configuration,
+                  items: [
+                    {
+                      title: dictionary.sidebar.topicPresets,
+                      url: `${base}/topic-presets`,
+                      icon: FileText,
+                    },
+                    {
+                      title: dictionary.sidebar.squadPresets,
+                      url: `${base}/squad-presets`,
+                      icon: LayoutGrid,
+                    },
+                    {
+                      title: dictionary.sidebar.groups,
+                      url: `${base}/groups`,
+                      icon: Users,
+                    },
+                    {
+                      title: dictionary.sidebar.users,
+                      url: `${base}/users`,
+                      icon: UserCog,
+                    },
                     {
                       title: dictionary.sidebar.serverSettings,
                       url: `${base}/settings`,
                       icon: Settings,
                     },
-                  ]
-                : []),
-            ],
-          },
+                  ],
+                },
+              ]
+            : []),
         ]
       : []),
   ];
@@ -165,7 +171,16 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <ServerSwitcher locale={locale} servers={servers} activeServerId={resolvedServerId} />
+        <ServerSwitcher
+          locale={locale}
+          servers={servers}
+          activeServerId={resolvedServerId}
+          labels={{
+            selectWorkspace: dictionary.workspace.selectWorkspace,
+            activeWorkspace: dictionary.workspace.activeWorkspace,
+            noWorkspaceSelected: dictionary.workspace.noWorkspaceSelected,
+          }}
+        />
       </SidebarHeader>
       <SidebarContent>
         {navGroups.map((group) => (

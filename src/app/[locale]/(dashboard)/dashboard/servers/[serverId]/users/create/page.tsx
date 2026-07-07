@@ -15,17 +15,18 @@ export default async function CreateServerUserPage({
   const { locale, serverId } = await params;
   const safeLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(safeLocale);
-  const { server } = getServerContext(serverId);
-  if (!server) return null;
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { server, groups = [] } = context;
 
-  const assignments = getServerUserAssignments(serverId);
-  const eligibleUsers = getEligibleUsersForServer(server, assignments);
+  const assignments = await getServerUserAssignments(serverId);
+  const eligibleUsers = await getEligibleUsersForServer(server, assignments);
 
   return (
     <>
       <PageHeader title={dictionary.userManagement.addPlayer} description={dictionary.userManagement.description} />
       <div className="px-4 lg:px-6">
-        <UserAssignmentForm server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} createMode />
+        <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} createMode />
       </div>
     </>
   );

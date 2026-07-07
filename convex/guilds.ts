@@ -121,3 +121,15 @@ export const syncManagedGuilds = mutation({
     return managedGuildIds;
   },
 });
+
+export const getById = query({
+  args: {
+    guildId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("guilds")
+      .withIndex("id", (q) => q.eq("id", args.guildId))
+      .unique();
+  },
+});

@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Bell } from "lucide-react";
 
 import { LocaleSwitcher } from "@/components/app/locale-switcher";
+import { AppBreadcrumbs } from "@/components/app/breadcrumbs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -37,26 +38,11 @@ export function SiteHeader({
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="h-4" />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold">
-            {activeServer?.name ?? dictionary.dashboard.title}
-          </div>
-          <div className="truncate text-xs text-muted-foreground">
-            {activeServer?.description ?? dictionary.dashboard.description}
-          </div>
+          <AppBreadcrumbs locale={locale} dictionary={dictionary} />
         </div>
         <div className="hidden sm:block">
           <LocaleSwitcher locale={locale} dictionary={dictionary} />
         </div>
-        <Badge variant={canAdmin ? "default" : "secondary"} className="rounded-full px-3">
-          {activeServer
-            ? canAdmin
-              ? dictionary.common.adminOnly
-              : dictionary.common.membersOnly
-            : dictionary.sidebar.workspace}
-        </Badge>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Bell className="size-4" />
-        </Button>
       </div>
     </header>
   );

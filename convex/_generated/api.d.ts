@@ -8,8 +8,14 @@
  * @module
  */
 
+import type * as events from "../events.js";
+import type * as groups from "../groups.js";
 import type * as guilds from "../guilds.js";
 import type * as players from "../players.js";
+import type * as rosters from "../rosters.js";
+import type * as serverData from "../serverData.js";
+import type * as serverSetup from "../serverSetup.js";
+import type * as userAssignments from "../userAssignments.js";
 
 import type {
   ApiFromModules,
@@ -18,8 +24,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  events: typeof events;
+  groups: typeof groups;
   guilds: typeof guilds;
   players: typeof players;
+  rosters: typeof rosters;
+  serverData: typeof serverData;
+  serverSetup: typeof serverSetup;
+  userAssignments: typeof userAssignments;
 }>;
 
 /**

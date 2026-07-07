@@ -4,8 +4,8 @@ import { PageHeader } from "@/components/app/page-header";
 import { RosterBoard } from "@/components/app/roster-board";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
-import { mockUsers } from "@/lib/mock-data";
 import { getServerContext } from "@/lib/server-context";
+import { getUsersByIds } from "@/lib/server-user-management";
 
 export async function generateMetadata({
   params,
@@ -13,9 +13,9 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; rosterId: string }>;
 }): Promise<Metadata> {
   const { serverId, rosterId } = await params;
-  const context = getServerContext(serverId);
-  const roster = context.rosters.find((item) => item.id === rosterId);
-  const event = context.events.find((item) => item.id === roster?.eventId);
+  const context = await getServerContext(serverId);
+  const roster = context?.rosters.find((item) => item.id === rosterId);
+  const event = context?.events.find((item) => item.id === roster?.eventId);
   return {
     title: event ? `${event.name} roster` : "Roster",
     description: "Roster board with reserves, role slots, publish state, and acknowledgements.",
@@ -29,9 +29,18 @@ export default async function RosterDetailPage({
 }) {
   const { locale, serverId, rosterId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const { rosters, events, canAdmin } = getServerContext(serverId);
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { rosters, events, canAdmin, assignments = [], groups = [] } = context;
   const roster = rosters.find((item) => item.id === rosterId);
   const event = events.find((item) => item.id === roster?.eventId);
+  const rosterUserIds = roster
+    ? [
+        ...roster.reservePlayerIds,
+        ...roster.squads.flatMap((squad) => squad.players.map((player) => player.id).filter(Boolean) as string[]),
+      ]
+    : [];
+  const users = await getUsersByIds(rosterUserIds);
 
   return (
     <>
@@ -40,7 +49,7 @@ export default async function RosterDetailPage({
         description="Inspired by competitive roster boards: grouped squads, visible reserves, assignment status, and a future-ready acknowledgement flow."
       />
       <div className="px-4 lg:px-6">
-        <RosterBoard roster={roster} event={event} users={mockUsers} canAdmin={canAdmin} dictionary={dictionary} />
+        <RosterBoard roster={roster} event={event} users={users} userAssignments={assignments} groups={groups} canAdmin={canAdmin} dictionary={dictionary} />
       </div>
     </>
   );

@@ -13,10 +13,10 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; locale: string }>;
 }): Promise<Metadata> {
   const { serverId, locale } = await params;
-  const context = getServerContext(serverId);
+  const context = await getServerContext(serverId);
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context.server?.name ?? "Clan"} ${dictionary.presets.topicTitle}`,
+    title: `${context?.server?.name ?? "Clan"} ${dictionary.presets.topicTitle}`,
     description: dictionary.presets.topicPresetMetaDescription,
   };
 }
@@ -28,7 +28,9 @@ export default async function TopicPresetsPage({
 }) {
   const { locale, serverId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const { topicPresets, canAdmin } = getServerContext(serverId);
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { topicPresets, canAdmin } = context;
 
   return (
     <>

@@ -13,10 +13,10 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; locale: string }>;
 }): Promise<Metadata> {
   const { serverId, locale } = await params;
-  const context = getServerContext(serverId);
+  const context = await getServerContext(serverId);
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context.server?.name ?? "Clan"} ${dictionary.sidebar.rosters}`,
+    title: `${context?.server?.name ?? "Clan"} ${dictionary.sidebar.rosters}`,
     description: dictionary.roster.title,
   };
 }
@@ -28,7 +28,9 @@ export default async function RostersPage({
 }) {
   const { locale, serverId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const { rosters, events, canAdmin } = getServerContext(serverId);
+  const context = await getServerContext(serverId);
+  if (!context) return null;
+  const { rosters, events, canAdmin } = context;
 
   return (
     <>

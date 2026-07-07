@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppProviders } from "@/components/providers/app-providers";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { SidebarConfigProvider } from "@/contexts/sidebar-context";
 import { inter } from "@/lib/fonts";
 
@@ -35,6 +36,7 @@ export default function RootLayout({
             <SidebarConfigProvider>
               {children}
             </SidebarConfigProvider>
+            <Toaster />
           </ThemeProvider>
         </AppProviders>
       </body>
