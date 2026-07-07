@@ -136,7 +136,7 @@ export function SquadPresetEditor({
     setDraftName((current) => current || dictionary.presets.starterTemplateName);
     setDraftSquads(createHllStarterSquadPreset());
     setIsEditing(true);
-    toast.info(dictionary.presets.starterTemplateName + " applied");
+    toast.success(dictionary.presets.importStarterTemplate);
   }
 
   function handleSave() {
@@ -144,7 +144,7 @@ export function SquadPresetEditor({
       // Logic for saving would go here (API call)
       // For now we just simulate success with toast
       setIsEditing(false);
-      toast.success("Squad preset saved");
+      toast.success(dictionary.common.save);
     });
   }
 

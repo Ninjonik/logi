@@ -26,7 +26,8 @@ export function EditableResourceDetail({
   dictionary,
   extra,
   startInEditMode = false,
-                                         createMode = false
+  createMode = false,
+  onSave,
 }: {
   title: string;
   description?: string;
@@ -36,16 +37,26 @@ export function EditableResourceDetail({
   extra?: React.ReactNode;
   startInEditMode?: boolean;
   createMode?: boolean;
+  onSave?: () => Promise<void> | void;
 }) {
   const [isEditing, setIsEditing] = useState(startInEditMode || createMode);
   const [isPending, startTransition] = useTransition();
 
   const handleSave = () => {
     startTransition(() => {
-      // Logic for saving would go here (passed as prop or handled in parent)
-      // For now we simulate success with toast
-      setIsEditing(false);
-      toast.success(createMode ? "Created successfully" : "Saved successfully");
+      if (!onSave) {
+        toast.info(dictionary.common.notAvailable);
+        return;
+      }
+
+      Promise.resolve(onSave())
+        .then(() => {
+          setIsEditing(false);
+          toast.success(dictionary.common.save);
+        })
+        .catch(() => {
+          toast.error(dictionary.common.error);
+        });
     });
   };
 

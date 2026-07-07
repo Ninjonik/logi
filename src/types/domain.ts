@@ -1,7 +1,7 @@
 export type Timestamp = string;
 
 export type AppUser = {
-  _reserveSection: string;
+  _reserveSection?: string;
   id: string;
   steamId?: string;
   name: string;

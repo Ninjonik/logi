@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { saveServerUserAssignment } from "@/lib/server-user-management";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
+
+function getAssignmentErrorCode(error: unknown) {
+  if (!(error instanceof Error)) return "UNKNOWN";
+  if (error.message.includes("Pick a primary group")) return "PRIMARY_GROUP_REQUIRED";
+  if (error.message.includes("already assigned to this server")) return "ALREADY_ASSIGNED";
+  return "UNKNOWN";
+}
 
 export async function POST(
   request: NextRequest,
@@ -17,9 +25,11 @@ export async function POST(
 
     return NextResponse.json({ assignmentId });
   } catch (error) {
+    logRouteError("assignments.create", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unable to save assignment.",
+        errorCode: getAssignmentErrorCode(error),
+        error: getUserSafeErrorMessage(error, "Unable to save the player assignment."),
       },
       { status: 400 },
     );

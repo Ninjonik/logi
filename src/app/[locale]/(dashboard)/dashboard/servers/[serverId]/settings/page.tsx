@@ -34,7 +34,7 @@ export default async function ServerSettingsPage({
   return (
     <>
       <PageHeader title={dictionary.serverSettings.title} description={dictionary.serverSettings.description} />
-      <div className="grid gap-6 px-4 xl:grid-cols-[1.2fr_1fr] lg:px-6">
+      <div className="px-4">
         <EditableResourceDetail
           title={server.name}
           description={dictionary.serverSettings.frontendOnlyDescription}
@@ -47,16 +47,6 @@ export default async function ServerSettingsPage({
           ]}
           createMode={false}
         />
-        <Card className="rounded-2xl border-border/60">
-          <CardHeader>
-            <CardTitle>{dictionary.serverSettings.accessModel}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>{dictionary.serverSettings.accessAdmins}</p>
-            <p>{dictionary.serverSettings.accessMembers}</p>
-            <p>{dictionary.serverSettings.accessBackend}</p>
-          </CardContent>
-        </Card>
       </div>
     </>
   );

@@ -34,22 +34,15 @@ export default async function RosterDetailPage({
   const { rosters, events, canAdmin, assignments = [], groups = [] } = context;
   const roster = rosters.find((item) => item.id === rosterId);
   const event = events.find((item) => item.id === roster?.eventId);
-  const rosterUserIds = roster
-    ? [
-        ...roster.reservePlayerIds,
-        ...roster.squads.flatMap((squad) => squad.players.map((player) => player.id).filter(Boolean) as string[]),
-      ]
-    : [];
-  const users = await getUsersByIds(rosterUserIds);
+  const users = await getUsersByIds(assignments.map((assignment) => assignment.userId));
 
   return (
     <>
       <PageHeader
         title={event ? `${event.name} roster` : "Roster"}
-        description="Inspired by competitive roster boards: grouped squads, visible reserves, assignment status, and a future-ready acknowledgement flow."
       />
       <div className="px-4 lg:px-6">
-        <RosterBoard roster={roster} event={event} users={users} userAssignments={assignments} groups={groups} canAdmin={canAdmin} dictionary={dictionary} />
+        <RosterBoard roster={roster} event={event} users={users} userAssignments={assignments} groups={groups} canAdmin={canAdmin} dictionary={dictionary} serverId={serverId} locale={locale} defaultEditMode={false} />
       </div>
     </>
   );

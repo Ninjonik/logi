@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { deleteServerUserAssignment, saveServerUserAssignment } from "@/lib/server-user-management";
+import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
+
+function getAssignmentErrorCode(error: unknown) {
+  if (!(error instanceof Error)) return "UNKNOWN";
+  if (error.message.includes("Pick a primary group")) return "PRIMARY_GROUP_REQUIRED";
+  if (error.message.includes("already assigned to this server")) return "ALREADY_ASSIGNED";
+  return "UNKNOWN";
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -18,9 +26,11 @@ export async function PATCH(
 
     return NextResponse.json({ assignmentId: updatedAssignmentId });
   } catch (error) {
+    logRouteError("assignments.update", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unable to update assignment.",
+        errorCode: getAssignmentErrorCode(error),
+        error: getUserSafeErrorMessage(error, "Unable to save the player assignment."),
       },
       { status: 400 },
     );
@@ -36,9 +46,11 @@ export async function DELETE(
     await deleteServerUserAssignment(assignmentId);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    logRouteError("assignments.delete", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unable to delete assignment.",
+        errorCode: "UNKNOWN",
+        error: getUserSafeErrorMessage(error, "Unable to delete the player assignment."),
       },
       { status: 400 },
     );

@@ -20,6 +20,7 @@ export function RosterCreator({
   canAdmin,
   dictionary,
   serverId,
+  locale,
 }: {
   events: EventRecord[];
   rosters: Roster[];
@@ -30,6 +31,7 @@ export function RosterCreator({
   canAdmin: boolean;
   dictionary: Dictionary;
   serverId: string;
+  locale: string;
 }) {
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
@@ -134,6 +136,8 @@ export function RosterCreator({
           groups={groups}
           canAdmin={canAdmin}
           dictionary={dictionary}
+          serverId={serverId}
+          locale={locale}
           defaultEditMode={true}
         />
       ) : (

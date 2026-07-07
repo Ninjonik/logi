@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
+import type { z } from "zod";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ export function GroupForm({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const form = useForm<GroupInput>({
+  const form = useForm<z.input<typeof groupSchema>, unknown, GroupInput>({
     resolver: zodResolver(groupSchema),
     defaultValues: {
       name: group?.name ?? "",
@@ -80,7 +81,7 @@ export function GroupForm({
       return;
     }
 
-    toast.success(createMode ? "Group created" : "Group updated");
+    toast.success(createMode ? dictionary.groups.createTitle : dictionary.common.save);
 
     startTransition(() => {
       router.push(`/${locale}/dashboard/servers/${serverId}/groups${createMode ? `/${body.groupId}` : ""}`);
@@ -102,7 +103,7 @@ export function GroupForm({
       return;
     }
 
-    toast.success("Group deleted");
+    toast.success(dictionary.common.clear);
 
     startTransition(() => {
       router.push(`/${locale}/dashboard/servers/${serverId}/groups`);

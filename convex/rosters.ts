@@ -38,13 +38,26 @@ export const upsert = mutation({
         updatedAt: now,
       });
       return rosterId;
-    } else {
-      return await ctx.db.insert("rosters", {
+    }
+
+    const existingForEvent = await ctx.db
+      .query("rosters")
+      .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
+      .unique();
+
+    if (existingForEvent) {
+      await ctx.db.patch(existingForEvent._id, {
         ...data,
-        createdAt: now,
         updatedAt: now,
       });
+      return existingForEvent._id;
     }
+
+    return await ctx.db.insert("rosters", {
+      ...data,
+      createdAt: now,
+      updatedAt: now,
+    });
   },
 });
 

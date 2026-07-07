@@ -80,7 +80,7 @@ export async function saveServerUserAssignment(input: {
     userId: input.userId,
     serverId: input.serverId,
     type: input.type,
-    primaryGroupId: input.primaryGroupId as never,
+    primaryGroupId: (input.primaryGroupId || undefined) as never,
     secondaryGroupIds: input.secondaryGroupIds as never,
     paused: input.paused,
     pausedNote: input.pausedNote,

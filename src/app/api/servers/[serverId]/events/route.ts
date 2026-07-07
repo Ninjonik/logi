@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { saveServerEvent } from "@/lib/server-events";
 import { eventSchema } from "@/lib/validation/event";
 
@@ -18,9 +19,10 @@ export async function POST(
 
     return NextResponse.json({ eventId });
   } catch (error) {
+    logRouteError("events.create", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unable to save event.",
+        error: getUserSafeErrorMessage(error, "Unable to save the event."),
       },
       { status: 400 },
     );

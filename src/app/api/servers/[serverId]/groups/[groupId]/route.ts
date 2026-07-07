@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { deleteServerGroup, saveServerGroup } from "@/lib/server-groups";
+import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { groupSchema } from "@/lib/validation/group";
 
 export async function PATCH(
@@ -18,9 +19,10 @@ export async function PATCH(
 
     return NextResponse.json({ groupId: updatedGroupId });
   } catch (error) {
+    logRouteError("groups.update", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unable to update group.",
+        error: getUserSafeErrorMessage(error, "Unable to save the group."),
       },
       { status: 400 },
     );
@@ -36,9 +38,10 @@ export async function DELETE(
     await deleteServerGroup(groupId);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    logRouteError("groups.delete", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unable to delete group.",
+        error: getUserSafeErrorMessage(error, "Unable to delete the group."),
       },
       { status: 400 },
     );

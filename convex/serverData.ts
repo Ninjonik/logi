@@ -8,6 +8,31 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   };
 }
 
+function normalizeAssignmentDoc<
+  T extends {
+    _id: unknown;
+    serverId: string;
+    primaryGroupId?: unknown;
+    secondaryGroupIds?: unknown[];
+  },
+>(assignment: T, groupNameById: Map<string, string>) {
+  const primaryGroupId = assignment.primaryGroupId ? String(assignment.primaryGroupId) : undefined;
+  const secondaryGroupIds = Array.isArray(assignment.secondaryGroupIds)
+    ? assignment.secondaryGroupIds.map((groupId) => String(groupId))
+    : [];
+
+  return {
+    ...assignment,
+    id: String(assignment._id),
+    primaryGroupId,
+    secondaryGroupIds,
+    primaryGroup: primaryGroupId ? groupNameById.get(primaryGroupId) : undefined,
+    secondaryGroups: secondaryGroupIds
+      .map((groupId) => groupNameById.get(groupId))
+      .filter((groupName): groupName is string => Boolean(groupName)),
+  };
+}
+
 export const getServerContext = query({
   args: {
     userId: v.string(),
@@ -47,6 +72,8 @@ export const getServerContext = query({
       return Boolean(event);
     });
 
+    const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
+
     return {
       user,
       server,
@@ -56,7 +83,7 @@ export const getServerContext = query({
       squadPresets: squadPresets.map(normalizeDoc),
       rosters: relevantRosters.map(normalizeDoc),
       groups: groups.map(normalizeDoc),
-      assignments: assignments.map(normalizeDoc),
+      assignments: assignments.map((assignment) => normalizeAssignmentDoc(assignment, groupNameById)),
     };
   },
 });
@@ -90,14 +117,17 @@ export const getAssignmentWithUser = query({
     const assignment = await ctx.db.get(args.assignmentId);
     if (!assignment) return null;
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("id", (q) => q.eq("id", assignment.userId))
-      .unique();
+    const [user, groups] = await Promise.all([
+      ctx.db.query("users").withIndex("id", (q) => q.eq("id", assignment.userId)).unique(),
+      ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", assignment.serverId)).collect(),
+    ]);
+
+    const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
+    const normalizedAssignment = normalizeAssignmentDoc(assignment, groupNameById);
 
     return {
-      ...assignment,
-      id: String(assignment._id),
+      ...normalizedAssignment,
+      user,
       userName: user?.name || "Unknown Player",
     };
   },

@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,25 @@ type EligibleUser = {
   canJoinAsMember: boolean;
   canJoinAsMercenary: boolean;
 };
+
+function getAssignmentErrorMessage(errorCode: string | undefined, dictionary: Dictionary) {
+  switch (errorCode) {
+    case "PRIMARY_GROUP_REQUIRED":
+      return dictionary.userManagement.primaryGroupRequired;
+    case "ALREADY_ASSIGNED":
+      return dictionary.userManagement.alreadyAssigned;
+    default:
+      return dictionary.userManagement.saveError;
+  }
+}
+
+function getValidationMessage(message: string | undefined, dictionary: Dictionary) {
+  if (!message) return "";
+  if (message === "Pick a primary group.") return dictionary.userManagement.primaryGroupRequired;
+  if (message === "Pick a player first.") return dictionary.userManagement.pickPlayerFirst;
+  if (message === "Add a pause note when membership is paused.") return dictionary.userManagement.pauseNoteRequired;
+  return message;
+}
 
 export function UserAssignmentForm({
   server,
@@ -84,6 +104,10 @@ export function UserAssignmentForm({
 
   async function submit(values: UserAssignmentInput) {
     setServerError(null);
+    const payload = {
+      ...values,
+      primaryGroupId: values.primaryGroupId || undefined,
+    };
     const url = createMode
       ? `/api/servers/${server.id}/assignments`
       : `/api/servers/${server.id}/assignments/${assignment?.id}`;
@@ -93,14 +117,18 @@ export function UserAssignmentForm({
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify(values),
+      body: JSON.stringify(payload),
     });
 
     const body = await response.json();
     if (!response.ok) {
-      setServerError(body.error ?? "Unable to save assignment.");
+      const message = getAssignmentErrorMessage(body.errorCode, dictionary);
+      setServerError(message);
+      toast.error(message);
       return;
     }
+
+    toast.success(createMode ? dictionary.userManagement.assignmentCreated : dictionary.userManagement.assignmentSaved);
 
     startTransition(() => {
       router.push(`/${locale}/dashboard/servers/${server.id}/users${createMode ? `/${body.assignmentId}` : ""}`);
@@ -116,9 +144,13 @@ export function UserAssignmentForm({
     });
     const body = await response.json();
     if (!response.ok) {
-      setServerError(body.error ?? "Unable to delete assignment.");
+      const message = body.error ?? dictionary.userManagement.deleteError;
+      setServerError(message);
+      toast.error(message);
       return;
     }
+
+    toast.success(dictionary.userManagement.assignmentDeleted);
 
     startTransition(() => {
       router.push(`/${locale}/dashboard/servers/${server.id}/users`);
@@ -183,7 +215,7 @@ export function UserAssignmentForm({
               ) : null}
             </div>
             {form.formState.errors.userId ? (
-              <p className="text-sm text-destructive">{form.formState.errors.userId.message}</p>
+              <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.userId.message, dictionary)}</p>
             ) : null}
           </div>
 
@@ -273,14 +305,17 @@ export function UserAssignmentForm({
                     name="paused"
                     render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
                   />
-                </div>
               </div>
+              {form.formState.errors.primaryGroupId ? (
+                <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.primaryGroupId.message, dictionary)}</p>
+              ) : null}
+            </div>
               {paused ? (
                 <div className="space-y-2 md:col-span-2">
                   <Label>{dictionary.userManagement.pauseNote}</Label>
                   <Textarea {...form.register("pausedNote")} className="min-h-24 rounded-xl" />
                   {form.formState.errors.pausedNote ? (
-                    <p className="text-sm text-destructive">{form.formState.errors.pausedNote.message}</p>
+                    <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.pausedNote.message, dictionary)}</p>
                   ) : null}
                 </div>
               ) : null}

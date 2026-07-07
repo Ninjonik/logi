@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState, useTransition } from "react";
+import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { useRouter } from "next/navigation";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -61,7 +62,10 @@ export function RosterBoard({
   userAssignments,
   groups,
   canAdmin,
-  dictionary, defaultEditMode = false,
+  dictionary,
+  serverId,
+  locale,
+  defaultEditMode = false,
 }: {
   roster?: Roster;
   event?: EventRecord;
@@ -70,14 +74,21 @@ export function RosterBoard({
   groups: Group[];
   canAdmin: boolean;
   dictionary: Dictionary;
+  serverId: string;
+  locale: string;
   defaultEditMode: boolean;
 }) {
+  const router = useRouter();
   const [board, setBoard] = useState(roster);
   const [editMode, setEditMode] = useState(defaultEditMode);
   const [search, setSearch] = useState("");
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [focusedGroup, setFocusedGroup] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search);
+
+  useEffect(() => {
+    setBoard(roster);
+  }, [roster]);
 
   const [isPending, startTransition] = useTransition();
   const upsertRoster = useMutation(api.rosters.upsert);
@@ -263,6 +274,21 @@ export function RosterBoard({
       if (!slot) return current;
       if (slot.id) (next.reservePlayerIds || (next.reservePlayerIds = [])).push(slot.id);
       slot.id = reserveUserId;
+      slot.ack = false;
+      return next;
+    });
+  }
+
+  function moveNotAttendingToSlot(userId: string, squadIndex: number, playerIndex: number) {
+    setBoard((current) => {
+      if (!current) return current;
+      const next = structuredClone(current);
+      next.notAttendingPlayerIds = (next.notAttendingPlayerIds || []).filter((id) => id !== userId);
+      next.reservePlayerIds = (next.reservePlayerIds || []).filter((id) => id !== userId);
+      const slot = next.squads[squadIndex]?.players[playerIndex];
+      if (!slot) return current;
+      if (slot.id) (next.reservePlayerIds || (next.reservePlayerIds = [])).push(slot.id);
+      slot.id = userId;
       slot.ack = false;
       return next;
     });
@@ -456,10 +482,10 @@ export function RosterBoard({
     if (!dragState) return;
     if (dragState.type === "reserve") {
       moveReserveToSlot(dragState.userId, squadIndex, playerIndex);
+    } else if (dragState.type === "notAttending") {
+      moveNotAttendingToSlot(dragState.userId, squadIndex, playerIndex);
     } else {
-      if (dragState.type !== "notAttending") {
-        swapSlots(dragState.squadIndex, dragState.playerIndex, squadIndex, playerIndex)
-      }
+      swapSlots(dragState.squadIndex, dragState.playerIndex, squadIndex, playerIndex);
     }
     setDragState(null);
   }
@@ -517,7 +543,7 @@ export function RosterBoard({
 
     startTransition(async () => {
       try {
-        await upsertRoster({
+        const rosterId = await upsertRoster({
           rosterId: board.id === "draft-roster" ? undefined : (board.id as any),
           eventId: event.id as any,
           squadPresetId: board.squadPresetId as any,
@@ -534,7 +560,25 @@ export function RosterBoard({
           published: published,
         });
 
-        setBoard((prev) => prev ? { ...prev, published } : prev);
+        const nextRosterId = String(rosterId);
+        const wasDraft = board.id === "draft-roster";
+
+        setBoard((prev) =>
+          prev
+            ? {
+                ...prev,
+                id: wasDraft ? nextRosterId : prev.id,
+                published,
+              }
+            : prev,
+        );
+
+        if (wasDraft) {
+          router.replace(`/${locale}/dashboard/servers/${serverId}/rosters/${nextRosterId}`);
+        } else {
+          router.refresh();
+        }
+
         toast.success(published ? dictionary.roster.published : dictionary.roster.saved);
       } catch (error) {
         console.error("Failed to save roster:", error);

@@ -20,7 +20,7 @@ export default async function CreateRosterPage({
   return (
     <>
       <PageHeader
-        title={dictionary.roster.createRoster}
+        title={dictionary.common.createRoster}
         description="Draft a roster from the squad preset structure and reshape it before publishing."
       />
       <div className="px-4 lg:px-6">
@@ -34,6 +34,7 @@ export default async function CreateRosterPage({
           canAdmin={canAdmin}
           dictionary={dictionary}
           serverId={serverId}
+          locale={locale}
         />
       </div>
     </>

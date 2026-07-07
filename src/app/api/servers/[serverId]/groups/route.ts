@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { saveServerGroup } from "@/lib/server-groups";
 import { groupSchema } from "@/lib/validation/group";
 
@@ -17,9 +18,10 @@ export async function POST(
 
     return NextResponse.json({ groupId });
   } catch (error) {
+    logRouteError("groups.create", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unable to save group.",
+        error: getUserSafeErrorMessage(error, "Unable to save the group."),
       },
       { status: 400 },
     );
