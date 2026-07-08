@@ -9,32 +9,6 @@
   <component name="ChangeListManager">
     <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="qol improvements">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bun.lock" beforeDir="false" afterPath="$PROJECT_DIR$/bun.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/groups.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/groups.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/guilds.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/guilds.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/discord-settings-form.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/group-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/group-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/server-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/server-card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/site-footer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/site-footer.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/ui/sonner.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/sonner.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/discord.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-groups.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-groups.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/validation/group.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/group.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +21,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="243" />
+    <option name="cachedIndexableFilesCount" value="262" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -170,7 +144,8 @@
       <workItem from="1783404865696" duration="13990000" />
       <workItem from="1783419384201" duration="1003000" />
       <workItem from="1783420423002" duration="106000" />
-      <workItem from="1783423976557" duration="9499000" />
+      <workItem from="1783423976557" duration="9572000" />
+      <workItem from="1783535088350" duration="49000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -236,7 +211,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783429560228</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="qol improvements">
+      <option name="closed" value="true" />
+      <created>1783435308616</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1783435308616</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
