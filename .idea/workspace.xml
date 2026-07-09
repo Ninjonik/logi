@@ -7,7 +7,16 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="qol improvements" />
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="qol improvements">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/events.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-creator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-creator.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -15,11 +24,12 @@
   </component>
   <component name="CopilotPersistence">
     <persistenceIdMap>
+      <entry key="_/Users/peterzatko/WebstormProjects/logi" value="3GGwWvMcPCsgLHTTCGzBNzeCfz7" />
       <entry key="_C:/Users/admin/WebstormProjects/logi" value="3G8Mxjfv2d8jL4uYQPvQDfkeOcj" />
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="262" />
+    <option name="cachedIndexableFilesCount" value="254" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -39,12 +49,12 @@
     &quot;assignee&quot;: &quot;Ninjonik&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/Ninjonik/logi.git&quot;,
-    &quot;accountId&quot;: &quot;9ba1adb5-e293-494f-a5be-bf1e53d2e76e&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Ninjonik/logi.git",
+    "accountId": "3787a58d-9ff7-4c97-8b11-eac11e8fe0a1"
   }
-}</component>
+}]]></component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -72,33 +82,42 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;copilot.chat.legacySessionMetadata.migrated&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
-    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
-    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/admin/WebstormProjects/logi/public&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;pnpm&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\admin\\WebstormProjects\\logi\\node_modules\\typescript\\lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "copilot.chat.legacySessionMetadata.migrated": "true",
+    "git-widget-placeholder": "main",
+    "javascript.preferred.runtime.type.id": "node",
+    "js.debugger.nextJs.config.created.client": "true",
+    "js.debugger.nextJs.config.created.server": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "C:/Users/admin/WebstormProjects/logi/public",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "pnpm",
+    "npm.Next.js: server-side.executor": "Run",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "/Users/peterzatko/WebstormProjects/logi/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
+  <component name="ReactDesignerToolWindowState">
+    <option name="myId2Visible">
+      <map>
+        <entry key="com.intellij.reactbuddy.reactComponents" value="false" />
+        <entry key="com.intellij.reactbuddy.reactInspector" value="false" />
+      </map>
+    </option>
+  </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\admin\WebstormProjects\logi\public" />
@@ -126,7 +145,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.31033.133" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.32098.39" />
       </set>
     </attachedChunks>
   </component>
@@ -145,6 +164,7 @@
       <workItem from="1783423976557" duration="9572000" />
       <workItem from="1783535088350" duration="49000" />
       <workItem from="1783544549975" duration="36000" />
+      <workItem from="1783611249796" duration="6135000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />

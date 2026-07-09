@@ -10,6 +10,8 @@ import type { ServerUserAssignment } from "@/lib/server-user-management";
 import type { AppUser, EventRecord, Group, Roster, SquadPreset } from "@/types/domain";
 import { formatDateTime } from "@/lib/format";
 
+const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING";
+
 export function RosterCreator({
   events,
   rosters,
@@ -56,6 +58,18 @@ export function RosterCreator({
   const draftRoster = useMemo(() => {
     if (!selectedEvent || !selectedPreset) return undefined;
 
+    const attendingUserIds = new Set(
+      selectedEvent.signUps
+        .filter((signUp) => signUp.group !== SIGNUP_NOT_ATTENDING)
+        .map((signUp) => signUp.userId),
+    );
+    const reservePlayerIds = users
+      .filter((user) => attendingUserIds.has(user.id))
+      .map((user) => user.id);
+    const notAttendingPlayerIds = users
+      .filter((user) => !attendingUserIds.has(user.id))
+      .map((user) => user.id);
+
     return {
       id: "draft-roster",
       eventId: selectedEvent.id,
@@ -75,8 +89,8 @@ export function RosterCreator({
           }))
         ),
       })),
-      reservePlayerIds: users.map((user) => user.id),
-      notAttendingPlayerIds: [],
+      reservePlayerIds,
+      notAttendingPlayerIds,
       published: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

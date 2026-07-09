@@ -55,7 +55,7 @@ export default async function EventsPage({
               title: dictionary.tables.status,
               render: (event) => {
                 const meta = getEventStatusMeta(event.status, dictionary);
-                return <StatusBadge active={meta.active} activeLabel={meta.label} inactiveLabel={meta.label} />;
+                return <StatusBadge active={meta?.active} activeLabel={meta.label} inactiveLabel={meta.label} />;
               },
             },
             {

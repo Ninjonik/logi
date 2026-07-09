@@ -46,7 +46,7 @@ export default async function EventDetailPage({
       <PageHeader
         title={event.name}
         description={event.description}
-        badge={`${event.cap ? `${event.cap} • ` : ""}${statusMeta.label}`}
+        badge={`${event.cap ? `${event.cap} • ` : ""}${statusMeta?.label}`}
         actions={
           <div className="flex flex-wrap gap-2">
             {roster?.published ? (

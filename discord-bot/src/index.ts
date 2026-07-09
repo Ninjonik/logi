@@ -133,6 +133,7 @@ const ATTENDANCE_OFFSETS_HOURS = [24, 18, 12, 6];
 const listSyncPayloadsReference = makeFunctionReference<"query">("discord:listSyncPayloads");
 const updateEventSyncStateReference = makeFunctionReference<"mutation">("discord:updateEventSyncState");
 const getEventSignupContextReference = makeFunctionReference<"query">("discord:getEventSignupContext");
+const getEventInteractionContextReference = makeFunctionReference<"query">("discord:getEventInteractionContext");
 const toggleSignUpReference = makeFunctionReference<"mutation">("events:toggleSignUp");
 const reconcileStatusesReference = makeFunctionReference<"mutation">("events:reconcileStatuses");
 const appendAttendanceReminderLogReference = makeFunctionReference<"mutation">("events:appendAttendanceReminderLog");
@@ -372,19 +373,34 @@ async function handleSignupInteraction(interaction: ButtonInteraction) {
   const [, eventId, encodedGroupId] = interaction.customId.split(":");
   const groupId = decodeURIComponent(encodedGroupId);
 
-  const context = (await convex.query(getEventSignupContextReference, {
-    secret: internalSecret,
-    guildId: interaction.guildId!,
-    eventId: eventId as never,
-  })) as { config: DiscordConfig; event: EventRecord; groups: Group[]; roster: Roster | null } | null;
+  if (interaction.customId.startsWith("attendance:")) {
+    const context = (await convex.query(getEventInteractionContextReference, {
+      secret: internalSecret,
+      eventId: eventId as never,
+    })) as { config: DiscordConfig; event: EventRecord; groups: Group[]; roster: Roster | null } | null;
 
-  if (!context || !interaction.guildId) {
-    await interaction.reply({ content: "Unable to load event context.", ephemeral: true });
+    if (!context) {
+      await interaction.reply({ content: "Unable to load event context.", ephemeral: true });
+      return;
+    }
+
+    await handleAttendanceInteraction(interaction, context);
     return;
   }
 
-  if (interaction.customId.startsWith("attendance:")) {
-    await handleAttendanceInteraction(interaction, context);
+  if (!interaction.guildId) {
+    await interaction.reply({ content: "Signup buttons can only be used from the server event message.", ephemeral: true });
+    return;
+  }
+
+  const context = (await convex.query(getEventSignupContextReference, {
+    secret: internalSecret,
+    guildId: interaction.guildId,
+    eventId: eventId as never,
+  })) as { config: DiscordConfig; event: EventRecord; groups: Group[]; roster: Roster | null } | null;
+
+  if (!context) {
+    await interaction.reply({ content: "Unable to load event context.", ephemeral: true });
     return;
   }
 
@@ -433,13 +449,15 @@ async function handleAttendanceInteraction(
   interaction: ButtonInteraction,
   context: { config: DiscordConfig; event: EventRecord; groups: Group[]; roster: Roster | null },
 ) {
+  const replyOptions = { ephemeral: Boolean(interaction.guildId) };
+
   if (context.event.status !== "starting") {
-    await interaction.reply({ content: "Attendance acknowledgement is not open right now.", ephemeral: true });
+    await interaction.reply({ content: "Attendance acknowledgement is not open right now.", ...replyOptions });
     return;
   }
 
   if (!context.roster?.published) {
-    await interaction.reply({ content: "Roster is not published for this event yet.", ephemeral: true });
+    await interaction.reply({ content: "Roster is not published for this event yet.", ...replyOptions });
     return;
   }
 
@@ -448,7 +466,7 @@ async function handleAttendanceInteraction(
   );
 
   if (!isOnRoster) {
-    await interaction.reply({ content: "You are not on the roster for this event.", ephemeral: true });
+    await interaction.reply({ content: "You are not on the roster for this event.", ...replyOptions });
     return;
   }
 
@@ -462,7 +480,7 @@ async function handleAttendanceInteraction(
     void pollLoop();
   }, 2000);
 
-  await interaction.reply({ content: "Attendance acknowledged.", ephemeral: true });
+  await interaction.reply({ content: "Attendance acknowledged.", ...replyOptions });
 }
 
 // Helper to generate a Google Calendar link from event times
@@ -637,6 +655,24 @@ function buildSignupButtons(groups: Group[], eventId: string, event: EventRecord
   return rows;
 }
 
+function buildDiscordMessageLink(guildId: string, channelId?: string, messageId?: string) {
+  if (!channelId) return null;
+  return messageId
+    ? `https://discord.com/channels/${guildId}/${channelId}/${messageId}`
+    : `https://discord.com/channels/${guildId}/${channelId}`;
+}
+
+function buildAttendanceReminderComponents(eventId: string) {
+  return [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`attendance:${eventId}:ack`)
+        .setStyle(ButtonStyle.Success)
+        .setLabel("Acknowledge attendance"),
+    ),
+  ];
+}
+
 async function processAttendanceReminders(payload: SyncPayload) {
   const guild = await client.guilds.fetch(payload.config.guildId).catch(() => null);
   if (!guild) return;
@@ -646,6 +682,7 @@ async function processAttendanceReminders(payload: SyncPayload) {
 
     const roster = payload.rosters.find((item) => item.eventId === event.id && item.published);
     if (!roster) continue;
+    const syncState = payload.syncStates.find((item) => item.eventId === event.id);
 
     const meetingStartMs = new Date(event.meetingStart).getTime();
     if (!Number.isFinite(meetingStartMs)) continue;
@@ -675,14 +712,22 @@ async function processAttendanceReminders(payload: SyncPayload) {
         if (!user) continue;
 
         const sentAt = new Date().toISOString();
+        const eventMessageUrl =
+          buildDiscordMessageLink(payload.config.guildId, syncState?.announcementChannelId, syncState?.announcementMessageId) ??
+          buildDiscordMessageLink(payload.config.guildId, syncState?.forumChannelId, syncState?.infoMessageId);
         const message = [
           `Attendance check for **${event.name}**.`,
           `Please acknowledge before the meeting if you can still make it.`,
           `Meeting: <t:${Math.floor(meetingStartMs / 1000)}:F>`,
-        ].join("\n");
+          eventMessageUrl ? `Event thread: [open in Discord](${eventMessageUrl})` : null,
+        ]
+          .filter((line): line is string => Boolean(line))
+          .join("\n");
+
+        const components = buildAttendanceReminderComponents(event.id);
 
         try {
-          await user.send(message);
+          await user.send({ content: message, components });
         } catch {
           continue;
         }

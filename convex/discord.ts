@@ -194,6 +194,38 @@ export const getEventSignupContext = query({
   },
 });
 
+export const getEventInteractionContext = query({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      return null;
+    }
+
+    const [config, groups, roster] = await Promise.all([
+      ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", event.guildId)).unique(),
+      ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", event.guildId)).collect(),
+      ctx.db.query("rosters").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique(),
+    ]);
+
+    if (!config) {
+      return null;
+    }
+
+    return {
+      config: normalizeDoc(config),
+      event: normalizeEventDoc(event),
+      groups: groups.map(normalizeDoc),
+      roster: roster ? normalizeDoc(roster) : null,
+    };
+  },
+});
+
 export const updateEventSyncState = mutation({
   args: {
     secret: v.string(),
