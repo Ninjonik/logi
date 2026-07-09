@@ -53,6 +53,12 @@ const signUp = v.object({
   group: v.optional(v.union(v.string(), v.null())),
 });
 
+const attendanceReminder = v.object({
+  userId: v.string(),
+  offsetHours: v.number(),
+  sentAt: v.string(),
+});
+
 const rosterPlayer = v.object({
   id: v.optional(v.string()),
   ack: v.boolean(),
@@ -140,6 +146,15 @@ export default defineSchema({
     gameEnd: v.string(),
     pingClan: v.boolean(),
     topicPresetId: v.optional(v.id("topicPresets")),
+    status: v.union(
+      v.literal("registration"),
+      v.literal("closed"),
+      v.literal("starting"),
+      v.literal("concluded"),
+    ),
+    statusUpdatedAt: v.string(),
+    concludedAt: v.optional(v.string()),
+    attendanceReminderLog: v.array(attendanceReminder),
     signUps: v.array(signUp),
     createdAt: v.string(),
     updatedAt: v.string(),

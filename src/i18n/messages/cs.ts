@@ -295,7 +295,15 @@ export const csMessages = {
     optionalLabel: "Volitelné",
     noPreset: "Bez šablony",
     topicPreset: "Šablona tématu",
+    conclude: "Ukončit akci",
+    concludedSuccess: "Akce ukončena",
     saveHelp: "Název a čtyři časová pole jsou povinné. Všechno ostatní je volitelné.",
+    statuses: {
+      registration: "Registrace",
+      closed: "Uzavřeno",
+      starting: "Začíná",
+      concluded: "Ukončeno",
+    },
     fields: {
       name: "Název",
       description: "Popis",
@@ -390,6 +398,7 @@ export const csMessages = {
   tables: {
     event: "Akce",
     meeting: "Sraz",
+    status: "Stav",
     pingClan: "Upozornit klan (Ping)",
     enabled: "Zapnuto",
     disabled: "Vypnuto",

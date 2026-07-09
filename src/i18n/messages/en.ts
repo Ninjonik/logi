@@ -295,7 +295,15 @@ export const enMessages = {
     optionalLabel: "Optional",
     noPreset: "No preset",
     topicPreset: "Topic preset",
+    conclude: "Conclude event",
+    concludedSuccess: "Event concluded",
     saveHelp: "Name and the four timeline fields are required. Everything else is optional.",
+    statuses: {
+      registration: "Registration",
+      closed: "Closed",
+      starting: "Starting",
+      concluded: "Concluded",
+    },
     fields: {
       name: "Name",
       description: "Description",
@@ -390,6 +398,7 @@ export const enMessages = {
   tables: {
     event: "Event",
     meeting: "Meeting",
+    status: "Status",
     pingClan: "Ping clan",
     enabled: "Enabled",
     disabled: "Disabled",

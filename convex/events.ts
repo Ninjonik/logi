@@ -9,6 +9,39 @@ function assertInternalSecret(secret: string) {
   }
 }
 
+const attendanceReminder = v.object({
+  userId: v.string(),
+  offsetHours: v.number(),
+  sentAt: v.string(),
+});
+
+function deriveEventStatus(event: {
+  registrationEnd: string;
+  meetingStart: string;
+  gameEnd: string;
+  status: "registration" | "closed" | "starting" | "concluded";
+}) {
+  if (event.status === "concluded") {
+    return "concluded" as const;
+  }
+
+  const now = Date.now();
+  const registrationEnd = new Date(event.registrationEnd).getTime();
+  const startingAt = new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000;
+  const gameEnd = new Date(event.gameEnd).getTime();
+
+  if (Number.isFinite(gameEnd) && now >= gameEnd) {
+    return "concluded" as const;
+  }
+  if (Number.isFinite(startingAt) && now >= startingAt) {
+    return "starting" as const;
+  }
+  if (Number.isFinite(registrationEnd) && now >= registrationEnd) {
+    return "closed" as const;
+  }
+  return "registration" as const;
+}
+
 export const upsert = mutation({
   args: {
     secret: v.string(),
@@ -53,17 +86,36 @@ export const upsert = mutation({
       gameEnd: args.gameEnd,
       pingClan: args.pingClan,
       topicPresetId: args.topicPresetId,
+      status: "registration" as const,
       updatedAt: new Date().toISOString(),
     };
 
     if (args.eventId) {
-      await ctx.db.patch(args.eventId, payload);
+      const existing = await ctx.db.get(args.eventId);
+      const derivedStatus = existing
+        ? deriveEventStatus({
+          registrationEnd: args.registrationEnd,
+          meetingStart: args.meetingStart,
+          gameEnd: args.gameEnd,
+          status: existing.status,
+        })
+        : "registration";
+
+      await ctx.db.patch(args.eventId, {
+        ...payload,
+        status: derivedStatus,
+        statusUpdatedAt: new Date().toISOString(),
+        concludedAt: derivedStatus === "concluded" ? existing?.concludedAt ?? new Date().toISOString() : undefined,
+      });
       return String(args.eventId);
     }
 
     const now = new Date().toISOString();
     const eventId = await ctx.db.insert("events", {
       ...payload,
+      status: "registration",
+      statusUpdatedAt: now,
+      attendanceReminderLog: [],
       signUps: [],
       createdAt: now,
       updatedAt: now,
@@ -98,6 +150,10 @@ export const toggleSignUp = mutation({
       throw new Error("Event not found.");
     }
 
+    if (event.status !== "registration") {
+      throw new Error("Signups are closed for this event.");
+    }
+
     const existing = event.signUps.find((signUp) => signUp.userId === args.userId);
     let signUps = event.signUps.filter((signUp) => signUp.userId !== args.userId);
 
@@ -111,5 +167,81 @@ export const toggleSignUp = mutation({
     });
 
     return signUps;
+  },
+});
+
+export const reconcileStatuses = mutation({
+  args: {
+    secret: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const events = await ctx.db.query("events").collect();
+    const now = new Date().toISOString();
+    const changedEventIds: string[] = [];
+
+    for (const event of events) {
+      const nextStatus = deriveEventStatus(event);
+      if (nextStatus === event.status) continue;
+
+      await ctx.db.patch(event._id, {
+        status: nextStatus,
+        statusUpdatedAt: now,
+        concludedAt: nextStatus === "concluded" ? event.concludedAt ?? now : undefined,
+        updatedAt: now,
+      });
+      changedEventIds.push(String(event._id));
+    }
+
+    return changedEventIds;
+  },
+});
+
+export const conclude = mutation({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      throw new Error("Event not found.");
+    }
+
+    const now = new Date().toISOString();
+    await ctx.db.patch(args.eventId, {
+      status: "concluded",
+      statusUpdatedAt: now,
+      concludedAt: now,
+      updatedAt: now,
+    });
+
+    return { ok: true };
+  },
+});
+
+export const appendAttendanceReminderLog = mutation({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+    reminders: v.array(attendanceReminder),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      throw new Error("Event not found.");
+    }
+
+    await ctx.db.patch(args.eventId, {
+      attendanceReminderLog: [...event.attendanceReminderLog, ...args.reminders],
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { ok: true };
   },
 });

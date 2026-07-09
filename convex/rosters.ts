@@ -70,3 +70,44 @@ export const getByEventId = query({
       .unique();
   },
 });
+
+export const acknowledgeAttendance = mutation({
+  args: {
+    eventId: v.id("events"),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const roster = await ctx.db
+      .query("rosters")
+      .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
+      .unique();
+
+    if (!roster) {
+      throw new Error("Roster not found.");
+    }
+
+    let found = false;
+    const squads = roster.squads.map((squad) => ({
+      ...squad,
+      players: squad.players.map((player) => {
+        if (player.id !== args.userId) {
+          return player;
+        }
+
+        found = true;
+        return { ...player, ack: true };
+      }),
+    }));
+
+    if (!found) {
+      throw new Error("User is not on the roster.");
+    }
+
+    await ctx.db.patch(roster._id, {
+      squads,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { ok: true };
+  },
+});

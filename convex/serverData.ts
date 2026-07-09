@@ -8,6 +8,50 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   };
 }
 
+function deriveEventStatus(event: {
+  registrationEnd: string;
+  meetingStart: string;
+  gameEnd: string;
+  status?: string;
+}) {
+  if (event.status === "concluded") {
+    return "concluded" as const;
+  }
+
+  const now = Date.now();
+  const registrationEnd = new Date(event.registrationEnd).getTime();
+  const startingAt = new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000;
+  const gameEnd = new Date(event.gameEnd).getTime();
+
+  if (Number.isFinite(gameEnd) && now >= gameEnd) return "concluded" as const;
+  if (Number.isFinite(startingAt) && now >= startingAt) return "starting" as const;
+  if (Number.isFinite(registrationEnd) && now >= registrationEnd) return "closed" as const;
+  return "registration" as const;
+}
+
+function normalizeEventDoc<
+  T extends {
+    _id: unknown;
+    registrationEnd: string;
+    meetingStart: string;
+    gameEnd: string;
+    status?: "registration" | "closed" | "starting" | "concluded";
+    statusUpdatedAt?: string;
+    concludedAt?: string;
+    attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
+    updatedAt?: string;
+    createdAt?: string;
+  },
+>(event: T) {
+  return {
+    ...normalizeDoc(event),
+    status: event.status ?? deriveEventStatus(event),
+    statusUpdatedAt: event.statusUpdatedAt ?? event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
+    concludedAt: event.concludedAt,
+    attendanceReminderLog: event.attendanceReminderLog ?? [],
+  };
+}
+
 function normalizeAssignmentDoc<
   T extends {
     _id: unknown;
@@ -85,7 +129,7 @@ export const getServerContext = query({
       user,
       server,
       canAdmin,
-      events: events.map(normalizeDoc),
+      events: events.map(normalizeEventDoc),
       topicPresets: topicPresets.map(normalizeDoc),
       squadPresets: squadPresets.map(normalizeDoc),
       rosters: relevantRosters.map(normalizeDoc),

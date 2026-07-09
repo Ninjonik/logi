@@ -4,6 +4,7 @@ import { makeFunctionReference } from "convex/server";
 import { getInternalAuthSecret } from "@/lib/env";
 
 const upsertEventReference = makeFunctionReference<"mutation">("events:upsert");
+const concludeEventReference = makeFunctionReference<"mutation">("events:conclude");
 
 export async function saveServerEvent(input: {
   eventId?: string;
@@ -41,5 +42,14 @@ export async function saveServerEvent(input: {
     gameEnd: input.gameEnd,
     pingClan: input.pingClan,
     topicPresetId: input.topicPresetId as never,
+  });
+}
+
+export async function concludeServerEvent(input: {
+  eventId: string;
+}) {
+  return await fetchMutation(concludeEventReference, {
+    secret: getInternalAuthSecret(),
+    eventId: input.eventId as never,
   });
 }

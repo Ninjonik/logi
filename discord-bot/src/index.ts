@@ -74,11 +74,33 @@ type EventRecord = {
   gameEnd: string;
   pingClan: boolean;
   topicPresetId?: string;
+  status: "registration" | "closed" | "starting" | "concluded";
+  statusUpdatedAt: string;
+  concludedAt?: string;
+  attendanceReminderLog: Array<{
+    userId: string;
+    offsetHours: number;
+    sentAt: string;
+  }>;
   signUps: Array<{
     userId: string;
     group?: string | null;
   }>;
   updatedAt: string;
+};
+
+type Roster = {
+  id: string;
+  eventId: string;
+  published: boolean;
+  squads: Array<{
+    name: string;
+    players: Array<{
+      id?: string;
+      ack: boolean;
+      roleName?: string;
+    }>;
+  }>;
 };
 
 type SyncState = {
@@ -100,16 +122,21 @@ type SyncPayload = {
   config: DiscordConfig;
   groups: Group[];
   events: EventRecord[];
+  rosters: Roster[];
   topicPresets: TopicPreset[];
   syncStates: SyncState[];
 };
 
 const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING";
+const ATTENDANCE_OFFSETS_HOURS = [24, 18, 12, 6];
 
 const listSyncPayloadsReference = makeFunctionReference<"query">("discord:listSyncPayloads");
 const updateEventSyncStateReference = makeFunctionReference<"mutation">("discord:updateEventSyncState");
 const getEventSignupContextReference = makeFunctionReference<"query">("discord:getEventSignupContext");
 const toggleSignUpReference = makeFunctionReference<"mutation">("events:toggleSignUp");
+const reconcileStatusesReference = makeFunctionReference<"mutation">("events:reconcileStatuses");
+const appendAttendanceReminderLogReference = makeFunctionReference<"mutation">("events:appendAttendanceReminderLog");
+const acknowledgeAttendanceReference = makeFunctionReference<"mutation">("rosters:acknowledgeAttendance");
 const syncMemberAccessReference = makeFunctionReference<"mutation">("discord:syncMemberAccess");
 
 const convexUrl =
@@ -141,7 +168,7 @@ client.once(Events.ClientReady, async (readyClient) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
-  if (!interaction.customId.startsWith("signup:")) return;
+  if (!interaction.customId.startsWith("signup:") && !interaction.customId.startsWith("attendance:")) return;
 
   await handleSignupInteraction(interaction);
 });
@@ -151,6 +178,10 @@ async function pollLoop() {
   isSyncing = true;
 
   try {
+    await convex.mutation(reconcileStatusesReference, {
+      secret: internalSecret,
+    });
+
     const payloads = (await convex.query(listSyncPayloadsReference, {
       secret: internalSecret,
     })) as SyncPayload[];
@@ -167,6 +198,7 @@ async function pollLoop() {
 
 async function syncGuildPayload(payload: SyncPayload) {
   await syncGuildMemberAccess(payload);
+  await processAttendanceReminders(payload);
 
   for (const event of payload.events) {
     const state = payload.syncStates.find((item) => item.eventId === event.id);
@@ -344,10 +376,20 @@ async function handleSignupInteraction(interaction: ButtonInteraction) {
     secret: internalSecret,
     guildId: interaction.guildId!,
     eventId: eventId as never,
-  })) as { config: DiscordConfig; event: EventRecord; groups: Group[] } | null;
+  })) as { config: DiscordConfig; event: EventRecord; groups: Group[]; roster: Roster | null } | null;
 
   if (!context || !interaction.guildId) {
     await interaction.reply({ content: "Unable to load event context.", ephemeral: true });
+    return;
+  }
+
+  if (interaction.customId.startsWith("attendance:")) {
+    await handleAttendanceInteraction(interaction, context);
+    return;
+  }
+
+  if (context.event.status !== "registration") {
+    await interaction.reply({ content: "Registration is already closed for this event.", ephemeral: true });
     return;
   }
 
@@ -387,6 +429,42 @@ async function handleSignupInteraction(interaction: ButtonInteraction) {
   });
 }
 
+async function handleAttendanceInteraction(
+  interaction: ButtonInteraction,
+  context: { config: DiscordConfig; event: EventRecord; groups: Group[]; roster: Roster | null },
+) {
+  if (context.event.status !== "starting") {
+    await interaction.reply({ content: "Attendance acknowledgement is not open right now.", ephemeral: true });
+    return;
+  }
+
+  if (!context.roster?.published) {
+    await interaction.reply({ content: "Roster is not published for this event yet.", ephemeral: true });
+    return;
+  }
+
+  const isOnRoster = context.roster.squads.some((squad) =>
+    squad.players.some((player) => player.id === interaction.user.id),
+  );
+
+  if (!isOnRoster) {
+    await interaction.reply({ content: "You are not on the roster for this event.", ephemeral: true });
+    return;
+  }
+
+  await convex.mutation(acknowledgeAttendanceReference, {
+    eventId: context.event.id as never,
+    userId: interaction.user.id,
+  });
+
+  queuedEventIds.add(context.event.id);
+  setTimeout(() => {
+    void pollLoop();
+  }, 2000);
+
+  await interaction.reply({ content: "Attendance acknowledged.", ephemeral: true });
+}
+
 // Helper to generate a Google Calendar link from event times
 function generateCalendarUrl(event: EventRecord): string {
   const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";
@@ -403,12 +481,13 @@ function generateCalendarUrl(event: EventRecord): string {
 }
 
 function buildAnnouncementMessage(payload: SyncPayload, event: EventRecord) {
-  const embed = buildEventEmbed(payload.config, payload.groups, event);
-  const signupButtons = buildSignupButtons(payload.config, payload.groups, event.id, event);
-  return { embed, components: signupButtons };
+  const roster = payload.rosters.find((item) => item.eventId === event.id);
+  const embed = buildEventEmbed(payload.config, payload.groups, event, roster);
+  const components = buildEventComponents(payload.groups, event, roster);
+  return { embed, components };
 }
 
-function buildEventEmbed(config: DiscordConfig, groups: Group[], event: EventRecord) {
+function buildEventEmbed(config: DiscordConfig, groups: Group[], event: EventRecord, roster?: Roster) {
   const signupsByGroup = new Map<string, string[]>();
   for (const signUp of event.signUps) {
     const key = signUp.group ?? SIGNUP_NOT_ATTENDING;
@@ -444,6 +523,7 @@ function buildEventEmbed(config: DiscordConfig, groups: Group[], event: EventRec
   descriptionLines.push(`**⏰ Registration Ends:** <t:${regEndUnix}:R> (<t:${regEndUnix}:f>)`);
   descriptionLines.push(`**📢 Headcount / Meeting:** <t:${meetingUnix}:t>`);
   descriptionLines.push(`**🚀 Match Start:** <t:${gameStartUnix}:F>`);
+  descriptionLines.push(`**📌 Status:** ${formatEventStatus(event.status)}`);
 
   const embed = new EmbedBuilder()
     .setTitle(`📅 ${event.name}`)
@@ -452,27 +532,77 @@ function buildEventEmbed(config: DiscordConfig, groups: Group[], event: EventRec
     .setFooter({ text: `Managed via Logi • Times adapt to your device` });
 
   // Add Group sign-ups as clean field sections
-  for (const group of groups) {
-    const members = signupsByGroup.get(group.name) ?? [];
+  if (event.status === "starting" && roster?.published) {
+    const rosterFields = roster.squads
+      .map((squad) => {
+        const players = squad.players
+          .filter((player) => player.id)
+          .map((player) => `${player.ack ? "✅" : "🟡"} <@${player.id}>${player.roleName ? ` - ${player.roleName}` : ""}`);
+        return {
+          name: `${squad.name} (${players.length})`,
+          value: players.length ? players.join("\n").slice(0, 1024) : "*No players assigned*",
+          inline: false,
+        };
+      })
+      .slice(0, 25);
+
+    if (rosterFields.length) {
+      embed.addFields(rosterFields);
+    }
+  } else {
+    for (const group of groups) {
+      const members = signupsByGroup.get(group.name) ?? [];
+      embed.addFields({
+        name: `${group.discordEmoji ?? "👥"} ${group.name} (${members.length})`,
+        value: members.length ? members.join(", ") : "*Nobody yet*",
+        inline: false,
+      });
+    }
+
+    const nonAttending = signupsByGroup.get(SIGNUP_NOT_ATTENDING) ?? [];
     embed.addFields({
-      name: `${group.discordEmoji ?? "👥"} ${group.name} (${members.length})`,
-      value: members.length ? members.join(", ") : "*Nobody yet*",
+      name: `❌ Not Attending (${nonAttending.length})`,
+      value: nonAttending.length ? nonAttending.join(", ") : "*Nobody yet*",
       inline: false,
     });
   }
 
-  // Add Absences
-  const nonAttending = signupsByGroup.get(SIGNUP_NOT_ATTENDING) ?? [];
-  embed.addFields({
-    name: `❌ Not Attending (${nonAttending.length})`,
-    value: nonAttending.length ? nonAttending.join(", ") : "*Nobody yet*",
-    inline: false,
-  });
-
   return embed;
 }
 
-function buildSignupButtons(config: DiscordConfig, groups: Group[], eventId: string, event: EventRecord) {
+function buildEventComponents(groups: Group[], event: EventRecord, roster?: Roster) {
+  if (event.status === "registration") {
+    return buildSignupButtons(groups, event.id, event);
+  }
+
+  if (event.status === "starting" && roster?.published) {
+    return [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`attendance:${event.id}:ack`)
+          .setStyle(ButtonStyle.Success)
+          .setLabel("Acknowledge attendance"),
+        new ButtonBuilder()
+          .setStyle(ButtonStyle.Link)
+          .setLabel("Add to Calendar")
+          .setEmoji("➕")
+          .setURL(generateCalendarUrl(event)),
+      ),
+    ];
+  }
+
+  return [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel("Add to Calendar")
+        .setEmoji("➕")
+        .setURL(generateCalendarUrl(event)),
+    ),
+  ];
+}
+
+function buildSignupButtons(groups: Group[], eventId: string, event: EventRecord) {
   const allButtons = [
     ...groups.map((group) => {
       const button = new ButtonBuilder()
@@ -505,6 +635,84 @@ function buildSignupButtons(config: DiscordConfig, groups: Group[], eventId: str
     rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(allButtons.slice(index, index + 5)));
   }
   return rows;
+}
+
+async function processAttendanceReminders(payload: SyncPayload) {
+  const guild = await client.guilds.fetch(payload.config.guildId).catch(() => null);
+  if (!guild) return;
+
+  for (const event of payload.events) {
+    if (event.status !== "starting") continue;
+
+    const roster = payload.rosters.find((item) => item.eventId === event.id && item.published);
+    if (!roster) continue;
+
+    const meetingStartMs = new Date(event.meetingStart).getTime();
+    if (!Number.isFinite(meetingStartMs)) continue;
+
+    const unacknowledgedUserIds = new Set(
+      roster.squads.flatMap((squad) =>
+        squad.players.filter((player) => player.id && !player.ack).map((player) => player.id!),
+      ),
+    );
+
+    if (!unacknowledgedUserIds.size) continue;
+
+    const now = Date.now();
+    const remindersToLog: Array<{ userId: string; offsetHours: number; sentAt: string }> = [];
+
+    for (const offsetHours of ATTENDANCE_OFFSETS_HOURS) {
+      const triggerTime = meetingStartMs - offsetHours * 60 * 60 * 1000;
+      if (now < triggerTime) continue;
+
+      for (const userId of unacknowledgedUserIds) {
+        const alreadySent = event.attendanceReminderLog.some(
+          (entry) => entry.userId === userId && entry.offsetHours === offsetHours,
+        );
+        if (alreadySent) continue;
+
+        const user = await client.users.fetch(userId).catch(() => null);
+        if (!user) continue;
+
+        const sentAt = new Date().toISOString();
+        const message = [
+          `Attendance check for **${event.name}**.`,
+          `Please acknowledge before the meeting if you can still make it.`,
+          `Meeting: <t:${Math.floor(meetingStartMs / 1000)}:F>`,
+        ].join("\n");
+
+        try {
+          await user.send(message);
+        } catch {
+          continue;
+        }
+
+        remindersToLog.push({ userId, offsetHours, sentAt });
+      }
+    }
+
+    if (remindersToLog.length) {
+      await convex.mutation(appendAttendanceReminderLogReference, {
+        secret: internalSecret,
+        eventId: event.id as never,
+        reminders: remindersToLog,
+      });
+      queuedEventIds.add(event.id);
+    }
+  }
+}
+
+function formatEventStatus(status: EventRecord["status"]) {
+  switch (status) {
+    case "registration":
+      return "Registration";
+    case "closed":
+      return "Closed";
+    case "starting":
+      return "Starting";
+    case "concluded":
+      return "Concluded";
+  }
 }
 
 function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord) {

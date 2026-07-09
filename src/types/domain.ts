@@ -1,5 +1,7 @@
 export type Timestamp = string;
 
+export type EventStatus = "registration" | "closed" | "starting" | "concluded";
+
 export type AppUser = {
   _reserveSection?: string;
   id: string;
@@ -97,6 +99,14 @@ export type EventRecord = {
   gameEnd: Timestamp;
   pingClan: boolean;
   topicPresetId?: string;
+  status: EventStatus;
+  statusUpdatedAt: Timestamp;
+  concludedAt?: Timestamp;
+  attendanceReminderLog: {
+    userId: string;
+    offsetHours: number;
+    sentAt: Timestamp;
+  }[];
   signUps: {
     userId: string;
     group?: string | null;

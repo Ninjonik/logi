@@ -7,6 +7,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getServerContext } from "@/lib/server-context";
 import { formatDateTime } from "@/lib/format";
+import { getEventStatusMeta } from "@/lib/event-status";
 
 export async function generateMetadata({
   params,
@@ -49,6 +50,14 @@ export default async function EventsPage({
             { key: "name", title: dictionary.tables.event, render: (event) => <div className="font-medium">{event.name}</div> },
             { key: "meetingStart", title: dictionary.tables.meeting, render: (event) => formatDateTime(event.meetingStart, discordConfig?.timezone) },
             { key: "map", title: dictionary.calendarCards.map, render: (event) => `${event.map ?? "TBD"} • ${event.side ?? "TBD"}` },
+            {
+              key: "status",
+              title: dictionary.tables.status,
+              render: (event) => {
+                const meta = getEventStatusMeta(event.status, dictionary);
+                return <StatusBadge active={meta.active} activeLabel={meta.label} inactiveLabel={meta.label} />;
+              },
+            },
             {
               key: "pingClan",
               title: dictionary.event.fields.pingClan,

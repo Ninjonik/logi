@@ -7,9 +7,7 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="qol improvements">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="qol improvements" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -146,6 +144,7 @@
       <workItem from="1783420423002" duration="106000" />
       <workItem from="1783423976557" duration="9572000" />
       <workItem from="1783535088350" duration="49000" />
+      <workItem from="1783544549975" duration="36000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -219,7 +218,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783435308616</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="qol improvements">
+      <option name="closed" value="true" />
+      <created>1783544581175</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1783544581175</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

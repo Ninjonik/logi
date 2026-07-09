@@ -16,6 +16,48 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   };
 }
 
+function deriveEventStatus(event: {
+  registrationEnd: string;
+  meetingStart: string;
+  gameEnd: string;
+  status?: string;
+}) {
+  if (event.status === "concluded") {
+    return "concluded" as const;
+  }
+
+  const now = Date.now();
+  const registrationEnd = new Date(event.registrationEnd).getTime();
+  const startingAt = new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000;
+  const gameEnd = new Date(event.gameEnd).getTime();
+
+  if (Number.isFinite(gameEnd) && now >= gameEnd) return "concluded" as const;
+  if (Number.isFinite(startingAt) && now >= startingAt) return "starting" as const;
+  if (Number.isFinite(registrationEnd) && now >= registrationEnd) return "closed" as const;
+  return "registration" as const;
+}
+
+function normalizeEventDoc<T extends {
+  _id: unknown;
+  registrationEnd: string;
+  meetingStart: string;
+  gameEnd: string;
+  status?: "registration" | "closed" | "starting" | "concluded";
+  statusUpdatedAt?: string;
+  concludedAt?: string;
+  attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
+  updatedAt?: string;
+  createdAt?: string;
+}>(event: T) {
+  return {
+    ...normalizeDoc(event),
+    status: event.status ?? deriveEventStatus(event),
+    statusUpdatedAt: event.statusUpdatedAt ?? event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
+    concludedAt: event.concludedAt,
+    attendanceReminderLog: event.attendanceReminderLog ?? [],
+  };
+}
+
 export const getConfigByGuild = query({
   args: {
     guildId: v.string(),
@@ -85,12 +127,13 @@ export const listSyncPayloads = query({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const [configs, groups, events, topicPresets, syncStates] = await Promise.all([
+    const [configs, groups, events, topicPresets, syncStates, rosters] = await Promise.all([
       ctx.db.query("discordConfigs").collect(),
       ctx.db.query("groups").collect(),
       ctx.db.query("events").collect(),
       ctx.db.query("topicPresets").collect(),
       ctx.db.query("discordEventSyncs").collect(),
+      ctx.db.query("rosters").collect(),
     ]);
 
     return configs.map((config) => {
@@ -99,18 +142,22 @@ export const listSyncPayloads = query({
         .map((group) => normalizeDoc(group));
       const guildEvents = events
         .filter((event) => event.guildId === config.guildId)
-        .map((event) => normalizeDoc(event));
+        .map((event) => normalizeEventDoc(event));
       const guildTopicPresets = topicPresets
         .filter((preset) => preset.guildId === config.guildId)
         .map((preset) => normalizeDoc(preset));
       const guildSyncStates = syncStates
         .filter((state) => state.guildId === config.guildId)
         .map((state) => normalizeDoc(state));
+      const guildRosters = rosters
+        .filter((roster) => guildEvents.some((event) => String(roster.eventId) === event.id))
+        .map((roster) => normalizeDoc(roster));
 
       return {
         config: normalizeDoc(config),
         groups: guildGroups,
         events: guildEvents,
+        rosters: guildRosters,
         topicPresets: guildTopicPresets,
         syncStates: guildSyncStates,
       };
@@ -127,10 +174,11 @@ export const getEventSignupContext = query({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const [config, event, groups] = await Promise.all([
+    const [config, event, groups, roster] = await Promise.all([
       ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", args.guildId)).unique(),
       ctx.db.get(args.eventId),
       ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", args.guildId)).collect(),
+      ctx.db.query("rosters").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique(),
     ]);
 
     if (!config || !event || event.guildId !== args.guildId) {
@@ -139,8 +187,9 @@ export const getEventSignupContext = query({
 
     return {
       config: normalizeDoc(config),
-      event: normalizeDoc(event),
+      event: normalizeEventDoc(event),
       groups: groups.map(normalizeDoc),
+      roster: roster ? normalizeDoc(roster) : null,
     };
   },
 });

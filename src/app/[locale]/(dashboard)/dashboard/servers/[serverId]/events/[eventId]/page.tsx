@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 
+import { ConcludeEventButton } from "@/components/app/conclude-event-button";
 import { EventFormPanel } from "@/components/app/event-form-panel";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getEventStatusMeta } from "@/lib/event-status";
 import { getServerContext } from "@/lib/server-context";
 
 export async function generateMetadata({
@@ -37,18 +39,30 @@ export default async function EventDetailPage({
 
   if (!event) return null;
 
+  const statusMeta = getEventStatusMeta(event.status, dictionary);
+
   return (
     <>
       <PageHeader
         title={event.name}
         description={event.description}
-        badge={event.cap}
+        badge={`${event.cap ? `${event.cap} • ` : ""}${statusMeta.label}`}
         actions={
-          roster?.published ? (
-            <Button asChild variant="outline" className="rounded-xl">
-              <a href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}>{dictionary.event.showRoster}</a>
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap gap-2">
+            {roster?.published ? (
+              <Button asChild variant="outline" className="rounded-xl">
+                <a href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}>{dictionary.event.showRoster}</a>
+              </Button>
+            ) : null}
+            {canAdmin ? (
+              <ConcludeEventButton
+                serverId={serverId}
+                eventId={event.id}
+                disabled={event.status === "concluded"}
+                dictionary={dictionary}
+              />
+            ) : null}
+          </div>
         }
       />
       <div className="px-4 lg:px-6">
