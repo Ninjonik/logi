@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,14 +12,17 @@ import {
 } from "@/components/ui/breadcrumb";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
+import type { Guild } from "@/types/domain";
 import React from "react";
 
 export function AppBreadcrumbs({
   dictionary,
   locale,
+  servers,
 }: {
   dictionary: Dictionary;
   locale: Locale;
+  servers: Guild[];
 }) {
   const pathname = usePathname();
   const params = useParams();
@@ -32,36 +33,7 @@ export function AppBreadcrumbs({
   const groupId = params.groupId as string | undefined;
   const presetId = params.presetId as string | undefined;
   const assignmentId = params.assignmentId as string | undefined;
-
-  // Live queries for dynamic names
-  const server = useQuery(
-    api.guilds.getById,
-    serverId ? { guildId: serverId } : "skip"
-  );
-  const event = useQuery(
-    api.events.getById,
-    eventId ? { eventId: eventId as any } : "skip"
-  );
-  const roster = useQuery(
-    api.serverData.getRosterById,
-    rosterId ? { rosterId: rosterId as any } : "skip"
-  );
-  const group = useQuery(
-    api.groups.getById,
-    groupId ? { groupId: groupId as any } : "skip"
-  );
-  const squadPreset = useQuery(
-    api.serverData.getSquadPresetById,
-    presetId && pathname.includes("squad-presets") ? { presetId: presetId as any } : "skip"
-  );
-  const topicPreset = useQuery(
-    api.serverData.getTopicPresetById,
-    presetId && pathname.includes("topic-presets") ? { presetId: presetId as any } : "skip"
-  );
-  const assignment = useQuery(
-    api.serverData.getAssignmentWithUser,
-    assignmentId ? { assignmentId: assignmentId as any } : "skip"
-  );
+  const server = servers.find((item) => item.id === serverId);
 
   const segments = pathname.split("/").filter(Boolean);
   
@@ -103,19 +75,19 @@ export function AppBreadcrumbs({
     } else if (segment === "create") {
       label = dictionary.common.create;
     } else if (segment === eventId) {
-      label = event?.name || dictionary.common.unknown;
+      label = dictionary.event.infoTitle;
     } else if (segment === rosterId) {
-      label = roster ? (event?.name ? `${event.name} ${dictionary.roster.title}` : dictionary.roster.title) : dictionary.common.unknown;
+      label = dictionary.roster.title;
     } else if (segment === groupId) {
-      label = group?.name || dictionary.common.unknown;
+      label = dictionary.sidebar.groups;
     } else if (segment === presetId) {
       if (pathname.includes("squad-presets")) {
-        label = squadPreset?.name || dictionary.common.unknown;
+        label = dictionary.presets.squadPresetMetaFallback;
       } else {
-        label = topicPreset?.name || dictionary.common.unknown;
+        label = dictionary.presets.topicPresetMetaFallback;
       }
     } else if (segment === assignmentId) {
-      label = assignment?.userName || dictionary.common.unknown;
+      label = dictionary.sidebar.users;
     }
 
     items.push({ label, href: currentHref, isLast });

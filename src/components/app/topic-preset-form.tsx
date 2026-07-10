@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Paperclip, Plus, Save, Trash2, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
+import type { FieldErrors } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -24,13 +25,34 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
   );
 }
 
-function newTopic() {
+function newTopic(title = "") {
   return {
     id: crypto.randomUUID(),
-    title: "",
+    title,
     body: "",
     attachments: [],
   };
+}
+
+function getFirstErrorMessage(errors: FieldErrors<TopicPresetInput>): string | undefined {
+  if (typeof errors.name?.message === "string") return errors.name.message;
+  if (typeof errors.topics?.message === "string") return errors.topics.message;
+  if (typeof errors.topics?.root?.message === "string") return errors.topics.root.message;
+
+  if (Array.isArray(errors.topics)) {
+    for (const topic of errors.topics) {
+      if (typeof topic?.title?.message === "string") return topic.title.message;
+      if (typeof topic?.body?.message === "string") return topic.body.message;
+      if (typeof topic?.attachments?.message === "string") return topic.attachments.message;
+      if (Array.isArray(topic?.attachments)) {
+        for (const attachment of topic.attachments) {
+          if (typeof attachment?.message === "string") return attachment.message;
+        }
+      }
+    }
+  }
+
+  return undefined;
 }
 
 async function uploadAttachment(file: File) {
@@ -53,7 +75,7 @@ async function uploadAttachment(file: File) {
   const urlResponse = await fetch("/api/uploads/url", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ storageId: storageBody.storageId }),
+    body: JSON.stringify({ storageId: storageBody.storageId, filename: file.name }),
   });
   const urlBody = await urlResponse.json();
   if (!urlResponse.ok) {
@@ -89,7 +111,7 @@ export function TopicPresetForm({
       side: preset?.side ?? "",
       cap: preset?.cap ?? "",
       notes: preset?.notes ?? "",
-      topics: preset?.topics.length ? preset.topics.map((topic) => ({ ...topic, id: topic.id ?? crypto.randomUUID() })) : [newTopic()],
+      topics: preset?.topics.length ? preset.topics.map((topic) => ({ ...topic, id: topic.id ?? crypto.randomUUID() })) : [newTopic(dictionary.presets.newTopic)],
     },
   });
 
@@ -110,7 +132,9 @@ export function TopicPresetForm({
 
     const body = await response.json();
     if (!response.ok) {
-      form.setError("root", { message: body.error ?? "Unable to save the topic preset." });
+      const message = body.error ?? "Unable to save the topic preset.";
+      form.setError("root", { message });
+      toast.error(message);
       return;
     }
 
@@ -148,7 +172,14 @@ export function TopicPresetForm({
         <p className="text-sm text-muted-foreground">{dictionary.presets.topicPresetPageDescription}</p>
       </CardHeader>
       <CardContent>
-        <form className="space-y-6" onSubmit={form.handleSubmit(submit)}>
+        <form
+          className="space-y-6"
+          onSubmit={form.handleSubmit(submit, (errors) => {
+            const message = getFirstErrorMessage(errors) ?? dictionary.common.error;
+            form.setError("root", { message });
+            toast.error(message);
+          })}
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <FieldLabel label={dictionary.presets.fields.name} required />
@@ -180,7 +211,7 @@ export function TopicPresetForm({
                 <p className="text-sm text-muted-foreground">{dictionary.presets.topicEditorDescription}</p>
               </div>
               {canEdit ? (
-                <Button type="button" variant="outline" className="rounded-xl" onClick={() => topics.append(newTopic())}>
+                <Button type="button" variant="outline" className="rounded-xl" onClick={() => topics.append(newTopic(dictionary.presets.newTopic))}>
                   <Plus className="size-4" />
                   {dictionary.presets.addTopic}
                 </Button>
@@ -229,19 +260,19 @@ export function TopicPresetForm({
                       ) : null}
                       <div className="flex flex-wrap items-center gap-2">
                         {canEdit ? (
-                          <Button type="button" variant="outline" className="relative rounded-xl">
+                          <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-xl border border-input bg-background px-4 py-2 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground">
                             <Upload className="size-4" />
                             {dictionary.common.upload}
                             <input
                               type="file"
                               multiple
-                              className="absolute inset-0 cursor-pointer opacity-0"
+                              className="sr-only"
                               onChange={(event) => {
                                 void handleUpload(topicIndex, event.target.files);
                                 event.target.value = "";
                               }}
                             />
-                          </Button>
+                          </label>
                         ) : null}
                         {field.value.length ? (
                           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
@@ -265,6 +296,7 @@ export function TopicPresetForm({
               {form.formState.isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
               {dictionary.common.save}
             </Button>
+            {!canEdit ? <p className="self-center text-sm text-muted-foreground">{dictionary.common.adminOnly}</p> : null}
           </div>
         </form>
       </CardContent>

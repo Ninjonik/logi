@@ -296,6 +296,8 @@ export const enMessages = {
     optionalLabel: "Optional",
     noPreset: "No preset",
     topicPreset: "Topic preset",
+    topicPresetCompleteMatch: "Complete match",
+    topicPresetPartialMatch: "Partial match",
     conclude: "Conclude event",
     concludedSuccess: "Event concluded",
     saveHelp: "Name and the four timeline fields are required. Everything else is optional.",

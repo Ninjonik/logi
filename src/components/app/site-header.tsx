@@ -38,7 +38,7 @@ export function SiteHeader({
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="h-4" />
         <div className="min-w-0 flex-1">
-          <AppBreadcrumbs locale={locale} dictionary={dictionary} />
+          <AppBreadcrumbs locale={locale} dictionary={dictionary} servers={servers} />
         </div>
         <div className="hidden sm:block">
           <LocaleSwitcher locale={locale} dictionary={dictionary} />

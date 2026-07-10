@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 
@@ -16,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { supportedTimezones } from "@/lib/discord-timezones";
 import { fromDateTimeLocalInTimeZone, toDateTimeLocalInTimeZone } from "@/lib/timezone-datetime";
+import { cn } from "@/lib/utils";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
 import type { EventRecord, TopicPreset } from "@/types/domain";
 
@@ -32,6 +34,32 @@ function FieldLabel({
       {required && <span className="text-destructive font-bold">*</span>}
     </div>
   );
+}
+
+function normalizeMatchValue(value?: string) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function getPresetMatch(preset: TopicPreset, eventValues: Pick<EventInput, "map" | "side" | "cap">) {
+  const fields = [
+    { key: "map", label: "Map", eventValue: eventValues.map, presetValue: preset.map },
+    { key: "side", label: "Side", eventValue: eventValues.side, presetValue: preset.side },
+    { key: "cap", label: "Point", eventValue: eventValues.cap, presetValue: preset.cap },
+  ];
+
+  const matchedFields = fields
+    .filter((field) => {
+      const eventValue = normalizeMatchValue(field.eventValue);
+      const presetValue = normalizeMatchValue(field.presetValue);
+      return Boolean(eventValue && presetValue && eventValue === presetValue);
+    })
+    .map((field) => field.label);
+
+  return {
+    score: matchedFields.length,
+    isFullMatch: matchedFields.length === fields.length,
+    label: matchedFields.join(" + "),
+  };
 }
 
 export function EventFormPanel({
@@ -75,6 +103,12 @@ export function EventFormPanel({
       topicPresetId: event.topicPresetId ?? "",
     },
   });
+  const eventMatchValues = form.watch(["map", "side", "cap"]);
+  const presetMatchValues = {
+    map: eventMatchValues[0],
+    side: eventMatchValues[1],
+    cap: eventMatchValues[2],
+  };
 
   async function submit(values: EventInput) {
     const payload = {
@@ -188,11 +222,30 @@ export function EventFormPanel({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">{dictionary.event.noPreset}</SelectItem>
-                      {topicPresets.map((preset) => (
-                        <SelectItem key={preset.id} value={preset.id}>
-                          {preset.name}
-                        </SelectItem>
-                      ))}
+                      {topicPresets.map((preset) => {
+                        const match = getPresetMatch(preset, presetMatchValues);
+
+                        return (
+                          <SelectItem
+                            key={preset.id}
+                            value={preset.id}
+                            className={cn(
+                              match.score > 0 && "bg-primary/5 font-medium",
+                              match.isFullMatch && "bg-primary/10 text-primary",
+                            )}
+                          >
+                            <span className="flex w-full min-w-0 items-center justify-between gap-3">
+                              <span className="min-w-0 truncate">{preset.name}</span>
+                              {match.score > 0 ? (
+                                <Badge variant={match.isFullMatch ? "default" : "secondary"} className="shrink-0 rounded-md">
+                                  <Check className="mr-1 size-3" />
+                                  {match.isFullMatch ? dictionary.event.topicPresetCompleteMatch : dictionary.event.topicPresetPartialMatch}
+                                </Badge>
+                              ) : null}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 )}
