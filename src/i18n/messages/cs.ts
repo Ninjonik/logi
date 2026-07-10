@@ -101,6 +101,7 @@ export const csMessages = {
     readyForAssignment: "Připraveno k přiřazení",
     saveAssignment: "Uložit přiřazení",
     removeAssignment: "Odebrat přiřazení",
+    upload: "Nahrát",
     error: "Chyba"
   },
   userSettings: {
@@ -295,6 +296,8 @@ export const csMessages = {
     optionalLabel: "Volitelné",
     noPreset: "Bez šablony",
     topicPreset: "Šablona tématu",
+    topicPresetCompleteMatch: "Úplná shoda",
+    topicPresetPartialMatch: "Částečná shoda",
     conclude: "Ukončit akci",
     concludedSuccess: "Akce ukončena",
     saveHelp: "Název a čtyři časová pole jsou povinné. Všechno ostatní je volitelné.",

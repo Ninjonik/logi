@@ -75,8 +75,8 @@ export default async function ServerOverviewPage({
         <StatCard title={dictionary.clan.members} value={server.memberIds.length} description={""}  icon={Users} />
         <StatCard title={dictionary.clan.presets} value={groups.length + squadPresets.length + topicPresets.length} description={""} icon={ClipboardList} />
       </div>
-      <div className="grid gap-6 px-4 xl:grid-cols-[1.4fr_.9fr] lg:px-6">
-        <Card className="rounded-2xl border-border/60">
+      <div className="flex flex-row w-full gap-6 px-4 lg:px-6">
+        <Card className="rounded-2xl border-border/60 w-full">
           <CardHeader>
             <CardTitle>{dictionary.clan.membersAndGroups}</CardTitle>
           </CardHeader>
@@ -100,6 +100,7 @@ export default async function ServerOverviewPage({
             ))}
           </CardContent>
         </Card>
+        { /* }
         <Card className="rounded-2xl border-border/60">
           <CardHeader>
             <CardTitle>{dictionary.clan.snapshot}</CardTitle>
@@ -114,6 +115,7 @@ export default async function ServerOverviewPage({
             </div>
           </CardContent>
         </Card>
+        { */ }
       </div>
     </>
   );

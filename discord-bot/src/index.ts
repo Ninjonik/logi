@@ -350,6 +350,7 @@ async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncS
     const createdPost = await forumChannel.threads.create({
       name: topic.title,
       message: {
+        content: topic.attachments.length ? topic.attachments.join("\n") : undefined,
         embeds: [
           new EmbedBuilder()
             .setTitle(topic.title)

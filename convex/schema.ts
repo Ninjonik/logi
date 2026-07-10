@@ -26,6 +26,7 @@ const guildMember = v.object({
 });
 
 const topic = v.object({
+  id: v.optional(v.string()),
   title: v.string(),
   body: v.optional(v.string()),
   attachments: v.array(v.string()),
