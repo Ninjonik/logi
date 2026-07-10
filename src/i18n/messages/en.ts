@@ -101,6 +101,7 @@ export const enMessages = {
     readyForAssignment: "Ready for assignment",
     saveAssignment: "Save assignment",
     removeAssignment: "Remove assignment",
+    upload: "Upload",
     "error": "Error",
   },
   userSettings: {

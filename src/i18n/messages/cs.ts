@@ -101,6 +101,7 @@ export const csMessages = {
     readyForAssignment: "Připraveno k přiřazení",
     saveAssignment: "Uložit přiřazení",
     removeAssignment: "Odebrat přiřazení",
+    upload: "Nahrát",
     error: "Chyba"
   },
   userSettings: {

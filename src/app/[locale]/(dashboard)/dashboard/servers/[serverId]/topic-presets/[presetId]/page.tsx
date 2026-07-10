@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageHeader } from "@/components/app/page-header";
-import { EditableResourceDetail } from "@/components/app/editable-resource-detail";
-import { TopicEditor } from "@/components/app/topic-editor";
+import { TopicPresetForm } from "@/components/app/topic-preset-form";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getServerContext } from "@/lib/server-context";
@@ -38,22 +37,8 @@ export default async function TopicPresetDetailPage({
   return (
     <>
       <PageHeader title={preset.name} description={preset.notes} />
-      <div className="grid gap-6 px-4 xl:grid-cols-[1.2fr_1fr] lg:px-6">
-        <EditableResourceDetail
-          title={dictionary.presets.presetDetails}
-          description={dictionary.presets.topicPresetPageDescription}
-          canEdit={canAdmin}
-          dictionary={dictionary}
-          fields={[
-            { label: dictionary.presets.fields.name, value: preset.name },
-            { label: dictionary.presets.fields.map, value: preset.map },
-            { label: dictionary.presets.fields.side, value: preset.side },
-            { label: dictionary.presets.fields.cap, value: preset.cap },
-            { label: dictionary.presets.fields.notes, value: preset.notes, multiline: true },
-          ]}
-          createMode={false}
-        />
-        <TopicEditor topics={preset.topics} canEdit={canAdmin} dictionary={dictionary} />
+      <div className="px-4 lg:px-6">
+        <TopicPresetForm preset={preset} serverId={serverId} locale={locale} canEdit={canAdmin} dictionary={dictionary} />
       </div>
     </>
   );
