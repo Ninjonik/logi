@@ -21,7 +21,7 @@ export default async function CreateRosterPage({
     <>
       <PageHeader
         title={dictionary.common.createRoster}
-        description="Draft a roster from the squad preset structure and reshape it before publishing."
+        description={dictionary.shared.rosterPageDescription}
       />
       <div className="px-4 lg:px-6">
         <RosterCreator
