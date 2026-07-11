@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { SidebarConfigProvider } from "@/contexts/sidebar-context";
 import { inter } from "@/lib/fonts";
+import { TopLoaderProvider } from "@/components/providers/top-loader-provider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://logi.local"),
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AppProviders>
           <ThemeProvider defaultTheme="system" storageKey="nextjs-ui-theme">
+            <TopLoaderProvider />
             <SidebarConfigProvider>
               {children}
             </SidebarConfigProvider>
