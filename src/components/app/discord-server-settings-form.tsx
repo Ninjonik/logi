@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { supportedClanLanguages, type ClanLanguage } from "@/lib/clan-language";
 import { supportedTimezones } from "@/lib/discord-timezones";
 import type { DiscordConfig } from "@/types/domain";
 
@@ -32,6 +33,7 @@ export function DiscordServerSettingsForm({
   const [isPending, startTransition] = useTransition();
   const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
   const [timezone, setTimezone] = useState(config?.timezone ?? "UTC");
+  const [defaultLanguage, setDefaultLanguage] = useState<ClanLanguage>(config?.defaultLanguage ?? "en");
   const [announcementsChannelId, setAnnouncementsChannelId] = useState<string | undefined>(config?.announcementsChannelId);
   const [forumCategoryId, setForumCategoryId] = useState<string | undefined>(config?.forumCategoryId);
   const [clanRoleId, setClanRoleId] = useState<string | undefined>(config?.clanRoleId);
@@ -50,6 +52,7 @@ export function DiscordServerSettingsForm({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         timezone,
+        defaultLanguage,
         announcementsChannelId,
         forumCategoryId,
         clanRoleId,
@@ -86,6 +89,21 @@ export function DiscordServerSettingsForm({
               {supportedTimezones.map((item) => (
                 <SelectItem key={item} value={item}>
                   {item}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>{dictionary.serverSettings.defaultLanguage}</Label>
+          <Select value={defaultLanguage} onValueChange={(value) => setDefaultLanguage(value as ClanLanguage)}>
+            <SelectTrigger className="rounded-xl">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {supportedClanLanguages.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {item === "en" ? dictionary.serverSettings.languageEnglish : dictionary.serverSettings.languageCzech}
                 </SelectItem>
               ))}
             </SelectContent>

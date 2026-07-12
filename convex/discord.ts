@@ -16,6 +16,13 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   };
 }
 
+function normalizeConfigDoc<T extends { _id: unknown; defaultLanguage?: "en" | "cs" }>(doc: T) {
+  return {
+    ...normalizeDoc(doc),
+    defaultLanguage: doc.defaultLanguage ?? "en",
+  };
+}
+
 function normalizeUserDoc<T extends { _id: unknown; id: string }>(doc: T) {
   return {
     ...doc,
@@ -75,7 +82,7 @@ export const getConfigByGuild = query({
       .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
       .unique();
 
-    return config ? normalizeDoc(config) : null;
+    return config ? normalizeConfigDoc(config) : null;
   },
 });
 
@@ -84,6 +91,7 @@ export const upsertConfig = mutation({
     secret: v.string(),
     guildId: v.string(),
     timezone: v.string(),
+    defaultLanguage: v.union(v.literal("en"), v.literal("cs")),
     announcementsChannelId: v.optional(v.string()),
     forumCategoryId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),
@@ -100,6 +108,7 @@ export const upsertConfig = mutation({
     const now = new Date().toISOString();
     const payload = {
       timezone: args.timezone,
+      defaultLanguage: args.defaultLanguage,
       announcementsChannelId: args.announcementsChannelId?.trim() || undefined,
       forumCategoryId: args.forumCategoryId?.trim() || undefined,
       clanRoleId: args.clanRoleId?.trim() || undefined,
@@ -118,12 +127,61 @@ export const upsertConfig = mutation({
     }
 
     const configId = await ctx.db.insert("discordConfigs", {
-      guildId: args.guildId,
-      ...payload,
-      createdAt: now,
+        guildId: args.guildId,
+        ...payload,
+        createdAt: now,
     });
 
     return String(configId);
+  },
+});
+
+export const backfillDefaultLanguages = mutation({
+  args: {
+    secret: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const now = new Date().toISOString();
+    const guilds = await ctx.db.query("guilds").collect();
+    const configs = await ctx.db.query("discordConfigs").collect();
+    const configByGuildId = new Map(configs.map((config) => [config.guildId, config]));
+
+    let patchedCount = 0;
+    let insertedCount = 0;
+
+    for (const config of configs) {
+      if (config.defaultLanguage) {
+        continue;
+      }
+
+      await ctx.db.patch(config._id, {
+        defaultLanguage: "en",
+        updatedAt: now,
+      });
+      patchedCount += 1;
+    }
+
+    for (const guild of guilds) {
+      if (configByGuildId.has(guild.id)) {
+        continue;
+      }
+
+      await ctx.db.insert("discordConfigs", {
+        guildId: guild.id,
+        timezone: "UTC",
+        defaultLanguage: "en",
+        createdAt: now,
+        updatedAt: now,
+      });
+      insertedCount += 1;
+    }
+
+    return {
+      patchedCount,
+      insertedCount,
+    };
   },
 });
 
@@ -161,7 +219,7 @@ export const listSyncPayloads = query({
         .map((roster) => normalizeDoc(roster));
 
       return {
-        config: normalizeDoc(config),
+        config: normalizeConfigDoc(config),
         groups: guildGroups,
         events: guildEvents,
         rosters: guildRosters,
@@ -193,7 +251,7 @@ export const getEventSignupContext = query({
     }
 
     return {
-      config: normalizeDoc(config),
+      config: normalizeConfigDoc(config),
       event: normalizeEventDoc(event),
       groups: groups.map(normalizeDoc),
       roster: roster ? normalizeDoc(roster) : null,
@@ -225,7 +283,7 @@ export const getEventInteractionContext = query({
     }
 
     return {
-      config: normalizeDoc(config),
+      config: normalizeConfigDoc(config),
       event: normalizeEventDoc(event),
       groups: groups.map(normalizeDoc),
       roster: roster ? normalizeDoc(roster) : null,
@@ -301,10 +359,11 @@ export const getRosterImageContext = query({
       return null;
     }
 
-    const [roster, groups, assignments] = await Promise.all([
+    const [roster, groups, assignments, config] = await Promise.all([
       ctx.db.query("rosters").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique(),
       ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", event.guildId)).collect(),
       ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", event.guildId)).collect(),
+      ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", event.guildId)).unique(),
     ]);
 
     if (!roster?.published) {
@@ -327,6 +386,7 @@ export const getRosterImageContext = query({
     return {
       event: normalizeEventDoc(event),
       roster: normalizeDoc(roster),
+      config: config ? normalizeConfigDoc(config) : { guildId: event.guildId, timezone: "UTC", defaultLanguage: "en" as const },
       groups: groups.map(normalizeDoc),
       assignments: assignments.map(normalizeDoc),
       users: users.map(normalizeUserDoc),

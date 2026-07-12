@@ -49,6 +49,7 @@ export type DiscordConfig = {
   id: string;
   guildId: string;
   timezone: string;
+  defaultLanguage: "en" | "cs";
   announcementsChannelId?: string;
   forumCategoryId?: string;
   clanRoleId?: string;

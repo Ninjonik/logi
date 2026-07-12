@@ -7,7 +7,7 @@
     "dev:all": "concurrently \"next dev\" \"tsx discord-bot/src/index.ts\"",
     "bot:dev": "tsx discord-bot/src/index.ts",
     "build": "next build",
-    "start": "concurrently \"next start\" \"tsx discord-bot/src/index.ts\"",
+    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
