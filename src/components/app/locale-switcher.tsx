@@ -63,9 +63,10 @@ export function LocaleSwitcher({
 
   return (
     <div className="flex items-center gap-2">
-      <Languages className="size-4 text-muted-foreground" />
       <Select value={locale} onValueChange={onLocaleChange} disabled={isPending}>
         <SelectTrigger className="w-[148px] rounded-full">
+          <Languages className="size-4 text-muted-foreground" />
+
           <SelectValue placeholder={dictionary.languageSwitcher.selectLanguage} />
         </SelectTrigger>
         <SelectContent>
