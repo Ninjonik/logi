@@ -25,6 +25,7 @@ type RosterImageContext = {
       players: Array<{
         id?: string;
         ack: boolean;
+        confirmed?: boolean;
         roleName?: string;
         roleIcon?: string;
         note?: string;

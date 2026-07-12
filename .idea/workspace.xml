@@ -7,24 +7,7 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="fixed build errors">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/guilds.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/guilds.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/serverData.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/serverData.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/create/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/server-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/server-card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/server-switcher.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/server-switcher.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/stat-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/stat-card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/nav-main.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/nav-main.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-context.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-context.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-user-management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-user-management.ts" afterDir="false" />
-    </list>
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="fixed roster board layout err" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -37,7 +20,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="300" />
+    <option name="cachedIndexableFilesCount" value="301" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -67,7 +50,7 @@
                 <list>
                   <RecentBranch>
                     <option name="branchName" value="dev" />
-                    <option name="lastUsedInstant" value="1783820530" />
+                    <option name="lastUsedInstant" value="1783891072" />
                   </RecentBranch>
                   <RecentBranch>
                     <option name="branchName" value="main" />
@@ -82,12 +65,12 @@
       </RecentBranches>
     </option>
   </component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/Ninjonik/logi.git&quot;,
-    &quot;accountId&quot;: &quot;3787a58d-9ff7-4c97-8b11-eac11e8fe0a1&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Ninjonik/logi.git",
+    "accountId": "9ba1adb5-e293-494f-a5be-bf1e53d2e76e"
   }
-}</component>
+}]]></component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -179,7 +162,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.32098.39" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.31033.133" />
       </set>
     </attachedChunks>
   </component>
@@ -201,6 +184,7 @@
       <workItem from="1783611249796" duration="6135000" />
       <workItem from="1783714052697" duration="46000" />
       <workItem from="1783739130408" duration="303000" />
+      <workItem from="1783890896842" duration="694000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -330,11 +314,54 @@
       <option name="project" value="LOCAL" />
       <updated>1783842391640</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="better optimization, better homepage">
+      <option name="closed" value="true" />
+      <created>1783851735084</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1783851735084</updated>
+    </task>
+    <task id="LOCAL-00018" summary="fixed invite link to include permissions">
+      <option name="closed" value="true" />
+      <created>1783891055682</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1783891055682</updated>
+    </task>
+    <task id="LOCAL-00019" summary="fixed invite link to include permissions, fixed design inconsistencies in roster board">
+      <option name="closed" value="true" />
+      <created>1783891297913</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1783891297913</updated>
+    </task>
+    <task id="LOCAL-00020" summary="fixed roster board layout err">
+      <option name="closed" value="true" />
+      <created>1783891594849</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1783891594849</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
@@ -352,6 +379,10 @@
     <MESSAGE value="- better navbar" />
     <MESSAGE value="better roster management, better user and clan settings (with ability to change avatar via uploading a file), better table views (+ SSR pagination + searching), better skeletons" />
     <MESSAGE value="fixed build errors" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed build errors" />
+    <MESSAGE value="better optimization, better homepage" />
+    <MESSAGE value="fixed invite link to include permissions" />
+    <MESSAGE value="fixed invite link to include permissions, fixed design inconsistencies in roster board" />
+    <MESSAGE value="fixed roster board layout err" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed roster board layout err" />
   </component>
 </project>

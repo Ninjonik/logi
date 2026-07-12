@@ -37,9 +37,21 @@ const SAFETY_BUFFER = 16; // tiny cushion so rounding never clips the bottom edg
 const SMALL_GROUP_MAX_SQUADS = 2;
 const LARGE_GROUP_MAX_PER_ROW = 4;
 
-type Player = { id?: string; ack: boolean; roleName?: string; roleIcon?: string; note?: string };
+type Player = { id?: string; ack: boolean; confirmed?: boolean; roleName?: string; roleIcon?: string; note?: string };
 type Squad = { name: string; color: string; players: Player[] };
 type GroupSection = { group: string; color: string; squads: Squad[] };
+
+function getAttendanceLabel(player: Player) {
+  if (player.confirmed) {
+    return { text: "Confirmed", color: "#22c55e" };
+  }
+
+  if (player.ack) {
+    return { text: "Ack", color: "#e2e8f0" };
+  }
+
+  return { text: "Not ack", color: "#94a3b8" };
+}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -359,6 +371,7 @@ export async function GET(
                               const user = player.id ? usersById.get(player.id) : null;
                               const assignment = user ? assignmentsByUserId.get(user.id) : null;
                               const primaryGroup = assignment?.primaryGroupId ? groupsById.get(assignment.primaryGroupId) : null;
+                              const attendance = getAttendanceLabel(player);
 
                               return (
                                 <div
@@ -374,8 +387,8 @@ export async function GET(
                                     width: "100%",
                                   }}
                                 >
-                                  <div style={{ display: "flex", justifyContent: "flex-end", fontSize: "8px", color: "#94a3b8", minHeight: "10px" }}>
-                                    <span>{player.ack ? "Ack" : ""}</span>
+                                  <div style={{ display: "flex", justifyContent: "flex-end", fontSize: "8px", color: attendance.color, minHeight: "10px" }}>
+                                    <span>{user ? attendance.text : ""}</span>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "10px", fontWeight: 600, color: user ? "#e2e8f0" : "#64748b", minWidth: 0 }}>
                                     {user ? (

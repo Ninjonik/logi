@@ -1,6 +1,7 @@
 import { getDiscordBotToken, getDiscordClientId, getDiscordClientSecret, getDiscordRedirectUri } from "@/lib/env";
 
 const ADMINISTRATOR_PERMISSION = BigInt(8);
+const DISCORD_BOT_INVITE_PERMISSIONS = BigInt(326417599504);
 
 export type DiscordUser = {
   id: string;
@@ -67,6 +68,7 @@ export function buildDiscordBotInviteUrl(guildId: string) {
   const url = new URL("https://discord.com/oauth2/authorize");
   url.searchParams.set("client_id", getDiscordClientId());
   url.searchParams.set("scope", "bot applications.commands");
+  url.searchParams.set("permissions", DISCORD_BOT_INVITE_PERMISSIONS.toString());
   url.searchParams.set("guild_id", guildId);
   url.searchParams.set("disable_guild_select", "true");
   return url.toString();

@@ -86,6 +86,7 @@ export function RosterCreator({
             roleName: role.name,
             roleIcon: role.icon,
             ack: false,
+            confirmed: false,
             note: role.note,
           }))
         ),

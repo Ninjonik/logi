@@ -272,8 +272,12 @@ export const csMessages = {
     rosterNotCreated: "Soupiska ještě nebyla vytvořena.",
     rosterNotAvailable: "Soupiska zatím není k dispozici.",
     notAttending: "Neúčastní se",
+    attendancePending: "Nepotvrzeno",
+    attendanceAcknowledged: "Potvrzeno účastníkem",
+    attendanceConfirmed: "Potvrzeno adminem",
     saved: "Soupiska uložena",
     published: "Soupiska publikována",
+    attendanceUpdated: "Docházka byla upravena",
   },
   event: {
     infoTitle: "Informace o akci",
