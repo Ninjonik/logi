@@ -109,6 +109,7 @@ async function reconcileRosterAttendance(ctx: MutationCtx, args: {
         ...player,
         id: undefined,
         ack: false,
+        confirmed: false,
       };
     }),
   }));

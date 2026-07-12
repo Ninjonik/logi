@@ -63,6 +63,7 @@ const attendanceReminder = v.object({
 const rosterPlayer = v.object({
   id: v.optional(v.string()),
   ack: v.boolean(),
+  confirmed: v.optional(v.boolean()),
   note: v.optional(v.string()),
   roleName: v.optional(v.string()),
   roleIcon: v.optional(v.string()),

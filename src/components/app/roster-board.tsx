@@ -12,12 +12,12 @@ import {
   GripVertical,
   Loader2,
   Plus,
-  Radio,
   Save,
   Send,
   Settings2,
   Trash2,
   UserPlus,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation } from "convex/react";
@@ -56,6 +56,32 @@ type DragState =
   | { type: "reserve"; userId: string }
   | { type: "notAttending"; userId: string }
   | { type: "slot"; squadIndex: number; playerIndex: number };
+
+type AttendanceStatus = "pending" | "acknowledged" | "confirmed";
+
+function getAttendanceStatus(player: Roster["squads"][number]["players"][number]): AttendanceStatus {
+  if (player.confirmed) {
+    return "confirmed";
+  }
+
+  if (player.ack) {
+    return "acknowledged";
+  }
+
+  return "pending";
+}
+
+function getAttendanceIcon(status: AttendanceStatus) {
+  if (status === "confirmed") {
+    return <CheckCircle2 className="size-4 text-emerald-500" />;
+  }
+
+  if (status === "acknowledged") {
+    return <CheckCircle2 className="size-4 text-foreground" />;
+  }
+
+  return <XCircle className="size-4 text-muted-foreground" />;
+}
 
 export function RosterBoard({
   roster,
@@ -267,6 +293,7 @@ export function RosterBoard({
           if (player.id === userId) {
             player.id = undefined;
             player.ack = false;
+            player.confirmed = false;
           }
         });
       });
@@ -280,6 +307,7 @@ export function RosterBoard({
 
       slot.id = userId;
       slot.ack = false;
+      slot.confirmed = false;
       return next;
     });
   }
@@ -299,6 +327,7 @@ export function RosterBoard({
       }
       slot.id = undefined;
       slot.ack = false;
+      slot.confirmed = false;
       return next;
     });
   }
@@ -315,6 +344,7 @@ export function RosterBoard({
       }
       slot.id = undefined;
       slot.ack = false;
+      slot.confirmed = false;
       return next;
     });
   }
@@ -417,6 +447,18 @@ export function RosterBoard({
     });
   }
 
+  function updatePlayerAttendanceStatus(squadIndex: number, playerIndex: number, status: AttendanceStatus) {
+    setBoard((current) => {
+      if (!current) return current;
+      const next = structuredClone(current);
+      const slot = next.squads[squadIndex]?.players[playerIndex];
+      if (!slot) return current;
+      slot.ack = status !== "pending";
+      slot.confirmed = status === "confirmed";
+      return next;
+    });
+  }
+
   function moveSquad(index: number, direction: -1 | 1) {
     setBoard((current) => {
       if (!current) return current;
@@ -444,6 +486,7 @@ export function RosterBoard({
       const next = structuredClone(current);
       next.squads[squadIndex].players.push({
         ack: false,
+        confirmed: false,
         roleName: dictionary.roster.newRoleName,
         roleIcon: "/img/roles/icn_Rifleman.png",
         note: "",
@@ -461,7 +504,7 @@ export function RosterBoard({
         group: dictionary.roster.defaultSquadGroup,
         order: next.squads.length,
         color: "#64748b",
-        players: [{ ack: false, roleName: dictionary.roster.defaultSquadLeadRole, note: "", roleIcon: "/img/roles/icn_officer.png" }],
+        players: [{ ack: false, confirmed: false, roleName: dictionary.roster.defaultSquadLeadRole, note: "", roleIcon: "/img/roles/icn_officer.png" }],
       });
       return next;
     });
@@ -704,6 +747,7 @@ export function RosterBoard({
                         moveSquad={moveSquad}
                         updatePlayerField={updatePlayerField}
                         updatePlayerIcon={updatePlayerIcon}
+                        updatePlayerAttendanceStatus={updatePlayerAttendanceStatus}
                         removeRosterSlot={removeRosterSlot}
                         handleDropOnSlot={handleDropOnSlot}
                         addRosterSlot={addRosterSlot}
@@ -731,6 +775,7 @@ export function RosterBoard({
                                   moveSquad={moveSquad}
                                   updatePlayerField={updatePlayerField}
                                   updatePlayerIcon={updatePlayerIcon}
+                                  updatePlayerAttendanceStatus={updatePlayerAttendanceStatus}
                                   removeRosterSlot={removeRosterSlot}
                                   handleDropOnSlot={handleDropOnSlot}
                                   addRosterSlot={addRosterSlot}
@@ -965,6 +1010,7 @@ function SquadCard({
   moveSquad,
   updatePlayerField,
   updatePlayerIcon,
+  updatePlayerAttendanceStatus,
   removeRosterSlot,
   handleDropOnSlot,
   addRosterSlot,
@@ -986,6 +1032,7 @@ function SquadCard({
   moveSquad: (index: number, direction: -1 | 1) => void;
   updatePlayerField: (sIndex: number, pIndex: number, field: "note" | "roleName", value: string) => void;
   updatePlayerIcon: (sIndex: number, pIndex: number, roleIcon: string) => void;
+  updatePlayerAttendanceStatus: (sIndex: number, pIndex: number, status: AttendanceStatus) => void;
   removeRosterSlot: (sIndex: number, pIndex: number) => void;
   handleDropOnSlot: (sIndex: number, pIndex: number) => void;
   addRosterSlot: (index: number) => void;
@@ -1045,6 +1092,7 @@ function SquadCard({
         {squad.players.map((player, playerIndex) => {
           const slotUser = player.id ? usersById.get(player.id) : undefined;
           const assignment = slotUser ? assignmentsByUserId.get(slotUser.id) : undefined;
+          const attendanceStatus = getAttendanceStatus(player);
 
           return (
             <div
@@ -1060,6 +1108,13 @@ function SquadCard({
                   <div className="flex min-w-0 flex-1 items-center gap-2">
                     <RoleIconSelect value={player.roleIcon} onChange={(value) => updatePlayerIcon(squadIndex, playerIndex, value)} />
                     <Input defaultValue={player.roleName ?? ""} onBlur={(event) => updatePlayerField(squadIndex, playerIndex, "roleName", event.target.value)} className="h-8 rounded-lg text-xs" />
+                    {slotUser ? (
+                      <AttendanceStatusSelect
+                        value={attendanceStatus}
+                        onChange={(value) => updatePlayerAttendanceStatus(squadIndex, playerIndex, value)}
+                        dictionary={dictionary}
+                      />
+                    ) : null}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -1093,7 +1148,7 @@ function SquadCard({
                       </div>
                       <div className="truncate text-xs text-muted-foreground">{player.note ?? ""}</div>
                     </div>
-                    {player.ack ? <CheckCircle2 className="size-4 text-emerald-500" /> : <Radio className="size-4 text-amber-500" />}
+                    {getAttendanceIcon(attendanceStatus)}
                   </div>
                   {editMode ? (
                     <Input defaultValue={player.note ?? ""} onBlur={(event) => updatePlayerField(squadIndex, playerIndex, "note", event.target.value)} placeholder={dictionary.common.playerNote} className="rounded-lg" />
@@ -1219,6 +1274,40 @@ function RoleIconSelect({
             <img src={iconPath} alt="" className="h-6 w-10 object-contain invert dark:invert-0" />
           </SelectItem>
         ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function AttendanceStatusSelect({
+  value,
+  onChange,
+  dictionary,
+}: {
+  value: AttendanceStatus;
+  onChange: (value: AttendanceStatus) => void;
+  dictionary: Dictionary;
+}) {
+  return (
+    <Select value={value} onValueChange={(nextValue) => onChange(nextValue as AttendanceStatus)}>
+      <SelectTrigger className="h-8 w-[170px] rounded-lg text-xs">
+        <SelectValue>
+          <div className="flex items-center gap-2">
+            {getAttendanceIcon(value)}
+            <span>
+              {value === "pending"
+                ? dictionary.roster.attendancePending
+                : value === "acknowledged"
+                  ? dictionary.roster.attendanceAcknowledged
+                  : dictionary.roster.attendanceConfirmed}
+            </span>
+          </div>
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="pending">{dictionary.roster.attendancePending}</SelectItem>
+        <SelectItem value="acknowledged">{dictionary.roster.attendanceAcknowledged}</SelectItem>
+        <SelectItem value="confirmed">{dictionary.roster.attendanceConfirmed}</SelectItem>
       </SelectContent>
     </Select>
   );

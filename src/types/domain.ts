@@ -164,6 +164,7 @@ export type SquadPreset = {
 export type RosterPlayer = {
   id?: string;
   ack: boolean;
+  confirmed?: boolean;
   note?: string;
   roleName?: string;
   roleIcon?: string;

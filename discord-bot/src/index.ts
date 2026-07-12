@@ -102,6 +102,7 @@ type Roster = {
     players: Array<{
       id?: string;
       ack: boolean;
+      confirmed?: boolean;
       roleName?: string;
     }>;
   }>;

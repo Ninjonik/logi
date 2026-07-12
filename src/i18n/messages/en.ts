@@ -272,8 +272,12 @@ export const enMessages = {
     rosterNotCreated: "Roster has not been created yet.",
     rosterNotAvailable: "Roster not yet available.",
     notAttending: "Not attending",
+    attendancePending: "Not acknowledged",
+    attendanceAcknowledged: "Acknowledged",
+    attendanceConfirmed: "Confirmed",
     saved: "Roster saved",
     published: "Roster published",
+    attendanceUpdated: "Attendance updated",
   },
   event: {
     infoTitle: "Event information",
