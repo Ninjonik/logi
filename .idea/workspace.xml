@@ -7,10 +7,30 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="QoL changes">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="- better navbar">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/locale-switcher.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/locale-switcher.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/site-header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/site-header.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/_generated/api.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/_generated/api.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/players.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/players.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/groups/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/groups/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/squad-presets/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/squad-presets/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/topic-presets/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/topic-presets/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/settings/user/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/settings/user/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/resource-table.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/resource-table.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/server-frontend-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/server-frontend-settings-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/nav-user.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/nav-user.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/providers/app-providers.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/providers/app-providers.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/table.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/table.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -293,7 +313,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783711900284</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="- better navbar">
+      <option name="closed" value="true" />
+      <created>1783820950213</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1783820950213</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -312,6 +340,7 @@
     <MESSAGE value="updated workspace.xml" />
     <MESSAGE value="topic presets + attachment implemented" />
     <MESSAGE value="QoL changes" />
-    <option name="LAST_COMMIT_MESSAGE" value="QoL changes" />
+    <MESSAGE value="- better navbar" />
+    <option name="LAST_COMMIT_MESSAGE" value="- better navbar" />
   </component>
 </project>

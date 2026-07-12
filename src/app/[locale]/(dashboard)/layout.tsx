@@ -41,9 +41,9 @@ export default async function DashboardLayout({
         activeServerId={undefined}
         canAdmin={false}
       />
-      <SidebarInset className="bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)]">
+      <SidebarInset className="bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)] overflow-hidden">
         <SiteHeader locale={safeLocale} dictionary={dictionary} servers={visibleServers} user={user} />
-        <div className="flex flex-1 flex-col gap-6 py-6">{children}</div>
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden py-6">{children}</div>
         <SiteFooter dictionary={dictionary} />
       </SidebarInset>
     </SidebarProvider>

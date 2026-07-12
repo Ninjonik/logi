@@ -11,13 +11,14 @@ import { getDiscordConfigByGuild } from "@/lib/server-discord-settings";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ serverId: string }>;
+  params: Promise<{ locale: string; serverId: string }>;
 }): Promise<Metadata> {
-  const { serverId } = await params;
+  const { locale, serverId } = await params;
   const context = await getServerContext(serverId);
+  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context?.server?.name ?? "Clan"} settings`,
-    description: "Clan settings page for avatar, description, and membership management.",
+    title: `${context?.server?.name ?? "Clan"} ${dictionary.serverSettings.title}`,
+    description: dictionary.serverSettings.pageDescription,
   };
 }
 
@@ -35,7 +36,7 @@ export default async function ServerSettingsPage({
 
   return (
     <>
-      <PageHeader title={dictionary.serverSettings.title} description={dictionary.serverSettings.description} />
+      <PageHeader title={dictionary.serverSettings.title} description={dictionary.serverSettings.pageDescription} />
       <div className="space-y-6 px-4 lg:px-6">
         {canAdmin ? <ServerFrontendSettingsForm server={server} dictionary={dictionary} /> : null}
         {canAdmin ? (

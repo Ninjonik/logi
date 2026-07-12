@@ -1,83 +1,59 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import * as React from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { ResourceTableClient } from "@/components/app/resource-table-client";
+
+type ColumnConfig<T> = {
+  key: string;
+  title: string;
+  render: (row: T) => React.ReactNode;
+  className?: string;
+};
 
 export function ResourceTable<T extends { id: string }>({
   columns,
   rows,
   getHref,
   dictionary,
+  page,
+  pageSize,
+  pageCount,
+  totalRows,
+  search,
+  searchPlaceholder,
+  className,
 }: {
-  columns: Array<{
-    key: string;
-    title: string;
-    render: (row: T) => React.ReactNode;
-  }>;
+  columns: Array<ColumnConfig<T>>;
   rows: T[];
   getHref: (row: T) => string;
   dictionary: Dictionary;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+  totalRows: number;
+  search: string;
+  searchPlaceholder?: string;
+  className?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border/60 bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {columns.map((column) => (
-              <TableHead key={column.key}>{column.title}</TableHead>
-            ))}
-            <TableHead className="w-[120px] text-right">{dictionary.common.actions}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.id}>
-              {columns.map((column) => (
-                <TableCell key={column.key}>{column.render(row)}</TableCell>
-              ))}
-              <TableCell className="text-right">
-                <Button asChild variant="ghost" size="sm">
-                  <Link href={getHref(row)}>
-                    {dictionary.shared.openColumn}
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      {!rows.length ? (
-        <div className="border-t px-6 py-12 text-center text-sm text-muted-foreground">
-          {dictionary.shared.nothingCreatedYet}
-        </div>
-      ) : null}
-    </div>
+    <ResourceTableClient
+      dictionary={dictionary}
+      page={page}
+      pageSize={pageSize}
+      pageCount={pageCount}
+      totalRows={totalRows}
+      search={search}
+      searchPlaceholder={searchPlaceholder}
+      className={className}
+      columnTitles={columns.map((column) => column.title)}
+      columnClassNames={columns.map((column) => column.className ?? "")}
+      rows={rows.map((row) => ({
+        id: row.id,
+        href: getHref(row),
+        cells: columns.map((column) => column.render(row)),
+      }))}
+    />
   );
 }
 
-export function StatusBadge({
-  active,
-  activeLabel,
-  inactiveLabel,
-}: {
-  active: boolean;
-  activeLabel: string;
-  inactiveLabel: string;
-}) {
-  return (
-    <Badge variant={active ? "default" : "secondary"} className="rounded-full px-3">
-      {active ? activeLabel : inactiveLabel}
-    </Badge>
-  );
-}
+export { StatusBadge } from "@/components/app/resource-table-client";

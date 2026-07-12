@@ -140,3 +140,27 @@ export const unlinkSteam = mutation({
     });
   },
 });
+
+export const updateProfile = mutation({
+  args: {
+    secret: v.string(),
+    userId: v.string(),
+    avatar: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("id", (q) => q.eq("id", args.userId))
+      .unique();
+    if (!user) {
+      throw new Error("Player not found.");
+    }
+
+    await ctx.db.patch(user._id, {
+      avatar: args.avatar.trim(),
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});

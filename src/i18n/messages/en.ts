@@ -115,26 +115,20 @@ export const enMessages = {
     profile: "Profile",
     discordName: "Discord name",
     discordId: "Discord ID",
-    avatarUrl: "UserAvatar URL",
+    avatar: "Avatar",
     preferredLanguage: "Preferred language",
     english: "English",
-    steamId: "Steam ID",
     notLinked: "Not linked",
     streamerMode: "Streamer mode",
     enabled: "Enabled",
     disabled: "Disabled",
     steamConnection: "Steam connection",
-    steamOauthPlaceholder: "Steam ID appears here after a successful Steam link.",
-    i18nReadiness: "i18n readiness",
-    localeRoutingActive: "Locale routing is already active under `/{locale}`.",
-    englishDefault:
-      "English is the default language, and all new pages read from shared dictionaries.",
-    addMoreLanguages:
-      "Additional languages can be added by extending the dictionary object and locale list.",
+    steamLinkedDescription: "Your Steam account is connected and ready for roster-related features.",
   },
   serverSettings: {
     title: "Clan settings",
     description: "Manage how this clan looks and who can run operations.",
+    pageDescription: "Update the clan profile, Discord automation settings, and access controls for your workspace.",
     frontendOnlyDescription: "Frontend-only clan configuration for now.",
     clanName: "Clan name",
     discordTitle: "Discord bot settings",
@@ -244,6 +238,7 @@ export const enMessages = {
   },
   roster: {
     title: "Roster",
+    listDescription: "Browse event rosters, check squad counts, and see which lineups are already published.",
     editingEnabled: "Editing enabled",
     editRoster: "Edit roster",
     updatePublished: "Update published roster",
@@ -280,6 +275,8 @@ export const enMessages = {
     infoTitle: "Event information",
     infoDescription:
       "This page stays view-first for everyone, and admins can toggle it into edit mode without changing routes.",
+    listDescription:
+      "Track planned operations, meeting times, map details, and publication settings in one place.",
     createTitle: "Create event",
     createDescription:
       "This create flow intentionally matches the edit screen so backend wiring later can stay DRY.",
@@ -440,6 +437,12 @@ export const enMessages = {
     nothingCreatedYet: "Nothing has been created in this section yet.",
     notSet: "Not set",
     createMode: "Create mode starts directly in edit mode.",
+    searchTable: "Search this table...",
+    noMatchingResults: "No matching results found.",
+    previousPage: "Previous",
+    nextPage: "Next",
+    pageLabel: "Page {page} of {pages}",
+    showingResults: "Showing {from}-{to} of {total}",
     rosterMetaDescription:
       "Roster board with reserves, role slots, publish state, and acknowledgements.",
     rosterPageDescription:

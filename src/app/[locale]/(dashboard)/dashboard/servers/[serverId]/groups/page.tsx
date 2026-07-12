@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 
 import { PageHeader } from "@/components/app/page-header";
 import { ResourceTable } from "@/components/app/resource-table";
+import { TablePageLayout } from "@/components/app/table-page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getPaginatedRows } from "@/lib/data-table";
 import { getServerContext } from "@/lib/server-context";
 
 export async function generateMetadata({
@@ -24,33 +26,50 @@ export async function generateMetadata({
 
 export default async function GroupsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; serverId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale, serverId } = await params;
+  const resolvedSearchParams = await searchParams;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
   if (!context) return null;
 
   const { groups = [], assignments = [], canAdmin } = context;
+  const paginated = getPaginatedRows({
+    rows: groups,
+    searchParams: resolvedSearchParams,
+    getSearchText: (group) => [group.name, group.description, group.color].filter(Boolean).join(" "),
+  });
 
   return (
-    <>
-      <PageHeader
-        title={dictionary.sidebar.groups}
-        description={dictionary.groups.description}
-        actions={
-          canAdmin ? (
-            <Button asChild className="rounded-xl">
-              <a href={`/${locale}/dashboard/servers/${serverId}/groups/create`}>{dictionary.groups.createTitle}</a>
-            </Button>
-          ) : undefined
-        }
-      />
-      <div className="px-4 lg:px-6">
+    <TablePageLayout
+      header={
+        <PageHeader
+          title={dictionary.sidebar.groups}
+          description={dictionary.groups.description}
+          actions={
+            canAdmin ? (
+              <Button asChild className="rounded-xl">
+                <a href={`/${locale}/dashboard/servers/${serverId}/groups/create`}>{dictionary.groups.createTitle}</a>
+              </Button>
+            ) : undefined
+          }
+        />
+      }
+    >
         <ResourceTable
+          className="h-full"
           dictionary={dictionary}
-          rows={groups}
+          rows={paginated.rows}
+          page={paginated.page}
+          pageSize={paginated.pageSize}
+          pageCount={paginated.pageCount}
+          totalRows={paginated.totalRows}
+          search={paginated.search}
+          searchPlaceholder={dictionary.shared.searchTable}
           getHref={(group) => `/${locale}/dashboard/servers/${serverId}/groups/${group.id}`}
           columns={[
             {
@@ -75,7 +94,6 @@ export default async function GroupsPage({
             },
           ]}
         />
-      </div>
-    </>
+    </TablePageLayout>
   );
 }

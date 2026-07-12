@@ -273,9 +273,6 @@ export function EventFormPanel({
             <Button className="rounded-xl" type="submit" disabled={!canEdit || isPending || form.formState.isSubmitting}>
               {dictionary.common.save}
             </Button>
-            <p className="self-center text-sm text-muted-foreground">
-              {dictionary.event.saveHelp}
-            </p>
           </div>
         </form>
       </CardContent>
