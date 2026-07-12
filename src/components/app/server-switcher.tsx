@@ -65,7 +65,7 @@ export function ServerSwitcher({
 
           return (
             <DropdownMenuItem key={server.id} asChild>
-              <Link href={target} className="flex items-center gap-3">
+              <Link href={target} prefetch={false} className="flex items-center gap-3">
                 <Avatar className="size-8 rounded-lg">
                   <AvatarImage src={server.avatar} alt={server.name} />
                   <AvatarFallback>{server.name.slice(0, 2)}</AvatarFallback>

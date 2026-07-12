@@ -9,7 +9,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
 import { getGuildMetadata } from "@/lib/server-metadata";
-import { getAssignmentUser, getServerUserAssignments } from "@/lib/server-user-management";
+import { getServerUserAssignments, getUsersByIds } from "@/lib/server-user-management";
 import { getServerContext } from "@/lib/server-context";
 
 export async function generateMetadata({
@@ -42,18 +42,13 @@ export default async function ServerUsersPage({
   const { groups } = context;
   const assignments = await getServerUserAssignments(serverId);
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
-  const assignmentUsers = await Promise.all(
-    assignments.map(async (assignment) => ({
-      assignmentId: assignment.id,
-      user: await getAssignmentUser(assignment),
-    })),
-  );
-  const assignmentUserMap = new Map(assignmentUsers.map((item) => [item.assignmentId, item.user]));
+  const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
+  const assignmentUserMap = new Map(assignmentUsers.map((user) => [user.id, user]));
   const paginated = getPaginatedRows({
     rows: assignments,
     searchParams: resolvedSearchParams,
     getSearchText: (assignment) => {
-      const user = assignmentUserMap.get(assignment.id);
+      const user = assignmentUserMap.get(assignment.userId);
       return [
         user?.name,
         user?.id,
@@ -94,7 +89,7 @@ export default async function ServerUsersPage({
               key: "player",
               title: dictionary.userManagement.tablePlayer,
               render: (assignment) => {
-                const user = assignmentUserMap.get(assignment.id);
+                const user = assignmentUserMap.get(assignment.userId);
                 if (!user) return dictionary.common.unknown;
                 return (
                   <div className="flex items-center gap-3">

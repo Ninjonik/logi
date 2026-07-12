@@ -45,10 +45,15 @@ export const visibleForUser = query({
       }
     }
 
-    const guilds = await ctx.db.query("guilds").collect();
-    return guilds
-      .filter((guild) => ids.has(guild.id))
-      .map((guild) => ({
+    const guilds = (
+      await Promise.all(
+        [...ids].map((guildId) =>
+          ctx.db.query("guilds").withIndex("id", (q) => q.eq("id", guildId)).unique(),
+        ),
+      )
+    ).filter((guild): guild is NonNullable<typeof guild> => Boolean(guild));
+
+    return guilds.map((guild) => ({
         ...guild,
         canAdmin: guild.adminIds.includes(args.userId) || adminGuildIds.has(guild.id),
       }));

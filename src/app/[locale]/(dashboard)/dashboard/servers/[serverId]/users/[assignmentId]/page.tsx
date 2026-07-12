@@ -7,10 +7,9 @@ import { isLocale } from "@/i18n/config";
 import { getAssignmentMetadata, getPlayerMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import {
-  getAssignmentUser,
   getEligibleUsersForServer,
   getServerUserAssignment,
-  getServerUserAssignments,
+  getUsersByIds,
 } from "@/lib/server-user-management";
 
 export async function generateMetadata({
@@ -41,11 +40,11 @@ export default async function ServerUserDetailPage({
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { server, groups = [] } = context;
+  const { server, groups = [], assignments } = context;
 
-  const assignments = await getServerUserAssignments(serverId);
   const assignment = await getServerUserAssignment(assignmentId);
-  const user = assignment ? await getAssignmentUser(assignment) : undefined;
+  const users = assignment ? await getUsersByIds([assignment.userId]) : [];
+  const user = users[0];
   const eligibleUsers = await getEligibleUsersForServer(server, assignments);
 
   if (!assignment || !user) return null;

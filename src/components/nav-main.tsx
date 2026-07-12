@@ -38,6 +38,7 @@ export function NavMain({
   }[]
 }) {
   const pathname = usePathname()
+  const isHeavyServerRoute = (url: string) => url.includes("/dashboard/servers/")
 
   // Check if any subitem is active to determine if parent should be open
   const shouldBeOpen = (item: typeof items[0]) => {
@@ -71,8 +72,9 @@ export function NavMain({
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild className="cursor-pointer" isActive={pathname === subItem.url}>
-                            <Link
+                          <Link
                               href={subItem.url}
+                              prefetch={!isHeavyServerRoute(subItem.url)}
                               target={(item.title === "Auth Pages" || item.title === "Errors") ? "_blank" : undefined}
                               rel={(item.title === "Auth Pages" || item.title === "Errors") ? "noopener noreferrer" : undefined}
                             >
@@ -86,7 +88,7 @@ export function NavMain({
                 </>
               ) : (
                 <SidebarMenuButton asChild tooltip={item.title} className="cursor-pointer" isActive={pathname === item.url}>
-                  <Link href={item.url}>
+                  <Link href={item.url} prefetch={!isHeavyServerRoute(item.url)}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </Link>
