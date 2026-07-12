@@ -738,6 +738,7 @@ export function RosterBoard({
                       <SquadCard
                         key={`${squad.group}-${squad.name}`}
                         squad={squad}
+                        board={board}
                         squadIndex={board.squads.indexOf(squad)}
                         editMode={editMode}
                         dictionary={dictionary}
@@ -766,6 +767,7 @@ export function RosterBoard({
                                 <SquadCard
                                   key={`${squad.group}-${squad.name}`}
                                   squad={squad}
+                                  board={board}
                                   squadIndex={board.squads.indexOf(squad)}
                                   editMode={editMode}
                                   dictionary={dictionary}
@@ -1001,6 +1003,7 @@ export function RosterBoard({
 
 function SquadCard({
   squad,
+  board,
   squadIndex,
   editMode,
   dictionary,
@@ -1023,6 +1026,7 @@ function SquadCard({
   setDragState,
 }: {
   squad: Roster["squads"][0];
+  board: Roster;
   squadIndex: number;
   editMode: boolean;
   dictionary: Dictionary;
@@ -1178,11 +1182,19 @@ function SquadCard({
                             {allUsersSorted
                               .filter((user) => user.name.toLowerCase().includes((slotSearches[playerIndex] ?? "").trim().toLowerCase()))
                               .sort((a, b) => {
-                                const aAssignedElsewhere = squad.players.some(
-                                  (currentPlayer, currentIndex) => currentIndex !== playerIndex && currentPlayer.id === a.id,
+                                const aAssignedElsewhere = board.squads.some((currentSquad, currentSquadIndex) =>
+                                  currentSquad.players.some(
+                                    (currentPlayer, currentPlayerIndex) =>
+                                      !(currentSquadIndex === squadIndex && currentPlayerIndex === playerIndex) &&
+                                      currentPlayer.id === a.id,
+                                  ),
                                 );
-                                const bAssignedElsewhere = squad.players.some(
-                                  (currentPlayer, currentIndex) => currentIndex !== playerIndex && currentPlayer.id === b.id,
+                                const bAssignedElsewhere = board.squads.some((currentSquad, currentSquadIndex) =>
+                                  currentSquad.players.some(
+                                    (currentPlayer, currentPlayerIndex) =>
+                                      !(currentSquadIndex === squadIndex && currentPlayerIndex === playerIndex) &&
+                                      currentPlayer.id === b.id,
+                                  ),
                                 );
 
                                 if (aAssignedElsewhere !== bAssignedElsewhere) {
@@ -1194,7 +1206,13 @@ function SquadCard({
                               .slice(0, 5)
                               .map((user) => {
                                 const assignment = assignmentsByUserId.get(user.id);
-                                const assignedElsewhere = squad.players.some((currentPlayer, currentIndex) => currentIndex !== playerIndex && currentPlayer.id === user.id);
+                                const assignedElsewhere = board.squads.some((currentSquad, currentSquadIndex) =>
+                                  currentSquad.players.some(
+                                    (currentPlayer, currentPlayerIndex) =>
+                                      !(currentSquadIndex === squadIndex && currentPlayerIndex === playerIndex) &&
+                                      currentPlayer.id === user.id,
+                                  ),
+                                );
 
                                 return (
                                   <CommandItem
