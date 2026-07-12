@@ -4,6 +4,7 @@ import { CalendarView } from "@/components/app/calendar-view";
 import { PageHeader } from "@/components/app/page-header";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
 export async function generateMetadata({
@@ -12,10 +13,10 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; locale: string }>;
 }): Promise<Metadata> {
   const { serverId, locale } = await params;
-  const context = await getServerContext(serverId);
+  const server = await getGuildMetadata(serverId);
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context?.server?.name ?? "Clan"} ${dictionary.calendarPage.title}`,
+    title: `${server?.name ?? "Clan"} ${dictionary.calendarPage.title}`,
     description: dictionary.calendarPage.description,
   };
 }

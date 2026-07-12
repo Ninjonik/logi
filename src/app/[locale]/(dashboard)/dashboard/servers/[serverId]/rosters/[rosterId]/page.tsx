@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { RosterBoard } from "@/components/app/roster-board";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getEventMetadata, getRosterMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getUsersByIds } from "@/lib/server-user-management";
 
@@ -12,14 +13,17 @@ export async function generateMetadata({
 }: {
   params: Promise<{ serverId: string; rosterId: string }>;
 }): Promise<Metadata> {
-  const { serverId, rosterId } = await params;
-  const context = await getServerContext(serverId);
-  const roster = context?.rosters.find((item) => item.id === rosterId);
-  const event = context?.events.find((item) => item.id === roster?.eventId);
+  const { rosterId } = await params;
+  const roster = await getRosterMetadata(rosterId);
+  const event = roster?.eventId ? await getEventMetadata(String(roster.eventId)) : null;
   return {
     title: event ? `${event.name} roster` : "Roster",
     description: "Roster board with reserves, role slots, publish state, and acknowledgements.",
   };
+}
+
+export function generateStaticParams() {
+  return [{ rosterId: "sample-roster" }];
 }
 
 export default async function RosterDetailPage({

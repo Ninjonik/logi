@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 
 import { PageHeader } from "@/components/app/page-header";
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table";
+import { TablePageLayout } from "@/components/app/table-page-layout";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getPaginatedRows } from "@/lib/data-table";
+import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { formatDateTime } from "@/lib/format";
 import { getEventStatusMeta } from "@/lib/event-status";
@@ -15,36 +18,53 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; locale: string }>;
 }): Promise<Metadata> {
   const { serverId, locale } = await params;
-  const context = await getServerContext(serverId);
+  const server = await getGuildMetadata(serverId);
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context?.server?.name ?? "Clan"} ${dictionary.sidebar.events}`,
-    description: dictionary.event.createDescription,
+    title: `${server?.name ?? "Clan"} ${dictionary.sidebar.events}`,
+    description: dictionary.event.listDescription,
   };
 }
 
 export default async function EventsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; serverId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale, serverId } = await params;
+  const resolvedSearchParams = await searchParams;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
   if (!context) return null;
   const { events, canAdmin, discordConfig } = context;
+  const paginated = getPaginatedRows({
+    rows: events,
+    searchParams: resolvedSearchParams,
+    getSearchText: (event) => [event.name, event.map, event.side, event.status].filter(Boolean).join(" "),
+  });
 
   return (
-    <>
-      <PageHeader
-        title={dictionary.sidebar.events}
-        description={dictionary.event.infoDescription}
-        actions={canAdmin ? <Button asChild className="rounded-xl"><a href={`/${locale}/dashboard/servers/${serverId}/events/create`}>{dictionary.common.createEvent}</a></Button> : undefined}
-      />
-      <div className="px-4 lg:px-6">
+    <TablePageLayout
+        header={
+          <PageHeader
+            title={dictionary.sidebar.events}
+            description={dictionary.event.listDescription}
+            actions={canAdmin ? <Button asChild className="rounded-xl"><a href={`/${locale}/dashboard/servers/${serverId}/events/create`}>{dictionary.common.createEvent}</a></Button> : undefined}
+          />
+        }
+      >
         <ResourceTable
+          className="h-full"
           dictionary={dictionary}
-          rows={events}
+          rows={paginated.rows}
+          page={paginated.page}
+          pageSize={paginated.pageSize}
+          pageCount={paginated.pageCount}
+          totalRows={paginated.totalRows}
+          search={paginated.search}
+          searchPlaceholder={dictionary.shared.searchTable}
           getHref={(event) => `/${locale}/dashboard/servers/${serverId}/events/${event.id}`}
           columns={[
             { key: "name", title: dictionary.tables.event, render: (event) => <div className="font-medium">{event.name}</div> },
@@ -67,7 +87,6 @@ export default async function EventsPage({
             },
           ]}
         />
-      </div>
-    </>
+    </TablePageLayout>
   );
 }

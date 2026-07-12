@@ -166,6 +166,7 @@ export type RosterPlayer = {
   ack: boolean;
   note?: string;
   roleName?: string;
+  roleIcon?: string;
 };
 
 export type RosterSquad = {

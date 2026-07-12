@@ -179,3 +179,17 @@ export async function unlinkSteamForCurrentPlayer() {
     userId: session.sub,
   });
 }
+
+export async function updateCurrentPlayerProfile(input: { avatar: string }) {
+  const session = await getSession();
+  if (!session) {
+    throw new Error("You must be signed in.");
+  }
+
+  return await fetchMutation(syncDiscordProfileReference, {
+    secret: getInternalAuthSecret(),
+    id: session.sub,
+    name: session.name,
+    avatar: input.avatar,
+  });
+}

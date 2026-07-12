@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 
 import { PageHeader } from "@/components/app/page-header";
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table";
+import { TablePageLayout } from "@/components/app/table-page-layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getPaginatedRows } from "@/lib/data-table";
+import { getGuildMetadata } from "@/lib/server-metadata";
 import { getAssignmentUser, getServerUserAssignments } from "@/lib/server-user-management";
 import { getServerContext } from "@/lib/server-context";
 
@@ -14,25 +17,29 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string; serverId: string }>;
 }): Promise<Metadata> {
-  const { serverId } = await params;
-  const context = await getServerContext(serverId);
+  const { serverId, locale } = await params;
+  const server = await getGuildMetadata(serverId);
+  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context?.server?.name ?? "Clan"} ${getDictionary("en").userManagement.title}`,
-    description: getDictionary("en").userManagement.description,
+    title: `${server?.name ?? "Clan"} ${dictionary.userManagement.title}`,
+    description: dictionary.userManagement.description,
   };
 }
 
 export default async function ServerUsersPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; serverId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale, serverId } = await params;
+  const resolvedSearchParams = await searchParams;
   const safeLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { server, groups } = context;
+  const { groups } = context;
   const assignments = await getServerUserAssignments(serverId);
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const assignmentUsers = await Promise.all(
@@ -41,29 +48,53 @@ export default async function ServerUsersPage({
       user: await getAssignmentUser(assignment),
     })),
   );
+  const assignmentUserMap = new Map(assignmentUsers.map((item) => [item.assignmentId, item.user]));
+  const paginated = getPaginatedRows({
+    rows: assignments,
+    searchParams: resolvedSearchParams,
+    getSearchText: (assignment) => {
+      const user = assignmentUserMap.get(assignment.id);
+      return [
+        user?.name,
+        user?.id,
+        groupNameById.get(assignment.primaryGroupId ?? ""),
+        assignment.type,
+        assignment.paused ? dictionary.userManagement.paused : dictionary.userManagement.active,
+      ].filter(Boolean).join(" ");
+    },
+  });
 
   return (
-    <>
-      <PageHeader
-        title={dictionary.userManagement.title}
-        description={dictionary.userManagement.description}
-        actions={
-          <Button asChild className="rounded-xl">
-            <a href={`/${locale}/dashboard/servers/${serverId}/users/create`}>{dictionary.userManagement.addPlayer}</a>
-          </Button>
-        }
-      />
-      <div className="px-4 lg:px-6">
+    <TablePageLayout
+      header={
+        <PageHeader
+          title={dictionary.userManagement.title}
+          description={dictionary.userManagement.description}
+          actions={
+            <Button asChild className="rounded-xl">
+              <a href={`/${locale}/dashboard/servers/${serverId}/users/create`}>{dictionary.userManagement.addPlayer}</a>
+            </Button>
+          }
+        />
+      }
+    >
         <ResourceTable
+          className="h-full"
           dictionary={dictionary}
-          rows={assignments}
+          rows={paginated.rows}
+          page={paginated.page}
+          pageSize={paginated.pageSize}
+          pageCount={paginated.pageCount}
+          totalRows={paginated.totalRows}
+          search={paginated.search}
+          searchPlaceholder={dictionary.userManagement.searchPlaceholder}
           getHref={(assignment) => `/${locale}/dashboard/servers/${serverId}/users/${assignment.id}`}
           columns={[
             {
               key: "player",
               title: dictionary.userManagement.tablePlayer,
               render: (assignment) => {
-                const user = assignmentUsers.find((item) => item.assignmentId === assignment.id)?.user;
+                const user = assignmentUserMap.get(assignment.id);
                 if (!user) return dictionary.common.unknown;
                 return (
                   <div className="flex items-center gap-3">
@@ -102,7 +133,6 @@ export default async function ServerUsersPage({
             },
           ]}
         />
-      </div>
-    </>
+    </TablePageLayout>
   );
 }

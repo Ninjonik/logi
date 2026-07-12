@@ -115,26 +115,20 @@ export const csMessages = {
     profile: "Profile",
     discordName: "Discord jméno",
     discordId: "Discord ID",
-    avatarUrl: "URL avataru",
+    avatar: "Avatar",
     preferredLanguage: "Preferovaný jazyk",
     english: "Angličtina",
-    steamId: "Steam ID",
     notLinked: "Nepropojeno",
     streamerMode: "Streamerský režim",
     enabled: "Zapnuto",
     disabled: "Vypnuto",
     steamConnection: "Propojení se Steamem",
-    steamOauthPlaceholder: "Steam ID se zde zobrazí po úspěšném propojení se Steamem.",
-    i18nReadiness: "Připravenost na lokalizaci (i18n)",
-    localeRoutingActive: "Směrování podle lokalizace je již aktivní na `/{locale}`.",
-    englishDefault:
-      "Výchozím jazykem je angličtina a všechny nové stránky čtou ze sdílených slovníků.",
-    addMoreLanguages:
-      "Další jazyky lze přidat rozšířením objektu slovníku a seznamu lokalizací.",
+    steamLinkedDescription: "Váš Steam účet je propojený a připravený pro funkce navázané na soupisky.",
   },
   serverSettings: {
     title: "Nastavení klanu",
     description: "Správa vzhledu klanu a nastavení práv pro správu operací.",
+    pageDescription: "Upravte profil klanu, nastavení Discord automatizace a přístupová pravidla pro tento workspace.",
     frontendOnlyDescription: "Zatím pouze frontendová konfigurace klanu.",
     clanName: "Název klanu",
     discordTitle: "Nastavení Discord bota",
@@ -244,6 +238,7 @@ export const csMessages = {
   },
   roster: {
     title: "Soupiska",
+    listDescription: "Procházejte soupisky akcí, kontrolujte počty jednotek a hned vidíte, které sestavy jsou publikované.",
     editingEnabled: "Úpravy povoleny",
     editRoster: "Upravit soupisku",
     updatePublished: "Aktualizovat publikovanou soupisku",
@@ -280,6 +275,8 @@ export const csMessages = {
     infoTitle: "Informace o akci",
     infoDescription:
       "Tato stránka zůstává pro běžné uživatele pouze ke čtení. Admini ji mohou přepnout do režimu úprav bez nutnosti měnit adresu URL.",
+    listDescription:
+      "Mějte přehled o plánovaných operacích, časech srazu, mapách a nastavení publikace na jednom místě.",
     createTitle: "Vytvořit akci",
     createDescription:
       "Tento proces vytvoření záměrně odpovídá editační obrazovce, aby byl budoucí kód backendu čistý a znovupoužitelný (DRY).",
@@ -440,6 +437,12 @@ export const csMessages = {
     nothingCreatedYet: "V této sekci nebylo ještě nic vytvořeno.",
     notSet: "Nastaveno",
     createMode: "Režim vytvoření začíná přímo v režimu úprav.",
+    searchTable: "Hledat v tabulce...",
+    noMatchingResults: "Nebyla nalezena žádná odpovídající data.",
+    previousPage: "Předchozí",
+    nextPage: "Další",
+    pageLabel: "Strana {page} z {pages}",
+    showingResults: "Zobrazeno {from}-{to} z {total}",
     rosterMetaDescription:
       "Tabule soupisky se zálohami, sloty rolí, stavem publikování a potvrzeními o účasti.",
     rosterPageDescription:

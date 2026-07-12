@@ -5,6 +5,7 @@ import {
   CircleUser,
 } from "lucide-react"
 import Link from "next/link"
+import { usePathname, useSearchParams } from "next/navigation"
 
 import { SignOutButton } from "@/components/auth/sign-out-button"
 import { Logo } from "@/components/logo"
@@ -40,6 +41,13 @@ export function NavUser({
   dictionary: Dictionary
 }) {
   const { isMobile } = useSidebar()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const pathWorkspace = pathname?.match(/\/servers\/([^/]+)/)?.[1]
+  const workspace = pathWorkspace ?? searchParams.get("workspace")
+  const settingsHref = workspace
+    ? `/${locale}/dashboard/settings/user?workspace=${encodeURIComponent(workspace)}`
+    : `/${locale}/dashboard/settings/user`
 
   return (
     <SidebarMenu>
@@ -84,7 +92,7 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href={`/${locale}/dashboard/settings/user`}>
+                <Link href={settingsHref}>
                   <CircleUser />
                   {dictionary.common.settings}
                 </Link>

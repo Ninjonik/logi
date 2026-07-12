@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { AvatarPicker } from "@/components/app/avatar-picker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,8 +53,14 @@ export function ServerFrontendSettingsForm({
           <Input value={name} onChange={(event) => setName(event.target.value)} className="rounded-xl" />
         </div>
         <div className="space-y-2">
-          <Label>{dictionary.userSettings.avatarUrl}</Label>
-          <Input value={avatar} onChange={(event) => setAvatar(event.target.value)} className="rounded-xl" />
+          <AvatarPicker
+            value={avatar}
+            onChange={setAvatar}
+            fallback={name.slice(0, 2) || "CL"}
+            label={dictionary.userSettings.avatar}
+            buttonLabel={dictionary.common.upload}
+            disabled={isPending}
+          />
         </div>
         <div className="space-y-2">
           <Label>{dictionary.event.fields.description}</Label>

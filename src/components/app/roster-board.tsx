@@ -44,11 +44,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
 import type { AppUser, EventRecord, Group, Roster } from "@/types/domain";
 import { formatDateTime } from "@/lib/format";
+import { roleIconOptions } from "@/lib/squad-preset-templates";
 
 type DragState =
   | { type: "reserve"; userId: string }
@@ -98,6 +100,7 @@ export function RosterBoard({
   const usersById = useMemo(() => new Map(users.map((user) => [user.id, user])), [users]);
   const assignmentsByUserId = useMemo(() => new Map(userAssignments.map((assignment) => [assignment.userId, assignment])), [userAssignments]);
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
+  const allUsersSorted = useMemo(() => users.slice().sort((a, b) => a.name.localeCompare(b.name)), [users]);
   const normalizedSearch = deferredSearch.trim().toLowerCase();
   const sortedSquads = useMemo(
     () => board?.squads.slice().sort((a, b) => a.order - b.order) ?? [],
@@ -182,50 +185,17 @@ export function RosterBoard({
   const reserveUsers = useMemo(() => {
     if (!board) return [];
 
-    const focusedGroupObj = focusedGroup ? groups.find(g => g.name === focusedGroup) : null;
-    const parentGroup = focusedGroupObj?.parentId ? groups.find(g => g.id === focusedGroupObj.parentId) : null;
-
     const filtered = (board.reservePlayerIds || [])
       .map((id) => usersById.get(id))
       .filter((user): user is AppUser => Boolean(user))
       .filter((user) => user.name.toLowerCase().includes(normalizedSearch));
 
-    if (!focusedGroup) {
-      return filtered.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    const parentGroupName = parentGroup?.name;
-    const targetGroupName = focusedGroup;
-
-    // Categorize
-    const targetGroupUsers: AppUser[] = [];
-    const parentGroupUsers: AppUser[] = [];
-    const otherUsers: AppUser[] = [];
-
-    filtered.forEach(user => {
-      const assignment = assignmentsByUserId.get(user.id);
-      const primaryGroup = assignment?.primaryGroupId ? groupsById.get(assignment.primaryGroupId) : null;
-      const secondaryGroups = (assignment?.secondaryGroupIds || []).map(id => groupsById.get(id as never)).filter(Boolean);
-
-      const isInTarget = primaryGroup?.name === targetGroupName || secondaryGroups.some(g => g?.name === targetGroupName);
-      const isInParent = parentGroupName && (primaryGroup?.name === parentGroupName || secondaryGroups.some(g => g?.name === parentGroupName));
-
-      if (isInTarget) {
-        targetGroupUsers.push(user);
-      } else if (isInParent) {
-        parentGroupUsers.push(user);
-      } else {
-        otherUsers.push(user);
-      }
-    });
-
-    const sortByName = (a: AppUser, b: AppUser) => a.name.localeCompare(b.name);
-
-    return [
-      ...targetGroupUsers.sort(sortByName).map(u => ({ ...u, _reserveSection: targetGroupName })),
-      ...parentGroupUsers.sort(sortByName).map(u => ({ ...u, _reserveSection: parentGroupName })),
-      ...otherUsers.sort(sortByName).map(u => ({ ...u, _reserveSection: "Other" }))
-    ] as (AppUser & { _reserveSection?: string })[];
+    return filtered
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((user) => ({
+        ...user,
+        _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.id), groupsById, dictionary),
+      }));
   }, [assignmentsByUserId, board, focusedGroup, groups, groupsById, normalizedSearch, usersById]);
 
   const notAttendingUsers = useMemo(() => {
@@ -235,6 +205,14 @@ export function RosterBoard({
       .filter((user): user is AppUser => Boolean(user))
       .filter((user) => user.name.toLowerCase().includes(normalizedSearch));
   }, [board, normalizedSearch, usersById]);
+
+  const groupedNotAttendingUsers = useMemo(
+    () => notAttendingUsers.map((user) => ({
+      ...user,
+      _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.id), groupsById, dictionary),
+    })),
+    [assignmentsByUserId, dictionary, groupsById, notAttendingUsers],
+  );
 
   if (!event) {
     return (
@@ -267,29 +245,39 @@ export function RosterBoard({
   }
 
   function moveReserveToSlot(reserveUserId: string, squadIndex: number, playerIndex: number) {
-    setBoard((current) => {
-      if (!current) return current;
-      const next = structuredClone(current);
-      next.reservePlayerIds = (next.reservePlayerIds || []).filter((id) => id !== reserveUserId);
-      next.notAttendingPlayerIds = (next.notAttendingPlayerIds || []).filter((id) => id !== reserveUserId);
-      const slot = next.squads[squadIndex]?.players[playerIndex];
-      if (!slot) return current;
-      if (slot.id) (next.reservePlayerIds || (next.reservePlayerIds = [])).push(slot.id);
-      slot.id = reserveUserId;
-      slot.ack = false;
-      return next;
-    });
+    assignUserToSlot(reserveUserId, squadIndex, playerIndex);
   }
 
   function moveNotAttendingToSlot(userId: string, squadIndex: number, playerIndex: number) {
+    assignUserToSlot(userId, squadIndex, playerIndex);
+  }
+
+  function assignUserToSlot(userId: string, squadIndex: number, playerIndex: number) {
     setBoard((current) => {
       if (!current) return current;
       const next = structuredClone(current);
-      next.notAttendingPlayerIds = (next.notAttendingPlayerIds || []).filter((id) => id !== userId);
-      next.reservePlayerIds = (next.reservePlayerIds || []).filter((id) => id !== userId);
       const slot = next.squads[squadIndex]?.players[playerIndex];
       if (!slot) return current;
-      if (slot.id) (next.reservePlayerIds || (next.reservePlayerIds = [])).push(slot.id);
+
+      next.reservePlayerIds = (next.reservePlayerIds || []).filter((id) => id !== userId);
+      next.notAttendingPlayerIds = (next.notAttendingPlayerIds || []).filter((id) => id !== userId);
+
+      next.squads.forEach((squad) => {
+        squad.players.forEach((player) => {
+          if (player.id === userId) {
+            player.id = undefined;
+            player.ack = false;
+          }
+        });
+      });
+
+      if (slot.id && slot.id !== userId) {
+        const reserveIds = next.reservePlayerIds || (next.reservePlayerIds = []);
+        if (!reserveIds.includes(slot.id)) {
+          reserveIds.push(slot.id);
+        }
+      }
+
       slot.id = userId;
       slot.ack = false;
       return next;
@@ -393,8 +381,16 @@ export function RosterBoard({
       const target = next.squads[targetSquadIndex]?.players[targetPlayerIndex];
       if (!source || !target) return current;
       const sourceCopy = { ...source };
-      next.squads[sourceSquadIndex].players[sourcePlayerIndex] = { ...target, roleName: source.roleName };
-      next.squads[targetSquadIndex].players[targetPlayerIndex] = { ...sourceCopy, roleName: target.roleName };
+      next.squads[sourceSquadIndex].players[sourcePlayerIndex] = {
+        ...target,
+        roleName: source.roleName,
+        roleIcon: source.roleIcon,
+      };
+      next.squads[targetSquadIndex].players[targetPlayerIndex] = {
+        ...sourceCopy,
+        roleName: target.roleName,
+        roleIcon: target.roleIcon,
+      };
       return next;
     });
   }
@@ -406,6 +402,17 @@ export function RosterBoard({
       const slot = next.squads[squadIndex]?.players[playerIndex];
       if (!slot) return current;
       slot[field] = value;
+      return next;
+    });
+  }
+
+  function updatePlayerIcon(squadIndex: number, playerIndex: number, roleIcon: string) {
+    setBoard((current) => {
+      if (!current) return current;
+      const next = structuredClone(current);
+      const slot = next.squads[squadIndex]?.players[playerIndex];
+      if (!slot) return current;
+      slot.roleIcon = roleIcon;
       return next;
     });
   }
@@ -435,7 +442,12 @@ export function RosterBoard({
     setBoard((current) => {
       if (!current) return current;
       const next = structuredClone(current);
-      next.squads[squadIndex].players.push({ ack: false, roleName: dictionary.roster.newRoleName, note: "" });
+      next.squads[squadIndex].players.push({
+        ack: false,
+        roleName: dictionary.roster.newRoleName,
+        roleIcon: "/img/roles/icn_Rifleman.png",
+        note: "",
+      });
       return next;
     });
   }
@@ -449,7 +461,7 @@ export function RosterBoard({
         group: dictionary.roster.defaultSquadGroup,
         order: next.squads.length,
         color: "#64748b",
-        players: [{ ack: false, roleName: dictionary.roster.defaultSquadLeadRole, note: "" }],
+        players: [{ ack: false, roleName: dictionary.roster.defaultSquadLeadRole, note: "", roleIcon: "/img/roles/icn_officer.png" }],
       });
       return next;
     });
@@ -581,6 +593,14 @@ export function RosterBoard({
           router.refresh();
         }
 
+        await fetch("/api/cache/roster-image", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            eventId: event.id,
+          }),
+        }).catch(() => null);
+
         toast.success(published ? dictionary.roster.published : dictionary.roster.saved);
       } catch (error) {
         console.error("Failed to save roster:", error);
@@ -621,27 +641,29 @@ export function RosterBoard({
                   <Settings2 className="size-4" />
                   {editMode ? dictionary.roster.editingEnabled : dictionary.roster.editRoster}
                 </Button>
-                <Button
-                  variant="default"
-                  className="rounded-xl"
-                  onClick={() => handleSave(true)}
-                  disabled={isPending || board?.published}
-                >
-                  {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                  {board?.published ? dictionary.roster.updatePublished : dictionary.roster.publishRoster}
-                </Button>
+                {!board?.published ? (
+                  <Button
+                    variant="default"
+                    className="rounded-xl"
+                    onClick={() => handleSave(true)}
+                    disabled={isPending}
+                  >
+                    {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                    {dictionary.roster.publishRoster}
+                  </Button>
+                ) : null}
               </div>
             ) : null}
           </div>
         </CardHeader>
-        <CardContent className="p-4 lg:p-5">
-          <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)_300px]">
-            <div className="space-y-4">
-              <RosterInfoCard label={dictionary.roster.matchTime} value={formatDateTime(event.meetingStart, timezone)} />
-              <RosterInfoCard label={dictionary.roster.opponent} value={event.name.split(dictionary.roster.versusDelimiter)[1]?.trim() ?? dictionary.common.unknown} />
-              <RosterInfoCard label={dictionary.roster.mapSide} value={`${event.map ?? dictionary.common.unknown} • ${event.side ?? dictionary.common.unknown}`} />
-              <RosterInfoCard label={dictionary.roster.notes} value={event.notes ?? dictionary.roster.noExtraNotes} />
-            </div>
+        <CardContent className=" flex flex-col gap-4">
+          <div className="flex flex-row gap-2">
+            <RosterInfoCard label={dictionary.roster.matchTime} value={formatDateTime(event.meetingStart, timezone)} />
+            <RosterInfoCard label={dictionary.roster.opponent} value={event.name.split(dictionary.roster.versusDelimiter)[1]?.trim() ?? dictionary.common.unknown} />
+            <RosterInfoCard label={dictionary.roster.mapSide} value={`${event.map ?? dictionary.common.unknown} • ${event.side ?? dictionary.common.unknown}`} />
+            <RosterInfoCard label={dictionary.roster.notes} value={event.notes ?? dictionary.roster.noExtraNotes} />
+          </div>
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
 
             <div className="space-y-8">
               {editMode ? (
@@ -681,9 +703,12 @@ export function RosterBoard({
                         removeRosterSquad={removeRosterSquad}
                         moveSquad={moveSquad}
                         updatePlayerField={updatePlayerField}
+                        updatePlayerIcon={updatePlayerIcon}
                         removeRosterSlot={removeRosterSlot}
                         handleDropOnSlot={handleDropOnSlot}
                         addRosterSlot={addRosterSlot}
+                        assignUserToSlot={assignUserToSlot}
+                        allUsersSorted={allUsersSorted}
                         usersById={usersById}
                         assignmentsByUserId={assignmentsByUserId}
                         groupsById={groupsById}
@@ -705,9 +730,12 @@ export function RosterBoard({
                                   removeRosterSquad={removeRosterSquad}
                                   moveSquad={moveSquad}
                                   updatePlayerField={updatePlayerField}
+                                  updatePlayerIcon={updatePlayerIcon}
                                   removeRosterSlot={removeRosterSlot}
                                   handleDropOnSlot={handleDropOnSlot}
                                   addRosterSlot={addRosterSlot}
+                                  assignUserToSlot={assignUserToSlot}
+                                  allUsersSorted={allUsersSorted}
                                   usersById={usersById}
                                   assignmentsByUserId={assignmentsByUserId}
                                   groupsById={groupsById}
@@ -785,14 +813,11 @@ export function RosterBoard({
                           sections[section].push(u);
                         });
 
-                        const sectionOrder = focusedGroup ? [
-                          focusedGroup,
-                          (() => {
-                            const focusedGroupObj = groups.find(g => g.name === focusedGroup);
-                            return focusedGroupObj?.parentId ? groups.find(g => g.id === focusedGroupObj.parentId)?.name : null;
-                          })(),
-                          "Other"
-                        ].filter((s): s is string => Boolean(s)) : ["Default"];
+                        const sectionOrder = Object.keys(sections).sort((a, b) => {
+                          if (focusedGroup && a === focusedGroup) return -1;
+                          if (focusedGroup && b === focusedGroup) return 1;
+                          return a.localeCompare(b);
+                        });
 
                         return sectionOrder.map(sectionName => {
                           const usersInSection = sections[sectionName];
@@ -803,7 +828,7 @@ export function RosterBoard({
                               {focusedGroup && (
                                 <div className="flex items-center gap-2 px-1">
                                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
-                                    {sectionName === "Other" ? dictionary.common.otherGroups : sectionName}
+                                    {sectionName}
                                   </span>
                                   <div className="h-px flex-1 bg-border/40" />
                                 </div>
@@ -821,19 +846,19 @@ export function RosterBoard({
                                     draggable={editMode && canAdmin}
                                     onDragStart={() => setDragState({ type: "reserve", userId: user.id })}
                                     onDragEnd={() => setDragState(null)}
-                                    className="flex cursor-grab items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-2"
+                                    className="flex min-w-0 cursor-grab items-start gap-3 rounded-xl border border-border/70 bg-background px-3 py-2"
                                   >
                                     {editMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
-                                    <Avatar className="size-8 rounded-lg">
+                                    <Avatar className="size-8 shrink-0 rounded-lg">
                                       <AvatarImage src={user.avatar} alt={user.name} />
                                       <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
                                     </Avatar>
                                     <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex flex-wrap items-center gap-2">
                                         <div className="truncate text-sm font-medium">{user.name}</div>
                                         <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
                                       </div>
-                                      <div className="text-xs text-muted-foreground">{user.score} {dictionary.navUser.scoreSuffix}</div>
+                                      <div className="break-words text-xs text-muted-foreground">{user.score} {dictionary.navUser.scoreSuffix}</div>
                                     </div>
                                   </div>
                                     );
@@ -860,39 +885,59 @@ export function RosterBoard({
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[300px] pr-4">
-                    <div className="space-y-2">
-                      {notAttendingUsers.map((user) => (
-                        <div
-                          key={user.id}
-                          onDragOver={(event) => editMode && event.preventDefault()}
-                          onDrop={() => handleDropOnNotAttending()}
-                        >
-                          {(() => {
-                            const assignment = assignmentsByUserId.get(user.id);
-                            return (
-                          <div
-                            draggable={editMode && canAdmin}
-                            onDragStart={() => setDragState({ type: "notAttending", userId: user.id })}
-                            onDragEnd={() => setDragState(null)}
-                            className="flex cursor-grab items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-2 opacity-60"
-                          >
-                            {editMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
-                            <Avatar className="size-8 rounded-lg">
-                              <AvatarImage src={user.avatar} alt={user.name} />
-                              <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <div className="truncate text-sm font-medium">{user.name}</div>
-                                <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
-                              </div>
+                    <div className="space-y-4">
+                      {(() => {
+                        const sections: Record<string, (AppUser & { _reserveSection?: string })[]> = {};
+                        groupedNotAttendingUsers.forEach((user) => {
+                          const section = user._reserveSection || dictionary.shared.notSet;
+                          if (!sections[section]) sections[section] = [];
+                          sections[section].push(user);
+                        });
+
+                        return Object.keys(sections).sort((a, b) => a.localeCompare(b)).map((sectionName) => (
+                          <div key={sectionName} className="space-y-2">
+                            <div className="flex items-center gap-2 px-1">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                                {sectionName}
+                              </span>
+                              <div className="h-px flex-1 bg-border/40" />
                             </div>
+                            {sections[sectionName].map((user) => (
+                              <div
+                                key={user.id}
+                                onDragOver={(event) => editMode && event.preventDefault()}
+                                onDrop={() => handleDropOnNotAttending()}
+                              >
+                                {(() => {
+                                  const assignment = assignmentsByUserId.get(user.id);
+                                  return (
+                                    <div
+                                      draggable={editMode && canAdmin}
+                                      onDragStart={() => setDragState({ type: "notAttending", userId: user.id })}
+                                      onDragEnd={() => setDragState(null)}
+                                      className="flex min-w-0 cursor-grab items-start gap-3 rounded-xl border border-border/70 bg-background px-3 py-2 opacity-60"
+                                    >
+                                      {editMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
+                                      <Avatar className="size-8 shrink-0 rounded-lg">
+                                        <AvatarImage src={user.avatar} alt={user.name} />
+                                        <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
+                                      </Avatar>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <div className="truncate text-sm font-medium">{user.name}</div>
+                                          <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
+                                        </div>
+                                        <div className="break-words text-xs text-muted-foreground">{user.score} {dictionary.navUser.scoreSuffix}</div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            ))}
                           </div>
-                            );
-                          })()}
-                        </div>
-                      ))}
-                      {!notAttendingUsers.length ? (
+                        ));
+                      })()}
+                      {!groupedNotAttendingUsers.length ? (
                         <div className="rounded-xl border border-dashed border-border/80 px-3 py-6 text-center text-sm text-muted-foreground">
                           {dictionary.shared.nothingCreatedYet}
                         </div>
@@ -919,9 +964,12 @@ function SquadCard({
   removeRosterSquad,
   moveSquad,
   updatePlayerField,
+  updatePlayerIcon,
   removeRosterSlot,
   handleDropOnSlot,
   addRosterSlot,
+  assignUserToSlot,
+  allUsersSorted,
   usersById,
   assignmentsByUserId,
   groupsById,
@@ -937,15 +985,21 @@ function SquadCard({
   removeRosterSquad: (index: number) => void;
   moveSquad: (index: number, direction: -1 | 1) => void;
   updatePlayerField: (sIndex: number, pIndex: number, field: "note" | "roleName", value: string) => void;
+  updatePlayerIcon: (sIndex: number, pIndex: number, roleIcon: string) => void;
   removeRosterSlot: (sIndex: number, pIndex: number) => void;
   handleDropOnSlot: (sIndex: number, pIndex: number) => void;
   addRosterSlot: (index: number) => void;
+  assignUserToSlot: (userId: string, sIndex: number, pIndex: number) => void;
+  allUsersSorted: AppUser[];
   usersById: Map<string, AppUser>;
   assignmentsByUserId: Map<string, ServerUserAssignment>;
   groupsById: Map<string, Group>;
   canAdmin: boolean;
   setDragState: (state: DragState | null) => void;
 }) {
+  const [slotPickerOpen, setSlotPickerOpen] = useState<number | null>(null);
+  const [slotSearches, setSlotSearches] = useState<Record<number, string>>({});
+
   return (
     <Card
       className="rounded-2xl border-border/70 bg-card"
@@ -978,8 +1032,8 @@ function SquadCard({
         ) : (
           <div className="flex items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-lg">{squad.name}</CardTitle>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{squad.group}</div>
+              <CardTitle className="cursor-pointer text-lg" onClick={() => setFocusedGroup(squad.group)}>{squad.name}</CardTitle>
+              <div className="cursor-pointer text-xs uppercase tracking-[0.2em] text-muted-foreground" onClick={() => setFocusedGroup(squad.group)}>{squad.group}</div>
             </div>
             <Badge className="rounded-full border-0" style={{ backgroundColor: squad.color, color: "#08111f" }}>
               {squad.players.length} slots
@@ -1003,9 +1057,15 @@ function SquadCard({
             >
               <div className="mb-2 flex items-center justify-between gap-2">
                 {editMode ? (
-                  <Input defaultValue={player.roleName ?? ""} onBlur={(event) => updatePlayerField(squadIndex, playerIndex, "roleName", event.target.value)} className="h-8 rounded-lg text-xs" />
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <RoleIconSelect value={player.roleIcon} onChange={(value) => updatePlayerIcon(squadIndex, playerIndex, value)} />
+                    <Input defaultValue={player.roleName ?? ""} onBlur={(event) => updatePlayerField(squadIndex, playerIndex, "roleName", event.target.value)} className="h-8 rounded-lg text-xs" />
+                  </div>
                 ) : (
-                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{player.roleName ?? dictionary.roster.role}</div>
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    {player.roleIcon ? <img src={player.roleIcon} alt="" className="size-3.5 object-contain invert dark:invert-0" /> : null}
+                    <span>{player.roleName ?? dictionary.roster.role}</span>
+                  </div>
                 )}
                 {editMode ? (
                   <Button variant="ghost" size="icon" className="size-8 rounded-xl" onClick={() => removeRosterSlot(squadIndex, playerIndex)}>
@@ -1019,15 +1079,15 @@ function SquadCard({
                     draggable={editMode && canAdmin}
                     onDragStart={() => setDragState({ type: "slot", squadIndex, playerIndex })}
                     onDragEnd={() => setDragState(null)}
-                    className="flex cursor-grab items-center gap-3 rounded-xl border border-border/60 bg-background px-3 py-2"
+                    className="flex min-w-0 cursor-grab items-center gap-3 rounded-xl border border-border/60 bg-background px-3 py-2"
                   >
                     {editMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
-                    <Avatar className="size-8 rounded-lg">
+                    <Avatar className="size-8 shrink-0 rounded-lg">
                       <AvatarImage src={slotUser.avatar} alt={slotUser.name} />
                       <AvatarFallback>{slotUser.name.slice(0, 2)}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <div className="truncate font-medium">{slotUser.name}</div>
                         <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
                       </div>
@@ -1041,9 +1101,81 @@ function SquadCard({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="rounded-xl border border-dashed border-border/80 px-3 py-4 text-sm text-muted-foreground">
-                    {player.note ?? dictionary.common.openSlot}
-                  </div>
+                  <Popover open={slotPickerOpen === playerIndex} onOpenChange={(open) => setSlotPickerOpen(open ? playerIndex : null)}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="w-full rounded-xl border border-dashed border-border/80 px-3 py-4 text-left text-sm text-muted-foreground"
+                      >
+                        {player.note ?? dictionary.common.openSlot}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[320px] p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          value={slotSearches[playerIndex] ?? ""}
+                          onValueChange={(value) => setSlotSearches((current) => ({ ...current, [playerIndex]: value }))}
+                          placeholder={dictionary.common.openSlot}
+                        />
+                        <CommandList>
+                          <CommandEmpty>{dictionary.userManagement.noResults}</CommandEmpty>
+                          <CommandGroup>
+                            {allUsersSorted
+                              .filter((user) => user.name.toLowerCase().includes((slotSearches[playerIndex] ?? "").trim().toLowerCase()))
+                              .sort((a, b) => {
+                                const aAssignedElsewhere = squad.players.some(
+                                  (currentPlayer, currentIndex) => currentIndex !== playerIndex && currentPlayer.id === a.id,
+                                );
+                                const bAssignedElsewhere = squad.players.some(
+                                  (currentPlayer, currentIndex) => currentIndex !== playerIndex && currentPlayer.id === b.id,
+                                );
+
+                                if (aAssignedElsewhere !== bAssignedElsewhere) {
+                                  return aAssignedElsewhere ? 1 : -1;
+                                }
+
+                                return a.name.localeCompare(b.name);
+                              })
+                              .slice(0, 5)
+                              .map((user) => {
+                                const assignment = assignmentsByUserId.get(user.id);
+                                const assignedElsewhere = squad.players.some((currentPlayer, currentIndex) => currentIndex !== playerIndex && currentPlayer.id === user.id);
+
+                                return (
+                                  <CommandItem
+                                    key={user.id}
+                                    value={user.name}
+                                    className={cn(
+                                      assignedElsewhere && "bg-amber-500/10 text-amber-100 data-[selected=true]:bg-amber-500/20",
+                                    )}
+                                    onSelect={() => {
+                                      assignUserToSlot(user.id, squadIndex, playerIndex);
+                                      setSlotPickerOpen(null);
+                                      setSlotSearches((current) => ({ ...current, [playerIndex]: "" }));
+                                    }}
+                                  >
+                                    <Avatar className="mr-2 size-6 rounded-sm">
+                                      <AvatarImage src={user.avatar} alt={user.name} />
+                                      <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="truncate">{user.name}</div>
+                                      <div className="truncate text-xs text-muted-foreground">
+                                        {getPrimaryGroupLabel(assignment, groupsById, dictionary)} • {user.score} {dictionary.navUser.scoreSuffix}
+                                      </div>
+                                      <div className="truncate text-xs text-muted-foreground/80">
+                                        {getSecondaryGroupLabel(assignment, groupsById, dictionary)}
+                                      </div>
+                                    </div>
+                                    {assignedElsewhere ? <ChevronsUpDown className="ml-auto size-4" /> : null}
+                                  </CommandItem>
+                                );
+                              })}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {editMode ? (
                     <Input defaultValue={player.note ?? ""} onBlur={(event) => updatePlayerField(squadIndex, playerIndex, "note", event.target.value)} placeholder={dictionary.common.slotNote} className="rounded-lg" />
                   ) : null}
@@ -1060,6 +1192,35 @@ function SquadCard({
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+function RoleIconSelect({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (value: string) => void;
+}) {
+  const selectedValue = value && roleIconOptions.includes(value as (typeof roleIconOptions)[number])
+    ? value
+    : roleIconOptions[0];
+
+  return (
+    <Select value={selectedValue} onValueChange={onChange}>
+      <SelectTrigger className="h-9 w-20 rounded-lg px-2.5">
+        <SelectValue>
+          <img src={selectedValue} alt="" className="h-6 w-10 object-contain invert dark:invert-0" />
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {roleIconOptions.map((iconPath) => (
+          <SelectItem key={iconPath} value={iconPath}>
+            <img src={iconPath} alt="" className="h-6 w-10 object-contain invert dark:invert-0" />
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -1085,6 +1246,15 @@ function getGroupMatchRank(
   return 2;
 }
 
+function getPrimaryGroupLabel(
+  assignment: ServerUserAssignment | undefined,
+  groupsById: Map<string, Group>,
+  dictionary: Dictionary,
+) {
+  const primaryGroup = assignment?.primaryGroupId ? groupsById.get(assignment.primaryGroupId) : undefined;
+  return primaryGroup?.name ?? dictionary.shared.notSet;
+}
+
 function GroupBadge({
   assignment,
   groupsById,
@@ -1106,7 +1276,7 @@ function GroupBadge({
   return (
     <HoverCard>
       <HoverCardTrigger asChild>
-        <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
+        <Badge variant="secondary" className="max-w-full rounded-full px-2 py-0 text-[10px]">
           {primaryGroup.name}
         </Badge>
       </HoverCardTrigger>
@@ -1118,4 +1288,16 @@ function GroupBadge({
       </HoverCardContent>
     </HoverCard>
   );
+}
+
+function getSecondaryGroupLabel(
+  assignment: ServerUserAssignment | undefined,
+  groupsById: Map<string, Group>,
+  dictionary: Dictionary,
+) {
+  const secondaryGroups = (assignment?.secondaryGroupIds || [])
+    .map((groupId) => groupsById.get(groupId as never)?.name)
+    .filter(Boolean) as string[];
+
+  return secondaryGroups.length ? secondaryGroups.join(", ") : dictionary.userManagement.noSecondaryGroups;
 }

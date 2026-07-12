@@ -84,6 +84,7 @@ export function RosterCreator({
         players: squad.roles.flatMap((role) =>
           Array.from({ length: role.count }).map(() => ({
             roleName: role.name,
+            roleIcon: role.icon,
             ack: false,
             note: role.note,
           }))

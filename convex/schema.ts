@@ -65,6 +65,7 @@ const rosterPlayer = v.object({
   ack: v.boolean(),
   note: v.optional(v.string()),
   roleName: v.optional(v.string()),
+  roleIcon: v.optional(v.string()),
 });
 
 const rosterSquad = v.object({
@@ -200,6 +201,7 @@ export default defineSchema({
     topicMessageIds: v.array(v.string()),
     lastSyncedAt: v.optional(v.string()),
     lastEventUpdatedAt: v.optional(v.string()),
+    lastRosterUpdatedAt: v.optional(v.string()),
     lastConfigUpdatedAt: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.string(),

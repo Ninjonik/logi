@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { UserAssignmentForm } from "@/components/app/user-assignment-form";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getAssignmentMetadata, getPlayerMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import {
   getAssignmentUser,
@@ -17,13 +18,17 @@ export async function generateMetadata({
 }: {
   params: Promise<{ serverId: string; assignmentId: string }>;
 }): Promise<Metadata> {
-  const { serverId, assignmentId } = await params;
-  const assignment = await getServerUserAssignment(assignmentId);
-  const user = assignment ? await getAssignmentUser(assignment) : undefined;
+  const { assignmentId } = await params;
+  const assignment = await getAssignmentMetadata(assignmentId);
+  const user = assignment ? await getPlayerMetadata(assignment.userId) : undefined;
   return {
     title: user ? `${user.name} ${getDictionary("en").userManagement.assignmentTitleSuffix}` : getDictionary("en").userManagement.editAssignment,
     description: getDictionary("en").userManagement.assignmentMetaDescription,
   };
+}
+
+export function generateStaticParams() {
+  return [{ assignmentId: "sample-assignment" }];
 }
 
 export default async function ServerUserDetailPage({
