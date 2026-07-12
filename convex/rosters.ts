@@ -6,6 +6,7 @@ const rosterPlayer = v.object({
   ack: v.boolean(),
   note: v.optional(v.string()),
   roleName: v.optional(v.string()),
+  roleIcon: v.optional(v.string()),
 });
 
 const rosterSquad = v.object({

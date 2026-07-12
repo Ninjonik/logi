@@ -16,6 +16,13 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   };
 }
 
+function normalizeUserDoc<T extends { _id: unknown; id: string }>(doc: T) {
+  return {
+    ...doc,
+    _id: String(doc._id),
+  };
+}
+
 function deriveEventStatus(event: {
   registrationEnd: string;
   meetingStart: string;
@@ -238,6 +245,7 @@ export const updateEventSyncState = mutation({
     infoMessageId: v.optional(v.string()),
     topicMessageIds: v.array(v.string()),
     lastEventUpdatedAt: v.optional(v.string()),
+    lastRosterUpdatedAt: v.optional(v.string()),
     lastConfigUpdatedAt: v.optional(v.string()),
     lastSyncedAt: v.string(),
   },
@@ -254,6 +262,7 @@ export const updateEventSyncState = mutation({
       infoMessageId: args.infoMessageId,
       topicMessageIds: args.topicMessageIds,
       lastEventUpdatedAt: args.lastEventUpdatedAt,
+      lastRosterUpdatedAt: args.lastRosterUpdatedAt,
       lastConfigUpdatedAt: args.lastConfigUpdatedAt,
       lastSyncedAt: args.lastSyncedAt,
       updatedAt: now,
@@ -276,6 +285,52 @@ export const updateEventSyncState = mutation({
     });
 
     return String(stateId);
+  },
+});
+
+export const getRosterImageContext = query({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      return null;
+    }
+
+    const [roster, groups, assignments] = await Promise.all([
+      ctx.db.query("rosters").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique(),
+      ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", event.guildId)).collect(),
+      ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", event.guildId)).collect(),
+    ]);
+
+    if (!roster?.published) {
+      return null;
+    }
+
+    const userIds = [
+      ...new Set([
+        ...roster.reservePlayerIds,
+        ...roster.notAttendingPlayerIds,
+        ...roster.squads.flatMap((squad) => squad.players.map((player) => player.id).filter(Boolean) as string[]),
+      ]),
+    ];
+
+    const usersRaw = await Promise.all(
+      userIds.map((userId) => ctx.db.query("users").withIndex("id", (q) => q.eq("id", userId)).unique()),
+    );
+    const users = usersRaw.filter((user): user is NonNullable<(typeof usersRaw)[number]> => Boolean(user));
+
+    return {
+      event: normalizeEventDoc(event),
+      roster: normalizeDoc(roster),
+      groups: groups.map(normalizeDoc),
+      assignments: assignments.map(normalizeDoc),
+      users: users.map(normalizeUserDoc),
+    };
   },
 });
 

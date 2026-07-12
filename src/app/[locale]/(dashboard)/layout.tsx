@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/app/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 
 export default async function DashboardLayout({
   children,
@@ -14,6 +15,8 @@ export default async function DashboardLayout({
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
+  await connection();
+
   const { locale } = await params;
   const safeLocale = (isLocale(locale) ? locale : "en") as Locale;
   const dictionary = getDictionary(safeLocale);

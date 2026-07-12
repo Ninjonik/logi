@@ -25,21 +25,35 @@ export function ThemeProvider({
     if (typeof window === "undefined") return
 
     const root = window.document.documentElement
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
 
-    root.classList.remove("light", "dark")
+    const applyTheme = (value: Theme) => {
+      root.classList.remove("light", "dark")
 
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
+      if (value === "system") {
+        root.classList.add(mediaQuery.matches ? "dark" : "light")
+        return
+      }
 
-      root.classList.add(systemTheme)
+      root.classList.add(value)
+    }
+
+    applyTheme(theme)
+
+    if (theme !== "system") {
       return
     }
 
-    root.classList.add(theme)
-  }, [theme])
+    const handleSystemThemeChange = () => {
+      applyTheme("system")
+    }
+
+    mediaQuery.addEventListener("change", handleSystemThemeChange)
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleSystemThemeChange)
+    }
+  }, [theme, storageKey])
 
   const value = {
     theme,

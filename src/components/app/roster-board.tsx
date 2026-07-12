@@ -44,11 +44,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
 import type { AppUser, EventRecord, Group, Roster } from "@/types/domain";
 import { formatDateTime } from "@/lib/format";
+import { roleIconOptions } from "@/lib/squad-preset-templates";
 
 type DragState =
   | { type: "reserve"; userId: string }
@@ -379,8 +381,16 @@ export function RosterBoard({
       const target = next.squads[targetSquadIndex]?.players[targetPlayerIndex];
       if (!source || !target) return current;
       const sourceCopy = { ...source };
-      next.squads[sourceSquadIndex].players[sourcePlayerIndex] = { ...target, roleName: source.roleName };
-      next.squads[targetSquadIndex].players[targetPlayerIndex] = { ...sourceCopy, roleName: target.roleName };
+      next.squads[sourceSquadIndex].players[sourcePlayerIndex] = {
+        ...target,
+        roleName: source.roleName,
+        roleIcon: source.roleIcon,
+      };
+      next.squads[targetSquadIndex].players[targetPlayerIndex] = {
+        ...sourceCopy,
+        roleName: target.roleName,
+        roleIcon: target.roleIcon,
+      };
       return next;
     });
   }
@@ -392,6 +402,17 @@ export function RosterBoard({
       const slot = next.squads[squadIndex]?.players[playerIndex];
       if (!slot) return current;
       slot[field] = value;
+      return next;
+    });
+  }
+
+  function updatePlayerIcon(squadIndex: number, playerIndex: number, roleIcon: string) {
+    setBoard((current) => {
+      if (!current) return current;
+      const next = structuredClone(current);
+      const slot = next.squads[squadIndex]?.players[playerIndex];
+      if (!slot) return current;
+      slot.roleIcon = roleIcon;
       return next;
     });
   }
@@ -421,7 +442,12 @@ export function RosterBoard({
     setBoard((current) => {
       if (!current) return current;
       const next = structuredClone(current);
-      next.squads[squadIndex].players.push({ ack: false, roleName: dictionary.roster.newRoleName, note: "" });
+      next.squads[squadIndex].players.push({
+        ack: false,
+        roleName: dictionary.roster.newRoleName,
+        roleIcon: "/img/roles/icn_Rifleman.png",
+        note: "",
+      });
       return next;
     });
   }
@@ -435,7 +461,7 @@ export function RosterBoard({
         group: dictionary.roster.defaultSquadGroup,
         order: next.squads.length,
         color: "#64748b",
-        players: [{ ack: false, roleName: dictionary.roster.defaultSquadLeadRole, note: "" }],
+        players: [{ ack: false, roleName: dictionary.roster.defaultSquadLeadRole, note: "", roleIcon: "/img/roles/icn_officer.png" }],
       });
       return next;
     });
@@ -567,6 +593,14 @@ export function RosterBoard({
           router.refresh();
         }
 
+        await fetch("/api/cache/roster-image", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            eventId: event.id,
+          }),
+        }).catch(() => null);
+
         toast.success(published ? dictionary.roster.published : dictionary.roster.saved);
       } catch (error) {
         console.error("Failed to save roster:", error);
@@ -669,6 +703,7 @@ export function RosterBoard({
                         removeRosterSquad={removeRosterSquad}
                         moveSquad={moveSquad}
                         updatePlayerField={updatePlayerField}
+                        updatePlayerIcon={updatePlayerIcon}
                         removeRosterSlot={removeRosterSlot}
                         handleDropOnSlot={handleDropOnSlot}
                         addRosterSlot={addRosterSlot}
@@ -695,6 +730,7 @@ export function RosterBoard({
                                   removeRosterSquad={removeRosterSquad}
                                   moveSquad={moveSquad}
                                   updatePlayerField={updatePlayerField}
+                                  updatePlayerIcon={updatePlayerIcon}
                                   removeRosterSlot={removeRosterSlot}
                                   handleDropOnSlot={handleDropOnSlot}
                                   addRosterSlot={addRosterSlot}
@@ -928,6 +964,7 @@ function SquadCard({
   removeRosterSquad,
   moveSquad,
   updatePlayerField,
+  updatePlayerIcon,
   removeRosterSlot,
   handleDropOnSlot,
   addRosterSlot,
@@ -948,6 +985,7 @@ function SquadCard({
   removeRosterSquad: (index: number) => void;
   moveSquad: (index: number, direction: -1 | 1) => void;
   updatePlayerField: (sIndex: number, pIndex: number, field: "note" | "roleName", value: string) => void;
+  updatePlayerIcon: (sIndex: number, pIndex: number, roleIcon: string) => void;
   removeRosterSlot: (sIndex: number, pIndex: number) => void;
   handleDropOnSlot: (sIndex: number, pIndex: number) => void;
   addRosterSlot: (index: number) => void;
@@ -1019,9 +1057,15 @@ function SquadCard({
             >
               <div className="mb-2 flex items-center justify-between gap-2">
                 {editMode ? (
-                  <Input defaultValue={player.roleName ?? ""} onBlur={(event) => updatePlayerField(squadIndex, playerIndex, "roleName", event.target.value)} className="h-8 rounded-lg text-xs" />
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <RoleIconSelect value={player.roleIcon} onChange={(value) => updatePlayerIcon(squadIndex, playerIndex, value)} />
+                    <Input defaultValue={player.roleName ?? ""} onBlur={(event) => updatePlayerField(squadIndex, playerIndex, "roleName", event.target.value)} className="h-8 rounded-lg text-xs" />
+                  </div>
                 ) : (
-                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{player.roleName ?? dictionary.roster.role}</div>
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    {player.roleIcon ? <img src={player.roleIcon} alt="" className="size-3.5 object-contain invert dark:invert-0" /> : null}
+                    <span>{player.roleName ?? dictionary.roster.role}</span>
+                  </div>
                 )}
                 {editMode ? (
                   <Button variant="ghost" size="icon" className="size-8 rounded-xl" onClick={() => removeRosterSlot(squadIndex, playerIndex)}>
@@ -1078,6 +1122,20 @@ function SquadCard({
                           <CommandGroup>
                             {allUsersSorted
                               .filter((user) => user.name.toLowerCase().includes((slotSearches[playerIndex] ?? "").trim().toLowerCase()))
+                              .sort((a, b) => {
+                                const aAssignedElsewhere = squad.players.some(
+                                  (currentPlayer, currentIndex) => currentIndex !== playerIndex && currentPlayer.id === a.id,
+                                );
+                                const bAssignedElsewhere = squad.players.some(
+                                  (currentPlayer, currentIndex) => currentIndex !== playerIndex && currentPlayer.id === b.id,
+                                );
+
+                                if (aAssignedElsewhere !== bAssignedElsewhere) {
+                                  return aAssignedElsewhere ? 1 : -1;
+                                }
+
+                                return a.name.localeCompare(b.name);
+                              })
                               .slice(0, 5)
                               .map((user) => {
                                 const assignment = assignmentsByUserId.get(user.id);
@@ -1087,6 +1145,9 @@ function SquadCard({
                                   <CommandItem
                                     key={user.id}
                                     value={user.name}
+                                    className={cn(
+                                      assignedElsewhere && "bg-amber-500/10 text-amber-100 data-[selected=true]:bg-amber-500/20",
+                                    )}
                                     onSelect={() => {
                                       assignUserToSlot(user.id, squadIndex, playerIndex);
                                       setSlotPickerOpen(null);
@@ -1131,6 +1192,35 @@ function SquadCard({
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+function RoleIconSelect({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (value: string) => void;
+}) {
+  const selectedValue = value && roleIconOptions.includes(value as (typeof roleIconOptions)[number])
+    ? value
+    : roleIconOptions[0];
+
+  return (
+    <Select value={selectedValue} onValueChange={onChange}>
+      <SelectTrigger className="h-9 w-20 rounded-lg px-2.5">
+        <SelectValue>
+          <img src={selectedValue} alt="" className="h-6 w-10 object-contain invert dark:invert-0" />
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {roleIconOptions.map((iconPath) => (
+          <SelectItem key={iconPath} value={iconPath}>
+            <img src={iconPath} alt="" className="h-6 w-10 object-contain invert dark:invert-0" />
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 

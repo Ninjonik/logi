@@ -93,8 +93,12 @@ type Roster = {
   id: string;
   eventId: string;
   published: boolean;
+  updatedAt: string;
   squads: Array<{
     name: string;
+    group: string;
+    color: string;
+    order: number;
     players: Array<{
       id?: string;
       ack: boolean;
@@ -115,6 +119,7 @@ type SyncState = {
   topicMessageIds: string[];
   lastSyncedAt?: string;
   lastEventUpdatedAt?: string;
+  lastRosterUpdatedAt?: string;
   lastConfigUpdatedAt?: string;
 };
 
@@ -155,6 +160,7 @@ const convex = new ConvexHttpClient(convexUrl);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 });
+const appSiteUrl = process.env.SITE_URL ?? "http://localhost:3000";
 
 const queuedEventIds = new Set<string>();
 let isSyncing = false;
@@ -203,9 +209,11 @@ async function syncGuildPayload(payload: SyncPayload) {
 
   for (const event of payload.events) {
     const state = payload.syncStates.find((item) => item.eventId === event.id);
+    const roster = payload.rosters.find((item) => item.eventId === event.id);
     const needsSync =
       !state ||
       state.lastEventUpdatedAt !== event.updatedAt ||
+      state.lastRosterUpdatedAt !== roster?.updatedAt ||
       state.lastConfigUpdatedAt !== payload.config.updatedAt ||
       queuedEventIds.has(event.id);
 
@@ -245,6 +253,7 @@ async function syncGuildMemberAccess(payload: SyncPayload) {
 async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncState) {
   const guild = await client.guilds.fetch(payload.config.guildId).catch(() => null);
   if (!guild) return;
+  const roster = payload.rosters.find((item) => item.eventId === event.id);
 
   let announcementMessageId = state?.announcementMessageId;
   let forumChannelId = state?.forumChannelId;
@@ -265,14 +274,18 @@ async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncS
         ? await textChannel.messages.fetch(announcementMessageId).catch(() => null)
         : null;
 
-      if (existingMessage) {
-        // Only update the existing message in-place
+      if (event.status === "concluded") {
+        if (existingMessage) {
+          await existingMessage.delete().catch(() => null);
+          announcementMessageId = undefined;
+          stateNeedsMutationUpdate = true;
+        }
+      } else if (existingMessage) {
         await existingMessage.edit({ embeds: [embed], components });
       } else {
-        // If it truly doesn't exist, send it ONCE and capture the ID
         const created = await textChannel.send({ embeds: [embed], components });
         announcementMessageId = created.id;
-        stateNeedsMutationUpdate = true; // Flag that we have a brand new ID to commit
+        stateNeedsMutationUpdate = true;
       }
     }
   }
@@ -325,6 +338,10 @@ async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncS
       topicMessageIds = await ensureForumTopicPosts(forumChannel, topicPreset);
       stateNeedsMutationUpdate = true;
     }
+
+    if (event.status === "concluded") {
+      await finalizeForumAfterConclusion(forumChannel, event);
+    }
   }
 
   // Always update Convex if something changed, OR if a new ID was generated
@@ -340,10 +357,13 @@ async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncS
     infoMessageId,
     topicMessageIds,
     lastEventUpdatedAt: event.updatedAt,
+    lastRosterUpdatedAt: roster?.updatedAt,
     lastConfigUpdatedAt: payload.config.updatedAt,
     lastSyncedAt: new Date().toISOString(),
   });
-}async function ensureForumTopicPosts(forumChannel: ForumChannel, topicPreset?: TopicPreset) {
+}
+
+async function ensureForumTopicPosts(forumChannel: ForumChannel, topicPreset?: TopicPreset) {
   const topicMessages: string[] = [];
 
   for (const topic of topicPreset?.topics ?? []) {
@@ -370,9 +390,34 @@ async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncS
   return topicMessages;
 }
 
+async function finalizeForumAfterConclusion(forumChannel: ForumChannel, event: EventRecord) {
+  const activePosts = await forumChannel.threads.fetchActive().catch(() => null);
+  const existingPosts = activePosts?.threads ? [...activePosts.threads.values()] : [];
+  let debriefPost = existingPosts.find((post) => post.name === "Debrief");
+
+  if (!debriefPost) {
+    debriefPost = await forumChannel.threads.create({
+      name: "Debrief",
+      message: {
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(`Debrief: ${event.name}`)
+            .setDescription("Use this thread for after-action notes, lessons learned, and follow-up discussion."),
+        ],
+      },
+    });
+  }
+
+  for (const post of [...existingPosts, debriefPost]) {
+    if ("setPinned" in post && typeof post.setPinned === "function") {
+      await post.setPinned(post.id === debriefPost.id).catch(() => null);
+    }
+  }
+}
+
 async function handleSignupInteraction(interaction: ButtonInteraction) {
   const [, eventId, encodedGroupId] = interaction.customId.split(":");
-  const groupId = decodeURIComponent(encodedGroupId);
+  const groupId = decodeURIComponent(encodedGroupId ?? "");
 
   if (interaction.customId.startsWith("attendance:")) {
     const context = (await convex.query(getEventInteractionContextReference, {
@@ -475,6 +520,7 @@ async function handleAttendanceInteraction(
     eventId: context.event.id as never,
     userId: interaction.user.id,
   });
+  await revalidateRosterImage(context.event.id);
 
   queuedEventIds.add(context.event.id);
   setTimeout(() => {
@@ -550,24 +596,8 @@ function buildEventEmbed(config: DiscordConfig, groups: Group[], event: EventRec
     .setColor("#FFB000")
     .setFooter({ text: `Managed via Logi • Times adapt to your device` });
 
-  // Add Group sign-ups as clean field sections
-  if (event.status === "starting" && roster?.published) {
-    const rosterFields = roster.squads
-      .map((squad) => {
-        const players = squad.players
-          .filter((player) => player.id)
-          .map((player) => `${player.ack ? "✅" : "🟡"} <@${player.id}>${player.roleName ? ` - ${player.roleName}` : ""}`);
-        return {
-          name: `${squad.name} (${players.length})`,
-          value: players.length ? players.join("\n").slice(0, 1024) : "*No players assigned*",
-          inline: false,
-        };
-      })
-      .slice(0, 25);
-
-    if (rosterFields.length) {
-      embed.addFields(rosterFields);
-    }
+  if (shouldShowPublishedRosterImage(event, roster)) {
+    embed.setImage(buildRosterImageUrl(event.id));
   } else {
     for (const group of groups) {
       const members = signupsByGroup.get(group.name) ?? [];
@@ -619,6 +649,10 @@ function buildEventComponents(groups: Group[], event: EventRecord, roster?: Rost
         .setURL(generateCalendarUrl(event)),
     ),
   ];
+}
+
+function shouldShowPublishedRosterImage(event: EventRecord, roster?: Roster) {
+  return Boolean(roster?.published && (event.status === "closed" || event.status === "starting"));
 }
 
 function buildSignupButtons(groups: Group[], eventId: string, event: EventRecord) {
@@ -778,6 +812,20 @@ function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord) {
 
 function buildForumThreadName(config: DiscordConfig, event: EventRecord) {
   return `${event.name} ${formatShortDate(event.gameStart, config.timezone)}`.slice(0, 100);
+}
+
+function buildRosterImageUrl(eventId: string) {
+  const url = new URL(`/api/discord/roster-image/${eventId}`, appSiteUrl);
+  url.searchParams.set("secret", internalSecret as string);
+  return url.toString();
+}
+
+async function revalidateRosterImage(eventId: string) {
+  await fetch(new URL("/api/cache/roster-image", appSiteUrl), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ eventId, secret: internalSecret }),
+  }).catch(() => null);
 }
 
 function pickButtonStyle(color: string) {
