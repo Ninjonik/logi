@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { supportedClanLanguages } from "@/lib/clan-language";
 import { supportedTimezones } from "@/lib/discord-timezones";
 
 const discordIdField = z
@@ -11,6 +12,7 @@ const discordIdField = z
 
 export const discordSettingsSchema = z.object({
   timezone: z.enum(supportedTimezones),
+  defaultLanguage: z.enum(supportedClanLanguages),
   announcementsChannelId: discordIdField,
   forumCategoryId: discordIdField,
   clanRoleId: discordIdField,

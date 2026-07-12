@@ -12,6 +12,14 @@ type RosterImageContext = {
     side?: string;
     meetingStart: string;
     gameStart: string;
+    cap?: string;
+    notes?: string;
+    registrationEnd: string;
+    gameEnd: string;
+    topicPresetId?: string;
+    server?: string;
+    serverPassword?: string;
+    description?: string;
   };
   roster: {
     updatedAt: string;
@@ -31,6 +39,11 @@ type RosterImageContext = {
         note?: string;
       }>;
     }>;
+  };
+  config?: {
+    guildId: string;
+    timezone: string;
+    defaultLanguage: "en" | "cs";
   };
   groups: Array<{
     id: string;

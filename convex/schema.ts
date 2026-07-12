@@ -112,6 +112,7 @@ export default defineSchema({
   discordConfigs: defineTable({
     guildId: v.string(),
     timezone: v.string(),
+    defaultLanguage: v.union(v.literal("en"), v.literal("cs")),
     announcementsChannelId: v.optional(v.string()),
     forumCategoryId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),

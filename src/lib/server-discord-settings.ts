@@ -14,6 +14,7 @@ export async function getDiscordConfigByGuild(guildId: string) {
 export async function saveDiscordConfig(input: {
   guildId: string;
   timezone: string;
+  defaultLanguage: "en" | "cs";
   announcementsChannelId?: string;
   forumCategoryId?: string;
   clanRoleId?: string;
@@ -23,6 +24,7 @@ export async function saveDiscordConfig(input: {
     secret: getInternalAuthSecret(),
     guildId: input.guildId,
     timezone: input.timezone,
+    defaultLanguage: input.defaultLanguage,
     announcementsChannelId: input.announcementsChannelId,
     forumCategoryId: input.forumCategoryId,
     clanRoleId: input.clanRoleId,

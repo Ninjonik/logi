@@ -106,6 +106,20 @@ export const syncManagedGuilds = mutation({
           adminIds,
           updatedAt: now,
         });
+
+        const existingConfig = await ctx.db
+          .query("discordConfigs")
+          .withIndex("guildId", (q) => q.eq("guildId", guild.id))
+          .unique();
+        if (!existingConfig) {
+          await ctx.db.insert("discordConfigs", {
+            guildId: guild.id,
+            timezone: "UTC",
+            defaultLanguage: "en",
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
         continue;
       }
 
@@ -119,6 +133,14 @@ export const syncManagedGuilds = mutation({
         memberIds: [],
         members: [],
         mercenaryIds: [],
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await ctx.db.insert("discordConfigs", {
+        guildId: guild.id,
+        timezone: "UTC",
+        defaultLanguage: "en",
         createdAt: now,
         updatedAt: now,
       });
