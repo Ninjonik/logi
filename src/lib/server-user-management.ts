@@ -1,5 +1,6 @@
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
+import { cache } from "react";
 
 import { getInternalAuthSecret } from "@/lib/env";
 import type { AppUser, Guild } from "@/types/domain";
@@ -24,23 +25,23 @@ export type ServerUserAssignment = {
   updatedAt: string;
 };
 
-export async function getServerUserAssignments(serverId: string): Promise<ServerUserAssignment[]> {
+export const getServerUserAssignments = cache(async function getServerUserAssignments(serverId: string): Promise<ServerUserAssignment[]> {
   return (await fetchQuery(listAssignmentsReference, { serverId })) as ServerUserAssignment[];
-}
+});
 
-export async function getServerUserAssignment(assignmentId: string) {
+export const getServerUserAssignment = cache(async function getServerUserAssignment(assignmentId: string) {
   return (await fetchQuery(getAssignmentByIdReference, {
     assignmentId: assignmentId as never,
   })) as ServerUserAssignment | null;
-}
+});
 
 export async function getUsersByIds(userIds: string[]) {
   return (await fetchQuery(getUsersByIdsReference, { userIds })) as AppUser[];
 }
 
-export async function listUsers() {
+export const listUsers = cache(async function listUsers() {
   return (await fetchQuery(listUsersReference, {})) as AppUser[];
-}
+});
 
 export async function getAssignmentUser(assignment: ServerUserAssignment) {
   const users = await getUsersByIds([assignment.userId]);

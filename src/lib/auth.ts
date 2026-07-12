@@ -3,6 +3,7 @@ import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 import { jwtVerify, SignJWT } from "jose";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { getInternalAuthSecret, getJwtSecret } from "@/lib/env";
 import type { AppUser, Guild } from "@/types/domain";
@@ -82,21 +83,21 @@ export async function clearSessionToken() {
   cookieStore.delete(SESSION_COOKIE_NAME);
 }
 
-export async function getSessionToken() {
+export const getSessionToken = cache(async function getSessionToken() {
   const cookieStore = await cookies();
   return cookieStore.get(SESSION_COOKIE_NAME)?.value ?? null;
-}
+});
 
-export async function getSession() {
+export const getSession = cache(async function getSession() {
   const token = await getSessionToken();
   if (!token) {
     return null;
   }
 
   return await verifySessionToken(token);
-}
+});
 
-export async function getLoggedInUser(): Promise<AppUser | null> {
+export const getLoggedInUser = cache(async function getLoggedInUser(): Promise<AppUser | null> {
   const session = await getSession();
   if (!session) {
     return null;
@@ -107,11 +108,11 @@ export async function getLoggedInUser(): Promise<AppUser | null> {
   } catch {
     return null;
   }
-}
+});
 
 export const getCurrentPlayer = getLoggedInUser;
 
-export async function getVisibleGuildsForLoggedInUser(): Promise<Guild[]> {
+export const getVisibleGuildsForLoggedInUser = cache(async function getVisibleGuildsForLoggedInUser(): Promise<Guild[]> {
   const user = await getLoggedInUser();
   if (!user) {
     return [];
@@ -122,7 +123,7 @@ export async function getVisibleGuildsForLoggedInUser(): Promise<Guild[]> {
   } catch {
     return [];
   }
-}
+});
 
 export async function handleIfNotLoggedIn(redirectUrl: string) {
   const user = await getLoggedInUser();

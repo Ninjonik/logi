@@ -5,7 +5,7 @@ import { UserAssignmentForm } from "@/components/app/user-assignment-form";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getServerContext } from "@/lib/server-context";
-import { getEligibleUsersForServer, getServerUserAssignments } from "@/lib/server-user-management";
+import { getEligibleUsersForServer } from "@/lib/server-user-management";
 
 export default async function CreateServerUserPage({
   params,
@@ -17,9 +17,8 @@ export default async function CreateServerUserPage({
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { server, groups = [] } = context;
+  const { server, groups = [], assignments } = context;
 
-  const assignments = await getServerUserAssignments(serverId);
   const eligibleUsers = await getEligibleUsersForServer(server, assignments);
 
   return (

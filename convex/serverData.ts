@@ -108,20 +108,21 @@ export const getServerContext = query({
     }
 
     const canAdmin = server.adminIds.includes(user.id) || Boolean(discordAccess?.isAdmin);
-    const [events, topicPresets, squadPresets, rosters, groups, assignments, discordConfig] = await Promise.all([
+    const [events, topicPresets, squadPresets, groups, assignments, discordConfig] = await Promise.all([
       ctx.db.query("events").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
       ctx.db.query("topicPresets").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
       ctx.db.query("squadPresets").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
-      ctx.db.query("rosters").collect(),
       ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
       ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", server.id)).collect(),
       ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", server.id)).unique(),
     ]);
 
-    const relevantRosters = rosters.filter((roster) => {
-      const event = events.find((item) => item._id === roster.eventId);
-      return Boolean(event);
-    });
+    const eventRosters = await Promise.all(
+      events.map((event) =>
+        ctx.db.query("rosters").withIndex("eventId", (q) => q.eq("eventId", event._id)).unique(),
+      ),
+    );
+    const relevantRosters = eventRosters.filter((roster): roster is NonNullable<typeof roster> => Boolean(roster));
 
     const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
 

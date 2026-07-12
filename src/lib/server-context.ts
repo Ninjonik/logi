@@ -1,5 +1,6 @@
 import { fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
+import { cache } from "react";
 
 import { getLoggedInUser } from "@/lib/auth";
 import type { AppUser, DiscordConfig, EventRecord, Group, Guild, Roster, SquadPreset, TopicPreset } from "@/types/domain";
@@ -20,7 +21,7 @@ export type ServerContext = {
   discordConfig: DiscordConfig | null;
 };
 
-export async function getServerContext(serverId: string): Promise<ServerContext | null> {
+export const getServerContext = cache(async function getServerContext(serverId: string): Promise<ServerContext | null> {
   const user = await getLoggedInUser();
   if (!user) {
     return null;
@@ -34,4 +35,4 @@ export async function getServerContext(serverId: string): Promise<ServerContext 
   } catch {
     return null;
   }
-}
+});
