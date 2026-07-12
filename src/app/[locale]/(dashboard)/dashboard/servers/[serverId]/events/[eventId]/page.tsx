@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getEventStatusMeta } from "@/lib/event-status";
+import { getEventMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
 export async function generateMetadata({
@@ -14,13 +15,16 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string; serverId: string; eventId: string }>;
 }): Promise<Metadata> {
-  const { serverId, eventId } = await params;
-  const context = await getServerContext(serverId);
-  const event = context?.events.find((item) => item.id === eventId);
+  const { eventId } = await params;
+  const event = await getEventMetadata(eventId);
   return {
     title: event?.name ?? "Event",
     description: event?.description,
   };
+}
+
+export function generateStaticParams() {
+  return [{ eventId: "sample-event" }];
 }
 
 export default async function EventDetailPage({

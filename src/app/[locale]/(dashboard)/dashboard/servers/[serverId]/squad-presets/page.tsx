@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
+import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
 export async function generateMetadata({
@@ -15,10 +16,10 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; locale: string }>;
 }): Promise<Metadata> {
   const { serverId, locale } = await params;
-  const context = await getServerContext(serverId);
+  const server = await getGuildMetadata(serverId);
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context?.server?.name ?? "Clan"} ${dictionary.presets.squadTitle}`,
+    title: `${server?.name ?? "Clan"} ${dictionary.presets.squadTitle}`,
     description: dictionary.presets.squadPresetMetaDescription,
   };
 }
@@ -44,14 +45,14 @@ export default async function SquadPresetsPage({
 
   return (
     <TablePageLayout
-      header={
-        <PageHeader
-          title={dictionary.presets.squadTitle}
-          description={dictionary.presets.squadDescription}
-          actions={canAdmin ? <Button asChild className="rounded-xl"><a href={`/${locale}/dashboard/servers/${serverId}/squad-presets/create`}>{dictionary.common.createPreset}</a></Button> : undefined}
-        />
-      }
-    >
+        header={
+          <PageHeader
+            title={dictionary.presets.squadTitle}
+            description={dictionary.presets.squadDescription}
+            actions={canAdmin ? <Button asChild className="rounded-xl"><a href={`/${locale}/dashboard/servers/${serverId}/squad-presets/create`}>{dictionary.common.createPreset}</a></Button> : undefined}
+          />
+        }
+      >
         <ResourceTable
           className="h-full"
           dictionary={dictionary}
@@ -74,6 +75,6 @@ export default async function SquadPresetsPage({
             },
           ]}
         />
-    </TablePageLayout>
+      </TablePageLayout>
   );
 }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
+import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { formatDateTime } from "@/lib/format";
 import { getEventStatusMeta } from "@/lib/event-status";
@@ -17,10 +18,10 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; locale: string }>;
 }): Promise<Metadata> {
   const { serverId, locale } = await params;
-  const context = await getServerContext(serverId);
+  const server = await getGuildMetadata(serverId);
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context?.server?.name ?? "Clan"} ${dictionary.sidebar.events}`,
+    title: `${server?.name ?? "Clan"} ${dictionary.sidebar.events}`,
     description: dictionary.event.listDescription,
   };
 }
@@ -46,14 +47,14 @@ export default async function EventsPage({
 
   return (
     <TablePageLayout
-      header={
-        <PageHeader
-          title={dictionary.sidebar.events}
-          description={dictionary.event.listDescription}
-          actions={canAdmin ? <Button asChild className="rounded-xl"><a href={`/${locale}/dashboard/servers/${serverId}/events/create`}>{dictionary.common.createEvent}</a></Button> : undefined}
-        />
-      }
-    >
+        header={
+          <PageHeader
+            title={dictionary.sidebar.events}
+            description={dictionary.event.listDescription}
+            actions={canAdmin ? <Button asChild className="rounded-xl"><a href={`/${locale}/dashboard/servers/${serverId}/events/create`}>{dictionary.common.createEvent}</a></Button> : undefined}
+          />
+        }
+      >
         <ResourceTable
           className="h-full"
           dictionary={dictionary}

@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { TopicPresetForm } from "@/components/app/topic-preset-form";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getTopicPresetMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
 export async function generateMetadata({
@@ -11,13 +12,16 @@ export async function generateMetadata({
 }: {
   params: Promise<{ serverId: string; presetId: string }>;
 }): Promise<Metadata> {
-  const { serverId, presetId } = await params;
-  const context = await getServerContext(serverId);
-  const preset = context?.topicPresets.find((item) => item.id === presetId);
+  const { presetId } = await params;
+  const preset = await getTopicPresetMetadata(presetId);
   return {
     title: preset?.name ?? "Topic preset",
     description: preset?.notes,
   };
+}
+
+export function generateStaticParams() {
+  return [{ presetId: "sample-topic-preset" }];
 }
 
 export default async function TopicPresetDetailPage({

@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { SquadPresetEditor } from "@/components/app/squad-preset-editor";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getSquadPresetMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
 export async function generateMetadata({
@@ -11,13 +12,16 @@ export async function generateMetadata({
 }: {
   params: Promise<{ serverId: string; presetId: string }>;
 }): Promise<Metadata> {
-  const { serverId, presetId } = await params;
-  const context = await getServerContext(serverId);
-  const preset = context?.squadPresets.find((item) => item.id === presetId);
+  const { presetId } = await params;
+  const preset = await getSquadPresetMetadata(presetId);
   return {
     title: preset?.name ?? "Squad preset",
     description: "Preset squad structure for new rosters.",
   };
+}
+
+export function generateStaticParams() {
+  return [{ presetId: "sample-squad-preset" }];
 }
 
 export default async function SquadPresetDetailPage({

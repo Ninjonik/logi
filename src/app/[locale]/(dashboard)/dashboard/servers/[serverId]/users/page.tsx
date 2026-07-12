@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
+import { getGuildMetadata } from "@/lib/server-metadata";
 import { getAssignmentUser, getServerUserAssignments } from "@/lib/server-user-management";
 import { getServerContext } from "@/lib/server-context";
 
@@ -17,10 +18,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string; serverId: string }>;
 }): Promise<Metadata> {
   const { serverId, locale } = await params;
-  const context = await getServerContext(serverId);
+  const server = await getGuildMetadata(serverId);
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context?.server?.name ?? "Clan"} ${dictionary.userManagement.title}`,
+    title: `${server?.name ?? "Clan"} ${dictionary.userManagement.title}`,
     description: dictionary.userManagement.description,
   };
 }

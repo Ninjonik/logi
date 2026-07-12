@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getUsersByIds } from "@/lib/server-user-management";
 import { formatDate } from "@/lib/format";
@@ -20,12 +21,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, serverId } = await params;
   const safeLocale = isLocale(locale) ? locale : "en";
-  const context = await getServerContext(serverId);
+  const server = await getGuildMetadata(serverId);
   const dictionary = getDictionary(safeLocale);
 
   return {
-    title: `${context?.server?.name ?? "Clan"} ${dictionary.sidebar.overview}`,
-    description: context?.server?.description,
+    title: `${server?.name ?? "Clan"} ${dictionary.sidebar.overview}`,
+    description: server?.description,
     alternates: { canonical: `/${safeLocale}/dashboard/servers/${serverId}` },
   };
 }

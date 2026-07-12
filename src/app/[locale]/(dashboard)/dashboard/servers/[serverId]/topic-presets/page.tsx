@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
+import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
 export async function generateMetadata({
@@ -15,10 +16,10 @@ export async function generateMetadata({
   params: Promise<{ serverId: string; locale: string }>;
 }): Promise<Metadata> {
   const { serverId, locale } = await params;
-  const context = await getServerContext(serverId);
+  const server = await getGuildMetadata(serverId);
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context?.server?.name ?? "Clan"} ${dictionary.presets.topicTitle}`,
+    title: `${server?.name ?? "Clan"} ${dictionary.presets.topicTitle}`,
     description: dictionary.presets.topicPresetMetaDescription,
   };
 }
@@ -44,14 +45,14 @@ export default async function TopicPresetsPage({
 
   return (
     <TablePageLayout
-      header={
-        <PageHeader
-          title={dictionary.presets.topicTitle}
-          description={dictionary.presets.topicDescription}
-          actions={canAdmin ? <Button asChild className="rounded-xl"><a href={`/${locale}/dashboard/servers/${serverId}/topic-presets/create`}>{dictionary.common.createPreset}</a></Button> : undefined}
-        />
-      }
-    >
+        header={
+          <PageHeader
+            title={dictionary.presets.topicTitle}
+            description={dictionary.presets.topicDescription}
+            actions={canAdmin ? <Button asChild className="rounded-xl"><a href={`/${locale}/dashboard/servers/${serverId}/topic-presets/create`}>{dictionary.common.createPreset}</a></Button> : undefined}
+          />
+        }
+      >
         <ResourceTable
           className="h-full"
           dictionary={dictionary}
@@ -69,6 +70,6 @@ export default async function TopicPresetsPage({
             { key: "topics", title: dictionary.presets.table.topics, render: (preset) => preset.topics.length },
           ]}
         />
-    </TablePageLayout>
+      </TablePageLayout>
   );
 }

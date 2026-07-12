@@ -5,6 +5,7 @@ import { DiscordServerSettingsForm } from "@/components/app/discord-server-setti
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings";
 
@@ -14,10 +15,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string; serverId: string }>;
 }): Promise<Metadata> {
   const { locale, serverId } = await params;
-  const context = await getServerContext(serverId);
+  const server = await getGuildMetadata(serverId);
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   return {
-    title: `${context?.server?.name ?? "Clan"} ${dictionary.serverSettings.title}`,
+    title: `${server?.name ?? "Clan"} ${dictionary.serverSettings.title}`,
     description: dictionary.serverSettings.pageDescription,
   };
 }

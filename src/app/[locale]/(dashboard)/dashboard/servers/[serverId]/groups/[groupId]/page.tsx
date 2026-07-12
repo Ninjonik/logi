@@ -4,6 +4,7 @@ import { GroupForm } from "@/components/app/group-form";
 import { PageHeader } from "@/components/app/page-header";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getGroupMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
 export async function generateMetadata({
@@ -11,13 +12,16 @@ export async function generateMetadata({
 }: {
   params: Promise<{ serverId: string; groupId: string }>;
 }): Promise<Metadata> {
-  const { serverId, groupId } = await params;
-  const context = await getServerContext(serverId);
-  const group = context?.groups.find((item) => item.id === groupId);
+  const { groupId } = await params;
+  const group = await getGroupMetadata(groupId);
   return {
     title: group?.name ?? "Group",
     description: group?.description,
   };
+}
+
+export function generateStaticParams() {
+  return [{ groupId: "sample-group" }];
 }
 
 export default async function GroupDetailPage({
