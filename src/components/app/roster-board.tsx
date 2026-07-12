@@ -655,7 +655,7 @@ export function RosterBoard({
   return (
     <div className="space-y-6">
       <Card className="rounded-2xl border-border/60 bg-card text-card-foreground">
-        <CardHeader className="flex flex-col gap-5 border-b border-border/70 lg:flex-row lg:items-start lg:justify-between">
+        <CardHeader className="flex flex-col gap-5 border-b border-border/70 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{dictionary.roster.title}</div>
             <CardTitle className="text-2xl">
@@ -891,7 +891,7 @@ export function RosterBoard({
                                     draggable={editMode && canAdmin}
                                     onDragStart={() => setDragState({ type: "reserve", userId: user.id })}
                                     onDragEnd={() => setDragState(null)}
-                                    className="flex min-w-0 cursor-grab items-start gap-3 rounded-xl border border-border/70 bg-background px-3 py-2"
+                                    className="flex min-w-0 cursor-grab items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-2"
                                   >
                                     {editMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
                                     <Avatar className="size-8 shrink-0 rounded-lg">
@@ -960,7 +960,7 @@ export function RosterBoard({
                                       draggable={editMode && canAdmin}
                                       onDragStart={() => setDragState({ type: "notAttending", userId: user.id })}
                                       onDragEnd={() => setDragState(null)}
-                                      className="flex min-w-0 cursor-grab items-start gap-3 rounded-xl border border-border/70 bg-background px-3 py-2 opacity-60"
+                                      className="flex min-w-0 cursor-grab items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-2 opacity-60"
                                     >
                                       {editMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
                                       <Avatar className="size-8 shrink-0 rounded-lg">
