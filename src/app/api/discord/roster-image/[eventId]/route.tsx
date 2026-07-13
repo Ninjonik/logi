@@ -16,19 +16,20 @@ const OUTER_GAP = 21;
 const CONTENT_WIDTH = CANVAS_WIDTH - OUTER_PADDING * 2 - SIDEBAR_WIDTH - OUTER_GAP; // ~1488px
 
 const GROUP_GAP = 18; // gap between squad cards, and between group rows
-const GROUP_PADDING = 32; // 16px each side, inside a group's box
-const HEADER_ROW_HEIGHT = 32; // "Published roster snapshot" row
+const GROUP_PADDING_X = 24; // 16px each side, inside a group's box
+const GROUP_PADDING_Y = 12; // 16px each side, inside a group's box
+const HEADER_ROW_HEIGHT = 18; // "Published roster snapshot" row
 const MAIN_COLUMN_GAP = 16; // gap between that header row and the groups area
-const GROUP_HEADER_HEIGHT = 34; // colored bar + group name row
+const GROUP_HEADER_HEIGHT = 18; // colored bar + group name row
 const GROUP_HEADER_GAP = 8;
-const SQUAD_LABEL_HEIGHT = 26; // squad name + slot count row
-const SQUAD_LABEL_GAP = 10;
-const ROLE_LABEL_HEIGHT = 20;
-const ROLE_LABEL_GAP = 7;
-const ROLE_SECTION_GAP = 10;
-const PLAYER_ROW_HEIGHT = 34;
+const SQUAD_LABEL_HEIGHT = 20; // squad name + slot count row
+const SQUAD_LABEL_GAP = 8;
+const ROLE_LABEL_HEIGHT = 16;
+const ROLE_LABEL_GAP = 5;
+const ROLE_SECTION_GAP = 8;
+const PLAYER_ROW_HEIGHT = 32;
 const PLAYER_ROW_HEIGHT_EMPTY = 24;
-const PLAYER_ROW_GAP = 6;
+const PLAYER_ROW_GAP = 4;
 const SAFETY_BUFFER = 24; // tiny cushion so rounding never clips the bottom edge
 
 // Groups with this many squads or fewer are "small" — they get a fixed,
@@ -141,7 +142,7 @@ function getSmallSquadCardWidth(perRow: number) {
 function getSmallGroupWidth(squadCount: number) {
   const perRow = getSmallSquadsPerRow(squadCount);
   const squadWidth = getSmallSquadCardWidth(perRow);
-  return perRow * squadWidth + (perRow - 1) * GROUP_GAP + GROUP_PADDING;
+  return perRow * squadWidth + (perRow - 1) * GROUP_GAP + GROUP_PADDING_X;
 }
 
 // --- Large-group sizing: squads stretch to fill the full content width ---
@@ -150,7 +151,7 @@ function getLargeSquadsPerRow(squadCount: number) {
 }
 
 function getLargeSquadCardWidth(perRow: number) {
-  const usable = CONTENT_WIDTH - GROUP_PADDING - (perRow - 1) * GROUP_GAP;
+  const usable = CONTENT_WIDTH - GROUP_PADDING_X - (perRow - 1) * GROUP_GAP;
   return Math.floor(usable / perRow);
 }
 
@@ -167,7 +168,7 @@ function estimateSquadHeight(squad: Squad) {
     return total + ROLE_LABEL_HEIGHT + ROLE_LABEL_GAP + playersHeight;
   }, 0);
   const sectionsGap = Math.max(0, roleSections.length - 1) * ROLE_SECTION_GAP;
-  const boxHeight = GROUP_PADDING + sectionsHeight + sectionsGap;
+  const boxHeight = GROUP_PADDING_Y + sectionsHeight + sectionsGap;
 
   return SQUAD_LABEL_HEIGHT + SQUAD_LABEL_GAP + boxHeight;
 }
@@ -176,7 +177,7 @@ function estimateGroupSectionHeight(squads: Squad[], perRow: number) {
   const maxSquadHeight = squads.reduce((max, squad) => Math.max(max, estimateSquadHeight(squad)), 0);
   const numRows = Math.max(1, Math.ceil(squads.length / perRow));
   const squadsAreaHeight = numRows * maxSquadHeight + Math.max(0, numRows - 1) * GROUP_GAP;
-  const groupBoxHeight = GROUP_PADDING + squadsAreaHeight;
+  const groupBoxHeight = GROUP_PADDING_Y + squadsAreaHeight;
   return GROUP_HEADER_HEIGHT + GROUP_HEADER_GAP + groupBoxHeight;
 }
 
@@ -431,8 +432,8 @@ export async function GET(
                                 <img
                                   src={resolveAssetUrl(request, section.roleIcon)}
                                   alt=""
-                                  width="11"
-                                  height="11"
+                                  width="16"
+                                  height="16"
                                   style={{ display: "flex", objectFit: "contain" }}
                                 />
                               ) : null}
