@@ -168,7 +168,7 @@ function estimateSquadHeight(squad: Squad) {
     return total + ROLE_LABEL_HEIGHT + ROLE_LABEL_GAP + playersHeight;
   }, 0);
   const sectionsGap = Math.max(0, roleSections.length - 1) * ROLE_SECTION_GAP;
-  const boxHeight = GROUP_PADDING_Y + sectionsHeight + sectionsGap;
+  const boxHeight = GROUP_PADDING_Y * 2 + sectionsHeight + sectionsGap;
 
   return SQUAD_LABEL_HEIGHT + SQUAD_LABEL_GAP + boxHeight;
 }
@@ -177,7 +177,7 @@ function estimateGroupSectionHeight(squads: Squad[], perRow: number) {
   const maxSquadHeight = squads.reduce((max, squad) => Math.max(max, estimateSquadHeight(squad)), 0);
   const numRows = Math.max(1, Math.ceil(squads.length / perRow));
   const squadsAreaHeight = numRows * maxSquadHeight + Math.max(0, numRows - 1) * GROUP_GAP;
-  const groupBoxHeight = GROUP_PADDING_Y + squadsAreaHeight;
+  const groupBoxHeight = GROUP_PADDING_Y * 2 + squadsAreaHeight;
   return GROUP_HEADER_HEIGHT + GROUP_HEADER_GAP + groupBoxHeight;
 }
 

@@ -7,9 +7,9 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="added basic match details upload + player stats, added automatic roster confirmed status check, completed the score functionality on its basic level">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="better stats handling">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/discord/roster-image/[eventId]/route.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/discord/roster-image/[eventId]/route.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -191,7 +191,7 @@
       <workItem from="1783891925099" duration="2746000" />
       <workItem from="1783957907690" duration="1059000" />
       <workItem from="1783959707955" duration="1583000" />
-      <workItem from="1783978726510" duration="2902000" />
+      <workItem from="1783978726510" duration="3441000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -385,7 +385,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783981426194</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="better stats handling">
+      <option name="closed" value="true" />
+      <created>1783982026231</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1783982026231</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -426,6 +434,7 @@
     <MESSAGE value="reverted: added concurrently for discord bot to be running as well; fixed: better discord image view; added language support for discord bot and roster images" />
     <MESSAGE value="better roster image design" />
     <MESSAGE value="added basic match details upload + player stats, added automatic roster confirmed status check, completed the score functionality on its basic level" />
-    <option name="LAST_COMMIT_MESSAGE" value="added basic match details upload + player stats, added automatic roster confirmed status check, completed the score functionality on its basic level" />
+    <MESSAGE value="better stats handling" />
+    <option name="LAST_COMMIT_MESSAGE" value="better stats handling" />
   </component>
 </project>
