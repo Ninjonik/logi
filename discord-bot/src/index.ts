@@ -36,6 +36,7 @@ type DiscordConfig = {
   defaultLanguage: "en" | "cs";
   announcementsChannelId?: string;
   forumCategoryId?: string;
+  meetingChannelId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
   updatedAt: string;
@@ -161,7 +162,7 @@ if (!convexUrl || !internalSecret || !botToken) {
 
 const convex = new ConvexHttpClient(convexUrl);
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates],
 });
 const appSiteUrl = process.env.SITE_URL ?? "http://localhost:3000";
 
@@ -246,6 +247,7 @@ async function syncGuildMemberAccess(payload: SyncPayload) {
       return {
         userId: member.id,
         roleIds,
+        voiceChannelId: member.voice.channelId ?? undefined,
         isAdmin,
         hasDashboardAccess,
       };

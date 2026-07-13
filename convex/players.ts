@@ -164,3 +164,31 @@ export const updateProfile = mutation({
     });
   },
 });
+
+export const updateScore = mutation({
+  args: {
+    secret: v.string(),
+    userId: v.string(),
+    score: v.number(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    if (!Number.isInteger(args.score)) {
+      throw new Error("Score must be an integer.");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("id", (q) => q.eq("id", args.userId))
+      .unique();
+    if (!user) {
+      throw new Error("Player not found.");
+    }
+
+    await ctx.db.patch(user._id, {
+      score: args.score,
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});

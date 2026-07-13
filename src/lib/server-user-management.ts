@@ -11,6 +11,7 @@ const getUsersByIdsReference = makeFunctionReference<"query">("serverData:getUse
 const listUsersReference = makeFunctionReference<"query">("serverData:listUsers");
 const upsertAssignmentReference = makeFunctionReference<"mutation">("userAssignments:upsert");
 const removeAssignmentReference = makeFunctionReference<"mutation">("userAssignments:remove");
+const updatePlayerScoreReference = makeFunctionReference<"mutation">("players:updateScore");
 
 export type ServerUserAssignment = {
   id: string;
@@ -92,5 +93,16 @@ export async function deleteServerUserAssignment(assignmentId: string) {
   return await fetchMutation(removeAssignmentReference, {
     secret: getInternalAuthSecret(),
     assignmentId: assignmentId as never,
+  });
+}
+
+export async function savePlayerScore(input: {
+  userId: string;
+  score: number;
+}) {
+  return await fetchMutation(updatePlayerScoreReference, {
+    secret: getInternalAuthSecret(),
+    userId: input.userId,
+    score: input.score,
   });
 }

@@ -6,6 +6,7 @@ export const userAssignmentSchema = z
     type: z.enum(["member", "mercenary"]),
     primaryGroupId: z.string().trim().optional(),
     secondaryGroupIds: z.array(z.string()),
+    score: z.int(),
     paused: z.boolean(),
     pausedNote: z.string().trim().optional(),
   })

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Search } from "lucide-react";
+import { PencilLine, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -70,6 +70,7 @@ export function UserAssignmentForm({
   const [query, setQuery] = useState(
     assignment ? eligibleUsers.find((item) => item.user.id === assignment.userId)?.user.name ?? "" : "",
   );
+  const [isEditing, setIsEditing] = useState(createMode);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -80,6 +81,7 @@ export function UserAssignmentForm({
       type: assignment?.type ?? "member",
       primaryGroupId: assignment?.primaryGroupId ?? "",
       secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
+      score: assignment ? (eligibleUsers.find((item) => item.user.id === assignment.userId)?.user.score ?? 0) : 0,
       paused: assignment?.paused ?? false,
       pausedNote: assignment?.pausedNote ?? "",
     },
@@ -101,6 +103,8 @@ export function UserAssignmentForm({
   const selected = eligibleUsers.find((item) => item.user.id === selectedUserId);
   const memberDisabled = selected ? !selected.canJoinAsMember : false;
   const mercDisabled = selected ? !selected.canJoinAsMercenary : false;
+  const showPlayerPicker = createMode;
+  const canEditFields = createMode || isEditing;
 
   async function submit(values: UserAssignmentInput) {
     setServerError(null);
@@ -131,6 +135,9 @@ export function UserAssignmentForm({
     toast.success(createMode ? dictionary.userManagement.assignmentCreated : dictionary.userManagement.assignmentSaved);
 
     startTransition(() => {
+      if (!createMode) {
+        setIsEditing(false);
+      }
       router.push(`/${locale}/dashboard/servers/${server.id}/users${createMode ? `/${body.assignmentId}` : ""}`);
       router.refresh();
     });
@@ -160,64 +167,101 @@ export function UserAssignmentForm({
 
   return (
     <Card className="rounded-2xl border-border/60">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-start justify-between gap-4">
         <CardTitle>{createMode ? dictionary.userManagement.addPlayer : dictionary.userManagement.editAssignment}</CardTitle>
+        {!createMode ? (
+          <Button
+            type="button"
+            variant={isEditing ? "secondary" : "default"}
+            className="rounded-xl"
+            onClick={() => setIsEditing((value) => !value)}
+          >
+            <PencilLine className="size-4" />
+            {dictionary.common.edit}
+          </Button>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-6">
         <form className="space-y-6" onSubmit={form.handleSubmit(submit)}>
-          <div className="space-y-3">
-            <Label>{dictionary.userManagement.playerSearch}</Label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={dictionary.userManagement.searchPlaceholder}
-                className="rounded-xl pl-9"
-              />
-            </div>
-            <div className="max-h-72 space-y-2 overflow-auto rounded-2xl border border-border/60 p-3">
-              {matches.map(({ user, canJoinAsMember, canJoinAsMercenary }) => (
-                <button
-                  key={user.id}
-                  type="button"
-                  onClick={() => {
-                    form.setValue("userId", user.id, { shouldValidate: true });
-                    setQuery(user.name);
-                    if (!canJoinAsMember && canJoinAsMercenary) {
-                      form.setValue("type", "mercenary", { shouldValidate: true });
-                    }
-                  }}
-                  className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left ${
-                    selectedUserId === user.id ? "border-primary bg-primary/5" : "border-border/60"
-                  }`}
-                >
-                  <Avatar className="size-9 rounded-lg">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{user.name}</div>
-                    <div className="truncate text-xs text-muted-foreground">{dictionary.userManagement.mainClan}: {user.guildId ?? dictionary.userManagement.none}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Badge variant={canJoinAsMember ? "default" : "secondary"} className="rounded-full px-2.5">
-                      {dictionary.userManagement.memberLabel}
-                    </Badge>
-                    <Badge variant={canJoinAsMercenary ? "default" : "secondary"} className="rounded-full px-2.5">
-                      {dictionary.userManagement.mercLabel}
-                    </Badge>
-                  </div>
-                </button>
-              ))}
-              {!matches.length ? (
-                <div className="py-6 text-center text-sm text-muted-foreground">{dictionary.userManagement.noResults}</div>
+          {showPlayerPicker ? (
+            <div className="space-y-3">
+              <Label>{dictionary.userManagement.playerSearch}</Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={dictionary.userManagement.searchPlaceholder}
+                  className="rounded-xl pl-9"
+                />
+              </div>
+              <div className="max-h-72 space-y-2 overflow-auto rounded-2xl border border-border/60 p-3">
+                {matches.map(({ user, canJoinAsMember, canJoinAsMercenary }) => (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() => {
+                      form.setValue("userId", user.id, { shouldValidate: true });
+                      form.setValue("score", user.score, { shouldValidate: true });
+                      setQuery(user.name);
+                      if (!canJoinAsMember && canJoinAsMercenary) {
+                        form.setValue("type", "mercenary", { shouldValidate: true });
+                      }
+                    }}
+                    className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left ${
+                      selectedUserId === user.id ? "border-primary bg-primary/5" : "border-border/60"
+                    }`}
+                  >
+                    <Avatar className="size-9 rounded-lg">
+                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium">{user.name}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {dictionary.userManagement.mainClan}: {user.guildId ?? dictionary.userManagement.none} • {user.score} {dictionary.navUser.scoreSuffix}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge variant={canJoinAsMember ? "default" : "secondary"} className="rounded-full px-2.5">
+                        {dictionary.userManagement.memberLabel}
+                      </Badge>
+                      <Badge variant={canJoinAsMercenary ? "default" : "secondary"} className="rounded-full px-2.5">
+                        {dictionary.userManagement.mercLabel}
+                      </Badge>
+                    </div>
+                  </button>
+                ))}
+                {!matches.length ? (
+                  <div className="py-6 text-center text-sm text-muted-foreground">{dictionary.userManagement.noResults}</div>
+                ) : null}
+              </div>
+              {form.formState.errors.userId ? (
+                <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.userId.message, dictionary)}</p>
               ) : null}
             </div>
-            {form.formState.errors.userId ? (
-              <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.userId.message, dictionary)}</p>
-            ) : null}
-          </div>
+          ) : selected ? (
+            <div className="rounded-2xl border border-border/60 p-4">
+              <div className="flex items-center gap-3">
+                <Avatar className="size-11 rounded-xl">
+                  <AvatarImage src={selected.user.avatar} alt={selected.user.name} />
+                  <AvatarFallback>{selected.user.name.slice(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{selected.user.name}</div>
+                  <div className="truncate text-sm text-muted-foreground">
+                    {selected.user.id} • {selected.user.score} {dictionary.navUser.scoreSuffix}
+                  </div>
+                </div>
+                <Badge variant={selected.canJoinAsMember ? "default" : "secondary"} className="rounded-full px-2.5">
+                  {dictionary.userManagement.memberLabel}
+                </Badge>
+                <Badge variant={selected.canJoinAsMercenary ? "default" : "secondary"} className="rounded-full px-2.5">
+                  {dictionary.userManagement.mercLabel}
+                </Badge>
+              </div>
+            </div>
+          ) : null}
 
           {selected ? (
             <div className="grid gap-4 md:grid-cols-2">
@@ -227,19 +271,25 @@ export function UserAssignmentForm({
                   control={form.control}
                   name="type"
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="member" disabled={memberDisabled}>
-                          {dictionary.userManagement.memberLabel}
-                        </SelectItem>
-                        <SelectItem value="mercenary" disabled={mercDisabled}>
-                          {dictionary.userManagement.mercLabel}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    canEditFields ? (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="member" disabled={memberDisabled}>
+                            {dictionary.userManagement.memberLabel}
+                          </SelectItem>
+                          <SelectItem value="mercenary" disabled={mercDisabled}>
+                            {dictionary.userManagement.mercLabel}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
+                        {field.value === "member" ? dictionary.userManagement.memberLabel : dictionary.userManagement.mercLabel}
+                      </div>
+                    )
                   )}
                 />
               </div>
@@ -249,47 +299,76 @@ export function UserAssignmentForm({
                   control={form.control}
                   name="primaryGroupId"
                   render={({ field }) => (
-                    <Select value={field.value || "__none__"} onValueChange={(value) => field.onChange(value === "__none__" ? "" : value)}>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">{dictionary.userManagement.noGroup}</SelectItem>
-                        {groups.map((group) => (
-                          <SelectItem key={group.id} value={group.id}>
-                            {group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    canEditFields ? (
+                      <Select value={field.value || "__none__"} onValueChange={(value) => field.onChange(value === "__none__" ? "" : value)}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">{dictionary.userManagement.noGroup}</SelectItem>
+                          {groups.map((group) => (
+                            <SelectItem key={group.id} value={group.id}>
+                              {group.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
+                        {groups.find((group) => group.id === field.value)?.name ?? dictionary.userManagement.noGroup}
+                      </div>
+                    )
                   )}
                 />
               </div>
+              <div className="space-y-2">
+                <Label>{dictionary.userManagement.tableScore}</Label>
+                {canEditFields ? (
+                  <Input
+                    type="number"
+                    step="1"
+                    {...form.register("score", { valueAsNumber: true })}
+                    className="rounded-xl"
+                  />
+                ) : (
+                  <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
+                    {form.getValues("score")}
+                  </div>
+                )}
+              </div>
               <div className="space-y-3 md:col-span-2">
                 <Label>{dictionary.userManagement.secondaryGroups}</Label>
-                <div className="grid gap-2 rounded-2xl border border-border/60 p-3 md:grid-cols-2">
-                  {groups.map((group) => {
-                    const checked = secondaryGroupIds.includes(group.id);
-                    const disabled = primaryGroupId === group.id;
-                    return (
-                      <label key={group.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${disabled ? "opacity-50" : ""}`}>
-                        <Checkbox
-                          checked={checked}
-                          disabled={disabled}
-                          onCheckedChange={(nextChecked) => {
-                            const nextValues = nextChecked
-                              ? [...secondaryGroupIds, group.id]
-                              : secondaryGroupIds.filter((groupId) => groupId !== group.id);
-                            form.setValue("secondaryGroupIds", [...new Set(nextValues)], { shouldValidate: true });
-                          }}
-                        />
-                        <span className="size-3 rounded-full border border-border/60" style={{ backgroundColor: group.color }} />
-                        <span className="text-sm">{group.name}</span>
-                      </label>
-                    );
-                  })}
-                  {!groups.length ? <div className="text-sm text-muted-foreground">{dictionary.shared.nothingCreatedYet}</div> : null}
-                </div>
+                {canEditFields ? (
+                  <div className="grid gap-2 rounded-2xl border border-border/60 p-3 md:grid-cols-2">
+                    {groups.map((group) => {
+                      const checked = secondaryGroupIds.includes(group.id);
+                      const disabled = primaryGroupId === group.id;
+                      return (
+                        <label key={group.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${disabled ? "opacity-50" : ""}`}>
+                          <Checkbox
+                            checked={checked}
+                            disabled={disabled}
+                            onCheckedChange={(nextChecked) => {
+                              const nextValues = nextChecked
+                                ? [...secondaryGroupIds, group.id]
+                                : secondaryGroupIds.filter((groupId) => groupId !== group.id);
+                              form.setValue("secondaryGroupIds", [...new Set(nextValues)], { shouldValidate: true });
+                            }}
+                          />
+                          <span className="size-3 rounded-full border border-border/60" style={{ backgroundColor: group.color }} />
+                          <span className="text-sm">{group.name}</span>
+                        </label>
+                      );
+                    })}
+                    {!groups.length ? <div className="text-sm text-muted-foreground">{dictionary.shared.nothingCreatedYet}</div> : null}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm">
+                    {secondaryGroupIds.length
+                      ? secondaryGroupIds.map((groupId) => groups.find((group) => group.id === groupId)?.name ?? groupId).join(", ")
+                      : dictionary.userManagement.noSecondaryGroups}
+                  </div>
+                )}
                 {form.formState.errors.secondaryGroupIds ? (
                   <p className="text-sm text-destructive">{form.formState.errors.secondaryGroupIds.message}</p>
                 ) : null}
@@ -303,7 +382,7 @@ export function UserAssignmentForm({
                   <Controller
                     control={form.control}
                     name="paused"
-                    render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
+                    render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} disabled={!canEditFields} />}
                   />
               </div>
               {form.formState.errors.primaryGroupId ? (
@@ -313,7 +392,13 @@ export function UserAssignmentForm({
               {paused ? (
                 <div className="space-y-2 md:col-span-2">
                   <Label>{dictionary.userManagement.pauseNote}</Label>
-                  <Textarea {...form.register("pausedNote")} className="min-h-24 rounded-xl" />
+                  {canEditFields ? (
+                    <Textarea {...form.register("pausedNote")} className="min-h-24 rounded-xl" />
+                  ) : (
+                    <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
+                      {form.getValues("pausedNote") || dictionary.shared.notSet}
+                    </div>
+                  )}
                   {form.formState.errors.pausedNote ? (
                     <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.pausedNote.message, dictionary)}</p>
                   ) : null}
@@ -328,22 +413,46 @@ export function UserAssignmentForm({
 
           {serverError ? <p className="text-sm text-destructive">{serverError}</p> : null}
 
-          <div className="flex flex-wrap gap-3">
-            <Button className="rounded-xl" type="submit" disabled={isPending || form.formState.isSubmitting}>
-              {dictionary.common.saveAssignment}
-            </Button>
-            {!createMode ? (
-              <Button
-                type="button"
-                variant="destructive"
-                className="rounded-xl"
-                onClick={removeAssignment}
-                disabled={isPending || form.formState.isSubmitting}
-              >
-                {dictionary.common.removeAssignment}
+          {canEditFields ? (
+            <div className="flex flex-wrap gap-3">
+              <Button className="rounded-xl" type="submit" disabled={isPending || form.formState.isSubmitting}>
+                {dictionary.common.saveAssignment}
               </Button>
-            ) : null}
-          </div>
+              {!createMode ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-xl"
+                    onClick={() => {
+                      form.reset({
+                        userId: assignment?.userId ?? "",
+                        type: assignment?.type ?? "member",
+                        primaryGroupId: assignment?.primaryGroupId ?? "",
+                        secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
+                        score: selected?.user.score ?? 0,
+                        paused: assignment?.paused ?? false,
+                        pausedNote: assignment?.pausedNote ?? "",
+                      });
+                      setIsEditing(false);
+                    }}
+                    disabled={isPending || form.formState.isSubmitting}
+                  >
+                    {dictionary.common.cancel}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="rounded-xl"
+                    onClick={removeAssignment}
+                    disabled={isPending || form.formState.isSubmitting}
+                  >
+                    {dictionary.common.removeAssignment}
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          ) : null}
         </form>
       </CardContent>
     </Card>

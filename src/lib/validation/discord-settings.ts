@@ -15,6 +15,7 @@ export const discordSettingsSchema = z.object({
   defaultLanguage: z.enum(supportedClanLanguages),
   announcementsChannelId: discordIdField,
   forumCategoryId: discordIdField,
+  meetingChannelId: discordIdField,
   clanRoleId: discordIdField,
   dashboardAdminRoleId: discordIdField,
 });

@@ -2,11 +2,44 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
+export const DEFAULT_ROSTER_SCORE_SETTINGS = {
+  noResponse: -2,
+  declined: -1,
+  accepted: 1,
+} as const;
 
 function assertInternalSecret(secret: string) {
   if (secret !== INTERNAL_AUTH_SECRET) {
     throw new Error("Unauthorized.");
   }
+}
+
+function normalizeRosterScoreSettings(
+  settings?: {
+    noResponse: number;
+    declined: number;
+    accepted: number;
+  },
+) {
+  return {
+    noResponse: Number.isInteger(settings?.noResponse) ? settings?.noResponse ?? DEFAULT_ROSTER_SCORE_SETTINGS.noResponse : DEFAULT_ROSTER_SCORE_SETTINGS.noResponse,
+    declined: Number.isInteger(settings?.declined) ? settings?.declined ?? DEFAULT_ROSTER_SCORE_SETTINGS.declined : DEFAULT_ROSTER_SCORE_SETTINGS.declined,
+    accepted: Number.isInteger(settings?.accepted) ? settings?.accepted ?? DEFAULT_ROSTER_SCORE_SETTINGS.accepted : DEFAULT_ROSTER_SCORE_SETTINGS.accepted,
+  };
+}
+
+function normalizeGuildDoc<T extends {
+  _id: unknown;
+  rosterScoreSettings?: {
+    noResponse: number;
+    declined: number;
+    accepted: number;
+  };
+}>(guild: T) {
+  return {
+    ...guild,
+    rosterScoreSettings: normalizeRosterScoreSettings(guild.rosterScoreSettings),
+  };
 }
 
 export const visibleForUser = query({
@@ -54,7 +87,7 @@ export const visibleForUser = query({
     ).filter((guild): guild is NonNullable<typeof guild> => Boolean(guild));
 
     return guilds.map((guild) => ({
-        ...guild,
+        ...normalizeGuildDoc(guild),
         canAdmin: guild.adminIds.includes(args.userId) || adminGuildIds.has(guild.id),
       }));
   },
@@ -103,6 +136,7 @@ export const syncManagedGuilds = mutation({
           name: guild.name,
           avatar: guild.avatar,
           botInside: guild.botInside,
+          rosterScoreSettings: normalizeRosterScoreSettings(existing.rosterScoreSettings),
           adminIds,
           updatedAt: now,
         });
@@ -128,6 +162,7 @@ export const syncManagedGuilds = mutation({
         name: guild.name,
         avatar: guild.avatar,
         description: undefined,
+        rosterScoreSettings: DEFAULT_ROSTER_SCORE_SETTINGS,
         botInside: guild.botInside,
         adminIds: [args.userId],
         memberIds: [],
@@ -176,10 +211,12 @@ export const getById = query({
     guildId: v.string(),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const guild = await ctx.db
       .query("guilds")
       .withIndex("id", (q) => q.eq("id", args.guildId))
       .unique();
+
+    return guild ? normalizeGuildDoc(guild) : null;
   },
 });
 
@@ -190,6 +227,11 @@ export const updateFrontendSettings = mutation({
     name: v.string(),
     avatar: v.string(),
     description: v.optional(v.string()),
+    rosterScoreSettings: v.object({
+      noResponse: v.number(),
+      declined: v.number(),
+      accepted: v.number(),
+    }),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -207,9 +249,45 @@ export const updateFrontendSettings = mutation({
       name: args.name.trim(),
       avatar: args.avatar.trim(),
       description: args.description?.trim() || undefined,
+      rosterScoreSettings: normalizeRosterScoreSettings(args.rosterScoreSettings),
       updatedAt: new Date().toISOString(),
     });
 
     return String(guild._id);
+  },
+});
+
+export const backfillRosterScoreSettings = mutation({
+  args: {
+    secret: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const now = new Date().toISOString();
+    const guilds = await ctx.db.query("guilds").collect();
+    let patchedCount = 0;
+
+    for (const guild of guilds) {
+      const normalized = normalizeRosterScoreSettings(guild.rosterScoreSettings);
+      const alreadyNormalized =
+        guild.rosterScoreSettings?.noResponse === normalized.noResponse &&
+        guild.rosterScoreSettings?.declined === normalized.declined &&
+        guild.rosterScoreSettings?.accepted === normalized.accepted;
+
+      if (alreadyNormalized) {
+        continue;
+      }
+
+      await ctx.db.patch(guild._id, {
+        rosterScoreSettings: normalized,
+        updatedAt: now,
+      });
+      patchedCount += 1;
+    }
+
+    return {
+      patchedCount,
+    };
   },
 });

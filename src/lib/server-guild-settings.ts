@@ -10,6 +10,11 @@ export async function saveGuildFrontendSettings(input: {
   name: string;
   avatar: string;
   description?: string;
+  rosterScoreSettings: {
+    noResponse: number;
+    declined: number;
+    accepted: number;
+  };
 }) {
   return await fetchMutation(updateFrontendSettingsReference, {
     secret: getInternalAuthSecret(),
@@ -17,5 +22,6 @@ export async function saveGuildFrontendSettings(input: {
     name: input.name,
     avatar: input.avatar,
     description: input.description,
+    rosterScoreSettings: input.rosterScoreSettings,
   });
 }

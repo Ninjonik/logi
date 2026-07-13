@@ -65,9 +65,11 @@ export function RosterCreator({
     );
     const reservePlayerIds = users
       .filter((user) => attendingUserIds.has(user.id))
+      .sort((a, b) => (b.score - a.score) || a.name.localeCompare(b.name))
       .map((user) => user.id);
     const notAttendingPlayerIds = users
       .filter((user) => !attendingUserIds.has(user.id))
+      .sort((a, b) => (b.score - a.score) || a.name.localeCompare(b.name))
       .map((user) => user.id);
 
     return {

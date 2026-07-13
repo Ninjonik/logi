@@ -5,6 +5,7 @@ import { getInternalAuthSecret } from "@/lib/env";
 
 const upsertEventReference = makeFunctionReference<"mutation">("events:upsert");
 const concludeEventReference = makeFunctionReference<"mutation">("events:conclude");
+const setEventResultReference = makeFunctionReference<"mutation">("events:setResult");
 
 export async function saveServerEvent(input: {
   eventId?: string;
@@ -51,5 +52,31 @@ export async function concludeServerEvent(input: {
   return await fetchMutation(concludeEventReference, {
     secret: getInternalAuthSecret(),
     eventId: input.eventId as never,
+  });
+}
+
+export async function saveServerEventResult(input: {
+  eventId: string;
+  eventResult: {
+    sourceUrl: string;
+    mapId: string;
+    mapName?: string;
+    endedAt?: string;
+    importedAt: string;
+    localTeam: "axis" | "allies";
+    enemyTeam: "axis" | "allies";
+    outcome: "victory" | "defeat" | "draw";
+    score: {
+      axis: number;
+      allied: number;
+      local: number;
+      enemy: number;
+    };
+  };
+}) {
+  return await fetchMutation(setEventResultReference, {
+    secret: getInternalAuthSecret(),
+    eventId: input.eventId as never,
+    eventResult: input.eventResult,
   });
 }

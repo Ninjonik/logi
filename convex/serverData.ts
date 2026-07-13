@@ -1,10 +1,37 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds";
 
 function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   return {
     ...doc,
     id: String(doc._id),
+  };
+}
+
+function normalizeGuildDoc<
+  T extends {
+    _id: unknown;
+    rosterScoreSettings?: {
+      noResponse: number;
+      declined: number;
+      accepted: number;
+    };
+  },
+>(guild: T) {
+  return {
+    ...normalizeDoc(guild),
+    rosterScoreSettings: {
+      noResponse: Number.isInteger(guild.rosterScoreSettings?.noResponse)
+        ? guild.rosterScoreSettings?.noResponse ?? DEFAULT_ROSTER_SCORE_SETTINGS.noResponse
+        : DEFAULT_ROSTER_SCORE_SETTINGS.noResponse,
+      declined: Number.isInteger(guild.rosterScoreSettings?.declined)
+        ? guild.rosterScoreSettings?.declined ?? DEFAULT_ROSTER_SCORE_SETTINGS.declined
+        : DEFAULT_ROSTER_SCORE_SETTINGS.declined,
+      accepted: Number.isInteger(guild.rosterScoreSettings?.accepted)
+        ? guild.rosterScoreSettings?.accepted ?? DEFAULT_ROSTER_SCORE_SETTINGS.accepted
+        : DEFAULT_ROSTER_SCORE_SETTINGS.accepted,
+    },
   };
 }
 
@@ -38,7 +65,24 @@ function normalizeEventDoc<
     status?: "registration" | "closed" | "starting" | "concluded";
     statusUpdatedAt?: string;
     concludedAt?: string;
+    eventResult?: {
+      sourceUrl: string;
+      mapId: string;
+      mapName?: string;
+      endedAt?: string;
+      importedAt: string;
+      localTeam: "axis" | "allies";
+      enemyTeam: "axis" | "allies";
+      outcome: "victory" | "defeat" | "draw";
+      score: {
+        axis: number;
+        allied: number;
+        local: number;
+        enemy: number;
+      };
+    };
     attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
+    signUps?: Array<{ userId: string; group?: string | null }>;
     updatedAt?: string;
     createdAt?: string;
   },
@@ -48,7 +92,9 @@ function normalizeEventDoc<
     status: event.status ?? deriveEventStatus(event),
     statusUpdatedAt: event.statusUpdatedAt ?? event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
     concludedAt: event.concludedAt,
+    eventResult: event.eventResult,
     attendanceReminderLog: event.attendanceReminderLog ?? [],
+    signUps: event.signUps ?? [],
   };
 }
 
@@ -128,7 +174,7 @@ export const getServerContext = query({
 
     return {
       user,
-      server,
+      server: normalizeGuildDoc(server),
       canAdmin,
       events: events.map(normalizeEventDoc),
       topicPresets: topicPresets.map(normalizeDoc),

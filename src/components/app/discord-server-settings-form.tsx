@@ -36,6 +36,7 @@ export function DiscordServerSettingsForm({
   const [defaultLanguage, setDefaultLanguage] = useState<ClanLanguage>(config?.defaultLanguage ?? "en");
   const [announcementsChannelId, setAnnouncementsChannelId] = useState<string | undefined>(config?.announcementsChannelId);
   const [forumCategoryId, setForumCategoryId] = useState<string | undefined>(config?.forumCategoryId);
+  const [meetingChannelId, setMeetingChannelId] = useState<string | undefined>(config?.meetingChannelId);
   const [clanRoleId, setClanRoleId] = useState<string | undefined>(config?.clanRoleId);
   const [dashboardAdminRoleId, setDashboardAdminRoleId] = useState<string | undefined>(config?.dashboardAdminRoleId);
 
@@ -55,6 +56,7 @@ export function DiscordServerSettingsForm({
         defaultLanguage,
         announcementsChannelId,
         forumCategoryId,
+        meetingChannelId,
         clanRoleId,
         dashboardAdminRoleId,
       }),
@@ -71,6 +73,7 @@ export function DiscordServerSettingsForm({
 
   const announcementChannels = metadata?.channels.filter((channel) => channel.type === 0 || channel.type === 5) ?? [];
   const categoryChannels = metadata?.channels.filter((channel) => channel.type === 4) ?? [];
+  const meetingChannels = metadata?.channels.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
   const roles = metadata?.roles ?? [];
 
   return (
@@ -116,6 +119,10 @@ export function DiscordServerSettingsForm({
         <div className="space-y-2">
           <Label>{dictionary.serverSettings.forumCategoryId}</Label>
           <DiscordEntitySelect value={forumCategoryId} onChange={setForumCategoryId} options={categoryChannels} placeholder={dictionary.serverSettings.forumCategoryId} />
+        </div>
+        <div className="space-y-2">
+          <Label>{dictionary.serverSettings.meetingChannelId}</Label>
+          <DiscordEntitySelect value={meetingChannelId} onChange={setMeetingChannelId} options={meetingChannels} placeholder={dictionary.serverSettings.meetingChannelId} />
         </div>
         <div className="space-y-2">
           <Label>{dictionary.serverSettings.clanRoleId}</Label>

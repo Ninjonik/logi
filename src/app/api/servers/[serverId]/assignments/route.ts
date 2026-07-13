@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
-import { saveServerUserAssignment } from "@/lib/server-user-management";
+import { savePlayerScore, saveServerUserAssignment } from "@/lib/server-user-management";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
 
 function getAssignmentErrorCode(error: unknown) {
@@ -21,6 +21,10 @@ export async function POST(
     const assignmentId = await saveServerUserAssignment({
       serverId,
       ...body,
+    });
+    await savePlayerScore({
+      userId: body.userId,
+      score: body.score,
     });
 
     return NextResponse.json({ assignmentId });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { deleteServerUserAssignment, saveServerUserAssignment } from "@/lib/server-user-management";
+import { deleteServerUserAssignment, savePlayerScore, saveServerUserAssignment } from "@/lib/server-user-management";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
 
@@ -22,6 +22,10 @@ export async function PATCH(
       assignmentId,
       serverId,
       ...body,
+    });
+    await savePlayerScore({
+      userId: body.userId,
+      score: body.score,
     });
 
     return NextResponse.json({ assignmentId: updatedAssignmentId });

@@ -52,6 +52,7 @@ export default async function ServerUsersPage({
       return [
         user?.name,
         user?.id,
+        String(user?.score ?? ""),
         groupNameById.get(assignment.primaryGroupId ?? ""),
         assignment.type,
         assignment.paused ? dictionary.userManagement.paused : dictionary.userManagement.active,
@@ -114,6 +115,11 @@ export default async function ServerUsersPage({
               key: "group",
               title: dictionary.userManagement.tableGroup,
               render: (assignment) => assignment.primaryGroupId ? groupNameById.get(assignment.primaryGroupId) ?? dictionary.userManagement.none : dictionary.userManagement.none,
+            },
+            {
+              key: "score",
+              title: dictionary.userManagement.tableScore,
+              render: (assignment) => assignmentUserMap.get(assignment.userId)?.score ?? 0,
             },
             {
               key: "state",

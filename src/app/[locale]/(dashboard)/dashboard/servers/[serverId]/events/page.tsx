@@ -11,6 +11,21 @@ import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { formatDateTime } from "@/lib/format";
 import { getEventStatusMeta } from "@/lib/event-status";
+import type { EventRecord } from "@/types/domain";
+
+function getEventResultLabel(event: EventRecord, dictionary: ReturnType<typeof getDictionary>) {
+  if (!event.eventResult) {
+    return dictionary.shared.notSet;
+  }
+
+  const outcomeLabel = event.eventResult.outcome === "victory"
+    ? dictionary.event.resultVictory
+    : event.eventResult.outcome === "defeat"
+      ? dictionary.event.resultDefeat
+      : dictionary.event.resultDraw;
+
+  return `${outcomeLabel} ${event.eventResult.score.local}-${event.eventResult.score.enemy}`;
+}
 
 export async function generateMetadata({
   params,
@@ -42,7 +57,14 @@ export default async function EventsPage({
   const paginated = getPaginatedRows({
     rows: events,
     searchParams: resolvedSearchParams,
-    getSearchText: (event) => [event.name, event.map, event.side, event.status].filter(Boolean).join(" "),
+    getSearchText: (event) => [
+      event.name,
+      event.map,
+      event.side,
+      event.status,
+      event.eventResult?.outcome,
+      event.eventResult ? `${event.eventResult.score.local}-${event.eventResult.score.enemy}` : undefined,
+    ].filter(Boolean).join(" "),
   });
 
   return (
@@ -70,6 +92,11 @@ export default async function EventsPage({
             { key: "name", title: dictionary.tables.event, render: (event) => <div className="font-medium">{event.name}</div> },
             { key: "meetingStart", title: dictionary.tables.meeting, render: (event) => formatDateTime(event.meetingStart, discordConfig?.timezone) },
             { key: "map", title: dictionary.calendarCards.map, render: (event) => `${event.map ?? "TBD"} • ${event.side ?? "TBD"}` },
+            {
+              key: "result",
+              title: dictionary.event.resultColumn,
+              render: (event) => <div className="font-medium">{getEventResultLabel(event, dictionary)}</div>,
+            },
             {
               key: "status",
               title: dictionary.tables.status,

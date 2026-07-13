@@ -40,6 +40,19 @@ function normalizeMatchValue(value?: string) {
   return value?.trim().toLowerCase() ?? "";
 }
 
+function getOutcomeLabel(outcome: "victory" | "defeat" | "draw", dictionary: Dictionary) {
+  switch (outcome) {
+    case "victory":
+      return dictionary.event.resultVictory;
+    case "defeat":
+      return dictionary.event.resultDefeat;
+    case "draw":
+      return dictionary.event.resultDraw;
+    default:
+      return outcome;
+  }
+}
+
 function getPresetMatch(preset: TopicPreset, eventValues: Pick<EventInput, "map" | "side" | "cap">) {
   const fields = [
     { key: "map", label: "Map", eventValue: eventValues.map, presetValue: preset.map },
@@ -155,6 +168,21 @@ export function EventFormPanel({
       </CardHeader>
       <CardContent>
         <form className="space-y-6" onSubmit={form.handleSubmit(submit)}>
+          {event.eventResult ? (
+            <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge variant={event.eventResult.outcome === "victory" ? "default" : "secondary"} className="rounded-full px-3">
+                  {getOutcomeLabel(event.eventResult.outcome, dictionary)}
+                </Badge>
+                <div className="text-lg font-semibold">
+                  {event.eventResult.score.local} - {event.eventResult.score.enemy}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {event.eventResult.mapName ?? event.eventResult.mapId}
+                </div>
+              </div>
+            </div>
+          ) : null}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <FieldLabel label={dictionary.event.fields.name} required  />
