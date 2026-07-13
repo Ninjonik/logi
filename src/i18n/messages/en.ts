@@ -215,6 +215,7 @@ export const enMessages = {
     assignmentMetaDescription: "Edit clan membership, mercenary role, group, and pause state.",
     assignmentTitleSuffix: "assignment",
     averageDescription: "Average across the last {count} matches.",
+    storedAverageDescription: "Average across {count} imported matches.",
     averageKills: "Avg kills",
     averageKd: "Avg K/D",
     averageDeaths: "Avg deaths",

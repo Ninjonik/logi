@@ -19,6 +19,17 @@ function toPlayer(user: {
   mercenaryGuildIds: string[];
   isStreamer: boolean;
   score: number;
+  performance?: {
+    matchesPlayed: number;
+    averages: {
+      kills: number;
+      killDeathRatio: number;
+      deaths: number;
+      offense: number;
+      defense: number;
+      support: number;
+    };
+  };
   createdAt: string;
   updatedAt: string;
 }) {
@@ -77,6 +88,7 @@ export const syncDiscordProfile = mutation({
       mercenaryGuildIds: [],
       isStreamer: false,
       score: 0,
+      performance: undefined,
       createdAt: now,
       updatedAt: now,
     });

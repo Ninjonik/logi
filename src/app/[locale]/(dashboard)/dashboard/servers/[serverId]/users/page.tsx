@@ -119,7 +119,17 @@ export default async function ServerUsersPage({
             {
               key: "score",
               title: dictionary.userManagement.tableScore,
-              render: (assignment) => assignmentUserMap.get(assignment.userId)?.score ?? 0,
+              render: (assignment) => {
+                const user = assignmentUserMap.get(assignment.userId);
+                if (!user) {
+                  return 0;
+                }
+
+                const kd = user.performance?.averages.killDeathRatio;
+                return typeof kd === "number"
+                  ? `${user.score} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`
+                  : user.score;
+              },
             },
             {
               key: "state",

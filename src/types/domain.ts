@@ -16,6 +16,17 @@ export type AppUser = {
   mercenaryGuildIds: string[];
   isStreamer: boolean;
   score: number;
+  performance?: {
+    matchesPlayed: number;
+    averages: {
+      kills: number;
+      killDeathRatio: number;
+      deaths: number;
+      offense: number;
+      defense: number;
+      support: number;
+    };
+  };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };

@@ -88,6 +88,15 @@ function compareUsersByScoreThenName(a: AppUser, b: AppUser) {
   return (b.score - a.score) || a.name.localeCompare(b.name);
 }
 
+function formatRosterScoreline(user: AppUser, dictionary: Dictionary) {
+  const kd = user.performance?.averages.killDeathRatio;
+  if (typeof kd !== "number") {
+    return `${user.score} ${dictionary.navUser.scoreSuffix}`;
+  }
+
+  return `${user.score} ${dictionary.navUser.scoreSuffix} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`;
+}
+
 export function RosterBoard({
   roster,
   event,
@@ -1002,7 +1011,7 @@ export function RosterBoard({
                                         <div className="truncate text-sm font-medium">{user.name}</div>
                                         <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
                                       </div>
-                                      <div className="break-words text-xs text-muted-foreground">{user.score} {dictionary.navUser.scoreSuffix}</div>
+                                      <div className="break-words text-xs text-muted-foreground">{formatRosterScoreline(user, dictionary)}</div>
                                     </div>
                                   </div>
                                     );
@@ -1071,7 +1080,7 @@ export function RosterBoard({
                                           <div className="truncate text-sm font-medium">{user.name}</div>
                                           <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
                                         </div>
-                                        <div className="break-words text-xs text-muted-foreground">{user.score} {dictionary.navUser.scoreSuffix}</div>
+                                        <div className="break-words text-xs text-muted-foreground">{formatRosterScoreline(user, dictionary)}</div>
                                       </div>
                                     </div>
                                   );
@@ -1245,7 +1254,7 @@ function SquadCard({
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="truncate font-medium">
-                          {slotUser.name} <span className="text-xs text-muted-foreground">({slotUser.score})</span>
+                          {slotUser.name} <span className="text-xs text-muted-foreground">({formatRosterScoreline(slotUser, dictionary)})</span>
                         </div>
                         <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
                       </div>
@@ -1333,7 +1342,7 @@ function SquadCard({
                                     <div className="min-w-0 flex-1">
                                       <div className="truncate">{user.name}</div>
                                       <div className="truncate text-xs text-muted-foreground">
-                                        {getPrimaryGroupLabel(assignment, groupsById, dictionary)} • {user.score} {dictionary.navUser.scoreSuffix}
+                                        {getPrimaryGroupLabel(assignment, groupsById, dictionary)} • {formatRosterScoreline(user, dictionary)}
                                       </div>
                                       <div className="truncate text-xs text-muted-foreground/80">
                                         {getSecondaryGroupLabel(assignment, groupsById, dictionary)}
@@ -1380,7 +1389,7 @@ function RoleIconSelect({
 
   return (
     <Select value={selectedValue} onValueChange={onChange}>
-      <SelectTrigger className="h-9 w-20 rounded-lg px-2.5">
+      <SelectTrigger className="h-9 w-32 rounded-lg px-2.5">
         <SelectValue>
           <img src={selectedValue} alt="" className="h-6 w-10 object-contain invert dark:invert-0" />
         </SelectValue>

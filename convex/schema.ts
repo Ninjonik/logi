@@ -11,6 +11,17 @@ const users = defineTable({
   mercenaryGuildIds: v.array(v.string()),
   isStreamer: v.boolean(),
   score: v.number(),
+  performance: v.optional(v.object({
+    matchesPlayed: v.number(),
+    averages: v.object({
+      kills: v.number(),
+      killDeathRatio: v.number(),
+      deaths: v.number(),
+      offense: v.number(),
+      defense: v.number(),
+      support: v.number(),
+    }),
+  })),
   createdAt: v.string(),
   updatedAt: v.string(),
 })

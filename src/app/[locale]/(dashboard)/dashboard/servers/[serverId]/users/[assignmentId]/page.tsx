@@ -63,7 +63,8 @@ export default async function ServerUserDetailPage({
     flattenPlayerMatches(playerStatsDocs),
     new Map(context.events.map((event) => [event.id, event])),
   );
-  const summary = await getPlayerStatsSummaryCached(user.id, context.events);
+  const recentSummary = await getPlayerStatsSummaryCached(user.id, context.events);
+  const storedPerformance = user.performance;
   const paginatedMatches = getPaginatedRows({
     rows: sortedMatches,
     searchParams: resolvedSearchParams,
@@ -97,12 +98,12 @@ export default async function ServerUserDetailPage({
       />
       <div className="space-y-6 px-4 lg:px-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <StatCard title={dictionary.userManagement.averageKills} value={formatAverage(summary.averages.kills)} description={dictionary.userManagement.averageDescription.replace("{count}", String(summary.lastTenMatches))} icon={Target} />
-          <StatCard title={dictionary.userManagement.averageKd} value={formatAverage(summary.averages.killDeathRatio)} description={dictionary.userManagement.averageDescription.replace("{count}", String(summary.lastTenMatches))} icon={Swords} />
-          <StatCard title={dictionary.userManagement.averageDeaths} value={formatAverage(summary.averages.deaths)} description={dictionary.userManagement.averageDescription.replace("{count}", String(summary.lastTenMatches))} icon={Skull} />
-          <StatCard title={dictionary.userManagement.averageOffense} value={formatAverage(summary.averages.offense)} description={dictionary.userManagement.averageDescription.replace("{count}", String(summary.lastTenMatches))} icon={Activity} />
-          <StatCard title={dictionary.userManagement.averageDefense} value={formatAverage(summary.averages.defense)} description={dictionary.userManagement.averageDescription.replace("{count}", String(summary.lastTenMatches))} icon={Shield} />
-          <StatCard title={dictionary.userManagement.averageSupport} value={formatAverage(summary.averages.support)} description={dictionary.userManagement.averageDescription.replace("{count}", String(summary.lastTenMatches))} icon={Wrench} />
+          <StatCard title={dictionary.userManagement.averageKills} value={formatAverage(storedPerformance?.averages.kills ?? recentSummary.averages.kills)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Target} />
+          <StatCard title={dictionary.userManagement.averageKd} value={formatAverage(storedPerformance?.averages.killDeathRatio ?? recentSummary.averages.killDeathRatio)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Swords} />
+          <StatCard title={dictionary.userManagement.averageDeaths} value={formatAverage(storedPerformance?.averages.deaths ?? recentSummary.averages.deaths)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Skull} />
+          <StatCard title={dictionary.userManagement.averageOffense} value={formatAverage(storedPerformance?.averages.offense ?? recentSummary.averages.offense)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Activity} />
+          <StatCard title={dictionary.userManagement.averageDefense} value={formatAverage(storedPerformance?.averages.defense ?? recentSummary.averages.defense)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Shield} />
+          <StatCard title={dictionary.userManagement.averageSupport} value={formatAverage(storedPerformance?.averages.support ?? recentSummary.averages.support)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Wrench} />
         </div>
         <ResourceTable
           className="h-full"

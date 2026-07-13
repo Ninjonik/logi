@@ -26,6 +26,44 @@ const playerMatchStats = v.object({
   support: v.number(),
 });
 
+function buildPerformanceSummary(matches: Array<{
+  kills: number;
+  killDeathRatio: number;
+  deaths: number;
+  offense: number;
+  defense: number;
+  support: number;
+}>) {
+  const divisor = matches.length || 1;
+  const totals = matches.reduce((acc, match) => ({
+    kills: acc.kills + match.kills,
+    killDeathRatio: acc.killDeathRatio + match.killDeathRatio,
+    deaths: acc.deaths + match.deaths,
+    offense: acc.offense + match.offense,
+    defense: acc.defense + match.defense,
+    support: acc.support + match.support,
+  }), {
+    kills: 0,
+    killDeathRatio: 0,
+    deaths: 0,
+    offense: 0,
+    defense: 0,
+    support: 0,
+  });
+
+  return {
+    matchesPlayed: matches.length,
+    averages: {
+      kills: totals.kills / divisor,
+      killDeathRatio: totals.killDeathRatio / divisor,
+      deaths: totals.deaths / divisor,
+      offense: totals.offense / divisor,
+      defense: totals.defense / divisor,
+      support: totals.support / divisor,
+    },
+  };
+}
+
 function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   return {
     ...doc,
@@ -46,6 +84,7 @@ export const upsertMatches = mutation({
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
+    const affectedUserIds = new Set<string>();
 
     for (const entry of args.entries) {
       const existing = await ctx.db
@@ -66,6 +105,9 @@ export const upsertMatches = mutation({
           matches,
           updatedAt,
         });
+        if (entry.userId ?? existing.userId) {
+          affectedUserIds.add((entry.userId ?? existing.userId)!);
+        }
         continue;
       }
 
@@ -75,6 +117,32 @@ export const upsertMatches = mutation({
         latestName: entry.latestName,
         matches,
         updatedAt,
+      });
+      if (entry.userId) {
+        affectedUserIds.add(entry.userId);
+      }
+    }
+
+    for (const userId of affectedUserIds) {
+      const relatedStats = await ctx.db
+        .query("playerStats")
+        .withIndex("userId", (q) => q.eq("userId", userId))
+        .collect();
+
+      const matches = relatedStats.flatMap((doc) => Object.values(doc.matches));
+      const performance = buildPerformanceSummary(matches);
+      const user = await ctx.db
+        .query("users")
+        .withIndex("id", (q) => q.eq("id", userId))
+        .unique();
+
+      if (!user) {
+        continue;
+      }
+
+      await ctx.db.patch(user._id, {
+        performance,
+        updatedAt: new Date().toISOString(),
       });
     }
 

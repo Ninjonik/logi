@@ -215,6 +215,7 @@ export const csMessages = {
     assignmentMetaDescription: "Úprava klanového členství, role žoldáka, skupiny a stavu pozastavení.",
     assignmentTitleSuffix: "zařazení",
     averageDescription: "Průměr za posledních {count} zápasů.",
+    storedAverageDescription: "Průměr napříč {count} importovanými zápasy.",
     averageKills: "Prům. killy",
     averageKd: "Prům. K/D",
     averageDeaths: "Prům. smrtí",
