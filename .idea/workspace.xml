@@ -7,21 +7,9 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="added concurrently for discord bot to be running as well">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="reverted: added concurrently for discord bot to be running as well; fixed: better discord image view; added language support for discord bot and roster images">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/guilds.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/guilds.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/api/discord/roster-image/[eventId]/route.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/discord/roster-image/[eventId]/route.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/discord-server-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/discord-server-settings-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/roster-image.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/roster-image.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,7 +23,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="300" />
+    <option name="cachedIndexableFilesCount" value="301" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -200,7 +188,9 @@
       <workItem from="1783714052697" duration="46000" />
       <workItem from="1783739130408" duration="303000" />
       <workItem from="1783890896842" duration="859000" />
-      <workItem from="1783891925099" duration="2405000" />
+      <workItem from="1783891925099" duration="2746000" />
+      <workItem from="1783957907690" duration="1059000" />
+      <workItem from="1783959707955" duration="1480000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -370,7 +360,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783891665690</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="reverted: added concurrently for discord bot to be running as well; fixed: better discord image view; added language support for discord bot and roster images">
+      <option name="closed" value="true" />
+      <created>1783894640107</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1783894640107</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -408,6 +406,7 @@
     <MESSAGE value="fixed invite link to include permissions, fixed design inconsistencies in roster board" />
     <MESSAGE value="fixed roster board layout err" />
     <MESSAGE value="added concurrently for discord bot to be running as well" />
-    <option name="LAST_COMMIT_MESSAGE" value="added concurrently for discord bot to be running as well" />
+    <MESSAGE value="reverted: added concurrently for discord bot to be running as well; fixed: better discord image view; added language support for discord bot and roster images" />
+    <option name="LAST_COMMIT_MESSAGE" value="reverted: added concurrently for discord bot to be running as well; fixed: better discord image view; added language support for discord bot and roster images" />
   </component>
 </project>
