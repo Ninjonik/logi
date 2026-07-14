@@ -2,13 +2,12 @@ export type Timestamp = string;
 
 export type EventStatus = "registration" | "closed" | "starting" | "concluded";
 
-export type EventTeamSide = "axis" | "allies";
 export type EventOutcome = "victory" | "defeat" | "draw";
 
 export type AppUser = {
   _reserveSection?: string;
   id: string;
-  platformId?: string;
+  platformIds: string[];
   name: string;
   avatar: string;
   managedGuildIds: string[];
@@ -124,20 +123,19 @@ export type EventRecord = {
   status: EventStatus;
   statusUpdatedAt: Timestamp;
   concludedAt?: Timestamp;
+  matchId?: string;
   eventResult?: {
     sourceUrl: string;
     mapId: string;
     mapName?: string;
     endedAt?: Timestamp;
     importedAt: Timestamp;
-    localTeam: EventTeamSide;
-    enemyTeam: EventTeamSide;
+    sideA: string;
+    sideB: string;
     outcome: EventOutcome;
     score: {
-      axis: number;
-      allied: number;
-      local: number;
-      enemy: number;
+      sideA: number;
+      sideB: number;
     };
   };
   attendanceReminderLog: {
@@ -154,6 +152,111 @@ export type EventRecord = {
   updatedAt: Timestamp;
 };
 
+export type MatchTeamSide = "axis" | "allies" | "unknown";
+
+export type MatchStatBreakdown = Partial<{
+  infantry: number;
+  mine: number;
+  sniper: number;
+  armor: number;
+  satchel: number;
+  grenade: number;
+  machine_gun: number;
+  bazooka: number;
+  artillery: number;
+  commander: number;
+}>;
+
+export type MatchRecord = {
+  id: string;
+  guildId: string;
+  eventId: string;
+  matchId: string;
+  sourceUrl: string;
+  importedAt: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  raw: {
+    id: number;
+    creation_time: Timestamp;
+    start: Timestamp;
+    end: Timestamp;
+    server_number: number;
+    map_name: string;
+    result: {
+      axis: number;
+      allied: number;
+    };
+    game_layout: {
+      requested: Array<number | null>;
+      set: string[];
+    };
+    player_stats: Array<{
+      id: number;
+      player_id: string;
+      player: string;
+      map_id: number;
+      kills: number;
+      kills_by_type?: MatchStatBreakdown;
+      kills_streak: number;
+      deaths: number;
+      deaths_by_type?: MatchStatBreakdown;
+      deaths_without_kill_streak: number;
+      teamkills: number;
+      teamkills_streak: number;
+      deaths_by_tk: number;
+      deaths_by_tk_streak: number;
+      nb_vote_started: number;
+      nb_voted_yes: number;
+      nb_voted_no: number;
+      time_seconds: number;
+      kills_per_minute: number;
+      deaths_per_minute: number;
+      kill_death_ratio: number;
+      longest_life_secs: number;
+      shortest_life_secs: number;
+      combat: number;
+      offense: number;
+      defense: number;
+      support: number;
+      most_killed: Record<string, number>;
+      death_by: Record<string, number>;
+      weapons: Record<string, number>;
+      death_by_weapons: Record<string, number>;
+      team: {
+        side: MatchTeamSide;
+        confidence?: "strong" | "mixed";
+        ratio?: number;
+      };
+      level: number;
+    }>;
+    map: {
+      id: string;
+      game_mode: string;
+      attackers?: string | null;
+      environment: string;
+      pretty_name: string;
+      image_name: string;
+      map: {
+        id: string;
+        name: string;
+        tag: string;
+        pretty_name: string;
+        shortname: string;
+        allies: {
+          name: string;
+          team: MatchTeamSide;
+        };
+        axis: {
+          name: string;
+          team: MatchTeamSide;
+        };
+        orientation: string;
+      };
+    };
+  };
+};
+
 export type PlayerMatchStats = {
   eventId: string;
   sourceUrl: string;
@@ -163,7 +266,7 @@ export type PlayerMatchStats = {
   mapName?: string;
   playerName: string;
   userId?: string;
-  team: EventTeamSide | "unknown";
+  team: string;
   kills: number;
   killDeathRatio: number;
   deaths: number;

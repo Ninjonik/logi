@@ -54,6 +54,7 @@ export function ImportEventsButton({
       });
 
       const body = await response.json();
+      console.log("[import-events] response", body);
       if (!response.ok) {
         toast.error(body.error ?? dictionary.common.error);
         return;

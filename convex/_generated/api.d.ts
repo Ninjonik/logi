@@ -12,6 +12,8 @@ import type * as discord from "../discord.js";
 import type * as events from "../events.js";
 import type * as groups from "../groups.js";
 import type * as guilds from "../guilds.js";
+import type * as matches from "../matches.js";
+import type * as migrations from "../migrations.js";
 import type * as playerStats from "../playerStats.js";
 import type * as players from "../players.js";
 import type * as rosters from "../rosters.js";
@@ -32,6 +34,8 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   groups: typeof groups;
   guilds: typeof guilds;
+  matches: typeof matches;
+  migrations: typeof migrations;
   playerStats: typeof playerStats;
   players: typeof players;
   rosters: typeof rosters;

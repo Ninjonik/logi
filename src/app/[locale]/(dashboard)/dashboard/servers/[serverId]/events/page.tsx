@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { ImportEventsButton } from "@/components/app/import-events-button";
 import { PageHeader } from "@/components/app/page-header";
@@ -25,7 +26,7 @@ function getEventResultLabel(event: EventRecord, dictionary: ReturnType<typeof g
       ? dictionary.event.resultDefeat
       : dictionary.event.resultDraw;
 
-  return `${outcomeLabel} ${event.eventResult.score.local}-${event.eventResult.score.enemy}`;
+  return `${outcomeLabel} ${event.eventResult.score.sideA}-${event.eventResult.score.sideB}`;
 }
 
 export async function generateMetadata({
@@ -63,8 +64,9 @@ export default async function EventsPage({
       event.map,
       event.side,
       event.status,
+      event.matchId,
       event.eventResult?.outcome,
-      event.eventResult ? `${event.eventResult.score.local}-${event.eventResult.score.enemy}` : undefined,
+      event.eventResult ? `${event.eventResult.sideA} ${event.eventResult.score.sideA}-${event.eventResult.score.sideB} ${event.eventResult.sideB}` : undefined,
     ].filter(Boolean).join(" "),
   });
 
@@ -104,6 +106,20 @@ export default async function EventsPage({
               key: "result",
               title: dictionary.event.resultColumn,
               render: (event) => <div className="font-medium">{getEventResultLabel(event, dictionary)}</div>,
+            },
+            {
+              key: "match",
+              title: dictionary.event.matchColumn,
+              render: (event) => event.matchId ? (
+                <Link
+                  href={`/${locale}/dashboard/servers/${serverId}/events/${event.id}/match`}
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  #{event.matchId.slice(-6)}
+                </Link>
+              ) : (
+                <span className="text-muted-foreground">{dictionary.shared.notSet}</span>
+              ),
             },
             {
               key: "status",

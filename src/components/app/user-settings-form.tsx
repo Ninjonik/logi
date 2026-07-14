@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { formatPlatformIds } from "@/lib/platform-ids";
 import type { AppUser } from "@/types/domain";
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -33,13 +34,13 @@ export function UserSettingsForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [avatar, setAvatar] = useState(user.avatar);
-  const [platformId, setPlatformId] = useState(user.platformId ?? "");
+  const [platformIds, setPlatformIds] = useState(formatPlatformIds(user.platformIds));
 
   async function handleSave() {
     const response = await fetch("/api/user/settings", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ avatar, platformId }),
+      body: JSON.stringify({ avatar, platformIds }),
     });
     const body = await response.json();
     if (!response.ok) {
@@ -103,8 +104,8 @@ export function UserSettingsForm({
               </Tooltip>
             </div>
             <Input
-              value={platformId}
-              onChange={(event) => setPlatformId(event.target.value.replace(/\s+/g, ""))}
+              value={platformIds}
+              onChange={(event) => setPlatformIds(event.target.value)}
               placeholder={dictionary.userSettings.platformIdPlaceholder}
               className="rounded-xl"
             />
@@ -125,12 +126,12 @@ export function UserSettingsForm({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Badge variant={user.platformId ? "default" : "secondary"} className="rounded-full px-3">
-              {user.platformId ? dictionary.userSettings.platformConnected : dictionary.userSettings.platformDisconnected}
+            <Badge variant={user.platformIds.length ? "default" : "secondary"} className="rounded-full px-3">
+              {user.platformIds.length ? dictionary.userSettings.platformConnected : dictionary.userSettings.platformDisconnected}
             </Badge>
             <div className="rounded-2xl border border-border/60 p-4">
               <div className="text-sm text-muted-foreground">{dictionary.userSettings.currentPlatformId}</div>
-              <div className="mt-2 break-all font-medium">{user.platformId || dictionary.shared.notSet}</div>
+              <div className="mt-2 break-all font-medium">{formatPlatformIds(user.platformIds) || dictionary.shared.notSet}</div>
             </div>
           </CardContent>
         </Card>

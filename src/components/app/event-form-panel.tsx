@@ -175,11 +175,22 @@ export function EventFormPanel({
                   {getOutcomeLabel(event.eventResult.outcome, dictionary)}
                 </Badge>
                 <div className="text-lg font-semibold">
-                  {event.eventResult.score.local} - {event.eventResult.score.enemy}
+                  {event.eventResult.sideA} {event.eventResult.score.sideA} - {event.eventResult.score.sideB} {event.eventResult.sideB}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {event.eventResult.mapName ?? event.eventResult.mapId}
                 </div>
+                {event.matchId ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => router.push(`/${locale}/dashboard/servers/${serverId}/events/${event.id}/match`)}
+                  >
+                    {dictionary.event.openMatch}
+                  </Button>
+                ) : null}
               </div>
             </div>
           ) : null}

@@ -63,14 +63,12 @@ export async function saveServerEventResult(input: {
     mapName?: string;
     endedAt?: string;
     importedAt: string;
-    localTeam: "axis" | "allies";
-    enemyTeam: "axis" | "allies";
+    sideA: string;
+    sideB: string;
     outcome: "victory" | "defeat" | "draw";
     score: {
-      axis: number;
-      allied: number;
-      local: number;
-      enemy: number;
+      sideA: number;
+      sideB: number;
     };
   };
 }) {

@@ -7,12 +7,36 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="discord events integration">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/_generated/api.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/_generated/api.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/events.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/playerStats.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/playerStats.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/players.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/players.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/discord.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/serverData.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/serverData.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/loading.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/loading.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/user/settings/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/user/settings/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/import-events-button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/import-events-button.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/submit-match-results-button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/submit-match-results-button.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/user-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/user-settings-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/server-events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-events.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/server-match-results.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-match-results.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/server-metadata.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-metadata.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/server-user-management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-user-management.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,7 +50,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="307" />
+    <option name="cachedIndexableFilesCount" value="309" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -195,7 +219,8 @@
       <workItem from="1783957907690" duration="1059000" />
       <workItem from="1783959707955" duration="1583000" />
       <workItem from="1783978726510" duration="3541000" />
-      <workItem from="1784042754118" duration="3374000" />
+      <workItem from="1784042754118" duration="3791000" />
+      <workItem from="1784065106292" duration="4520000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -413,7 +438,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784046712035</updated>
     </task>
-    <option name="localTasksCounter" value="28" />
+    <task id="LOCAL-00028" summary="discord events integration">
+      <option name="closed" value="true" />
+      <created>1784047546430</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1784047546430</updated>
+    </task>
+    <option name="localTasksCounter" value="29" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -457,6 +490,7 @@
     <MESSAGE value="better stats handling" />
     <MESSAGE value="fixed height issues in roster discord image" />
     <MESSAGE value="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)" />
-    <option name="LAST_COMMIT_MESSAGE" value="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)" />
+    <MESSAGE value="discord events integration" />
+    <option name="LAST_COMMIT_MESSAGE" value="discord events integration" />
   </component>
 </project>

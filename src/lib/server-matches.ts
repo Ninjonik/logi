@@ -1,0 +1,29 @@
+import { fetchMutation, fetchQuery } from "convex/nextjs";
+import { makeFunctionReference } from "convex/server";
+
+import { getInternalAuthSecret } from "@/lib/env";
+import type { MatchRecord } from "@/types/domain";
+
+const upsertMatchForEventReference = makeFunctionReference<"mutation">("matches:upsertForEvent");
+const getMatchByEventIdReference = makeFunctionReference<"query">("matches:getByEventId");
+
+export async function saveServerMatch(input: {
+  eventId: string;
+  sourceUrl: string;
+  raw: MatchRecord["raw"];
+}) {
+  return await fetchMutation(upsertMatchForEventReference, {
+    secret: getInternalAuthSecret(),
+    eventId: input.eventId as never,
+    sourceUrl: input.sourceUrl,
+    raw: input.raw,
+  });
+}
+
+export async function getServerMatchByEventId(eventId: string) {
+  "use cache";
+  if (eventId.startsWith("sample-")) return null;
+  return await fetchQuery(getMatchByEventIdReference, {
+    eventId: eventId as never,
+  }) as MatchRecord | null;
+}

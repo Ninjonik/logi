@@ -4,7 +4,7 @@ import { v } from "convex/values";
 const users = defineTable({
   id: v.string(),
   name: v.string(),
-  platformId: v.optional(v.string()),
+  platformIds: v.optional(v.array(v.string())),
   avatar: v.string(),
   managedGuildIds: v.array(v.string()),
   guildId: v.optional(v.string()),
@@ -25,8 +25,7 @@ const users = defineTable({
   createdAt: v.string(),
   updatedAt: v.string(),
 })
-  .index("id", ["id"])
-  .index("platformId", ["platformId"]);
+  .index("id", ["id"]);
 
 const guildMember = v.object({
   id: v.string(),
@@ -83,14 +82,109 @@ const eventResult = v.object({
   mapName: v.optional(v.string()),
   endedAt: v.optional(v.string()),
   importedAt: v.string(),
-  localTeam: v.union(v.literal("axis"), v.literal("allies")),
-  enemyTeam: v.union(v.literal("axis"), v.literal("allies")),
+  sideA: v.string(),
+  sideB: v.string(),
   outcome: v.union(v.literal("victory"), v.literal("defeat"), v.literal("draw")),
   score: v.object({
+    sideA: v.number(),
+    sideB: v.number(),
+  }),
+});
+
+const statBreakdown = v.object({
+  infantry: v.optional(v.number()),
+  mine: v.optional(v.number()),
+  sniper: v.optional(v.number()),
+  armor: v.optional(v.number()),
+  satchel: v.optional(v.number()),
+  grenade: v.optional(v.number()),
+  machine_gun: v.optional(v.number()),
+  bazooka: v.optional(v.number()),
+  artillery: v.optional(v.number()),
+  commander: v.optional(v.number()),
+});
+
+const matchPlayerTeam = v.object({
+  side: v.union(v.literal("axis"), v.literal("allies"), v.literal("unknown")),
+  confidence: v.optional(v.union(v.literal("strong"), v.literal("mixed"))),
+  ratio: v.optional(v.number()),
+});
+
+const matchPlayerStat = v.object({
+  id: v.number(),
+  player_id: v.string(),
+  player: v.string(),
+  map_id: v.number(),
+  kills: v.number(),
+  kills_by_type: v.optional(statBreakdown),
+  kills_streak: v.number(),
+  deaths: v.number(),
+  deaths_by_type: v.optional(statBreakdown),
+  deaths_without_kill_streak: v.number(),
+  teamkills: v.number(),
+  teamkills_streak: v.number(),
+  deaths_by_tk: v.number(),
+  deaths_by_tk_streak: v.number(),
+  nb_vote_started: v.number(),
+  nb_voted_yes: v.number(),
+  nb_voted_no: v.number(),
+  time_seconds: v.number(),
+  kills_per_minute: v.number(),
+  deaths_per_minute: v.number(),
+  kill_death_ratio: v.number(),
+  longest_life_secs: v.number(),
+  shortest_life_secs: v.number(),
+  combat: v.number(),
+  offense: v.number(),
+  defense: v.number(),
+  support: v.number(),
+  most_killed: v.record(v.string(), v.number()),
+  death_by: v.record(v.string(), v.number()),
+  weapons: v.record(v.string(), v.number()),
+  death_by_weapons: v.record(v.string(), v.number()),
+  team: matchPlayerTeam,
+  level: v.number(),
+});
+
+const rawMatch = v.object({
+  id: v.number(),
+  creation_time: v.string(),
+  start: v.string(),
+  end: v.string(),
+  server_number: v.number(),
+  map_name: v.string(),
+  result: v.object({
     axis: v.number(),
     allied: v.number(),
-    local: v.number(),
-    enemy: v.number(),
+  }),
+  game_layout: v.object({
+    requested: v.array(v.union(v.number(), v.null())),
+    set: v.array(v.string()),
+  }),
+  player_stats: v.array(matchPlayerStat),
+  map: v.object({
+    id: v.string(),
+    game_mode: v.string(),
+    attackers: v.optional(v.union(v.string(), v.null())),
+    environment: v.string(),
+    pretty_name: v.string(),
+    image_name: v.string(),
+    map: v.object({
+      id: v.string(),
+      name: v.string(),
+      tag: v.string(),
+      pretty_name: v.string(),
+      shortname: v.string(),
+      allies: v.object({
+        name: v.string(),
+        team: v.union(v.literal("axis"), v.literal("allies"), v.literal("unknown")),
+      }),
+      axis: v.object({
+        name: v.string(),
+        team: v.union(v.literal("axis"), v.literal("allies"), v.literal("unknown")),
+      }),
+      orientation: v.string(),
+    }),
   }),
 });
 
@@ -195,6 +289,7 @@ export default defineSchema({
     statusUpdatedAt: v.optional(v.string()),
     concludedAt: v.optional(v.string()),
     eventResult: v.optional(eventResult),
+    matchId: v.optional(v.id("matches")),
     attendanceReminderLog: v.optional(v.array(attendanceReminder)),
     signUps: v.optional(v.array(signUp)),
     scoreAppliedAt: v.optional(v.string()),
@@ -282,7 +377,7 @@ export default defineSchema({
       mapName: v.optional(v.string()),
       playerName: v.string(),
       userId: v.optional(v.string()),
-      team: v.union(v.literal("axis"), v.literal("allies"), v.literal("unknown")),
+      team: v.string(),
       kills: v.number(),
       killDeathRatio: v.number(),
       deaths: v.number(),
@@ -293,4 +388,16 @@ export default defineSchema({
   })
     .index("id", ["id"])
     .index("userId", ["userId"]),
+  matches: defineTable({
+    guildId: v.string(),
+    eventId: v.id("events"),
+    sourceUrl: v.string(),
+    matchId: v.string(),
+    importedAt: v.string(),
+    raw: rawMatch,
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("guildId", ["guildId"])
+    .index("eventId", ["eventId"]),
 });

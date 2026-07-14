@@ -24,14 +24,12 @@ const eventResult = v.object({
   mapName: v.optional(v.string()),
   endedAt: v.optional(v.string()),
   importedAt: v.string(),
-  localTeam: v.union(v.literal("axis"), v.literal("allies")),
-  enemyTeam: v.union(v.literal("axis"), v.literal("allies")),
+  sideA: v.string(),
+  sideB: v.string(),
   outcome: v.union(v.literal("victory"), v.literal("defeat"), v.literal("draw")),
   score: v.object({
-    axis: v.number(),
-    allied: v.number(),
-    local: v.number(),
-    enemy: v.number(),
+    sideA: v.number(),
+    sideB: v.number(),
   }),
 });
 
@@ -69,16 +67,15 @@ function normalizeEventRecord<T extends {
     mapName?: string;
     endedAt?: string;
     importedAt: string;
-    localTeam: "axis" | "allies";
-    enemyTeam: "axis" | "allies";
+    sideA: string;
+    sideB: string;
     outcome: "victory" | "defeat" | "draw";
     score: {
-      axis: number;
-      allied: number;
-      local: number;
-      enemy: number;
+      sideA: number;
+      sideB: number;
     };
   };
+  matchId?: Id<"matches">;
   attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
   signUps?: Array<{ userId: string; group?: string | null }>;
   scoreAppliedAt?: string;
@@ -94,6 +91,7 @@ function normalizeEventRecord<T extends {
     statusUpdatedAt: event.statusUpdatedAt ?? timestamp,
     concludedAt: event.concludedAt,
     eventResult: event.eventResult,
+    matchId: event.matchId,
     attendanceReminderLog: normalizeOptionalArray(event.attendanceReminderLog),
     signUps: normalizeOptionalArray(event.signUps),
     scoreAppliedAt: event.scoreAppliedAt,
@@ -302,6 +300,7 @@ export const upsert = mutation({
         statusUpdatedAt: new Date().toISOString(),
         concludedAt: derivedStatus === "concluded" ? existing?.concludedAt ?? new Date().toISOString() : undefined,
         eventResult: existing?.eventResult,
+        matchId: existing?.matchId,
         attendanceReminderLog: normalizeOptionalArray(existing?.attendanceReminderLog),
         signUps: normalizeOptionalArray(existing?.signUps),
         scoreAppliedAt: existing?.scoreAppliedAt,
@@ -322,6 +321,7 @@ export const upsert = mutation({
       signUps: [],
       scoreAppliedAt: undefined,
       eventResult: undefined,
+      matchId: undefined,
       createdAt: now,
       updatedAt: now,
     });
@@ -413,6 +413,7 @@ export const reconcileStatuses = mutation({
         statusUpdatedAt: nextStatus !== event.status ? now : normalizedEvent.statusUpdatedAt,
         concludedAt: nextStatus === "concluded" ? event.concludedAt ?? now : undefined,
         eventResult: event.eventResult,
+        matchId: event.matchId,
         attendanceReminderLog: normalizedEvent.attendanceReminderLog,
         signUps: normalizedEvent.signUps,
         scoreAppliedAt: event.scoreAppliedAt,

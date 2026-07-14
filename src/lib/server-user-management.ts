@@ -3,6 +3,7 @@ import { makeFunctionReference } from "convex/server";
 import { cache } from "react";
 
 import { getInternalAuthSecret } from "@/lib/env";
+import { parsePlatformIdsInput } from "@/lib/platform-ids";
 import type { AppUser, Guild } from "@/types/domain";
 
 const listAssignmentsReference = makeFunctionReference<"query">("userAssignments:listForServer");
@@ -13,8 +14,8 @@ const upsertAssignmentReference = makeFunctionReference<"mutation">("userAssignm
 const importDiscordMembersReference = makeFunctionReference<"mutation">("userAssignments:importDiscordMembers");
 const removeAssignmentReference = makeFunctionReference<"mutation">("userAssignments:remove");
 const updatePlayerScoreReference = makeFunctionReference<"mutation">("players:updateScore");
-const updatePlatformIdReference = makeFunctionReference<"mutation">("players:updatePlatformId");
-const clearPlatformIdReference = makeFunctionReference<"mutation">("players:clearPlatformId");
+const updatePlatformIdsReference = makeFunctionReference<"mutation">("players:updatePlatformIds");
+const clearPlatformIdsReference = makeFunctionReference<"mutation">("players:clearPlatformIds");
 
 export type ServerUserAssignment = {
   id: string;
@@ -112,21 +113,21 @@ export async function savePlayerScore(input: {
 
 export async function savePlayerPlatformId(input: {
   userId: string;
-  platformId?: string;
+  platformIds?: string | string[];
 }) {
-  const normalizedPlatformId = input.platformId?.replace(/\s+/g, "").trim();
+  const normalizedPlatformIds = parsePlatformIdsInput(input.platformIds);
 
-  if (!normalizedPlatformId) {
-    return await fetchMutation(clearPlatformIdReference, {
+  if (normalizedPlatformIds.length === 0) {
+    return await fetchMutation(clearPlatformIdsReference, {
       secret: getInternalAuthSecret(),
       userId: input.userId,
     });
   }
 
-  return await fetchMutation(updatePlatformIdReference, {
+  return await fetchMutation(updatePlatformIdsReference, {
     secret: getInternalAuthSecret(),
     userId: input.userId,
-    platformId: normalizedPlatformId,
+    platformIds: normalizedPlatformIds,
   });
 }
 

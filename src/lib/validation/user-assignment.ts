@@ -7,7 +7,7 @@ export const userAssignmentSchema = z
     primaryGroupId: z.string().trim().optional(),
     secondaryGroupIds: z.array(z.string()),
     score: z.int(),
-    platformId: z.string().trim().optional(),
+    platformIds: z.string().trim().optional(),
     paused: z.boolean(),
     pausedNote: z.string().trim().optional(),
   })
@@ -36,13 +36,6 @@ export const userAssignmentSchema = z
       });
     }
 
-    if (value.platformId && /\s/.test(value.platformId)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["platformId"],
-        message: "Platform ID cannot contain spaces.",
-      });
-    }
   });
 
 export type UserAssignmentInput = z.infer<typeof userAssignmentSchema>;

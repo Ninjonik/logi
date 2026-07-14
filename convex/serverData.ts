@@ -13,15 +13,20 @@ function normalizeUserDoc<
   T extends {
     _id: unknown;
     id: string;
-    platformId?: string;
+    platformIds?: string[];
   },
 >(user: T) {
-  const legacyUser = user as T & { steamId?: string };
+  const legacyUser = user as T & { steamId?: string; platformId?: string };
 
   return {
     ...user,
     _id: String(user._id),
-    platformId: user.platformId ?? legacyUser.steamId,
+    platformIds: [...new Set(
+      (user.platformIds ?? [legacyUser.platformId ?? legacyUser.steamId].filter(Boolean))
+        .flatMap((entry) => String(entry).split(","))
+        .map((entry) => entry.replace(/\s+/g, "").trim())
+        .filter(Boolean),
+    )],
   };
 }
 
@@ -87,16 +92,15 @@ function normalizeEventDoc<
       mapName?: string;
       endedAt?: string;
       importedAt: string;
-      localTeam: "axis" | "allies";
-      enemyTeam: "axis" | "allies";
+      sideA: string;
+      sideB: string;
       outcome: "victory" | "defeat" | "draw";
       score: {
-        axis: number;
-        allied: number;
-        local: number;
-        enemy: number;
+        sideA: number;
+        sideB: number;
       };
     };
+    matchId?: unknown;
     attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
     signUps?: Array<{ userId: string; group?: string | null }>;
     updatedAt?: string;
@@ -109,6 +113,7 @@ function normalizeEventDoc<
     statusUpdatedAt: event.statusUpdatedAt ?? event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
     concludedAt: event.concludedAt,
     eventResult: event.eventResult,
+    matchId: event.matchId ? String(event.matchId) : undefined,
     attendanceReminderLog: event.attendanceReminderLog ?? [],
     signUps: event.signUps ?? [],
   };

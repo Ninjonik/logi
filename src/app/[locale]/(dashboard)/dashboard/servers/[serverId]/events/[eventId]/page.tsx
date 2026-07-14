@@ -59,6 +59,11 @@ export default async function EventDetailPage({
                 <a href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}>{dictionary.event.showRoster}</a>
               </Button>
             ) : null}
+            {event.matchId ? (
+              <Button asChild variant="outline" className="rounded-xl">
+                <a href={`/${locale}/dashboard/servers/${serverId}/events/${event.id}/match`}>{dictionary.event.openMatch}</a>
+              </Button>
+            ) : null}
             {canAdmin ? (
               event.status === "concluded" ? (
                 <SubmitMatchResultsButton
