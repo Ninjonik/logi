@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
@@ -83,6 +84,19 @@ function getAttendanceIcon(status: AttendanceStatus) {
   return <XCircle className="size-4 text-muted-foreground" />;
 }
 
+function compareUsersByScoreThenName(a: AppUser, b: AppUser) {
+  return (b.score - a.score) || a.name.localeCompare(b.name);
+}
+
+function formatRosterScoreline(user: AppUser, dictionary: Dictionary) {
+  const kd = user.performance?.averages.killDeathRatio;
+  if (typeof kd !== "number") {
+    return `${user.score} ${dictionary.navUser.scoreSuffix}`;
+  }
+
+  return `${user.score} ${dictionary.navUser.scoreSuffix} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`;
+}
+
 export function RosterBoard({
   roster,
   event,
@@ -94,6 +108,7 @@ export function RosterBoard({
   serverId,
   locale,
   timezone,
+  meetingChannelId,
   defaultEditMode = false,
 }: {
   roster?: Roster;
@@ -106,6 +121,7 @@ export function RosterBoard({
   serverId: string;
   locale: string;
   timezone?: string;
+  meetingChannelId?: string;
   defaultEditMode: boolean;
 }) {
   const router = useRouter();
@@ -121,12 +137,13 @@ export function RosterBoard({
   }, [roster]);
 
   const [isPending, startTransition] = useTransition();
+  const [isConfirmingMeetingChannel, setIsConfirmingMeetingChannel] = useState(false);
   const upsertRoster = useMutation(api.rosters.upsert);
 
   const usersById = useMemo(() => new Map(users.map((user) => [user.id, user])), [users]);
   const assignmentsByUserId = useMemo(() => new Map(userAssignments.map((assignment) => [assignment.userId, assignment])), [userAssignments]);
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
-  const allUsersSorted = useMemo(() => users.slice().sort((a, b) => a.name.localeCompare(b.name)), [users]);
+  const allUsersSorted = useMemo(() => users.slice().sort(compareUsersByScoreThenName), [users]);
   const normalizedSearch = deferredSearch.trim().toLowerCase();
   const sortedSquads = useMemo(
     () => board?.squads.slice().sort((a, b) => a.order - b.order) ?? [],
@@ -217,7 +234,7 @@ export function RosterBoard({
       .filter((user) => user.name.toLowerCase().includes(normalizedSearch));
 
     return filtered
-      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort(compareUsersByScoreThenName)
       .map((user) => ({
         ...user,
         _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.id), groupsById, dictionary),
@@ -229,7 +246,8 @@ export function RosterBoard({
     return (board.notAttendingPlayerIds || [])
       .map((id) => usersById.get(id))
       .filter((user): user is AppUser => Boolean(user))
-      .filter((user) => user.name.toLowerCase().includes(normalizedSearch));
+      .filter((user) => user.name.toLowerCase().includes(normalizedSearch))
+      .sort(compareUsersByScoreThenName);
   }, [board, normalizedSearch, usersById]);
 
   const groupedNotAttendingUsers = useMemo(
@@ -652,6 +670,80 @@ export function RosterBoard({
     });
   };
 
+  const canConfirmFromMeetingChannel = Boolean(meetingChannelId && board?.id && event?.id);
+  const confirmFromMeetingChannelButton = (
+    <Button
+      variant="outline"
+      className="rounded-xl"
+      onClick={handleConfirmFromMeetingChannel}
+      disabled={!canConfirmFromMeetingChannel || isPending || isConfirmingMeetingChannel}
+    >
+      {isConfirmingMeetingChannel ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+      {isConfirmingMeetingChannel
+        ? dictionary.roster.confirmingFromMeetingChannel
+        : dictionary.roster.confirmFromMeetingChannel}
+    </Button>
+  );
+
+  async function handleConfirmFromMeetingChannel() {
+    if (!board?.id || !event || !canConfirmFromMeetingChannel) {
+      return;
+    }
+
+    setIsConfirmingMeetingChannel(true);
+
+    try {
+      const response = await fetch(`/api/servers/${serverId}/rosters/${board.id}/confirm-meeting-attendance`, {
+        method: "POST",
+      });
+      const body = await response.json();
+
+      if (!response.ok) {
+        toast.error(body.error ?? dictionary.common.error);
+        return;
+      }
+
+      if (body.updatedCount > 0) {
+        setBoard((current) => {
+          if (!current) return current;
+
+          const next = structuredClone(current);
+          const confirmedUserIds = new Set<string>(body.updatedUserIds);
+
+          next.squads = next.squads.map((squad) => ({
+            ...squad,
+            players: squad.players.map((player) => {
+              if (!player.id || !confirmedUserIds.has(player.id)) {
+                return player;
+              }
+
+              return {
+                ...player,
+                ack: true,
+                confirmed: true,
+              };
+            }),
+          }));
+
+          return next;
+        });
+      }
+
+      router.refresh();
+
+      toast.success(
+        body.updatedCount > 0
+          ? dictionary.roster.confirmedFromMeetingChannel.replace("{count}", String(body.updatedCount))
+          : dictionary.roster.noRosterPlayersInMeetingChannel,
+      );
+    } catch (error) {
+      console.error("Failed to confirm roster from meeting channel:", error);
+      toast.error(dictionary.common.error);
+    } finally {
+      setIsConfirmingMeetingChannel(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card className="rounded-2xl border-border/60 bg-card text-card-foreground">
@@ -675,11 +767,25 @@ export function RosterBoard({
                   variant="outline"
                   className="rounded-xl"
                   onClick={() => handleSave(board?.published)}
-                  disabled={isPending}
+                  disabled={isPending || isConfirmingMeetingChannel}
                 >
                   {isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
                   {dictionary.common.save}
                 </Button>
+                {canConfirmFromMeetingChannel ? (
+                  confirmFromMeetingChannelButton
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0}>
+                        {confirmFromMeetingChannelButton}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {dictionary.roster.confirmFromMeetingChannelHelp}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
                 <Button variant={editMode ? "default" : "outline"} className="rounded-xl" onClick={() => setEditMode((value) => !value)}>
                   <Settings2 className="size-4" />
                   {editMode ? dictionary.roster.editingEnabled : dictionary.roster.editRoster}
@@ -689,7 +795,7 @@ export function RosterBoard({
                     variant="default"
                     className="rounded-xl"
                     onClick={() => handleSave(true)}
-                    disabled={isPending}
+                    disabled={isPending || isConfirmingMeetingChannel}
                   >
                     {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
                     {dictionary.roster.publishRoster}
@@ -750,6 +856,8 @@ export function RosterBoard({
                         updatePlayerIcon={updatePlayerIcon}
                         updatePlayerAttendanceStatus={updatePlayerAttendanceStatus}
                         removeRosterSlot={removeRosterSlot}
+                        moveSlotToReserve={moveSlotToReserve}
+                        moveSlotToNotAttending={moveSlotToNotAttending}
                         handleDropOnSlot={handleDropOnSlot}
                         addRosterSlot={addRosterSlot}
                         assignUserToSlot={assignUserToSlot}
@@ -776,12 +884,14 @@ export function RosterBoard({
                                   removeRosterSquad={removeRosterSquad}
                                   moveSquad={moveSquad}
                                   updatePlayerField={updatePlayerField}
-                                  updatePlayerIcon={updatePlayerIcon}
-                                  updatePlayerAttendanceStatus={updatePlayerAttendanceStatus}
-                                  removeRosterSlot={removeRosterSlot}
-                                  handleDropOnSlot={handleDropOnSlot}
-                                  addRosterSlot={addRosterSlot}
-                                  assignUserToSlot={assignUserToSlot}
+                                   updatePlayerIcon={updatePlayerIcon}
+                                   updatePlayerAttendanceStatus={updatePlayerAttendanceStatus}
+                                   removeRosterSlot={removeRosterSlot}
+                                   moveSlotToReserve={moveSlotToReserve}
+                                   moveSlotToNotAttending={moveSlotToNotAttending}
+                                   handleDropOnSlot={handleDropOnSlot}
+                                   addRosterSlot={addRosterSlot}
+                                   assignUserToSlot={assignUserToSlot}
                                   allUsersSorted={allUsersSorted}
                                   usersById={usersById}
                                   assignmentsByUserId={assignmentsByUserId}
@@ -905,7 +1015,7 @@ export function RosterBoard({
                                         <div className="truncate text-sm font-medium">{user.name}</div>
                                         <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
                                       </div>
-                                      <div className="break-words text-xs text-muted-foreground">{user.score} {dictionary.navUser.scoreSuffix}</div>
+                                      <div className="break-words text-xs text-muted-foreground">{formatRosterScoreline(user, dictionary)}</div>
                                     </div>
                                   </div>
                                     );
@@ -974,7 +1084,7 @@ export function RosterBoard({
                                           <div className="truncate text-sm font-medium">{user.name}</div>
                                           <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
                                         </div>
-                                        <div className="break-words text-xs text-muted-foreground">{user.score} {dictionary.navUser.scoreSuffix}</div>
+                                        <div className="break-words text-xs text-muted-foreground">{formatRosterScoreline(user, dictionary)}</div>
                                       </div>
                                     </div>
                                   );
@@ -1015,6 +1125,8 @@ function SquadCard({
   updatePlayerIcon,
   updatePlayerAttendanceStatus,
   removeRosterSlot,
+  moveSlotToReserve,
+  moveSlotToNotAttending,
   handleDropOnSlot,
   addRosterSlot,
   assignUserToSlot,
@@ -1038,6 +1150,8 @@ function SquadCard({
   updatePlayerIcon: (sIndex: number, pIndex: number, roleIcon: string) => void;
   updatePlayerAttendanceStatus: (sIndex: number, pIndex: number, status: AttendanceStatus) => void;
   removeRosterSlot: (sIndex: number, pIndex: number) => void;
+  moveSlotToReserve: (sIndex: number, pIndex: number, targetReserveId?: string) => void;
+  moveSlotToNotAttending: (sIndex: number, pIndex: number) => void;
   handleDropOnSlot: (sIndex: number, pIndex: number) => void;
   addRosterSlot: (index: number) => void;
   assignUserToSlot: (userId: string, sIndex: number, pIndex: number) => void;
@@ -1050,6 +1164,7 @@ function SquadCard({
 }) {
   const [slotPickerOpen, setSlotPickerOpen] = useState<number | null>(null);
   const [slotSearches, setSlotSearches] = useState<Record<number, string>>({});
+  const [moveMenuOpen, setMoveMenuOpen] = useState<number | null>(null);
 
   return (
     <Card
@@ -1147,11 +1262,59 @@ function SquadCard({
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="truncate font-medium">{slotUser.name}</div>
+                        <div className="truncate font-medium">
+                          {slotUser.name} <span className="text-xs text-muted-foreground">({formatRosterScoreline(slotUser, dictionary)})</span>
+                        </div>
                         <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
                       </div>
                       <div className="truncate text-xs text-muted-foreground">{player.note ?? ""}</div>
                     </div>
+                    {editMode && canAdmin ? (
+                      <Popover open={moveMenuOpen === playerIndex} onOpenChange={(open) => setMoveMenuOpen(open ? playerIndex : null)}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 rounded-xl"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                            }}
+                            onPointerDown={(event) => {
+                              event.stopPropagation();
+                            }}
+                          >
+                            <ChevronsUpDown className="size-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-2" align="end">
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="justify-start rounded-lg"
+                              onClick={() => {
+                                moveSlotToReserve(squadIndex, playerIndex);
+                                setMoveMenuOpen(null);
+                              }}
+                            >
+                              {dictionary.roster.moveToReserves}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="justify-start rounded-lg"
+                              onClick={() => {
+                                moveSlotToNotAttending(squadIndex, playerIndex);
+                                setMoveMenuOpen(null);
+                              }}
+                            >
+                              {dictionary.roster.moveToNotAttending}
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ) : null}
                     {getAttendanceIcon(attendanceStatus)}
                   </div>
                   {editMode ? (
@@ -1201,7 +1364,7 @@ function SquadCard({
                                   return aAssignedElsewhere ? 1 : -1;
                                 }
 
-                                return a.name.localeCompare(b.name);
+                                return compareUsersByScoreThenName(a, b);
                               })
                               .slice(0, 5)
                               .map((user) => {
@@ -1234,7 +1397,7 @@ function SquadCard({
                                     <div className="min-w-0 flex-1">
                                       <div className="truncate">{user.name}</div>
                                       <div className="truncate text-xs text-muted-foreground">
-                                        {getPrimaryGroupLabel(assignment, groupsById, dictionary)} • {user.score} {dictionary.navUser.scoreSuffix}
+                                        {getPrimaryGroupLabel(assignment, groupsById, dictionary)} • {formatRosterScoreline(user, dictionary)}
                                       </div>
                                       <div className="truncate text-xs text-muted-foreground/80">
                                         {getSecondaryGroupLabel(assignment, groupsById, dictionary)}
@@ -1281,7 +1444,7 @@ function RoleIconSelect({
 
   return (
     <Select value={selectedValue} onValueChange={onChange}>
-      <SelectTrigger className="h-9 w-20 rounded-lg px-2.5">
+      <SelectTrigger className="h-9 w-32 rounded-lg px-2.5">
         <SelectValue>
           <img src={selectedValue} alt="" className="h-6 w-10 object-contain invert dark:invert-0" />
         </SelectValue>

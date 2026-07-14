@@ -10,7 +10,11 @@ const getAssignmentByIdReference = makeFunctionReference<"query">("userAssignmen
 const getUsersByIdsReference = makeFunctionReference<"query">("serverData:getUsersByIds");
 const listUsersReference = makeFunctionReference<"query">("serverData:listUsers");
 const upsertAssignmentReference = makeFunctionReference<"mutation">("userAssignments:upsert");
+const importDiscordMembersReference = makeFunctionReference<"mutation">("userAssignments:importDiscordMembers");
 const removeAssignmentReference = makeFunctionReference<"mutation">("userAssignments:remove");
+const updatePlayerScoreReference = makeFunctionReference<"mutation">("players:updateScore");
+const updatePlatformIdReference = makeFunctionReference<"mutation">("players:updatePlatformId");
+const clearPlatformIdReference = makeFunctionReference<"mutation">("players:clearPlatformId");
 
 export type ServerUserAssignment = {
   id: string;
@@ -93,4 +97,62 @@ export async function deleteServerUserAssignment(assignmentId: string) {
     secret: getInternalAuthSecret(),
     assignmentId: assignmentId as never,
   });
+}
+
+export async function savePlayerScore(input: {
+  userId: string;
+  score: number;
+}) {
+  return await fetchMutation(updatePlayerScoreReference, {
+    secret: getInternalAuthSecret(),
+    userId: input.userId,
+    score: input.score,
+  });
+}
+
+export async function savePlayerPlatformId(input: {
+  userId: string;
+  platformId?: string;
+}) {
+  const normalizedPlatformId = input.platformId?.replace(/\s+/g, "").trim();
+
+  if (!normalizedPlatformId) {
+    return await fetchMutation(clearPlatformIdReference, {
+      secret: getInternalAuthSecret(),
+      userId: input.userId,
+    });
+  }
+
+  return await fetchMutation(updatePlatformIdReference, {
+    secret: getInternalAuthSecret(),
+    userId: input.userId,
+    platformId: normalizedPlatformId,
+  });
+}
+
+export async function importDiscordMembersForServer(input: {
+  serverId: string;
+  assignmentType: "member" | "mercenary";
+  members: Array<{
+    userId: string;
+    name: string;
+    avatar: string;
+    secondaryGroupIds: string[];
+  }>;
+}) {
+  return await fetchMutation(importDiscordMembersReference, {
+    secret: getInternalAuthSecret(),
+    serverId: input.serverId,
+    assignmentType: input.assignmentType,
+    members: input.members.map((member) => ({
+      ...member,
+      secondaryGroupIds: member.secondaryGroupIds as never,
+    })) as never,
+  }) as {
+    importedCount: number;
+    createdUsers: number;
+    updatedUsers: number;
+    createdAssignments: number;
+    updatedAssignments: number;
+  };
 }

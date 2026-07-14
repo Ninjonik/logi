@@ -2,10 +2,13 @@ export type Timestamp = string;
 
 export type EventStatus = "registration" | "closed" | "starting" | "concluded";
 
+export type EventTeamSide = "axis" | "allies";
+export type EventOutcome = "victory" | "defeat" | "draw";
+
 export type AppUser = {
   _reserveSection?: string;
   id: string;
-  steamId?: string;
+  platformId?: string;
   name: string;
   avatar: string;
   managedGuildIds: string[];
@@ -13,6 +16,17 @@ export type AppUser = {
   mercenaryGuildIds: string[];
   isStreamer: boolean;
   score: number;
+  performance?: {
+    matchesPlayed: number;
+    averages: {
+      kills: number;
+      killDeathRatio: number;
+      deaths: number;
+      offense: number;
+      defense: number;
+      support: number;
+    };
+  };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
@@ -29,6 +43,11 @@ export type Guild = {
   name: string;
   avatar: string;
   description?: string;
+  rosterScoreSettings: {
+    noResponse: number;
+    declined: number;
+    accepted: number;
+  };
   botInside: boolean;
   canAdmin?: boolean;
   adminIds: string[];
@@ -52,6 +71,7 @@ export type DiscordConfig = {
   defaultLanguage: "en" | "cs";
   announcementsChannelId?: string;
   forumCategoryId?: string;
+  meetingChannelId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
   createdAt: Timestamp;
@@ -63,6 +83,7 @@ export type DiscordMemberAccess = {
   guildId: string;
   userId: string;
   roleIds: string[];
+  voiceChannelId?: string;
   isAdmin: boolean;
   hasDashboardAccess: boolean;
   createdAt: Timestamp;
@@ -103,6 +124,22 @@ export type EventRecord = {
   status: EventStatus;
   statusUpdatedAt: Timestamp;
   concludedAt?: Timestamp;
+  eventResult?: {
+    sourceUrl: string;
+    mapId: string;
+    mapName?: string;
+    endedAt?: Timestamp;
+    importedAt: Timestamp;
+    localTeam: EventTeamSide;
+    enemyTeam: EventTeamSide;
+    outcome: EventOutcome;
+    score: {
+      axis: number;
+      allied: number;
+      local: number;
+      enemy: number;
+    };
+  };
   attendanceReminderLog: {
     userId: string;
     offsetHours: number;
@@ -112,8 +149,27 @@ export type EventRecord = {
     userId: string;
     group?: string | null;
   }[];
+  scoreAppliedAt?: Timestamp;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+};
+
+export type PlayerMatchStats = {
+  eventId: string;
+  sourceUrl: string;
+  importedAt: Timestamp;
+  endedAt?: Timestamp;
+  mapId: string;
+  mapName?: string;
+  playerName: string;
+  userId?: string;
+  team: EventTeamSide | "unknown";
+  kills: number;
+  killDeathRatio: number;
+  deaths: number;
+  offense: number;
+  defense: number;
+  support: number;
 };
 
 export type Topic = {

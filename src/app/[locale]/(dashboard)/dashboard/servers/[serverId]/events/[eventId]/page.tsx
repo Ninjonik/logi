@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ConcludeEventButton } from "@/components/app/conclude-event-button";
 import { EventFormPanel } from "@/components/app/event-form-panel";
 import { PageHeader } from "@/components/app/page-header";
+import { SubmitMatchResultsButton } from "@/components/app/submit-match-results-button";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
@@ -59,12 +60,20 @@ export default async function EventDetailPage({
               </Button>
             ) : null}
             {canAdmin ? (
-              <ConcludeEventButton
-                serverId={serverId}
-                eventId={event.id}
-                disabled={event.status === "concluded"}
-                dictionary={dictionary}
-              />
+              event.status === "concluded" ? (
+                <SubmitMatchResultsButton
+                  serverId={serverId}
+                  eventId={event.id}
+                  dictionary={dictionary}
+                />
+              ) : (
+                <ConcludeEventButton
+                  serverId={serverId}
+                  eventId={event.id}
+                  disabled={false}
+                  dictionary={dictionary}
+                />
+              )
             ) : null}
           </div>
         }

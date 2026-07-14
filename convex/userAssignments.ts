@@ -215,3 +215,170 @@ export const remove = mutation({
     }
   },
 });
+
+export const importDiscordMembers = mutation({
+  args: {
+    secret: v.string(),
+    serverId: v.string(),
+    assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
+    members: v.array(v.object({
+      userId: v.string(),
+      name: v.string(),
+      avatar: v.string(),
+      secondaryGroupIds: v.array(v.id("groups")),
+    })),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const server = await ctx.db
+      .query("guilds")
+      .withIndex("id", (q) => q.eq("id", args.serverId))
+      .unique();
+
+    if (!server) {
+      throw new Error("Server not found.");
+    }
+
+    const now = new Date().toISOString();
+    const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", args.serverId)).collect();
+    const validGroupIds = new Set(groups.map((group) => String(group._id)));
+    const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
+    const existingAssignments = await ctx.db
+      .query("userAssignments")
+      .withIndex("serverId", (q) => q.eq("serverId", args.serverId))
+      .collect();
+    const existingAssignmentsByUserId = new Map(existingAssignments.map((assignment) => [assignment.userId, assignment]));
+
+    let createdUsers = 0;
+    let updatedUsers = 0;
+    let createdAssignments = 0;
+    let updatedAssignments = 0;
+
+    for (const member of args.members) {
+      if (member.secondaryGroupIds.some((groupId) => !validGroupIds.has(String(groupId)))) {
+        throw new Error("One of the selected secondary groups does not belong to this server.");
+      }
+
+      const existingUser = await ctx.db
+        .query("users")
+        .withIndex("id", (q) => q.eq("id", member.userId))
+        .unique();
+
+      if (existingUser) {
+        await ctx.db.patch(existingUser._id, {
+          name: member.name,
+          avatar: member.avatar || existingUser.avatar || "https://cdn.discordapp.com/embed/avatars/0.png",
+          updatedAt: now,
+        });
+        updatedUsers += 1;
+      } else {
+        await ctx.db.insert("users", {
+          id: member.userId,
+          name: member.name,
+          avatar: member.avatar || "https://cdn.discordapp.com/embed/avatars/0.png",
+          managedGuildIds: [],
+          guildId: undefined,
+          mercenaryGuildIds: [],
+          isStreamer: false,
+          score: 0,
+          performance: undefined,
+          createdAt: now,
+          updatedAt: now,
+        });
+        createdUsers += 1;
+      }
+
+      const existingAssignment = existingAssignmentsByUserId.get(member.userId);
+      const primaryGroupId = existingAssignment?.primaryGroupId;
+      const mergedSecondaryGroupIds = [...new Set([
+        ...(existingAssignment?.secondaryGroupIds ?? []).map((groupId) => String(groupId)),
+        ...member.secondaryGroupIds.map((groupId) => String(groupId)),
+      ])]
+        .filter((groupId) => groupId !== String(primaryGroupId ?? ""))
+        .map((groupId) => groupId as any);
+
+      if (existingAssignment) {
+        await ctx.db.patch(existingAssignment._id, {
+          type: existingAssignment.type ?? args.assignmentType,
+          primaryGroupId,
+          secondaryGroupIds: mergedSecondaryGroupIds,
+          paused: existingAssignment.paused,
+          pausedNote: existingAssignment.pausedNote,
+          updatedAt: now,
+        });
+        updatedAssignments += 1;
+      } else {
+        const insertedAssignmentId = await ctx.db.insert("userAssignments", {
+          userId: member.userId,
+          serverId: args.serverId,
+          type: args.assignmentType,
+          primaryGroupId: undefined,
+          secondaryGroupIds: mergedSecondaryGroupIds,
+          paused: false,
+          pausedNote: undefined,
+          createdAt: now,
+          updatedAt: now,
+        });
+        const insertedAssignment = await ctx.db.get(insertedAssignmentId);
+        if (insertedAssignment) {
+          existingAssignmentsByUserId.set(member.userId, insertedAssignment);
+        }
+        createdAssignments += 1;
+      }
+    }
+
+    const currentServerAssignments = await ctx.db
+      .query("userAssignments")
+      .withIndex("serverId", (q) => q.eq("serverId", args.serverId))
+      .collect();
+
+    const memberAssignments = currentServerAssignments.filter((item) => item.type === "member");
+    const mercAssignments = currentServerAssignments.filter((item) => item.type === "mercenary");
+
+    await ctx.db.patch(server._id, {
+      memberIds: memberAssignments.map((item) => item.userId),
+      members: memberAssignments.map((item) => ({
+        id: item.userId,
+        primaryGroup: item.primaryGroupId ? groupNameById.get(String(item.primaryGroupId)) : undefined,
+        secondaryGroups: (item.secondaryGroupIds ?? [])
+          .map((groupId) => groupNameById.get(String(groupId)))
+          .filter((groupName): groupName is string => Boolean(groupName)),
+        joinedAt: item.createdAt,
+      })),
+      mercenaryIds: mercAssignments.map((item) => item.userId),
+      updatedAt: now,
+    });
+
+    const touchedUserIds = [...new Set(args.members.map((member) => member.userId))];
+    for (const userId of touchedUserIds) {
+      const [user, allAssignmentsForUser] = await Promise.all([
+        ctx.db.query("users").withIndex("id", (q) => q.eq("id", userId)).unique(),
+        ctx.db.query("userAssignments").withIndex("userId", (q) => q.eq("userId", userId)).collect(),
+      ]);
+
+      if (!user) {
+        continue;
+      }
+
+      const primaryAssignment = allAssignmentsForUser.find((item) => item.type === "member");
+      const mercenaryGuildIds = allAssignmentsForUser
+        .filter((item) => item.type === "mercenary")
+        .map((item) => item.serverId);
+
+      await ctx.db.patch(user._id, {
+        guildId: primaryAssignment?.serverId,
+        mercenaryGuildIds,
+        updatedAt: now,
+      });
+    }
+
+    return {
+      importedCount: args.members.length,
+      createdUsers,
+      updatedUsers,
+      createdAssignments,
+      updatedAssignments,
+    };
+  },
+});

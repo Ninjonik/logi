@@ -1,10 +1,53 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds";
 
 function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   return {
     ...doc,
     id: String(doc._id),
+  };
+}
+
+function normalizeUserDoc<
+  T extends {
+    _id: unknown;
+    id: string;
+    platformId?: string;
+  },
+>(user: T) {
+  const legacyUser = user as T & { steamId?: string };
+
+  return {
+    ...user,
+    _id: String(user._id),
+    platformId: user.platformId ?? legacyUser.steamId,
+  };
+}
+
+function normalizeGuildDoc<
+  T extends {
+    _id: unknown;
+    rosterScoreSettings?: {
+      noResponse: number;
+      declined: number;
+      accepted: number;
+    };
+  },
+>(guild: T) {
+  return {
+    ...normalizeDoc(guild),
+    rosterScoreSettings: {
+      noResponse: Number.isInteger(guild.rosterScoreSettings?.noResponse)
+        ? guild.rosterScoreSettings?.noResponse ?? DEFAULT_ROSTER_SCORE_SETTINGS.noResponse
+        : DEFAULT_ROSTER_SCORE_SETTINGS.noResponse,
+      declined: Number.isInteger(guild.rosterScoreSettings?.declined)
+        ? guild.rosterScoreSettings?.declined ?? DEFAULT_ROSTER_SCORE_SETTINGS.declined
+        : DEFAULT_ROSTER_SCORE_SETTINGS.declined,
+      accepted: Number.isInteger(guild.rosterScoreSettings?.accepted)
+        ? guild.rosterScoreSettings?.accepted ?? DEFAULT_ROSTER_SCORE_SETTINGS.accepted
+        : DEFAULT_ROSTER_SCORE_SETTINGS.accepted,
+    },
   };
 }
 
@@ -38,7 +81,24 @@ function normalizeEventDoc<
     status?: "registration" | "closed" | "starting" | "concluded";
     statusUpdatedAt?: string;
     concludedAt?: string;
+    eventResult?: {
+      sourceUrl: string;
+      mapId: string;
+      mapName?: string;
+      endedAt?: string;
+      importedAt: string;
+      localTeam: "axis" | "allies";
+      enemyTeam: "axis" | "allies";
+      outcome: "victory" | "defeat" | "draw";
+      score: {
+        axis: number;
+        allied: number;
+        local: number;
+        enemy: number;
+      };
+    };
     attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
+    signUps?: Array<{ userId: string; group?: string | null }>;
     updatedAt?: string;
     createdAt?: string;
   },
@@ -48,7 +108,9 @@ function normalizeEventDoc<
     status: event.status ?? deriveEventStatus(event),
     statusUpdatedAt: event.statusUpdatedAt ?? event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
     concludedAt: event.concludedAt,
+    eventResult: event.eventResult,
     attendanceReminderLog: event.attendanceReminderLog ?? [],
+    signUps: event.signUps ?? [],
   };
 }
 
@@ -127,8 +189,8 @@ export const getServerContext = query({
     const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
 
     return {
-      user,
-      server,
+      user: normalizeUserDoc(user),
+      server: normalizeGuildDoc(server),
       canAdmin,
       events: events.map(normalizeEventDoc),
       topicPresets: topicPresets.map(normalizeDoc),
@@ -151,14 +213,16 @@ export const getUsersByIds = query({
       uniqueIds.map((userId) => ctx.db.query("users").withIndex("id", (q) => q.eq("id", userId)).unique()),
     );
 
-    return users.filter(Boolean);
+    return users
+      .filter((user): user is NonNullable<typeof user> => Boolean(user))
+      .map((user) => normalizeUserDoc(user));
   },
 });
 
 export const listUsers = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("users").collect();
+    return (await ctx.db.query("users").collect()).map((user) => normalizeUserDoc(user));
   },
 });
 
@@ -180,7 +244,7 @@ export const getAssignmentWithUser = query({
 
     return {
       ...normalizedAssignment,
-      user,
+      user: user ? normalizeUserDoc(user) : user,
       userName: user?.name || "Unknown Player",
     };
   },

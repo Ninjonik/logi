@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
+import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -17,10 +18,41 @@ const attendanceReminder = v.object({
   sentAt: v.string(),
 });
 
+const eventResult = v.object({
+  sourceUrl: v.string(),
+  mapId: v.string(),
+  mapName: v.optional(v.string()),
+  endedAt: v.optional(v.string()),
+  importedAt: v.string(),
+  localTeam: v.union(v.literal("axis"), v.literal("allies")),
+  enemyTeam: v.union(v.literal("axis"), v.literal("allies")),
+  outcome: v.union(v.literal("victory"), v.literal("defeat"), v.literal("draw")),
+  score: v.object({
+    axis: v.number(),
+    allied: v.number(),
+    local: v.number(),
+    enemy: v.number(),
+  }),
+});
+
 const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING";
 
 function normalizeOptionalArray<T>(value: T[] | undefined) {
   return Array.isArray(value) ? value : [];
+}
+
+function getSignUpScoreCategory(
+  signUp: { group?: string | null } | undefined,
+): "noResponse" | "declined" | "accepted" {
+  if (!signUp || !signUp.group) {
+    return "noResponse";
+  }
+
+  if (signUp.group === SIGNUP_NOT_ATTENDING) {
+    return "declined";
+  }
+
+  return "accepted";
 }
 
 function normalizeEventRecord<T extends {
@@ -31,8 +63,25 @@ function normalizeEventRecord<T extends {
   status?: "registration" | "closed" | "starting" | "concluded";
   statusUpdatedAt?: string;
   concludedAt?: string;
+  eventResult?: {
+    sourceUrl: string;
+    mapId: string;
+    mapName?: string;
+    endedAt?: string;
+    importedAt: string;
+    localTeam: "axis" | "allies";
+    enemyTeam: "axis" | "allies";
+    outcome: "victory" | "defeat" | "draw";
+    score: {
+      axis: number;
+      allied: number;
+      local: number;
+      enemy: number;
+    };
+  };
   attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
   signUps?: Array<{ userId: string; group?: string | null }>;
+  scoreAppliedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }>(event: T) {
@@ -44,8 +93,10 @@ function normalizeEventRecord<T extends {
     status,
     statusUpdatedAt: event.statusUpdatedAt ?? timestamp,
     concludedAt: event.concludedAt,
+    eventResult: event.eventResult,
     attendanceReminderLog: normalizeOptionalArray(event.attendanceReminderLog),
     signUps: normalizeOptionalArray(event.signUps),
+    scoreAppliedAt: event.scoreAppliedAt,
     updatedAt: event.updatedAt ?? timestamp,
   };
 }
@@ -130,6 +181,62 @@ async function reconcileRosterAttendance(ctx: MutationCtx, args: {
   });
 }
 
+async function applyScoreToEventSignups(
+  ctx: MutationCtx,
+  eventId: Id<"events">,
+) {
+  const event = await ctx.db.get(eventId);
+  if (!event) {
+    throw new Error("Event not found.");
+  }
+
+  const normalizedEvent = normalizeEventRecord(event);
+  if (normalizedEvent.scoreAppliedAt || normalizedEvent.status === "registration") {
+    return false;
+  }
+
+  const guild = await ctx.db
+    .query("guilds")
+    .withIndex("id", (q) => q.eq("id", normalizedEvent.guildId))
+    .unique();
+  if (!guild) {
+    throw new Error("Server not found.");
+  }
+
+  const scoreSettings = guild.rosterScoreSettings ?? DEFAULT_ROSTER_SCORE_SETTINGS;
+  const assignments = await ctx.db
+    .query("userAssignments")
+    .withIndex("serverId", (q) => q.eq("serverId", normalizedEvent.guildId))
+    .collect();
+
+  const activeAssignments = assignments.filter((assignment) => !assignment.paused);
+  const signUpByUserId = new Map(normalizedEvent.signUps.map((signUp) => [signUp.userId, signUp]));
+  const users = await Promise.all(
+    activeAssignments.map((assignment) =>
+      ctx.db.query("users").withIndex("id", (q) => q.eq("id", assignment.userId)).unique(),
+    ),
+  );
+
+  for (const user of users) {
+    if (!user) continue;
+    const signUp = signUpByUserId.get(user.id);
+    const category = getSignUpScoreCategory(signUp);
+    const delta = scoreSettings[category];
+
+    await ctx.db.patch(user._id, {
+      score: user.score + delta,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  await ctx.db.patch(eventId, {
+    scoreAppliedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  return true;
+}
+
 export const upsert = mutation({
   args: {
     secret: v.string(),
@@ -194,9 +301,15 @@ export const upsert = mutation({
         status: derivedStatus,
         statusUpdatedAt: new Date().toISOString(),
         concludedAt: derivedStatus === "concluded" ? existing?.concludedAt ?? new Date().toISOString() : undefined,
+        eventResult: existing?.eventResult,
         attendanceReminderLog: normalizeOptionalArray(existing?.attendanceReminderLog),
         signUps: normalizeOptionalArray(existing?.signUps),
+        scoreAppliedAt: existing?.scoreAppliedAt,
       });
+
+      if (derivedStatus !== "registration") {
+        await applyScoreToEventSignups(ctx, args.eventId);
+      }
       return String(args.eventId);
     }
 
@@ -207,6 +320,8 @@ export const upsert = mutation({
       statusUpdatedAt: now,
       attendanceReminderLog: [],
       signUps: [],
+      scoreAppliedAt: undefined,
+      eventResult: undefined,
       createdAt: now,
       updatedAt: now,
     });
@@ -288,6 +403,7 @@ export const reconcileStatuses = mutation({
         !event.statusUpdatedAt ||
         !event.attendanceReminderLog ||
         !event.signUps ||
+        (nextStatus !== "registration" && !event.scoreAppliedAt) ||
         !event.updatedAt;
 
       if (!shouldPatch) continue;
@@ -296,10 +412,16 @@ export const reconcileStatuses = mutation({
         status: nextStatus,
         statusUpdatedAt: nextStatus !== event.status ? now : normalizedEvent.statusUpdatedAt,
         concludedAt: nextStatus === "concluded" ? event.concludedAt ?? now : undefined,
+        eventResult: event.eventResult,
         attendanceReminderLog: normalizedEvent.attendanceReminderLog,
         signUps: normalizedEvent.signUps,
+        scoreAppliedAt: event.scoreAppliedAt,
         updatedAt: now,
       });
+
+      if (nextStatus !== "registration") {
+        await applyScoreToEventSignups(ctx, event._id);
+      }
       changedEventIds.push(String(event._id));
     }
 
@@ -328,6 +450,8 @@ export const conclude = mutation({
       updatedAt: now,
     });
 
+    await applyScoreToEventSignups(ctx, args.eventId);
+
     return { ok: true };
   },
 });
@@ -350,6 +474,29 @@ export const appendAttendanceReminderLog = mutation({
 
     await ctx.db.patch(args.eventId, {
       attendanceReminderLog: [...normalizedEvent.attendanceReminderLog, ...args.reminders],
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { ok: true };
+  },
+});
+
+export const setResult = mutation({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+    eventResult,
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      throw new Error("Event not found.");
+    }
+
+    await ctx.db.patch(args.eventId, {
+      eventResult: args.eventResult,
       updatedAt: new Date().toISOString(),
     });
 

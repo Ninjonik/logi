@@ -14,6 +14,11 @@ import {
   Events,
   ForumChannel,
   GatewayIntentBits,
+  Guild,
+  GuildChannel,
+  GuildScheduledEventEntityType,
+  GuildScheduledEventPrivacyLevel,
+  GuildScheduledEventStatus,
   GuildBasedChannel,
   GuildMember,
   TextChannel,
@@ -36,6 +41,7 @@ type DiscordConfig = {
   defaultLanguage: "en" | "cs";
   announcementsChannelId?: string;
   forumCategoryId?: string;
+  meetingChannelId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
   updatedAt: string;
@@ -116,6 +122,8 @@ type SyncState = {
   guildId: string;
   announcementChannelId?: string;
   announcementMessageId?: string;
+  scheduledEventId?: string;
+  scheduledEventStatus?: "scheduled" | "active" | "completed" | "canceled";
   forumChannelId?: string;
   forumThreadId?: string;
   infoMessageId?: string;
@@ -161,7 +169,7 @@ if (!convexUrl || !internalSecret || !botToken) {
 
 const convex = new ConvexHttpClient(convexUrl);
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates],
 });
 const appSiteUrl = process.env.SITE_URL ?? "http://localhost:3000";
 
@@ -213,11 +221,16 @@ async function syncGuildPayload(payload: SyncPayload) {
   for (const event of payload.events) {
     const state = payload.syncStates.find((item) => item.eventId === event.id);
     const roster = payload.rosters.find((item) => item.eventId === event.id);
+    const desiredScheduledEventStatus = payload.config.meetingChannelId
+      ? getStoredScheduledEventStatus(deriveScheduledEventLifecycle(event))
+      : undefined;
     const needsSync =
       !state ||
       state.lastEventUpdatedAt !== event.updatedAt ||
       state.lastRosterUpdatedAt !== roster?.updatedAt ||
       state.lastConfigUpdatedAt !== payload.config.updatedAt ||
+      state.scheduledEventStatus !== desiredScheduledEventStatus ||
+      (payload.config.meetingChannelId ? !state.scheduledEventId && desiredScheduledEventStatus !== "completed" && desiredScheduledEventStatus !== "canceled" : Boolean(state.scheduledEventId)) ||
       queuedEventIds.has(event.id);
 
     if (!needsSync) continue;
@@ -246,6 +259,7 @@ async function syncGuildMemberAccess(payload: SyncPayload) {
       return {
         userId: member.id,
         roleIds,
+        voiceChannelId: member.voice.channelId ?? undefined,
         isAdmin,
         hasDashboardAccess,
       };
@@ -259,6 +273,8 @@ async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncS
   const roster = payload.rosters.find((item) => item.eventId === event.id);
 
   let announcementMessageId = state?.announcementMessageId;
+  let scheduledEventId = state?.scheduledEventId;
+  let scheduledEventStatus = state?.scheduledEventStatus;
   let forumChannelId = state?.forumChannelId;
   let forumThreadId = state?.forumThreadId;
   let infoMessageId = state?.infoMessageId;
@@ -291,6 +307,32 @@ async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncS
         stateNeedsMutationUpdate = true;
       }
     }
+  }
+
+  const scheduledLifecycle = deriveScheduledEventLifecycle(event);
+  if (payload.config.meetingChannelId) {
+    const meetingChannel = await guild.channels.fetch(payload.config.meetingChannelId).catch(() => null);
+    const scheduledSyncResult = await syncScheduledDiscordEvent({
+      guild,
+      event,
+      meetingChannel,
+      scheduledEventId,
+      desiredLifecycle: scheduledLifecycle,
+    });
+
+    if (
+      scheduledSyncResult.scheduledEventId !== scheduledEventId ||
+      scheduledSyncResult.scheduledEventStatus !== scheduledEventStatus
+    ) {
+      scheduledEventId = scheduledSyncResult.scheduledEventId;
+      scheduledEventStatus = scheduledSyncResult.scheduledEventStatus;
+      stateNeedsMutationUpdate = true;
+    }
+  } else if (scheduledEventId) {
+    const canceled = await cancelScheduledDiscordEvent(guild, scheduledEventId);
+    scheduledEventId = undefined;
+    scheduledEventStatus = canceled ? "canceled" : undefined;
+    stateNeedsMutationUpdate = true;
   }
 
   if (payload.config.forumCategoryId) {
@@ -358,6 +400,8 @@ async function syncEvent(payload: SyncPayload, event: EventRecord, state?: SyncS
     guildId: payload.config.guildId,
     announcementChannelId: payload.config.announcementsChannelId,
     announcementMessageId,
+    scheduledEventId,
+    scheduledEventStatus,
     forumChannelId,
     forumThreadId,
     infoMessageId,
@@ -499,6 +543,152 @@ async function handleSignupInteraction(interaction: ButtonInteraction) {
       : getClanDiscordMessages(context.config.defaultLanguage).interaction.markedNotAttending,
     ephemeral: true,
   });
+}
+
+type ScheduledLifecycle = "scheduled" | "active" | "completed" | "canceled";
+
+function deriveScheduledEventLifecycle(event: EventRecord): ScheduledLifecycle {
+  const now = Date.now();
+  const meetingStart = new Date(event.meetingStart).getTime();
+  const gameEnd = new Date(event.gameEnd).getTime();
+
+  if (event.status === "concluded") {
+    return Number.isFinite(meetingStart) && now < meetingStart ? "canceled" : "completed";
+  }
+
+  if (Number.isFinite(gameEnd) && now >= gameEnd) {
+    return "completed";
+  }
+
+  if (Number.isFinite(meetingStart) && now >= meetingStart) {
+    return "active";
+  }
+
+  return "scheduled";
+}
+
+function getStoredScheduledEventStatus(status: ScheduledLifecycle) {
+  return status;
+}
+
+function buildScheduledEventDescription(event: EventRecord) {
+  const lines = [
+    event.description?.trim(),
+    event.notes?.trim(),
+    event.map ? `Map: ${event.map}` : null,
+    event.side ? `Side: ${event.side}` : null,
+    event.cap ? `Cap: ${event.cap}` : null,
+    event.server ? `Server: ${event.server}` : null,
+    event.serverPassword ? `Password: ${event.serverPassword}` : null,
+  ].filter((line): line is string => Boolean(line));
+
+  return lines.join("\n").slice(0, 1000) || "Managed by Logi.";
+}
+
+async function syncScheduledDiscordEvent(input: {
+  guild: Guild;
+  event: EventRecord;
+  meetingChannel: GuildBasedChannel | null;
+  scheduledEventId?: string;
+  desiredLifecycle: ScheduledLifecycle;
+}) {
+  const { guild, event, meetingChannel, scheduledEventId, desiredLifecycle } = input;
+  const isSupportedMeetingChannel =
+    meetingChannel?.type === ChannelType.GuildVoice || meetingChannel?.type === ChannelType.GuildStageVoice;
+
+  if (!isSupportedMeetingChannel) {
+    if (scheduledEventId) {
+      await cancelScheduledDiscordEvent(guild, scheduledEventId);
+    }
+    return {
+      scheduledEventId: undefined,
+      scheduledEventStatus: scheduledEventId ? "canceled" as const : undefined,
+    };
+  }
+
+  const eventChannel = meetingChannel as GuildChannel;
+
+  let scheduledEvent = scheduledEventId
+    ? await guild.scheduledEvents.fetch(scheduledEventId).catch(() => null)
+    : null;
+
+  if (!scheduledEvent) {
+    if (desiredLifecycle === "completed" || desiredLifecycle === "canceled") {
+      return {
+        scheduledEventId: undefined,
+        scheduledEventStatus: desiredLifecycle,
+      };
+    }
+
+    scheduledEvent = await guild.scheduledEvents.create({
+      name: event.name.slice(0, 100),
+      description: buildScheduledEventDescription(event),
+      scheduledStartTime: new Date(event.meetingStart),
+      scheduledEndTime: new Date(event.gameEnd),
+      privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
+      entityType: GuildScheduledEventEntityType.Voice,
+      channel: eventChannel.id,
+    });
+  } else if (
+    scheduledEvent.status !== GuildScheduledEventStatus.Completed &&
+    scheduledEvent.status !== GuildScheduledEventStatus.Canceled
+  ) {
+    await scheduledEvent.edit({
+      name: event.name.slice(0, 100),
+      description: buildScheduledEventDescription(event),
+      scheduledStartTime: new Date(event.meetingStart),
+      scheduledEndTime: new Date(event.gameEnd),
+      channel: eventChannel.id,
+    });
+  }
+
+  if (!scheduledEvent) {
+    return {
+      scheduledEventId: undefined,
+      scheduledEventStatus: desiredLifecycle,
+    };
+  }
+
+  if (
+    desiredLifecycle !== "scheduled" &&
+    scheduledEvent.status !== GuildScheduledEventStatus.Completed &&
+    scheduledEvent.status !== GuildScheduledEventStatus.Canceled
+  ) {
+    const nextDiscordStatus =
+      desiredLifecycle === "active"
+        ? GuildScheduledEventStatus.Active
+        : desiredLifecycle === "completed"
+          ? GuildScheduledEventStatus.Completed
+          : GuildScheduledEventStatus.Canceled;
+
+    if (scheduledEvent.status !== nextDiscordStatus) {
+      scheduledEvent = await scheduledEvent.edit({ status: nextDiscordStatus });
+    }
+  }
+
+  return {
+    scheduledEventId: scheduledEvent.id,
+    scheduledEventStatus: desiredLifecycle,
+  };
+}
+
+async function cancelScheduledDiscordEvent(
+  guild: Guild,
+  scheduledEventId: string,
+) {
+  const scheduledEvent = await guild.scheduledEvents.fetch(scheduledEventId).catch(() => null);
+  if (!scheduledEvent) {
+    return false;
+  }
+
+  if (
+    scheduledEvent.status !== GuildScheduledEventStatus.Completed &&
+    scheduledEvent.status !== GuildScheduledEventStatus.Canceled
+  ) {
+    await scheduledEvent.edit({ status: GuildScheduledEventStatus.Canceled }).catch(() => null);
+  }
+
+  return true;
 }
 
 async function handleAttendanceInteraction(

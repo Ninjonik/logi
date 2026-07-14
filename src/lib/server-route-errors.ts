@@ -44,5 +44,13 @@ export function getUserSafeErrorMessage(
     return "Game end must be after game start.";
   }
 
+  if (message.includes("valid match link")) {
+    return "Please provide a valid match link.";
+  }
+
+  if (message.includes("must point to /games/[id]")) {
+    return "The link must point to /games/[id].";
+  }
+
   return fallback;
 }

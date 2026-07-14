@@ -12,8 +12,8 @@ const getUserByIdReference = makeFunctionReference<"query">("players:getById");
 const getVisibleGuildsReference = makeFunctionReference<"query">("guilds:visibleForUser");
 const syncDiscordProfileReference = makeFunctionReference<"mutation">("players:syncDiscordProfile");
 const syncManagedGuildsReference = makeFunctionReference<"mutation">("guilds:syncManagedGuilds");
-const linkSteamReference = makeFunctionReference<"mutation">("players:linkSteam");
-const unlinkSteamReference = makeFunctionReference<"mutation">("players:unlinkSteam");
+const updatePlatformIdReference = makeFunctionReference<"mutation">("players:updatePlatformId");
+const clearPlatformIdReference = makeFunctionReference<"mutation">("players:clearPlatformId");
 
 const SESSION_COOKIE_NAME = "token";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
@@ -156,41 +156,55 @@ export async function syncManagedGuildsForCurrentPlayer(userId: string, guilds: 
   });
 }
 
-export async function linkSteamForCurrentPlayer(steamId: string) {
+export async function updatePlatformIdForCurrentPlayer(platformId: string) {
   const session = await getSession();
   if (!session) {
     throw new Error("You must be signed in.");
   }
 
-  return await fetchMutation(linkSteamReference, {
+  return await fetchMutation(updatePlatformIdReference, {
     secret: getInternalAuthSecret(),
     userId: session.sub,
-    steamId,
+    platformId,
   });
 }
 
-export async function unlinkSteamForCurrentPlayer() {
+export async function clearPlatformIdForCurrentPlayer() {
   const session = await getSession();
   if (!session) {
     throw new Error("You must be signed in.");
   }
 
-  return await fetchMutation(unlinkSteamReference, {
+  return await fetchMutation(clearPlatformIdReference, {
     secret: getInternalAuthSecret(),
     userId: session.sub,
   });
 }
 
-export async function updateCurrentPlayerProfile(input: { avatar: string }) {
+export async function updateCurrentPlayerProfile(input: { avatar: string; platformId?: string }) {
   const session = await getSession();
   if (!session) {
     throw new Error("You must be signed in.");
   }
 
-  return await fetchMutation(syncDiscordProfileReference, {
+  await fetchMutation(syncDiscordProfileReference, {
     secret: getInternalAuthSecret(),
     id: session.sub,
     name: session.name,
     avatar: input.avatar,
+  });
+
+  if (input.platformId?.trim()) {
+    await fetchMutation(updatePlatformIdReference, {
+      secret: getInternalAuthSecret(),
+      userId: session.sub,
+      platformId: input.platformId.trim(),
+    });
+    return;
+  }
+
+  await fetchMutation(clearPlatformIdReference, {
+    secret: getInternalAuthSecret(),
+    userId: session.sub,
   });
 }

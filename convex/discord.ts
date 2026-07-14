@@ -94,6 +94,7 @@ export const upsertConfig = mutation({
     defaultLanguage: v.union(v.literal("en"), v.literal("cs")),
     announcementsChannelId: v.optional(v.string()),
     forumCategoryId: v.optional(v.string()),
+    meetingChannelId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),
     dashboardAdminRoleId: v.optional(v.string()),
   },
@@ -111,6 +112,7 @@ export const upsertConfig = mutation({
       defaultLanguage: args.defaultLanguage,
       announcementsChannelId: args.announcementsChannelId?.trim() || undefined,
       forumCategoryId: args.forumCategoryId?.trim() || undefined,
+      meetingChannelId: args.meetingChannelId?.trim() || undefined,
       clanRoleId: args.clanRoleId?.trim() || undefined,
       dashboardAdminRoleId: args.dashboardAdminRoleId?.trim() || undefined,
       updatedAt: now,
@@ -298,6 +300,13 @@ export const updateEventSyncState = mutation({
     guildId: v.string(),
     announcementChannelId: v.optional(v.string()),
     announcementMessageId: v.optional(v.string()),
+    scheduledEventId: v.optional(v.string()),
+    scheduledEventStatus: v.optional(v.union(
+      v.literal("scheduled"),
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("canceled"),
+    )),
     forumChannelId: v.optional(v.string()),
     forumThreadId: v.optional(v.string()),
     infoMessageId: v.optional(v.string()),
@@ -315,6 +324,8 @@ export const updateEventSyncState = mutation({
       guildId: args.guildId,
       announcementChannelId: args.announcementChannelId,
       announcementMessageId: args.announcementMessageId,
+      scheduledEventId: args.scheduledEventId,
+      scheduledEventStatus: args.scheduledEventStatus,
       forumChannelId: args.forumChannelId,
       forumThreadId: args.forumThreadId,
       infoMessageId: args.infoMessageId,
@@ -402,6 +413,7 @@ export const syncMemberAccess = mutation({
       v.object({
         userId: v.string(),
         roleIds: v.array(v.string()),
+        voiceChannelId: v.optional(v.string()),
         isAdmin: v.boolean(),
         hasDashboardAccess: v.boolean(),
       }),
@@ -424,6 +436,7 @@ export const syncMemberAccess = mutation({
       if (current) {
         await ctx.db.patch(current._id, {
           roleIds: member.roleIds,
+          voiceChannelId: member.voiceChannelId,
           isAdmin: member.isAdmin,
           hasDashboardAccess: member.hasDashboardAccess,
           updatedAt: now,
@@ -433,6 +446,7 @@ export const syncMemberAccess = mutation({
           guildId: args.guildId,
           userId: member.userId,
           roleIds: member.roleIds,
+          voiceChannelId: member.voiceChannelId,
           isAdmin: member.isAdmin,
           hasDashboardAccess: member.hasDashboardAccess,
           createdAt: now,
@@ -447,6 +461,87 @@ export const syncMemberAccess = mutation({
       }
     }
 
-    return { ok: true };
+  return { ok: true };
+  },
+});
+
+export const confirmRosterAttendanceFromMeetingChannel = mutation({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    rosterId: v.id("rosters"),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const [config, roster] = await Promise.all([
+      ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", args.guildId)).unique(),
+      ctx.db.get(args.rosterId),
+    ]);
+
+    if (!config?.meetingChannelId) {
+      throw new Error("Meeting channel is not configured.");
+    }
+
+    if (!roster) {
+      throw new Error("Roster not found.");
+    }
+
+    const event = await ctx.db.get(roster.eventId);
+    if (!event || event.guildId !== args.guildId) {
+      throw new Error("Roster does not belong to this server.");
+    }
+
+    const memberAccess = await ctx.db
+      .query("discordMemberAccess")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .collect();
+
+    const memberIdsInMeetingChannel = new Set(
+      memberAccess
+        .filter((member) => member.voiceChannelId === config.meetingChannelId)
+        .map((member) => member.userId),
+    );
+
+    let rosteredCount = 0;
+    let updatedCount = 0;
+    const updatedUserIds = new Set<string>();
+
+    const squads = roster.squads.map((squad) => ({
+      ...squad,
+      players: squad.players.map((player) => {
+        if (!player.id || !memberIdsInMeetingChannel.has(player.id)) {
+          return player;
+        }
+
+        rosteredCount += 1;
+
+        if (player.ack && player.confirmed) {
+          return player;
+        }
+
+        updatedCount += 1;
+        updatedUserIds.add(player.id);
+        return {
+          ...player,
+          ack: true,
+          confirmed: true,
+        };
+      }),
+    }));
+
+    if (updatedCount > 0) {
+      await ctx.db.patch(roster._id, {
+        squads,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    return {
+      matchedVoiceCount: memberIdsInMeetingChannel.size,
+      rosteredCount,
+      updatedCount,
+      updatedUserIds: Array.from(updatedUserIds),
+    };
   },
 });

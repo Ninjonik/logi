@@ -4,18 +4,29 @@ import { v } from "convex/values";
 const users = defineTable({
   id: v.string(),
   name: v.string(),
-  steamId: v.optional(v.string()),
+  platformId: v.optional(v.string()),
   avatar: v.string(),
   managedGuildIds: v.array(v.string()),
   guildId: v.optional(v.string()),
   mercenaryGuildIds: v.array(v.string()),
   isStreamer: v.boolean(),
   score: v.number(),
+  performance: v.optional(v.object({
+    matchesPlayed: v.number(),
+    averages: v.object({
+      kills: v.number(),
+      killDeathRatio: v.number(),
+      deaths: v.number(),
+      offense: v.number(),
+      defense: v.number(),
+      support: v.number(),
+    }),
+  })),
   createdAt: v.string(),
   updatedAt: v.string(),
 })
   .index("id", ["id"])
-  .index("steamId", ["steamId"]);
+  .index("platformId", ["platformId"]);
 
 const guildMember = v.object({
   id: v.string(),
@@ -54,10 +65,33 @@ const signUp = v.object({
   group: v.optional(v.union(v.string(), v.null())),
 });
 
+const rosterScoreSettings = v.object({
+  noResponse: v.number(),
+  declined: v.number(),
+  accepted: v.number(),
+});
+
 const attendanceReminder = v.object({
   userId: v.string(),
   offsetHours: v.number(),
   sentAt: v.string(),
+});
+
+const eventResult = v.object({
+  sourceUrl: v.string(),
+  mapId: v.string(),
+  mapName: v.optional(v.string()),
+  endedAt: v.optional(v.string()),
+  importedAt: v.string(),
+  localTeam: v.union(v.literal("axis"), v.literal("allies")),
+  enemyTeam: v.union(v.literal("axis"), v.literal("allies")),
+  outcome: v.union(v.literal("victory"), v.literal("defeat"), v.literal("draw")),
+  score: v.object({
+    axis: v.number(),
+    allied: v.number(),
+    local: v.number(),
+    enemy: v.number(),
+  }),
 });
 
 const rosterPlayer = v.object({
@@ -101,6 +135,7 @@ export default defineSchema({
     name: v.string(),
     avatar: v.string(),
     description: v.optional(v.string()),
+    rosterScoreSettings: v.optional(rosterScoreSettings),
     botInside: v.boolean(),
     adminIds: v.array(v.string()),
     memberIds: v.array(v.string()),
@@ -115,6 +150,7 @@ export default defineSchema({
     defaultLanguage: v.union(v.literal("en"), v.literal("cs")),
     announcementsChannelId: v.optional(v.string()),
     forumCategoryId: v.optional(v.string()),
+    meetingChannelId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),
     dashboardAdminRoleId: v.optional(v.string()),
     createdAt: v.string(),
@@ -158,8 +194,10 @@ export default defineSchema({
     )),
     statusUpdatedAt: v.optional(v.string()),
     concludedAt: v.optional(v.string()),
+    eventResult: v.optional(eventResult),
     attendanceReminderLog: v.optional(v.array(attendanceReminder)),
     signUps: v.optional(v.array(signUp)),
+    scoreAppliedAt: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.optional(v.string()),
   }).index("guildId", ["guildId"]),
@@ -197,6 +235,13 @@ export default defineSchema({
     guildId: v.string(),
     announcementChannelId: v.optional(v.string()),
     announcementMessageId: v.optional(v.string()),
+    scheduledEventId: v.optional(v.string()),
+    scheduledEventStatus: v.optional(v.union(
+      v.literal("scheduled"),
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("canceled"),
+    )),
     forumChannelId: v.optional(v.string()),
     forumThreadId: v.optional(v.string()),
     infoMessageId: v.optional(v.string()),
@@ -214,6 +259,7 @@ export default defineSchema({
     guildId: v.string(),
     userId: v.string(),
     roleIds: v.array(v.string()),
+    voiceChannelId: v.optional(v.string()),
     isAdmin: v.boolean(),
     hasDashboardAccess: v.boolean(),
     createdAt: v.string(),
@@ -223,4 +269,28 @@ export default defineSchema({
     .index("userId", ["userId"])
     .index("guildId_userId", ["guildId", "userId"]),
   userAssignments,
+  playerStats: defineTable({
+    id: v.string(),
+    userId: v.optional(v.string()),
+    latestName: v.optional(v.string()),
+    updatedAt: v.string(),
+    matches: v.record(v.string(), v.object({
+      sourceUrl: v.string(),
+      importedAt: v.string(),
+      endedAt: v.optional(v.string()),
+      mapId: v.string(),
+      mapName: v.optional(v.string()),
+      playerName: v.string(),
+      userId: v.optional(v.string()),
+      team: v.union(v.literal("axis"), v.literal("allies"), v.literal("unknown")),
+      kills: v.number(),
+      killDeathRatio: v.number(),
+      deaths: v.number(),
+      offense: v.number(),
+      defense: v.number(),
+      support: v.number(),
+    })),
+  })
+    .index("id", ["id"])
+    .index("userId", ["userId"]),
 });

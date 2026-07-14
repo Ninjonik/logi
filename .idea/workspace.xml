@@ -7,9 +7,12 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="reverted: added concurrently for discord bot to be running as well; fixed: better discord image view; added language support for discord bot and roster images">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/discord/roster-image/[eventId]/route.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/discord/roster-image/[eventId]/route.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/discord.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,7 +26,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="301" />
+    <option name="cachedIndexableFilesCount" value="307" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -190,7 +193,9 @@
       <workItem from="1783890896842" duration="859000" />
       <workItem from="1783891925099" duration="2746000" />
       <workItem from="1783957907690" duration="1059000" />
-      <workItem from="1783959707955" duration="1480000" />
+      <workItem from="1783959707955" duration="1583000" />
+      <workItem from="1783978726510" duration="3541000" />
+      <workItem from="1784042754118" duration="3374000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -368,7 +373,47 @@
       <option name="project" value="LOCAL" />
       <updated>1783894640107</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="better roster image design">
+      <option name="closed" value="true" />
+      <created>1783961250315</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1783961250315</updated>
+    </task>
+    <task id="LOCAL-00024" summary="added basic match details upload + player stats, added automatic roster confirmed status check, completed the score functionality on its basic level">
+      <option name="closed" value="true" />
+      <created>1783981426194</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1783981426194</updated>
+    </task>
+    <task id="LOCAL-00025" summary="better stats handling">
+      <option name="closed" value="true" />
+      <created>1783982026231</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1783982026231</updated>
+    </task>
+    <task id="LOCAL-00026" summary="fixed height issues in roster discord image">
+      <option name="closed" value="true" />
+      <created>1783982279922</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1783982279922</updated>
+    </task>
+    <task id="LOCAL-00027" summary="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)">
+      <option name="closed" value="true" />
+      <created>1784046712035</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1784046712035</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -407,6 +452,11 @@
     <MESSAGE value="fixed roster board layout err" />
     <MESSAGE value="added concurrently for discord bot to be running as well" />
     <MESSAGE value="reverted: added concurrently for discord bot to be running as well; fixed: better discord image view; added language support for discord bot and roster images" />
-    <option name="LAST_COMMIT_MESSAGE" value="reverted: added concurrently for discord bot to be running as well; fixed: better discord image view; added language support for discord bot and roster images" />
+    <MESSAGE value="better roster image design" />
+    <MESSAGE value="added basic match details upload + player stats, added automatic roster confirmed status check, completed the score functionality on its basic level" />
+    <MESSAGE value="better stats handling" />
+    <MESSAGE value="fixed height issues in roster discord image" />
+    <MESSAGE value="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)" />
+    <option name="LAST_COMMIT_MESSAGE" value="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)" />
   </component>
 </project>

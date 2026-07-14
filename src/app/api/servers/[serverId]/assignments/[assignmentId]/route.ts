@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { deleteServerUserAssignment, saveServerUserAssignment } from "@/lib/server-user-management";
+import { syncDiscordRolesForAssignment } from "@/lib/discord";
+import { deleteServerUserAssignment, savePlayerPlatformId, savePlayerScore, saveServerUserAssignment } from "@/lib/server-user-management";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
+import { getServerUserAssignment } from "@/lib/server-user-management";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
 
 function getAssignmentErrorCode(error: unknown) {
   if (!(error instanceof Error)) return "UNKNOWN";
   if (error.message.includes("Pick a primary group")) return "PRIMARY_GROUP_REQUIRED";
   if (error.message.includes("already assigned to this server")) return "ALREADY_ASSIGNED";
+  if (error.message.includes("already linked to another player")) return "PLATFORM_ALREADY_LINKED";
   return "UNKNOWN";
+}
+
+async function syncRolesSafely(input: Parameters<typeof syncDiscordRolesForAssignment>[0]) {
+  try {
+    await syncDiscordRolesForAssignment(input);
+  } catch (error) {
+    logRouteError("assignments.discordRoleSync", error);
+  }
 }
 
 export async function PATCH(
@@ -18,10 +29,27 @@ export async function PATCH(
   try {
     const body = userAssignmentSchema.parse(await request.json());
     const { serverId, assignmentId } = await params;
+    const existingAssignment = await getServerUserAssignment(assignmentId);
     const updatedAssignmentId = await saveServerUserAssignment({
       assignmentId,
       serverId,
       ...body,
+    });
+    await savePlayerScore({
+      userId: body.userId,
+      score: body.score,
+    });
+    await savePlayerPlatformId({
+      userId: body.userId,
+      platformId: body.platformId,
+    });
+    await syncRolesSafely({
+      guildId: serverId,
+      userId: body.userId,
+      beforePrimaryGroupId: existingAssignment?.primaryGroupId,
+      beforeSecondaryGroupIds: existingAssignment?.secondaryGroupIds ?? [],
+      afterPrimaryGroupId: body.primaryGroupId || undefined,
+      afterSecondaryGroupIds: body.secondaryGroupIds,
     });
 
     return NextResponse.json({ assignmentId: updatedAssignmentId });
@@ -39,11 +67,20 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ assignmentId: string }> },
+  { params }: { params: Promise<{ serverId: string; assignmentId: string }> },
 ) {
   try {
-    const { assignmentId } = await params;
+    const { assignmentId, serverId } = await params;
+    const existingAssignment = await getServerUserAssignment(assignmentId);
     await deleteServerUserAssignment(assignmentId);
+    if (existingAssignment) {
+      await syncRolesSafely({
+        guildId: serverId,
+        userId: existingAssignment.userId,
+        beforePrimaryGroupId: existingAssignment.primaryGroupId,
+        beforeSecondaryGroupIds: existingAssignment.secondaryGroupIds ?? [],
+      });
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     logRouteError("assignments.delete", error);
