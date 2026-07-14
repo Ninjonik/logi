@@ -8,7 +8,7 @@ export type EventOutcome = "victory" | "defeat" | "draw";
 export type AppUser = {
   _reserveSection?: string;
   id: string;
-  steamId?: string;
+  platformId?: string;
   name: string;
   avatar: string;
   managedGuildIds: string[];

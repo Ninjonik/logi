@@ -94,9 +94,11 @@ export default async function ServerUserDetailPage({
     <>
       <PageHeader
         title={user.name}
-        description={dictionary.userManagement.assignmentDescription}
+        description={user.platformId
+          ? dictionary.userManagement.platformConnectedAs.replace("{platformId}", user.platformId)
+          : dictionary.userManagement.platformNotConnected}
       />
-      <div className="space-y-6 px-4 lg:px-6">
+      <div className="space-y-6 px-4 pb-6 lg:px-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <StatCard title={dictionary.userManagement.averageKills} value={formatAverage(storedPerformance?.averages.kills ?? recentSummary.averages.kills)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Target} />
           <StatCard title={dictionary.userManagement.averageKd} value={formatAverage(storedPerformance?.averages.killDeathRatio ?? recentSummary.averages.killDeathRatio)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Swords} />
@@ -106,7 +108,7 @@ export default async function ServerUserDetailPage({
           <StatCard title={dictionary.userManagement.averageSupport} value={formatAverage(storedPerformance?.averages.support ?? recentSummary.averages.support)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Wrench} />
         </div>
         <ResourceTable
-          className="h-full"
+          className="h-auto max-h-[32rem]"
           dictionary={dictionary}
           rows={matchRows}
           page={paginatedMatches.page}

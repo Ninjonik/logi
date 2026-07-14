@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Gamepad2, Link2 } from "lucide-react";
+import { CircleHelp, Gamepad2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AvatarPicker } from "@/components/app/avatar-picker";
@@ -10,9 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { AppUser } from "@/types/domain";
-import type { SteamProfile } from "@/lib/steam";
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -26,21 +26,20 @@ function Field({ label, value }: { label: string; value: string }) {
 export function UserSettingsForm({
   user,
   dictionary,
-  steamProfile,
 }: {
   user: AppUser;
   dictionary: Dictionary;
-  steamProfile: SteamProfile | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [avatar, setAvatar] = useState(user.avatar);
+  const [platformId, setPlatformId] = useState(user.platformId ?? "");
 
   async function handleSave() {
     const response = await fetch("/api/user/settings", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ avatar }),
+      body: JSON.stringify({ avatar, platformId }),
     });
     const body = await response.json();
     if (!response.ok) {
@@ -49,20 +48,6 @@ export function UserSettingsForm({
     }
 
     toast.success(dictionary.common.save);
-    startTransition(() => router.refresh());
-  }
-
-  async function handleUnlinkSteam() {
-    const response = await fetch("/api/user/steam/unlink", {
-      method: "POST",
-    });
-    const body = await response.json();
-    if (!response.ok) {
-      toast.error(body.error ?? dictionary.common.error);
-      return;
-    }
-
-    toast.success(dictionary.userSettings.unlinkSteam);
     startTransition(() => router.refresh());
   }
 
@@ -87,6 +72,43 @@ export function UserSettingsForm({
           <Field label={dictionary.userSettings.discordId} value={user.id} />
           <Field label={dictionary.userSettings.preferredLanguage} value={dictionary.userSettings.english} />
           <Field label={dictionary.userSettings.streamerMode} value={user.isStreamer ? dictionary.userSettings.enabled : dictionary.userSettings.disabled} />
+          <div className="space-y-2 md:col-span-2">
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-medium">{dictionary.userSettings.platformId}</div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" className="text-muted-foreground">
+                    <CircleHelp className="size-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm space-y-2">
+                  <p>{dictionary.userSettings.platformIdHelp}</p>
+                  <div className="space-y-1 text-xs">
+                    <p>
+                      <a href="https://help.steampowered.com/en/faqs/view/2816-BE67-5B69-0FEC" target="_blank" rel="noreferrer" className="underline">
+                        {dictionary.userSettings.platformIdSteamLink}
+                      </a>
+                      {" "}
+                      {dictionary.userSettings.platformIdSteamHint}
+                    </p>
+                    <p>
+                      <a href="https://www.epicgames.com/help/c-202300000001645/c-Trending_0/what-is-an-epic-games-account-id-and-where-can-i-find-it-a202300000011535" target="_blank" rel="noreferrer" className="underline">
+                        {dictionary.userSettings.platformIdEpicLink}
+                      </a>
+                      {" "}
+                      {dictionary.userSettings.platformIdEpicHint}
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Input
+              value={platformId}
+              onChange={(event) => setPlatformId(event.target.value.replace(/\s+/g, ""))}
+              placeholder={dictionary.userSettings.platformIdPlaceholder}
+              className="rounded-xl"
+            />
+          </div>
           <div className="md:col-span-2">
             <Button className="rounded-xl" onClick={handleSave} disabled={isPending}>
               {dictionary.common.save}
@@ -99,41 +121,17 @@ export function UserSettingsForm({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Gamepad2 className="size-4" />
-              {dictionary.userSettings.steamConnection}
+              {dictionary.userSettings.platformConnection}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Badge variant={user.steamId ? "default" : "secondary"} className="rounded-full px-3">
-              {user.steamId ? dictionary.userSettings.steamConnected : dictionary.userSettings.steamDisconnected}
+            <Badge variant={user.platformId ? "default" : "secondary"} className="rounded-full px-3">
+              {user.platformId ? dictionary.userSettings.platformConnected : dictionary.userSettings.platformDisconnected}
             </Badge>
-            {steamProfile ? (
-              <a
-                href={steamProfile.profileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-3 rounded-2xl border border-border/60 p-3 transition-colors hover:bg-accent/40"
-              >
-                <img src={steamProfile.avatar} alt={steamProfile.name} className="size-14 rounded-xl object-cover" />
-                <div>
-                  <div className="font-medium">{steamProfile.name}</div>
-                  <div className="text-sm text-muted-foreground">{dictionary.userSettings.steamConnected}</div>
-                </div>
-              </a>
-            ) : null}
-            {!user.steamId ? (
-              <Button asChild className="w-full rounded-xl">
-                <a href="/api/steam/link">
-                  <Link2 className="size-4" />
-                  {dictionary.userSettings.connectSteam}
-                </a>
-              </Button>
-            ) : null}
-            {user.steamId ? (
-              <Button variant="outline" className="w-full rounded-xl" onClick={handleUnlinkSteam} disabled={isPending}>
-                <Link2 className="size-4" />
-                {dictionary.userSettings.unlinkSteam}
-              </Button>
-            ) : null}
+            <div className="rounded-2xl border border-border/60 p-4">
+              <div className="text-sm text-muted-foreground">{dictionary.userSettings.currentPlatformId}</div>
+              <div className="mt-2 break-all font-medium">{user.platformId || dictionary.shared.notSet}</div>
+            </div>
           </CardContent>
         </Card>
       </div>

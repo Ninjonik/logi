@@ -36,6 +36,8 @@ function getAssignmentErrorMessage(errorCode: string | undefined, dictionary: Di
       return dictionary.userManagement.primaryGroupRequired;
     case "ALREADY_ASSIGNED":
       return dictionary.userManagement.alreadyAssigned;
+    case "PLATFORM_ALREADY_LINKED":
+      return dictionary.userManagement.platformAlreadyLinked;
     default:
       return dictionary.userManagement.saveError;
   }
@@ -46,6 +48,7 @@ function getValidationMessage(message: string | undefined, dictionary: Dictionar
   if (message === "Pick a primary group.") return dictionary.userManagement.primaryGroupRequired;
   if (message === "Pick a player first.") return dictionary.userManagement.pickPlayerFirst;
   if (message === "Add a pause note when membership is paused.") return dictionary.userManagement.pauseNoteRequired;
+  if (message === "Platform ID cannot contain spaces.") return dictionary.userManagement.platformIdNoSpaces;
   return message;
 }
 
@@ -82,6 +85,7 @@ export function UserAssignmentForm({
       primaryGroupId: assignment?.primaryGroupId ?? "",
       secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
       score: assignment ? (eligibleUsers.find((item) => item.user.id === assignment.userId)?.user.score ?? 0) : 0,
+      platformId: assignment ? (eligibleUsers.find((item) => item.user.id === assignment.userId)?.user.platformId ?? "") : "",
       paused: assignment?.paused ?? false,
       pausedNote: assignment?.pausedNote ?? "",
     },
@@ -336,6 +340,30 @@ export function UserAssignmentForm({
                   </div>
                 )}
               </div>
+              <div className="space-y-2">
+                <Label>{dictionary.userManagement.platformId}</Label>
+                {canEditFields ? (
+                  <Input
+                    type="text"
+                    inputMode="text"
+                    placeholder={dictionary.shared.notSet}
+                    {...form.register("platformId")}
+                    className="rounded-xl"
+                  />
+                ) : (
+                  <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
+                    {selected.user.platformId || dictionary.shared.notSet}
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {selected.user.platformId
+                    ? dictionary.userManagement.platformConnectedAs.replace("{platformId}", selected.user.platformId)
+                    : dictionary.userManagement.platformNotConnected}
+                </p>
+                {form.formState.errors.platformId ? (
+                  <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.platformId.message, dictionary)}</p>
+                ) : null}
+              </div>
               <div className="space-y-3 md:col-span-2">
                 <Label>{dictionary.userManagement.secondaryGroups}</Label>
                 {canEditFields ? (
@@ -428,12 +456,13 @@ export function UserAssignmentForm({
                       form.reset({
                         userId: assignment?.userId ?? "",
                         type: assignment?.type ?? "member",
-                        primaryGroupId: assignment?.primaryGroupId ?? "",
-                        secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
-                        score: selected?.user.score ?? 0,
-                        paused: assignment?.paused ?? false,
-                        pausedNote: assignment?.pausedNote ?? "",
-                      });
+                      primaryGroupId: assignment?.primaryGroupId ?? "",
+                      secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
+                      score: selected?.user.score ?? 0,
+                      platformId: selected?.user.platformId ?? "",
+                      paused: assignment?.paused ?? false,
+                      pausedNote: assignment?.pausedNote ?? "",
+                    });
                       setIsEditing(false);
                     }}
                     disabled={isPending || form.formState.isSubmitting}

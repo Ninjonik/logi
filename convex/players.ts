@@ -11,7 +11,7 @@ function assertInternalSecret(secret: string) {
 
 function toPlayer(user: {
   id: string;
-  steamId?: string;
+  platformId?: string;
   name: string;
   avatar: string;
   managedGuildIds: string[];
@@ -33,8 +33,10 @@ function toPlayer(user: {
   createdAt: string;
   updatedAt: string;
 }) {
+  const legacyUser = user as typeof user & { steamId?: string };
   return {
     ...user,
+    platformId: user.platformId ?? legacyUser.steamId,
     avatar: user.avatar || "https://cdn.discordapp.com/embed/avatars/0.png",
   };
 }
@@ -97,11 +99,11 @@ export const syncDiscordProfile = mutation({
   },
 });
 
-export const linkSteam = mutation({
+export const updatePlatformId = mutation({
   args: {
     secret: v.string(),
     userId: v.string(),
-    steamId: v.string(),
+    platformId: v.string(),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -114,23 +116,23 @@ export const linkSteam = mutation({
       throw new Error("Player not found.");
     }
 
-    const duplicateSteam = await ctx.db
+    const duplicatePlatform = await ctx.db
       .query("users")
-      .withIndex("steamId", (q) => q.eq("steamId", args.steamId))
+      .withIndex("platformId", (q) => q.eq("platformId", args.platformId))
       .unique();
 
-    if (duplicateSteam && duplicateSteam._id !== user._id) {
-      throw new Error("This Steam account is already linked to another player.");
+    if (duplicatePlatform && duplicatePlatform._id !== user._id) {
+      throw new Error("This platform ID is already linked to another player.");
     }
 
     await ctx.db.patch(user._id, {
-      steamId: args.steamId,
+      platformId: args.platformId,
       updatedAt: new Date().toISOString(),
     });
   },
 });
 
-export const unlinkSteam = mutation({
+export const clearPlatformId = mutation({
   args: {
     secret: v.string(),
     userId: v.string(),
@@ -147,7 +149,7 @@ export const unlinkSteam = mutation({
     }
 
     await ctx.db.patch(user._id, {
-      steamId: undefined,
+      platformId: undefined,
       updatedAt: new Date().toISOString(),
     });
   },

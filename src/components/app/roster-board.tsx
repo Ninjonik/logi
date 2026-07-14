@@ -856,6 +856,8 @@ export function RosterBoard({
                         updatePlayerIcon={updatePlayerIcon}
                         updatePlayerAttendanceStatus={updatePlayerAttendanceStatus}
                         removeRosterSlot={removeRosterSlot}
+                        moveSlotToReserve={moveSlotToReserve}
+                        moveSlotToNotAttending={moveSlotToNotAttending}
                         handleDropOnSlot={handleDropOnSlot}
                         addRosterSlot={addRosterSlot}
                         assignUserToSlot={assignUserToSlot}
@@ -882,12 +884,14 @@ export function RosterBoard({
                                   removeRosterSquad={removeRosterSquad}
                                   moveSquad={moveSquad}
                                   updatePlayerField={updatePlayerField}
-                                  updatePlayerIcon={updatePlayerIcon}
-                                  updatePlayerAttendanceStatus={updatePlayerAttendanceStatus}
-                                  removeRosterSlot={removeRosterSlot}
-                                  handleDropOnSlot={handleDropOnSlot}
-                                  addRosterSlot={addRosterSlot}
-                                  assignUserToSlot={assignUserToSlot}
+                                   updatePlayerIcon={updatePlayerIcon}
+                                   updatePlayerAttendanceStatus={updatePlayerAttendanceStatus}
+                                   removeRosterSlot={removeRosterSlot}
+                                   moveSlotToReserve={moveSlotToReserve}
+                                   moveSlotToNotAttending={moveSlotToNotAttending}
+                                   handleDropOnSlot={handleDropOnSlot}
+                                   addRosterSlot={addRosterSlot}
+                                   assignUserToSlot={assignUserToSlot}
                                   allUsersSorted={allUsersSorted}
                                   usersById={usersById}
                                   assignmentsByUserId={assignmentsByUserId}
@@ -1121,6 +1125,8 @@ function SquadCard({
   updatePlayerIcon,
   updatePlayerAttendanceStatus,
   removeRosterSlot,
+  moveSlotToReserve,
+  moveSlotToNotAttending,
   handleDropOnSlot,
   addRosterSlot,
   assignUserToSlot,
@@ -1144,6 +1150,8 @@ function SquadCard({
   updatePlayerIcon: (sIndex: number, pIndex: number, roleIcon: string) => void;
   updatePlayerAttendanceStatus: (sIndex: number, pIndex: number, status: AttendanceStatus) => void;
   removeRosterSlot: (sIndex: number, pIndex: number) => void;
+  moveSlotToReserve: (sIndex: number, pIndex: number, targetReserveId?: string) => void;
+  moveSlotToNotAttending: (sIndex: number, pIndex: number) => void;
   handleDropOnSlot: (sIndex: number, pIndex: number) => void;
   addRosterSlot: (index: number) => void;
   assignUserToSlot: (userId: string, sIndex: number, pIndex: number) => void;
@@ -1156,6 +1164,7 @@ function SquadCard({
 }) {
   const [slotPickerOpen, setSlotPickerOpen] = useState<number | null>(null);
   const [slotSearches, setSlotSearches] = useState<Record<number, string>>({});
+  const [moveMenuOpen, setMoveMenuOpen] = useState<number | null>(null);
 
   return (
     <Card
@@ -1260,6 +1269,52 @@ function SquadCard({
                       </div>
                       <div className="truncate text-xs text-muted-foreground">{player.note ?? ""}</div>
                     </div>
+                    {editMode && canAdmin ? (
+                      <Popover open={moveMenuOpen === playerIndex} onOpenChange={(open) => setMoveMenuOpen(open ? playerIndex : null)}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 rounded-xl"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                            }}
+                            onPointerDown={(event) => {
+                              event.stopPropagation();
+                            }}
+                          >
+                            <ChevronsUpDown className="size-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-2" align="end">
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="justify-start rounded-lg"
+                              onClick={() => {
+                                moveSlotToReserve(squadIndex, playerIndex);
+                                setMoveMenuOpen(null);
+                              }}
+                            >
+                              {dictionary.roster.moveToReserves}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="justify-start rounded-lg"
+                              onClick={() => {
+                                moveSlotToNotAttending(squadIndex, playerIndex);
+                                setMoveMenuOpen(null);
+                              }}
+                            >
+                              {dictionary.roster.moveToNotAttending}
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ) : null}
                     {getAttendanceIcon(attendanceStatus)}
                   </div>
                   {editMode ? (

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { AutoLinkPlatformIdsButton } from "@/components/app/auto-link-platform-ids-button";
+import { ImportDiscordMembersButton } from "@/components/app/import-discord-members-button";
 import { PageHeader } from "@/components/app/page-header";
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table";
 import { TablePageLayout } from "@/components/app/table-page-layout";
@@ -39,7 +41,7 @@ export default async function ServerUsersPage({
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { groups } = context;
+  const { groups, discordConfig } = context;
   const assignments = await getServerUserAssignments(serverId);
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
@@ -52,6 +54,7 @@ export default async function ServerUsersPage({
       return [
         user?.name,
         user?.id,
+        user?.platformId,
         String(user?.score ?? ""),
         groupNameById.get(assignment.primaryGroupId ?? ""),
         assignment.type,
@@ -67,9 +70,17 @@ export default async function ServerUsersPage({
           title={dictionary.userManagement.title}
           description={dictionary.userManagement.description}
           actions={
-            <Button asChild className="rounded-xl">
-              <a href={`/${locale}/dashboard/servers/${serverId}/users/create`}>{dictionary.userManagement.addPlayer}</a>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <AutoLinkPlatformIdsButton serverId={serverId} dictionary={dictionary} />
+              <ImportDiscordMembersButton
+                serverId={serverId}
+                dictionary={dictionary}
+                defaultRoleId={discordConfig?.clanRoleId}
+              />
+              <Button asChild className="rounded-xl">
+                <a href={`/${locale}/dashboard/servers/${serverId}/users/create`}>{dictionary.userManagement.addPlayer}</a>
+              </Button>
+            </div>
           }
         />
       }
@@ -100,7 +111,9 @@ export default async function ServerUsersPage({
                     </Avatar>
                     <div>
                       <div className="font-medium">{user.name}</div>
-                      <div className="text-xs text-muted-foreground">{user.id}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {user.id}{user.platformId ? ` • ${dictionary.userManagement.platformId}: ${user.platformId}` : ""}
+                      </div>
                     </div>
                   </div>
                 );

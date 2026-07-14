@@ -7,6 +7,7 @@ export const userAssignmentSchema = z
     primaryGroupId: z.string().trim().optional(),
     secondaryGroupIds: z.array(z.string()),
     score: z.int(),
+    platformId: z.string().trim().optional(),
     paused: z.boolean(),
     pausedNote: z.string().trim().optional(),
   })
@@ -32,6 +33,14 @@ export const userAssignmentSchema = z
         code: z.ZodIssueCode.custom,
         path: ["secondaryGroupIds"],
         message: "Primary group cannot also be selected as a secondary group.",
+      });
+    }
+
+    if (value.platformId && /\s/.test(value.platformId)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["platformId"],
+        message: "Platform ID cannot contain spaces.",
       });
     }
   });

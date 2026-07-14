@@ -5,7 +5,6 @@ import { UserSettingsForm } from "@/components/app/user-settings-form";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getCurrentPlayer } from "@/lib/auth";
-import { getSteamProfileCached } from "@/lib/steam";
 
 export async function generateMetadata({
   params,
@@ -33,13 +32,11 @@ export default async function UserSettingsPage({
     return null;
   }
 
-  const steamProfile = await getSteamProfileCached(user.id, user.steamId);
-
   return (
     <>
       <PageHeader title={dictionary.userSettings.title} description={dictionary.userSettings.description} />
       <div className="px-4 lg:px-6">
-        <UserSettingsForm user={user} dictionary={dictionary} steamProfile={steamProfile} />
+        <UserSettingsForm user={user} dictionary={dictionary} />
       </div>
     </>
   );

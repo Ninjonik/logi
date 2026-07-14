@@ -4,7 +4,7 @@ import { v } from "convex/values";
 const users = defineTable({
   id: v.string(),
   name: v.string(),
-  steamId: v.optional(v.string()),
+  platformId: v.optional(v.string()),
   avatar: v.string(),
   managedGuildIds: v.array(v.string()),
   guildId: v.optional(v.string()),
@@ -26,7 +26,7 @@ const users = defineTable({
   updatedAt: v.string(),
 })
   .index("id", ["id"])
-  .index("steamId", ["steamId"]);
+  .index("platformId", ["platformId"]);
 
 const guildMember = v.object({
   id: v.string(),

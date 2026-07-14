@@ -9,6 +9,22 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   };
 }
 
+function normalizeUserDoc<
+  T extends {
+    _id: unknown;
+    id: string;
+    platformId?: string;
+  },
+>(user: T) {
+  const legacyUser = user as T & { steamId?: string };
+
+  return {
+    ...user,
+    _id: String(user._id),
+    platformId: user.platformId ?? legacyUser.steamId,
+  };
+}
+
 function normalizeGuildDoc<
   T extends {
     _id: unknown;
@@ -173,7 +189,7 @@ export const getServerContext = query({
     const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
 
     return {
-      user,
+      user: normalizeUserDoc(user),
       server: normalizeGuildDoc(server),
       canAdmin,
       events: events.map(normalizeEventDoc),
@@ -197,14 +213,16 @@ export const getUsersByIds = query({
       uniqueIds.map((userId) => ctx.db.query("users").withIndex("id", (q) => q.eq("id", userId)).unique()),
     );
 
-    return users.filter(Boolean);
+    return users
+      .filter((user): user is NonNullable<typeof user> => Boolean(user))
+      .map((user) => normalizeUserDoc(user));
   },
 });
 
 export const listUsers = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("users").collect();
+    return (await ctx.db.query("users").collect()).map((user) => normalizeUserDoc(user));
   },
 });
 
@@ -226,7 +244,7 @@ export const getAssignmentWithUser = query({
 
     return {
       ...normalizedAssignment,
-      user,
+      user: user ? normalizeUserDoc(user) : user,
       userName: user?.name || "Unknown Player",
     };
   },
