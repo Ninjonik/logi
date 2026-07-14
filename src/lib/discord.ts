@@ -3,7 +3,11 @@ import { getServerGroups } from "@/lib/server-groups";
 
 const ADMINISTRATOR_PERMISSION = BigInt(8);
 const MANAGE_ROLES_PERMISSION = BigInt(1) << BigInt(28);
-const DISCORD_BOT_INVITE_PERMISSIONS = BigInt(326417599504) | MANAGE_ROLES_PERMISSION;
+const MANAGE_EVENTS_PERMISSION = BigInt(1) << BigInt(33);
+const DISCORD_BOT_INVITE_PERMISSIONS =
+  BigInt(326417599504) |
+  MANAGE_ROLES_PERMISSION |
+  MANAGE_EVENTS_PERMISSION;
 
 export type DiscordUser = {
   id: string;

@@ -235,6 +235,13 @@ export default defineSchema({
     guildId: v.string(),
     announcementChannelId: v.optional(v.string()),
     announcementMessageId: v.optional(v.string()),
+    scheduledEventId: v.optional(v.string()),
+    scheduledEventStatus: v.optional(v.union(
+      v.literal("scheduled"),
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("canceled"),
+    )),
     forumChannelId: v.optional(v.string()),
     forumThreadId: v.optional(v.string()),
     infoMessageId: v.optional(v.string()),
