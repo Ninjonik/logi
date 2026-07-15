@@ -101,7 +101,7 @@ export const enMessages = {
     addSlot: "Add slot",
     clear: "Clear",
     playerNote: "Player note",
-    slotNote: "Slot note",
+    slotNote: "Note",
     otherGroups: "Other groups",
     openSlot: "Open slot",
     readyForAssignment: "Ready for assignment",

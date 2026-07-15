@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
+import { formatHllPresetLabel } from "@/lib/hll-map-presets";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
@@ -66,7 +67,7 @@ export default async function TopicPresetsPage({
           getHref={(preset) => `/${locale}/dashboard/servers/${serverId}/topic-presets/${preset.id}`}
           columns={[
             { key: "name", title: dictionary.presets.table.preset, render: (preset) => <div className="font-medium">{preset.name}</div> },
-            { key: "map", title: dictionary.calendarCards.map, render: (preset) => `${preset.map ?? "TBD"} • ${preset.side ?? "TBD"}` },
+            { key: "map", title: dictionary.calendarCards.map, render: (preset) => `${formatHllPresetLabel(preset.map) ?? preset.map ?? "TBD"} • ${preset.side ?? "TBD"}` },
             { key: "topics", title: dictionary.presets.table.topics, render: (preset) => preset.topics.length },
           ]}
         />

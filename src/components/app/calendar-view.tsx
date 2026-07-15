@@ -8,6 +8,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import type { EventRecord, Roster } from "@/types/domain";
 import type { Locale } from "@/i18n/config";
 import { formatDateTime } from "@/lib/format";
+import { formatHllPresetLabel } from "@/lib/hll-map-presets";
 
 export function CalendarView({
   locale,
@@ -37,7 +38,7 @@ export function CalendarView({
           const detailPath = event.kind === "training" ? "trainings" : "matches";
           const tertiaryValue = event.kind === "training"
             ? (event.meetingChannelId || "Discord")
-            : `${event.map ?? "TBD"} • ${event.side ?? "TBD"}`;
+            : `${formatHllPresetLabel(event.map) ?? event.map ?? "TBD"} • ${event.side ?? "TBD"}`;
 
           return (
             <Card key={event.id} className="rounded-2xl border-border/60">

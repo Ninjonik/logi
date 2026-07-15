@@ -11,6 +11,7 @@ import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
 import { getEventStatusMeta } from "@/lib/event-status";
 import { formatDateTime } from "@/lib/format";
+import { formatHllPresetLabel } from "@/lib/hll-map-presets";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import type { EventRecord } from "@/types/domain";
@@ -101,7 +102,7 @@ export default async function MatchesPage({
         columns={[
           { key: "name", title: dictionary.tables.event, render: (event) => <div className="font-medium">{event.name}</div> },
           { key: "meetingStart", title: dictionary.tables.meeting, render: (event) => formatDateTime(event.meetingStart, discordConfig?.timezone) },
-          { key: "map", title: dictionary.calendarCards.map, render: (event) => `${event.map ?? "TBD"} • ${event.side ?? "TBD"}` },
+          { key: "map", title: dictionary.calendarCards.map, render: (event) => `${formatHllPresetLabel(event.map) ?? event.map ?? "TBD"} • ${event.side ?? "TBD"}` },
           { key: "result", title: dictionary.event.resultColumn, render: (event) => <div className="font-medium">{getEventResultLabel(event, dictionary)}</div> },
           {
             key: "match",

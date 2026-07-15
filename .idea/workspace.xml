@@ -7,8 +7,11 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="added map presets, better match/training handler">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="different modes for roster editing and display">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -193,7 +196,7 @@
       <workItem from="1783978726510" duration="3541000" />
       <workItem from="1784042754118" duration="3791000" />
       <workItem from="1784065106292" duration="4520000" />
-      <workItem from="1784128265407" duration="10263000" />
+      <workItem from="1784128265407" duration="12657000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -475,7 +478,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784146273918</updated>
     </task>
-    <option name="localTasksCounter" value="36" />
+    <task id="LOCAL-00036" summary="different modes for roster editing and display">
+      <option name="closed" value="true" />
+      <created>1784149050219</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1784149050219</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -495,7 +506,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="basic bot added + discord integrations" />
     <MESSAGE value="qol improvements" />
     <MESSAGE value="updated workspace.xml" />
     <MESSAGE value="topic presets + attachment implemented" />
@@ -520,6 +530,7 @@
     <MESSAGE value="split up discord bot into multiple parts" />
     <MESSAGE value="made better sense between discordid and id" />
     <MESSAGE value="added map presets, better match/training handler" />
-    <option name="LAST_COMMIT_MESSAGE" value="added map presets, better match/training handler" />
+    <MESSAGE value="different modes for roster editing and display" />
+    <option name="LAST_COMMIT_MESSAGE" value="different modes for roster editing and display" />
   </component>
 </project>

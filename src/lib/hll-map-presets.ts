@@ -30,6 +30,14 @@ type SelectOption = {
   label: string;
 };
 
+function titleCaseFragment(value: string) {
+  return value
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
 const MAP_DEFINITIONS: MapDefinition[] = [
   { id: "carentan", name: "Carentan", aliases: ["carentan", "car_s_1944"] },
   { id: "driel", name: "Driel", aliases: ["driel", "drl_s_1944"] },
@@ -254,4 +262,21 @@ export function resolveHllPresetCode(input: {
 
 export function isKnownHllPresetCode(code?: string | null) {
   return Boolean(inferHllSelection(code));
+}
+
+export function formatHllPresetLabel(code?: string | null) {
+  if (!code) {
+    return null;
+  }
+
+  const parsed = parsePresetCode(code);
+  if (parsed) {
+    return [parsed.mapName, TIME_LABELS[parsed.time], MODE_LABELS[parsed.mode]].join(" • ");
+  }
+
+  return code
+    .split("_")
+    .filter((part) => part && !/^\d+$/.test(part) && part !== "p")
+    .map(titleCaseFragment)
+    .join(" • ");
 }

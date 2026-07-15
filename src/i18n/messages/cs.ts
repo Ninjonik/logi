@@ -101,7 +101,7 @@ export const csMessages = {
     addSlot: "Přidat slot",
     clear: "Vymazat",
     playerNote: "Poznámka k hráči",
-    slotNote: "Poznámka ke slotu",
+    slotNote: "Poznámka",
     otherGroups: "Ostatní skupiny",
     openSlot: "Volný slot",
     readyForAssignment: "Připraveno k přiřazení",
