@@ -42,8 +42,13 @@ export function DiscordServerSettingsForm({
 
   useEffect(() => {
     fetch(`/api/servers/${serverId}/discord-metadata`)
-      .then((response) => response.json())
-      .then((body) => setMetadata(body))
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok || !body || !Array.isArray(body.channels) || !Array.isArray(body.roles) || !Array.isArray(body.emojis)) {
+          throw new Error("Unable to load Discord metadata.");
+        }
+        setMetadata(body);
+      })
       .catch(() => setMetadata(null));
   }, [serverId]);
 
@@ -71,9 +76,9 @@ export function DiscordServerSettingsForm({
     startTransition(() => router.refresh());
   }
 
-  const announcementChannels = metadata?.channels.filter((channel) => channel.type === 0 || channel.type === 5) ?? [];
-  const categoryChannels = metadata?.channels.filter((channel) => channel.type === 4) ?? [];
-  const meetingChannels = metadata?.channels.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
+  const announcementChannels = metadata?.channels?.filter((channel) => channel.type === 0 || channel.type === 5) ?? [];
+  const categoryChannels = metadata?.channels?.filter((channel) => channel.type === 4) ?? [];
+  const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
   const roles = metadata?.roles ?? [];
 
   return (

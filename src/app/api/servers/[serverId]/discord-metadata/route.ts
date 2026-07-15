@@ -17,10 +17,11 @@ export async function GET(
   }
 
   try {
+    const discordGuildId = context.server.discordId;
     const [roles, channels, emojis] = await Promise.all([
-      fetchDiscordGuildRoles(serverId),
-      fetchDiscordGuildChannels(serverId),
-      fetchDiscordGuildEmojis(serverId),
+      fetchDiscordGuildRoles(discordGuildId),
+      fetchDiscordGuildChannels(discordGuildId),
+      fetchDiscordGuildEmojis(discordGuildId),
     ]);
 
     return NextResponse.json({

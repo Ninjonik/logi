@@ -1210,7 +1210,7 @@ function SquadCard({
       <CardContent className="space-y-3">
         {squad.players.map((player, playerIndex) => {
           const slotUser = player.id ? usersById.get(player.id) : undefined;
-          const assignment = slotUser ? assignmentsByUserId.get(slotUser.id) : undefined;
+          const assignment = slotUser ? assignmentsByUserId.get(slotUser.discordId) : undefined;
           const attendanceStatus = getAttendanceStatus(player);
 
           return (
@@ -1349,14 +1349,14 @@ function SquadCard({
                                   currentSquad.players.some(
                                     (currentPlayer, currentPlayerIndex) =>
                                       !(currentSquadIndex === squadIndex && currentPlayerIndex === playerIndex) &&
-                                      currentPlayer.id === a.id,
+                                      currentPlayer.id === a.discordId,
                                   ),
                                 );
                                 const bAssignedElsewhere = board.squads.some((currentSquad, currentSquadIndex) =>
                                   currentSquad.players.some(
                                     (currentPlayer, currentPlayerIndex) =>
                                       !(currentSquadIndex === squadIndex && currentPlayerIndex === playerIndex) &&
-                                      currentPlayer.id === b.id,
+                                      currentPlayer.id === b.discordId,
                                   ),
                                 );
 

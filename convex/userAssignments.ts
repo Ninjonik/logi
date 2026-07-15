@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getGuildByDiscordId, getGuildById, getGuildDiscordId, getUserByDiscordId, getUserDiscordId } from "./identity";
+import { getGuildByDiscordId, getGuildById, getGuildDiscordId, getUserByDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -61,36 +61,13 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    console.log("[userAssignments.upsert] Lookup start", {
-      serverId: String(args.serverId),
-      userId: args.userId,
-      assignmentId: args.assignmentId ? String(args.assignmentId) : null,
-      type: args.type,
-    });
-
     const [server, user] = await Promise.all([
       getGuildById(ctx, args.serverId),
       getUserByDiscordId(ctx, args.userId),
     ]);
     const serverDiscordId = server ? getGuildDiscordId(server) : undefined;
 
-    console.log("[userAssignments.upsert] Lookup result", {
-      serverFound: Boolean(server),
-      userFound: Boolean(user),
-      serverDocId: server ? String(server._id) : null,
-      serverIndexId: serverDiscordId,
-      userDocId: user ? String(user._id) : null,
-      userIndexId: user ? getUserDiscordId(user) : null,
-    });
-
     if (!server || !user) {
-      console.log("[userAssignments.upsert] Missing lookup diagnostics", {
-        requestedServerId: String(args.serverId),
-        requestedUserId: args.userId,
-        guildFoundByDocId: Boolean(server),
-        guildDocId: server ? String(server._id) : null,
-        guildStoredId: serverDiscordId,
-      });
       throw new Error("Server or user not found.");
     }
     if (!serverDiscordId) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { syncDiscordRolesForAssignment } from "@/lib/discord";
+import { getServerContext } from "@/lib/server-context";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { savePlayerPlatformId, savePlayerScore, saveServerUserAssignment } from "@/lib/server-user-management";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
@@ -28,13 +29,10 @@ export async function POST(
   try {
     const body = userAssignmentSchema.parse(await request.json());
     const { serverId } = await params;
-    console.log("[assignments.create] Incoming request", {
-      serverId,
-      userId: body.userId,
-      type: body.type,
-      primaryGroupId: body.primaryGroupId || null,
-      secondaryGroupIds: body.secondaryGroupIds,
-    });
+    const serverContext = await getServerContext(serverId);
+    if (!serverContext?.canAdmin) {
+      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+    }
     const assignmentId = await saveServerUserAssignment({
       serverId,
       ...body,
@@ -48,7 +46,8 @@ export async function POST(
       platformIds: body.platformIds,
     });
     await syncRolesSafely({
-      guildId: serverId,
+      serverId,
+      discordGuildId: serverContext.server.discordId,
       userId: body.userId,
       afterPrimaryGroupId: body.primaryGroupId || undefined,
       afterSecondaryGroupIds: body.secondaryGroupIds,
@@ -56,7 +55,6 @@ export async function POST(
 
     return NextResponse.json({ assignmentId });
   } catch (error) {
-    console.error("[assignments.create] Request failed", error);
     logRouteError("assignments.create", error);
     return NextResponse.json(
       {

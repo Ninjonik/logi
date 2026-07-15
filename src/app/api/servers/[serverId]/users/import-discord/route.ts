@@ -7,7 +7,7 @@ import { importDiscordMembersForServer, getServerUserAssignments, listUsers } fr
 
 function canImportUserAsType(input: {
   assignmentType: "member" | "mercenary";
-  serverId: string;
+  serverDiscordId: string;
   user?: Awaited<ReturnType<typeof listUsers>>[number];
   existingAssignment?: Awaited<ReturnType<typeof getServerUserAssignments>>[number];
 }) {
@@ -16,7 +16,7 @@ function canImportUserAsType(input: {
   }
 
   if (input.assignmentType === "member") {
-    return !input.user?.guildId || input.user.guildId === input.serverId;
+    return !input.user?.guildId || input.user.guildId === input.serverDiscordId;
   }
 
   return true;
@@ -52,7 +52,7 @@ export async function POST(
     }
 
     const [discordMembers, existingUsers, existingAssignments] = await Promise.all([
-      fetchDiscordGuildMembers(serverId),
+      fetchDiscordGuildMembers(context.server.discordId),
       listUsers(),
       getServerUserAssignments(serverId),
     ]);
@@ -81,7 +81,7 @@ export async function POST(
       const existingAssignment = assignmentsByUserId.get(member.user.id);
       if (!canImportUserAsType({
         assignmentType,
-        serverId,
+        serverDiscordId: context.server.discordId,
         user: existingUser,
         existingAssignment,
       })) {

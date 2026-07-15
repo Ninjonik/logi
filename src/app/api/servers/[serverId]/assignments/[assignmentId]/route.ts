@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { syncDiscordRolesForAssignment } from "@/lib/discord";
+import { getServerContext } from "@/lib/server-context";
 import { deleteServerUserAssignment, savePlayerPlatformId, savePlayerScore, saveServerUserAssignment } from "@/lib/server-user-management";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { getServerUserAssignment } from "@/lib/server-user-management";
@@ -29,6 +30,10 @@ export async function PATCH(
   try {
     const body = userAssignmentSchema.parse(await request.json());
     const { serverId, assignmentId } = await params;
+    const serverContext = await getServerContext(serverId);
+    if (!serverContext?.canAdmin) {
+      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+    }
     const existingAssignment = await getServerUserAssignment(assignmentId);
     const updatedAssignmentId = await saveServerUserAssignment({
       assignmentId,
@@ -44,7 +49,8 @@ export async function PATCH(
       platformIds: body.platformIds,
     });
     await syncRolesSafely({
-      guildId: serverId,
+      serverId,
+      discordGuildId: serverContext.server.discordId,
       userId: body.userId,
       beforePrimaryGroupId: existingAssignment?.primaryGroupId,
       beforeSecondaryGroupIds: existingAssignment?.secondaryGroupIds ?? [],
@@ -71,11 +77,16 @@ export async function DELETE(
 ) {
   try {
     const { assignmentId, serverId } = await params;
+    const serverContext = await getServerContext(serverId);
+    if (!serverContext?.canAdmin) {
+      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+    }
     const existingAssignment = await getServerUserAssignment(assignmentId);
     await deleteServerUserAssignment(assignmentId);
     if (existingAssignment) {
       await syncRolesSafely({
-        guildId: serverId,
+        serverId,
+        discordGuildId: serverContext.server.discordId,
         userId: existingAssignment.userId,
         beforePrimaryGroupId: existingAssignment.primaryGroupId,
         beforeSecondaryGroupIds: existingAssignment.secondaryGroupIds ?? [],

@@ -10,7 +10,7 @@ const upsertGroupReference = makeFunctionReference<"mutation">("groups:upsert");
 const removeGroupReference = makeFunctionReference<"mutation">("groups:remove");
 
 export async function getServerGroups(serverId: string) {
-  return (await fetchQuery(listGroupsReference, { guildId: serverId })) as Group[];
+  return (await fetchQuery(listGroupsReference, { guildId: serverId as never })) as Group[];
 }
 
 export async function getServerGroup(groupId: string) {
@@ -30,7 +30,7 @@ export async function saveServerGroup(input: {
 }) {
   return await fetchMutation(upsertGroupReference, {
     secret: getInternalAuthSecret(),
-    guildId: input.serverId,
+    guildId: input.serverId as never,
     groupId: input.groupId as never,
     name: input.name,
     color: input.color,
