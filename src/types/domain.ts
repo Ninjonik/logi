@@ -127,6 +127,7 @@ export type EventRecord = {
   gameStart: Timestamp;
   gameEnd: Timestamp;
   pingClan: boolean;
+  createForumChannel: boolean;
   topicPresetId?: string;
   status: EventStatus;
   statusUpdatedAt: Timestamp;

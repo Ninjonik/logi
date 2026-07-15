@@ -63,6 +63,27 @@ async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, pay
       ? getStoredScheduledEventStatus(deriveScheduledEventLifecycle(event))
       : undefined;
 
+    if (event.status === "concluded" && !state && !queuedEventIds.has(event.id)) {
+      await convex.mutation(references.updateEventSyncState, {
+        secret: env.internalSecret,
+        eventId: event.id as never,
+        guildId: payload.config.guildId,
+        announcementChannelId: payload.config.announcementsChannelId,
+        announcementMessageId: undefined,
+        scheduledEventId: undefined,
+        scheduledEventStatus: desiredScheduledEventStatus,
+        forumChannelId: undefined,
+        forumThreadId: undefined,
+        infoMessageId: undefined,
+        topicMessageIds: [],
+        lastEventUpdatedAt: event.updatedAt,
+        lastRosterUpdatedAt: roster?.updatedAt,
+        lastConfigUpdatedAt: payload.config.updatedAt,
+        lastSyncedAt: new Date().toISOString(),
+      });
+      continue;
+    }
+
     const needsSync =
       !state ||
       state.lastEventUpdatedAt !== event.updatedAt ||
@@ -80,8 +101,16 @@ async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, pay
 
     if (!needsSync) continue;
 
-    await syncEvent(client, payload, event, state);
-    queuedEventIds.delete(event.id);
+    try {
+      await syncEvent(client, payload, event, state);
+      queuedEventIds.delete(event.id);
+    } catch (error) {
+      console.error("Discord bot event sync failed", {
+        eventId: event.id,
+        guildId: payload.config.guildId,
+        error,
+      });
+    }
   }
 }
 
@@ -126,7 +155,7 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
   let infoMessageId = state?.infoMessageId;
   let topicMessageIds = state?.topicMessageIds ?? [];
 
-  if (payload.config.announcementsChannelId) {
+  if (payload.config.announcementsChannelId && !(event.status === "concluded" && !announcementMessageId)) {
     const channel = await guild.channels.fetch(payload.config.announcementsChannelId).catch(() => null);
     if (channel?.isTextBased() && channel.type === ChannelType.GuildText) {
       const textChannel = channel as TextChannel;
@@ -151,39 +180,61 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
 
   const scheduledLifecycle = deriveScheduledEventLifecycle(event);
   if (payload.config.meetingChannelId) {
-    const meetingChannel = await guild.channels.fetch(payload.config.meetingChannelId).catch(() => null);
-    const scheduledSyncResult = await syncScheduledDiscordEvent({
-      guild,
-      event,
-      meetingChannel,
-      scheduledEventId,
-      desiredLifecycle: scheduledLifecycle,
-    });
+    try {
+      const meetingChannel = await guild.channels.fetch(payload.config.meetingChannelId).catch(() => null);
+      const scheduledSyncResult = await syncScheduledDiscordEvent({
+        guild,
+        event,
+        meetingChannel,
+        scheduledEventId,
+        desiredLifecycle: scheduledLifecycle,
+      });
 
-    scheduledEventId = scheduledSyncResult.scheduledEventId;
-    scheduledEventStatus = scheduledSyncResult.scheduledEventStatus;
+      scheduledEventId = scheduledSyncResult.scheduledEventId;
+      scheduledEventStatus = scheduledSyncResult.scheduledEventStatus;
+    } catch (error) {
+      console.error("Discord bot scheduled event sync failed", {
+        eventId: event.id,
+        guildId: payload.config.guildId,
+        scheduledEventId,
+        error,
+      });
+    }
   } else if (scheduledEventId) {
     const canceled = await cancelScheduledDiscordEvent(guild, scheduledEventId);
     scheduledEventId = undefined;
     scheduledEventStatus = canceled ? "canceled" : undefined;
   }
 
-  if (payload.config.forumCategoryId) {
-    const topicPreset = payload.topicPresets.find((preset) => preset.id === event.topicPresetId);
-    const forumSyncResult = await syncForumChannel({
-      config: payload.config,
-      event,
-      forumCategoryId: payload.config.forumCategoryId,
-      forumChannelId,
-      guild,
-      existingTopicMessageIds: topicMessageIds,
-      topicPreset,
-    });
+  if (
+    event.createForumChannel &&
+    payload.config.forumCategoryId &&
+    !(event.status === "concluded" && !forumChannelId)
+  ) {
+    try {
+      const topicPreset = payload.topicPresets.find((preset) => preset.id === event.topicPresetId);
+      const forumSyncResult = await syncForumChannel({
+        config: payload.config,
+        event,
+        forumCategoryId: payload.config.forumCategoryId,
+        forumChannelId,
+        guild,
+        existingTopicMessageIds: topicMessageIds,
+        topicPreset,
+      });
 
-    forumChannelId = forumSyncResult.forumChannelId;
-    infoMessageId = forumSyncResult.infoMessageId;
-    if (!topicMessageIds.length && forumSyncResult.topicMessageIds.length) {
-      topicMessageIds = forumSyncResult.topicMessageIds;
+      forumChannelId = forumSyncResult.forumChannelId;
+      infoMessageId = forumSyncResult.infoMessageId;
+      if (!topicMessageIds.length && forumSyncResult.topicMessageIds.length) {
+        topicMessageIds = forumSyncResult.topicMessageIds;
+      }
+    } catch (error) {
+      console.error("Discord bot forum sync failed", {
+        eventId: event.id,
+        guildId: payload.config.guildId,
+        forumChannelId,
+        error,
+      });
     }
   }
 

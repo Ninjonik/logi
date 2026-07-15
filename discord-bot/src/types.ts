@@ -52,6 +52,7 @@ export type EventRecord = {
   gameStart: string;
   gameEnd: string;
   pingClan: boolean;
+  createForumChannel: boolean;
   topicPresetId?: string;
   status: "registration" | "closed" | "starting" | "concluded";
   statusUpdatedAt: string;

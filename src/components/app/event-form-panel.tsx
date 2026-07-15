@@ -5,9 +5,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { AvatarPicker } from "@/components/app/avatar-picker";
-import { type DiscordSelectOption } from "@/components/app/discord-entity-select";
+import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,14 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { supportedTimezones } from "@/lib/discord-timezones";
+import {
+  getHllMapOptions,
+  getHllModeOptions,
+  getHllTimeOptions,
+  inferHllSelection,
+  isKnownHllPresetCode,
+  resolveHllPresetCode,
+} from "@/lib/hll-map-presets";
 import { fromDateTimeLocalInTimeZone, toDateTimeLocalInTimeZone } from "@/lib/timezone-datetime";
 import { cn } from "@/lib/utils";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
@@ -26,6 +35,7 @@ import type { EventRecord, TopicPreset } from "@/types/domain";
 
 type DiscordMetadata = {
   roles: DiscordSelectOption[];
+  channels: Array<DiscordSelectOption & { type: number; parentId?: string }>;
 };
 
 function FieldLabel({
@@ -82,6 +92,26 @@ function getPresetMatch(preset: TopicPreset, eventValues: Pick<EventInput, "map"
   };
 }
 
+function resolveTrainingEndTime(values: EventInput, timezone: string) {
+  const meetingStartIso = fromDateTimeLocalInTimeZone(values.meetingStart, timezone);
+  const fallbackEndIso = values.gameEnd
+    ? fromDateTimeLocalInTimeZone(values.gameEnd, timezone)
+    : meetingStartIso;
+
+  const meetingStartMs = new Date(meetingStartIso).getTime();
+  const fallbackEndMs = new Date(fallbackEndIso).getTime();
+
+  if (!Number.isFinite(meetingStartMs) || !Number.isFinite(fallbackEndMs)) {
+    return fallbackEndIso;
+  }
+
+  if (fallbackEndMs > meetingStartMs) {
+    return fallbackEndIso;
+  }
+
+  return new Date(meetingStartMs + 90 * 60 * 1000).toISOString();
+}
+
 export function EventFormPanel({
   event,
   serverId,
@@ -104,6 +134,9 @@ export function EventFormPanel({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
+  const [selectedMapId, setSelectedMapId] = useState("");
+  const [selectedMapTime, setSelectedMapTime] = useState("");
+  const [selectedMapMode, setSelectedMapMode] = useState("");
 
   const form = useForm<EventInput>({
     resolver: zodResolver(eventSchema),
@@ -126,27 +159,95 @@ export function EventFormPanel({
       gameStart: toDateTimeLocalInTimeZone(event.gameStart, timezone),
       gameEnd: toDateTimeLocalInTimeZone(event.gameEnd, timezone),
       pingClan: event.pingClan,
+      createForumChannel: event.createForumChannel,
       topicPresetId: event.topicPresetId ?? "",
     },
   });
   const eventKind = form.watch("kind");
   const detailBasePath = eventKind === "training" ? "trainings" : "matches";
   const eventName = form.watch("name");
+  const sideValue = form.watch("side");
+  const mapValue = form.watch("map");
   const eventMatchValues = form.watch(["map", "side", "cap"]);
   const presetMatchValues = {
     map: eventMatchValues[0],
     side: eventMatchValues[1],
     cap: eventMatchValues[2],
   };
+  const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
+  const mapOptions = getHllMapOptions();
+  const timeOptions = selectedMapId ? getHllTimeOptions(selectedMapId) : [];
+  const modeOptions = selectedMapId ? getHllModeOptions(selectedMapId, selectedMapTime) : [];
 
   useEffect(() => {
     if (!canEdit) return;
 
     fetch(`/api/servers/${serverId}/discord-metadata`)
-      .then((response) => response.json())
-      .then((body) => setMetadata(body))
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok || !body || !Array.isArray(body.roles) || !Array.isArray(body.channels)) {
+          throw new Error("Unable to load Discord metadata.");
+        }
+        setMetadata(body);
+      })
       .catch(() => setMetadata(null));
   }, [canEdit, serverId]);
+
+  useEffect(() => {
+    if (eventKind !== "match") {
+      return;
+    }
+
+    const inferredSelection = inferHllSelection(mapValue);
+    if (inferredSelection) {
+      setSelectedMapId(inferredSelection.mapId);
+      setSelectedMapTime(inferredSelection.time);
+      setSelectedMapMode(inferredSelection.mode);
+      return;
+    }
+
+    setSelectedMapId("");
+    setSelectedMapTime("");
+    setSelectedMapMode("");
+  }, [eventKind, mapValue]);
+
+  useEffect(() => {
+    if (eventKind !== "match" || !selectedMapId || !selectedMapTime || !selectedMapMode) {
+      return;
+    }
+
+    const resolvedCode = resolveHllPresetCode({
+      mapId: selectedMapId,
+      time: selectedMapTime,
+      mode: selectedMapMode,
+      side: sideValue,
+    });
+
+    if (resolvedCode && resolvedCode !== mapValue) {
+      form.setValue("map", resolvedCode, { shouldDirty: true, shouldTouch: true });
+    }
+  }, [eventKind, form, mapValue, selectedMapId, selectedMapMode, selectedMapTime, sideValue]);
+
+  useEffect(() => {
+    if (eventKind === "training" && form.getValues("createForumChannel")) {
+      form.setValue("createForumChannel", false, { shouldDirty: true, shouldTouch: true });
+    }
+  }, [eventKind, form]);
+
+  function handleMapSelection(mapId: string) {
+    setSelectedMapId(mapId);
+    setSelectedMapTime("");
+    setSelectedMapMode("");
+  }
+
+  function handleMapTimeSelection(time: string) {
+    setSelectedMapTime(time);
+    setSelectedMapMode("");
+  }
+
+  function handleMapModeSelection(mode: string) {
+    setSelectedMapMode(mode);
+  }
 
   async function submit(values: EventInput) {
     const payload = {
@@ -158,7 +259,8 @@ export function EventFormPanel({
         : fromDateTimeLocalInTimeZone(values.meetingStart, timezone),
       gameEnd: values.kind === "match"
         ? fromDateTimeLocalInTimeZone(values.gameEnd ?? values.gameStart ?? values.meetingStart, timezone)
-        : fromDateTimeLocalInTimeZone(values.meetingStart, timezone),
+        : resolveTrainingEndTime(values, timezone),
+      createForumChannel: values.kind === "match" ? values.createForumChannel : false,
       topicPresetId: values.topicPresetId || undefined,
       thumbnailUrl: values.thumbnailUrl || undefined,
     };
@@ -176,12 +278,14 @@ export function EventFormPanel({
 
     const body = await response.json();
     if (!response.ok) {
+      toast.error(body.error ?? "Unable to save event.");
       form.setError("root", {
         message: body.error ?? "Unable to save event.",
       });
       return;
     }
 
+    toast.success(createMode ? dictionary.event.created : dictionary.event.saved);
     startTransition(() => {
       router.push(`/${locale}/dashboard/servers/${serverId}/${detailBasePath}/${createMode ? body.eventId : event.id}`);
       router.refresh();
@@ -249,10 +353,71 @@ export function EventFormPanel({
               {form.formState.errors.name ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.name.message}</p> : null}
             </div>
             {eventKind === "match" ? (
-            <div>
-              <FieldLabel label={dictionary.event.fields.map}  />
-              <Input {...form.register("map")} className="rounded-xl" />
-            </div>
+              <div className="space-y-3 md:col-span-2">
+                <FieldLabel label={dictionary.event.fields.map}  />
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="min-w-0 space-y-2">
+                    <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                      {dictionary.event.fields.map}
+                    </div>
+                    <Select value={selectedMapId} onValueChange={handleMapSelection}>
+                      <SelectTrigger className="w-full rounded-xl">
+                        <SelectValue placeholder={dictionary.event.fields.map} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mapOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {selectedMapId ? (
+                    <div className="min-w-0 space-y-2">
+                      <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                        {dictionary.event.fields.mapVariant ?? "Variant"}
+                      </div>
+                      <Select value={selectedMapTime} onValueChange={handleMapTimeSelection}>
+                        <SelectTrigger className="w-full rounded-xl">
+                          <SelectValue placeholder={dictionary.event.fields.mapVariant ?? "Variant"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {timeOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : null}
+                  {selectedMapId && selectedMapTime ? (
+                    <div className="min-w-0 space-y-2">
+                      <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                        {dictionary.event.fields.mapMode ?? "Mode"}
+                      </div>
+                      <Select value={selectedMapMode} onValueChange={handleMapModeSelection}>
+                        <SelectTrigger className="w-full rounded-xl">
+                          <SelectValue placeholder={dictionary.event.fields.mapMode ?? "Mode"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {modeOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : null}
+                </div>
+                {mapValue ? (
+                  <p className="text-xs text-muted-foreground">
+                    {dictionary.event.fields.mapPresetCode ?? "Map preset code"}: <span className="font-mono">{mapValue}</span>
+                  </p>
+                ) : null}
+              </div>
             ) : null}
             <div className="md:col-span-2">
               <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
@@ -306,7 +471,19 @@ export function EventFormPanel({
             ) : null}
             <div>
               <FieldLabel label={dictionary.event.fields.meetingChannelId ?? "Meeting VC"}  />
-              <Input {...form.register("meetingChannelId")} className="rounded-xl" />
+              <Controller
+                control={form.control}
+                name="meetingChannelId"
+                render={({ field }) => (
+                  <DiscordEntitySelect
+                    value={field.value || undefined}
+                    onChange={(value) => field.onChange(value ?? "")}
+                    options={meetingChannels}
+                    placeholder={dictionary.event.fields.meetingChannelId ?? "Meeting VC"}
+                    noneLabel={dictionary.shared.notSet}
+                  />
+                )}
+              />
             </div>
             <div>
               <FieldLabel label={dictionary.event.fields.registrationEnd} required  />
@@ -379,6 +556,23 @@ export function EventFormPanel({
               <FieldLabel label={dictionary.event.fields.notes}  />
               <Textarea {...form.register("notes")} className="min-h-28 rounded-xl" />
             </div>
+            {eventKind === "match" ? (
+            <div className="md:col-span-2">
+              <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                <div>
+                  <FieldLabel label={dictionary.event.fields.createForumChannel ?? "Create forum channel"}  />
+                  <p className="text-sm text-muted-foreground">
+                    {dictionary.event.createForumChannelDescription ?? "Create the Discord forum channel and its briefing topics for this event."}
+                  </p>
+                </div>
+                <Controller
+                  control={form.control}
+                  name="createForumChannel"
+                  render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
+                />
+              </div>
+            </div>
+            ) : null}
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.requiredRoleIds ?? "Required role IDs"} />
               <Controller

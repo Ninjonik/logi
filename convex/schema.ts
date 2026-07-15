@@ -297,6 +297,7 @@ export default defineSchema({
     gameStart: v.string(),
     gameEnd: v.string(),
     pingClan: v.boolean(),
+    createForumChannel: v.optional(v.boolean()),
     topicPresetId: v.optional(v.id("topicPresets")),
     status: v.optional(v.union(
       v.literal("registration"),

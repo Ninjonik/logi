@@ -345,6 +345,8 @@ export const csMessages = {
     listDescription:
       "Mějte přehled o plánovaných operacích, časech srazu, mapách a nastavení publikace na jednom místě.",
     createTitle: "Vytvořit akci",
+    created: "Akce byla vytvořena.",
+    saved: "Akce byla uložena.",
     createDescription:
       "Tento proces vytvoření záměrně odpovídá editační obrazovce, aby byl budoucí kód backendu čistý a znovupoužitelný (DRY).",
     createPageDescription:
@@ -362,6 +364,7 @@ export const csMessages = {
     topicPreset: "Šablona tématu",
     topicPresetCompleteMatch: "Úplná shoda",
     topicPresetPartialMatch: "Částečná shoda",
+    createForumChannelDescription: "Vytvořit pro tuto akci Discord forum kanál a briefingová témata.",
     conclude: "Ukončit akci",
     submitMatchResults: "Odeslat výsledky zápasu",
     submitMatchResultsDescription:
@@ -420,6 +423,9 @@ export const csMessages = {
       server: "Server",
       serverPassword: "Heslo na server",
       map: "Mapa",
+      mapVariant: "Denní doba / počasí",
+      mapMode: "Herní režim",
+      mapPresetCode: "Kód mapového presetu",
       side: "Strana",
       capMode: "Střední bod",
       registrationEnd: "Konec registrace",
@@ -430,6 +436,7 @@ export const csMessages = {
       requiredRoleIds: "Požadované role ID",
       rewardRoleIds: "Role po dokončení",
       pingClan: "Upozornit klan (Ping)",
+      createForumChannel: "Vytvořit forum kanál",
     },
   },
   presets: {

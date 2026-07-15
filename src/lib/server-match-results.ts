@@ -724,6 +724,7 @@ export async function importServerEventsFromLinks(input: {
       const createdEventId = await saveServerEvent({
         serverId: input.serverId,
         kind: "match",
+        createForumChannel: true,
         ...buildImportedEventInput({
           payload: sanitizedPayload,
           sourceUrl,

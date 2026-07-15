@@ -85,6 +85,38 @@ function participantsToSignUps(participants: ParticipantRecord[]) {
   }));
 }
 
+function isTrainingRegistrationStillOpen(event: {
+  kind?: "match" | "training";
+  registrationEnd: string;
+  status?: "registration" | "closed" | "starting" | "concluded";
+}) {
+  if ((event.kind ?? "match") !== "training") {
+    return false;
+  }
+
+  const registrationEnd = new Date(event.registrationEnd).getTime();
+  return event.status === "starting" && Number.isFinite(registrationEnd) && Date.now() < registrationEnd;
+}
+
+function canAcceptSignups(event: {
+  kind?: "match" | "training";
+  registrationEnd: string;
+  status?: "registration" | "closed" | "starting" | "concluded";
+}) {
+  return event.status === "registration" || isTrainingRegistrationStillOpen(event);
+}
+
+function resolveCreateForumChannel(event: {
+  kind?: "match" | "training";
+  createForumChannel?: boolean;
+}) {
+  if (typeof event.createForumChannel === "boolean") {
+    return event.createForumChannel;
+  }
+
+  return (event.kind ?? "match") === "match";
+}
+
 function normalizeEventRecord<T extends {
   _id: unknown;
   registrationEnd: string;
@@ -95,6 +127,7 @@ function normalizeEventRecord<T extends {
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
+  createForumChannel?: boolean;
   status?: "registration" | "closed" | "starting" | "concluded";
   statusUpdatedAt?: string;
   concludedAt?: string;
@@ -132,6 +165,7 @@ function normalizeEventRecord<T extends {
     meetingChannelId: event.meetingChannelId,
     requiredRoleIds: normalizeOptionalArray(event.requiredRoleIds),
     rewardRoleIds: normalizeOptionalArray(event.rewardRoleIds),
+    createForumChannel: resolveCreateForumChannel(event),
     status,
     statusUpdatedAt: event.statusUpdatedAt ?? timestamp,
     concludedAt: event.concludedAt,
@@ -158,7 +192,10 @@ function deriveEventStatus(event: {
 
   const now = Date.now();
   const registrationEnd = new Date(event.registrationEnd).getTime();
-  const startingAt = new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000;
+  const meetingCountdownStart = new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000;
+  const startingAt = Number.isFinite(registrationEnd)
+    ? Math.max(registrationEnd, meetingCountdownStart)
+    : meetingCountdownStart;
   const gameEnd = new Date(event.gameEnd).getTime();
 
   if (Number.isFinite(gameEnd) && now >= gameEnd) {
@@ -305,6 +342,7 @@ export const upsert = mutation({
     gameStart: v.string(),
     gameEnd: v.string(),
     pingClan: v.boolean(),
+    createForumChannel: v.optional(v.boolean()),
     topicPresetId: v.optional(v.id("topicPresets")),
   },
   handler: async (ctx, args) => {
@@ -336,6 +374,7 @@ export const upsert = mutation({
       gameStart: args.gameStart,
       gameEnd: args.gameEnd,
       pingClan: args.pingClan,
+      createForumChannel: args.kind === "training" ? false : args.createForumChannel ?? true,
       topicPresetId: args.topicPresetId,
       status: "registration" as const,
       updatedAt: new Date().toISOString(),
@@ -417,7 +456,7 @@ export const toggleSignUp = mutation({
 
     const normalizedEvent = normalizeEventRecord(event);
 
-    if (normalizedEvent.status !== "registration") {
+    if (!canAcceptSignups(normalizedEvent)) {
       throw new Error("Signups are closed for this event.");
     }
 

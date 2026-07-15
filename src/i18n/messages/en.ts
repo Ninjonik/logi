@@ -345,6 +345,8 @@ export const enMessages = {
     listDescription:
       "Track planned operations, meeting times, map details, and publication settings in one place.",
     createTitle: "Create event",
+    created: "Event created.",
+    saved: "Event saved.",
     createDescription:
       "This create flow intentionally matches the edit screen so backend wiring later can stay DRY.",
     createPageDescription:
@@ -362,6 +364,7 @@ export const enMessages = {
     topicPreset: "Topic preset",
     topicPresetCompleteMatch: "Complete match",
     topicPresetPartialMatch: "Partial match",
+    createForumChannelDescription: "Create the Discord forum channel and briefing topics for this event.",
     conclude: "Conclude event",
     submitMatchResults: "Submit match results",
     submitMatchResultsDescription:
@@ -420,6 +423,9 @@ export const enMessages = {
       server: "Server",
       serverPassword: "Server password",
       map: "Map",
+      mapVariant: "Time of day / weather",
+      mapMode: "Gamemode",
+      mapPresetCode: "Map preset code",
       side: "Side",
       capMode: "Middle Cap Point",
       registrationEnd: "Registration end",
@@ -430,6 +436,7 @@ export const enMessages = {
       requiredRoleIds: "Required role IDs",
       rewardRoleIds: "Reward role IDs",
       pingClan: "Ping clan",
+      createForumChannel: "Create forum channel",
     },
   },
   presets: {

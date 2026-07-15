@@ -51,7 +51,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       return;
     }
 
-    if (context.event.status !== "registration") {
+    if (!isSignupOpen(context.event)) {
       await interaction.reply({
         content: getClanDiscordMessages(context.config.defaultLanguage).interaction.registrationClosed,
         ephemeral: true,
@@ -116,6 +116,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       ephemeral: true,
     });
   };
+}
+
+function isSignupOpen(event: EventInteractionContext["event"]) {
+  if (event.status === "registration") {
+    return true;
+  }
+
+  if (event.kind !== "training" || event.status !== "starting") {
+    return false;
+  }
+
+  const registrationEnd = new Date(event.registrationEnd).getTime();
+  return Number.isFinite(registrationEnd) && Date.now() < registrationEnd;
 }
 
 async function handleAttendanceInteraction(

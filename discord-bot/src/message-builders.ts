@@ -122,7 +122,7 @@ export function buildEventEmbed(config: DiscordConfig, groups: Group[], event: E
 export function buildEventComponents(config: DiscordConfig, groups: Group[], event: EventRecord, roster?: Roster) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
 
-  if (event.status === "registration") {
+  if (isSignupOpen(event)) {
     return buildSignupButtons(config, groups, event.id, event);
   }
 
@@ -201,6 +201,19 @@ function shouldShowPublishedRosterImage(event: EventRecord, roster?: Roster) {
   return Boolean(roster?.published && (event.status === "closed" || event.status === "starting"));
 }
 
+function isSignupOpen(event: EventRecord) {
+  if (event.status === "registration") {
+    return true;
+  }
+
+  if (event.kind !== "training" || event.status !== "starting") {
+    return false;
+  }
+
+  const registrationEnd = new Date(event.registrationEnd).getTime();
+  return Number.isFinite(registrationEnd) && Date.now() < registrationEnd;
+}
+
 function buildSignupButtons(config: DiscordConfig, groups: Group[], eventId: string, event: EventRecord) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
 
@@ -210,7 +223,11 @@ function buildSignupButtons(config: DiscordConfig, groups: Group[], eventId: str
         new ButtonBuilder()
           .setCustomId(`signup:${eventId}:${encodeURIComponent(TRAINING_ATTEND)}`)
           .setStyle(ButtonStyle.Primary)
-          .setLabel("Attend"),
+          .setLabel(messages.buttons.attend),
+        new ButtonBuilder()
+          .setCustomId(`signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`)
+          .setStyle(ButtonStyle.Danger)
+          .setLabel(messages.buttons.decline),
         new ButtonBuilder()
           .setStyle(ButtonStyle.Link)
           .setLabel(messages.buttons.addToCalendar)

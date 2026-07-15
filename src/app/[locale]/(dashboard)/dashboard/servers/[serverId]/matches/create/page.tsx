@@ -37,6 +37,7 @@ export default async function CreateMatchPage({
     gameStart: "2026-07-12T15:00:00.000Z",
     gameEnd: "2026-07-12T17:00:00.000Z",
     pingClan: false,
+    createForumChannel: true,
     status: "registration" as const,
     statusUpdatedAt: "2026-07-06T18:00:00.000Z",
     attendanceReminderLog: [],
