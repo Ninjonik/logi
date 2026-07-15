@@ -18,7 +18,7 @@ export async function POST(
 
   try {
     const result = await confirmRosterAttendanceFromMeetingChannel({
-      guildId: serverId,
+      guildId: serverContext.server.discordId,
       rosterId,
     });
 

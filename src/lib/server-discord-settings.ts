@@ -8,7 +8,7 @@ const getConfigByGuildReference = makeFunctionReference<"query">("discord:getCon
 const upsertConfigReference = makeFunctionReference<"mutation">("discord:upsertConfig");
 
 export async function getDiscordConfigByGuild(guildId: string) {
-  return (await fetchQuery(getConfigByGuildReference, { guildId })) as DiscordConfig | null;
+  return (await fetchQuery(getConfigByGuildReference, { guildId: guildId as never })) as DiscordConfig | null;
 }
 
 export async function saveDiscordConfig(input: {
@@ -23,7 +23,7 @@ export async function saveDiscordConfig(input: {
 }) {
   return await fetchMutation(upsertConfigReference, {
     secret: getInternalAuthSecret(),
-    guildId: input.guildId,
+    guildId: input.guildId as never,
     timezone: input.timezone,
     defaultLanguage: input.defaultLanguage,
     announcementsChannelId: input.announcementsChannelId,

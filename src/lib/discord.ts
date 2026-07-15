@@ -257,7 +257,8 @@ function buildLinkedRoleIdsByGroupId(groups: Awaited<ReturnType<typeof getServer
 }
 
 export async function syncDiscordRolesForAssignment(input: {
-  guildId: string;
+  serverId: string;
+  discordGuildId: string;
   userId: string;
   beforePrimaryGroupId?: string;
   beforeSecondaryGroupIds?: string[];
@@ -268,7 +269,7 @@ export async function syncDiscordRolesForAssignment(input: {
     return { addedRoleIds: [], removedRoleIds: [] };
   }
 
-  const groups = await getServerGroups(input.guildId);
+  const groups = await getServerGroups(input.serverId);
   const roleIdByGroupId = buildLinkedRoleIdsByGroupId(groups);
 
   const beforeRoleIds = new Set(
@@ -294,12 +295,12 @@ export async function syncDiscordRolesForAssignment(input: {
 
   await Promise.all([
     ...roleIdsToAdd.map((roleId) =>
-      fetchDiscordBot(`/guilds/${input.guildId}/members/${input.userId}/roles/${roleId}`, {
+      fetchDiscordBot(`/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`, {
         method: "PUT",
       }),
     ),
     ...roleIdsToRemove.map((roleId) =>
-      fetchDiscordBot(`/guilds/${input.guildId}/members/${input.userId}/roles/${roleId}`, {
+      fetchDiscordBot(`/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`, {
         method: "DELETE",
       }),
     ),
