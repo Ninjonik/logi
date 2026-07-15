@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   FileText,
   ListTodo,
+  CalendarIcon,
 } from "lucide-react";
 
 import { AppLogo } from "@/components/app/app-logo";
@@ -107,9 +108,14 @@ export function AppSidebar({
               ...(resolvedCanAdmin
                 ? [
                     {
-                      title: dictionary.sidebar.events,
-                      url: `${base}/events`,
-                      icon: ListTodo,
+                      title: dictionary.sidebar.matches,
+                      url: `${base}/matches`,
+                      icon: CalendarIcon,
+                    },
+                    {
+                      title: dictionary.sidebar.trainings,
+                      url: `${base}/trainings`,
+                      icon: Shield,
                     },
                     {
                       title: dictionary.sidebar.rosters,

@@ -34,6 +34,10 @@ export function CalendarView({
       <div className="grid gap-4 xl:grid-cols-3">
         {highlightedEvents.map((event) => {
           const roster = rosters.find((item) => item.eventId === event.id);
+          const detailPath = event.kind === "training" ? "trainings" : "matches";
+          const tertiaryValue = event.kind === "training"
+            ? (event.meetingChannelId || "Discord")
+            : `${event.map ?? "TBD"} • ${event.side ?? "TBD"}`;
 
           return (
             <Card key={event.id} className="rounded-2xl border-border/60">
@@ -45,13 +49,13 @@ export function CalendarView({
                 <div className="grid gap-3">
                   <InfoTile label={dictionary.calendarCards.registrationEnds} value={formatDateTime(event.registrationEnd, timezone)} />
                   <InfoTile label={dictionary.calendarCards.meeting} value={formatDateTime(event.meetingStart, timezone)} />
-                  <InfoTile label={dictionary.calendarCards.map} value={`${event.map ?? "TBD"} • ${event.side ?? "TBD"}`} />
+                  <InfoTile label={dictionary.calendarCards.map} value={tertiaryValue} />
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Button asChild className="rounded-xl">
-                    <Link href={`/${locale}/dashboard/servers/${serverId}/events/${event.id}`}>{dictionary.common.viewDetails}</Link>
+                    <Link href={`/${locale}/dashboard/servers/${serverId}/${detailPath}/${event.id}`}>{dictionary.common.viewDetails}</Link>
                   </Button>
-                  {roster?.published ? (
+                  {event.kind === "match" && roster?.published ? (
                     <Button asChild variant="outline" className="rounded-xl">
                       <Link href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}>{dictionary.calendarCards.showRoster}</Link>
                     </Button>

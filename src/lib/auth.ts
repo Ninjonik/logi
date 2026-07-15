@@ -6,14 +6,15 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 
 import { getInternalAuthSecret, getJwtSecret } from "@/lib/env";
+import { parsePlatformIdsInput } from "@/lib/platform-ids";
 import type { AppUser, Guild } from "@/types/domain";
 
 const getUserByIdReference = makeFunctionReference<"query">("players:getById");
 const getVisibleGuildsReference = makeFunctionReference<"query">("guilds:visibleForUser");
 const syncDiscordProfileReference = makeFunctionReference<"mutation">("players:syncDiscordProfile");
 const syncManagedGuildsReference = makeFunctionReference<"mutation">("guilds:syncManagedGuilds");
-const updatePlatformIdReference = makeFunctionReference<"mutation">("players:updatePlatformId");
-const clearPlatformIdReference = makeFunctionReference<"mutation">("players:clearPlatformId");
+const updatePlatformIdsReference = makeFunctionReference<"mutation">("players:updatePlatformIds");
+const clearPlatformIdsReference = makeFunctionReference<"mutation">("players:clearPlatformIds");
 
 const SESSION_COOKIE_NAME = "token";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
@@ -156,32 +157,32 @@ export async function syncManagedGuildsForCurrentPlayer(userId: string, guilds: 
   });
 }
 
-export async function updatePlatformIdForCurrentPlayer(platformId: string) {
+export async function updatePlatformIdsForCurrentPlayer(platformIds: string[]) {
   const session = await getSession();
   if (!session) {
     throw new Error("You must be signed in.");
   }
 
-  return await fetchMutation(updatePlatformIdReference, {
+  return await fetchMutation(updatePlatformIdsReference, {
     secret: getInternalAuthSecret(),
     userId: session.sub,
-    platformId,
+    platformIds,
   });
 }
 
-export async function clearPlatformIdForCurrentPlayer() {
+export async function clearPlatformIdsForCurrentPlayer() {
   const session = await getSession();
   if (!session) {
     throw new Error("You must be signed in.");
   }
 
-  return await fetchMutation(clearPlatformIdReference, {
+  return await fetchMutation(clearPlatformIdsReference, {
     secret: getInternalAuthSecret(),
     userId: session.sub,
   });
 }
 
-export async function updateCurrentPlayerProfile(input: { avatar: string; platformId?: string }) {
+export async function updateCurrentPlayerProfile(input: { avatar: string; platformIds?: string | string[] }) {
   const session = await getSession();
   if (!session) {
     throw new Error("You must be signed in.");
@@ -194,16 +195,17 @@ export async function updateCurrentPlayerProfile(input: { avatar: string; platfo
     avatar: input.avatar,
   });
 
-  if (input.platformId?.trim()) {
-    await fetchMutation(updatePlatformIdReference, {
+  const normalizedPlatformIds = parsePlatformIdsInput(input.platformIds);
+  if (normalizedPlatformIds.length > 0) {
+    await fetchMutation(updatePlatformIdsReference, {
       secret: getInternalAuthSecret(),
       userId: session.sub,
-      platformId: input.platformId.trim(),
+      platformIds: normalizedPlatformIds,
     });
     return;
   }
 
-  await fetchMutation(clearPlatformIdReference, {
+  await fetchMutation(clearPlatformIdsReference, {
     secret: getInternalAuthSecret(),
     userId: session.sub,
   });

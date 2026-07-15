@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { formatPlatformIds } from "@/lib/platform-ids";
 import type { UserAssignmentInput } from "@/lib/validation/user-assignment";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
@@ -48,7 +49,6 @@ function getValidationMessage(message: string | undefined, dictionary: Dictionar
   if (message === "Pick a primary group.") return dictionary.userManagement.primaryGroupRequired;
   if (message === "Pick a player first.") return dictionary.userManagement.pickPlayerFirst;
   if (message === "Add a pause note when membership is paused.") return dictionary.userManagement.pauseNoteRequired;
-  if (message === "Platform ID cannot contain spaces.") return dictionary.userManagement.platformIdNoSpaces;
   return message;
 }
 
@@ -85,7 +85,7 @@ export function UserAssignmentForm({
       primaryGroupId: assignment?.primaryGroupId ?? "",
       secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
       score: assignment ? (eligibleUsers.find((item) => item.user.id === assignment.userId)?.user.score ?? 0) : 0,
-      platformId: assignment ? (eligibleUsers.find((item) => item.user.id === assignment.userId)?.user.platformId ?? "") : "",
+      platformIds: assignment ? formatPlatformIds(eligibleUsers.find((item) => item.user.id === assignment.userId)?.user.platformIds) : "",
       paused: assignment?.paused ?? false,
       pausedNote: assignment?.pausedNote ?? "",
     },
@@ -347,21 +347,21 @@ export function UserAssignmentForm({
                     type="text"
                     inputMode="text"
                     placeholder={dictionary.shared.notSet}
-                    {...form.register("platformId")}
+                    {...form.register("platformIds")}
                     className="rounded-xl"
                   />
                 ) : (
                   <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
-                    {selected.user.platformId || dictionary.shared.notSet}
+                    {formatPlatformIds(selected.user.platformIds) || dictionary.shared.notSet}
                   </div>
                 )}
                 <p className="text-sm text-muted-foreground">
-                  {selected.user.platformId
-                    ? dictionary.userManagement.platformConnectedAs.replace("{platformId}", selected.user.platformId)
+                  {selected.user.platformIds.length
+                    ? dictionary.userManagement.platformConnectedAs.replace("{platformId}", formatPlatformIds(selected.user.platformIds))
                     : dictionary.userManagement.platformNotConnected}
                 </p>
-                {form.formState.errors.platformId ? (
-                  <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.platformId.message, dictionary)}</p>
+                {form.formState.errors.platformIds ? (
+                  <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.platformIds.message, dictionary)}</p>
                 ) : null}
               </div>
               <div className="space-y-3 md:col-span-2">
@@ -459,7 +459,7 @@ export function UserAssignmentForm({
                       primaryGroupId: assignment?.primaryGroupId ?? "",
                       secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
                       score: selected?.user.score ?? 0,
-                      platformId: selected?.user.platformId ?? "",
+                      platformIds: formatPlatformIds(selected?.user.platformIds),
                       paused: assignment?.paused ?? false,
                       pausedNote: assignment?.pausedNote ?? "",
                     });

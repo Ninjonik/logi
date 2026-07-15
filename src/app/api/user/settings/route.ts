@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
       avatar?: string;
-      platformId?: string;
+      platformIds?: string;
     };
 
     if (!body.avatar?.trim()) {
@@ -17,14 +17,14 @@ export async function POST(request: Request) {
 
     await updateCurrentPlayerProfile({
       avatar: body.avatar,
-      platformId: body.platformId,
+      platformIds: body.platformIds,
     });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Failed to save user settings", error);
     const message = error instanceof Error && error.message.includes("already linked to another player")
-      ? "This platform ID is already linked to another player."
+      ? "One of these platform IDs is already linked to another player."
       : "Unable to save user settings.";
     return NextResponse.json({ error: message }, { status: message === "Unable to save user settings." ? 500 : 400 });
   }

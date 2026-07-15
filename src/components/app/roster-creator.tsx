@@ -42,7 +42,7 @@ export function RosterCreator({
 
   const availableEvents = useMemo(() => {
     const rosterEventIds = new Set(rosters.map((r) => r.eventId));
-    return events.filter((e) => !rosterEventIds.has(e.id));
+    return events.filter((e) => e.kind === "match" && !rosterEventIds.has(e.id));
   }, [events, rosters]);
 
   const selectedEvent = useMemo(

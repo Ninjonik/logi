@@ -9,6 +9,7 @@ const getSquadPresetByIdReference = makeFunctionReference<"query">("serverData:g
 const getTopicPresetByIdReference = makeFunctionReference<"query">("serverData:getTopicPresetById");
 const getAssignmentByIdReference = makeFunctionReference<"query">("userAssignments:getById");
 const getPlayerByIdReference = makeFunctionReference<"query">("players:getById");
+const getMatchByEventIdReference = makeFunctionReference<"query">("matchStats:getByEventId");
 
 export async function getGuildMetadata(serverId: string) {
   "use cache";
@@ -54,4 +55,10 @@ export async function getAssignmentMetadata(assignmentId: string) {
 export async function getPlayerMetadata(userId: string) {
   "use cache";
   return await fetchQuery(getPlayerByIdReference, { userId });
+}
+
+export async function getMatchMetadataByEventId(eventId: string) {
+  "use cache";
+  if (eventId.startsWith("sample-")) return null;
+  return await fetchQuery(getMatchByEventIdReference, { eventId: eventId as never });
 }

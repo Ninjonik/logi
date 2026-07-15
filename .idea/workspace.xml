@@ -7,12 +7,10 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="changed sidebar icons to be better (event, rosters)">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/discord.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,7 +24,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="307" />
+    <option name="cachedIndexableFilesCount" value="314" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -195,7 +193,9 @@
       <workItem from="1783957907690" duration="1059000" />
       <workItem from="1783959707955" duration="1583000" />
       <workItem from="1783978726510" duration="3541000" />
-      <workItem from="1784042754118" duration="3374000" />
+      <workItem from="1784042754118" duration="3791000" />
+      <workItem from="1784065106292" duration="4520000" />
+      <workItem from="1784128265407" duration="3882000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -413,7 +413,31 @@
       <option name="project" value="LOCAL" />
       <updated>1784046712035</updated>
     </task>
-    <option name="localTasksCounter" value="28" />
+    <task id="LOCAL-00028" summary="discord events integration">
+      <option name="closed" value="true" />
+      <created>1784047546430</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1784047546430</updated>
+    </task>
+    <task id="LOCAL-00029" summary="refactored event system, added trainings, re-added import default data button">
+      <option name="closed" value="true" />
+      <created>1784135281900</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1784135281901</updated>
+    </task>
+    <task id="LOCAL-00030" summary="changed sidebar icons to be better (event, rosters)">
+      <option name="closed" value="true" />
+      <created>1784135443666</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1784135443666</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -433,8 +457,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="kept nextjs version only" />
-    <MESSAGE value="initial version, frontend logic only with mock data, no backend" />
     <MESSAGE value="some other better stuff, gotta compeltley rework the auth" />
     <MESSAGE value="basic auth system + oath for discord and steam done" />
     <MESSAGE value="improvements" />
@@ -457,6 +479,9 @@
     <MESSAGE value="better stats handling" />
     <MESSAGE value="fixed height issues in roster discord image" />
     <MESSAGE value="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)" />
-    <option name="LAST_COMMIT_MESSAGE" value="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)" />
+    <MESSAGE value="discord events integration" />
+    <MESSAGE value="refactored event system, added trainings, re-added import default data button" />
+    <MESSAGE value="changed sidebar icons to be better (event, rosters)" />
+    <option name="LAST_COMMIT_MESSAGE" value="changed sidebar icons to be better (event, rosters)" />
   </component>
 </project>

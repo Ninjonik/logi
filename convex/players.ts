@@ -9,9 +9,19 @@ function assertInternalSecret(secret: string) {
   }
 }
 
+function normalizePlatformIds(value: string | string[] | undefined) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return [...new Set(
+    values
+      .flatMap((entry) => entry.split(","))
+      .map((entry) => entry.replace(/\s+/g, "").trim())
+      .filter(Boolean),
+  )];
+}
+
 function toPlayer(user: {
   id: string;
-  platformId?: string;
+  platformIds?: string[];
   name: string;
   avatar: string;
   managedGuildIds: string[];
@@ -33,10 +43,10 @@ function toPlayer(user: {
   createdAt: string;
   updatedAt: string;
 }) {
-  const legacyUser = user as typeof user & { steamId?: string };
+  const legacyUser = user as typeof user & { steamId?: string; platformId?: string };
   return {
     ...user,
-    platformId: user.platformId ?? legacyUser.steamId,
+    platformIds: normalizePlatformIds(user.platformIds ?? legacyUser.platformId ?? legacyUser.steamId),
     avatar: user.avatar || "https://cdn.discordapp.com/embed/avatars/0.png",
   };
 }
@@ -99,11 +109,11 @@ export const syncDiscordProfile = mutation({
   },
 });
 
-export const updatePlatformId = mutation({
+export const updatePlatformIds = mutation({
   args: {
     secret: v.string(),
     userId: v.string(),
-    platformId: v.string(),
+    platformIds: v.array(v.string()),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -116,23 +126,31 @@ export const updatePlatformId = mutation({
       throw new Error("Player not found.");
     }
 
-    const duplicatePlatform = await ctx.db
-      .query("users")
-      .withIndex("platformId", (q) => q.eq("platformId", args.platformId))
-      .unique();
+    const normalizedPlatformIds = normalizePlatformIds(args.platformIds);
+    const allUsers = await ctx.db.query("users").collect();
+    for (const candidate of allUsers) {
+      if (candidate._id === user._id) {
+        continue;
+      }
 
-    if (duplicatePlatform && duplicatePlatform._id !== user._id) {
-      throw new Error("This platform ID is already linked to another player.");
+      const legacyCandidate = candidate as typeof candidate & { steamId?: string; platformId?: string };
+      const candidatePlatformIds = normalizePlatformIds(
+        candidate.platformIds ?? legacyCandidate.platformId ?? legacyCandidate.steamId,
+      );
+
+      if (normalizedPlatformIds.some((platformId) => candidatePlatformIds.includes(platformId))) {
+        throw new Error("One of these platform IDs is already linked to another player.");
+      }
     }
 
     await ctx.db.patch(user._id, {
-      platformId: args.platformId,
+      platformIds: normalizedPlatformIds,
       updatedAt: new Date().toISOString(),
     });
   },
 });
 
-export const clearPlatformId = mutation({
+export const clearPlatformIds = mutation({
   args: {
     secret: v.string(),
     userId: v.string(),
@@ -149,7 +167,7 @@ export const clearPlatformId = mutation({
     }
 
     await ctx.db.patch(user._id, {
-      platformId: undefined,
+      platformIds: [],
       updatedAt: new Date().toISOString(),
     });
   },

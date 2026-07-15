@@ -9,6 +9,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
 import { formatDateTime } from "@/lib/format";
+import { formatPlatformIds } from "@/lib/platform-ids";
 import { getAssignmentMetadata, getPlayerMetadata } from "@/lib/server-metadata";
 import { flattenPlayerMatches, getPlayerStatsDocsCached, getPlayerStatsSummaryCached, sortPlayerMatches } from "@/lib/server-player-stats";
 import { getServerContext } from "@/lib/server-context";
@@ -94,8 +95,8 @@ export default async function ServerUserDetailPage({
     <>
       <PageHeader
         title={user.name}
-        description={user.platformId
-          ? dictionary.userManagement.platformConnectedAs.replace("{platformId}", user.platformId)
+        description={user.platformIds.length
+          ? dictionary.userManagement.platformConnectedAs.replace("{platformId}", formatPlatformIds(user.platformIds))
           : dictionary.userManagement.platformNotConnected}
       />
       <div className="space-y-6 px-4 pb-6 lg:px-6">
@@ -117,7 +118,7 @@ export default async function ServerUserDetailPage({
           totalRows={paginatedMatches.totalRows}
           search={paginatedMatches.search}
           searchPlaceholder={dictionary.userManagement.matchHistorySearch}
-          getHref={(match) => `/${safeLocale}/dashboard/servers/${serverId}/events/${match.eventId}`}
+          getHref={(match) => `/${safeLocale}/dashboard/servers/${serverId}/matches/${match.eventId}`}
           columns={[
             {
               key: "event",

@@ -41,7 +41,7 @@ export async function PATCH(
     });
     await savePlayerPlatformId({
       userId: body.userId,
-      platformId: body.platformId,
+      platformIds: body.platformIds,
     });
     await syncRolesSafely({
       guildId: serverId,

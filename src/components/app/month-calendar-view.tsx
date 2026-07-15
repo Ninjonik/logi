@@ -121,7 +121,7 @@ export function MonthCalendarView({
                   {dayEvents.slice(0, 4).map((event) => (
                     <Link
                       key={event.id}
-                      href={`/${locale}/dashboard/servers/${serverId}/events/${event.id}`}
+                      href={`/${locale}/dashboard/servers/${serverId}/${event.kind === "training" ? "trainings" : "matches"}/${event.id}`}
                       className="block rounded-xl border border-border/60 bg-card px-2.5 py-2 transition hover:border-primary/40 hover:bg-primary/5"
                     >
                       <div className="truncate text-xs font-semibold">{event.name}</div>

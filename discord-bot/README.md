@@ -29,3 +29,14 @@ npm run dev:all
 - Create one forum post per event
 - Handle signup button interactions
 - Write sync state back to Convex
+
+## Source layout
+
+- `src/index.ts` boots the bot and wires events
+- `src/sync.ts` runs the polling loop and guild/event sync
+- `src/interactions.ts` handles signup and attendance button actions
+- `src/message-builders.ts` builds embeds, buttons, and reminder components
+- `src/forum.ts` manages forum channels and posts
+- `src/scheduled-events.ts` manages Discord scheduled events
+- `src/convex.ts`, `src/environment.ts`, `src/constants.ts`, and `src/types.ts` hold shared setup data
+- `src/utils.ts` contains formatting and reusable bot helpers

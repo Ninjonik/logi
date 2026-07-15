@@ -13,15 +13,20 @@ function normalizeUserDoc<
   T extends {
     _id: unknown;
     id: string;
-    platformId?: string;
+    platformIds?: string[];
   },
 >(user: T) {
-  const legacyUser = user as T & { steamId?: string };
+  const legacyUser = user as T & { steamId?: string; platformId?: string };
 
   return {
     ...user,
     _id: String(user._id),
-    platformId: user.platformId ?? legacyUser.steamId,
+    platformIds: [...new Set(
+      (user.platformIds ?? [legacyUser.platformId ?? legacyUser.steamId].filter(Boolean))
+        .flatMap((entry) => String(entry).split(","))
+        .map((entry) => entry.replace(/\s+/g, "").trim())
+        .filter(Boolean),
+    )],
   };
 }
 
@@ -78,6 +83,11 @@ function normalizeEventDoc<
     registrationEnd: string;
     meetingStart: string;
     gameEnd: string;
+    kind?: "match" | "training";
+    thumbnailUrl?: string;
+    meetingChannelId?: string;
+    requiredRoleIds?: string[];
+    rewardRoleIds?: string[];
     status?: "registration" | "closed" | "starting" | "concluded";
     statusUpdatedAt?: string;
     concludedAt?: string;
@@ -87,30 +97,48 @@ function normalizeEventDoc<
       mapName?: string;
       endedAt?: string;
       importedAt: string;
-      localTeam: "axis" | "allies";
-      enemyTeam: "axis" | "allies";
+      sideA: string;
+      sideB: string;
       outcome: "victory" | "defeat" | "draw";
       score: {
-        axis: number;
-        allied: number;
-        local: number;
-        enemy: number;
+        sideA: number;
+        sideB: number;
       };
     };
+    matchStatsId?: unknown;
     attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
+    participants?: Array<{ userId: string; status: "attending" | "not_attending"; group?: string | null; completed?: "passed" | "failed"; updatedAt: string }>;
     signUps?: Array<{ userId: string; group?: string | null }>;
     updatedAt?: string;
     createdAt?: string;
   },
 >(event: T) {
+  const participants = event.participants ?? (event.signUps ?? []).map((signUp) => ({
+    userId: signUp.userId,
+    status: signUp.group && signUp.group !== "NOT_ATTENDING" ? "attending" as const : "not_attending" as const,
+    group: signUp.group,
+    updatedAt: event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
+  }));
+
   return {
     ...normalizeDoc(event),
+    kind: event.kind ?? "match",
+    thumbnailUrl: event.thumbnailUrl,
+    meetingChannelId: event.meetingChannelId,
+    requiredRoleIds: event.requiredRoleIds ?? [],
+    rewardRoleIds: event.rewardRoleIds ?? [],
     status: event.status ?? deriveEventStatus(event),
     statusUpdatedAt: event.statusUpdatedAt ?? event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
     concludedAt: event.concludedAt,
     eventResult: event.eventResult,
+    matchStatsId: event.matchStatsId ? String(event.matchStatsId) : undefined,
+    matchId: event.matchStatsId ? String(event.matchStatsId) : undefined,
     attendanceReminderLog: event.attendanceReminderLog ?? [],
-    signUps: event.signUps ?? [],
+    participants,
+    signUps: participants.map((participant) => ({
+      userId: participant.userId,
+      group: participant.status === "attending" ? (participant.group ?? "ATTENDING") : "NOT_ATTENDING",
+    })),
   };
 }
 

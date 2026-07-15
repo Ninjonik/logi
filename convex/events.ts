@@ -24,18 +24,24 @@ const eventResult = v.object({
   mapName: v.optional(v.string()),
   endedAt: v.optional(v.string()),
   importedAt: v.string(),
-  localTeam: v.union(v.literal("axis"), v.literal("allies")),
-  enemyTeam: v.union(v.literal("axis"), v.literal("allies")),
+  sideA: v.string(),
+  sideB: v.string(),
   outcome: v.union(v.literal("victory"), v.literal("defeat"), v.literal("draw")),
   score: v.object({
-    axis: v.number(),
-    allied: v.number(),
-    local: v.number(),
-    enemy: v.number(),
+    sideA: v.number(),
+    sideB: v.number(),
   }),
 });
 
 const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING";
+
+type ParticipantRecord = {
+  userId: string;
+  status: "attending" | "not_attending";
+  group?: string | null;
+  completed?: "passed" | "failed";
+  updatedAt: string;
+};
 
 function normalizeOptionalArray<T>(value: T[] | undefined) {
   return Array.isArray(value) ? value : [];
@@ -55,11 +61,39 @@ function getSignUpScoreCategory(
   return "accepted";
 }
 
+function normalizeParticipants(
+  participants: ParticipantRecord[] | undefined,
+  signUps: Array<{ userId: string; group?: string | null }> | undefined,
+) {
+  if (Array.isArray(participants) && participants.length > 0) {
+    return participants;
+  }
+
+  return normalizeOptionalArray(signUps).map((signUp) => ({
+    userId: signUp.userId,
+    status: signUp.group && signUp.group !== SIGNUP_NOT_ATTENDING ? "attending" as const : "not_attending" as const,
+    group: signUp.group,
+    updatedAt: new Date().toISOString(),
+  }));
+}
+
+function participantsToSignUps(participants: ParticipantRecord[]) {
+  return participants.map((participant) => ({
+    userId: participant.userId,
+    group: participant.status === "attending" ? (participant.group ?? "ATTENDING") : SIGNUP_NOT_ATTENDING,
+  }));
+}
+
 function normalizeEventRecord<T extends {
   _id: unknown;
   registrationEnd: string;
   meetingStart: string;
   gameEnd: string;
+  kind?: "match" | "training";
+  thumbnailUrl?: string;
+  meetingChannelId?: string;
+  requiredRoleIds?: string[];
+  rewardRoleIds?: string[];
   status?: "registration" | "closed" | "starting" | "concluded";
   statusUpdatedAt?: string;
   concludedAt?: string;
@@ -69,17 +103,17 @@ function normalizeEventRecord<T extends {
     mapName?: string;
     endedAt?: string;
     importedAt: string;
-    localTeam: "axis" | "allies";
-    enemyTeam: "axis" | "allies";
+    sideA: string;
+    sideB: string;
     outcome: "victory" | "defeat" | "draw";
     score: {
-      axis: number;
-      allied: number;
-      local: number;
-      enemy: number;
+      sideA: number;
+      sideB: number;
     };
   };
+  matchStatsId?: Id<"matchStats">;
   attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
+  participants?: ParticipantRecord[];
   signUps?: Array<{ userId: string; group?: string | null }>;
   scoreAppliedAt?: string;
   createdAt?: string;
@@ -87,15 +121,25 @@ function normalizeEventRecord<T extends {
 }>(event: T) {
   const status = event.status ?? deriveEventStatus(event);
   const timestamp = event.updatedAt ?? event.createdAt ?? new Date().toISOString();
+  const participants = normalizeParticipants(event.participants, event.signUps);
+  const matchStatsId = event.matchStatsId;
 
   return {
     ...event,
+    kind: event.kind ?? "match",
+    thumbnailUrl: event.thumbnailUrl,
+    meetingChannelId: event.meetingChannelId,
+    requiredRoleIds: normalizeOptionalArray(event.requiredRoleIds),
+    rewardRoleIds: normalizeOptionalArray(event.rewardRoleIds),
     status,
     statusUpdatedAt: event.statusUpdatedAt ?? timestamp,
     concludedAt: event.concludedAt,
     eventResult: event.eventResult,
+    matchStatsId,
+    matchId: matchStatsId,
     attendanceReminderLog: normalizeOptionalArray(event.attendanceReminderLog),
-    signUps: normalizeOptionalArray(event.signUps),
+    participants,
+    signUps: participantsToSignUps(participants),
     scoreAppliedAt: event.scoreAppliedAt,
     updatedAt: event.updatedAt ?? timestamp,
   };
@@ -133,6 +177,11 @@ async function reconcileRosterAttendance(ctx: MutationCtx, args: {
   userId: string;
   attending: boolean;
 }) {
+  const event = await ctx.db.get(args.eventId);
+  if (!event || (event.kind ?? "match") !== "match") {
+    return;
+  }
+
   const roster = await ctx.db
     .query("rosters")
     .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
@@ -242,8 +291,13 @@ export const upsert = mutation({
     secret: v.string(),
     serverId: v.string(),
     eventId: v.optional(v.id("events")),
+    kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
     name: v.string(),
     description: v.optional(v.string()),
+    thumbnailUrl: v.optional(v.string()),
+    meetingChannelId: v.optional(v.string()),
+    requiredRoleIds: v.optional(v.array(v.string())),
+    rewardRoleIds: v.optional(v.array(v.string())),
     server: v.optional(v.string()),
     serverPassword: v.optional(v.string()),
     side: v.optional(v.string()),
@@ -267,8 +321,13 @@ export const upsert = mutation({
 
     const payload = {
       guildId: args.serverId,
+      kind: args.kind ?? "match",
       name: args.name.trim(),
       description: args.description?.trim() || undefined,
+      thumbnailUrl: args.thumbnailUrl?.trim() || undefined,
+      meetingChannelId: args.meetingChannelId?.trim() || undefined,
+      requiredRoleIds: normalizeOptionalArray(args.requiredRoleIds).map((roleId) => roleId.trim()).filter(Boolean),
+      rewardRoleIds: normalizeOptionalArray(args.rewardRoleIds).map((roleId) => roleId.trim()).filter(Boolean),
       server: args.server?.trim() || undefined,
       serverPassword: args.serverPassword?.trim() || undefined,
       side: args.side?.trim() || undefined,
@@ -302,7 +361,9 @@ export const upsert = mutation({
         statusUpdatedAt: new Date().toISOString(),
         concludedAt: derivedStatus === "concluded" ? existing?.concludedAt ?? new Date().toISOString() : undefined,
         eventResult: existing?.eventResult,
+        matchStatsId: existing?.matchStatsId,
         attendanceReminderLog: normalizeOptionalArray(existing?.attendanceReminderLog),
+        participants: normalizeParticipants(existing?.participants, existing?.signUps),
         signUps: normalizeOptionalArray(existing?.signUps),
         scoreAppliedAt: existing?.scoreAppliedAt,
       });
@@ -319,9 +380,11 @@ export const upsert = mutation({
       status: "registration",
       statusUpdatedAt: now,
       attendanceReminderLog: [],
+      participants: [],
       signUps: [],
       scoreAppliedAt: undefined,
       eventResult: undefined,
+      matchStatsId: undefined,
       createdAt: now,
       updatedAt: now,
     });
@@ -361,16 +424,26 @@ export const toggleSignUp = mutation({
       throw new Error("Signups are closed for this event.");
     }
 
-    const existing = normalizedEvent.signUps.find((signUp) => signUp.userId === args.userId);
-    let signUps = normalizedEvent.signUps.filter((signUp) => signUp.userId !== args.userId);
-    const shouldRemoveSignup = Boolean(existing && existing.group === args.group);
-    const attending = !shouldRemoveSignup && Boolean(args.group && args.group !== SIGNUP_NOT_ATTENDING);
+    const existing = normalizedEvent.participants.find((participant) => participant.userId === args.userId);
+    let participants = normalizedEvent.participants.filter((participant) => participant.userId !== args.userId);
+    const nextStatus = args.group && args.group !== SIGNUP_NOT_ATTENDING ? "attending" : "not_attending";
+    const shouldRemoveSignup = Boolean(existing && existing.status === nextStatus);
+    const attending = !shouldRemoveSignup && nextStatus === "attending";
 
     if (!shouldRemoveSignup) {
-      signUps = [...signUps, { userId: args.userId, group: args.group }];
+      participants = [...participants, {
+        userId: args.userId,
+        status: nextStatus,
+        group: nextStatus === "attending" ? args.group : null,
+        updatedAt: new Date().toISOString(),
+        completed: existing?.completed,
+      }];
     }
 
+    const signUps = participantsToSignUps(participants);
+
     await ctx.db.patch(args.eventId, {
+      participants,
       signUps,
       updatedAt: new Date().toISOString(),
     });
@@ -402,6 +475,7 @@ export const reconcileStatuses = mutation({
         nextStatus !== event.status ||
         !event.statusUpdatedAt ||
         !event.attendanceReminderLog ||
+        !event.participants ||
         !event.signUps ||
         (nextStatus !== "registration" && !event.scoreAppliedAt) ||
         !event.updatedAt;
@@ -413,7 +487,9 @@ export const reconcileStatuses = mutation({
         statusUpdatedAt: nextStatus !== event.status ? now : normalizedEvent.statusUpdatedAt,
         concludedAt: nextStatus === "concluded" ? event.concludedAt ?? now : undefined,
         eventResult: event.eventResult,
+        matchStatsId: event.matchStatsId,
         attendanceReminderLog: normalizedEvent.attendanceReminderLog,
+        participants: normalizedEvent.participants,
         signUps: normalizedEvent.signUps,
         scoreAppliedAt: event.scoreAppliedAt,
         updatedAt: now,

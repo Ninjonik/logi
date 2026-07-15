@@ -17,7 +17,7 @@ const playerMatchStats = v.object({
   mapName: v.optional(v.string()),
   playerName: v.string(),
   userId: v.optional(v.string()),
-  team: v.union(v.literal("axis"), v.literal("allies"), v.literal("unknown")),
+  team: v.string(),
   kills: v.number(),
   killDeathRatio: v.number(),
   deaths: v.number(),

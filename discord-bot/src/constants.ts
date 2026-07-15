@@ -1,0 +1,3 @@
+export const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING";
+export const TRAINING_ATTEND = "ATTEND";
+export const ATTENDANCE_OFFSETS_HOURS = [24, 18, 12, 6];

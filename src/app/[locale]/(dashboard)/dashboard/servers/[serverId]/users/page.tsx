@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
+import { formatPlatformIds } from "@/lib/platform-ids";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerUserAssignments, getUsersByIds } from "@/lib/server-user-management";
 import { getServerContext } from "@/lib/server-context";
@@ -54,7 +55,7 @@ export default async function ServerUsersPage({
       return [
         user?.name,
         user?.id,
-        user?.platformId,
+        user?.platformIds?.join(" "),
         String(user?.score ?? ""),
         groupNameById.get(assignment.primaryGroupId ?? ""),
         assignment.type,
@@ -112,7 +113,7 @@ export default async function ServerUsersPage({
                     <div>
                       <div className="font-medium">{user.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {user.id}{user.platformId ? ` • ${dictionary.userManagement.platformId}: ${user.platformId}` : ""}
+                        {user.id}{user.platformIds.length ? ` • ${dictionary.userManagement.platformId}: ${formatPlatformIds(user.platformIds)}` : ""}
                       </div>
                     </div>
                   </div>

@@ -38,7 +38,7 @@ export async function POST(
     });
     await savePlayerPlatformId({
       userId: body.userId,
-      platformId: body.platformId,
+      platformIds: body.platformIds,
     });
     await syncRolesSafely({
       guildId: serverId,
