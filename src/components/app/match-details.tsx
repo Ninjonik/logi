@@ -48,16 +48,36 @@ function formatDuration(start: string, end: string) {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
+function normalizeTeamValue(side: string | undefined) {
+  return side?.trim().toLowerCase() ?? "";
+}
+
+function isUnknownTeam(side: string | undefined) {
+  const normalized = normalizeTeamValue(side);
+  return !normalized || normalized === "unknown";
+}
+
 function getTeamLabel(side: MatchTeamSide, dictionary: Dictionary) {
   if (side === "allies") return dictionary.event.alliedTeam;
   if (side === "axis") return dictionary.event.axisTeam;
-  return dictionary.event.teamUnknown;
+  if (isUnknownTeam(side)) return dictionary.event.teamUnknown;
+  return side;
 }
 
-function getTeamColor(side: MatchTeamSide) {
+function getTeamColor(side: MatchTeamSide, index = 0) {
   if (side === "allies") return "var(--chart-1)";
   if (side === "axis") return "var(--chart-5)";
-  return "var(--muted-foreground)";
+  if (isUnknownTeam(side)) return "var(--muted-foreground)";
+
+  const palette = [
+    "var(--chart-1)",
+    "var(--chart-5)",
+    "var(--chart-3)",
+    "var(--chart-4)",
+    "var(--chart-2)",
+  ];
+
+  return palette[index % palette.length];
 }
 
 function getChartStyles() {
@@ -70,6 +90,48 @@ function getChartStyles() {
     treemapFill: "var(--chart-2)",
     treemapStroke: "var(--border)",
   };
+}
+
+type TeamSeries = {
+  key: string;
+  side: MatchTeamSide;
+  label: string;
+  color: string;
+};
+
+function buildTeamSeries(players: MatchRecord["raw"]["player_stats"], dictionary: Dictionary) {
+  const seen = new Set<string>();
+  const series: TeamSeries[] = [];
+
+  for (const player of players) {
+    if (isUnknownTeam(player.team.side)) {
+      continue;
+    }
+
+    const key = normalizeTeamValue(player.team.side);
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    series.push({
+      key,
+      side: player.team.side,
+      label: getTeamLabel(player.team.side, dictionary),
+      color: getTeamColor(player.team.side, series.length),
+    });
+  }
+
+  if (series.length === 0) {
+    series.push({
+      key: "unknown",
+      side: "unknown",
+      label: dictionary.event.teamUnknown,
+      color: getTeamColor("unknown"),
+    });
+  }
+
+  return series;
 }
 
 function renderTooltipContent({
@@ -115,37 +177,48 @@ function renderTooltipContent({
   );
 }
 
-function buildBreakdownTotals(players: MatchRecord["raw"]["player_stats"], key: "kills_by_type" | "deaths_by_type") {
-  const base = new Map<string, { label: string; allies: number; axis: number }>(
-    TYPE_LABELS.map(({ key: typeKey, label }) => [typeKey, { label, allies: 0, axis: 0 }]),
+function buildBreakdownTotals(
+  players: MatchRecord["raw"]["player_stats"],
+  teamSeries: TeamSeries[],
+  key: "kills_by_type" | "deaths_by_type",
+) {
+  const base = new Map<string, { label: string; total: number } & Record<string, number | string>>(
+    TYPE_LABELS.map(({ key: typeKey, label }) => [typeKey, { label, total: 0 }]),
   );
+  const teamKeys = new Set(teamSeries.map((team) => team.key));
 
   for (const player of players) {
-    const target = player.team.side === "axis" ? "axis" : player.team.side === "allies" ? "allies" : null;
-    if (!target) continue;
+    const target = normalizeTeamValue(player.team.side);
+    if (!teamKeys.has(target)) continue;
 
     for (const { key: typeKey } of TYPE_LABELS) {
       const value = player[key]?.[typeKey] ?? 0;
       const existing = base.get(typeKey);
       if (existing) {
-        existing[target] += value;
+        existing[target] = Number(existing[target] ?? 0) + value;
+        existing.total += value;
       }
     }
   }
 
-  return [...base.values()].filter((item) => item.allies > 0 || item.axis > 0);
+  return [...base.values()].filter((item) => item.total > 0);
 }
 
-function buildWeaponTotals(players: MatchRecord["raw"]["player_stats"], key: "weapons" | "death_by_weapons") {
-  const totals = new Map<string, { weapon: string; allies: number; axis: number; total: number }>();
+function buildWeaponTotals(
+  players: MatchRecord["raw"]["player_stats"],
+  teamSeries: TeamSeries[],
+  key: "weapons" | "death_by_weapons",
+) {
+  const totals = new Map<string, { weapon: string; total: number } & Record<string, number | string>>();
+  const teamKeys = new Set(teamSeries.map((team) => team.key));
 
   for (const player of players) {
-    const target = player.team.side === "axis" ? "axis" : player.team.side === "allies" ? "allies" : null;
-    if (!target) continue;
+    const target = normalizeTeamValue(player.team.side);
+    if (!teamKeys.has(target)) continue;
 
     for (const [weapon, amount] of Object.entries(player[key])) {
-      const current = totals.get(weapon) ?? { weapon, allies: 0, axis: 0, total: 0 };
-      current[target] += amount;
+      const current = totals.get(weapon) ?? { weapon, total: 0 };
+      current[target] = Number(current[target] ?? 0) + amount;
       current.total += amount;
       totals.set(weapon, current);
     }
@@ -168,10 +241,15 @@ export function MatchDetails({
     () => [...match.raw.player_stats].sort((left, right) => right.kills - left.kills || right.kill_death_ratio - left.kill_death_ratio),
     [match.raw.player_stats],
   );
-  const killTypeData = useMemo(() => buildBreakdownTotals(players, "kills_by_type"), [players]);
-  const deathTypeData = useMemo(() => buildBreakdownTotals(players, "deaths_by_type"), [players]);
-  const weaponData = useMemo(() => buildWeaponTotals(players, "weapons"), [players]);
-  const deathWeaponData = useMemo(() => buildWeaponTotals(players, "death_by_weapons"), [players]);
+  const teamSeries = useMemo(() => buildTeamSeries(players, dictionary), [dictionary, players]);
+  const teamSeriesByKey = useMemo(
+    () => new Map(teamSeries.map((team) => [team.key, team])),
+    [teamSeries],
+  );
+  const killTypeData = useMemo(() => buildBreakdownTotals(players, teamSeries, "kills_by_type"), [players, teamSeries]);
+  const deathTypeData = useMemo(() => buildBreakdownTotals(players, teamSeries, "deaths_by_type"), [players, teamSeries]);
+  const weaponData = useMemo(() => buildWeaponTotals(players, teamSeries, "weapons"), [players, teamSeries]);
+  const deathWeaponData = useMemo(() => buildWeaponTotals(players, teamSeries, "death_by_weapons"), [players, teamSeries]);
   const scatterData = useMemo(
     () => players.map((player) => ({
       name: player.player,
@@ -179,15 +257,15 @@ export function MatchDetails({
       kills: player.kills,
       deaths: player.deaths,
       kd: Number(player.kill_death_ratio.toFixed(2)),
-      fill: getTeamColor(player.team.side),
+      fill: teamSeriesByKey.get(normalizeTeamValue(player.team.side))?.color ?? getTeamColor(player.team.side),
     })),
-    [players],
+    [players, teamSeriesByKey],
   );
   const killTypeSummaryData = useMemo(
     () => killTypeData
       .map((entry) => ({
         label: entry.label,
-        total: entry.allies + entry.axis,
+        total: entry.total,
       }))
       .sort((left, right) => right.total - left.total),
     [killTypeData],
@@ -326,21 +404,25 @@ export function MatchDetails({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {players.map((player, index) => (
-                      <TableRow key={`${player.player_id}-${index}`}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell style={{ color: getTeamColor(player.team.side) }}>{getTeamLabel(player.team.side, dictionary)}</TableCell>
-                        <TableCell className="font-medium">{player.player}</TableCell>
-                        <TableCell>{player.level}</TableCell>
-                        <TableCell>{player.kills}</TableCell>
-                        <TableCell>{player.kill_death_ratio.toFixed(2)}</TableCell>
-                        <TableCell>{player.deaths}</TableCell>
-                        <TableCell>{player.offense}</TableCell>
-                        <TableCell>{player.defense}</TableCell>
-                        <TableCell>{player.support}</TableCell>
-                        <TableCell>{player.teamkills}</TableCell>
-                      </TableRow>
-                    ))}
+                    {players.map((player, index) => {
+                      const teamStyle = teamSeriesByKey.get(normalizeTeamValue(player.team.side));
+
+                      return (
+                        <TableRow key={`${player.player_id}-${index}`}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell style={{ color: teamStyle?.color ?? getTeamColor(player.team.side) }}>{teamStyle?.label ?? getTeamLabel(player.team.side, dictionary)}</TableCell>
+                          <TableCell className="font-medium">{player.player}</TableCell>
+                          <TableCell>{player.level}</TableCell>
+                          <TableCell>{player.kills}</TableCell>
+                          <TableCell>{player.kill_death_ratio.toFixed(2)}</TableCell>
+                          <TableCell>{player.deaths}</TableCell>
+                          <TableCell>{player.offense}</TableCell>
+                          <TableCell>{player.defense}</TableCell>
+                          <TableCell>{player.support}</TableCell>
+                          <TableCell>{player.teamkills}</TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -361,8 +443,9 @@ export function MatchDetails({
                     <XAxis type="number" tick={{ fill: chartStyles.axis, fontSize: 12 }} axisLine={{ stroke: chartStyles.grid }} tickLine={{ stroke: chartStyles.grid }} />
                     <YAxis type="category" dataKey="label" width={110} tick={{ fill: chartStyles.axis, fontSize: 12 }} axisLine={{ stroke: chartStyles.grid }} tickLine={{ stroke: chartStyles.grid }} />
                     <Tooltip cursor={false} content={renderTooltipContent} />
-                    <Bar dataKey="allies" fill={getTeamColor("allies")} activeBar={false} />
-                    <Bar dataKey="axis" fill={getTeamColor("axis")} activeBar={false} />
+                    {teamSeries.map((team) => (
+                      <Bar key={team.key} dataKey={team.key} name={team.label} fill={team.color} activeBar={false} />
+                    ))}
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -387,8 +470,9 @@ export function MatchDetails({
                           <XAxis type="number" tick={{ fill: chartStyles.axis, fontSize: 12 }} axisLine={{ stroke: chartStyles.grid }} tickLine={{ stroke: chartStyles.grid }} />
                           <YAxis type="category" dataKey="weapon" width={160} tick={{ fill: chartStyles.axis, fontSize: 12 }} axisLine={{ stroke: chartStyles.grid }} tickLine={{ stroke: chartStyles.grid }} />
                           <Tooltip cursor={false} content={renderTooltipContent} />
-                          <Bar dataKey="allies" fill={getTeamColor("allies")} activeBar={false} />
-                          <Bar dataKey="axis" fill={getTeamColor("axis")} activeBar={false} />
+                          {teamSeries.map((team) => (
+                            <Bar key={team.key} dataKey={team.key} name={team.label} fill={team.color} activeBar={false} />
+                          ))}
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -404,8 +488,9 @@ export function MatchDetails({
                           <XAxis type="number" tick={{ fill: chartStyles.axis, fontSize: 12 }} axisLine={{ stroke: chartStyles.grid }} tickLine={{ stroke: chartStyles.grid }} />
                           <YAxis type="category" dataKey="weapon" width={160} tick={{ fill: chartStyles.axis, fontSize: 12 }} axisLine={{ stroke: chartStyles.grid }} tickLine={{ stroke: chartStyles.grid }} />
                           <Tooltip cursor={false} content={renderTooltipContent} />
-                          <Bar dataKey="allies" fill={getTeamColor("allies")} activeBar={false} />
-                          <Bar dataKey="axis" fill={getTeamColor("axis")} activeBar={false} />
+                          {teamSeries.map((team) => (
+                            <Bar key={team.key} dataKey={team.key} name={team.label} fill={team.color} activeBar={false} />
+                          ))}
                         </BarChart>
                       </ResponsiveContainer>
                     </div>

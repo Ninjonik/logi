@@ -8,7 +8,6 @@ import { userAssignmentSchema } from "@/lib/validation/user-assignment";
 
 function getAssignmentErrorCode(error: unknown) {
   if (!(error instanceof Error)) return "UNKNOWN";
-  if (error.message.includes("Pick a primary group")) return "PRIMARY_GROUP_REQUIRED";
   if (error.message.includes("already assigned to this server")) return "ALREADY_ASSIGNED";
   if (error.message.includes("already linked to another player")) return "PLATFORM_ALREADY_LINKED";
   return "UNKNOWN";

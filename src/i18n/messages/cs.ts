@@ -257,6 +257,7 @@ export const csMessages = {
     matchHistoryEvent: "Akce",
     matchHistoryPlayedAt: "Odehráno",
     removePlayerFromClan: "Odebrat hráče z tohoto klanu.",
+    removePlayerConfirm: "Odebrat tohoto hráče z klanu? Tímto smažete jeho přiřazení.",
     saveError: "Nepodařilo se uložit přiřazení hráče.",
     deleteError: "Nepodařilo se smazat přiřazení hráče.",
     assignmentSaved: "Přiřazení hráče bylo uloženo.",

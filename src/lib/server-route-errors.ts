@@ -12,10 +12,6 @@ export function getUserSafeErrorMessage(
 
   const message = error.message;
 
-  if (message.includes("Pick a primary group")) {
-    return "Pick a primary group.";
-  }
-
   if (message.includes("Primary group does not belong to this server")) {
     return "Pick a valid primary group for this clan.";
   }

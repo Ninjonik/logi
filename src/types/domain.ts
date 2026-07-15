@@ -169,7 +169,7 @@ export type EventRecord = {
   updatedAt: Timestamp;
 };
 
-export type MatchTeamSide = "axis" | "allies" | "unknown";
+export type MatchTeamSide = string;
 
 export type MatchStatBreakdown = Partial<{
   infantry: number;

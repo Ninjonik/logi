@@ -115,7 +115,7 @@ const statBreakdown = v.object({
 });
 
 const matchPlayerTeam = v.object({
-  side: v.union(v.literal("axis"), v.literal("allies"), v.literal("unknown")),
+  side: v.string(),
   confidence: v.optional(v.union(v.literal("strong"), v.literal("mixed"))),
   ratio: v.optional(v.number()),
 });
@@ -187,11 +187,11 @@ const rawMatch = v.object({
       shortname: v.string(),
       allies: v.object({
         name: v.string(),
-        team: v.union(v.literal("axis"), v.literal("allies"), v.literal("unknown")),
+        team: v.string(),
       }),
       axis: v.object({
         name: v.string(),
-        team: v.union(v.literal("axis"), v.literal("allies"), v.literal("unknown")),
+        team: v.string(),
       }),
       orientation: v.string(),
     }),

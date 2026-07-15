@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PencilLine, Search } from "lucide-react";
+import { PencilLine, Search, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -33,8 +33,6 @@ type EligibleUser = {
 
 function getAssignmentErrorMessage(errorCode: string | undefined, dictionary: Dictionary) {
   switch (errorCode) {
-    case "PRIMARY_GROUP_REQUIRED":
-      return dictionary.userManagement.primaryGroupRequired;
     case "ALREADY_ASSIGNED":
       return dictionary.userManagement.alreadyAssigned;
     case "PLATFORM_ALREADY_LINKED":
@@ -46,7 +44,6 @@ function getAssignmentErrorMessage(errorCode: string | undefined, dictionary: Di
 
 function getValidationMessage(message: string | undefined, dictionary: Dictionary) {
   if (!message) return "";
-  if (message === "Pick a primary group.") return dictionary.userManagement.primaryGroupRequired;
   if (message === "Pick a player first.") return dictionary.userManagement.pickPlayerFirst;
   if (message === "Add a pause note when membership is paused.") return dictionary.userManagement.pauseNoteRequired;
   return message;
@@ -70,25 +67,32 @@ export function UserAssignmentForm({
   createMode?: boolean;
 }) {
   const router = useRouter();
+  const initialSelectedUser = assignment
+    ? eligibleUsers.find((item) => item.user.discordId === assignment.userId)?.user
+    : undefined;
   const [query, setQuery] = useState(
-    assignment ? eligibleUsers.find((item) => item.user.discordId === assignment.userId)?.user.name ?? "" : "",
+    initialSelectedUser?.name ?? "",
   );
   const [isEditing, setIsEditing] = useState(createMode);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<UserAssignmentInput>({
-    resolver: zodResolver(userAssignmentSchema),
-    defaultValues: {
+  function getDefaultValues(): UserAssignmentInput {
+    return {
       userId: assignment?.userId ?? "",
       type: assignment?.type ?? "member",
       primaryGroupId: assignment?.primaryGroupId ?? "",
       secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
-      score: assignment ? (eligibleUsers.find((item) => item.user.discordId === assignment.userId)?.user.score ?? 0) : 0,
-      platformIds: assignment ? formatPlatformIds(eligibleUsers.find((item) => item.user.discordId === assignment.userId)?.user.platformIds) : "",
+      score: initialSelectedUser?.score ?? 0,
+      platformIds: formatPlatformIds(initialSelectedUser?.platformIds),
       paused: assignment?.paused ?? false,
       pausedNote: assignment?.pausedNote ?? "",
-    },
+    };
+  }
+
+  const form = useForm<UserAssignmentInput>({
+    resolver: zodResolver(userAssignmentSchema),
+    defaultValues: getDefaultValues(),
   });
 
   const selectedUserId = form.watch("userId");
@@ -130,7 +134,10 @@ export function UserAssignmentForm({
 
     const body = await response.json();
     if (!response.ok) {
-      const message = getAssignmentErrorMessage(body.errorCode, dictionary);
+      const mappedMessage = getAssignmentErrorMessage(body.errorCode, dictionary);
+      const message = mappedMessage === dictionary.userManagement.saveError
+        ? (body.error ?? mappedMessage)
+        : mappedMessage;
       setServerError(message);
       toast.error(message);
       return;
@@ -149,6 +156,9 @@ export function UserAssignmentForm({
 
   async function removeAssignment() {
     if (!assignment) return;
+    if (!window.confirm(dictionary.userManagement.removePlayerConfirm)) {
+      return;
+    }
     setServerError(null);
     const response = await fetch(`/api/servers/${server.id}/assignments/${assignment.id}`, {
       method: "DELETE",
@@ -170,19 +180,31 @@ export function UserAssignmentForm({
   }
 
   return (
-    <Card className="rounded-2xl border-border/60">
+    <Card className="shrink-0 rounded-2xl border-border/60">
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <CardTitle>{createMode ? dictionary.userManagement.addPlayer : dictionary.userManagement.editAssignment}</CardTitle>
         {!createMode ? (
-          <Button
-            type="button"
-            variant={isEditing ? "secondary" : "default"}
-            className="rounded-xl"
-            onClick={() => setIsEditing((value) => !value)}
-          >
-            <PencilLine className="size-4" />
-            {dictionary.common.edit}
-          </Button>
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button
+              type="button"
+              variant={isEditing ? "secondary" : "default"}
+              className="rounded-xl"
+              onClick={() => setIsEditing((value) => !value)}
+            >
+              <PencilLine className="size-4" />
+              {dictionary.common.edit}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="rounded-xl"
+              onClick={removeAssignment}
+              disabled={isPending || form.formState.isSubmitting}
+            >
+              <Trash2 className="size-4" />
+              {dictionary.common.removeAssignment}
+            </Button>
+          </div>
         ) : null}
       </CardHeader>
       <CardContent className="space-y-6">
@@ -410,13 +432,12 @@ export function UserAssignmentForm({
                   <Controller
                     control={form.control}
                     name="paused"
-                    render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} disabled={!canEditFields} />}
+                    render={({ field }) => (
+                      <Switch checked={field.value} onCheckedChange={field.onChange} disabled={!canEditFields} />
+                    )}
                   />
+                </div>
               </div>
-              {form.formState.errors.primaryGroupId ? (
-                <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.primaryGroupId.message, dictionary)}</p>
-              ) : null}
-            </div>
               {paused ? (
                 <div className="space-y-2 md:col-span-2">
                   <Label>{dictionary.userManagement.pauseNote}</Label>
@@ -453,30 +474,12 @@ export function UserAssignmentForm({
                     variant="outline"
                     className="rounded-xl"
                     onClick={() => {
-                      form.reset({
-                        userId: assignment?.userId ?? "",
-                        type: assignment?.type ?? "member",
-                      primaryGroupId: assignment?.primaryGroupId ?? "",
-                      secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
-                      score: selected?.user.score ?? 0,
-                      platformIds: formatPlatformIds(selected?.user.platformIds),
-                      paused: assignment?.paused ?? false,
-                      pausedNote: assignment?.pausedNote ?? "",
-                    });
+                      form.reset(getDefaultValues());
                       setIsEditing(false);
                     }}
                     disabled={isPending || form.formState.isSubmitting}
                   >
                     {dictionary.common.cancel}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="rounded-xl"
-                    onClick={removeAssignment}
-                    disabled={isPending || form.formState.isSubmitting}
-                  >
-                    {dictionary.common.removeAssignment}
                   </Button>
                 </>
               ) : null}

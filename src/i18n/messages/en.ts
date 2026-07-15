@@ -257,6 +257,7 @@ export const enMessages = {
     matchHistoryEvent: "Event",
     matchHistoryPlayedAt: "Played",
     removePlayerFromClan: "Remove the player from this clan.",
+    removePlayerConfirm: "Remove this player from the clan? This will delete their assignment.",
     saveError: "Unable to save the player assignment.",
     deleteError: "Unable to delete the player assignment.",
     assignmentSaved: "Player assignment saved.",

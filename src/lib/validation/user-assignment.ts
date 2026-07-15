@@ -12,14 +12,6 @@ export const userAssignmentSchema = z
     pausedNote: z.string().trim().optional(),
   })
   .superRefine((value, ctx) => {
-    if (!value.primaryGroupId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["primaryGroupId"],
-        message: "Pick a primary group.",
-      });
-    }
-
     if (value.paused && !value.pausedNote) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
