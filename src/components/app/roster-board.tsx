@@ -59,6 +59,7 @@ type DragState =
   | { type: "slot"; squadIndex: number; playerIndex: number };
 
 type AttendanceStatus = "pending" | "acknowledged" | "confirmed";
+type RosterBoardMode = "view" | "layout" | "assignment";
 
 function getAttendanceStatus(player: Roster["squads"][number]["players"][number]): AttendanceStatus {
   if (player.confirmed) {
@@ -109,7 +110,7 @@ export function RosterBoard({
   locale,
   timezone,
   meetingChannelId,
-  defaultEditMode = false,
+  defaultMode = "view",
 }: {
   roster?: Roster;
   event?: EventRecord;
@@ -122,19 +123,25 @@ export function RosterBoard({
   locale: string;
   timezone?: string;
   meetingChannelId?: string;
-  defaultEditMode: boolean;
+  defaultMode?: RosterBoardMode;
 }) {
   const router = useRouter();
   const [board, setBoard] = useState(roster);
-  const [editMode, setEditMode] = useState(defaultEditMode);
+  const [mode, setMode] = useState<RosterBoardMode>(defaultMode);
   const [search, setSearch] = useState("");
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [focusedGroup, setFocusedGroup] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search);
+  const isLayoutMode = mode === "layout";
+  const isAssignmentMode = mode === "assignment";
 
   useEffect(() => {
     setBoard(roster);
   }, [roster]);
+
+  useEffect(() => {
+    setMode(defaultMode);
+  }, [defaultMode]);
 
   const [isPending, startTransition] = useTransition();
   const [isConfirmingMeetingChannel, setIsConfirmingMeetingChannel] = useState(false);
@@ -745,9 +752,9 @@ export function RosterBoard({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card className="rounded-2xl border-border/60 bg-card text-card-foreground">
-        <CardHeader className="flex flex-col gap-5 border-b border-border/70 lg:flex-row lg:items-center lg:justify-between">
+        <CardHeader className="flex flex-col gap-4 border-b border-border/70 pb-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{dictionary.roster.title}</div>
             <CardTitle className="text-2xl">
@@ -762,7 +769,18 @@ export function RosterBoard({
               {board.published ? dictionary.common.published : dictionary.common.unpublished}
             </Badge>
             {canAdmin ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                <Select value={mode} onValueChange={(value) => setMode(value as RosterBoardMode)}>
+                  <SelectTrigger className="h-10 min-w-[210px] rounded-xl">
+                    <Settings2 className="size-4" />
+                    <SelectValue placeholder={dictionary.roster.modeView} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="view">{dictionary.roster.modeView}</SelectItem>
+                    <SelectItem value="layout">{dictionary.roster.modeLayout}</SelectItem>
+                    <SelectItem value="assignment">{dictionary.roster.modeAssignment}</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   variant="outline"
                   className="rounded-xl"
@@ -786,10 +804,6 @@ export function RosterBoard({
                     </TooltipContent>
                   </Tooltip>
                 )}
-                <Button variant={editMode ? "default" : "outline"} className="rounded-xl" onClick={() => setEditMode((value) => !value)}>
-                  <Settings2 className="size-4" />
-                  {editMode ? dictionary.roster.editingEnabled : dictionary.roster.editRoster}
-                </Button>
                 {!board?.published ? (
                   <Button
                     variant="default"
@@ -805,48 +819,48 @@ export function RosterBoard({
             ) : null}
           </div>
         </CardHeader>
-        <CardContent className=" flex flex-col gap-4">
-          <div className="flex flex-row gap-2">
+        <CardContent className="flex flex-col gap-4 pt-5">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
             <RosterInfoCard label={dictionary.roster.matchTime} value={formatDateTime(event.meetingStart, timezone)} />
             <RosterInfoCard label={dictionary.roster.opponent} value={event.name.split(dictionary.roster.versusDelimiter)[1]?.trim() ?? dictionary.common.unknown} />
             <RosterInfoCard label={dictionary.roster.mapSide} value={`${event.map ?? dictionary.common.unknown} • ${event.side ?? dictionary.common.unknown}`} />
             <RosterInfoCard label={dictionary.roster.notes} value={event.notes ?? dictionary.roster.noExtraNotes} />
           </div>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
 
-            <div className="space-y-8">
-              {editMode ? (
+            <div className="space-y-5">
+              {isLayoutMode ? (
                 <div className="md:col-span-2">
-                  <Button variant="outline" className="rounded-xl" onClick={addRosterSquad}>
+                  <Button variant="outline" className="h-9 rounded-xl" onClick={addRosterSquad}>
                     <Plus className="size-4" />
                     {dictionary.roster.addSquad}
                   </Button>
                 </div>
               ) : null}
               {squadGroups.map((groupEntry, groupIndex) => (
-                <div key={`${groupEntry.group.name}-${groupIndex}`} className="space-y-4">
-                  <div className="flex items-center gap-3">
+                <div key={`${groupEntry.group.name}-${groupIndex}`} className="space-y-3">
+                  <div className="flex items-center gap-2">
                     <div
-                      className="h-6 w-1 rounded-full"
+                      className="h-5 w-1 rounded-full"
                       style={{ backgroundColor: groupEntry.group.color }}
                     />
                     {focusedGroup === groupEntry.group.name ? (
-                      <CircleDot className="size-4 text-primary" />
+                      <CircleDot className="size-3.5 text-primary" />
                     ) : (
-                      <Circle className="size-4 text-muted-foreground/50" />
+                      <Circle className="size-3.5 text-muted-foreground/50" />
                     )}
-                    <h3 className="text-lg font-bold uppercase tracking-wider">
+                    <h3 className="text-sm font-bold uppercase tracking-[0.22em]">
                       {groupEntry.group.name}
                     </h3>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
                     {groupEntry.squads.map((squad) => (
                       <SquadCard
                         key={`${squad.group}-${squad.name}`}
                         squad={squad}
                         board={board}
                         squadIndex={board.squads.indexOf(squad)}
-                        editMode={editMode}
+                        mode={mode}
                         dictionary={dictionary}
                         setFocusedGroup={setFocusedGroup}
                         updateSquadField={updateSquadField}
@@ -877,7 +891,7 @@ export function RosterBoard({
                                   squad={squad}
                                   board={board}
                                   squadIndex={board.squads.indexOf(squad)}
-                                  editMode={editMode}
+                                  mode={mode}
                                   dictionary={dictionary}
                                   setFocusedGroup={setFocusedGroup}
                                   updateSquadField={updateSquadField}
@@ -908,11 +922,11 @@ export function RosterBoard({
             </div>
 
             <div className="flex flex-col gap-6">
-              <Card className="rounded-2xl border-border/70 bg-card" onDragOver={(event) => editMode && event.preventDefault()} onDrop={() => handleDropOnReserve()}>
-                <CardHeader>
+              <Card className="rounded-2xl border-border/70 bg-card" onDragOver={(event) => isAssignmentMode && event.preventDefault()} onDrop={() => handleDropOnReserve()}>
+                <CardHeader className="space-y-3 pb-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">{dictionary.common.reserves}</CardTitle>
-                    {editMode && (
+                    {isAssignmentMode && (
                       <Popover open={userPickerOpen} onOpenChange={setUserPickerOpen}>
                         <PopoverTrigger asChild>
                           <Button variant="ghost" size="icon" className="size-8 rounded-xl">
@@ -960,8 +974,8 @@ export function RosterBoard({
                   />
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-[400px] pr-4">
-                    <div className="space-y-4">
+                  <ScrollArea className="h-[320px] pr-4">
+                    <div className="space-y-3">
                       {(() => {
                         const sections: Record<string, (AppUser & { _reserveSection?: string })[]> = {};
                         reserveUsers.forEach(u => {
@@ -993,20 +1007,20 @@ export function RosterBoard({
                               {usersInSection.map((user) => (
                                 <div
                                   key={user.id}
-                                  onDragOver={(event) => editMode && event.preventDefault()}
+                                  onDragOver={(event) => isAssignmentMode && event.preventDefault()}
                                   onDrop={() => handleDropOnReserve(user.discordId)}
                                 >
                                   {(() => {
                                     const assignment = assignmentsByUserId.get(user.discordId);
                                     return (
                                   <div
-                                    draggable={editMode && canAdmin}
+                                    draggable={isAssignmentMode && canAdmin}
                                     onDragStart={() => setDragState({ type: "reserve", userId: user.discordId })}
                                     onDragEnd={() => setDragState(null)}
-                                    className="flex min-w-0 cursor-grab items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-2"
+                                    className="flex min-w-0 cursor-grab items-center gap-2 rounded-xl border border-border/70 bg-background px-2.5 py-2"
                                   >
-                                    {editMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
-                                    <Avatar className="size-8 shrink-0 rounded-lg">
+                                    {isAssignmentMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
+                                    <Avatar className="size-7 shrink-0 rounded-lg">
                                       <AvatarImage src={user.avatar} alt={user.name} />
                                       <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
                                     </Avatar>
@@ -1036,13 +1050,13 @@ export function RosterBoard({
                 </CardContent>
               </Card>
 
-              <Card className="rounded-2xl border-border/70 bg-card" onDragOver={(event) => editMode && event.preventDefault()} onDrop={() => handleDropOnNotAttending()}>
-                <CardHeader>
+              <Card className="rounded-2xl border-border/70 bg-card" onDragOver={(event) => isAssignmentMode && event.preventDefault()} onDrop={() => handleDropOnNotAttending()}>
+                <CardHeader className="pb-4">
                   <CardTitle className="text-base">{dictionary.roster.notAttending}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-[300px] pr-4">
-                    <div className="space-y-4">
+                  <ScrollArea className="h-[220px] pr-4">
+                    <div className="space-y-3">
                       {(() => {
                         const sections: Record<string, (AppUser & { _reserveSection?: string })[]> = {};
                         groupedNotAttendingUsers.forEach((user) => {
@@ -1062,20 +1076,20 @@ export function RosterBoard({
                             {sections[sectionName].map((user) => (
                               <div
                                 key={user.id}
-                                onDragOver={(event) => editMode && event.preventDefault()}
+                                onDragOver={(event) => isAssignmentMode && event.preventDefault()}
                                 onDrop={() => handleDropOnNotAttending()}
                               >
                                 {(() => {
                                   const assignment = assignmentsByUserId.get(user.discordId);
                                   return (
                                     <div
-                                      draggable={editMode && canAdmin}
+                                      draggable={isAssignmentMode && canAdmin}
                                       onDragStart={() => setDragState({ type: "notAttending", userId: user.discordId })}
                                       onDragEnd={() => setDragState(null)}
-                                      className="flex min-w-0 cursor-grab items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-2 opacity-60"
+                                      className="flex min-w-0 cursor-grab items-center gap-2 rounded-xl border border-border/70 bg-background px-2.5 py-2 opacity-60"
                                     >
-                                      {editMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
-                                      <Avatar className="size-8 shrink-0 rounded-lg">
+                                      {isAssignmentMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
+                                      <Avatar className="size-7 shrink-0 rounded-lg">
                                         <AvatarImage src={user.avatar} alt={user.name} />
                                         <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
                                       </Avatar>
@@ -1115,7 +1129,7 @@ function SquadCard({
   squad,
   board,
   squadIndex,
-  editMode,
+  mode,
   dictionary,
   setFocusedGroup,
   updateSquadField,
@@ -1140,7 +1154,7 @@ function SquadCard({
   squad: Roster["squads"][0];
   board: Roster;
   squadIndex: number;
-  editMode: boolean;
+  mode: RosterBoardMode;
   dictionary: Dictionary;
   setFocusedGroup: (group: string) => void;
   updateSquadField: (index: number, field: "name" | "group" | "color", value: string) => void;
@@ -1165,6 +1179,9 @@ function SquadCard({
   const [slotPickerOpen, setSlotPickerOpen] = useState<number | null>(null);
   const [slotSearches, setSlotSearches] = useState<Record<number, string>>({});
   const [moveMenuOpen, setMoveMenuOpen] = useState<number | null>(null);
+  const isLayoutMode = mode === "layout";
+  const isAssignmentMode = mode === "assignment";
+  const isViewMode = mode === "view";
 
   return (
     <Card
@@ -1172,8 +1189,8 @@ function SquadCard({
       style={{ boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${squad.color} 60%, transparent)` }}
       onClick={() => setFocusedGroup(squad.group)}
     >
-      <CardHeader className="">
-        {editMode ? (
+      <CardHeader className="pb-4">
+        {isLayoutMode ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div className="text-sm font-medium">{dictionary.roster.squadSetup}</div>
@@ -1198,16 +1215,16 @@ function SquadCard({
         ) : (
           <div className="flex items-center justify-between gap-3">
             <div>
-              <CardTitle className="cursor-pointer text-lg" onClick={() => setFocusedGroup(squad.group)}>{squad.name}</CardTitle>
-              <div className="cursor-pointer text-xs uppercase tracking-[0.2em] text-muted-foreground" onClick={() => setFocusedGroup(squad.group)}>{squad.group}</div>
+              <CardTitle className="cursor-pointer text-base leading-none" onClick={() => setFocusedGroup(squad.group)}>{squad.name}</CardTitle>
+              <div className="cursor-pointer pt-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground" onClick={() => setFocusedGroup(squad.group)}>{squad.group}</div>
             </div>
-            <Badge className="rounded-full border-0" style={{ backgroundColor: squad.color, color: "#08111f" }}>
+            <Badge className="rounded-full border-0 text-[11px]" style={{ backgroundColor: squad.color, color: "#08111f" }}>
               {squad.players.length} slots
             </Badge>
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2.5">
         {squad.players.map((player, playerIndex) => {
           const slotUser = player.id ? usersById.get(player.id) : undefined;
           const assignment = slotUser ? assignmentsByUserId.get(slotUser.discordId) : undefined;
@@ -1217,13 +1234,16 @@ function SquadCard({
             <div
               key={`${squadIndex}-${playerIndex}`}
               onDragOver={(event) => {
-                if (editMode) event.preventDefault();
+                if (isAssignmentMode) event.preventDefault();
               }}
               onDrop={() => handleDropOnSlot(squadIndex, playerIndex)}
-              className="rounded-xl border border-border/70 bg-muted/20 p-3"
+              className={cn(
+                "rounded-xl border border-border/70 bg-muted/20",
+                isViewMode ? "p-2.5" : "p-3",
+              )}
             >
               <div className="mb-2 flex items-center justify-between gap-2">
-                {editMode ? (
+                {isLayoutMode ? (
                   <div className="flex min-w-0 flex-1 items-center gap-2">
                     <RoleIconSelect value={player.roleIcon} onChange={(value) => updatePlayerIcon(squadIndex, playerIndex, value)} />
                     <Input defaultValue={player.roleName ?? ""} onBlur={(event) => updatePlayerField(squadIndex, playerIndex, "roleName", event.target.value)} className="h-8 rounded-lg text-xs" />
@@ -1241,7 +1261,7 @@ function SquadCard({
                     <span>{player.roleName ?? dictionary.roster.role}</span>
                   </div>
                 )}
-                {editMode ? (
+                {isLayoutMode ? (
                   <Button variant="ghost" size="icon" className="size-8 rounded-xl" onClick={() => removeRosterSlot(squadIndex, playerIndex)}>
                     <Trash2 className="size-4" />
                   </Button>
@@ -1250,26 +1270,29 @@ function SquadCard({
               {slotUser ? (
                 <div className="space-y-2">
                   <div
-                    draggable={editMode && canAdmin}
+                    draggable={isAssignmentMode && canAdmin}
                     onDragStart={() => setDragState({ type: "slot", squadIndex, playerIndex })}
                     onDragEnd={() => setDragState(null)}
-                    className="flex min-w-0 cursor-grab items-center gap-3 rounded-xl border border-border/60 bg-background px-3 py-2"
+                    className={cn(
+                      "flex min-w-0 items-center rounded-xl border border-border/60 bg-background",
+                      isAssignmentMode && canAdmin ? "cursor-grab gap-3 px-3 py-2" : "gap-2 px-2.5 py-2",
+                    )}
                   >
-                    {editMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
-                    <Avatar className="size-8 shrink-0 rounded-lg">
+                    {isAssignmentMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
+                    <Avatar className={cn("shrink-0 rounded-lg", isViewMode ? "size-7" : "size-8")}>
                       <AvatarImage src={slotUser.avatar} alt={slotUser.name} />
                       <AvatarFallback>{slotUser.name.slice(0, 2)}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="truncate font-medium">
+                        <div className="truncate text-sm font-medium">
                           {slotUser.name} <span className="text-xs text-muted-foreground">({formatRosterScoreline(slotUser, dictionary)})</span>
                         </div>
                         <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
                       </div>
                       <div className="truncate text-xs text-muted-foreground">{player.note ?? ""}</div>
                     </div>
-                    {editMode && canAdmin ? (
+                    {isAssignmentMode && canAdmin ? (
                       <Popover open={moveMenuOpen === playerIndex} onOpenChange={(open) => setMoveMenuOpen(open ? playerIndex : null)}>
                         <PopoverTrigger asChild>
                           <Button
@@ -1317,17 +1340,21 @@ function SquadCard({
                     ) : null}
                     {getAttendanceIcon(attendanceStatus)}
                   </div>
-                  {editMode ? (
+                  {isAssignmentMode ? (
                     <Input defaultValue={player.note ?? ""} onBlur={(event) => updatePlayerField(squadIndex, playerIndex, "note", event.target.value)} placeholder={dictionary.common.playerNote} className="rounded-lg" />
                   ) : null}
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Popover open={slotPickerOpen === playerIndex} onOpenChange={(open) => setSlotPickerOpen(open ? playerIndex : null)}>
+                  <Popover open={isAssignmentMode && slotPickerOpen === playerIndex} onOpenChange={(open) => setSlotPickerOpen(open ? playerIndex : null)}>
                     <PopoverTrigger asChild>
                       <button
                         type="button"
-                        className="w-full rounded-xl border border-dashed border-border/80 px-3 py-4 text-left text-sm text-muted-foreground"
+                        disabled={!isAssignmentMode}
+                        className={cn(
+                          "w-full rounded-xl border border-dashed border-border/80 text-left text-sm text-muted-foreground",
+                          isAssignmentMode ? "px-3 py-4" : "cursor-default px-2.5 py-2.5",
+                        )}
                       >
                         {player.note ?? dictionary.common.openSlot}
                       </button>
@@ -1412,7 +1439,7 @@ function SquadCard({
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  {editMode ? (
+                  {isAssignmentMode ? (
                     <Input defaultValue={player.note ?? ""} onBlur={(event) => updatePlayerField(squadIndex, playerIndex, "note", event.target.value)} placeholder={dictionary.common.slotNote} className="rounded-lg" />
                   ) : null}
                 </div>
@@ -1420,8 +1447,8 @@ function SquadCard({
             </div>
           );
         })}
-        {editMode ? (
-          <Button variant="outline" className="w-full rounded-xl" onClick={() => addRosterSlot(squadIndex)}>
+        {isLayoutMode ? (
+          <Button variant="outline" className="h-9 w-full rounded-xl" onClick={() => addRosterSlot(squadIndex)}>
             <Plus className="size-4" />
             {dictionary.roster.addSlot}
           </Button>
@@ -1496,9 +1523,9 @@ function AttendanceStatusSelect({
 
 function RosterInfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
-      <div className="text-xs uppercase tracking-[0.24em] text-muted-foreground">{label}</div>
-      <div className="mt-2 text-sm font-medium">{value}</div>
+    <div className="rounded-2xl border border-border/70 bg-muted/20 p-3">
+      <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{label}</div>
+      <div className="mt-1.5 line-clamp-2 text-sm font-medium">{value}</div>
     </div>
   );
 }

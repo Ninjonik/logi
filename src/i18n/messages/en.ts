@@ -295,8 +295,9 @@ export const enMessages = {
   roster: {
     title: "Roster",
     listDescription: "Browse event rosters, check squad counts, and see which lineups are already published.",
-    editingEnabled: "Editing enabled",
-    editRoster: "Edit roster",
+    modeView: "View only",
+    modeLayout: "Squad editor",
+    modeAssignment: "Roster editor",
     updatePublished: "Update published roster",
     publishRoster: "Publish roster",
     setupRoster: "Setup Roster",

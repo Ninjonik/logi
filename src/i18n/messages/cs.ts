@@ -295,8 +295,9 @@ export const csMessages = {
   roster: {
     title: "Soupiska",
     listDescription: "Procházejte soupisky akcí, kontrolujte počty jednotek a hned vidíte, které sestavy jsou publikované.",
-    editingEnabled: "Úpravy povoleny",
-    editRoster: "Upravit soupisku",
+    modeView: "Pouze zobrazeni",
+    modeLayout: "Editor jednotek",
+    modeAssignment: "Editor soupisky",
     updatePublished: "Aktualizovat publikovanou soupisku",
     publishRoster: "Publikovat soupisku",
     setupRoster: "Nastavení soupisky",

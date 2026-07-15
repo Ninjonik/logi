@@ -46,7 +46,7 @@ export default async function RosterDetailPage({
         title={event ? `${event.name} roster` : "Roster"}
       />
       <div className="px-4 lg:px-6">
-        <RosterBoard roster={roster} event={event} users={users} userAssignments={assignments} groups={groups} canAdmin={canAdmin} dictionary={dictionary} serverId={serverId} locale={locale} timezone={discordConfig?.timezone} meetingChannelId={discordConfig?.meetingChannelId} defaultEditMode={false} />
+        <RosterBoard roster={roster} event={event} users={users} userAssignments={assignments} groups={groups} canAdmin={canAdmin} dictionary={dictionary} serverId={serverId} locale={locale} timezone={discordConfig?.timezone} meetingChannelId={discordConfig?.meetingChannelId} defaultMode="view" />
       </div>
     </>
   );
