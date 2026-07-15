@@ -28,6 +28,13 @@ export async function POST(
   try {
     const body = userAssignmentSchema.parse(await request.json());
     const { serverId } = await params;
+    console.log("[assignments.create] Incoming request", {
+      serverId,
+      userId: body.userId,
+      type: body.type,
+      primaryGroupId: body.primaryGroupId || null,
+      secondaryGroupIds: body.secondaryGroupIds,
+    });
     const assignmentId = await saveServerUserAssignment({
       serverId,
       ...body,
@@ -49,6 +56,7 @@ export async function POST(
 
     return NextResponse.json({ assignmentId });
   } catch (error) {
+    console.error("[assignments.create] Request failed", error);
     logRouteError("assignments.create", error);
     return NextResponse.json(
       {

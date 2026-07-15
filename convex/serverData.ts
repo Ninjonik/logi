@@ -1,6 +1,7 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds";
+import { getGuildDiscordId, getUserByDiscordId, getUserDiscordId } from "./identity";
 
 function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   return {
@@ -12,7 +13,8 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
 function normalizeUserDoc<
   T extends {
     _id: unknown;
-    id: string;
+    discordId?: string;
+    id?: string;
     platformIds?: string[];
   },
 >(user: T) {
@@ -20,7 +22,8 @@ function normalizeUserDoc<
 
   return {
     ...user,
-    _id: String(user._id),
+    id: String(user._id),
+    discordId: getUserDiscordId(user),
     platformIds: [...new Set(
       (user.platformIds ?? [legacyUser.platformId ?? legacyUser.steamId].filter(Boolean))
         .flatMap((entry) => String(entry).split(","))
@@ -42,6 +45,7 @@ function normalizeGuildDoc<
 >(guild: T) {
   return {
     ...normalizeDoc(guild),
+    discordId: getGuildDiscordId(guild),
     rosterScoreSettings: {
       noResponse: Number.isInteger(guild.rosterScoreSettings?.noResponse)
         ? guild.rosterScoreSettings?.noResponse ?? DEFAULT_ROSTER_SCORE_SETTINGS.noResponse
@@ -170,41 +174,42 @@ function normalizeAssignmentDoc<
 export const getServerContext = query({
   args: {
     userId: v.string(),
-    serverId: v.string(),
+    serverId: v.id("guilds"),
   },
   handler: async (ctx, args) => {
     const [user, server] = await Promise.all([
-      ctx.db.query("users").withIndex("id", (q) => q.eq("id", args.userId)).unique(),
-      ctx.db.query("guilds").withIndex("id", (q) => q.eq("id", args.serverId)).unique(),
+      getUserByDiscordId(ctx, args.userId),
+      ctx.db.get(args.serverId),
     ]);
 
     if (!user || !server) {
       return null;
     }
 
+    const serverDiscordId = getGuildDiscordId(server);
     const discordAccess = await ctx.db
       .query("discordMemberAccess")
-      .withIndex("guildId_userId", (q) => q.eq("guildId", args.serverId).eq("userId", args.userId))
+      .withIndex("guildId_userId", (q) => q.eq("guildId", serverDiscordId).eq("userId", args.userId))
       .unique();
 
     const canAccess =
-      user.guildId === server.id ||
-      user.managedGuildIds.includes(server.id) ||
-      user.mercenaryGuildIds.includes(server.id) ||
+      user.guildId === serverDiscordId ||
+      user.managedGuildIds.includes(serverDiscordId) ||
+      user.mercenaryGuildIds.includes(serverDiscordId) ||
       Boolean(discordAccess?.hasDashboardAccess);
 
     if (!canAccess) {
       return null;
     }
 
-    const canAdmin = server.adminIds.includes(user.id) || Boolean(discordAccess?.isAdmin);
+    const canAdmin = server.adminIds.includes(args.userId) || Boolean(discordAccess?.isAdmin);
     const [events, topicPresets, squadPresets, groups, assignments, discordConfig] = await Promise.all([
-      ctx.db.query("events").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
-      ctx.db.query("topicPresets").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
-      ctx.db.query("squadPresets").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
-      ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", server.id)).collect(),
-      ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", server.id)).collect(),
-      ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", server.id)).unique(),
+      ctx.db.query("events").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect(),
+      ctx.db.query("topicPresets").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect(),
+      ctx.db.query("squadPresets").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect(),
+      ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect(),
+      ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", serverDiscordId)).collect(),
+      ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).unique(),
     ]);
 
     const eventRosters = await Promise.all(
@@ -238,7 +243,7 @@ export const getUsersByIds = query({
   handler: async (ctx, args) => {
     const uniqueIds = [...new Set(args.userIds)];
     const users = await Promise.all(
-      uniqueIds.map((userId) => ctx.db.query("users").withIndex("id", (q) => q.eq("id", userId)).unique()),
+      uniqueIds.map((userId) => getUserByDiscordId(ctx, userId)),
     );
 
     return users
@@ -263,7 +268,7 @@ export const getAssignmentWithUser = query({
     if (!assignment) return null;
 
     const [user, groups] = await Promise.all([
-      ctx.db.query("users").withIndex("id", (q) => q.eq("id", assignment.userId)).unique(),
+      getUserByDiscordId(ctx, assignment.userId),
       ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", assignment.serverId)).collect(),
     ]);
 

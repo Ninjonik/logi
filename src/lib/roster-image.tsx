@@ -59,6 +59,7 @@ type RosterImageContext = {
   }>;
   users: Array<{
     id: string;
+    discordId: string;
     name: string;
     avatar: string;
     score: number;

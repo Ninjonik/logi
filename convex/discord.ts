@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getGuildById, getGuildDiscordId, getUserByDiscordId, getUserDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -23,10 +24,11 @@ function normalizeConfigDoc<T extends { _id: unknown; defaultLanguage?: "en" | "
   };
 }
 
-function normalizeUserDoc<T extends { _id: unknown; id: string }>(doc: T) {
+function normalizeUserDoc<T extends { _id: unknown; discordId?: string; id?: string }>(doc: T) {
   return {
     ...doc,
-    _id: String(doc._id),
+    id: String(doc._id),
+    discordId: getUserDiscordId(doc),
   };
 }
 
@@ -101,12 +103,16 @@ function normalizeEventDoc<T extends {
 
 export const getConfigByGuild = query({
   args: {
-    guildId: v.string(),
+    guildId: v.id("guilds"),
   },
   handler: async (ctx, args) => {
+    const guild = await getGuildById(ctx, args.guildId);
+    if (!guild) {
+      return null;
+    }
     const config = await ctx.db
       .query("discordConfigs")
-      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .withIndex("guildId", (q) => q.eq("guildId", getGuildDiscordId(guild)))
       .unique();
 
     return config ? normalizeConfigDoc(config) : null;
@@ -116,7 +122,7 @@ export const getConfigByGuild = query({
 export const upsertConfig = mutation({
   args: {
     secret: v.string(),
-    guildId: v.string(),
+    guildId: v.id("guilds"),
     timezone: v.string(),
     defaultLanguage: v.union(v.literal("en"), v.literal("cs")),
     announcementsChannelId: v.optional(v.string()),
@@ -128,10 +134,11 @@ export const upsertConfig = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const guild = await ctx.db.query("guilds").withIndex("id", (q) => q.eq("id", args.guildId)).unique();
+    const guild = await getGuildById(ctx, args.guildId);
     if (!guild) {
       throw new Error("Server not found.");
     }
+    const guildDiscordId = getGuildDiscordId(guild);
 
     const now = new Date().toISOString();
     const payload = {
@@ -147,7 +154,7 @@ export const upsertConfig = mutation({
 
     const existing = await ctx.db
       .query("discordConfigs")
-      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
       .unique();
 
     if (existing) {
@@ -156,9 +163,9 @@ export const upsertConfig = mutation({
     }
 
     const configId = await ctx.db.insert("discordConfigs", {
-        guildId: args.guildId,
-        ...payload,
-        createdAt: now,
+      guildId: guildDiscordId,
+      ...payload,
+      createdAt: now,
     });
 
     return String(configId);
@@ -193,12 +200,12 @@ export const backfillDefaultLanguages = mutation({
     }
 
     for (const guild of guilds) {
-      if (configByGuildId.has(guild.id)) {
+      if (configByGuildId.has(getGuildDiscordId(guild))) {
         continue;
       }
 
       await ctx.db.insert("discordConfigs", {
-        guildId: guild.id,
+        guildId: getGuildDiscordId(guild),
         timezone: "UTC",
         defaultLanguage: "en",
         createdAt: now,
@@ -417,7 +424,7 @@ export const getRosterImageContext = query({
     ];
 
     const usersRaw = await Promise.all(
-      userIds.map((userId) => ctx.db.query("users").withIndex("id", (q) => q.eq("id", userId)).unique()),
+      userIds.map((userId) => getUserByDiscordId(ctx, userId)),
     );
     const users = usersRaw.filter((user): user is NonNullable<(typeof usersRaw)[number]> => Boolean(user));
 

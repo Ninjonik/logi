@@ -11,16 +11,16 @@ export async function POST() {
 
   try {
     const visibleGuilds = await getVisibleGuildsForLoggedInUser();
-    const managedGuilds = visibleGuilds.filter((guild) => user.managedGuildIds.includes(guild.id));
+    const managedGuilds = visibleGuilds.filter((guild) => user.managedGuildIds.includes(guild.discordId));
 
     await syncManagedGuildsForCurrentPlayer(
-      user.id,
+      user.discordId,
       await Promise.all(
         managedGuilds.map(async (guild) => ({
-          id: guild.id,
+          id: guild.discordId,
           name: guild.name,
           avatar: guild.avatar,
-          botInside: await isBotInsideDiscordGuild(guild.id),
+          botInside: await isBotInsideDiscordGuild(guild.discordId),
         })),
       ),
     );

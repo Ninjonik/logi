@@ -70,7 +70,7 @@ export function UserSettingsForm({
             />
           </div>
           <Field label={dictionary.userSettings.discordName} value={user.name} />
-          <Field label={dictionary.userSettings.discordId} value={user.id} />
+          <Field label={dictionary.userSettings.discordId} value={user.discordId} />
           <Field label={dictionary.userSettings.preferredLanguage} value={dictionary.userSettings.english} />
           <Field label={dictionary.userSettings.streamerMode} value={user.isStreamer ? dictionary.userSettings.enabled : dictionary.userSettings.disabled} />
           <div className="space-y-2 md:col-span-2">

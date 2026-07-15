@@ -59,12 +59,12 @@ export default async function ServerUserDetailPage({
 
   if (!assignment || !user) return null;
 
-  const playerStatsDocs = await getPlayerStatsDocsCached(user.id);
+  const playerStatsDocs = await getPlayerStatsDocsCached(user.discordId);
   const sortedMatches = sortPlayerMatches(
     flattenPlayerMatches(playerStatsDocs),
     new Map(context.events.map((event) => [event.id, event])),
   );
-  const recentSummary = await getPlayerStatsSummaryCached(user.id, context.events);
+  const recentSummary = await getPlayerStatsSummaryCached(user.discordId, context.events);
   const storedPerformance = user.performance;
   const paginatedMatches = getPaginatedRows({
     rows: sortedMatches,

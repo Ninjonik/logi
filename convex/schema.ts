@@ -2,7 +2,8 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 const users = defineTable({
-  id: v.string(),
+  discordId: v.optional(v.string()),
+  id: v.optional(v.string()),
   name: v.string(),
   platformIds: v.optional(v.array(v.string())),
   avatar: v.string(),
@@ -25,6 +26,7 @@ const users = defineTable({
   createdAt: v.string(),
   updatedAt: v.string(),
 })
+  .index("discordId", ["discordId"])
   .index("id", ["id"]);
 
 const guildMember = v.object({
@@ -233,7 +235,8 @@ const userAssignments = defineTable({
 export default defineSchema({
   users,
   guilds: defineTable({
-    id: v.string(),
+    discordId: v.optional(v.string()),
+    id: v.optional(v.string()),
     name: v.string(),
     avatar: v.string(),
     description: v.optional(v.string()),
@@ -245,7 +248,9 @@ export default defineSchema({
     mercenaryIds: v.array(v.string()),
     createdAt: v.string(),
     updatedAt: v.string(),
-  }).index("id", ["id"]),
+  })
+    .index("discordId", ["discordId"])
+    .index("id", ["id"]),
   discordConfigs: defineTable({
     guildId: v.string(),
     timezone: v.string(),

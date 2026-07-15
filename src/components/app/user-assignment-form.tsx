@@ -71,7 +71,7 @@ export function UserAssignmentForm({
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(
-    assignment ? eligibleUsers.find((item) => item.user.id === assignment.userId)?.user.name ?? "" : "",
+    assignment ? eligibleUsers.find((item) => item.user.discordId === assignment.userId)?.user.name ?? "" : "",
   );
   const [isEditing, setIsEditing] = useState(createMode);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -84,8 +84,8 @@ export function UserAssignmentForm({
       type: assignment?.type ?? "member",
       primaryGroupId: assignment?.primaryGroupId ?? "",
       secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
-      score: assignment ? (eligibleUsers.find((item) => item.user.id === assignment.userId)?.user.score ?? 0) : 0,
-      platformIds: assignment ? formatPlatformIds(eligibleUsers.find((item) => item.user.id === assignment.userId)?.user.platformIds) : "",
+      score: assignment ? (eligibleUsers.find((item) => item.user.discordId === assignment.userId)?.user.score ?? 0) : 0,
+      platformIds: assignment ? formatPlatformIds(eligibleUsers.find((item) => item.user.discordId === assignment.userId)?.user.platformIds) : "",
       paused: assignment?.paused ?? false,
       pausedNote: assignment?.pausedNote ?? "",
     },
@@ -100,11 +100,11 @@ export function UserAssignmentForm({
     const normalized = query.trim().toLowerCase();
     return eligibleUsers.filter(({ user }) => {
       if (!normalized) return true;
-      return user.name.toLowerCase().includes(normalized) || user.id.includes(normalized);
+      return user.name.toLowerCase().includes(normalized) || user.discordId.includes(normalized);
     });
   }, [eligibleUsers, query]);
 
-  const selected = eligibleUsers.find((item) => item.user.id === selectedUserId);
+  const selected = eligibleUsers.find((item) => item.user.discordId === selectedUserId);
   const memberDisabled = selected ? !selected.canJoinAsMember : false;
   const mercDisabled = selected ? !selected.canJoinAsMercenary : false;
   const showPlayerPicker = createMode;
@@ -205,7 +205,7 @@ export function UserAssignmentForm({
                     key={user.id}
                     type="button"
                     onClick={() => {
-                      form.setValue("userId", user.id, { shouldValidate: true });
+                      form.setValue("userId", user.discordId, { shouldValidate: true });
                       form.setValue("score", user.score, { shouldValidate: true });
                       setQuery(user.name);
                       if (!canJoinAsMember && canJoinAsMercenary) {
@@ -213,7 +213,7 @@ export function UserAssignmentForm({
                       }
                     }}
                     className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left ${
-                      selectedUserId === user.id ? "border-primary bg-primary/5" : "border-border/60"
+                      selectedUserId === user.discordId ? "border-primary bg-primary/5" : "border-border/60"
                     }`}
                   >
                     <Avatar className="size-9 rounded-lg">
@@ -254,7 +254,7 @@ export function UserAssignmentForm({
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{selected.user.name}</div>
                   <div className="truncate text-sm text-muted-foreground">
-                    {selected.user.id} • {selected.user.score} {dictionary.navUser.scoreSuffix}
+                    {selected.user.discordId} • {selected.user.score} {dictionary.navUser.scoreSuffix}
                   </div>
                 </div>
                 <Badge variant={selected.canJoinAsMember ? "default" : "secondary"} className="rounded-full px-2.5">

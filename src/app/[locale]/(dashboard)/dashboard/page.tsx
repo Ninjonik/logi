@@ -38,11 +38,11 @@ export default async function DashboardHomePage({
   }
 
   const visibleGuilds = await getVisibleGuildsForLoggedInUser();
-  const mainServer = user.guildId ? visibleGuilds.find((guild) => guild.id === user.guildId) : undefined;
-  const managedServers = visibleGuilds.filter((guild) => user.managedGuildIds.includes(guild.id));
+  const mainServer = user.guildId ? visibleGuilds.find((guild) => guild.discordId === user.guildId) : undefined;
+  const managedServers = visibleGuilds.filter((guild) => user.managedGuildIds.includes(guild.discordId));
   const readyManagedServers = managedServers.filter((guild) => guild.botInside);
   const managedServersMissingBot = managedServers.filter((guild) => !guild.botInside);
-  const mercenaryServers = visibleGuilds.filter((guild) => user.mercenaryGuildIds.includes(guild.id));
+  const mercenaryServers = visibleGuilds.filter((guild) => user.mercenaryGuildIds.includes(guild.discordId));
 
   return (
     <>
@@ -76,7 +76,7 @@ export default async function DashboardHomePage({
                   <RefreshBotStatusButton dictionary={dictionary} />
                   {managedServersMissingBot.map((guild) => (
                     <Button key={guild.id} asChild variant="outline" className="rounded-full">
-                      <a href={buildDiscordBotInviteUrl(guild.id)} target="_blank" rel="noreferrer">
+                      <a href={buildDiscordBotInviteUrl(guild.discordId)} target="_blank" rel="noreferrer">
                         <Bot className="size-4" />
                         {guild.name}
                       </a>

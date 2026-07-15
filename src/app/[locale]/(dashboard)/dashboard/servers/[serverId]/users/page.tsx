@@ -46,7 +46,7 @@ export default async function ServerUsersPage({
   const assignments = await getServerUserAssignments(serverId);
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
-  const assignmentUserMap = new Map(assignmentUsers.map((user) => [user.id, user]));
+  const assignmentUserMap = new Map(assignmentUsers.map((user) => [user.discordId, user]));
   const paginated = getPaginatedRows({
     rows: assignments,
     searchParams: resolvedSearchParams,
@@ -113,7 +113,7 @@ export default async function ServerUsersPage({
                     <div>
                       <div className="font-medium">{user.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {user.id}{user.platformIds.length ? ` • ${dictionary.userManagement.platformId}: ${formatPlatformIds(user.platformIds)}` : ""}
+                        {user.discordId}{user.platformIds.length ? ` • ${dictionary.userManagement.platformId}: ${formatPlatformIds(user.platformIds)}` : ""}
                       </div>
                     </div>
                   </div>

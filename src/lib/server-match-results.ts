@@ -355,7 +355,7 @@ async function buildServerUserLookups(serverId: string) {
     assignmentCount: assignments.length,
     userCount: users.length,
     users: users.map((user) => ({
-      userId: user.id,
+      userId: user.discordId,
       name: user.name,
       platformIds: user.platformIds,
       normalizedName: user.name,
@@ -888,7 +888,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
   const uniqueUsersByName = buildUniqueUserMap(assignedUsers);
   const existingPlatformOwnerById = new Map(
     allUsers.flatMap((user) =>
-      user.platformIds.map((platformId) => [normalizeValue(platformId), user.id] as const),
+      user.platformIds.map((platformId) => [normalizeValue(platformId), user.discordId] as const),
     ),
   );
 
@@ -939,7 +939,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
   let conflictedUsers = 0;
 
   for (const user of assignedUsers) {
-    const candidateIds = candidateIdsByUserId.get(user.id);
+    const candidateIds = candidateIdsByUserId.get(user.discordId);
     if (!candidateIds || candidateIds.size === 0) {
       continue;
     }
@@ -953,7 +953,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
     const existingPlatformIds = user.platformIds.map((platformId) => normalizeValue(platformId)).filter(Boolean);
     const existingOwnerId = existingPlatformOwnerById.get(candidateId);
 
-    if (existingOwnerId && existingOwnerId !== user.id) {
+    if (existingOwnerId && existingOwnerId !== user.discordId) {
       conflictedUsers += 1;
       continue;
     }
@@ -964,16 +964,16 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
       } else {
         try {
           await savePlayerPlatformId({
-            userId: user.id,
+            userId: user.discordId,
             platformIds: [...user.platformIds, candidateId],
           });
-          existingPlatformOwnerById.set(candidateId, user.id);
+          existingPlatformOwnerById.set(candidateId, user.discordId);
           linkedUsers += 1;
         } catch (error) {
           conflictedUsers += 1;
           console.error("[match-results] auto-link:failed-save", {
             serverId: input.serverId,
-            userId: user.id,
+            userId: user.discordId,
             candidateId,
             error,
           });
@@ -984,16 +984,16 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
 
     try {
       await savePlayerPlatformId({
-        userId: user.id,
+        userId: user.discordId,
         platformIds: [candidateId],
       });
-      existingPlatformOwnerById.set(candidateId, user.id);
+      existingPlatformOwnerById.set(candidateId, user.discordId);
       linkedUsers += 1;
     } catch (error) {
       conflictedUsers += 1;
       console.error("[match-results] auto-link:failed-save", {
         serverId: input.serverId,
-        userId: user.id,
+        userId: user.discordId,
         candidateId,
         error,
       });

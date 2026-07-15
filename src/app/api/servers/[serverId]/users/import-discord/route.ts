@@ -57,7 +57,7 @@ export async function POST(
       getServerUserAssignments(serverId),
     ]);
 
-    const usersById = new Map(existingUsers.map((user) => [user.id, user]));
+    const usersById = new Map(existingUsers.map((user) => [user.discordId, user]));
     const assignmentsByUserId = new Map(existingAssignments.map((assignment) => [assignment.userId, assignment]));
     const discordMappedGroups = context.groups.filter((group) => group.discordRoleId);
 
