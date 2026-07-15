@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 import { defaultGroupSeeds } from "../src/lib/group-defaults";
 import { createHllStarterSquadPreset } from "../src/lib/squad-preset-templates";
+import { getGuildById, getGuildDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -13,12 +14,17 @@ function assertInternalSecret(secret: string) {
 }
 
 async function clearHelperData(ctx: MutationCtx, guildId: string) {
+  const guild = await getGuildById(ctx, guildId);
+  if (!guild) {
+    return { ok: false };
+  }
+  const guildDiscordId = getGuildDiscordId(guild);
   const [groups, squadPresets, topicPresets, assignments, events] = await Promise.all([
-    ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", guildId)).collect(),
-    ctx.db.query("squadPresets").withIndex("guildId", (q) => q.eq("guildId", guildId)).collect(),
-    ctx.db.query("topicPresets").withIndex("guildId", (q) => q.eq("guildId", guildId)).collect(),
-    ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", guildId)).collect(),
-    ctx.db.query("events").withIndex("guildId", (q) => q.eq("guildId", guildId)).collect(),
+    ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", guildDiscordId)).collect(),
+    ctx.db.query("squadPresets").withIndex("guildId", (q) => q.eq("guildId", guildDiscordId)).collect(),
+    ctx.db.query("topicPresets").withIndex("guildId", (q) => q.eq("guildId", guildDiscordId)).collect(),
+    ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", guildDiscordId)).collect(),
+    ctx.db.query("events").withIndex("guildId", (q) => q.eq("guildId", guildDiscordId)).collect(),
   ]);
 
   const rosters = await Promise.all(
@@ -65,18 +71,15 @@ async function clearHelperData(ctx: MutationCtx, guildId: string) {
     });
   }
 
-  const guild = await ctx.db.query("guilds").withIndex("id", (q) => q.eq("id", guildId)).unique();
-  if (guild) {
-    await ctx.db.patch(guild._id, {
-      members: guild.members.map((member) => ({
-        ...member,
-        group: undefined,
-        primaryGroup: undefined,
-        secondaryGroups: [],
-      })),
-      updatedAt: now,
-    });
-  }
+  await ctx.db.patch(guild._id, {
+    members: guild.members.map((member) => ({
+      ...member,
+      group: undefined,
+      primaryGroup: undefined,
+      secondaryGroups: [],
+    })),
+    updatedAt: now,
+  });
 
   return { ok: true };
 }
@@ -84,7 +87,7 @@ async function clearHelperData(ctx: MutationCtx, guildId: string) {
 export const resetHelperDataForGuild = mutation({
   args: {
     secret: v.string(),
-    guildId: v.string(),
+    guildId: v.id("guilds"),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -95,11 +98,16 @@ export const resetHelperDataForGuild = mutation({
 export const initializeDefaultHelperDataForGuild = mutation({
   args: {
     secret: v.string(),
-    guildId: v.string(),
+    guildId: v.id("guilds"),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
     await clearHelperData(ctx, args.guildId);
+    const guild = await getGuildById(ctx, args.guildId);
+    if (!guild) {
+      throw new Error("Server not found.");
+    }
+    const guildDiscordId = getGuildDiscordId(guild);
 
     const now = new Date().toISOString();
     const groupMap = new Map<string, string>();
@@ -108,7 +116,7 @@ export const initializeDefaultHelperDataForGuild = mutation({
 
     for (const group of rootGroups) {
       const groupId = await ctx.db.insert("groups", {
-        guildId: args.guildId,
+        guildId: guildDiscordId,
         name: group.name,
         color: group.color,
         order: group.order,
@@ -121,7 +129,7 @@ export const initializeDefaultHelperDataForGuild = mutation({
 
     for (const group of subGroups) {
       const groupId = await ctx.db.insert("groups", {
-        guildId: args.guildId,
+        guildId: guildDiscordId,
         name: group.name,
         color: group.color,
         order: group.order,
@@ -134,7 +142,7 @@ export const initializeDefaultHelperDataForGuild = mutation({
     }
 
     await ctx.db.insert("squadPresets", {
-      guildId: args.guildId,
+      guildId: guildDiscordId,
       name: "HLL Standard Lineup",
       squads: createHllStarterSquadPreset(),
       createdAt: now,

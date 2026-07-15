@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getGuildById, getGuildDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -18,10 +19,14 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
 
 export const listForGuild = query({
   args: {
-    guildId: v.string(),
+    guildId: v.id("guilds"),
   },
   handler: async (ctx, args) => {
-    const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", args.guildId)).collect();
+    const guild = await getGuildById(ctx, args.guildId);
+    if (!guild) {
+      return [];
+    }
+    const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", getGuildDiscordId(guild))).collect();
     return groups.map(normalizeDoc);
   },
 });
@@ -39,7 +44,7 @@ export const getById = query({
 export const upsert = mutation({
   args: {
     secret: v.string(),
-    guildId: v.string(),
+    guildId: v.id("guilds"),
     groupId: v.optional(v.id("groups")),
     name: v.string(),
     color: v.string(),
@@ -56,10 +61,15 @@ export const upsert = mutation({
     if (!trimmedName) {
       throw new Error("Group name is required.");
     }
+    const guild = await getGuildById(ctx, args.guildId);
+    if (!guild) {
+      throw new Error("Server not found.");
+    }
+    const guildDiscordId = getGuildDiscordId(guild);
 
     const duplicate = await ctx.db
       .query("groups")
-      .withIndex("guildId_name", (q) => q.eq("guildId", args.guildId).eq("name", trimmedName))
+      .withIndex("guildId_name", (q) => q.eq("guildId", guildDiscordId).eq("name", trimmedName))
       .unique();
 
     if (duplicate && duplicate._id !== args.groupId) {
@@ -83,7 +93,7 @@ export const upsert = mutation({
     }
 
     const groupId = await ctx.db.insert("groups", {
-      guildId: args.guildId,
+      guildId: guildDiscordId,
       name: trimmedName,
       color: args.color,
       order: args.order,

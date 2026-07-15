@@ -76,7 +76,7 @@ export function ServerCard({
         ) : (
           <div className="flex w-full gap-2">
             <Button asChild className="flex-1 rounded-xl">
-              <Link href={buildDiscordBotInviteUrl(guild.id)}>
+              <Link href={buildDiscordBotInviteUrl(guild.discordId)}>
                 {dictionary.dashboard.inviteBot}
                 <ArrowRight className="size-4" />
               </Link>

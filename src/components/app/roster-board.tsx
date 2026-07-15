@@ -140,7 +140,7 @@ export function RosterBoard({
   const [isConfirmingMeetingChannel, setIsConfirmingMeetingChannel] = useState(false);
   const upsertRoster = useMutation(api.rosters.upsert);
 
-  const usersById = useMemo(() => new Map(users.map((user) => [user.id, user])), [users]);
+  const usersById = useMemo(() => new Map(users.map((user) => [user.discordId, user])), [users]);
   const assignmentsByUserId = useMemo(() => new Map(userAssignments.map((assignment) => [assignment.userId, assignment])), [userAssignments]);
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
   const allUsersSorted = useMemo(() => users.slice().sort(compareUsersByScoreThenName), [users]);
@@ -237,7 +237,7 @@ export function RosterBoard({
       .sort(compareUsersByScoreThenName)
       .map((user) => ({
         ...user,
-        _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.id), groupsById, dictionary),
+        _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.discordId), groupsById, dictionary),
       }));
   }, [assignmentsByUserId, board, focusedGroup, groups, groupsById, normalizedSearch, usersById]);
 
@@ -253,7 +253,7 @@ export function RosterBoard({
   const groupedNotAttendingUsers = useMemo(
     () => notAttendingUsers.map((user) => ({
       ...user,
-      _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.id), groupsById, dictionary),
+      _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.discordId), groupsById, dictionary),
     })),
     [assignmentsByUserId, dictionary, groupsById, notAttendingUsers],
   );
@@ -930,7 +930,7 @@ export function RosterBoard({
                                     key={user.id}
                                     value={user.name}
                                     onSelect={() => {
-                                      addPlayerToReserve(user.id);
+                                      addPlayerToReserve(user.discordId);
                                       setUserPickerOpen(false);
                                     }}
                                   >
@@ -939,7 +939,7 @@ export function RosterBoard({
                                       <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
                                     </Avatar>
                                     <span className="truncate">{user.name}</span>
-                                    {board.reservePlayerIds?.includes(user.id) && (
+                                    {board.reservePlayerIds?.includes(user.discordId) && (
                                       <Check className="ml-auto size-4" />
                                     )}
                                   </CommandItem>
@@ -994,14 +994,14 @@ export function RosterBoard({
                                 <div
                                   key={user.id}
                                   onDragOver={(event) => editMode && event.preventDefault()}
-                                  onDrop={() => handleDropOnReserve(user.id)}
+                                  onDrop={() => handleDropOnReserve(user.discordId)}
                                 >
                                   {(() => {
-                                    const assignment = assignmentsByUserId.get(user.id);
+                                    const assignment = assignmentsByUserId.get(user.discordId);
                                     return (
                                   <div
                                     draggable={editMode && canAdmin}
-                                    onDragStart={() => setDragState({ type: "reserve", userId: user.id })}
+                                    onDragStart={() => setDragState({ type: "reserve", userId: user.discordId })}
                                     onDragEnd={() => setDragState(null)}
                                     className="flex min-w-0 cursor-grab items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-2"
                                   >
@@ -1066,11 +1066,11 @@ export function RosterBoard({
                                 onDrop={() => handleDropOnNotAttending()}
                               >
                                 {(() => {
-                                  const assignment = assignmentsByUserId.get(user.id);
+                                  const assignment = assignmentsByUserId.get(user.discordId);
                                   return (
                                     <div
                                       draggable={editMode && canAdmin}
-                                      onDragStart={() => setDragState({ type: "notAttending", userId: user.id })}
+                                      onDragStart={() => setDragState({ type: "notAttending", userId: user.discordId })}
                                       onDragEnd={() => setDragState(null)}
                                       className="flex min-w-0 cursor-grab items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-2 opacity-60"
                                     >
@@ -1368,12 +1368,12 @@ function SquadCard({
                               })
                               .slice(0, 5)
                               .map((user) => {
-                                const assignment = assignmentsByUserId.get(user.id);
+                                const assignment = assignmentsByUserId.get(user.discordId);
                                 const assignedElsewhere = board.squads.some((currentSquad, currentSquadIndex) =>
                                   currentSquad.players.some(
                                     (currentPlayer, currentPlayerIndex) =>
                                       !(currentSquadIndex === squadIndex && currentPlayerIndex === playerIndex) &&
-                                      currentPlayer.id === user.id,
+                                      currentPlayer.id === user.discordId,
                                   ),
                                 );
 
@@ -1385,7 +1385,7 @@ function SquadCard({
                                       assignedElsewhere && "bg-amber-500/10 text-amber-100 data-[selected=true]:bg-amber-500/20",
                                     )}
                                     onSelect={() => {
-                                      assignUserToSlot(user.id, squadIndex, playerIndex);
+                                      assignUserToSlot(user.discordId, squadIndex, playerIndex);
                                       setSlotPickerOpen(null);
                                       setSlotSearches((current) => ({ ...current, [playerIndex]: "" }));
                                     }}

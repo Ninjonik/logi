@@ -64,13 +64,13 @@ export function RosterCreator({
         .map((signUp) => signUp.userId),
     );
     const reservePlayerIds = users
-      .filter((user) => attendingUserIds.has(user.id))
+      .filter((user) => attendingUserIds.has(user.discordId))
       .sort((a, b) => (b.score - a.score) || a.name.localeCompare(b.name))
-      .map((user) => user.id);
+      .map((user) => user.discordId);
     const notAttendingPlayerIds = users
-      .filter((user) => !attendingUserIds.has(user.id))
+      .filter((user) => !attendingUserIds.has(user.discordId))
       .sort((a, b) => (b.score - a.score) || a.name.localeCompare(b.name))
-      .map((user) => user.id);
+      .map((user) => user.discordId);
 
     return {
       id: "draft-roster",

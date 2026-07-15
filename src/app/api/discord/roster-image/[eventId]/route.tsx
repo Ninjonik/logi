@@ -251,7 +251,7 @@ export async function GET(
   const messages = getClanDiscordMessages(clanLanguage);
   const intlLocale = getIntlLocaleForClanLanguage(clanLanguage);
 
-  const usersById = new Map(data.users.map((user) => [user.id, user]));
+  const usersById = new Map(data.users.map((user) => [user.discordId, user]));
 
   const sortedSquads = data.roster.squads.slice().sort((a, b) => a.order - b.order);
   const squadByGroupName = new Map<string, typeof data.roster.squads>();

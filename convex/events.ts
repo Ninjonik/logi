@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds";
+import { getGuildByDiscordId, getGuildById, getGuildDiscordId, getUserByDiscordId, getUserDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -244,10 +245,7 @@ async function applyScoreToEventSignups(
     return false;
   }
 
-  const guild = await ctx.db
-    .query("guilds")
-    .withIndex("id", (q) => q.eq("id", normalizedEvent.guildId))
-    .unique();
+  const guild = await getGuildByDiscordId(ctx, normalizedEvent.guildId);
   if (!guild) {
     throw new Error("Server not found.");
   }
@@ -261,14 +259,12 @@ async function applyScoreToEventSignups(
   const activeAssignments = assignments.filter((assignment) => !assignment.paused);
   const signUpByUserId = new Map(normalizedEvent.signUps.map((signUp) => [signUp.userId, signUp]));
   const users = await Promise.all(
-    activeAssignments.map((assignment) =>
-      ctx.db.query("users").withIndex("id", (q) => q.eq("id", assignment.userId)).unique(),
-    ),
+      activeAssignments.map((assignment) => getUserByDiscordId(ctx, assignment.userId)),
   );
 
   for (const user of users) {
     if (!user) continue;
-    const signUp = signUpByUserId.get(user.id);
+    const signUp = signUpByUserId.get(getUserDiscordId(user));
     const category = getSignUpScoreCategory(signUp);
     const delta = scoreSettings[category];
 
@@ -289,7 +285,7 @@ async function applyScoreToEventSignups(
 export const upsert = mutation({
   args: {
     secret: v.string(),
-    serverId: v.string(),
+    serverId: v.id("guilds"),
     eventId: v.optional(v.id("events")),
     kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
     name: v.string(),
@@ -314,13 +310,14 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const guild = await ctx.db.query("guilds").withIndex("id", (q) => q.eq("id", args.serverId)).unique();
+    const guild = await getGuildById(ctx, args.serverId);
     if (!guild) {
       throw new Error("Server not found.");
     }
+    const guildDiscordId = getGuildDiscordId(guild);
 
     const payload = {
-      guildId: args.serverId,
+      guildId: guildDiscordId,
       kind: args.kind ?? "match",
       name: args.name.trim(),
       description: args.description?.trim() || undefined,

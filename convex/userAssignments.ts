@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getGuildByDiscordId, getGuildById, getGuildDiscordId, getUserByDiscordId, getUserDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -19,12 +20,16 @@ function normalizeAssignment<T extends { _id: unknown }>(assignment: T) {
 
 export const listForServer = query({
   args: {
-    serverId: v.string(),
+    serverId: v.id("guilds"),
   },
   handler: async (ctx, args) => {
+    const server = await getGuildById(ctx, args.serverId);
+    if (!server) {
+      return [];
+    }
     const assignments = await ctx.db
       .query("userAssignments")
-      .withIndex("serverId", (q) => q.eq("serverId", args.serverId))
+      .withIndex("serverId", (q) => q.eq("serverId", getGuildDiscordId(server)))
       .collect();
 
     return assignments.map(normalizeAssignment);
@@ -44,7 +49,7 @@ export const getById = query({
 export const upsert = mutation({
   args: {
     secret: v.string(),
-    serverId: v.string(),
+    serverId: v.id("guilds"),
     assignmentId: v.optional(v.id("userAssignments")),
     userId: v.string(),
     type: v.union(v.literal("member"), v.literal("mercenary")),
@@ -56,16 +61,44 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
+    console.log("[userAssignments.upsert] Lookup start", {
+      serverId: String(args.serverId),
+      userId: args.userId,
+      assignmentId: args.assignmentId ? String(args.assignmentId) : null,
+      type: args.type,
+    });
+
     const [server, user] = await Promise.all([
-      ctx.db.query("guilds").withIndex("id", (q) => q.eq("id", args.serverId)).unique(),
-      ctx.db.query("users").withIndex("id", (q) => q.eq("id", args.userId)).unique(),
+      getGuildById(ctx, args.serverId),
+      getUserByDiscordId(ctx, args.userId),
     ]);
+    const serverDiscordId = server ? getGuildDiscordId(server) : undefined;
+
+    console.log("[userAssignments.upsert] Lookup result", {
+      serverFound: Boolean(server),
+      userFound: Boolean(user),
+      serverDocId: server ? String(server._id) : null,
+      serverIndexId: serverDiscordId,
+      userDocId: user ? String(user._id) : null,
+      userIndexId: user ? getUserDiscordId(user) : null,
+    });
 
     if (!server || !user) {
+      console.log("[userAssignments.upsert] Missing lookup diagnostics", {
+        requestedServerId: String(args.serverId),
+        requestedUserId: args.userId,
+        guildFoundByDocId: Boolean(server),
+        guildDocId: server ? String(server._id) : null,
+        guildStoredId: serverDiscordId,
+      });
       throw new Error("Server or user not found.");
     }
+    if (!serverDiscordId) {
+      throw new Error("Server Discord ID not found.");
+    }
+    const resolvedServerDiscordId = serverDiscordId;
 
-    const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", args.serverId)).collect();
+    const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", resolvedServerDiscordId)).collect();
     const validGroupIds = new Set(groups.map((group) => String(group._id)));
     if (args.primaryGroupId && !validGroupIds.has(String(args.primaryGroupId))) {
       throw new Error("Primary group does not belong to this server.");
@@ -77,7 +110,7 @@ export const upsert = mutation({
 
     const duplicate = await ctx.db
       .query("userAssignments")
-      .withIndex("serverId_userId", (q) => q.eq("serverId", args.serverId).eq("userId", args.userId))
+      .withIndex("serverId_userId", (q) => q.eq("serverId", resolvedServerDiscordId).eq("userId", args.userId))
       .unique();
 
     if (duplicate && duplicate._id !== args.assignmentId) {
@@ -97,9 +130,9 @@ export const upsert = mutation({
         updatedAt: now,
       });
     } else {
-      assignmentId = await ctx.db.insert("userAssignments", {
-        userId: args.userId,
-        serverId: args.serverId,
+        assignmentId = await ctx.db.insert("userAssignments", {
+          userId: args.userId,
+          serverId: resolvedServerDiscordId,
         type: args.type,
         primaryGroupId: args.primaryGroupId,
         secondaryGroupIds: args.secondaryGroupIds.filter((groupId) => groupId !== args.primaryGroupId),
@@ -112,7 +145,7 @@ export const upsert = mutation({
 
     const currentServerAssignments = await ctx.db
       .query("userAssignments")
-      .withIndex("serverId", (q) => q.eq("serverId", args.serverId))
+      .withIndex("serverId", (q) => q.eq("serverId", resolvedServerDiscordId))
       .collect();
 
     const memberAssignments = currentServerAssignments.filter((item) => item.type === "member");
@@ -170,8 +203,8 @@ export const remove = mutation({
     const now = new Date().toISOString();
 
     const [server, user] = await Promise.all([
-      ctx.db.query("guilds").withIndex("id", (q) => q.eq("id", assignment.serverId)).unique(),
-      ctx.db.query("users").withIndex("id", (q) => q.eq("id", assignment.userId)).unique(),
+      getGuildByDiscordId(ctx, assignment.serverId),
+      getUserByDiscordId(ctx, assignment.userId),
     ]);
 
     if (server) {
@@ -219,7 +252,7 @@ export const remove = mutation({
 export const importDiscordMembers = mutation({
   args: {
     secret: v.string(),
-    serverId: v.string(),
+    serverId: v.id("guilds"),
     assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
     members: v.array(v.object({
       userId: v.string(),
@@ -231,22 +264,20 @@ export const importDiscordMembers = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const server = await ctx.db
-      .query("guilds")
-      .withIndex("id", (q) => q.eq("id", args.serverId))
-      .unique();
+    const server = await getGuildById(ctx, args.serverId);
 
     if (!server) {
       throw new Error("Server not found.");
     }
+    const serverDiscordId = getGuildDiscordId(server);
 
     const now = new Date().toISOString();
-    const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", args.serverId)).collect();
+    const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect();
     const validGroupIds = new Set(groups.map((group) => String(group._id)));
     const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
     const existingAssignments = await ctx.db
       .query("userAssignments")
-      .withIndex("serverId", (q) => q.eq("serverId", args.serverId))
+      .withIndex("serverId", (q) => q.eq("serverId", serverDiscordId))
       .collect();
     const existingAssignmentsByUserId = new Map(existingAssignments.map((assignment) => [assignment.userId, assignment]));
 
@@ -260,10 +291,7 @@ export const importDiscordMembers = mutation({
         throw new Error("One of the selected secondary groups does not belong to this server.");
       }
 
-      const existingUser = await ctx.db
-        .query("users")
-        .withIndex("id", (q) => q.eq("id", member.userId))
-        .unique();
+      const existingUser = await getUserByDiscordId(ctx, member.userId);
 
       if (existingUser) {
         await ctx.db.patch(existingUser._id, {
@@ -274,6 +302,7 @@ export const importDiscordMembers = mutation({
         updatedUsers += 1;
       } else {
         await ctx.db.insert("users", {
+          discordId: member.userId,
           id: member.userId,
           name: member.name,
           avatar: member.avatar || "https://cdn.discordapp.com/embed/avatars/0.png",
@@ -311,7 +340,7 @@ export const importDiscordMembers = mutation({
       } else {
         const insertedAssignmentId = await ctx.db.insert("userAssignments", {
           userId: member.userId,
-          serverId: args.serverId,
+          serverId: serverDiscordId,
           type: args.assignmentType,
           primaryGroupId: undefined,
           secondaryGroupIds: mergedSecondaryGroupIds,
@@ -330,7 +359,7 @@ export const importDiscordMembers = mutation({
 
     const currentServerAssignments = await ctx.db
       .query("userAssignments")
-      .withIndex("serverId", (q) => q.eq("serverId", args.serverId))
+      .withIndex("serverId", (q) => q.eq("serverId", serverDiscordId))
       .collect();
 
     const memberAssignments = currentServerAssignments.filter((item) => item.type === "member");
@@ -353,7 +382,7 @@ export const importDiscordMembers = mutation({
     const touchedUserIds = [...new Set(args.members.map((member) => member.userId))];
     for (const userId of touchedUserIds) {
       const [user, allAssignmentsForUser] = await Promise.all([
-        ctx.db.query("users").withIndex("id", (q) => q.eq("id", userId)).unique(),
+        getUserByDiscordId(ctx, userId),
         ctx.db.query("userAssignments").withIndex("userId", (q) => q.eq("userId", userId)).collect(),
       ]);
 

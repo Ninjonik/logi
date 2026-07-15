@@ -1,6 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+import { getUserByDiscordId, getUserDiscordId } from "./identity";
+
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
 function assertInternalSecret(secret: string) {
@@ -20,7 +22,9 @@ function normalizePlatformIds(value: string | string[] | undefined) {
 }
 
 function toPlayer(user: {
-  id: string;
+  _id: unknown;
+  discordId?: string;
+  id?: string;
   platformIds?: string[];
   name: string;
   avatar: string;
@@ -46,6 +50,8 @@ function toPlayer(user: {
   const legacyUser = user as typeof user & { steamId?: string; platformId?: string };
   return {
     ...user,
+    id: String(user._id),
+    discordId: getUserDiscordId(user),
     platformIds: normalizePlatformIds(user.platformIds ?? legacyUser.platformId ?? legacyUser.steamId),
     avatar: user.avatar || "https://cdn.discordapp.com/embed/avatars/0.png",
   };
@@ -56,10 +62,7 @@ export const getById = query({
     userId: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("id", (q) => q.eq("id", args.userId))
-      .unique();
+    const user = await getUserByDiscordId(ctx, args.userId);
 
     return user ? toPlayer(user) : null;
   },
@@ -76,10 +79,7 @@ export const syncDiscordProfile = mutation({
     assertInternalSecret(args.secret);
 
     const now = new Date().toISOString();
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("id", (q) => q.eq("id", args.id))
-      .unique();
+    const existing = await getUserByDiscordId(ctx, args.id);
 
     if (existing) {
       await ctx.db.patch(existing._id, {
@@ -88,10 +88,11 @@ export const syncDiscordProfile = mutation({
         updatedAt: now,
       });
 
-      return existing.id;
+      return getUserDiscordId(existing);
     }
 
     await ctx.db.insert("users", {
+      discordId: args.id,
       id: args.id,
       name: args.name,
       avatar: args.avatar,
@@ -118,10 +119,7 @@ export const updatePlatformIds = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("id", (q) => q.eq("id", args.userId))
-      .unique();
+    const user = await getUserByDiscordId(ctx, args.userId);
     if (!user) {
       throw new Error("Player not found.");
     }
@@ -158,10 +156,7 @@ export const clearPlatformIds = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("id", (q) => q.eq("id", args.userId))
-      .unique();
+    const user = await getUserByDiscordId(ctx, args.userId);
     if (!user) {
       throw new Error("Player not found.");
     }
@@ -182,10 +177,7 @@ export const updateProfile = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("id", (q) => q.eq("id", args.userId))
-      .unique();
+    const user = await getUserByDiscordId(ctx, args.userId);
     if (!user) {
       throw new Error("Player not found.");
     }
@@ -210,10 +202,7 @@ export const updateScore = mutation({
       throw new Error("Score must be an integer.");
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("id", (q) => q.eq("id", args.userId))
-      .unique();
+    const user = await getUserByDiscordId(ctx, args.userId);
     if (!user) {
       throw new Error("Player not found.");
     }

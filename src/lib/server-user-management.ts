@@ -57,8 +57,8 @@ export async function getEligibleUsersForServer(server: Guild, assignments: Serv
   const currentUsers = await listUsers();
 
   return currentUsers.map((user) => {
-    const existingHere = assignments.find((assignment) => assignment.userId === user.id);
-    const canJoinAsMember = (!user.guildId || user.guildId === server.id) && existingHere?.type !== "mercenary";
+    const existingHere = assignments.find((assignment) => assignment.userId === user.discordId);
+    const canJoinAsMember = (!user.guildId || user.guildId === server.discordId) && existingHere?.type !== "mercenary";
     const canJoinAsMercenary = existingHere?.type !== "member";
 
     return {

@@ -8,6 +8,7 @@ export type EventKind = "match" | "training";
 export type AppUser = {
   _reserveSection?: string;
   id: string;
+  discordId: string;
   platformIds: string[];
   name: string;
   avatar: string;
@@ -40,6 +41,7 @@ export type GuildMember = {
 
 export type Guild = {
   id: string;
+  discordId: string;
   name: string;
   avatar: string;
   description?: string;

@@ -1,5 +1,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { getGuildById, getGuildDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -19,7 +20,7 @@ const topic = v.object({
 export const upsert = mutation({
   args: {
     secret: v.string(),
-    serverId: v.string(),
+    serverId: v.id("guilds"),
     presetId: v.optional(v.id("topicPresets")),
     name: v.string(),
     side: v.optional(v.string()),
@@ -31,10 +32,11 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const guild = await ctx.db.query("guilds").withIndex("id", (q) => q.eq("id", args.serverId)).unique();
+    const guild = await getGuildById(ctx, args.serverId);
     if (!guild) {
       throw new Error("Server not found.");
     }
+    const guildDiscordId = getGuildDiscordId(guild);
 
     const name = args.name.trim();
     if (!name) {
@@ -53,7 +55,7 @@ export const upsert = mutation({
     }
 
     const payload = {
-      guildId: args.serverId,
+      guildId: guildDiscordId,
       name,
       side: args.side?.trim() || undefined,
       map: args.map?.trim() || undefined,
@@ -65,7 +67,7 @@ export const upsert = mutation({
 
     if (args.presetId) {
       const existing = await ctx.db.get(args.presetId);
-      if (!existing || existing.guildId !== args.serverId) {
+      if (!existing || existing.guildId !== guildDiscordId) {
         throw new Error("Topic preset not found.");
       }
 

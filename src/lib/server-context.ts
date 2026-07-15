@@ -29,8 +29,8 @@ export const getServerContext = cache(async function getServerContext(serverId: 
 
   try {
     return (await fetchQuery(getServerContextReference, {
-      userId: user.id,
-      serverId,
+      userId: user.discordId,
+      serverId: serverId as never,
     })) as ServerContext;
   } catch {
     return null;

@@ -120,7 +120,7 @@ export const getVisibleGuildsForLoggedInUser = cache(async function getVisibleGu
   }
 
   try {
-    return (await fetchQuery(getVisibleGuildsReference, { userId: user.id })) as Guild[];
+    return (await fetchQuery(getVisibleGuildsReference, { userId: user.discordId })) as Guild[];
   } catch {
     return [];
   }

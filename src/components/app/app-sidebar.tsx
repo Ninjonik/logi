@@ -62,7 +62,7 @@ export function AppSidebar({
     resolvedServerId &&
       (
         resolvedServer?.canAdmin ||
-        resolvedServer?.adminIds.includes(user.id) ||
+        resolvedServer?.adminIds.includes(user.discordId) ||
         canAdmin
       ),
   );
