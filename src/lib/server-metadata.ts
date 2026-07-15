@@ -9,7 +9,7 @@ const getSquadPresetByIdReference = makeFunctionReference<"query">("serverData:g
 const getTopicPresetByIdReference = makeFunctionReference<"query">("serverData:getTopicPresetById");
 const getAssignmentByIdReference = makeFunctionReference<"query">("userAssignments:getById");
 const getPlayerByIdReference = makeFunctionReference<"query">("players:getById");
-const getMatchByEventIdReference = makeFunctionReference<"query">("matches:getByEventId");
+const getMatchByEventIdReference = makeFunctionReference<"query">("matchStats:getByEventId");
 
 export async function getGuildMetadata(serverId: string) {
   "use cache";

@@ -1,12 +1,10 @@
-import type { Metadata } from "next";
-
 import { EventFormPanel } from "@/components/app/event-form-panel";
 import { PageHeader } from "@/components/app/page-header";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getServerContext } from "@/lib/server-context";
 
-export default async function CreateEventPage({
+export default async function CreateTrainingPage({
   params,
 }: {
   params: Promise<{ locale: string; serverId: string }>;
@@ -19,25 +17,20 @@ export default async function CreateEventPage({
   const timezone = context?.discordConfig?.timezone ?? "UTC";
 
   const draftEvent = {
-    id: "draft-event",
+    id: "draft-training",
     guildId: serverId,
-    kind: "match" as const,
+    kind: "training" as const,
     name: "",
     description: "",
     thumbnailUrl: "",
     meetingChannelId: "",
     requiredRoleIds: [],
     rewardRoleIds: [],
-    server: "",
-    serverPassword: "",
-    side: "",
-    map: "",
-    cap: "",
     notes: "",
     registrationEnd: "2026-07-12T14:00:00.000Z",
     meetingStart: "2026-07-12T14:30:00.000Z",
-    gameStart: "2026-07-12T15:00:00.000Z",
-    gameEnd: "2026-07-12T17:00:00.000Z",
+    gameStart: "2026-07-12T14:30:00.000Z",
+    gameEnd: "2026-07-12T16:00:00.000Z",
     pingClan: false,
     status: "registration" as const,
     statusUpdatedAt: "2026-07-06T18:00:00.000Z",
@@ -50,7 +43,7 @@ export default async function CreateEventPage({
 
   return (
     <>
-      <PageHeader title={dictionary.event.createTitle} description={dictionary.event.createPageDescription} />
+      <PageHeader title={dictionary.sidebar.trainings ?? "Trainings"} description={dictionary.event.createPageDescription} />
       <div className="px-4 lg:px-6">
         <EventFormPanel event={draftEvent} serverId={serverId} locale={locale} topicPresets={topicPresets} timezone={timezone} canEdit={canAdmin} dictionary={dictionary} createMode />
       </div>

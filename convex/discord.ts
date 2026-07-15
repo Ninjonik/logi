@@ -56,18 +56,45 @@ function normalizeEventDoc<T extends {
   registrationEnd: string;
   meetingStart: string;
   gameEnd: string;
+  kind?: "match" | "training";
+  thumbnailUrl?: string;
+  meetingChannelId?: string;
+  requiredRoleIds?: string[];
+  rewardRoleIds?: string[];
   status?: "registration" | "closed" | "starting" | "concluded";
   statusUpdatedAt?: string;
   concludedAt?: string;
+  matchStatsId?: unknown;
+  participants?: Array<{ userId: string; status: "attending" | "not_attending"; group?: string | null; completed?: "passed" | "failed"; updatedAt: string }>;
+  signUps?: Array<{ userId: string; group?: string | null }>;
   attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
   updatedAt?: string;
   createdAt?: string;
 }>(event: T) {
+  const participants = event.participants ?? (event.signUps ?? []).map((signUp) => ({
+    userId: signUp.userId,
+    status: signUp.group && signUp.group !== "NOT_ATTENDING" ? "attending" as const : "not_attending" as const,
+    group: signUp.group,
+    updatedAt: event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
+  }));
+
   return {
     ...normalizeDoc(event),
+    kind: event.kind ?? "match",
+    thumbnailUrl: event.thumbnailUrl,
+    meetingChannelId: event.meetingChannelId,
+    requiredRoleIds: event.requiredRoleIds ?? [],
+    rewardRoleIds: event.rewardRoleIds ?? [],
     status: event.status ?? deriveEventStatus(event),
     statusUpdatedAt: event.statusUpdatedAt ?? event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
     concludedAt: event.concludedAt,
+    matchStatsId: event.matchStatsId ? String(event.matchStatsId) : undefined,
+    matchId: event.matchStatsId ? String(event.matchStatsId) : undefined,
+    participants,
+    signUps: participants.map((participant) => ({
+      userId: participant.userId,
+      group: participant.status === "attending" ? (participant.group ?? "ATTENDING") : "NOT_ATTENDING",
+    })),
     attendanceReminderLog: event.attendanceReminderLog ?? [],
   };
 }

@@ -209,7 +209,7 @@ export default async function ServerOverviewPage({
                         dayEvents.slice(0, 3).map((event) => (
                           <a
                             key={event.id}
-                            href={`/${safeLocale}/dashboard/servers/${serverId}/events/${event.id}`}
+                            href={`/${safeLocale}/dashboard/servers/${serverId}/${event.kind === "training" ? "trainings" : "matches"}/${event.id}`}
                             className="block rounded-xl border border-border/60 px-2.5 py-2 transition hover:border-primary/40 hover:bg-primary/5"
                           >
                             <div className="truncate text-sm font-medium">{event.name}</div>
@@ -243,7 +243,7 @@ export default async function ServerOverviewPage({
             </CardHeader>
             <CardContent className="flex flex-wrap items-center gap-3">
               <Button asChild className="rounded-xl">
-                <a href={`/${safeLocale}/dashboard/servers/${serverId}/events/${nextEvent.id}`}>{dictionary.common.viewDetails}</a>
+                <a href={`/${safeLocale}/dashboard/servers/${serverId}/${nextEvent.kind === "training" ? "trainings" : "matches"}/${nextEvent.id}`}>{dictionary.common.viewDetails}</a>
               </Button>
               <Button asChild variant="outline" className="rounded-xl">
                 <a href={`/${safeLocale}/dashboard/servers/${serverId}/rosters`}>

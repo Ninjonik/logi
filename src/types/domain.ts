@@ -3,6 +3,7 @@ export type Timestamp = string;
 export type EventStatus = "registration" | "closed" | "starting" | "concluded";
 
 export type EventOutcome = "victory" | "defeat" | "draw";
+export type EventKind = "match" | "training";
 
 export type AppUser = {
   _reserveSection?: string;
@@ -106,8 +107,13 @@ export type Group = {
 export type EventRecord = {
   id: string;
   guildId: string;
+  kind: EventKind;
   name: string;
   description?: string;
+  thumbnailUrl?: string;
+  meetingChannelId?: string;
+  requiredRoleIds: string[];
+  rewardRoleIds: string[];
   server?: string;
   serverPassword?: string;
   side?: string;
@@ -123,6 +129,7 @@ export type EventRecord = {
   status: EventStatus;
   statusUpdatedAt: Timestamp;
   concludedAt?: Timestamp;
+  matchStatsId?: string;
   matchId?: string;
   eventResult?: {
     sourceUrl: string;
@@ -142,6 +149,13 @@ export type EventRecord = {
     userId: string;
     offsetHours: number;
     sentAt: Timestamp;
+  }[];
+  participants: {
+    userId: string;
+    status: "attending" | "not_attending";
+    group?: string | null;
+    completed?: "passed" | "failed";
+    updatedAt: Timestamp;
   }[];
   signUps: {
     userId: string;
@@ -167,7 +181,7 @@ export type MatchStatBreakdown = Partial<{
   commander: number;
 }>;
 
-export type MatchRecord = {
+export type MatchStatsRecord = {
   id: string;
   guildId: string;
   eventId: string;
@@ -256,6 +270,8 @@ export type MatchRecord = {
     };
   };
 };
+
+export type MatchRecord = MatchStatsRecord;
 
 export type PlayerMatchStats = {
   eventId: string;

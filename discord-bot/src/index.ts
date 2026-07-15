@@ -68,8 +68,13 @@ type TopicPreset = {
 type EventRecord = {
   id: string;
   guildId: string;
+  kind: "match" | "training";
   name: string;
   description?: string;
+  thumbnailUrl?: string;
+  meetingChannelId?: string;
+  requiredRoleIds: string[];
+  rewardRoleIds: string[];
   server?: string;
   serverPassword?: string;
   side?: string;
@@ -93,6 +98,13 @@ type EventRecord = {
   signUps: Array<{
     userId: string;
     group?: string | null;
+  }>;
+  participants: Array<{
+    userId: string;
+    status: "attending" | "not_attending";
+    group?: string | null;
+    completed?: "passed" | "failed";
+    updatedAt: string;
   }>;
   updatedAt: string;
 };
@@ -144,6 +156,7 @@ type SyncPayload = {
 };
 
 const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING";
+const TRAINING_ATTEND = "ATTEND";
 const ATTENDANCE_OFFSETS_HOURS = [24, 18, 12, 6];
 
 const listSyncPayloadsReference = makeFunctionReference<"query">("discord:listSyncPayloads");
@@ -510,13 +523,19 @@ async function handleSignupInteraction(interaction: ButtonInteraction) {
   }
 
   const member = interaction.member as GuildMember | null;
-  const selectedGroup = groupId === SIGNUP_NOT_ATTENDING ? null : context.groups.find((group) => group.id === groupId);
-  if (!selectedGroup && groupId !== SIGNUP_NOT_ATTENDING) {
+  const isTrainingAttend = context.event.kind === "training" && groupId === TRAINING_ATTEND;
+  const selectedGroup = groupId === SIGNUP_NOT_ATTENDING || isTrainingAttend ? null : context.groups.find((group) => group.id === groupId);
+  if (!selectedGroup && groupId !== SIGNUP_NOT_ATTENDING && !isTrainingAttend) {
     await interaction.reply({ content: getClanDiscordMessages(context.config.defaultLanguage).interaction.invalidSignupButton, ephemeral: true });
     return;
   }
   if (!member) {
     await interaction.reply({ content: getClanDiscordMessages(context.config.defaultLanguage).interaction.unableToResolveMembership, ephemeral: true });
+    return;
+  }
+
+  if (context.event.requiredRoleIds.length > 0 && !context.event.requiredRoleIds.some((roleId) => member.roles.cache.has(roleId))) {
+    await interaction.reply({ content: getClanDiscordMessages(context.config.defaultLanguage).interaction.missingRequiredRole, ephemeral: true });
     return;
   }
 
@@ -529,7 +548,7 @@ async function handleSignupInteraction(interaction: ButtonInteraction) {
     secret: internalSecret,
     eventId: eventId as never,
     userId: interaction.user.id,
-    group: selectedGroup ? selectedGroup.name : SIGNUP_NOT_ATTENDING,
+    group: isTrainingAttend ? TRAINING_ATTEND : (selectedGroup ? selectedGroup.name : SIGNUP_NOT_ATTENDING),
   });
 
   queuedEventIds.add(eventId);
@@ -538,7 +557,7 @@ async function handleSignupInteraction(interaction: ButtonInteraction) {
   }, 2000);
 
   await interaction.reply({
-    content: selectedGroup
+    content: selectedGroup || isTrainingAttend
       ? getClanDiscordMessages(context.config.defaultLanguage).interaction.signupUpdated
       : getClanDiscordMessages(context.config.defaultLanguage).interaction.markedNotAttending,
     ephemeral: true,
@@ -575,11 +594,11 @@ function buildScheduledEventDescription(event: EventRecord) {
   const lines = [
     event.description?.trim(),
     event.notes?.trim(),
-    event.map ? `Map: ${event.map}` : null,
-    event.side ? `Side: ${event.side}` : null,
-    event.cap ? `Cap: ${event.cap}` : null,
+    event.kind === "match" && event.map ? `Map: ${event.map}` : null,
+    event.kind === "match" && event.side ? `Side: ${event.side}` : null,
+    event.kind === "match" && event.cap ? `Cap: ${event.cap}` : null,
     event.server ? `Server: ${event.server}` : null,
-    event.serverPassword ? `Password: ${event.serverPassword}` : null,
+    event.kind === "match" && event.serverPassword ? `Password: ${event.serverPassword}` : null,
   ].filter((line): line is string => Boolean(line));
 
   return lines.join("\n").slice(0, 1000) || "Managed by Logi.";
@@ -742,7 +761,7 @@ function generateCalendarUrl(event: EventRecord, language: "en" | "cs"): string 
 
   const dates = `${formatTime(event.gameStart)}/${formatTime(event.gameEnd)}`;
   const details = encodeURIComponent(event.description || messages.calendar.fallbackDetails);
-  const location = encodeURIComponent(event.server ?? messages.calendar.fallbackLocation);
+  const location = encodeURIComponent(event.server ?? event.meetingChannelId ?? messages.calendar.fallbackLocation);
 
   return `${base}&text=${title}&dates=${dates}&details=${details}&location=${location}`;
 }
@@ -772,11 +791,11 @@ function buildEventEmbed(config: DiscordConfig, groups: Group[], event: EventRec
   const descriptionLines: string[] = [];
 
   // --- Conditional Core Info ---
-  if (event.map) descriptionLines.push(`**🗺️ ${messages.embed.map}:** ${event.map}`);
-  if (event.side) descriptionLines.push(`**⚔️ ${messages.embed.side}:** ${event.side}`);
-  if (event.cap) descriptionLines.push(`**🧢 ${messages.embed.cap}:** ${event.cap}`);
+  if (event.kind === "match" && event.map) descriptionLines.push(`**🗺️ ${messages.embed.map}:** ${event.map}`);
+  if (event.kind === "match" && event.side) descriptionLines.push(`**⚔️ ${messages.embed.side}:** ${event.side}`);
+  if (event.kind === "match" && event.cap) descriptionLines.push(`**🧢 ${messages.embed.cap}:** ${event.cap}`);
   if (event.server) descriptionLines.push(`**🖥️ ${messages.embed.server}:** ${event.server}`);
-  if (event.serverPassword) descriptionLines.push(`**🔑 ${messages.embed.password}:** \`${event.serverPassword}\``);
+  if (event.kind === "match" && event.serverPassword) descriptionLines.push(`**🔑 ${messages.embed.password}:** \`${event.serverPassword}\``);
 
   if (event.description || event.notes) {
     descriptionLines.push(`**📝 ${messages.embed.description}:** ${event.notes || event.description}`);
@@ -798,25 +817,49 @@ function buildEventEmbed(config: DiscordConfig, groups: Group[], event: EventRec
     .setDescription(descriptionLines.join("\n"))
     .setColor("#FFB000")
     .setFooter({ text: messages.embed.managedFooter });
+  if (event.thumbnailUrl) {
+    embed.setThumbnail(event.thumbnailUrl);
+  }
 
-  if (shouldShowPublishedRosterImage(event, roster)) {
+  if (event.kind === "match" && shouldShowPublishedRosterImage(event, roster)) {
     embed.setImage(buildRosterImageUrl(event.id));
   } else {
-    for (const group of groups) {
-      const members = signupsByGroup.get(group.name) ?? [];
+    if (event.kind === "match") {
+      for (const group of groups) {
+        const members = signupsByGroup.get(group.name) ?? [];
+        embed.addFields({
+          name: `${group.discordEmoji ?? "👥"} ${group.name} (${members.length})`,
+          value: members.length ? members.join(", ") : messages.embed.nobodyYet,
+          inline: false,
+        });
+      }
+
+      const nonAttending = signupsByGroup.get(SIGNUP_NOT_ATTENDING) ?? [];
       embed.addFields({
-        name: `${group.discordEmoji ?? "👥"} ${group.name} (${members.length})`,
-        value: members.length ? members.join(", ") : messages.embed.nobodyYet,
+        name: `❌ ${messages.embed.notAttending} (${nonAttending.length})`,
+        value: nonAttending.length ? nonAttending.join(", ") : messages.embed.nobodyYet,
         inline: false,
       });
+    } else {
+      const attending = event.participants
+        .filter((participant) => participant.status === "attending")
+        .map((participant) => `<@${participant.userId}>`);
+      const nonAttending = event.participants
+        .filter((participant) => participant.status === "not_attending")
+        .map((participant) => `<@${participant.userId}>`);
+      embed.addFields(
+        {
+          name: `✅ Attending (${attending.length})`,
+          value: attending.length ? attending.join(", ") : messages.embed.nobodyYet,
+          inline: false,
+        },
+        {
+          name: `❌ ${messages.embed.notAttending} (${nonAttending.length})`,
+          value: nonAttending.length ? nonAttending.join(", ") : messages.embed.nobodyYet,
+          inline: false,
+        },
+      );
     }
-
-    const nonAttending = signupsByGroup.get(SIGNUP_NOT_ATTENDING) ?? [];
-    embed.addFields({
-      name: `❌ ${messages.embed.notAttending} (${nonAttending.length})`,
-      value: nonAttending.length ? nonAttending.join(", ") : messages.embed.nobodyYet,
-      inline: false,
-    });
   }
 
   return embed;
@@ -861,6 +904,22 @@ function shouldShowPublishedRosterImage(event: EventRecord, roster?: Roster) {
 
 function buildSignupButtons(config: DiscordConfig, groups: Group[], eventId: string, event: EventRecord) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
+  if (event.kind === "training") {
+    return [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`signup:${eventId}:${encodeURIComponent(TRAINING_ATTEND)}`)
+          .setStyle(ButtonStyle.Primary)
+          .setLabel("Attend"),
+        new ButtonBuilder()
+          .setStyle(ButtonStyle.Link)
+          .setLabel(messages.buttons.addToCalendar)
+          .setEmoji("➕")
+          .setURL(generateCalendarUrl(event, config.defaultLanguage)),
+      ),
+    ];
+  }
+
   const allButtons = [
     ...groups.map((group) => {
       const button = new ButtonBuilder()
@@ -1005,18 +1064,29 @@ function formatEventStatus(status: EventRecord["status"], language: "en" | "cs")
 
 function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setTitle(event.name)
     .setDescription(event.notes || event.description || messages.forum.matchInformation)
-    .addFields(
+    .setFooter({ text: `${messages.forum.managedFooter} ${config.timezone}` });
+  if (event.thumbnailUrl) {
+    embed.setThumbnail(event.thumbnailUrl);
+  }
+  if (event.kind === "match") {
+    embed.addFields(
       { name: messages.forum.map, value: event.map ?? messages.forum.notSet, inline: true },
       { name: messages.forum.side, value: event.side ?? messages.forum.notSet, inline: true },
       { name: messages.forum.cap, value: event.cap ?? messages.forum.notSet, inline: true },
       { name: messages.forum.server, value: event.server ?? messages.forum.notSet, inline: true },
       { name: messages.forum.serverPassword, value: event.serverPassword ?? messages.forum.notSet, inline: true },
       { name: messages.forum.gameStart, value: formatInTimezone(event.gameStart, config.timezone, config.defaultLanguage), inline: true },
-    )
-    .setFooter({ text: `${messages.forum.managedFooter} ${config.timezone}` });
+    );
+  } else {
+    embed.addFields(
+      { name: messages.embed.meeting, value: formatInTimezone(event.meetingStart, config.timezone, config.defaultLanguage), inline: true },
+      { name: messages.forum.server, value: event.meetingChannelId ?? messages.forum.notSet, inline: true },
+    );
+  }
+  return embed;
 }
 
 function buildForumThreadName(config: DiscordConfig, event: EventRecord) {

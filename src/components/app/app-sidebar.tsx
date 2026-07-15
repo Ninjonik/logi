@@ -107,8 +107,13 @@ export function AppSidebar({
               ...(resolvedCanAdmin
                 ? [
                     {
-                      title: dictionary.sidebar.events,
-                      url: `${base}/events`,
+                      title: dictionary.sidebar.matches,
+                      url: `${base}/matches`,
+                      icon: ListTodo,
+                    },
+                    {
+                      title: dictionary.sidebar.trainings,
+                      url: `${base}/trainings`,
                       icon: ListTodo,
                     },
                     {

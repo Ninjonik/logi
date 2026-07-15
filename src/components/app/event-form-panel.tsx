@@ -1,11 +1,14 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 
+import { AvatarPicker } from "@/components/app/avatar-picker";
+import { type DiscordSelectOption } from "@/components/app/discord-entity-select";
+import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +23,10 @@ import { fromDateTimeLocalInTimeZone, toDateTimeLocalInTimeZone } from "@/lib/ti
 import { cn } from "@/lib/utils";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
 import type { EventRecord, TopicPreset } from "@/types/domain";
+
+type DiscordMetadata = {
+  roles: DiscordSelectOption[];
+};
 
 function FieldLabel({
                       label,
@@ -96,12 +103,18 @@ export function EventFormPanel({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
 
   const form = useForm<EventInput>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
+      kind: event.kind ?? "match",
       name: event.name ?? "",
       description: event.description ?? "",
+      thumbnailUrl: event.thumbnailUrl ?? "",
+      meetingChannelId: event.meetingChannelId ?? "",
+      requiredRoleIds: event.requiredRoleIds,
+      rewardRoleIds: event.rewardRoleIds,
       server: event.server ?? "",
       serverPassword: event.serverPassword ?? "",
       side: event.side ?? "",
@@ -116,6 +129,9 @@ export function EventFormPanel({
       topicPresetId: event.topicPresetId ?? "",
     },
   });
+  const eventKind = form.watch("kind");
+  const detailBasePath = eventKind === "training" ? "trainings" : "matches";
+  const eventName = form.watch("name");
   const eventMatchValues = form.watch(["map", "side", "cap"]);
   const presetMatchValues = {
     map: eventMatchValues[0],
@@ -123,14 +139,28 @@ export function EventFormPanel({
     cap: eventMatchValues[2],
   };
 
+  useEffect(() => {
+    if (!canEdit) return;
+
+    fetch(`/api/servers/${serverId}/discord-metadata`)
+      .then((response) => response.json())
+      .then((body) => setMetadata(body))
+      .catch(() => setMetadata(null));
+  }, [canEdit, serverId]);
+
   async function submit(values: EventInput) {
     const payload = {
       ...values,
       registrationEnd: fromDateTimeLocalInTimeZone(values.registrationEnd, timezone),
       meetingStart: fromDateTimeLocalInTimeZone(values.meetingStart, timezone),
-      gameStart: fromDateTimeLocalInTimeZone(values.gameStart, timezone),
-      gameEnd: fromDateTimeLocalInTimeZone(values.gameEnd, timezone),
+      gameStart: values.kind === "match"
+        ? fromDateTimeLocalInTimeZone(values.gameStart ?? values.meetingStart, timezone)
+        : fromDateTimeLocalInTimeZone(values.meetingStart, timezone),
+      gameEnd: values.kind === "match"
+        ? fromDateTimeLocalInTimeZone(values.gameEnd ?? values.gameStart ?? values.meetingStart, timezone)
+        : fromDateTimeLocalInTimeZone(values.meetingStart, timezone),
       topicPresetId: values.topicPresetId || undefined,
+      thumbnailUrl: values.thumbnailUrl || undefined,
     };
 
     const response = await fetch(
@@ -153,7 +183,7 @@ export function EventFormPanel({
     }
 
     startTransition(() => {
-      router.push(`/${locale}/dashboard/servers/${serverId}/events/${createMode ? body.eventId : event.id}`);
+      router.push(`/${locale}/dashboard/servers/${serverId}/${detailBasePath}/${createMode ? body.eventId : event.id}`);
       router.refresh();
     });
   }
@@ -168,7 +198,7 @@ export function EventFormPanel({
       </CardHeader>
       <CardContent>
         <form className="space-y-6" onSubmit={form.handleSubmit(submit)}>
-          {event.eventResult ? (
+          {event.kind === "match" && event.eventResult ? (
             <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
               <div className="flex flex-wrap items-center gap-3">
                 <Badge variant={event.eventResult.outcome === "victory" ? "default" : "secondary"} className="rounded-full px-3">
@@ -180,13 +210,13 @@ export function EventFormPanel({
                 <div className="text-sm text-muted-foreground">
                   {event.eventResult.mapName ?? event.eventResult.mapId}
                 </div>
-                {event.matchId ? (
+                {event.matchStatsId ? (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="rounded-full"
-                    onClick={() => router.push(`/${locale}/dashboard/servers/${serverId}/events/${event.id}/match`)}
+                    onClick={() => router.push(`/${locale}/dashboard/servers/${serverId}/matches/${event.id}/match-stats`)}
                   >
                     {dictionary.event.openMatch}
                   </Button>
@@ -195,39 +225,88 @@ export function EventFormPanel({
             </div>
           ) : null}
           <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <FieldLabel label={dictionary.event.fields.kind} required />
+              <Controller
+                control={form.control}
+                name="kind"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={(value) => field.onChange(value as EventInput["kind"])}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="match">{dictionary.sidebar.matches ?? "Matches"}</SelectItem>
+                      <SelectItem value="training">{dictionary.sidebar.trainings ?? "Trainings"}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
             <div>
               <FieldLabel label={dictionary.event.fields.name} required  />
               <Input {...form.register("name")} className="rounded-xl" />
               {form.formState.errors.name ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.name.message}</p> : null}
             </div>
+            {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.map}  />
               <Input {...form.register("map")} className="rounded-xl" />
             </div>
+            ) : null}
             <div className="md:col-span-2">
               <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
                 {dictionary.serverSettings.timezone}: {supportedTimezones.includes(timezone as (typeof supportedTimezones)[number]) ? timezone : "UTC"}
               </div>
             </div>
             <div className="md:col-span-2">
+              <Controller
+                control={form.control}
+                name="thumbnailUrl"
+                render={({ field }) => (
+                  <AvatarPicker
+                    value={field.value || ""}
+                  onChange={field.onChange}
+                    fallback={eventName.slice(0, 2).toUpperCase() || "EV"}
+                    label={dictionary.event.fields.thumbnail ?? "Thumbnail"}
+                    buttonLabel={dictionary.common.upload}
+                    disabled={!canEdit || isPending}
+                    className="rounded-2xl border border-border/60 p-4"
+                  />
+                )}
+              />
+            </div>
+            <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.description}  />
               <Textarea {...form.register("description")} className="min-h-24 rounded-xl" />
             </div>
+            {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.side}  />
               <Input {...form.register("side")} className="rounded-xl" />
             </div>
+            ) : null}
+            {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.capMode}  />
               <Input {...form.register("cap")} className="rounded-xl" />
             </div>
+            ) : null}
+            {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.server}  />
               <Input {...form.register("server")} autoComplete="one-time-code" className="rounded-xl" />
             </div>
+            ) : null}
+            {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.serverPassword}  />
               <Input {...form.register("serverPassword")} autoComplete={"new-password"} className="rounded-xl" />
+            </div>
+            ) : null}
+            <div>
+              <FieldLabel label={dictionary.event.fields.meetingChannelId ?? "Meeting VC"}  />
+              <Input {...form.register("meetingChannelId")} className="rounded-xl" />
             </div>
             <div>
               <FieldLabel label={dictionary.event.fields.registrationEnd} required  />
@@ -239,16 +318,21 @@ export function EventFormPanel({
               <Input type="datetime-local" {...form.register("meetingStart")} className="rounded-xl" />
               {form.formState.errors.meetingStart ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.meetingStart.message}</p> : null}
             </div>
-            <div>
-              <FieldLabel label={dictionary.event.fields.gameStart} required  />
-              <Input type="datetime-local" {...form.register("gameStart")} className="rounded-xl" />
-              {form.formState.errors.gameStart ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.gameStart.message}</p> : null}
-            </div>
-            <div>
-              <FieldLabel label={dictionary.event.fields.gameEnd} required  />
-              <Input type="datetime-local" {...form.register("gameEnd")} className="rounded-xl" />
-              {form.formState.errors.gameEnd ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.gameEnd.message}</p> : null}
-            </div>
+            {eventKind === "match" ? (
+              <>
+                <div>
+                  <FieldLabel label={dictionary.event.fields.gameStart} required  />
+                  <Input type="datetime-local" {...form.register("gameStart")} className="rounded-xl" />
+                  {form.formState.errors.gameStart ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.gameStart.message}</p> : null}
+                </div>
+                <div>
+                  <FieldLabel label={dictionary.event.fields.gameEnd} required  />
+                  <Input type="datetime-local" {...form.register("gameEnd")} className="rounded-xl" />
+                  {form.formState.errors.gameEnd ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.gameEnd.message}</p> : null}
+                </div>
+              </>
+            ) : null}
+            {eventKind === "match" ? (
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.topicPreset}  />
               <Controller
@@ -290,10 +374,42 @@ export function EventFormPanel({
                 )}
               />
             </div>
+            ) : null}
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.notes}  />
               <Textarea {...form.register("notes")} className="min-h-28 rounded-xl" />
             </div>
+            <div className="md:col-span-2">
+              <FieldLabel label={dictionary.event.fields.requiredRoleIds ?? "Required role IDs"} />
+              <Controller
+                control={form.control}
+                name="requiredRoleIds"
+                render={({ field }) => (
+                  <DiscordMultiEntitySelect
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    options={metadata?.roles ?? []}
+                    placeholder={dictionary.event.fields.requiredRoleIds ?? "Required role IDs"}
+                  />
+                )}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <FieldLabel label={dictionary.event.fields.rewardRoleIds ?? "Reward role IDs"} />
+              <Controller
+                control={form.control}
+                name="rewardRoleIds"
+                render={({ field }) => (
+                  <DiscordMultiEntitySelect
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    options={metadata?.roles ?? []}
+                    placeholder={dictionary.event.fields.rewardRoleIds ?? "Reward role IDs"}
+                  />
+                )}
+              />
+            </div>
+            {eventKind === "match" ? (
             <div className="md:col-span-2">
               <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
                 <div>
@@ -306,6 +422,7 @@ export function EventFormPanel({
                 />
               </div>
             </div>
+            ) : null}
           </div>
           {form.formState.errors.root ? <p className="text-sm text-destructive">{form.formState.errors.root.message}</p> : null}
           <div className="flex flex-wrap gap-3">

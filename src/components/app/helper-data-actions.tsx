@@ -36,7 +36,7 @@ export function HelperDataActions({
       return;
     }
 
-    toast.success(action === "initialize" ? "Default data initialized" : "Data reset complete");
+    toast.success(action === "initialize" ? dictionary.groups.initializeSuccess : dictionary.groups.resetSuccess);
 
     startTransition(() => {
       router.refresh();

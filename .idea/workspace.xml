@@ -10,32 +10,30 @@
     <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="discord events integration">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/_generated/api.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/_generated/api.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/events.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/playerStats.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/playerStats.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/players.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/players.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/matches.ts" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/serverData.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/serverData.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/loading.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/loading.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/serverSetup.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/serverSetup.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/user/settings/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/user/settings/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/calendar-view.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/calendar-view.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/import-events-button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/import-events-button.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/submit-match-results-button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/submit-match-results-button.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/user-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/user-settings-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/helper-data-actions.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/helper-data-actions.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/month-calendar-view.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/month-calendar-view.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-creator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-creator.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/server-events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-events.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/server-match-results.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-match-results.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/server-matches.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-matches.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/server-metadata.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-metadata.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-user-management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-user-management.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/validation/event.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/event.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -50,7 +48,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="309" />
+    <option name="cachedIndexableFilesCount" value="314" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -221,6 +219,7 @@
       <workItem from="1783978726510" duration="3541000" />
       <workItem from="1784042754118" duration="3791000" />
       <workItem from="1784065106292" duration="4520000" />
+      <workItem from="1784128265407" duration="2499000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />

@@ -131,7 +131,7 @@ export const upsertForEvent = mutation({
     }
 
     const existing = await ctx.db
-      .query("matches")
+      .query("matchStats")
       .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
       .unique();
     const now = new Date().toISOString();
@@ -146,14 +146,14 @@ export const upsertForEvent = mutation({
       });
 
       await ctx.db.patch(args.eventId, {
-        matchId: existing._id,
+        matchStatsId: existing._id,
         updatedAt: now,
       });
 
       return String(existing._id);
     }
 
-    const insertedId = await ctx.db.insert("matches", {
+    const insertedId = await ctx.db.insert("matchStats", {
       guildId: event.guildId,
       eventId: args.eventId,
       sourceUrl: args.sourceUrl,
@@ -165,7 +165,7 @@ export const upsertForEvent = mutation({
     });
 
     await ctx.db.patch(args.eventId, {
-      matchId: insertedId,
+      matchStatsId: insertedId,
       updatedAt: now,
     });
 
@@ -178,11 +178,11 @@ export const getByEventId = query({
     eventId: v.id("events"),
   },
   handler: async (ctx, args) => {
-    const match = await ctx.db
-      .query("matches")
+    const matchStats = await ctx.db
+      .query("matchStats")
       .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
       .unique();
 
-    return match ? normalizeDoc(match) : null;
+    return matchStats ? normalizeDoc(matchStats) : null;
   },
 });

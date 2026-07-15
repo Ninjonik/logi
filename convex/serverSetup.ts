@@ -13,12 +13,17 @@ function assertInternalSecret(secret: string) {
 }
 
 async function clearHelperData(ctx: MutationCtx, guildId: string) {
-  const [groups, squadPresets, topicPresets, assignments] = await Promise.all([
+  const [groups, squadPresets, topicPresets, assignments, events] = await Promise.all([
     ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", guildId)).collect(),
     ctx.db.query("squadPresets").withIndex("guildId", (q) => q.eq("guildId", guildId)).collect(),
     ctx.db.query("topicPresets").withIndex("guildId", (q) => q.eq("guildId", guildId)).collect(),
     ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", guildId)).collect(),
+    ctx.db.query("events").withIndex("guildId", (q) => q.eq("guildId", guildId)).collect(),
   ]);
+
+  const rosters = await Promise.all(
+    events.map((event) => ctx.db.query("rosters").withIndex("eventId", (q) => q.eq("eventId", event._id)).unique()),
+  );
 
   for (const group of groups) {
     await ctx.db.delete(group._id);
@@ -37,6 +42,25 @@ async function clearHelperData(ctx: MutationCtx, guildId: string) {
     await ctx.db.patch(assignment._id, {
       primaryGroupId: undefined,
       secondaryGroupIds: [],
+      group: undefined,
+      updatedAt: now,
+    });
+  }
+
+  for (const event of events) {
+    await ctx.db.patch(event._id, {
+      topicPresetId: undefined,
+      updatedAt: now,
+    });
+  }
+
+  for (const roster of rosters) {
+    if (!roster) {
+      continue;
+    }
+
+    await ctx.db.patch(roster._id, {
+      squadPresetId: undefined,
       updatedAt: now,
     });
   }
@@ -46,6 +70,7 @@ async function clearHelperData(ctx: MutationCtx, guildId: string) {
     await ctx.db.patch(guild._id, {
       members: guild.members.map((member) => ({
         ...member,
+        group: undefined,
         primaryGroup: undefined,
         secondaryGroups: [],
       })),

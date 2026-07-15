@@ -10,8 +10,13 @@ const setEventResultReference = makeFunctionReference<"mutation">("events:setRes
 export async function saveServerEvent(input: {
   eventId?: string;
   serverId: string;
+  kind: "match" | "training";
   name: string;
   description?: string;
+  thumbnailUrl?: string;
+  meetingChannelId?: string;
+  requiredRoleIds?: string[];
+  rewardRoleIds?: string[];
   server?: string;
   serverPassword?: string;
   side?: string;
@@ -20,8 +25,8 @@ export async function saveServerEvent(input: {
   notes?: string;
   registrationEnd: string;
   meetingStart: string;
-  gameStart: string;
-  gameEnd: string;
+  gameStart?: string;
+  gameEnd?: string;
   pingClan: boolean;
   topicPresetId?: string;
 }) {
@@ -29,8 +34,13 @@ export async function saveServerEvent(input: {
     secret: getInternalAuthSecret(),
     eventId: input.eventId as never,
     serverId: input.serverId,
+    kind: input.kind,
     name: input.name,
     description: input.description,
+    thumbnailUrl: input.thumbnailUrl,
+    meetingChannelId: input.meetingChannelId,
+    requiredRoleIds: input.requiredRoleIds,
+    rewardRoleIds: input.rewardRoleIds,
     server: input.server,
     serverPassword: input.serverPassword,
     side: input.side,
@@ -39,8 +49,8 @@ export async function saveServerEvent(input: {
     notes: input.notes,
     registrationEnd: input.registrationEnd,
     meetingStart: input.meetingStart,
-    gameStart: input.gameStart,
-    gameEnd: input.gameEnd,
+    gameStart: input.gameStart ?? input.meetingStart,
+    gameEnd: input.gameEnd ?? input.gameStart ?? input.meetingStart,
     pingClan: input.pingClan,
     topicPresetId: input.topicPresetId as never,
   });

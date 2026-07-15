@@ -1,12 +1,10 @@
-import type { Metadata } from "next";
-
 import { EventFormPanel } from "@/components/app/event-form-panel";
 import { PageHeader } from "@/components/app/page-header";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getServerContext } from "@/lib/server-context";
 
-export default async function CreateEventPage({
+export default async function CreateMatchPage({
   params,
 }: {
   params: Promise<{ locale: string; serverId: string }>;
@@ -19,7 +17,7 @@ export default async function CreateEventPage({
   const timezone = context?.discordConfig?.timezone ?? "UTC";
 
   const draftEvent = {
-    id: "draft-event",
+    id: "draft-match",
     guildId: serverId,
     kind: "match" as const,
     name: "",

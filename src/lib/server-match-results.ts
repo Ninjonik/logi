@@ -723,6 +723,7 @@ export async function importServerEventsFromLinks(input: {
       });
       const createdEventId = await saveServerEvent({
         serverId: input.serverId,
+        kind: "match",
         ...buildImportedEventInput({
           payload: sanitizedPayload,
           sourceUrl,

@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 
 import { PageHeader } from "@/components/app/page-header";
 import { DiscordServerSettingsForm } from "@/components/app/discord-server-settings-form";
+import { HelperDataActions } from "@/components/app/helper-data-actions";
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getGuildMetadata } from "@/lib/server-metadata";
@@ -46,6 +48,17 @@ export default async function ServerSettingsPage({
             dictionary={dictionary}
             config={discordConfig}
           />
+        ) : null}
+        {canAdmin ? (
+          <Card className="rounded-2xl border-border/60">
+            <CardHeader>
+              <CardTitle>{dictionary.clan.helperDataTitle}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">{dictionary.clan.helperDataBody}</p>
+              <HelperDataActions serverId={serverId} dictionary={dictionary} />
+            </CardContent>
+          </Card>
         ) : null}
       </div>
     </>

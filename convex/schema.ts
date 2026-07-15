@@ -64,6 +64,14 @@ const signUp = v.object({
   group: v.optional(v.union(v.string(), v.null())),
 });
 
+const eventParticipant = v.object({
+  userId: v.string(),
+  status: v.union(v.literal("attending"), v.literal("not_attending")),
+  group: v.optional(v.union(v.string(), v.null())),
+  completed: v.optional(v.union(v.literal("passed"), v.literal("failed"))),
+  updatedAt: v.string(),
+});
+
 const rosterScoreSettings = v.object({
   noResponse: v.number(),
   declined: v.number(),
@@ -266,8 +274,13 @@ export default defineSchema({
     .index("guildId_name", ["guildId", "name"]),
   events: defineTable({
     guildId: v.string(),
+    kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
     name: v.string(),
     description: v.optional(v.string()),
+    thumbnailUrl: v.optional(v.string()),
+    meetingChannelId: v.optional(v.string()),
+    requiredRoleIds: v.optional(v.array(v.string())),
+    rewardRoleIds: v.optional(v.array(v.string())),
     server: v.optional(v.string()),
     serverPassword: v.optional(v.string()),
     side: v.optional(v.string()),
@@ -289,8 +302,9 @@ export default defineSchema({
     statusUpdatedAt: v.optional(v.string()),
     concludedAt: v.optional(v.string()),
     eventResult: v.optional(eventResult),
-    matchId: v.optional(v.id("matches")),
+    matchStatsId: v.optional(v.id("matchStats")),
     attendanceReminderLog: v.optional(v.array(attendanceReminder)),
+    participants: v.optional(v.array(eventParticipant)),
     signUps: v.optional(v.array(signUp)),
     scoreAppliedAt: v.optional(v.string()),
     createdAt: v.string(),
@@ -388,7 +402,7 @@ export default defineSchema({
   })
     .index("id", ["id"])
     .index("userId", ["userId"]),
-  matches: defineTable({
+  matchStats: defineTable({
     guildId: v.string(),
     eventId: v.id("events"),
     sourceUrl: v.string(),

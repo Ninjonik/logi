@@ -4,8 +4,8 @@ import { makeFunctionReference } from "convex/server";
 import { getInternalAuthSecret } from "@/lib/env";
 import type { MatchRecord } from "@/types/domain";
 
-const upsertMatchForEventReference = makeFunctionReference<"mutation">("matches:upsertForEvent");
-const getMatchByEventIdReference = makeFunctionReference<"query">("matches:getByEventId");
+const upsertMatchForEventReference = makeFunctionReference<"mutation">("matchStats:upsertForEvent");
+const getMatchByEventIdReference = makeFunctionReference<"query">("matchStats:getByEventId");
 
 export async function saveServerMatch(input: {
   eventId: string;

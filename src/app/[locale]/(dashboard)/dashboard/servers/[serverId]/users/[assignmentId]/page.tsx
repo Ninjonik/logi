@@ -118,7 +118,7 @@ export default async function ServerUserDetailPage({
           totalRows={paginatedMatches.totalRows}
           search={paginatedMatches.search}
           searchPlaceholder={dictionary.userManagement.matchHistorySearch}
-          getHref={(match) => `/${safeLocale}/dashboard/servers/${serverId}/events/${match.eventId}`}
+          getHref={(match) => `/${safeLocale}/dashboard/servers/${serverId}/matches/${match.eventId}`}
           columns={[
             {
               key: "event",
