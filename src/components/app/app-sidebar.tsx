@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   FileText,
   ListTodo,
+  CalendarIcon,
 } from "lucide-react";
 
 import { AppLogo } from "@/components/app/app-logo";
@@ -109,12 +110,12 @@ export function AppSidebar({
                     {
                       title: dictionary.sidebar.matches,
                       url: `${base}/matches`,
-                      icon: ListTodo,
+                      icon: CalendarIcon,
                     },
                     {
                       title: dictionary.sidebar.trainings,
                       url: `${base}/trainings`,
-                      icon: ListTodo,
+                      icon: Shield,
                     },
                     {
                       title: dictionary.sidebar.rosters,
