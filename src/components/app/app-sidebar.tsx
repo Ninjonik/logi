@@ -162,6 +162,11 @@ export function AppSidebar({
                       url: `${base}/settings`,
                       icon: Settings,
                     },
+                    {
+                      title: dictionary.sidebar.tickets,
+                      url: `${base}/tickets`,
+                      icon: ListTodo,
+                    },
                   ],
                 },
               ]

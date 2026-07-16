@@ -86,6 +86,33 @@ const attendanceReminder = v.object({
   sentAt: v.string(),
 });
 
+const ticketModalQuestion = v.object({
+  id: v.string(),
+  label: v.string(),
+  placeholder: v.optional(v.string()),
+  style: v.union(v.literal("short"), v.literal("paragraph")),
+  required: v.boolean(),
+});
+
+const ticketCategory = v.object({
+  id: v.string(),
+  emoji: v.optional(v.string()),
+  label: v.optional(v.string()),
+  description: v.optional(v.string()),
+  supportRoleIds: v.array(v.string()),
+  modalQuestions: v.array(ticketModalQuestion),
+});
+
+const ticketSettings = v.object({
+  enabled: v.boolean(),
+  submitChannelId: v.optional(v.string()),
+  ticketParentChannelId: v.optional(v.string()),
+  panelTitle: v.string(),
+  panelDescription: v.string(),
+  panelImageUrl: v.optional(v.string()),
+  categories: v.array(ticketCategory),
+});
+
 const eventResult = v.object({
   sourceUrl: v.string(),
   mapId: v.string(),
@@ -260,6 +287,10 @@ export default defineSchema({
     meetingChannelId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),
     dashboardAdminRoleId: v.optional(v.string()),
+    ticketSettings: v.optional(ticketSettings),
+    ticketPanelMessageId: v.optional(v.string()),
+    ticketPanelLastConfigUpdatedAt: v.optional(v.string()),
+    ticketCounter: v.optional(v.number()),
     createdAt: v.string(),
     updatedAt: v.string(),
   }).index("guildId", ["guildId"]),
@@ -383,6 +414,31 @@ export default defineSchema({
     .index("guildId", ["guildId"])
     .index("userId", ["userId"])
     .index("guildId_userId", ["guildId", "userId"]),
+  ticketThreads: defineTable({
+    guildId: v.string(),
+    threadId: v.string(),
+    parentChannelId: v.string(),
+    creatorId: v.string(),
+    categoryId: v.string(),
+    categoryLabel: v.string(),
+    ticketNumber: v.number(),
+    status: v.union(v.literal("open"), v.literal("closed")),
+    transcriptMessageId: v.optional(v.string()),
+    answers: v.array(v.object({
+      questionId: v.string(),
+      label: v.string(),
+      value: v.string(),
+    })),
+    openedAt: v.string(),
+    closedAt: v.optional(v.string()),
+    closedByUserId: v.optional(v.string()),
+    closeReason: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("guildId", ["guildId"])
+    .index("threadId", ["threadId"])
+    .index("guildId_ticketNumber", ["guildId", "ticketNumber"]),
   userAssignments,
   playerStats: defineTable({
     id: v.string(),

@@ -3,12 +3,13 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
+  type APIEmbedField,
 } from "discord.js";
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 
 import { SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
-import type { ClanLanguage, DiscordConfig, EventRecord, Group, Roster, SyncPayload } from "./types";
+import type { ClanLanguage, DiscordConfig, EventRecord, Group, Roster, SyncPayload, TicketCategory, TicketThreadRecord } from "./types";
 import {
   buildForumThreadName,
   buildRosterImageUrl,
@@ -196,6 +197,106 @@ export function buildAttendanceReminderComponents(eventId: string, language: Cla
 }
 
 export { buildForumThreadName };
+
+export function buildTicketPanelEmbed(config: DiscordConfig) {
+  const ticketSettings = config.ticketSettings;
+  if (!ticketSettings) {
+    return null;
+  }
+
+  const embed = new EmbedBuilder()
+    .setTitle(ticketSettings.panelTitle.slice(0, 256))
+    .setDescription(ticketSettings.panelDescription.slice(0, 4096))
+    .setColor("#3B82F6")
+    .setFooter({ text: "Managed by Logi tickets" });
+
+  if (ticketSettings.panelImageUrl) {
+    embed.setThumbnail(ticketSettings.panelImageUrl);
+  }
+
+  const categoryFieldValue = ticketSettings.categories
+    .map((category) => {
+      const heading = [category.emoji?.trim(), category.label?.trim() || category.id].filter(Boolean).join(" ");
+      const description = category.description?.trim();
+      return description ? `${heading}: ${description}` : heading;
+    })
+    .join("\n")
+    .slice(0, 1024);
+
+  const fields: APIEmbedField[] = [];
+  if (categoryFieldValue) {
+    fields.push({
+      name: "Categories",
+      value: categoryFieldValue,
+      inline: false,
+    });
+  }
+
+  if (fields.length) {
+    embed.addFields(fields);
+  }
+
+  return embed;
+}
+
+export function buildTicketPanelComponents(config: DiscordConfig) {
+  const ticketSettings = config.ticketSettings;
+  if (!ticketSettings?.categories.length) {
+    return [];
+  }
+
+  const buttons = ticketSettings.categories.map((category) => {
+    const button = new ButtonBuilder()
+      .setCustomId(`ticket:${category.id}`)
+      .setStyle(ButtonStyle.Primary);
+
+    const label = category.label?.trim();
+    const emoji = category.emoji?.trim();
+
+    if (emoji) {
+      button.setEmoji(emoji);
+    }
+    if (label) {
+      button.setLabel(label.slice(0, 80));
+    } else if (!emoji) {
+      button.setLabel(category.id.slice(0, 80));
+    }
+
+    return button;
+  });
+
+  const rows: Array<ActionRowBuilder<ButtonBuilder>> = [];
+  for (let index = 0; index < buttons.length; index += 5) {
+    rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(buttons.slice(index, index + 5)));
+  }
+
+  return rows;
+}
+
+export function buildTicketThreadEmbed(input: {
+  category: TicketCategory;
+  ticket: Pick<TicketThreadRecord, "ticketNumber" | "categoryLabel" | "creatorId">;
+  answers: Array<{ label: string; value: string }>;
+  creatorTag: string;
+}) {
+  const embed = new EmbedBuilder()
+    .setTitle(`Ticket #${input.ticket.ticketNumber}`)
+    .setDescription(`Category: ${input.ticket.categoryLabel}\nCreated by: <@${input.ticket.creatorId}>`)
+    .setColor("#F59E0B");
+
+  if (input.answers.length) {
+    embed.addFields(
+      input.answers.slice(0, 25).map((answer) => ({
+        name: answer.label.slice(0, 256),
+        value: answer.value.slice(0, 1024) || "-",
+        inline: false,
+      })),
+    );
+  }
+
+  embed.setFooter({ text: `Opened by ${input.creatorTag}` });
+  return embed;
+}
 
 function shouldShowPublishedRosterImage(event: EventRecord, roster?: Roster) {
   return Boolean(roster?.published && (event.status === "closed" || event.status === "starting"));

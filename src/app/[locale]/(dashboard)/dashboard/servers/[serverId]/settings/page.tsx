@@ -9,7 +9,6 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
-import { getDiscordConfigByGuild } from "@/lib/server-discord-settings";
 
 export async function generateMetadata({
   params,
@@ -35,7 +34,6 @@ export default async function ServerSettingsPage({
   const context = await getServerContext(serverId);
   if (!context) return null;
   const { server, canAdmin } = context;
-  const discordConfig = await getDiscordConfigByGuild(serverId);
 
   return (
     <>
@@ -46,7 +44,7 @@ export default async function ServerSettingsPage({
           <DiscordServerSettingsForm
             serverId={serverId}
             dictionary={dictionary}
-            config={discordConfig}
+            config={context.discordConfig}
           />
         ) : null}
         {canAdmin ? (

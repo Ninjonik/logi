@@ -119,3 +119,12 @@ export function formatShortDate(timestamp: string, timezone: string, language: C
 export function buildForumThreadName(config: DiscordConfig, event: EventRecord) {
   return `${event.name} ${formatShortDate(event.gameStart, config.timezone, config.defaultLanguage)}`.slice(0, 100);
 }
+
+export function slugifyTicketLabel(value: string) {
+  const normalized = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || "ticket";
+}

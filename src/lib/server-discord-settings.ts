@@ -2,7 +2,7 @@ import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
 import { getInternalAuthSecret } from "@/lib/env";
-import type { DiscordConfig } from "@/types/domain";
+import type { DiscordConfig, TicketSettings } from "@/types/domain";
 
 const getConfigByGuildReference = makeFunctionReference<"query">("discord:getConfigByGuild");
 const upsertConfigReference = makeFunctionReference<"mutation">("discord:upsertConfig");
@@ -20,6 +20,7 @@ export async function saveDiscordConfig(input: {
   meetingChannelId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
+  ticketSettings?: TicketSettings;
 }) {
   return await fetchMutation(upsertConfigReference, {
     secret: getInternalAuthSecret(),
@@ -31,6 +32,7 @@ export async function saveDiscordConfig(input: {
     meetingChannelId: input.meetingChannelId,
     clanRoleId: input.clanRoleId,
     dashboardAdminRoleId: input.dashboardAdminRoleId,
+    ticketSettings: input.ticketSettings,
   });
 }
 

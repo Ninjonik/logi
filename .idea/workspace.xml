@@ -7,19 +7,25 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="better roster board UI">
-      <change beforePath="$PROJECT_DIR$/convex/matchStats.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/matchStats.ts" afterDir="false" />
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="primary group is optional, better player assignment ui">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/match-details.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/match-details.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/convex.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/convex.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/interactions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/interactions.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/message-builders.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/message-builders.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/sync.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/sync.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/types.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/utils.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/utils.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/breadcrumbs.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/breadcrumbs.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/discord-server-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/discord-server-settings-form.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-match-results.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-match-results.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-route-errors.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-route-errors.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -34,7 +40,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="314" />
+    <option name="cachedIndexableFilesCount" value="337" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -205,7 +211,8 @@
       <workItem from="1783978726510" duration="3541000" />
       <workItem from="1784042754118" duration="3791000" />
       <workItem from="1784065106292" duration="4520000" />
-      <workItem from="1784128265407" duration="13380000" />
+      <workItem from="1784128265407" duration="13704000" />
+      <workItem from="1784220915709" duration="1150000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -503,7 +510,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784152108787</updated>
     </task>
-    <option name="localTasksCounter" value="38" />
+    <task id="LOCAL-00038" summary="primary group is optional, better player assignment ui">
+      <option name="closed" value="true" />
+      <created>1784153175252</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1784153175252</updated>
+    </task>
+    <option name="localTasksCounter" value="39" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -523,7 +538,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="updated workspace.xml" />
     <MESSAGE value="topic presets + attachment implemented" />
     <MESSAGE value="QoL changes" />
     <MESSAGE value="- better navbar" />
@@ -548,6 +562,7 @@
     <MESSAGE value="added map presets, better match/training handler" />
     <MESSAGE value="different modes for roster editing and display" />
     <MESSAGE value="better roster board UI" />
-    <option name="LAST_COMMIT_MESSAGE" value="better roster board UI" />
+    <MESSAGE value="primary group is optional, better player assignment ui" />
+    <option name="LAST_COMMIT_MESSAGE" value="primary group is optional, better player assignment ui" />
   </component>
 </project>

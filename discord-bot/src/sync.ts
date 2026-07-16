@@ -9,6 +9,8 @@ import { syncForumChannel } from "./forum";
 import {
   buildAnnouncementMessage,
   buildAttendanceReminderComponents,
+  buildTicketPanelComponents,
+  buildTicketPanelEmbed,
 } from "./message-builders";
 import {
   deriveScheduledEventLifecycle,
@@ -54,6 +56,7 @@ export function createPollLoop(options: PollLoopOptions) {
 
 async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
   await syncGuildMemberAccess(client, payload);
+  await syncTicketPanel(client, payload);
   await processAttendanceReminders(client, queuedEventIds, payload);
 
   for (const event of payload.events) {
@@ -111,6 +114,52 @@ async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, pay
         error,
       });
     }
+  }
+}
+
+async function syncTicketPanel(client: Client, payload: SyncPayload) {
+  const ticketSettings = payload.config.ticketSettings;
+  if (!ticketSettings?.enabled || !ticketSettings.submitChannelId || !ticketSettings.ticketParentChannelId || !ticketSettings.categories.length) {
+    return;
+  }
+
+  const guild = await client.guilds.fetch(payload.config.guildId).catch(() => null);
+  if (!guild) return;
+
+  const channel = await guild.channels.fetch(ticketSettings.submitChannelId).catch(() => null);
+  if (!channel?.isTextBased() || channel.type !== ChannelType.GuildText) {
+    return;
+  }
+
+  const textChannel = channel as TextChannel;
+  const currentMessage = payload.config.ticketPanelMessageId
+    ? await textChannel.messages.fetch(payload.config.ticketPanelMessageId).catch(() => null)
+    : null;
+  const embed = buildTicketPanelEmbed(payload.config);
+  if (!embed) {
+    return;
+  }
+  const components = buildTicketPanelComponents(payload.config);
+
+  let ticketPanelMessageId = payload.config.ticketPanelMessageId;
+
+  if (currentMessage) {
+    await currentMessage.edit({ embeds: [embed], components });
+  } else {
+    const created = await textChannel.send({ embeds: [embed], components });
+    ticketPanelMessageId = created.id;
+  }
+
+  if (
+    ticketPanelMessageId !== payload.config.ticketPanelMessageId ||
+    payload.config.ticketPanelLastConfigUpdatedAt !== payload.config.updatedAt
+  ) {
+    await convex.mutation(references.updateTicketPanelState, {
+      secret: env.internalSecret,
+      guildId: payload.config.guildId,
+      ticketPanelMessageId,
+      ticketPanelLastConfigUpdatedAt: payload.config.updatedAt,
+    });
   }
 }
 

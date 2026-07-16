@@ -18,13 +18,18 @@ function triggerPollSoon() {
   }, 2000);
 }
 
-const handleButtonInteraction = createInteractionHandler({
+const interactionHandler = createInteractionHandler({
   enqueueEventSync,
   triggerPollSoon,
 });
 
 client.once(Events.ClientReady, async (readyClient) => {
   console.log(`Discord bot ready as ${readyClient.user.tag}`);
+  for (const guild of readyClient.guilds.cache.values()) {
+    await interactionHandler.registerGuildCommands(guild).catch((error) => {
+      console.error("Failed to register guild commands", { guildId: guild.id, error });
+    });
+  }
   void pollLoop();
   setInterval(() => {
     void pollLoop();
@@ -32,10 +37,39 @@ client.once(Events.ClientReady, async (readyClient) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isButton()) return;
-  if (!interaction.customId.startsWith("signup:") && !interaction.customId.startsWith("attendance:")) return;
+  try {
+    if (interaction.isButton()) {
+      await interactionHandler.handleButtonInteraction(interaction);
+      return;
+    }
 
-  await handleButtonInteraction(interaction);
+    if (interaction.isModalSubmit()) {
+      await interactionHandler.handleModalSubmit(interaction);
+      return;
+    }
+
+    if (interaction.isChatInputCommand()) {
+      await interactionHandler.handleChatInputCommand(interaction);
+    }
+  } catch (error) {
+    console.error("Discord interaction failed", {
+      type: interaction.type,
+      customId: "customId" in interaction ? interaction.customId : undefined,
+      commandName: "commandName" in interaction ? interaction.commandName : undefined,
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      error,
+    });
+
+    if (interaction.isRepliable()) {
+      const message = "Something went wrong while handling that interaction.";
+      if (interaction.deferred || interaction.replied) {
+        await interaction.followUp({ content: message, ephemeral: true }).catch(() => null);
+      } else {
+        await interaction.reply({ content: message, ephemeral: true }).catch(() => null);
+      }
+    }
+  }
 });
 
 void client.login(env.botToken);

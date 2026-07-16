@@ -66,6 +66,33 @@ export type DiscordGroupLink = {
   emoji?: string;
 };
 
+export type TicketModalQuestion = {
+  id: string;
+  label: string;
+  placeholder?: string;
+  style: "short" | "paragraph";
+  required: boolean;
+};
+
+export type TicketCategory = {
+  id: string;
+  emoji?: string;
+  label?: string;
+  description?: string;
+  supportRoleIds: string[];
+  modalQuestions: TicketModalQuestion[];
+};
+
+export type TicketSettings = {
+  enabled: boolean;
+  submitChannelId?: string;
+  ticketParentChannelId?: string;
+  panelTitle: string;
+  panelDescription: string;
+  panelImageUrl?: string;
+  categories: TicketCategory[];
+};
+
 export type DiscordConfig = {
   id: string;
   guildId: string;
@@ -76,6 +103,10 @@ export type DiscordConfig = {
   meetingChannelId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
+  ticketSettings?: TicketSettings;
+  ticketPanelMessageId?: string;
+  ticketPanelLastConfigUpdatedAt?: string;
+  ticketCounter?: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };

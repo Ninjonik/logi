@@ -1,5 +1,32 @@
 export type ClanLanguage = "en" | "cs";
 
+export type TicketModalQuestion = {
+  id: string;
+  label: string;
+  placeholder?: string;
+  style: "short" | "paragraph";
+  required: boolean;
+};
+
+export type TicketCategory = {
+  id: string;
+  emoji?: string;
+  label?: string;
+  description?: string;
+  supportRoleIds: string[];
+  modalQuestions: TicketModalQuestion[];
+};
+
+export type TicketSettings = {
+  enabled: boolean;
+  submitChannelId?: string;
+  ticketParentChannelId?: string;
+  panelTitle: string;
+  panelDescription: string;
+  panelImageUrl?: string;
+  categories: TicketCategory[];
+};
+
 export type DiscordConfig = {
   id: string;
   guildId: string;
@@ -10,6 +37,34 @@ export type DiscordConfig = {
   meetingChannelId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
+  ticketSettings?: TicketSettings;
+  ticketPanelMessageId?: string;
+  ticketPanelLastConfigUpdatedAt?: string;
+  ticketCounter?: number;
+  updatedAt: string;
+};
+
+export type TicketThreadRecord = {
+  id: string;
+  guildId: string;
+  threadId: string;
+  parentChannelId: string;
+  creatorId: string;
+  categoryId: string;
+  categoryLabel: string;
+  ticketNumber: number;
+  status: "open" | "closed";
+  transcriptMessageId?: string;
+  answers: Array<{
+    questionId: string;
+    label: string;
+    value: string;
+  }>;
+  openedAt: string;
+  closedAt?: string;
+  closedByUserId?: string;
+  closeReason?: string;
+  createdAt: string;
   updatedAt: string;
 };
 

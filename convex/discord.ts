@@ -24,6 +24,33 @@ function normalizeConfigDoc<T extends { _id: unknown; defaultLanguage?: "en" | "
   };
 }
 
+const ticketModalQuestionValidator = v.object({
+  id: v.string(),
+  label: v.string(),
+  placeholder: v.optional(v.string()),
+  style: v.union(v.literal("short"), v.literal("paragraph")),
+  required: v.boolean(),
+});
+
+const ticketCategoryValidator = v.object({
+  id: v.string(),
+  emoji: v.optional(v.string()),
+  label: v.optional(v.string()),
+  description: v.optional(v.string()),
+  supportRoleIds: v.array(v.string()),
+  modalQuestions: v.array(ticketModalQuestionValidator),
+});
+
+const ticketSettingsValidator = v.object({
+  enabled: v.boolean(),
+  submitChannelId: v.optional(v.string()),
+  ticketParentChannelId: v.optional(v.string()),
+  panelTitle: v.string(),
+  panelDescription: v.string(),
+  panelImageUrl: v.optional(v.string()),
+  categories: v.array(ticketCategoryValidator),
+});
+
 function normalizeUserDoc<T extends { _id: unknown; discordId?: string; id?: string }>(doc: T) {
   return {
     ...doc,
@@ -146,6 +173,7 @@ export const upsertConfig = mutation({
     meetingChannelId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),
     dashboardAdminRoleId: v.optional(v.string()),
+    ticketSettings: v.optional(ticketSettingsValidator),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -165,6 +193,7 @@ export const upsertConfig = mutation({
       meetingChannelId: args.meetingChannelId?.trim() || undefined,
       clanRoleId: args.clanRoleId?.trim() || undefined,
       dashboardAdminRoleId: args.dashboardAdminRoleId?.trim() || undefined,
+      ticketSettings: args.ticketSettings,
       updatedAt: now,
     };
 
@@ -185,6 +214,34 @@ export const upsertConfig = mutation({
     });
 
     return String(configId);
+  },
+});
+
+export const updateTicketPanelState = mutation({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    ticketPanelMessageId: v.optional(v.string()),
+    ticketPanelLastConfigUpdatedAt: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config) {
+      throw new Error("Discord config not found.");
+    }
+
+    await ctx.db.patch(config._id, {
+      ticketPanelMessageId: args.ticketPanelMessageId,
+      ticketPanelLastConfigUpdatedAt: args.ticketPanelLastConfigUpdatedAt,
+    });
+
+    return { ok: true };
   },
 });
 
@@ -404,6 +461,201 @@ export const updateEventSyncState = mutation({
     });
 
     return String(stateId);
+  },
+});
+
+export const getTicketCategoryContext = query({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    categoryId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config?.ticketSettings?.enabled) {
+      return null;
+    }
+
+    const category = config.ticketSettings.categories.find((item) => item.id === args.categoryId);
+    if (!category) {
+      return null;
+    }
+
+    return {
+      config: normalizeConfigDoc(config),
+      category,
+    };
+  },
+});
+
+export const createTicketThread = mutation({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    threadId: v.string(),
+    parentChannelId: v.string(),
+    creatorId: v.string(),
+    categoryId: v.string(),
+    transcriptMessageId: v.optional(v.string()),
+    answers: v.array(v.object({
+      questionId: v.string(),
+      label: v.string(),
+      value: v.string(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config?.ticketSettings?.enabled) {
+      throw new Error("Tickets are not enabled.");
+    }
+
+    const category = config.ticketSettings.categories.find((item) => item.id === args.categoryId);
+    if (!category) {
+      throw new Error("Ticket category not found.");
+    }
+
+    const nextTicketNumber = (config.ticketCounter ?? 0) + 1;
+    const now = new Date().toISOString();
+
+    await ctx.db.patch(config._id, {
+      ticketCounter: nextTicketNumber,
+    });
+
+    const threadRecordId = await ctx.db.insert("ticketThreads", {
+      guildId: args.guildId,
+      threadId: args.threadId,
+      parentChannelId: args.parentChannelId,
+      creatorId: args.creatorId,
+      categoryId: category.id,
+      categoryLabel: category.label?.trim() || category.id,
+      ticketNumber: nextTicketNumber,
+      status: "open",
+      transcriptMessageId: args.transcriptMessageId,
+      answers: args.answers,
+      openedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      ticket: {
+        id: String(threadRecordId),
+        threadId: args.threadId,
+        ticketNumber: nextTicketNumber,
+        categoryId: category.id,
+        categoryLabel: category.label?.trim() || category.id,
+      },
+      category,
+      config: normalizeConfigDoc(config),
+    };
+  },
+});
+
+export const getTicketThreadContext = query({
+  args: {
+    secret: v.string(),
+    threadId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const ticket = await ctx.db
+      .query("ticketThreads")
+      .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+      .unique();
+
+    if (!ticket) {
+      return null;
+    }
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", ticket.guildId))
+      .unique();
+
+    if (!config) {
+      return null;
+    }
+
+    const category = config.ticketSettings?.categories.find((item) => item.id === ticket.categoryId) ?? null;
+
+    return {
+      config: normalizeConfigDoc(config),
+      ticket: normalizeDoc(ticket),
+      category,
+    };
+  },
+});
+
+export const closeTicketThread = mutation({
+  args: {
+    secret: v.string(),
+    threadId: v.string(),
+    closedByUserId: v.string(),
+    closeReason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const ticket = await ctx.db
+      .query("ticketThreads")
+      .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+      .unique();
+
+    if (!ticket) {
+      throw new Error("Ticket not found.");
+    }
+
+    const now = new Date().toISOString();
+
+    await ctx.db.patch(ticket._id, {
+      status: "closed",
+      closedAt: now,
+      closedByUserId: args.closedByUserId,
+      closeReason: args.closeReason?.trim() || undefined,
+      updatedAt: now,
+    });
+
+    return { ok: true };
+  },
+});
+
+export const updateTicketTranscriptMessage = mutation({
+  args: {
+    secret: v.string(),
+    threadId: v.string(),
+    transcriptMessageId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const ticket = await ctx.db
+      .query("ticketThreads")
+      .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+      .unique();
+
+    if (!ticket) {
+      throw new Error("Ticket not found.");
+    }
+
+    await ctx.db.patch(ticket._id, {
+      transcriptMessageId: args.transcriptMessageId,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { ok: true };
   },
 });
 
