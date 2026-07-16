@@ -46,7 +46,18 @@ function getValidationMessage(message: string | undefined, dictionary: Dictionar
   if (!message) return "";
   if (message === "Pick a player first.") return dictionary.userManagement.pickPlayerFirst;
   if (message === "Add a pause note when membership is paused.") return dictionary.userManagement.pauseNoteRequired;
+  if (message === "Mercenaries cannot use the recruit status.") return "Mercenaries cannot use the recruit status.";
   return message;
+}
+
+function getMembershipStatusLabel(
+  type: "member" | "mercenary",
+  status: "pending" | "recruit" | "active",
+  dictionary: Dictionary,
+) {
+  if (status === "pending") return dictionary.userManagement.pendingLabel ?? "Pending";
+  if (status === "recruit") return dictionary.userManagement.recruitLabel ?? "Recruit";
+  return type === "mercenary" ? dictionary.userManagement.mercLabel : dictionary.userManagement.memberLabel;
 }
 
 export function UserAssignmentForm({
@@ -81,6 +92,7 @@ export function UserAssignmentForm({
     return {
       userId: assignment?.userId ?? "",
       type: assignment?.type ?? "member",
+      status: assignment?.status ?? "active",
       primaryGroupId: assignment?.primaryGroupId ?? "",
       secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
       score: initialSelectedUser?.score ?? 0,
@@ -97,6 +109,7 @@ export function UserAssignmentForm({
 
   const selectedUserId = form.watch("userId");
   const paused = form.watch("paused");
+  const assignmentType = form.watch("type");
   const primaryGroupId = form.watch("primaryGroupId");
   const secondaryGroupIds = form.watch("secondaryGroupIds");
 
@@ -232,6 +245,7 @@ export function UserAssignmentForm({
                       setQuery(user.name);
                       if (!canJoinAsMember && canJoinAsMercenary) {
                         form.setValue("type", "mercenary", { shouldValidate: true });
+                        form.setValue("status", "active", { shouldValidate: true });
                       }
                     }}
                     className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left ${
@@ -290,8 +304,8 @@ export function UserAssignmentForm({
           ) : null}
 
           {selected ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+            <div className="grid gap-4 md:grid-cols-6">
+              <div className="space-y-2 md:col-span-2">
                 <Label>{dictionary.userManagement.assignmentType}</Label>
                 <Controller
                   control={form.control}
@@ -299,7 +313,7 @@ export function UserAssignmentForm({
                   render={({ field }) => (
                     canEditFields ? (
                       <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="rounded-xl">
+                        <SelectTrigger className="w-full rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -319,7 +333,42 @@ export function UserAssignmentForm({
                   )}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label>{dictionary.userManagement.membershipStatus ?? "Membership status"}</Label>
+                <Controller
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    canEditFields ? (
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => field.onChange(value)}
+                      >
+                        <SelectTrigger className="w-full rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">{dictionary.userManagement.pendingLabel ?? "Pending"}</SelectItem>
+                          {assignmentType === "member" ? (
+                            <SelectItem value="recruit">{dictionary.userManagement.recruitLabel ?? "Recruit"}</SelectItem>
+                          ) : null}
+                          <SelectItem value="active">
+                            {assignmentType === "mercenary" ? dictionary.userManagement.mercLabel : dictionary.userManagement.memberLabel}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
+                        {getMembershipStatusLabel(assignmentType, field.value, dictionary)}
+                      </div>
+                    )
+                  )}
+                />
+                {form.formState.errors.status ? (
+                  <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.status.message, dictionary)}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2 md:col-span-2">
                 <Label>{dictionary.userManagement.primaryGroup}</Label>
                 <Controller
                   control={form.control}
@@ -327,7 +376,7 @@ export function UserAssignmentForm({
                   render={({ field }) => (
                     canEditFields ? (
                       <Select value={field.value || "__none__"} onValueChange={(value) => field.onChange(value === "__none__" ? "" : value)}>
-                        <SelectTrigger className="rounded-xl">
+                        <SelectTrigger className="w-full rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -347,7 +396,7 @@ export function UserAssignmentForm({
                   )}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-3">
                 <Label>{dictionary.userManagement.tableScore}</Label>
                 {canEditFields ? (
                   <Input
@@ -362,7 +411,7 @@ export function UserAssignmentForm({
                   </div>
                 )}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-3">
                 <Label>{dictionary.userManagement.platformId}</Label>
                 {canEditFields ? (
                   <Input
@@ -386,7 +435,7 @@ export function UserAssignmentForm({
                   <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.platformIds.message, dictionary)}</p>
                 ) : null}
               </div>
-              <div className="space-y-3 md:col-span-2">
+              <div className="space-y-3 md:col-span-6">
                 <Label>{dictionary.userManagement.secondaryGroups}</Label>
                 {canEditFields ? (
                   <div className="grid gap-2 rounded-2xl border border-border/60 p-3 md:grid-cols-2">
@@ -423,7 +472,7 @@ export function UserAssignmentForm({
                   <p className="text-sm text-destructive">{form.formState.errors.secondaryGroupIds.message}</p>
                 ) : null}
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2 md:col-span-6">
                 <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
                   <div>
                     <div className="font-medium">{dictionary.userManagement.pauseMembership}</div>
@@ -439,7 +488,7 @@ export function UserAssignmentForm({
                 </div>
               </div>
               {paused ? (
-                <div className="space-y-2 md:col-span-2">
+                <div className="space-y-2 md:col-span-6">
                   <Label>{dictionary.userManagement.pauseNote}</Label>
                   {canEditFields ? (
                     <Textarea {...form.register("pausedNote")} className="min-h-24 rounded-xl" />

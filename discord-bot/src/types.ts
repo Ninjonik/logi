@@ -17,6 +17,18 @@ export type TicketCategory = {
   modalQuestions: TicketModalQuestion[];
 };
 
+export type MembershipCategory = {
+  id: string;
+  emoji?: string;
+  label?: string;
+  description?: string;
+  supportRoleIds: string[];
+  recruitRoleId?: string;
+  finalRoleId?: string;
+  modalQuestions: TicketModalQuestion[];
+  assignmentType: "member" | "mercenary";
+};
+
 export type TicketSettings = {
   enabled: boolean;
   submitChannelId?: string;
@@ -25,6 +37,17 @@ export type TicketSettings = {
   panelDescription: string;
   panelImageUrl?: string;
   categories: TicketCategory[];
+};
+
+export type MembershipSettings = {
+  enabled: boolean;
+  submitChannelId?: string;
+  applicationParentChannelId?: string;
+  panelTitle: string;
+  panelDescription: string;
+  panelImageUrl?: string;
+  autoAssignRecruitOnApply: boolean;
+  categories: MembershipCategory[];
 };
 
 export type DiscordConfig = {
@@ -38,9 +61,42 @@ export type DiscordConfig = {
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
   ticketSettings?: TicketSettings;
+  membershipSettings?: MembershipSettings;
   ticketPanelMessageId?: string;
   ticketPanelLastConfigUpdatedAt?: string;
+  membershipPanelMessageId?: string;
+  membershipPanelLastConfigUpdatedAt?: string;
   ticketCounter?: number;
+  membershipApplicationCounter?: number;
+  updatedAt: string;
+};
+
+export type MembershipStatus = "pending" | "recruit" | "active";
+
+export type MembershipApplicationThreadRecord = {
+  id: string;
+  guildId: string;
+  threadId: string;
+  parentChannelId: string;
+  creatorId: string;
+  categoryId: string;
+  categoryLabel: string;
+  assignmentType: "member" | "mercenary";
+  applicationNumber: number;
+  assignmentId?: string;
+  transcriptMessageId?: string;
+  answers: Array<{
+    questionId: string;
+    label: string;
+    value: string;
+  }>;
+  status: "open" | "closed";
+  openedAt: string;
+  closedAt?: string;
+  closedByUserId?: string;
+  closeReason?: string;
+  closeOutcome?: "denied" | "pending" | "recruit" | "member" | "mercenary";
+  createdAt: string;
   updatedAt: string;
 };
 

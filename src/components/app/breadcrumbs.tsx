@@ -72,6 +72,8 @@ export function AppBreadcrumbs({
       label = dictionary.sidebar.users;
     } else if (segment === "settings") {
       label = dictionary.sidebar.serverSettings;
+    } else if (segment === "memberships") {
+      label = dictionary.sidebar.memberships;
     } else if (segment === "tickets") {
       label = dictionary.sidebar.tickets;
     } else if (segment === "create") {

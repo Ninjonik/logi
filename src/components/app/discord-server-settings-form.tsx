@@ -70,6 +70,7 @@ export function DiscordServerSettingsForm({
         clanRoleId,
         dashboardAdminRoleId,
         ticketSettings: config?.ticketSettings,
+        membershipSettings: config?.membershipSettings,
       }),
     });
     const body = await response.json();

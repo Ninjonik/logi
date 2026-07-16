@@ -35,6 +35,7 @@ export async function POST(
     const assignmentId = await saveServerUserAssignment({
       serverId,
       ...body,
+      membershipCategoryId: undefined,
     });
     await savePlayerScore({
       userId: body.userId,
@@ -50,6 +51,9 @@ export async function POST(
       userId: body.userId,
       afterPrimaryGroupId: body.primaryGroupId || undefined,
       afterSecondaryGroupIds: body.secondaryGroupIds,
+      afterAssignmentType: body.type,
+      afterMembershipStatus: body.status,
+      afterMembershipCategoryId: undefined,
     });
 
     return NextResponse.json({ assignmentId });

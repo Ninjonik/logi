@@ -9,7 +9,18 @@ import {
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 
 import { SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
-import type { ClanLanguage, DiscordConfig, EventRecord, Group, Roster, SyncPayload, TicketCategory, TicketThreadRecord } from "./types";
+import type {
+  ClanLanguage,
+  DiscordConfig,
+  EventRecord,
+  Group,
+  MembershipCategory,
+  MembershipApplicationThreadRecord,
+  Roster,
+  SyncPayload,
+  TicketCategory,
+  TicketThreadRecord,
+} from "./types";
 import {
   buildForumThreadName,
   buildRosterImageUrl,
@@ -273,6 +284,76 @@ export function buildTicketPanelComponents(config: DiscordConfig) {
   return rows;
 }
 
+export function buildMembershipPanelEmbed(config: DiscordConfig) {
+  const membershipSettings = config.membershipSettings;
+  if (!membershipSettings) {
+    return null;
+  }
+
+  const embed = new EmbedBuilder()
+    .setTitle(membershipSettings.panelTitle.slice(0, 256))
+    .setDescription(membershipSettings.panelDescription.slice(0, 4096))
+    .setColor("#16A34A")
+    .setFooter({ text: "Managed by Logi memberships" });
+
+  if (membershipSettings.panelImageUrl) {
+    embed.setThumbnail(membershipSettings.panelImageUrl);
+  }
+
+  const categoryFieldValue = membershipSettings.categories
+    .map((category) => {
+      const heading = [category.emoji?.trim(), category.label?.trim() || category.id].filter(Boolean).join(" ");
+      const description = category.description?.trim();
+      return description ? `${heading}: ${description}` : heading;
+    })
+    .join("\n")
+    .slice(0, 1024);
+
+  if (categoryFieldValue) {
+    embed.addFields({
+      name: "Applications",
+      value: categoryFieldValue,
+      inline: false,
+    });
+  }
+
+  return embed;
+}
+
+export function buildMembershipPanelComponents(config: DiscordConfig) {
+  const membershipSettings = config.membershipSettings;
+  if (!membershipSettings?.categories.length) {
+    return [];
+  }
+
+  const buttons = membershipSettings.categories.map((category) => {
+    const button = new ButtonBuilder()
+      .setCustomId(`membership:${category.id}`)
+      .setStyle(ButtonStyle.Success);
+
+    const label = category.label?.trim();
+    const emoji = category.emoji?.trim();
+
+    if (emoji) {
+      button.setEmoji(emoji);
+    }
+    if (label) {
+      button.setLabel(label.slice(0, 80));
+    } else if (!emoji) {
+      button.setLabel(category.id.slice(0, 80));
+    }
+
+    return button;
+  });
+
+  const rows: Array<ActionRowBuilder<ButtonBuilder>> = [];
+  for (let index = 0; index < buttons.length; index += 5) {
+    rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(buttons.slice(index, index + 5)));
+  }
+
+  return rows;
+}
+
 export function buildTicketThreadEmbed(input: {
   category: TicketCategory;
   ticket: Pick<TicketThreadRecord, "ticketNumber" | "categoryLabel" | "creatorId">;
@@ -283,6 +364,42 @@ export function buildTicketThreadEmbed(input: {
     .setTitle(`Ticket #${input.ticket.ticketNumber}`)
     .setDescription(`Category: ${input.ticket.categoryLabel}\nCreated by: <@${input.ticket.creatorId}>`)
     .setColor("#F59E0B");
+
+  if (input.answers.length) {
+    embed.addFields(
+      input.answers.slice(0, 25).map((answer) => ({
+        name: answer.label.slice(0, 256),
+        value: answer.value.slice(0, 1024) || "-",
+        inline: false,
+      })),
+    );
+  }
+
+  embed.setFooter({ text: `Opened by ${input.creatorTag}` });
+  return embed;
+}
+
+export function buildMembershipApplicationThreadEmbed(input: {
+  category: MembershipCategory;
+  application: Pick<MembershipApplicationThreadRecord, "applicationNumber" | "categoryLabel" | "creatorId" | "assignmentType">;
+  answers: Array<{ label: string; value: string }>;
+  creatorTag: string;
+  assignmentStatus: "pending" | "recruit" | "active";
+}) {
+  const resolvedStatus = input.assignmentStatus === "pending"
+    ? "Pending"
+    : input.assignmentStatus === "recruit"
+      ? "Recruit"
+      : input.application.assignmentType === "mercenary"
+        ? "Mercenary"
+        : "Member";
+
+  const embed = new EmbedBuilder()
+    .setTitle(`Application #${input.application.applicationNumber}`)
+    .setDescription(
+      `Category: ${input.application.categoryLabel}\nCreated by: <@${input.application.creatorId}>\nInitial status: ${resolvedStatus}`,
+    )
+    .setColor("#16A34A");
 
   if (input.answers.length) {
     embed.addFields(

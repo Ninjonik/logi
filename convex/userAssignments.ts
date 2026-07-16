@@ -1,8 +1,13 @@
+import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+
 import { getGuildByDiscordId, getGuildById, getGuildDiscordId, getUserByDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
+
+type AssignmentType = "member" | "mercenary";
+type AssignmentStatus = "pending" | "recruit" | "active";
 
 function assertInternalSecret(secret: string) {
   if (secret !== INTERNAL_AUTH_SECRET) {
@@ -18,6 +23,148 @@ function normalizeAssignment<T extends { _id: unknown }>(assignment: T) {
   };
 }
 
+function getResolvedMemberStatus(type: AssignmentType, status: AssignmentStatus) {
+  if (status === "pending") return "pending";
+  if (status === "recruit") return "recruit";
+  return type === "mercenary" ? "mercenary" : "member";
+}
+
+async function rebuildServerMembershipState(ctx: MutationCtx, serverDiscordId: string) {
+  const [server, groups, currentServerAssignments] = await Promise.all([
+    getGuildByDiscordId(ctx, serverDiscordId),
+    ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect(),
+    ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", serverDiscordId)).collect(),
+  ]);
+
+  if (!server) {
+    return;
+  }
+
+  const activeMemberAssignments = currentServerAssignments.filter((item) => item.type === "member" && item.status !== "pending");
+  const activeMercAssignments = currentServerAssignments.filter((item) => item.type === "mercenary" && item.status === "active");
+  const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
+
+  await ctx.db.patch(server._id, {
+    memberIds: activeMemberAssignments.map((item) => item.userId),
+    members: activeMemberAssignments.map((item) => ({
+      id: item.userId,
+      primaryGroup: item.primaryGroupId ? groupNameById.get(String(item.primaryGroupId)) : undefined,
+      secondaryGroups: (item.secondaryGroupIds ?? [])
+        .map((groupId) => groupNameById.get(String(groupId)))
+        .filter((groupName): groupName is string => Boolean(groupName)),
+      joinedAt: item.createdAt,
+      status: getResolvedMemberStatus(item.type, item.status),
+    })),
+    mercenaryIds: activeMercAssignments.map((item) => item.userId),
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+async function rebuildUserMembershipState(ctx: MutationCtx, userId: string) {
+  const [user, allAssignmentsForUser] = await Promise.all([
+    getUserByDiscordId(ctx, userId),
+    ctx.db.query("userAssignments").withIndex("userId", (q) => q.eq("userId", userId)).collect(),
+  ]);
+
+  if (!user) {
+    return;
+  }
+
+  const primaryAssignment = allAssignmentsForUser.find((item) => item.type === "member" && item.status !== "pending");
+  const mercenaryGuildIds = allAssignmentsForUser
+    .filter((item) => item.type === "mercenary" && item.status === "active")
+    .map((item) => item.serverId);
+
+  await ctx.db.patch(user._id, {
+    guildId: primaryAssignment?.serverId,
+    mercenaryGuildIds,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+async function rebuildMembershipState(
+  ctx: MutationCtx,
+  serverDiscordId: string,
+  userIds: string[],
+) {
+  await rebuildServerMembershipState(ctx, serverDiscordId);
+  for (const userId of userIds) {
+    await rebuildUserMembershipState(ctx, userId);
+  }
+}
+
+async function saveAssignmentWithServerDiscordId(
+  ctx: MutationCtx,
+  args: {
+    userId: string;
+    serverDiscordId: string;
+    assignmentId?: any;
+    type: AssignmentType;
+    status: AssignmentStatus;
+    membershipCategoryId?: string;
+    primaryGroupId?: any;
+    secondaryGroupIds: any[];
+    paused: boolean;
+    pausedNote?: string;
+  },
+) {
+  const [server, user] = await Promise.all([
+    getGuildByDiscordId(ctx, args.serverDiscordId),
+    getUserByDiscordId(ctx, args.userId),
+  ]);
+
+  if (!server || !user) {
+    throw new Error("Server or user not found.");
+  }
+
+  const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", args.serverDiscordId)).collect();
+  const validGroupIds = new Set(groups.map((group) => String(group._id)));
+
+  if (args.primaryGroupId && !validGroupIds.has(String(args.primaryGroupId))) {
+    throw new Error("Primary group does not belong to this server.");
+  }
+
+  if (args.secondaryGroupIds.some((groupId) => !validGroupIds.has(String(groupId)))) {
+    throw new Error("One of the selected secondary groups does not belong to this server.");
+  }
+
+  const duplicate = await ctx.db
+    .query("userAssignments")
+    .withIndex("serverId_userId", (q) => q.eq("serverId", args.serverDiscordId).eq("userId", args.userId))
+    .unique();
+
+  if (duplicate && duplicate._id !== args.assignmentId) {
+    throw new Error("This user is already assigned to this server.");
+  }
+
+  const now = new Date().toISOString();
+  const payload = {
+    type: args.type,
+    status: args.status,
+    membershipCategoryId: args.membershipCategoryId,
+    primaryGroupId: args.primaryGroupId,
+    secondaryGroupIds: args.secondaryGroupIds.filter((groupId) => groupId !== args.primaryGroupId),
+    paused: args.paused,
+    pausedNote: args.pausedNote,
+    updatedAt: now,
+  };
+
+  let assignmentId = args.assignmentId;
+  if (assignmentId) {
+    await ctx.db.patch(assignmentId, payload);
+  } else {
+    assignmentId = await ctx.db.insert("userAssignments", {
+      userId: args.userId,
+      serverId: args.serverDiscordId,
+      ...payload,
+      createdAt: now,
+    });
+  }
+
+  await rebuildMembershipState(ctx, args.serverDiscordId, [args.userId]);
+  return String(assignmentId);
+}
+
 export const listForServer = query({
   args: {
     serverId: v.id("guilds"),
@@ -27,6 +174,7 @@ export const listForServer = query({
     if (!server) {
       return [];
     }
+
     const assignments = await ctx.db
       .query("userAssignments")
       .withIndex("serverId", (q) => q.eq("serverId", getGuildDiscordId(server)))
@@ -46,6 +194,21 @@ export const getById = query({
   },
 });
 
+export const getForServerUser = query({
+  args: {
+    serverDiscordId: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const assignment = await ctx.db
+      .query("userAssignments")
+      .withIndex("serverId_userId", (q) => q.eq("serverId", args.serverDiscordId).eq("userId", args.userId))
+      .unique();
+
+    return assignment ? normalizeAssignment(assignment) : null;
+  },
+});
+
 export const upsert = mutation({
   args: {
     secret: v.string(),
@@ -53,6 +216,8 @@ export const upsert = mutation({
     assignmentId: v.optional(v.id("userAssignments")),
     userId: v.string(),
     type: v.union(v.literal("member"), v.literal("mercenary")),
+    status: v.union(v.literal("pending"), v.literal("recruit"), v.literal("active")),
+    membershipCategoryId: v.optional(v.string()),
     primaryGroupId: v.optional(v.id("groups")),
     secondaryGroupIds: v.array(v.id("groups")),
     paused: v.boolean(),
@@ -61,105 +226,44 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const [server, user] = await Promise.all([
-      getGuildById(ctx, args.serverId),
-      getUserByDiscordId(ctx, args.userId),
-    ]);
+    const server = await getGuildById(ctx, args.serverId);
     const serverDiscordId = server ? getGuildDiscordId(server) : undefined;
-
-    if (!server || !user) {
-      throw new Error("Server or user not found.");
-    }
     if (!serverDiscordId) {
       throw new Error("Server Discord ID not found.");
     }
-    const resolvedServerDiscordId = serverDiscordId;
-
-    const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", resolvedServerDiscordId)).collect();
-    const validGroupIds = new Set(groups.map((group) => String(group._id)));
-    if (args.primaryGroupId && !validGroupIds.has(String(args.primaryGroupId))) {
-      throw new Error("Primary group does not belong to this server.");
-    }
-
-    if (args.secondaryGroupIds.some((groupId) => !validGroupIds.has(String(groupId)))) {
-      throw new Error("One of the selected secondary groups does not belong to this server.");
-    }
-
-    const duplicate = await ctx.db
-      .query("userAssignments")
-      .withIndex("serverId_userId", (q) => q.eq("serverId", resolvedServerDiscordId).eq("userId", args.userId))
-      .unique();
-
-    if (duplicate && duplicate._id !== args.assignmentId) {
-      throw new Error("This user is already assigned to this server.");
-    }
-
-    const now = new Date().toISOString();
-    let assignmentId = args.assignmentId;
-
-    if (assignmentId) {
-      await ctx.db.patch(assignmentId, {
-        type: args.type,
-        primaryGroupId: args.primaryGroupId,
-        secondaryGroupIds: args.secondaryGroupIds.filter((groupId) => groupId !== args.primaryGroupId),
-        paused: args.paused,
-        pausedNote: args.pausedNote,
-        updatedAt: now,
-      });
-    } else {
-        assignmentId = await ctx.db.insert("userAssignments", {
-          userId: args.userId,
-          serverId: resolvedServerDiscordId,
-        type: args.type,
-        primaryGroupId: args.primaryGroupId,
-        secondaryGroupIds: args.secondaryGroupIds.filter((groupId) => groupId !== args.primaryGroupId),
-        paused: args.paused,
-        pausedNote: args.pausedNote,
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
-
-    const currentServerAssignments = await ctx.db
-      .query("userAssignments")
-      .withIndex("serverId", (q) => q.eq("serverId", resolvedServerDiscordId))
-      .collect();
-
-    const memberAssignments = currentServerAssignments.filter((item) => item.type === "member");
-    const mercAssignments = currentServerAssignments.filter((item) => item.type === "mercenary");
-    const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
-
-    await ctx.db.patch(server._id, {
-      memberIds: memberAssignments.map((item) => item.userId),
-      members: memberAssignments.map((item) => ({
-        id: item.userId,
-        primaryGroup: item.primaryGroupId ? groupNameById.get(String(item.primaryGroupId)) : undefined,
-        secondaryGroups: (item.secondaryGroupIds ?? [])
-          .map((groupId) => groupNameById.get(String(groupId)))
-          .filter((groupName): groupName is string => Boolean(groupName)),
-        joinedAt: item.createdAt,
-      })),
-      mercenaryIds: mercAssignments.map((item) => item.userId),
-      updatedAt: now,
+    return await saveAssignmentWithServerDiscordId(ctx, {
+      userId: args.userId,
+      serverDiscordId,
+      assignmentId: args.assignmentId,
+      type: args.type,
+      status: args.status,
+      membershipCategoryId: args.membershipCategoryId,
+      primaryGroupId: args.primaryGroupId,
+      secondaryGroupIds: args.secondaryGroupIds,
+      paused: args.paused,
+      pausedNote: args.pausedNote,
     });
+  },
+});
 
-    const allAssignmentsForUser = await ctx.db
-      .query("userAssignments")
-      .withIndex("userId", (q) => q.eq("userId", args.userId))
-      .collect();
+export const upsertByServerDiscordId = mutation({
+  args: {
+    secret: v.string(),
+    serverDiscordId: v.string(),
+    assignmentId: v.optional(v.id("userAssignments")),
+    userId: v.string(),
+    type: v.union(v.literal("member"), v.literal("mercenary")),
+    status: v.union(v.literal("pending"), v.literal("recruit"), v.literal("active")),
+    membershipCategoryId: v.optional(v.string()),
+    primaryGroupId: v.optional(v.id("groups")),
+    secondaryGroupIds: v.array(v.id("groups")),
+    paused: v.boolean(),
+    pausedNote: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
 
-    const primaryAssignment = allAssignmentsForUser.find((item) => item.type === "member");
-    const mercenaryGuildIds = allAssignmentsForUser
-      .filter((item) => item.type === "mercenary")
-      .map((item) => item.serverId);
-
-    await ctx.db.patch(user._id, {
-      guildId: primaryAssignment?.serverId,
-      mercenaryGuildIds,
-      updatedAt: now,
-    });
-
-    return String(assignmentId);
+    return await saveAssignmentWithServerDiscordId(ctx, args);
   },
 });
 
@@ -177,52 +281,7 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(args.assignmentId);
-    const now = new Date().toISOString();
-
-    const [server, user] = await Promise.all([
-      getGuildByDiscordId(ctx, assignment.serverId),
-      getUserByDiscordId(ctx, assignment.userId),
-    ]);
-
-    if (server) {
-      const currentServerAssignments = await ctx.db
-        .query("userAssignments")
-        .withIndex("serverId", (q) => q.eq("serverId", assignment.serverId))
-        .collect();
-      const memberAssignments = currentServerAssignments.filter((item) => item.type === "member");
-      const mercAssignments = currentServerAssignments.filter((item) => item.type === "mercenary");
-      const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", assignment.serverId)).collect();
-      const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
-      await ctx.db.patch(server._id, {
-        memberIds: memberAssignments.map((item) => item.userId),
-        members: memberAssignments.map((item) => ({
-          id: item.userId,
-          primaryGroup: item.primaryGroupId ? groupNameById.get(String(item.primaryGroupId)) : undefined,
-          secondaryGroups: (item.secondaryGroupIds ?? [])
-            .map((groupId) => groupNameById.get(String(groupId)))
-            .filter((groupName): groupName is string => Boolean(groupName)),
-          joinedAt: item.createdAt,
-        })),
-        mercenaryIds: mercAssignments.map((item) => item.userId),
-        updatedAt: now,
-      });
-    }
-
-    if (user) {
-      const allAssignmentsForUser = await ctx.db
-        .query("userAssignments")
-        .withIndex("userId", (q) => q.eq("userId", assignment.userId))
-        .collect();
-      const primaryAssignment = allAssignmentsForUser.find((item) => item.type === "member");
-      const mercenaryGuildIds = allAssignmentsForUser
-        .filter((item) => item.type === "mercenary")
-        .map((item) => item.serverId);
-      await ctx.db.patch(user._id, {
-        guildId: primaryAssignment?.serverId,
-        mercenaryGuildIds,
-        updatedAt: now,
-      });
-    }
+    await rebuildMembershipState(ctx, assignment.serverId, [assignment.userId]);
   },
 });
 
@@ -242,16 +301,14 @@ export const importDiscordMembers = mutation({
     assertInternalSecret(args.secret);
 
     const server = await getGuildById(ctx, args.serverId);
-
     if (!server) {
       throw new Error("Server not found.");
     }
-    const serverDiscordId = getGuildDiscordId(server);
 
+    const serverDiscordId = getGuildDiscordId(server);
     const now = new Date().toISOString();
     const groups = await ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect();
     const validGroupIds = new Set(groups.map((group) => String(group._id)));
-    const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
     const existingAssignments = await ctx.db
       .query("userAssignments")
       .withIndex("serverId", (q) => q.eq("serverId", serverDiscordId))
@@ -302,11 +359,13 @@ export const importDiscordMembers = mutation({
         ...member.secondaryGroupIds.map((groupId) => String(groupId)),
       ])]
         .filter((groupId) => groupId !== String(primaryGroupId ?? ""))
-        .map((groupId) => groupId as any);
+        .map((groupId) => groupId as never);
 
       if (existingAssignment) {
         await ctx.db.patch(existingAssignment._id, {
           type: existingAssignment.type ?? args.assignmentType,
+          status: existingAssignment.status ?? "active",
+          membershipCategoryId: existingAssignment.membershipCategoryId,
           primaryGroupId,
           secondaryGroupIds: mergedSecondaryGroupIds,
           paused: existingAssignment.paused,
@@ -319,6 +378,8 @@ export const importDiscordMembers = mutation({
           userId: member.userId,
           serverId: serverDiscordId,
           type: args.assignmentType,
+          status: "active",
+          membershipCategoryId: undefined,
           primaryGroupId: undefined,
           secondaryGroupIds: mergedSecondaryGroupIds,
           paused: false,
@@ -334,50 +395,8 @@ export const importDiscordMembers = mutation({
       }
     }
 
-    const currentServerAssignments = await ctx.db
-      .query("userAssignments")
-      .withIndex("serverId", (q) => q.eq("serverId", serverDiscordId))
-      .collect();
-
-    const memberAssignments = currentServerAssignments.filter((item) => item.type === "member");
-    const mercAssignments = currentServerAssignments.filter((item) => item.type === "mercenary");
-
-    await ctx.db.patch(server._id, {
-      memberIds: memberAssignments.map((item) => item.userId),
-      members: memberAssignments.map((item) => ({
-        id: item.userId,
-        primaryGroup: item.primaryGroupId ? groupNameById.get(String(item.primaryGroupId)) : undefined,
-        secondaryGroups: (item.secondaryGroupIds ?? [])
-          .map((groupId) => groupNameById.get(String(groupId)))
-          .filter((groupName): groupName is string => Boolean(groupName)),
-        joinedAt: item.createdAt,
-      })),
-      mercenaryIds: mercAssignments.map((item) => item.userId),
-      updatedAt: now,
-    });
-
     const touchedUserIds = [...new Set(args.members.map((member) => member.userId))];
-    for (const userId of touchedUserIds) {
-      const [user, allAssignmentsForUser] = await Promise.all([
-        getUserByDiscordId(ctx, userId),
-        ctx.db.query("userAssignments").withIndex("userId", (q) => q.eq("userId", userId)).collect(),
-      ]);
-
-      if (!user) {
-        continue;
-      }
-
-      const primaryAssignment = allAssignmentsForUser.find((item) => item.type === "member");
-      const mercenaryGuildIds = allAssignmentsForUser
-        .filter((item) => item.type === "mercenary")
-        .map((item) => item.serverId);
-
-      await ctx.db.patch(user._id, {
-        guildId: primaryAssignment?.serverId,
-        mercenaryGuildIds,
-        updatedAt: now,
-      });
-    }
+    await rebuildMembershipState(ctx, serverDiscordId, touchedUserIds);
 
     return {
       importedCount: args.members.length,

@@ -9,6 +9,8 @@ import { syncForumChannel } from "./forum";
 import {
   buildAnnouncementMessage,
   buildAttendanceReminderComponents,
+  buildMembershipPanelComponents,
+  buildMembershipPanelEmbed,
   buildTicketPanelComponents,
   buildTicketPanelEmbed,
 } from "./message-builders";
@@ -57,6 +59,7 @@ export function createPollLoop(options: PollLoopOptions) {
 async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
   await syncGuildMemberAccess(client, payload);
   await syncTicketPanel(client, payload);
+  await syncMembershipPanel(client, payload);
   await processAttendanceReminders(client, queuedEventIds, payload);
 
   for (const event of payload.events) {
@@ -159,6 +162,52 @@ async function syncTicketPanel(client: Client, payload: SyncPayload) {
       guildId: payload.config.guildId,
       ticketPanelMessageId,
       ticketPanelLastConfigUpdatedAt: payload.config.updatedAt,
+    });
+  }
+}
+
+async function syncMembershipPanel(client: Client, payload: SyncPayload) {
+  const membershipSettings = payload.config.membershipSettings;
+  if (!membershipSettings?.enabled || !membershipSettings.submitChannelId || !membershipSettings.applicationParentChannelId || !membershipSettings.categories.length) {
+    return;
+  }
+
+  const guild = await client.guilds.fetch(payload.config.guildId).catch(() => null);
+  if (!guild) return;
+
+  const channel = await guild.channels.fetch(membershipSettings.submitChannelId).catch(() => null);
+  if (!channel?.isTextBased() || channel.type !== ChannelType.GuildText) {
+    return;
+  }
+
+  const textChannel = channel as TextChannel;
+  const currentMessage = payload.config.membershipPanelMessageId
+    ? await textChannel.messages.fetch(payload.config.membershipPanelMessageId).catch(() => null)
+    : null;
+  const embed = buildMembershipPanelEmbed(payload.config);
+  if (!embed) {
+    return;
+  }
+  const components = buildMembershipPanelComponents(payload.config);
+
+  let membershipPanelMessageId = payload.config.membershipPanelMessageId;
+
+  if (currentMessage) {
+    await currentMessage.edit({ embeds: [embed], components });
+  } else {
+    const created = await textChannel.send({ embeds: [embed], components });
+    membershipPanelMessageId = created.id;
+  }
+
+  if (
+    membershipPanelMessageId !== payload.config.membershipPanelMessageId ||
+    payload.config.membershipPanelLastConfigUpdatedAt !== payload.config.updatedAt
+  ) {
+    await convex.mutation(references.updateMembershipPanelState, {
+      secret: env.internalSecret,
+      guildId: payload.config.guildId,
+      membershipPanelMessageId,
+      membershipPanelLastConfigUpdatedAt: payload.config.updatedAt,
     });
   }
 }

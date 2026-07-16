@@ -36,6 +36,7 @@ export type GuildMember = {
   id: string;
   primaryGroup?: string;
   secondaryGroups: string[];
+  status?: "pending" | "recruit" | "member" | "mercenary";
   joinedAt?: Timestamp;
 };
 
@@ -83,6 +84,18 @@ export type TicketCategory = {
   modalQuestions: TicketModalQuestion[];
 };
 
+export type MembershipCategory = {
+  id: string;
+  emoji?: string;
+  label?: string;
+  description?: string;
+  supportRoleIds: string[];
+  recruitRoleId?: string;
+  finalRoleId?: string;
+  modalQuestions: TicketModalQuestion[];
+  assignmentType: "member" | "mercenary";
+};
+
 export type TicketSettings = {
   enabled: boolean;
   submitChannelId?: string;
@@ -91,6 +104,17 @@ export type TicketSettings = {
   panelDescription: string;
   panelImageUrl?: string;
   categories: TicketCategory[];
+};
+
+export type MembershipSettings = {
+  enabled: boolean;
+  submitChannelId?: string;
+  applicationParentChannelId?: string;
+  panelTitle: string;
+  panelDescription: string;
+  panelImageUrl?: string;
+  autoAssignRecruitOnApply: boolean;
+  categories: MembershipCategory[];
 };
 
 export type DiscordConfig = {
@@ -104,12 +128,19 @@ export type DiscordConfig = {
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
   ticketSettings?: TicketSettings;
+  membershipSettings?: MembershipSettings;
   ticketPanelMessageId?: string;
   ticketPanelLastConfigUpdatedAt?: string;
+  membershipPanelMessageId?: string;
+  membershipPanelLastConfigUpdatedAt?: string;
   ticketCounter?: number;
+  membershipApplicationCounter?: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
+
+export type MembershipStatus = "pending" | "recruit" | "active";
+export type MembershipCloseOutcome = "denied" | "pending" | "recruit" | "member" | "mercenary";
 
 export type DiscordMemberAccess = {
   id: string;

@@ -2,13 +2,21 @@ import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
 import { getInternalAuthSecret } from "@/lib/env";
-import type { DiscordConfig, TicketSettings } from "@/types/domain";
+import type { DiscordConfig, MembershipSettings, TicketSettings } from "@/types/domain";
 
 const getConfigByGuildReference = makeFunctionReference<"query">("discord:getConfigByGuild");
+const getMembershipApplicationByAssignmentReference = makeFunctionReference<"query">("discord:getMembershipApplicationByAssignment");
 const upsertConfigReference = makeFunctionReference<"mutation">("discord:upsertConfig");
 
 export async function getDiscordConfigByGuild(guildId: string) {
   return (await fetchQuery(getConfigByGuildReference, { guildId: guildId as never })) as DiscordConfig | null;
+}
+
+export async function getMembershipApplicationByAssignment(assignmentId: string) {
+  return (await fetchQuery(getMembershipApplicationByAssignmentReference, {
+    secret: getInternalAuthSecret(),
+    assignmentId: assignmentId as never,
+  })) as { categoryId: string } | null;
 }
 
 export async function saveDiscordConfig(input: {
@@ -21,6 +29,7 @@ export async function saveDiscordConfig(input: {
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
   ticketSettings?: TicketSettings;
+  membershipSettings?: MembershipSettings;
 }) {
   return await fetchMutation(upsertConfigReference, {
     secret: getInternalAuthSecret(),
@@ -33,6 +42,7 @@ export async function saveDiscordConfig(input: {
     clanRoleId: input.clanRoleId,
     dashboardAdminRoleId: input.dashboardAdminRoleId,
     ticketSettings: input.ticketSettings,
+    membershipSettings: input.membershipSettings,
   });
 }
 

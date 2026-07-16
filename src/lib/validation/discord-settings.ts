@@ -35,6 +35,12 @@ const ticketCategorySchema = z.object({
   modalQuestions: z.array(ticketModalQuestionSchema).max(5, "Discord modals can have up to 5 questions."),
 });
 
+const membershipCategorySchema = ticketCategorySchema.extend({
+  recruitRoleId: discordIdField,
+  finalRoleId: discordIdField,
+  assignmentType: z.enum(["member", "mercenary"]),
+});
+
 const ticketSettingsSchema = z.object({
   enabled: z.boolean(),
   submitChannelId: discordIdField,
@@ -111,6 +117,82 @@ const ticketSettingsSchema = z.object({
   }
 });
 
+const membershipSettingsSchema = z.object({
+  enabled: z.boolean(),
+  submitChannelId: discordIdField,
+  applicationParentChannelId: discordIdField,
+  panelTitle: z.string().trim().max(256, "Discord embed titles can be up to 256 characters."),
+  panelDescription: z.string().trim().max(4096, "Discord embed descriptions can be up to 4096 characters."),
+  panelImageUrl: imageUrlField,
+  autoAssignRecruitOnApply: z.boolean(),
+  categories: z.array(membershipCategorySchema).max(20, "Keep membership categories to 20 or fewer buttons."),
+}).superRefine((value, ctx) => {
+  if (!value.enabled) {
+    return;
+  }
+
+  if (!value.submitChannelId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["submitChannelId"],
+      message: "Pick a submit channel for clan applications.",
+    });
+  }
+
+  if (!value.applicationParentChannelId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["applicationParentChannelId"],
+      message: "Pick a parent text channel for application threads.",
+    });
+  }
+
+  if (!value.panelTitle.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["panelTitle"],
+      message: "Application panel title is required.",
+    });
+  }
+
+  if (!value.panelDescription.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["panelDescription"],
+      message: "Application panel description is required.",
+    });
+  }
+
+  if (!value.categories.length) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["categories"],
+      message: "Add at least one application category.",
+    });
+  }
+
+  const usedIds = new Set<string>();
+  for (const [index, category] of value.categories.entries()) {
+    if (!category.label?.trim() && !category.emoji?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["categories", index, "label"],
+        message: "Each application category needs at least a label or an emoji.",
+      });
+    }
+
+    if (usedIds.has(category.id)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["categories", index, "id"],
+        message: "Application category IDs must be unique.",
+      });
+    }
+
+    usedIds.add(category.id);
+  }
+});
+
 export const discordSettingsSchema = z.object({
   timezone: z.enum(supportedTimezones),
   defaultLanguage: z.enum(supportedClanLanguages),
@@ -120,6 +202,7 @@ export const discordSettingsSchema = z.object({
   clanRoleId: discordIdField,
   dashboardAdminRoleId: discordIdField,
   ticketSettings: ticketSettingsSchema.optional(),
+  membershipSettings: membershipSettingsSchema.optional(),
 });
 
 export type DiscordSettingsInput = z.infer<typeof discordSettingsSchema>;

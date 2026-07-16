@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { syncDiscordRolesForAssignment } from "@/lib/discord";
+import { getMembershipApplicationByAssignment } from "@/lib/server-discord-settings";
 import { getServerContext } from "@/lib/server-context";
 import { deleteServerUserAssignment, savePlayerPlatformId, savePlayerScore, saveServerUserAssignment } from "@/lib/server-user-management";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
@@ -34,10 +35,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
     const existingAssignment = await getServerUserAssignment(assignmentId);
+    const linkedApplication = existingAssignment?.membershipCategoryId
+      ? null
+      : await getMembershipApplicationByAssignment(assignmentId);
+    const effectiveMembershipCategoryId = existingAssignment?.membershipCategoryId ?? linkedApplication?.categoryId;
     const updatedAssignmentId = await saveServerUserAssignment({
       assignmentId,
       serverId,
       ...body,
+      membershipCategoryId: effectiveMembershipCategoryId,
     });
     await savePlayerScore({
       userId: body.userId,
@@ -53,8 +59,14 @@ export async function PATCH(
       userId: body.userId,
       beforePrimaryGroupId: existingAssignment?.primaryGroupId,
       beforeSecondaryGroupIds: existingAssignment?.secondaryGroupIds ?? [],
+      beforeAssignmentType: existingAssignment?.type,
+      beforeMembershipStatus: existingAssignment?.status,
+      beforeMembershipCategoryId: effectiveMembershipCategoryId,
       afterPrimaryGroupId: body.primaryGroupId || undefined,
       afterSecondaryGroupIds: body.secondaryGroupIds,
+      afterAssignmentType: body.type,
+      afterMembershipStatus: body.status,
+      afterMembershipCategoryId: effectiveMembershipCategoryId,
     });
 
     return NextResponse.json({ assignmentId: updatedAssignmentId });
@@ -81,6 +93,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
     const existingAssignment = await getServerUserAssignment(assignmentId);
+    const linkedApplication = existingAssignment?.membershipCategoryId
+      ? null
+      : existingAssignment
+        ? await getMembershipApplicationByAssignment(assignmentId)
+        : null;
+    const effectiveMembershipCategoryId = existingAssignment?.membershipCategoryId ?? linkedApplication?.categoryId;
     await deleteServerUserAssignment(assignmentId);
     if (existingAssignment) {
       await syncRolesSafely({
@@ -89,6 +107,9 @@ export async function DELETE(
         userId: existingAssignment.userId,
         beforePrimaryGroupId: existingAssignment.primaryGroupId,
         beforeSecondaryGroupIds: existingAssignment.secondaryGroupIds ?? [],
+        beforeAssignmentType: existingAssignment.type,
+        beforeMembershipStatus: existingAssignment.status,
+        beforeMembershipCategoryId: effectiveMembershipCategoryId,
       });
     }
     return NextResponse.json({ ok: true });

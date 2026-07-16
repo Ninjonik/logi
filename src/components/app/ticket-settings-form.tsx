@@ -202,6 +202,7 @@ export function TicketSettingsForm({
         clanRoleId: config?.clanRoleId,
         dashboardAdminRoleId: config?.dashboardAdminRoleId,
         ticketSettings: normalizedTicketSettings,
+        membershipSettings: config?.membershipSettings,
       }),
     });
     const body = await response.json();

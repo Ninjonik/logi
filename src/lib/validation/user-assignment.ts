@@ -4,6 +4,7 @@ export const userAssignmentSchema = z
   .object({
     userId: z.string().min(1, "Pick a player first."),
     type: z.enum(["member", "mercenary"]),
+    status: z.enum(["pending", "recruit", "active"]),
     primaryGroupId: z.string().trim().optional(),
     secondaryGroupIds: z.array(z.string()),
     score: z.int(),
@@ -25,6 +26,14 @@ export const userAssignmentSchema = z
         code: z.ZodIssueCode.custom,
         path: ["secondaryGroupIds"],
         message: "Primary group cannot also be selected as a secondary group.",
+      });
+    }
+
+    if (value.type === "mercenary" && value.status === "recruit") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["status"],
+        message: "Mercenaries cannot use the recruit status.",
       });
     }
 

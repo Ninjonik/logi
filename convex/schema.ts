@@ -34,6 +34,12 @@ const guildMember = v.object({
   group: v.optional(v.string()),
   primaryGroup: v.optional(v.string()),
   secondaryGroups: v.optional(v.array(v.string())),
+  status: v.optional(v.union(
+    v.literal("pending"),
+    v.literal("recruit"),
+    v.literal("member"),
+    v.literal("mercenary"),
+  )),
   joinedAt: v.optional(v.string()),
 });
 
@@ -103,6 +109,18 @@ const ticketCategory = v.object({
   modalQuestions: v.array(ticketModalQuestion),
 });
 
+const membershipCategory = v.object({
+  id: v.string(),
+  emoji: v.optional(v.string()),
+  label: v.optional(v.string()),
+  description: v.optional(v.string()),
+  supportRoleIds: v.array(v.string()),
+  recruitRoleId: v.optional(v.string()),
+  finalRoleId: v.optional(v.string()),
+  modalQuestions: v.array(ticketModalQuestion),
+  assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
+});
+
 const ticketSettings = v.object({
   enabled: v.boolean(),
   submitChannelId: v.optional(v.string()),
@@ -111,6 +129,17 @@ const ticketSettings = v.object({
   panelDescription: v.string(),
   panelImageUrl: v.optional(v.string()),
   categories: v.array(ticketCategory),
+});
+
+const membershipSettings = v.object({
+  enabled: v.boolean(),
+  submitChannelId: v.optional(v.string()),
+  applicationParentChannelId: v.optional(v.string()),
+  panelTitle: v.string(),
+  panelDescription: v.string(),
+  panelImageUrl: v.optional(v.string()),
+  autoAssignRecruitOnApply: v.boolean(),
+  categories: v.array(membershipCategory),
 });
 
 const eventResult = v.object({
@@ -248,6 +277,8 @@ const userAssignments = defineTable({
   userId: v.string(),
   serverId: v.string(),
   type: v.union(v.literal("member"), v.literal("mercenary")),
+  status: v.union(v.literal("pending"), v.literal("recruit"), v.literal("active")),
+  membershipCategoryId: v.optional(v.string()),
   primaryGroupId: v.optional(v.id("groups")),
   secondaryGroupIds: v.optional(v.array(v.id("groups"))),
   group: v.optional(v.string()),
@@ -289,9 +320,13 @@ export default defineSchema({
     clanRoleId: v.optional(v.string()),
     dashboardAdminRoleId: v.optional(v.string()),
     ticketSettings: v.optional(ticketSettings),
+    membershipSettings: v.optional(membershipSettings),
     ticketPanelMessageId: v.optional(v.string()),
     ticketPanelLastConfigUpdatedAt: v.optional(v.string()),
+    membershipPanelMessageId: v.optional(v.string()),
+    membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
     ticketCounter: v.optional(v.number()),
+    membershipApplicationCounter: v.optional(v.number()),
     createdAt: v.string(),
     updatedAt: v.string(),
   }).index("guildId", ["guildId"]),
@@ -440,6 +475,54 @@ export default defineSchema({
     .index("guildId", ["guildId"])
     .index("threadId", ["threadId"])
     .index("guildId_ticketNumber", ["guildId", "ticketNumber"]),
+  membershipApplicationThreads: defineTable({
+    guildId: v.string(),
+    threadId: v.string(),
+    parentChannelId: v.string(),
+    creatorId: v.string(),
+    categoryId: v.string(),
+    categoryLabel: v.string(),
+    assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
+    applicationNumber: v.number(),
+    assignmentId: v.optional(v.id("userAssignments")),
+    transcriptMessageId: v.optional(v.string()),
+    answers: v.array(v.object({
+      questionId: v.string(),
+      label: v.string(),
+      value: v.string(),
+    })),
+    status: v.union(v.literal("open"), v.literal("closed")),
+    openedAt: v.string(),
+    closedAt: v.optional(v.string()),
+    closedByUserId: v.optional(v.string()),
+    closeReason: v.optional(v.string()),
+    closeOutcome: v.optional(v.union(
+      v.literal("denied"),
+      v.literal("pending"),
+      v.literal("recruit"),
+      v.literal("member"),
+      v.literal("mercenary"),
+    )),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("guildId", ["guildId"])
+    .index("threadId", ["threadId"])
+    .index("guildId_applicationNumber", ["guildId", "applicationNumber"]),
+  platformIdLinkTokens: defineTable({
+    token: v.string(),
+    guildId: v.string(),
+    userId: v.string(),
+    userName: v.string(),
+    userAvatar: v.optional(v.string()),
+    categoryId: v.string(),
+    expiresAt: v.string(),
+    consumedAt: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("token", ["token"])
+    .index("userId", ["userId"]),
   userAssignments,
   playerStats: defineTable({
     id: v.string(),
