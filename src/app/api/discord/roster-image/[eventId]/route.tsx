@@ -39,9 +39,18 @@ const SAFETY_BUFFER = 24; // tiny cushion so rounding never clips the bottom edg
 const SMALL_GROUP_MAX_SQUADS = 2;
 const LARGE_GROUP_MAX_PER_ROW = 4;
 
-type Player = { id?: string; ack: boolean; confirmed?: boolean; roleName?: string; roleIcon?: string; note?: string };
+type Player = { id?: string; customName?: string; ack: boolean; confirmed?: boolean; roleName?: string; roleIcon?: string; note?: string };
 type Squad = { name: string; color: string; players: Player[] };
 type GroupSection = { group: string; color: string; squads: Squad[] };
+
+function getFilledPlayerName(player: Player, userName?: string | null) {
+  const customName = player.customName?.trim();
+  if (customName) {
+    return customName;
+  }
+
+  return userName ?? null;
+}
 
 function getAttendanceStyle(player: Player) {
   if (player.confirmed) {
@@ -162,7 +171,7 @@ function estimateSquadHeight(squad: Squad) {
   const sectionsHeight = roleSections.reduce((total, section) => {
     const playersHeight =
       section.players.reduce(
-        (sum, player) => sum + (player.id ? PLAYER_ROW_HEIGHT : PLAYER_ROW_HEIGHT_EMPTY),
+        (sum, player) => sum + (getFilledPlayerName(player) ? PLAYER_ROW_HEIGHT : PLAYER_ROW_HEIGHT_EMPTY),
         0,
       ) + Math.max(0, section.players.length - 1) * PLAYER_ROW_GAP;
     return total + ROLE_LABEL_HEIGHT + ROLE_LABEL_GAP + playersHeight;
@@ -302,7 +311,7 @@ export async function GET(
 
   const reserveUsers = data.roster.reservePlayerIds.map((id) => usersById.get(id)).filter(Boolean);
   const totalAssigned = data.roster.squads.reduce(
-    (sum, squad) => sum + squad.players.filter((player) => player.id).length,
+    (sum, squad) => sum + squad.players.filter((player) => getFilledPlayerName(player)).length,
     0,
   );
 
@@ -442,6 +451,7 @@ export async function GET(
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                               {section.players.map((player, index) => {
                                 const user = player.id ? usersById.get(player.id) : null;
+                                const playerName = getFilledPlayerName(player, user?.name);
                                 const attendance = getAttendanceStyle(player);
 
                                 return (
@@ -451,7 +461,7 @@ export async function GET(
                                       display: "flex",
                                       alignItems: "center",
                                       gap: "6px",
-                                      background: user ? attendance.background : "#182235",
+                                      background: playerName ? (user ? attendance.background : "#182235") : "#182235",
                                       borderRadius: "10px",
                                       padding: "6px 10px",
                                       minWidth: 0,
@@ -466,6 +476,24 @@ export async function GET(
                                         height="20"
                                         style={{ display: "flex", width: "20px", height: "20px", borderRadius: "999px", objectFit: "cover", flexShrink: 0 }}
                                       />
+                                    ) : playerName ? (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          width: "20px",
+                                          height: "20px",
+                                          borderRadius: "999px",
+                                          background: "#334155",
+                                          color: "#e2e8f0",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          fontSize: "9px",
+                                          fontWeight: 700,
+                                          flexShrink: 0,
+                                        }}
+                                      >
+                                        {(playerName.slice(0, 2) || "?").toUpperCase()}
+                                      </div>
                                     ) : null}
                                     <span
                                       style={{
@@ -474,15 +502,15 @@ export async function GET(
                                         minWidth: 0,
                                         fontSize: "12px",
                                         fontWeight: 600,
-                                        color: user ? "#e2e8f0" : "#64748b",
-                                        justifyContent: user ? "flex-start" : "center",
-                                        textAlign: user ? "left" : "center",
+                                        color: playerName ? "#e2e8f0" : "#64748b",
+                                        justifyContent: playerName ? "flex-start" : "center",
+                                        textAlign: playerName ? "left" : "center",
                                         overflow: "hidden",
                                         textOverflow: "ellipsis",
                                         whiteSpace: "nowrap",
                                       }}
                                     >
-                                    {user?.name ?? messages.rosterImage.openSlot}
+                                    {playerName ?? messages.rosterImage.openSlot}
                                   </span>
                                     {player.note ? (
                                       <span

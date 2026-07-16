@@ -373,6 +373,7 @@ export type SquadPreset = {
 
 export type RosterPlayer = {
   id?: string;
+  customName?: string;
   ack: boolean;
   confirmed?: boolean;
   note?: string;

@@ -227,6 +227,7 @@ const rawMatch = v.object({
 
 const rosterPlayer = v.object({
   id: v.optional(v.string()),
+  customName: v.optional(v.string()),
   ack: v.boolean(),
   confirmed: v.optional(v.boolean()),
   note: v.optional(v.string()),

@@ -7,25 +7,13 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="primary group is optional, better player assignment ui">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="added a simple ticket system">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/rosters.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/rosters.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/convex.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/convex.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/interactions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/interactions.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/message-builders.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/message-builders.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/sync.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/sync.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/types.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/utils.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/utils.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/breadcrumbs.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/breadcrumbs.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/discord-server-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/discord-server-settings-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/discord/roster-image/[eventId]/route.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/discord/roster-image/[eventId]/route.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/roster-image.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/roster-image.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -212,7 +200,7 @@
       <workItem from="1784042754118" duration="3791000" />
       <workItem from="1784065106292" duration="4520000" />
       <workItem from="1784128265407" duration="13704000" />
-      <workItem from="1784220915709" duration="1150000" />
+      <workItem from="1784220915709" duration="2511000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -518,7 +506,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784153175252</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="added a simple ticket system">
+      <option name="closed" value="true" />
+      <created>1784222429240</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1784222429240</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -538,7 +534,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="topic presets + attachment implemented" />
     <MESSAGE value="QoL changes" />
     <MESSAGE value="- better navbar" />
     <MESSAGE value="better roster management, better user and clan settings (with ability to change avatar via uploading a file), better table views (+ SSR pagination + searching), better skeletons" />
@@ -563,6 +558,7 @@
     <MESSAGE value="different modes for roster editing and display" />
     <MESSAGE value="better roster board UI" />
     <MESSAGE value="primary group is optional, better player assignment ui" />
-    <option name="LAST_COMMIT_MESSAGE" value="primary group is optional, better player assignment ui" />
+    <MESSAGE value="added a simple ticket system" />
+    <option name="LAST_COMMIT_MESSAGE" value="added a simple ticket system" />
   </component>
 </project>

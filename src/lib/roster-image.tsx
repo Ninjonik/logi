@@ -32,6 +32,7 @@ type RosterImageContext = {
       order: number;
       players: Array<{
         id?: string;
+        customName?: string;
         ack: boolean;
         confirmed?: boolean;
         roleName?: string;

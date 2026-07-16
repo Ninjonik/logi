@@ -62,6 +62,21 @@ type DragState =
 type AttendanceStatus = "pending" | "acknowledged" | "confirmed";
 type RosterBoardMode = "view" | "layout" | "assignment";
 
+function getCustomPlayerName(player: Roster["squads"][number]["players"][number]) {
+  return player.customName?.trim() || undefined;
+}
+
+function isRosterSlotFilled(player: Roster["squads"][number]["players"][number]) {
+  return Boolean(player.id || getCustomPlayerName(player));
+}
+
+function clearRosterPlayerAssignment(player: Roster["squads"][number]["players"][number]) {
+  player.id = undefined;
+  player.customName = undefined;
+  player.ack = false;
+  player.confirmed = false;
+}
+
 function getAttendanceStatus(player: Roster["squads"][number]["players"][number]): AttendanceStatus {
   if (player.confirmed) {
     return "confirmed";
@@ -225,7 +240,7 @@ export function RosterBoard({
   }, [board, groups, sortedSquads]);
 
   const assignedCount = useMemo(
-    () => board?.squads.reduce((sum, squad) => sum + squad.players.filter((player) => player.id).length, 0) ?? 0,
+    () => board?.squads.reduce((sum, squad) => sum + squad.players.filter((player) => isRosterSlotFilled(player)).length, 0) ?? 0,
     [board],
   );
 
@@ -318,9 +333,7 @@ export function RosterBoard({
       next.squads.forEach((squad) => {
         squad.players.forEach((player) => {
           if (player.id === userId) {
-            player.id = undefined;
-            player.ack = false;
-            player.confirmed = false;
+            clearRosterPlayerAssignment(player);
           }
         });
       });
@@ -333,8 +346,34 @@ export function RosterBoard({
       }
 
       slot.id = userId;
+      slot.customName = undefined;
       slot.ack = false;
       slot.confirmed = false;
+      return next;
+    });
+  }
+
+  function assignPlaceholderToSlot(customName: string, squadIndex: number, playerIndex: number) {
+    const trimmedName = customName.trim();
+    if (!trimmedName) {
+      return;
+    }
+
+    setBoard((current) => {
+      if (!current) return current;
+      const next = structuredClone(current);
+      const slot = next.squads[squadIndex]?.players[playerIndex];
+      if (!slot) return current;
+
+      if (slot.id && slot.id !== trimmedName) {
+        const reserveIds = next.reservePlayerIds || (next.reservePlayerIds = []);
+        if (!reserveIds.includes(slot.id)) {
+          reserveIds.push(slot.id);
+        }
+      }
+
+      clearRosterPlayerAssignment(slot);
+      slot.customName = trimmedName;
       return next;
     });
   }
@@ -352,9 +391,7 @@ export function RosterBoard({
       } else {
         reserveIds.push(slot.id);
       }
-      slot.id = undefined;
-      slot.ack = false;
-      slot.confirmed = false;
+      clearRosterPlayerAssignment(slot);
       return next;
     });
   }
@@ -369,9 +406,7 @@ export function RosterBoard({
       if (!notAttendingIds.includes(slot.id)) {
         notAttendingIds.push(slot.id);
       }
-      slot.id = undefined;
-      slot.ack = false;
-      slot.confirmed = false;
+      clearRosterPlayerAssignment(slot);
       return next;
     });
   }
@@ -479,9 +514,28 @@ export function RosterBoard({
       if (!current) return current;
       const next = structuredClone(current);
       const slot = next.squads[squadIndex]?.players[playerIndex];
-      if (!slot) return current;
+      if (!slot || !slot.id) return current;
       slot.ack = status !== "pending";
       slot.confirmed = status === "confirmed";
+      return next;
+    });
+  }
+
+  function clearSlotAssignment(squadIndex: number, playerIndex: number) {
+    setBoard((current) => {
+      if (!current) return current;
+      const next = structuredClone(current);
+      const slot = next.squads[squadIndex]?.players[playerIndex];
+      if (!slot || (!slot.id && !getCustomPlayerName(slot))) return current;
+
+      if (slot.id) {
+        const reserveIds = next.reservePlayerIds || (next.reservePlayerIds = []);
+        if (!reserveIds.includes(slot.id)) {
+          reserveIds.push(slot.id);
+        }
+      }
+
+      clearRosterPlayerAssignment(slot);
       return next;
     });
   }
@@ -636,6 +690,7 @@ export function RosterBoard({
             players: s.players.map(p => ({
               ...p,
               id: p.id || undefined,
+              customName: p.customName?.trim() || undefined,
             }))
           })),
           reservePlayerIds: board.reservePlayerIds || [],
@@ -874,9 +929,11 @@ export function RosterBoard({
                         removeRosterSlot={removeRosterSlot}
                         moveSlotToReserve={moveSlotToReserve}
                         moveSlotToNotAttending={moveSlotToNotAttending}
+                        clearSlotAssignment={clearSlotAssignment}
                         handleDropOnSlot={handleDropOnSlot}
                         addRosterSlot={addRosterSlot}
                         assignUserToSlot={assignUserToSlot}
+                        assignPlaceholderToSlot={assignPlaceholderToSlot}
                         allUsersSorted={allUsersSorted}
                         usersById={usersById}
                         assignmentsByUserId={assignmentsByUserId}
@@ -905,9 +962,11 @@ export function RosterBoard({
                                    removeRosterSlot={removeRosterSlot}
                                    moveSlotToReserve={moveSlotToReserve}
                                    moveSlotToNotAttending={moveSlotToNotAttending}
+                                   clearSlotAssignment={clearSlotAssignment}
                                    handleDropOnSlot={handleDropOnSlot}
                                    addRosterSlot={addRosterSlot}
                                    assignUserToSlot={assignUserToSlot}
+                                   assignPlaceholderToSlot={assignPlaceholderToSlot}
                                   allUsersSorted={allUsersSorted}
                                   usersById={usersById}
                                   assignmentsByUserId={assignmentsByUserId}
@@ -1143,9 +1202,11 @@ function SquadCard({
   removeRosterSlot,
   moveSlotToReserve,
   moveSlotToNotAttending,
+  clearSlotAssignment,
   handleDropOnSlot,
   addRosterSlot,
   assignUserToSlot,
+  assignPlaceholderToSlot,
   allUsersSorted,
   usersById,
   assignmentsByUserId,
@@ -1168,9 +1229,11 @@ function SquadCard({
   removeRosterSlot: (sIndex: number, pIndex: number) => void;
   moveSlotToReserve: (sIndex: number, pIndex: number, targetReserveId?: string) => void;
   moveSlotToNotAttending: (sIndex: number, pIndex: number) => void;
+  clearSlotAssignment: (sIndex: number, pIndex: number) => void;
   handleDropOnSlot: (sIndex: number, pIndex: number) => void;
   addRosterSlot: (index: number) => void;
   assignUserToSlot: (userId: string, sIndex: number, pIndex: number) => void;
+  assignPlaceholderToSlot: (customName: string, sIndex: number, pIndex: number) => void;
   allUsersSorted: AppUser[];
   usersById: Map<string, AppUser>;
   assignmentsByUserId: Map<string, ServerUserAssignment>;
@@ -1230,6 +1293,7 @@ function SquadCard({
       <CardContent className="space-y-1.5">
         {squad.players.map((player, playerIndex) => {
           const slotUser = player.id ? usersById.get(player.id) : undefined;
+          const placeholderName = getCustomPlayerName(player);
           const assignment = slotUser ? assignmentsByUserId.get(slotUser.discordId) : undefined;
           const attendanceStatus = getAttendanceStatus(player);
 
@@ -1263,29 +1327,35 @@ function SquadCard({
                   </Button>
                 ) : null}
               </div>
-              {slotUser ? (
+              {slotUser || placeholderName ? (
                 <div>
                   {!isLayoutMode ? (
                     <div
-                      draggable={isAssignmentMode && canAdmin}
-                      onDragStart={() => setDragState({ type: "slot", squadIndex, playerIndex })}
+                      draggable={Boolean(slotUser) && isAssignmentMode && canAdmin}
+                      onDragStart={() => {
+                        if (!slotUser) return;
+                        setDragState({ type: "slot", squadIndex, playerIndex });
+                      }}
                       onDragEnd={() => setDragState(null)}
                       className={cn(
                         "flex min-w-0 items-center rounded-lg border border-border/60 bg-background",
-                        isAssignmentMode && canAdmin ? "cursor-grab gap-1.5 px-1.5 py-1" : "gap-1 px-1.5 py-1",
+                        isAssignmentMode && canAdmin && slotUser ? "cursor-grab gap-1.5 px-1.5 py-1" : "gap-1 px-1.5 py-1",
                       )}
                     >
-                      {isAssignmentMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
+                      {isAssignmentMode && canAdmin && slotUser ? <GripVertical className="size-4 text-muted-foreground" /> : null}
                       <Avatar className={cn("shrink-0 rounded-md", isViewMode ? "size-5" : "size-6")}>
-                        <AvatarImage src={slotUser.avatar} alt={slotUser.name} />
-                        <AvatarFallback>{slotUser.name.slice(0, 2)}</AvatarFallback>
+                        {slotUser ? <AvatarImage src={slotUser.avatar} alt={slotUser.name} /> : null}
+                        <AvatarFallback>{(slotUser?.name ?? placeholderName ?? "?").slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <div className="truncate text-xs font-medium leading-none">
-                            {slotUser.name} <span className="text-[10px] text-muted-foreground">({formatRosterScoreline(slotUser, dictionary)})</span>
+                            {slotUser ? slotUser.name : placeholderName}{" "}
+                            <span className="text-[10px] text-muted-foreground">
+                              ({slotUser ? formatRosterScoreline(slotUser, dictionary) : `0 ${dictionary.navUser.scoreSuffix}`})
+                            </span>
                           </div>
-                          <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
+                          {slotUser ? <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} /> : null}
                         </div>
                       </div>
                       {player.note && !isAssignmentMode ? (
@@ -1311,33 +1381,48 @@ function SquadCard({
                           </PopoverTrigger>
                           <PopoverContent className="w-56 p-2" align="end">
                             <div className="flex flex-col gap-1">
+                              {slotUser ? (
+                                <>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="justify-start rounded-lg"
+                                    onClick={() => {
+                                      moveSlotToReserve(squadIndex, playerIndex);
+                                      setMoveMenuOpen(null);
+                                    }}
+                                  >
+                                    {dictionary.roster.moveToReserves}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="justify-start rounded-lg"
+                                    onClick={() => {
+                                      moveSlotToNotAttending(squadIndex, playerIndex);
+                                      setMoveMenuOpen(null);
+                                    }}
+                                  >
+                                    {dictionary.roster.moveToNotAttending}
+                                  </Button>
+                                </>
+                              ) : null}
                               <Button
                                 type="button"
                                 variant="ghost"
                                 className="justify-start rounded-lg"
                                 onClick={() => {
-                                  moveSlotToReserve(squadIndex, playerIndex);
+                                  clearSlotAssignment(squadIndex, playerIndex);
                                   setMoveMenuOpen(null);
                                 }}
                               >
-                                {dictionary.roster.moveToReserves}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="justify-start rounded-lg"
-                                onClick={() => {
-                                  moveSlotToNotAttending(squadIndex, playerIndex);
-                                  setMoveMenuOpen(null);
-                                }}
-                              >
-                                {dictionary.roster.moveToNotAttending}
+                                {dictionary.common.clear}
                               </Button>
                             </div>
                           </PopoverContent>
                         </Popover>
                       ) : null}
-                      {isAssignmentMode ? (
+                      {isAssignmentMode && slotUser ? (
                         <Popover open={attendanceMenuOpen === playerIndex} onOpenChange={(open) => setAttendanceMenuOpen(open ? playerIndex : null)}>
                           <PopoverTrigger asChild>
                             <Button
@@ -1397,7 +1482,7 @@ function SquadCard({
                           </PopoverContent>
                         </Popover>
                       ) : (
-                        getAttendanceIcon(attendanceStatus)
+                        slotUser ? getAttendanceIcon(attendanceStatus) : <Circle className="size-4 text-muted-foreground" />
                       )}
                     </div>
                   ) : null}
@@ -1447,6 +1532,29 @@ function SquadCard({
                             />
                             <CommandList>
                               <CommandEmpty>{dictionary.userManagement.noResults}</CommandEmpty>
+                              {(slotSearches[playerIndex] ?? "").trim() ? (
+                                <CommandGroup>
+                                  <CommandItem
+                                    value={(slotSearches[playerIndex] ?? "").trim()}
+                                    onSelect={() => {
+                                      assignPlaceholderToSlot((slotSearches[playerIndex] ?? "").trim(), squadIndex, playerIndex);
+                                      setSlotPickerOpen(null);
+                                      setSlotSearches((current) => ({ ...current, [playerIndex]: "" }));
+                                    }}
+                                  >
+                                    <Avatar className="mr-2 size-6 rounded-sm">
+                                      <AvatarFallback>{(slotSearches[playerIndex] ?? "").trim().slice(0, 2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="truncate">{(slotSearches[playerIndex] ?? "").trim()}</div>
+                                      <div className="truncate text-xs text-muted-foreground">
+                                        Saved as a typed roster placeholder
+                                      </div>
+                                    </div>
+                                    <Plus className="ml-auto size-4" />
+                                  </CommandItem>
+                                </CommandGroup>
+                              ) : null}
                               <CommandGroup>
                                 {allUsersSorted
                                   .filter((user) => user.name.toLowerCase().includes((slotSearches[playerIndex] ?? "").trim().toLowerCase()))
