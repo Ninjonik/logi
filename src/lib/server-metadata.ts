@@ -13,6 +13,7 @@ const getMatchByEventIdReference = makeFunctionReference<"query">("matchStats:ge
 
 export async function getGuildMetadata(serverId: string) {
   "use cache";
+  if (serverId.startsWith("sample-")) return null;
   return await fetchQuery(getGuildByIdReference, { guildId: serverId as never });
 }
 

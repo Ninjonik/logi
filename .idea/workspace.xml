@@ -9,29 +9,6 @@
   <component name="ChangeListManager">
     <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="made better sense between discordid and id">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/userAssignments.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/userAssignments.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/convex.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/convex.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/interactions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/interactions.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/message-builders.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/message-builders.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/sync.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/sync.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/types.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/breadcrumbs.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/breadcrumbs.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/discord-server-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/discord-server-settings-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/ticket-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/ticket-settings-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/discord.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-discord-settings.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-user-management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-user-management.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/discord-settings.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,7 +69,7 @@
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
     "url": "https://github.com/Ninjonik/logi.git",
-    "accountId": "5e27c5c6-641b-447e-87dd-854d7c2e673d"
+    "accountId": "b8f695e0-11cc-4a94-a90a-7233db8e34e8"
   }
 }]]></component>
   <component name="McpProjectServerCommands">
@@ -134,7 +111,7 @@
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "copilot.chat.legacySessionMetadata.migrated": "true",
-    "git-widget-placeholder": "dev",
+    "git-widget-placeholder": "main",
     "javascript.preferred.runtime.type.id": "node",
     "js.debugger.nextJs.config.created.client": "true",
     "js.debugger.nextJs.config.created.server": "true",
@@ -219,6 +196,7 @@
       <workItem from="1784128265407" duration="13704000" />
       <workItem from="1784220915709" duration="2511000" />
       <workItem from="1784239792741" duration="1160000" />
+      <workItem from="1784306866768" duration="1272000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
