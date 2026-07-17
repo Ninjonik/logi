@@ -32,6 +32,7 @@ export default async function CreateTrainingPage({
     gameStart: "2026-07-12T14:30:00.000Z",
     gameEnd: "2026-07-12T16:00:00.000Z",
     pingClan: false,
+    createForumChannel: false,
     status: "registration" as const,
     statusUpdatedAt: "2026-07-06T18:00:00.000Z",
     attendanceReminderLog: [],

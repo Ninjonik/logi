@@ -20,6 +20,7 @@ export const eventSchema = z
     gameStart: z.string().optional(),
     gameEnd: z.string().optional(),
     pingClan: z.boolean(),
+    createForumChannel: z.boolean().default(false),
     topicPresetId: z.string().trim().optional(),
   })
   .superRefine((value, ctx) => {

@@ -13,6 +13,7 @@ import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { formatDateTime } from "@/lib/format";
 import { getEventStatusMeta } from "@/lib/event-status";
+import { formatHllPresetLabel } from "@/lib/hll-map-presets";
 import type { EventRecord } from "@/types/domain";
 
 function getEventResultLabel(event: EventRecord, dictionary: ReturnType<typeof getDictionary>) {
@@ -101,7 +102,7 @@ export default async function EventsPage({
           columns={[
             { key: "name", title: dictionary.tables.event, render: (event) => <div className="font-medium">{event.name}</div> },
             { key: "meetingStart", title: dictionary.tables.meeting, render: (event) => formatDateTime(event.meetingStart, discordConfig?.timezone) },
-            { key: "map", title: dictionary.calendarCards.map, render: (event) => `${event.map ?? "TBD"} • ${event.side ?? "TBD"}` },
+            { key: "map", title: dictionary.calendarCards.map, render: (event) => `${formatHllPresetLabel(event.map) ?? event.map ?? "TBD"} • ${event.side ?? "TBD"}` },
             {
               key: "result",
               title: dictionary.event.resultColumn,

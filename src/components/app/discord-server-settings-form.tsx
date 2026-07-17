@@ -52,6 +52,11 @@ export function DiscordServerSettingsForm({
       .catch(() => setMetadata(null));
   }, [serverId]);
 
+  const announcementChannels = metadata?.channels?.filter((channel) => channel.type === 0 || channel.type === 5) ?? [];
+  const categoryChannels = metadata?.channels?.filter((channel) => channel.type === 4) ?? [];
+  const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
+  const roles = metadata?.roles ?? [];
+
   async function handleSave() {
     const response = await fetch(`/api/servers/${serverId}/discord-settings`, {
       method: "POST",
@@ -64,6 +69,8 @@ export function DiscordServerSettingsForm({
         meetingChannelId,
         clanRoleId,
         dashboardAdminRoleId,
+        ticketSettings: config?.ticketSettings,
+        membershipSettings: config?.membershipSettings,
       }),
     });
     const body = await response.json();
@@ -76,17 +83,12 @@ export function DiscordServerSettingsForm({
     startTransition(() => router.refresh());
   }
 
-  const announcementChannels = metadata?.channels?.filter((channel) => channel.type === 0 || channel.type === 5) ?? [];
-  const categoryChannels = metadata?.channels?.filter((channel) => channel.type === 4) ?? [];
-  const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
-  const roles = metadata?.roles ?? [];
-
   return (
     <Card className="rounded-2xl border-border/60">
       <CardHeader>
         <CardTitle>{dictionary.serverSettings.discordTitle}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label>{dictionary.serverSettings.timezone}</Label>
           <Select value={timezone} onValueChange={setTimezone}>
@@ -137,6 +139,7 @@ export function DiscordServerSettingsForm({
           <Label>{dictionary.serverSettings.dashboardAdminRoleId}</Label>
           <DiscordEntitySelect value={dashboardAdminRoleId} onChange={setDashboardAdminRoleId} options={roles} placeholder={dictionary.serverSettings.dashboardAdminRoleId} />
         </div>
+
         <Button className="rounded-xl" onClick={handleSave} disabled={isPending}>
           {dictionary.serverSettings.saveDiscordSettings}
         </Button>

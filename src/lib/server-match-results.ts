@@ -3,7 +3,7 @@ import { saveServerMatch } from "@/lib/server-matches";
 import { getServerUserAssignments, getUsersByIds, listUsers, savePlayerPlatformId } from "@/lib/server-user-management";
 import { savePlayerMatchStats } from "@/lib/server-player-stats";
 
-type ExternalTeam = "axis" | "allies" | "unknown";
+type ExternalTeam = string;
 
 type ScoreboardResponse = {
   failed: boolean;
@@ -128,6 +128,11 @@ function toErrorMessage(error: unknown, fallback: string) {
 
 function normalizeValue(value: string | undefined) {
   return value?.trim().toLowerCase() ?? "";
+}
+
+function isUnknownTeam(value: string | undefined) {
+  const normalized = normalizeValue(value);
+  return !normalized || normalized === "unknown";
 }
 
 function parseDate(value: string | undefined) {
@@ -316,6 +321,10 @@ function resolveLocalTeam(eventSide: string | undefined, payload: ScoreboardResp
   return null;
 }
 
+function resolvePreferredTeamLabel(teamNames: string[], fallback: string) {
+  return teamNames.find((teamName) => !isUnknownTeam(teamName)) ?? fallback;
+}
+
 function buildEventResult(eventSide: string | undefined, sourceUrl: string, mapId: string, payload: ScoreboardResponse["result"]) {
   const localTeam = resolveLocalTeam(eventSide, payload);
   if (!localTeam) {
@@ -323,8 +332,8 @@ function buildEventResult(eventSide: string | undefined, sourceUrl: string, mapI
   }
 
   const enemyTeam = localTeam === "axis" ? "allies" : "axis";
-  const sideA = payload.map.map.axis.name || payload.map.map.axis.team || "Side A";
-  const sideB = payload.map.map.allies.name || payload.map.map.allies.team || "Side B";
+  const sideA = resolvePreferredTeamLabel([payload.map.map.axis.name, payload.map.map.axis.team], "Side A");
+  const sideB = resolvePreferredTeamLabel([payload.map.map.allies.name, payload.map.map.allies.team], "Side B");
   const sideAScore = payload.result.axis ?? 0;
   const sideBScore = payload.result.allied ?? 0;
   const localScore = localTeam === "axis" ? sideAScore : sideBScore;
@@ -388,10 +397,7 @@ async function preparePlayerImports(input: {
 }) {
   const { usersByPlatformId, usersByName } = await buildServerUserLookups(input.serverId);
   const importedAt = new Date().toISOString();
-  const sideCounts = {
-    axis: 0,
-    allies: 0,
-  };
+  const sideCounts = new Map<string, { count: number; value: string }>();
 
   const entries = input.payload.player_stats.flatMap((player) => {
     const normalizedPlayerId = normalizeValue(player.player_id);
@@ -438,8 +444,13 @@ async function preparePlayerImports(input: {
       return [];
     }
 
-    if (player.team.side === "axis" || player.team.side === "allies") {
-      sideCounts[player.team.side] += 1;
+    if (!isUnknownTeam(player.team.side)) {
+      const normalizedTeamSide = normalizeValue(player.team.side);
+      const current = sideCounts.get(normalizedTeamSide);
+      sideCounts.set(normalizedTeamSide, {
+        count: (current?.count ?? 0) + 1,
+        value: current?.value ?? player.team.side,
+      });
     }
 
     return [{
@@ -465,11 +476,12 @@ async function preparePlayerImports(input: {
     }] satisfies PreparedPlayerImport[];
   });
 
-  const inferredEventSide: "axis" | "allies" | undefined = sideCounts.axis === sideCounts.allies
+  const rankedSides = [...sideCounts.values()].sort((left, right) => right.count - left.count);
+  const inferredEventSide = rankedSides.length === 0
     ? undefined
-    : sideCounts.axis > sideCounts.allies
-      ? "axis"
-      : "allies";
+    : rankedSides.length > 1 && rankedSides[0].count === rankedSides[1].count
+      ? undefined
+      : rankedSides[0].value;
 
   return {
     entries,
@@ -481,7 +493,7 @@ async function preparePlayerImports(input: {
 function buildImportedEventInput(input: {
   payload: ScoreboardResponse["result"];
   sourceUrl: string;
-  inferredEventSide?: "axis" | "allies";
+  inferredEventSide?: string;
 }) {
   const payload = input.payload;
   const startAt = parseDate(payload.start) ?? parseDate(payload.end) ?? parseDate(payload.creation_time) ?? new Date();
@@ -724,6 +736,7 @@ export async function importServerEventsFromLinks(input: {
       const createdEventId = await saveServerEvent({
         serverId: input.serverId,
         kind: "match",
+        createForumChannel: true,
         ...buildImportedEventInput({
           payload: sanitizedPayload,
           sourceUrl,

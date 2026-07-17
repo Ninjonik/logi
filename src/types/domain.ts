@@ -36,6 +36,7 @@ export type GuildMember = {
   id: string;
   primaryGroup?: string;
   secondaryGroups: string[];
+  status?: "pending" | "recruit" | "member" | "mercenary";
   joinedAt?: Timestamp;
 };
 
@@ -66,6 +67,56 @@ export type DiscordGroupLink = {
   emoji?: string;
 };
 
+export type TicketModalQuestion = {
+  id: string;
+  label: string;
+  placeholder?: string;
+  style: "short" | "paragraph";
+  required: boolean;
+};
+
+export type TicketCategory = {
+  id: string;
+  emoji?: string;
+  label?: string;
+  description?: string;
+  supportRoleIds: string[];
+  modalQuestions: TicketModalQuestion[];
+};
+
+export type MembershipCategory = {
+  id: string;
+  emoji?: string;
+  label?: string;
+  description?: string;
+  supportRoleIds: string[];
+  recruitRoleId?: string;
+  finalRoleId?: string;
+  modalQuestions: TicketModalQuestion[];
+  assignmentType: "member" | "mercenary";
+};
+
+export type TicketSettings = {
+  enabled: boolean;
+  submitChannelId?: string;
+  ticketParentChannelId?: string;
+  panelTitle: string;
+  panelDescription: string;
+  panelImageUrl?: string;
+  categories: TicketCategory[];
+};
+
+export type MembershipSettings = {
+  enabled: boolean;
+  submitChannelId?: string;
+  applicationParentChannelId?: string;
+  panelTitle: string;
+  panelDescription: string;
+  panelImageUrl?: string;
+  autoAssignRecruitOnApply: boolean;
+  categories: MembershipCategory[];
+};
+
 export type DiscordConfig = {
   id: string;
   guildId: string;
@@ -76,9 +127,20 @@ export type DiscordConfig = {
   meetingChannelId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
+  ticketSettings?: TicketSettings;
+  membershipSettings?: MembershipSettings;
+  ticketPanelMessageId?: string;
+  ticketPanelLastConfigUpdatedAt?: string;
+  membershipPanelMessageId?: string;
+  membershipPanelLastConfigUpdatedAt?: string;
+  ticketCounter?: number;
+  membershipApplicationCounter?: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
+
+export type MembershipStatus = "pending" | "recruit" | "active";
+export type MembershipCloseOutcome = "denied" | "pending" | "recruit" | "member" | "mercenary";
 
 export type DiscordMemberAccess = {
   id: string;
@@ -127,6 +189,7 @@ export type EventRecord = {
   gameStart: Timestamp;
   gameEnd: Timestamp;
   pingClan: boolean;
+  createForumChannel: boolean;
   topicPresetId?: string;
   status: EventStatus;
   statusUpdatedAt: Timestamp;
@@ -168,7 +231,7 @@ export type EventRecord = {
   updatedAt: Timestamp;
 };
 
-export type MatchTeamSide = "axis" | "allies" | "unknown";
+export type MatchTeamSide = string;
 
 export type MatchStatBreakdown = Partial<{
   infantry: number;
@@ -341,6 +404,7 @@ export type SquadPreset = {
 
 export type RosterPlayer = {
   id?: string;
+  customName?: string;
   ack: boolean;
   confirmed?: boolean;
   note?: string;

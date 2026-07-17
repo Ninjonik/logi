@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import type { Locale } from "@/i18n/config";
 import type { EventRecord } from "@/types/domain";
 import { formatDateKey, formatTime } from "@/lib/format";
+import { formatHllPresetLabel } from "@/lib/hll-map-presets";
 
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -126,7 +127,7 @@ export function MonthCalendarView({
                     >
                       <div className="truncate text-xs font-semibold">{event.name}</div>
                       <div className="mt-1 text-[11px] text-muted-foreground">
-                        {formatTime(event.meetingStart, timezone)} • {event.map}
+                        {formatTime(event.meetingStart, timezone)} • {formatHllPresetLabel(event.map) ?? event.map}
                       </div>
                     </Link>
                   ))}

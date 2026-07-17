@@ -28,6 +28,7 @@ export async function saveServerEvent(input: {
   gameStart?: string;
   gameEnd?: string;
   pingClan: boolean;
+  createForumChannel: boolean;
   topicPresetId?: string;
 }) {
   return await fetchMutation(upsertEventReference, {
@@ -52,6 +53,7 @@ export async function saveServerEvent(input: {
     gameStart: input.gameStart ?? input.meetingStart,
     gameEnd: input.gameEnd ?? input.gameStart ?? input.meetingStart,
     pingClan: input.pingClan,
+    createForumChannel: input.createForumChannel,
     topicPresetId: input.topicPresetId as never,
   });
 }

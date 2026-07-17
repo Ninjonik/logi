@@ -159,7 +159,7 @@ export function RosterCreator({
           serverId={serverId}
           locale={locale}
           timezone={timezone}
-          defaultEditMode={true}
+          defaultMode="assignment"
         />
       ) : (
         <div className="flex h-64 flex-col items-center justify-center rounded-3xl border-2 border-dashed border-border/50 bg-muted/20 text-muted-foreground">

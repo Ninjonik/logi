@@ -16,6 +16,7 @@ import {
   FileText,
   ListTodo,
   CalendarIcon,
+  UserRoundPlus,
 } from "lucide-react";
 
 import { AppLogo } from "@/components/app/app-logo";
@@ -161,6 +162,16 @@ export function AppSidebar({
                       title: dictionary.sidebar.serverSettings,
                       url: `${base}/settings`,
                       icon: Settings,
+                    },
+                    {
+                      title: dictionary.sidebar.memberships,
+                      url: `${base}/memberships`,
+                      icon: UserRoundPlus,
+                    },
+                    {
+                      title: dictionary.sidebar.tickets,
+                      url: `${base}/tickets`,
+                      icon: ListTodo,
                     },
                   ],
                 },

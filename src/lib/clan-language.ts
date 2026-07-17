@@ -6,6 +6,7 @@ type ClanDiscordMessages = {
   locale: string;
   buttons: {
     acknowledgeAttendance: string;
+    attend: string;
     addToCalendar: string;
     decline: string;
   };
@@ -95,6 +96,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     locale: "en-GB",
     buttons: {
       acknowledgeAttendance: "Acknowledge attendance",
+      attend: "Attend",
       addToCalendar: "Add to Calendar",
       decline: "Decline",
     },
@@ -182,6 +184,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     locale: "cs-CZ",
     buttons: {
       acknowledgeAttendance: "Potvrdit účast",
+      attend: "Zúčastním se",
       addToCalendar: "Přidat do kalendáře",
       decline: "Odmítnout",
     },

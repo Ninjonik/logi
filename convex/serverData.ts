@@ -72,13 +72,27 @@ function deriveEventStatus(event: {
 
   const now = Date.now();
   const registrationEnd = new Date(event.registrationEnd).getTime();
-  const startingAt = new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000;
+  const meetingCountdownStart = new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000;
+  const startingAt = Number.isFinite(registrationEnd)
+    ? Math.max(registrationEnd, meetingCountdownStart)
+    : meetingCountdownStart;
   const gameEnd = new Date(event.gameEnd).getTime();
 
   if (Number.isFinite(gameEnd) && now >= gameEnd) return "concluded" as const;
   if (Number.isFinite(startingAt) && now >= startingAt) return "starting" as const;
   if (Number.isFinite(registrationEnd) && now >= registrationEnd) return "closed" as const;
   return "registration" as const;
+}
+
+function resolveCreateForumChannel(event: {
+  kind?: "match" | "training";
+  createForumChannel?: boolean;
+}) {
+  if (typeof event.createForumChannel === "boolean") {
+    return event.createForumChannel;
+  }
+
+  return (event.kind ?? "match") === "match";
 }
 
 function normalizeEventDoc<
@@ -92,6 +106,7 @@ function normalizeEventDoc<
     meetingChannelId?: string;
     requiredRoleIds?: string[];
     rewardRoleIds?: string[];
+    createForumChannel?: boolean;
     status?: "registration" | "closed" | "starting" | "concluded";
     statusUpdatedAt?: string;
     concludedAt?: string;
@@ -131,6 +146,7 @@ function normalizeEventDoc<
     meetingChannelId: event.meetingChannelId,
     requiredRoleIds: event.requiredRoleIds ?? [],
     rewardRoleIds: event.rewardRoleIds ?? [],
+    createForumChannel: resolveCreateForumChannel(event),
     status: event.status ?? deriveEventStatus(event),
     statusUpdatedAt: event.statusUpdatedAt ?? event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
     concludedAt: event.concludedAt,

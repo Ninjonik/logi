@@ -24,6 +24,56 @@ function normalizeConfigDoc<T extends { _id: unknown; defaultLanguage?: "en" | "
   };
 }
 
+const ticketModalQuestionValidator = v.object({
+  id: v.string(),
+  label: v.string(),
+  placeholder: v.optional(v.string()),
+  style: v.union(v.literal("short"), v.literal("paragraph")),
+  required: v.boolean(),
+});
+
+const ticketCategoryValidator = v.object({
+  id: v.string(),
+  emoji: v.optional(v.string()),
+  label: v.optional(v.string()),
+  description: v.optional(v.string()),
+  supportRoleIds: v.array(v.string()),
+  modalQuestions: v.array(ticketModalQuestionValidator),
+});
+
+const membershipCategoryValidator = v.object({
+  id: v.string(),
+  emoji: v.optional(v.string()),
+  label: v.optional(v.string()),
+  description: v.optional(v.string()),
+  supportRoleIds: v.array(v.string()),
+  recruitRoleId: v.optional(v.string()),
+  finalRoleId: v.optional(v.string()),
+  modalQuestions: v.array(ticketModalQuestionValidator),
+  assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
+});
+
+const ticketSettingsValidator = v.object({
+  enabled: v.boolean(),
+  submitChannelId: v.optional(v.string()),
+  ticketParentChannelId: v.optional(v.string()),
+  panelTitle: v.string(),
+  panelDescription: v.string(),
+  panelImageUrl: v.optional(v.string()),
+  categories: v.array(ticketCategoryValidator),
+});
+
+const membershipSettingsValidator = v.object({
+  enabled: v.boolean(),
+  submitChannelId: v.optional(v.string()),
+  applicationParentChannelId: v.optional(v.string()),
+  panelTitle: v.string(),
+  panelDescription: v.string(),
+  panelImageUrl: v.optional(v.string()),
+  autoAssignRecruitOnApply: v.boolean(),
+  categories: v.array(membershipCategoryValidator),
+});
+
 function normalizeUserDoc<T extends { _id: unknown; discordId?: string; id?: string }>(doc: T) {
   return {
     ...doc,
@@ -44,13 +94,27 @@ function deriveEventStatus(event: {
 
   const now = Date.now();
   const registrationEnd = new Date(event.registrationEnd).getTime();
-  const startingAt = new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000;
+  const meetingCountdownStart = new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000;
+  const startingAt = Number.isFinite(registrationEnd)
+    ? Math.max(registrationEnd, meetingCountdownStart)
+    : meetingCountdownStart;
   const gameEnd = new Date(event.gameEnd).getTime();
 
   if (Number.isFinite(gameEnd) && now >= gameEnd) return "concluded" as const;
   if (Number.isFinite(startingAt) && now >= startingAt) return "starting" as const;
   if (Number.isFinite(registrationEnd) && now >= registrationEnd) return "closed" as const;
   return "registration" as const;
+}
+
+function resolveCreateForumChannel(event: {
+  kind?: "match" | "training";
+  createForumChannel?: boolean;
+}) {
+  if (typeof event.createForumChannel === "boolean") {
+    return event.createForumChannel;
+  }
+
+  return (event.kind ?? "match") === "match";
 }
 
 function normalizeEventDoc<T extends {
@@ -63,6 +127,7 @@ function normalizeEventDoc<T extends {
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
+  createForumChannel?: boolean;
   status?: "registration" | "closed" | "starting" | "concluded";
   statusUpdatedAt?: string;
   concludedAt?: string;
@@ -87,6 +152,7 @@ function normalizeEventDoc<T extends {
     meetingChannelId: event.meetingChannelId,
     requiredRoleIds: event.requiredRoleIds ?? [],
     rewardRoleIds: event.rewardRoleIds ?? [],
+    createForumChannel: resolveCreateForumChannel(event),
     status: event.status ?? deriveEventStatus(event),
     statusUpdatedAt: event.statusUpdatedAt ?? event.updatedAt ?? event.createdAt ?? new Date().toISOString(),
     concludedAt: event.concludedAt,
@@ -130,6 +196,8 @@ export const upsertConfig = mutation({
     meetingChannelId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),
     dashboardAdminRoleId: v.optional(v.string()),
+    ticketSettings: v.optional(ticketSettingsValidator),
+    membershipSettings: v.optional(membershipSettingsValidator),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -149,6 +217,8 @@ export const upsertConfig = mutation({
       meetingChannelId: args.meetingChannelId?.trim() || undefined,
       clanRoleId: args.clanRoleId?.trim() || undefined,
       dashboardAdminRoleId: args.dashboardAdminRoleId?.trim() || undefined,
+      ticketSettings: args.ticketSettings,
+      membershipSettings: args.membershipSettings,
       updatedAt: now,
     };
 
@@ -169,6 +239,62 @@ export const upsertConfig = mutation({
     });
 
     return String(configId);
+  },
+});
+
+export const updateTicketPanelState = mutation({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    ticketPanelMessageId: v.optional(v.string()),
+    ticketPanelLastConfigUpdatedAt: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config) {
+      throw new Error("Discord config not found.");
+    }
+
+    await ctx.db.patch(config._id, {
+      ticketPanelMessageId: args.ticketPanelMessageId,
+      ticketPanelLastConfigUpdatedAt: args.ticketPanelLastConfigUpdatedAt,
+    });
+
+    return { ok: true };
+  },
+});
+
+export const updateMembershipPanelState = mutation({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    membershipPanelMessageId: v.optional(v.string()),
+    membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config) {
+      throw new Error("Discord config not found.");
+    }
+
+    await ctx.db.patch(config._id, {
+      membershipPanelMessageId: args.membershipPanelMessageId,
+      membershipPanelLastConfigUpdatedAt: args.membershipPanelLastConfigUpdatedAt,
+    });
+
+    return { ok: true };
   },
 });
 
@@ -388,6 +514,597 @@ export const updateEventSyncState = mutation({
     });
 
     return String(stateId);
+  },
+});
+
+export const getTicketCategoryContext = query({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    categoryId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config?.ticketSettings?.enabled) {
+      return null;
+    }
+
+    const category = config.ticketSettings.categories.find((item) => item.id === args.categoryId);
+    if (!category) {
+      return null;
+    }
+
+    return {
+      config: normalizeConfigDoc(config),
+      category,
+    };
+  },
+});
+
+export const getMembershipCategoryContext = query({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    categoryId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config?.membershipSettings?.enabled) {
+      return null;
+    }
+
+    const category = config.membershipSettings.categories.find((item) => item.id === args.categoryId);
+    if (!category) {
+      return null;
+    }
+
+    return {
+      config: normalizeConfigDoc(config),
+      category,
+    };
+  },
+});
+
+export const getMembershipApplicationPrereq = query({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    categoryId: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config?.membershipSettings?.enabled) {
+      return null;
+    }
+
+    const category = config.membershipSettings.categories.find((item) => item.id === args.categoryId);
+    if (!category) {
+      return null;
+    }
+
+    const [user, assignment, openApplications] = await Promise.all([
+      getUserByDiscordId(ctx, args.userId),
+      ctx.db
+        .query("userAssignments")
+        .withIndex("serverId_userId", (q) => q.eq("serverId", args.guildId).eq("userId", args.userId))
+        .unique(),
+      ctx.db
+        .query("membershipApplicationThreads")
+        .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+        .collect(),
+    ]);
+
+    return {
+      config: normalizeConfigDoc(config),
+      category,
+      user: user ? normalizeUserDoc(user) : null,
+      assignment: assignment ? normalizeDoc(assignment) : null,
+      hasOpenApplication: openApplications.some((application) => application.creatorId === args.userId && application.status === "open"),
+    };
+  },
+});
+
+export const createPlatformIdLinkToken = mutation({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    categoryId: v.string(),
+    userId: v.string(),
+    userName: v.string(),
+    userAvatar: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 15 * 60 * 1000).toISOString();
+    const token = crypto.randomUUID();
+    const existingTokens = await ctx.db
+      .query("platformIdLinkTokens")
+      .withIndex("userId", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    await Promise.all(existingTokens.map((doc) => ctx.db.delete(doc._id)));
+
+    await ctx.db.insert("platformIdLinkTokens", {
+      token,
+      guildId: args.guildId,
+      userId: args.userId,
+      userName: args.userName,
+      userAvatar: args.userAvatar,
+      categoryId: args.categoryId,
+      expiresAt,
+      consumedAt: undefined,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    });
+
+    return {
+      token,
+      expiresAt,
+    };
+  },
+});
+
+export const getPlatformIdLinkToken = query({
+  args: {
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const doc = await ctx.db
+      .query("platformIdLinkTokens")
+      .withIndex("token", (q) => q.eq("token", args.token))
+      .unique();
+
+    if (!doc) {
+      return null;
+    }
+
+    return normalizeDoc(doc);
+  },
+});
+
+export const consumePlatformIdLinkToken = mutation({
+  args: {
+    secret: v.string(),
+    token: v.string(),
+    platformId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const doc = await ctx.db
+      .query("platformIdLinkTokens")
+      .withIndex("token", (q) => q.eq("token", args.token))
+      .unique();
+
+    if (!doc) {
+      throw new Error("Token not found.");
+    }
+
+    if (doc.consumedAt) {
+      throw new Error("Token already used.");
+    }
+
+    if (new Date(doc.expiresAt).getTime() < Date.now()) {
+      throw new Error("Token expired.");
+    }
+
+    const existingUser = await getUserByDiscordId(ctx, doc.userId);
+    const now = new Date().toISOString();
+    const normalizedPlatformId = args.platformId.trim();
+
+    if (!normalizedPlatformId) {
+      throw new Error("Platform ID is required.");
+    }
+
+    if (existingUser) {
+      const nextPlatformIds = [...new Set([...(existingUser.platformIds ?? []), normalizedPlatformId])];
+      await ctx.db.patch(existingUser._id, {
+        name: existingUser.name || doc.userName,
+        avatar: existingUser.avatar || doc.userAvatar || "https://cdn.discordapp.com/embed/avatars/0.png",
+        platformIds: nextPlatformIds,
+        updatedAt: now,
+      });
+    } else {
+      await ctx.db.insert("users", {
+        discordId: doc.userId,
+        id: doc.userId,
+        name: doc.userName,
+        platformIds: [normalizedPlatformId],
+        avatar: doc.userAvatar || "https://cdn.discordapp.com/embed/avatars/0.png",
+        managedGuildIds: [],
+        guildId: undefined,
+        mercenaryGuildIds: [],
+        isStreamer: false,
+        score: 0,
+        performance: undefined,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    await ctx.db.patch(doc._id, {
+      consumedAt: now,
+      updatedAt: now,
+    });
+
+    return { ok: true };
+  },
+});
+
+export const createTicketThread = mutation({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    threadId: v.string(),
+    parentChannelId: v.string(),
+    creatorId: v.string(),
+    categoryId: v.string(),
+    transcriptMessageId: v.optional(v.string()),
+    answers: v.array(v.object({
+      questionId: v.string(),
+      label: v.string(),
+      value: v.string(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config?.ticketSettings?.enabled) {
+      throw new Error("Tickets are not enabled.");
+    }
+
+    const category = config.ticketSettings.categories.find((item) => item.id === args.categoryId);
+    if (!category) {
+      throw new Error("Ticket category not found.");
+    }
+
+    const nextTicketNumber = (config.ticketCounter ?? 0) + 1;
+    const now = new Date().toISOString();
+
+    await ctx.db.patch(config._id, {
+      ticketCounter: nextTicketNumber,
+    });
+
+    const threadRecordId = await ctx.db.insert("ticketThreads", {
+      guildId: args.guildId,
+      threadId: args.threadId,
+      parentChannelId: args.parentChannelId,
+      creatorId: args.creatorId,
+      categoryId: category.id,
+      categoryLabel: category.label?.trim() || category.id,
+      ticketNumber: nextTicketNumber,
+      status: "open",
+      transcriptMessageId: args.transcriptMessageId,
+      answers: args.answers,
+      openedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      ticket: {
+        id: String(threadRecordId),
+        threadId: args.threadId,
+        ticketNumber: nextTicketNumber,
+        categoryId: category.id,
+        categoryLabel: category.label?.trim() || category.id,
+      },
+      category,
+      config: normalizeConfigDoc(config),
+    };
+  },
+});
+
+export const createMembershipApplicationThread = mutation({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    threadId: v.string(),
+    parentChannelId: v.string(),
+    creatorId: v.string(),
+    categoryId: v.string(),
+    assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
+    assignmentId: v.optional(v.id("userAssignments")),
+    transcriptMessageId: v.optional(v.string()),
+    answers: v.array(v.object({
+      questionId: v.string(),
+      label: v.string(),
+      value: v.string(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config?.membershipSettings?.enabled) {
+      throw new Error("Membership applications are not enabled.");
+    }
+
+    const category = config.membershipSettings.categories.find((item) => item.id === args.categoryId);
+    if (!category) {
+      throw new Error("Application category not found.");
+    }
+
+    const nextApplicationNumber = (config.membershipApplicationCounter ?? 0) + 1;
+    const now = new Date().toISOString();
+
+    await ctx.db.patch(config._id, {
+      membershipApplicationCounter: nextApplicationNumber,
+    });
+
+    const applicationId = await ctx.db.insert("membershipApplicationThreads", {
+      guildId: args.guildId,
+      threadId: args.threadId,
+      parentChannelId: args.parentChannelId,
+      creatorId: args.creatorId,
+      categoryId: category.id,
+      categoryLabel: category.label?.trim() || category.id,
+      assignmentType: args.assignmentType,
+      applicationNumber: nextApplicationNumber,
+      assignmentId: args.assignmentId,
+      transcriptMessageId: args.transcriptMessageId,
+      answers: args.answers,
+      status: "open",
+      openedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      application: {
+        id: String(applicationId),
+        threadId: args.threadId,
+        applicationNumber: nextApplicationNumber,
+        categoryLabel: category.label?.trim() || category.id,
+      },
+      category,
+      config: normalizeConfigDoc(config),
+    };
+  },
+});
+
+export const getTicketThreadContext = query({
+  args: {
+    secret: v.string(),
+    threadId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const ticket = await ctx.db
+      .query("ticketThreads")
+      .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+      .unique();
+
+    if (!ticket) {
+      return null;
+    }
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", ticket.guildId))
+      .unique();
+
+    if (!config) {
+      return null;
+    }
+
+    const category = config.ticketSettings?.categories.find((item) => item.id === ticket.categoryId) ?? null;
+
+    return {
+      config: normalizeConfigDoc(config),
+      ticket: normalizeDoc(ticket),
+      category,
+    };
+  },
+});
+
+export const getMembershipApplicationThreadContext = query({
+  args: {
+    secret: v.string(),
+    threadId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const application = await ctx.db
+      .query("membershipApplicationThreads")
+      .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+      .unique();
+
+    if (!application) {
+      return null;
+    }
+
+    const [config, assignment] = await Promise.all([
+      ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", application.guildId)).unique(),
+      application.assignmentId ? ctx.db.get(application.assignmentId) : null,
+    ]);
+
+    if (!config) {
+      return null;
+    }
+
+    const category = config.membershipSettings?.categories.find((item) => item.id === application.categoryId) ?? null;
+
+    return {
+      config: normalizeConfigDoc(config),
+      application: normalizeDoc(application),
+      assignment: assignment ? normalizeDoc(assignment) : null,
+      category,
+    };
+  },
+});
+
+export const getMembershipApplicationByAssignment = query({
+  args: {
+    secret: v.string(),
+    assignmentId: v.id("userAssignments"),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const applications = await ctx.db.query("membershipApplicationThreads").collect();
+    const application = applications.find((item) => item.assignmentId === args.assignmentId) ?? null;
+
+    return application ? normalizeDoc(application) : null;
+  },
+});
+
+export const closeTicketThread = mutation({
+  args: {
+    secret: v.string(),
+    threadId: v.string(),
+    closedByUserId: v.string(),
+    closeReason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const ticket = await ctx.db
+      .query("ticketThreads")
+      .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+      .unique();
+
+    if (!ticket) {
+      throw new Error("Ticket not found.");
+    }
+
+    const now = new Date().toISOString();
+
+    await ctx.db.patch(ticket._id, {
+      status: "closed",
+      closedAt: now,
+      closedByUserId: args.closedByUserId,
+      closeReason: args.closeReason?.trim() || undefined,
+      updatedAt: now,
+    });
+
+    return { ok: true };
+  },
+});
+
+export const closeMembershipApplicationThread = mutation({
+  args: {
+    secret: v.string(),
+    threadId: v.string(),
+    closedByUserId: v.string(),
+    closeReason: v.optional(v.string()),
+    closeOutcome: v.union(
+      v.literal("denied"),
+      v.literal("pending"),
+      v.literal("recruit"),
+      v.literal("member"),
+      v.literal("mercenary"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const application = await ctx.db
+      .query("membershipApplicationThreads")
+      .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+      .unique();
+
+    if (!application) {
+      throw new Error("Application not found.");
+    }
+
+    const now = new Date().toISOString();
+    await ctx.db.patch(application._id, {
+      status: "closed",
+      closeOutcome: args.closeOutcome,
+      closedAt: now,
+      closedByUserId: args.closedByUserId,
+      closeReason: args.closeReason?.trim() || undefined,
+      updatedAt: now,
+    });
+
+    return { ok: true };
+  },
+});
+
+export const updateTicketTranscriptMessage = mutation({
+  args: {
+    secret: v.string(),
+    threadId: v.string(),
+    transcriptMessageId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const ticket = await ctx.db
+      .query("ticketThreads")
+      .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+      .unique();
+
+    if (!ticket) {
+      throw new Error("Ticket not found.");
+    }
+
+    await ctx.db.patch(ticket._id, {
+      transcriptMessageId: args.transcriptMessageId,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { ok: true };
+  },
+});
+
+export const updateMembershipApplicationTranscriptMessage = mutation({
+  args: {
+    secret: v.string(),
+    threadId: v.string(),
+    transcriptMessageId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const application = await ctx.db
+      .query("membershipApplicationThreads")
+      .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+      .unique();
+
+    if (!application) {
+      throw new Error("Application not found.");
+    }
+
+    await ctx.db.patch(application._id, {
+      transcriptMessageId: args.transcriptMessageId,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { ok: true };
   },
 });
 

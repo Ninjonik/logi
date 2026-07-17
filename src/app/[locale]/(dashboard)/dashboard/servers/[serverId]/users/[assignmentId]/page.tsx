@@ -4,6 +4,7 @@ import { Activity, Shield, Skull, Swords, Target, Wrench } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
 import { ResourceTable } from "@/components/app/resource-table";
 import { StatCard } from "@/components/app/stat-card";
+import { TablePageLayout } from "@/components/app/table-page-layout";
 import { UserAssignmentForm } from "@/components/app/user-assignment-form";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
@@ -92,14 +93,17 @@ export default async function ServerUserDetailPage({
   }
 
   return (
-    <>
-      <PageHeader
-        title={user.name}
-        description={user.platformIds.length
-          ? dictionary.userManagement.platformConnectedAs.replace("{platformId}", formatPlatformIds(user.platformIds))
-          : dictionary.userManagement.platformNotConnected}
-      />
-      <div className="space-y-6 px-4 pb-6 lg:px-6">
+    <TablePageLayout
+      header={
+        <PageHeader
+          title={user.name}
+          description={user.platformIds.length
+            ? dictionary.userManagement.platformConnectedAs.replace("{platformId}", formatPlatformIds(user.platformIds))
+            : dictionary.userManagement.platformNotConnected}
+        />
+      }
+    >
+      <div className="flex min-h-0 flex-col gap-6 overflow-y-auto pb-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <StatCard title={dictionary.userManagement.averageKills} value={formatAverage(storedPerformance?.averages.kills ?? recentSummary.averages.kills)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Target} />
           <StatCard title={dictionary.userManagement.averageKd} value={formatAverage(storedPerformance?.averages.killDeathRatio ?? recentSummary.averages.killDeathRatio)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Swords} />
@@ -172,6 +176,6 @@ export default async function ServerUserDetailPage({
         />
         <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} assignment={assignment} />
       </div>
-    </>
+    </TablePageLayout>
   );
 }

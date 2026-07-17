@@ -22,6 +22,8 @@ export type ServerUserAssignment = {
   userId: string;
   serverId: string;
   type: "member" | "mercenary";
+  status: "pending" | "recruit" | "active";
+  membershipCategoryId?: string;
   primaryGroupId?: string;
   secondaryGroupIds: string[];
   paused: boolean;
@@ -75,6 +77,8 @@ export async function saveServerUserAssignment(input: {
   userId: string;
   serverId: string;
   type: "member" | "mercenary";
+  status: "pending" | "recruit" | "active";
+  membershipCategoryId?: string;
   primaryGroupId?: string;
   secondaryGroupIds: string[];
   paused: boolean;
@@ -86,6 +90,8 @@ export async function saveServerUserAssignment(input: {
     userId: input.userId,
     serverId: input.serverId,
     type: input.type,
+    status: input.status,
+    membershipCategoryId: input.membershipCategoryId,
     primaryGroupId: (input.primaryGroupId || undefined) as never,
     secondaryGroupIds: input.secondaryGroupIds as never,
     paused: input.paused,

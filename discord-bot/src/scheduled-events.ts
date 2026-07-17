@@ -56,6 +56,8 @@ export async function syncScheduledDiscordEvent(input: {
   }
 
   const eventChannel = meetingChannel as GuildChannel;
+  const scheduledStartTime = new Date(event.meetingStart);
+  const scheduledEndTime = resolveScheduledEndTime(event);
   let scheduledEvent = scheduledEventId
     ? await guild.scheduledEvents.fetch(scheduledEventId).catch(() => null)
     : null;
@@ -71,8 +73,8 @@ export async function syncScheduledDiscordEvent(input: {
     scheduledEvent = await guild.scheduledEvents.create({
       name: event.name.slice(0, 100),
       description: buildScheduledEventDescription(event),
-      scheduledStartTime: new Date(event.meetingStart),
-      scheduledEndTime: new Date(event.gameEnd),
+      scheduledStartTime,
+      scheduledEndTime,
       privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
       entityType: GuildScheduledEventEntityType.Voice,
       channel: eventChannel.id,
@@ -84,8 +86,8 @@ export async function syncScheduledDiscordEvent(input: {
     await scheduledEvent.edit({
       name: event.name.slice(0, 100),
       description: buildScheduledEventDescription(event),
-      scheduledStartTime: new Date(event.meetingStart),
-      scheduledEndTime: new Date(event.gameEnd),
+      scheduledStartTime,
+      scheduledEndTime,
       channel: eventChannel.id,
     });
   }
@@ -148,4 +150,19 @@ function buildScheduledEventDescription(event: EventRecord) {
   ].filter((line): line is string => Boolean(line));
 
   return lines.join("\n").slice(0, 1000) || "Managed by Logi.";
+}
+
+function resolveScheduledEndTime(event: EventRecord) {
+  const scheduledStartTime = new Date(event.meetingStart);
+  const scheduledEndTime = new Date(event.gameEnd);
+
+  if (
+    Number.isFinite(scheduledStartTime.getTime()) &&
+    Number.isFinite(scheduledEndTime.getTime()) &&
+    scheduledEndTime.getTime() > scheduledStartTime.getTime()
+  ) {
+    return scheduledEndTime;
+  }
+
+  return new Date(scheduledStartTime.getTime() + 90 * 60 * 1000);
 }

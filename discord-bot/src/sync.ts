@@ -9,6 +9,10 @@ import { syncForumChannel } from "./forum";
 import {
   buildAnnouncementMessage,
   buildAttendanceReminderComponents,
+  buildMembershipPanelComponents,
+  buildMembershipPanelEmbed,
+  buildTicketPanelComponents,
+  buildTicketPanelEmbed,
 } from "./message-builders";
 import {
   deriveScheduledEventLifecycle,
@@ -54,6 +58,8 @@ export function createPollLoop(options: PollLoopOptions) {
 
 async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
   await syncGuildMemberAccess(client, payload);
+  await syncTicketPanel(client, payload);
+  await syncMembershipPanel(client, payload);
   await processAttendanceReminders(client, queuedEventIds, payload);
 
   for (const event of payload.events) {
@@ -62,6 +68,27 @@ async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, pay
     const desiredScheduledEventStatus = payload.config.meetingChannelId
       ? getStoredScheduledEventStatus(deriveScheduledEventLifecycle(event))
       : undefined;
+
+    if (event.status === "concluded" && !state && !queuedEventIds.has(event.id)) {
+      await convex.mutation(references.updateEventSyncState, {
+        secret: env.internalSecret,
+        eventId: event.id as never,
+        guildId: payload.config.guildId,
+        announcementChannelId: payload.config.announcementsChannelId,
+        announcementMessageId: undefined,
+        scheduledEventId: undefined,
+        scheduledEventStatus: desiredScheduledEventStatus,
+        forumChannelId: undefined,
+        forumThreadId: undefined,
+        infoMessageId: undefined,
+        topicMessageIds: [],
+        lastEventUpdatedAt: event.updatedAt,
+        lastRosterUpdatedAt: roster?.updatedAt,
+        lastConfigUpdatedAt: payload.config.updatedAt,
+        lastSyncedAt: new Date().toISOString(),
+      });
+      continue;
+    }
 
     const needsSync =
       !state ||
@@ -80,8 +107,108 @@ async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, pay
 
     if (!needsSync) continue;
 
-    await syncEvent(client, payload, event, state);
-    queuedEventIds.delete(event.id);
+    try {
+      await syncEvent(client, payload, event, state);
+      queuedEventIds.delete(event.id);
+    } catch (error) {
+      console.error("Discord bot event sync failed", {
+        eventId: event.id,
+        guildId: payload.config.guildId,
+        error,
+      });
+    }
+  }
+}
+
+async function syncTicketPanel(client: Client, payload: SyncPayload) {
+  const ticketSettings = payload.config.ticketSettings;
+  if (!ticketSettings?.enabled || !ticketSettings.submitChannelId || !ticketSettings.ticketParentChannelId || !ticketSettings.categories.length) {
+    return;
+  }
+
+  const guild = await client.guilds.fetch(payload.config.guildId).catch(() => null);
+  if (!guild) return;
+
+  const channel = await guild.channels.fetch(ticketSettings.submitChannelId).catch(() => null);
+  if (!channel?.isTextBased() || channel.type !== ChannelType.GuildText) {
+    return;
+  }
+
+  const textChannel = channel as TextChannel;
+  const currentMessage = payload.config.ticketPanelMessageId
+    ? await textChannel.messages.fetch(payload.config.ticketPanelMessageId).catch(() => null)
+    : null;
+  const embed = buildTicketPanelEmbed(payload.config);
+  if (!embed) {
+    return;
+  }
+  const components = buildTicketPanelComponents(payload.config);
+
+  let ticketPanelMessageId = payload.config.ticketPanelMessageId;
+
+  if (currentMessage) {
+    await currentMessage.edit({ embeds: [embed], components });
+  } else {
+    const created = await textChannel.send({ embeds: [embed], components });
+    ticketPanelMessageId = created.id;
+  }
+
+  if (
+    ticketPanelMessageId !== payload.config.ticketPanelMessageId ||
+    payload.config.ticketPanelLastConfigUpdatedAt !== payload.config.updatedAt
+  ) {
+    await convex.mutation(references.updateTicketPanelState, {
+      secret: env.internalSecret,
+      guildId: payload.config.guildId,
+      ticketPanelMessageId,
+      ticketPanelLastConfigUpdatedAt: payload.config.updatedAt,
+    });
+  }
+}
+
+async function syncMembershipPanel(client: Client, payload: SyncPayload) {
+  const membershipSettings = payload.config.membershipSettings;
+  if (!membershipSettings?.enabled || !membershipSettings.submitChannelId || !membershipSettings.applicationParentChannelId || !membershipSettings.categories.length) {
+    return;
+  }
+
+  const guild = await client.guilds.fetch(payload.config.guildId).catch(() => null);
+  if (!guild) return;
+
+  const channel = await guild.channels.fetch(membershipSettings.submitChannelId).catch(() => null);
+  if (!channel?.isTextBased() || channel.type !== ChannelType.GuildText) {
+    return;
+  }
+
+  const textChannel = channel as TextChannel;
+  const currentMessage = payload.config.membershipPanelMessageId
+    ? await textChannel.messages.fetch(payload.config.membershipPanelMessageId).catch(() => null)
+    : null;
+  const embed = buildMembershipPanelEmbed(payload.config);
+  if (!embed) {
+    return;
+  }
+  const components = buildMembershipPanelComponents(payload.config);
+
+  let membershipPanelMessageId = payload.config.membershipPanelMessageId;
+
+  if (currentMessage) {
+    await currentMessage.edit({ embeds: [embed], components });
+  } else {
+    const created = await textChannel.send({ embeds: [embed], components });
+    membershipPanelMessageId = created.id;
+  }
+
+  if (
+    membershipPanelMessageId !== payload.config.membershipPanelMessageId ||
+    payload.config.membershipPanelLastConfigUpdatedAt !== payload.config.updatedAt
+  ) {
+    await convex.mutation(references.updateMembershipPanelState, {
+      secret: env.internalSecret,
+      guildId: payload.config.guildId,
+      membershipPanelMessageId,
+      membershipPanelLastConfigUpdatedAt: payload.config.updatedAt,
+    });
   }
 }
 
@@ -126,7 +253,7 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
   let infoMessageId = state?.infoMessageId;
   let topicMessageIds = state?.topicMessageIds ?? [];
 
-  if (payload.config.announcementsChannelId) {
+  if (payload.config.announcementsChannelId && !(event.status === "concluded" && !announcementMessageId)) {
     const channel = await guild.channels.fetch(payload.config.announcementsChannelId).catch(() => null);
     if (channel?.isTextBased() && channel.type === ChannelType.GuildText) {
       const textChannel = channel as TextChannel;
@@ -151,39 +278,61 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
 
   const scheduledLifecycle = deriveScheduledEventLifecycle(event);
   if (payload.config.meetingChannelId) {
-    const meetingChannel = await guild.channels.fetch(payload.config.meetingChannelId).catch(() => null);
-    const scheduledSyncResult = await syncScheduledDiscordEvent({
-      guild,
-      event,
-      meetingChannel,
-      scheduledEventId,
-      desiredLifecycle: scheduledLifecycle,
-    });
+    try {
+      const meetingChannel = await guild.channels.fetch(payload.config.meetingChannelId).catch(() => null);
+      const scheduledSyncResult = await syncScheduledDiscordEvent({
+        guild,
+        event,
+        meetingChannel,
+        scheduledEventId,
+        desiredLifecycle: scheduledLifecycle,
+      });
 
-    scheduledEventId = scheduledSyncResult.scheduledEventId;
-    scheduledEventStatus = scheduledSyncResult.scheduledEventStatus;
+      scheduledEventId = scheduledSyncResult.scheduledEventId;
+      scheduledEventStatus = scheduledSyncResult.scheduledEventStatus;
+    } catch (error) {
+      console.error("Discord bot scheduled event sync failed", {
+        eventId: event.id,
+        guildId: payload.config.guildId,
+        scheduledEventId,
+        error,
+      });
+    }
   } else if (scheduledEventId) {
     const canceled = await cancelScheduledDiscordEvent(guild, scheduledEventId);
     scheduledEventId = undefined;
     scheduledEventStatus = canceled ? "canceled" : undefined;
   }
 
-  if (payload.config.forumCategoryId) {
-    const topicPreset = payload.topicPresets.find((preset) => preset.id === event.topicPresetId);
-    const forumSyncResult = await syncForumChannel({
-      config: payload.config,
-      event,
-      forumCategoryId: payload.config.forumCategoryId,
-      forumChannelId,
-      guild,
-      existingTopicMessageIds: topicMessageIds,
-      topicPreset,
-    });
+  if (
+    event.createForumChannel &&
+    payload.config.forumCategoryId &&
+    !(event.status === "concluded" && !forumChannelId)
+  ) {
+    try {
+      const topicPreset = payload.topicPresets.find((preset) => preset.id === event.topicPresetId);
+      const forumSyncResult = await syncForumChannel({
+        config: payload.config,
+        event,
+        forumCategoryId: payload.config.forumCategoryId,
+        forumChannelId,
+        guild,
+        existingTopicMessageIds: topicMessageIds,
+        topicPreset,
+      });
 
-    forumChannelId = forumSyncResult.forumChannelId;
-    infoMessageId = forumSyncResult.infoMessageId;
-    if (!topicMessageIds.length && forumSyncResult.topicMessageIds.length) {
-      topicMessageIds = forumSyncResult.topicMessageIds;
+      forumChannelId = forumSyncResult.forumChannelId;
+      infoMessageId = forumSyncResult.infoMessageId;
+      if (!topicMessageIds.length && forumSyncResult.topicMessageIds.length) {
+        topicMessageIds = forumSyncResult.topicMessageIds;
+      }
+    } catch (error) {
+      console.error("Discord bot forum sync failed", {
+        eventId: event.id,
+        guildId: payload.config.guildId,
+        forumChannelId,
+        error,
+      });
     }
   }
 
