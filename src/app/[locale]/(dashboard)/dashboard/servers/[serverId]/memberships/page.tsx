@@ -18,8 +18,8 @@ export async function generateMetadata({
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
 
   return {
-    title: `${server?.name ?? "Clan"} Membership settings`,
-    description: dictionary.serverSettings.pageDescription,
+    title: `${server?.name ?? "Clan"} ${dictionary.membershipSettings.title}`,
+    description: dictionary.membershipSettings.pageDescription,
   };
 }
 
@@ -36,9 +36,9 @@ export default async function ServerMembershipsPage({
 
   return (
     <>
-      <PageHeader title="Membership settings" description="Configure the Discord application embed, required application categories, and default assignment behavior for new clan members." />
+      <PageHeader title={dictionary.membershipSettings.title} description={dictionary.membershipSettings.pageDescription} />
       <div className="space-y-6 px-4 lg:px-6">
-        <MembershipSettingsForm serverId={serverId} config={discordConfig} />
+        <MembershipSettingsForm serverId={serverId} config={discordConfig} dictionary={dictionary} />
       </div>
     </>
   );

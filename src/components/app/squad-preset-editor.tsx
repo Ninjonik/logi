@@ -2,13 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, Loader2, PencilLine, Plus, Save, Sparkles, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { createHllStarterSquadPreset, roleIconOptions } from "@/lib/squad-preset-templates";
 import type { Group, SquadPresetSquad } from "@/types/domain";
@@ -48,6 +48,9 @@ export function SquadPresetEditor({
   groups,
   canEdit,
   dictionary,
+  serverId,
+  locale,
+  presetId,
   startInEditMode = false,
 }: {
   name: string;
@@ -55,12 +58,18 @@ export function SquadPresetEditor({
   groups: Group[];
   canEdit: boolean;
   dictionary: Dictionary;
+  serverId: string;
+  locale: string;
+  presetId?: string;
   startInEditMode?: boolean;
 }) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(startInEditMode);
   const [draftName, setDraftName] = useState(name);
   const [draftSquads, setDraftSquads] = useState(squads);
+  const [isSaving, setIsSaving] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const createMode = !presetId;
 
   function moveSquad(index: number, direction: -1 | 1) {
     setDraftSquads((current) => {
@@ -139,14 +148,44 @@ export function SquadPresetEditor({
     toast.success(dictionary.presets.importStarterTemplate);
   }
 
-  function handleSave() {
-    startTransition(() => {
-      // Logic for saving would go here (API call)
-      // For now we just simulate success with toast
+  async function handleSave() {
+    if (isSaving) return;
+    setIsSaving(true);
+
+    try {
+      const response = await fetch(
+        createMode ? `/api/servers/${serverId}/squad-presets` : `/api/servers/${serverId}/squad-presets/${presetId}`,
+        {
+          method: createMode ? "POST" : "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            name: draftName,
+            squads: draftSquads,
+          }),
+        },
+      );
+
+      const body = await response.json();
+      if (!response.ok) {
+        const message = body.error ?? "Unable to save the squad preset.";
+        toast.error(message);
+        return;
+      }
+
       setIsEditing(false);
       toast.success(dictionary.common.save);
-    });
+      startTransition(() => {
+        router.push(`/${locale}/dashboard/servers/${serverId}/squad-presets/${createMode ? body.presetId : presetId}`);
+        router.refresh();
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save the squad preset.");
+    } finally {
+      setIsSaving(false);
+    }
   }
+
+  const disabled = !canEdit || isSaving || isPending;
 
   return (
     <Card className="rounded-2xl border-border/60">
@@ -173,8 +212,8 @@ export function SquadPresetEditor({
                   <Plus className="size-4" />
                   {dictionary.common.addSquad}
                 </Button>
-                <Button variant="default" className="rounded-xl" onClick={handleSave} disabled={isPending}>
-                  {isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                <Button variant="default" className="rounded-xl" onClick={() => void handleSave()} disabled={disabled}>
+                  {isSaving || isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
                   {dictionary.common.save}
                 </Button>
               </>
@@ -186,7 +225,7 @@ export function SquadPresetEditor({
         <div>
           <div className="mb-2 text-sm font-medium">{dictionary.presets.presetName}</div>
           {isEditing ? (
-            <Input defaultValue={draftName} onBlur={(event) => setDraftName(event.target.value)} className="rounded-xl" />
+            <Input value={draftName} onChange={(event) => setDraftName(event.target.value)} className="rounded-xl" />
           ) : (
             <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">{draftName || dictionary.presets.untitledPreset}</div>
           )}
@@ -204,9 +243,9 @@ export function SquadPresetEditor({
                     </Button>
                   </div>
                   <div className="grid gap-2 grid-cols-[auto_auto_56px_72px_56px_auto_auto] items-center">
-                    <Input defaultValue={squad.name} onBlur={(event) => updateSquad(squadIndex, "name", event.target.value)} className="rounded-xl" />
+                    <Input value={squad.name} onChange={(event) => updateSquad(squadIndex, "name", event.target.value)} className="rounded-xl" />
                     {groups.length ? (
-                      <Select defaultValue={squad.group} onValueChange={(value) => updateSquad(squadIndex, "group", value)}>
+                      <Select value={squad.group} onValueChange={(value) => updateSquad(squadIndex, "group", value)}>
                         <SelectTrigger className="rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
@@ -219,7 +258,7 @@ export function SquadPresetEditor({
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Input defaultValue={squad.group} onBlur={(event) => updateSquad(squadIndex, "group", event.target.value)} className="rounded-xl" />
+                      <Input value={squad.group} onChange={(event) => updateSquad(squadIndex, "group", event.target.value)} className="rounded-xl" />
                     )}
                     <Input type="color" value={squad.color} onChange={(event) => updateSquad(squadIndex, "color", event.target.value)} className="h-9 rounded-xl p-1" />
                     <Input type="number" value={squad.order} onChange={(event) => updateSquad(squadIndex, "order", Number(event.target.value))} className="h-9 rounded-xl" />
@@ -241,12 +280,12 @@ export function SquadPresetEditor({
                           </Button>
                         </div>
                         <div className="grid gap-2 grid-cols-[2fr_60px_56px_1fr] items-center">
-                          <Input defaultValue={role.name} onBlur={(event) => updateRole(squadIndex, roleIndex, "name", event.target.value)} className="h-9 rounded-xl" />
+                          <Input value={role.name} onChange={(event) => updateRole(squadIndex, roleIndex, "name", event.target.value)} className="h-9 rounded-xl" />
                           <Input type="number" value={role.count} onChange={(event) => updateRole(squadIndex, roleIndex, "count", Number(event.target.value))} className="h-9 rounded-xl" />
                           <IconSelect value={role.icon} onChange={(value) => updateRole(squadIndex, roleIndex, "icon", value)} />
                           <Input
-                            defaultValue={role.note ?? ""}
-                            onBlur={(event) => updateRole(squadIndex, roleIndex, "note", event.target.value)}
+                            value={role.note ?? ""}
+                            onChange={(event) => updateRole(squadIndex, roleIndex, "note", event.target.value)}
                             className="h-9 rounded-xl"
                             placeholder={dictionary.presets.shortNote}
                           />
@@ -284,7 +323,10 @@ export function SquadPresetEditor({
 
         {isEditing ? (
           <div className="flex gap-3">
-            <Button className="rounded-xl">{dictionary.common.save}</Button>
+            <Button className="rounded-xl" onClick={() => void handleSave()} disabled={disabled}>
+              {isSaving || isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
+              {dictionary.common.save}
+            </Button>
             <Button variant="outline" className="rounded-xl" onClick={() => setIsEditing(false)}>
               {dictionary.common.cancel}
             </Button>

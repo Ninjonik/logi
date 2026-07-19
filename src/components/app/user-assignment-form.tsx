@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import type { ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PencilLine, Search, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import { ConfigNotice } from "@/components/app/config-notice";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +24,7 @@ import { formatPlatformIds } from "@/lib/platform-ids";
 import type { UserAssignmentInput } from "@/lib/validation/user-assignment";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
-import type { AppUser, Group, Guild } from "@/types/domain";
+import type { AppUser, DiscordConfig, Group, Guild } from "@/types/domain";
 
 type EligibleUser = {
   user: AppUser;
@@ -46,7 +48,7 @@ function getValidationMessage(message: string | undefined, dictionary: Dictionar
   if (!message) return "";
   if (message === "Pick a player first.") return dictionary.userManagement.pickPlayerFirst;
   if (message === "Add a pause note when membership is paused.") return dictionary.userManagement.pauseNoteRequired;
-  if (message === "Mercenaries cannot use the recruit status.") return "Mercenaries cannot use the recruit status.";
+  if (message === "Mercenaries cannot use the recruit status.") return dictionary.userManagement.mercenaryRecruitStatusError;
   return message;
 }
 
@@ -67,6 +69,7 @@ export function UserAssignmentForm({
   eligibleUsers,
   groups,
   assignment,
+  config,
   createMode = false,
 }: {
   server: Guild;
@@ -75,6 +78,7 @@ export function UserAssignmentForm({
   eligibleUsers: EligibleUser[];
   groups: Group[];
   assignment?: ServerUserAssignment;
+  config?: DiscordConfig | null;
   createMode?: boolean;
 }) {
   const router = useRouter();
@@ -126,6 +130,47 @@ export function UserAssignmentForm({
   const mercDisabled = selected ? !selected.canJoinAsMercenary : false;
   const showPlayerPicker = createMode;
   const canEditFields = createMode || isEditing;
+  const membershipCategory = assignment?.membershipCategoryId
+    ? config?.membershipSettings?.categories.find((item) => item.id === assignment.membershipCategoryId)
+    : undefined;
+  const status = form.watch("status");
+  const needsMembershipRoles = assignmentType === "member" && status !== "pending";
+  const missingRecruitRole = status === "recruit" && !membershipCategory?.recruitRoleId;
+  const missingFinalRole = status === "active" && !membershipCategory?.finalRoleId;
+
+  const notices: ReactNode[] = [
+    (
+      <ConfigNotice key="role-sync-info" tone="info" title={dictionary.userManagement.roleSyncTitle}>
+        {dictionary.userManagement.roleSyncDescription}
+      </ConfigNotice>
+    ),
+  ];
+
+  if (needsMembershipRoles && !config?.clanRoleId) {
+    notices.push(
+      <ConfigNotice key="missing-clan-role" title={dictionary.userManagement.missingClanRoleTitle}>
+        {dictionary.userManagement.missingClanRoleDescription}
+      </ConfigNotice>,
+    );
+  }
+
+  if (needsMembershipRoles && !assignment?.membershipCategoryId) {
+    notices.push(
+      <ConfigNotice key="missing-membership-category" title={dictionary.userManagement.missingMembershipCategoryTitle}>
+        {dictionary.userManagement.missingMembershipCategoryDescription}
+      </ConfigNotice>,
+    );
+  }
+
+  if (needsMembershipRoles && assignment?.membershipCategoryId && (missingRecruitRole || missingFinalRole)) {
+    notices.push(
+      <ConfigNotice key="missing-category-role" title={dictionary.userManagement.missingCategoryRolesTitle}>
+        {missingRecruitRole ? dictionary.userManagement.missingRecruitRoleDescription : ""}
+        {missingFinalRole ? dictionary.userManagement.missingFinalRoleDescription : ""}
+        {dictionary.userManagement.missingCategoryRolesSummary}
+      </ConfigNotice>,
+    );
+  }
 
   async function submit(values: UserAssignmentInput) {
     setServerError(null);
@@ -222,6 +267,7 @@ export function UserAssignmentForm({
       </CardHeader>
       <CardContent className="space-y-6">
         <form className="space-y-6" onSubmit={form.handleSubmit(submit)}>
+          {notices}
           {showPlayerPicker ? (
             <div className="space-y-3">
               <Label>{dictionary.userManagement.playerSearch}</Label>

@@ -19,7 +19,16 @@ export default async function CreateSquadPresetPage({
     <>
       <PageHeader title={dictionary.presets.createSquadTitle} description={dictionary.presets.createSquadDescription} />
       <div className="px-4 lg:px-6">
-        <SquadPresetEditor name="" squads={[]} groups={groups} canEdit={canAdmin} dictionary={dictionary} startInEditMode />
+        <SquadPresetEditor
+          name=""
+          squads={[]}
+          groups={groups}
+          canEdit={canAdmin}
+          dictionary={dictionary}
+          serverId={serverId}
+          locale={locale}
+          startInEditMode
+        />
       </div>
     </>
   );

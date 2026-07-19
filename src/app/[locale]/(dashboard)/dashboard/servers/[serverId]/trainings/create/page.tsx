@@ -15,6 +15,7 @@ export default async function CreateTrainingPage({
   const canAdmin = context?.canAdmin ?? false;
   const topicPresets = context?.topicPresets ?? [];
   const timezone = context?.discordConfig?.timezone ?? "UTC";
+  const discordConfig = context?.discordConfig ?? null;
 
   const draftEvent = {
     id: "draft-training",
@@ -44,9 +45,9 @@ export default async function CreateTrainingPage({
 
   return (
     <>
-      <PageHeader title={dictionary.sidebar.trainings ?? "Trainings"} description={dictionary.event.createPageDescription} />
+      <PageHeader title={dictionary.sidebar.trainings} description={dictionary.event.createPageDescription} />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={draftEvent} serverId={serverId} locale={locale} topicPresets={topicPresets} timezone={timezone} canEdit={canAdmin} dictionary={dictionary} createMode />
+        <EventFormPanel event={draftEvent} serverId={serverId} locale={locale} topicPresets={topicPresets} timezone={timezone} canEdit={canAdmin} dictionary={dictionary} createMode discordConfig={discordConfig} />
       </div>
     </>
   );
