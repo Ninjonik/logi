@@ -71,6 +71,19 @@ export type DiscordConfig = {
   updatedAt: string;
 };
 
+export type GuildRecord = {
+  id: string;
+  discordId: string;
+  name: string;
+  avatar: string;
+  description?: string;
+  botInside: boolean;
+  adminIds: string[];
+  memberIds: string[];
+  mercenaryIds: string[];
+  updatedAt: string;
+};
+
 export type MembershipStatus = "pending" | "recruit" | "active";
 
 export type MembershipApplicationThreadRecord = {
@@ -126,20 +139,45 @@ export type TicketThreadRecord = {
 
 export type Group = {
   id: string;
+  guildId: string;
   name: string;
   color: string;
   discordRoleId?: string;
   discordEmoji?: string;
+  updatedAt: string;
 };
 
 export type TopicPreset = {
   id: string;
+  guildId: string;
   name: string;
   topics: Array<{
     title: string;
     body?: string;
-    attachments: string[];
+      attachments: string[];
   }>;
+  updatedAt: string;
+};
+
+export type SquadPreset = {
+  id: string;
+  guildId: string;
+  name: string;
+  squads: Array<{
+    name: string;
+    group: string;
+    order: number;
+    color: string;
+    icon: string;
+    roles: Array<{
+      name: string;
+      color: string;
+      icon: string;
+      count: number;
+      note?: string;
+    }>;
+  }>;
+  updatedAt: string;
 };
 
 export type EventRecord = {
@@ -231,6 +269,30 @@ export type SyncPayload = {
   rosters: Roster[];
   topicPresets: TopicPreset[];
   syncStates: SyncState[];
+};
+
+export type GuildCacheSnapshot = {
+  guilds: GuildRecord[];
+  configs: DiscordConfig[];
+  groups: Group[];
+  squadPresets: SquadPreset[];
+  topicPresets: TopicPreset[];
+};
+
+export type EventSyncIndex = {
+  events: Array<{
+    id: string;
+    guildId: string;
+    status: EventRecord["status"];
+    updatedAt: string;
+  }>;
+  rosters: Array<Roster>;
+};
+
+export type EventSyncContext = {
+  event: EventRecord;
+  roster: Roster | null;
+  syncState: SyncState | null;
 };
 
 export type EventInteractionContext = {
