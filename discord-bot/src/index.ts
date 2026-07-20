@@ -1,25 +1,19 @@
 import { Events } from "discord.js";
+import { Worker } from "node:worker_threads";
 
 import { client } from "./discord-client";
 import { env } from "./environment";
 import { createInteractionHandler } from "./interactions";
-import { createPollLoop } from "./sync";
+import { DiscordSyncService } from "./runtime/sync-service";
 
-const queuedEventIds = new Set<string>();
-const pollLoop = createPollLoop({ client, queuedEventIds });
-
-function enqueueEventSync(eventId: string) {
-  queuedEventIds.add(eventId);
-}
+const syncService = new DiscordSyncService(client);
 
 function triggerPollSoon() {
-  setTimeout(() => {
-    void pollLoop();
-  }, 2000);
+  syncService.triggerSoon();
 }
 
 const interactionHandler = createInteractionHandler({
-  enqueueEventSync,
+  enqueueEventSync: (eventId) => syncService.queueEventSync(eventId),
   triggerPollSoon,
 });
 
@@ -30,10 +24,32 @@ client.once(Events.ClientReady, async (readyClient) => {
       console.error("Failed to register guild commands", { guildId: guild.id, error });
     });
   }
-  void pollLoop();
-  setInterval(() => {
-    void pollLoop();
-  }, 15000);
+  await syncService.start();
+
+  const fallbackWorker = new Worker(new URL("./runtime/fallback-worker.ts", import.meta.url), {
+    execArgv: process.execArgv,
+  });
+  fallbackWorker.on("message", (message: { type: string; eventIds?: string[]; error?: string }) => {
+    if (message.type === "eventsChanged") {
+      for (const eventId of message.eventIds ?? []) {
+        syncService.queueEventSync(eventId);
+      }
+      syncService.triggerSoon(250);
+      return;
+    }
+
+    if (message.type === "fullResync") {
+      syncService.requestFullResync();
+      return;
+    }
+
+    if (message.type === "error") {
+      console.error("Discord fallback worker failed", message.error);
+    }
+  });
+  fallbackWorker.on("error", (error) => {
+    console.error("Discord fallback worker crashed", error);
+  });
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {

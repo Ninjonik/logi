@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 
+import { LiveRosterBoard } from "@/components/app/live-roster-board";
 import { PageHeader } from "@/components/app/page-header";
-import { RosterBoard } from "@/components/app/roster-board";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getLoggedInUser } from "@/lib/auth";
 import { getEventMetadata, getRosterMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getUsersByIds } from "@/lib/server-user-management";
@@ -39,6 +40,8 @@ export default async function RosterDetailPage({
   const roster = rosters.find((item) => item.id === rosterId);
   const event = events.find((item) => item.id === roster?.eventId);
   const users = await getUsersByIds(assignments.map((assignment) => assignment.userId));
+  const user = await getLoggedInUser();
+  if (!user) return null;
 
   return (
     <>
@@ -46,7 +49,20 @@ export default async function RosterDetailPage({
         title={event ? `${event.name} roster` : "Roster"}
       />
       <div className="px-4 lg:px-6">
-        <RosterBoard roster={roster} event={event} users={users} userAssignments={assignments} groups={groups} canAdmin={canAdmin} dictionary={dictionary} serverId={serverId} locale={locale} timezone={discordConfig?.timezone} meetingChannelId={discordConfig?.meetingChannelId} defaultMode="view" />
+        <LiveRosterBoard
+          rosterId={rosterId}
+          serverId={serverId}
+          locale={locale}
+          userId={user.discordId}
+          dictionary={dictionary}
+          initialRoster={roster}
+          initialEvent={event}
+          initialUsers={users}
+          initialAssignments={assignments}
+          initialGroups={groups}
+          initialCanAdmin={canAdmin}
+          initialDiscordConfig={discordConfig}
+        />
       </div>
     </>
   );

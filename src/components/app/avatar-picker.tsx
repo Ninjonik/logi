@@ -8,11 +8,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-async function uploadImage(file: File) {
+async function uploadImage(file: File, messages?: {
+  prepareUploadError: string;
+  uploadImageError: string;
+  readImageUrlError: string;
+}) {
   const uploadResponse = await fetch("/api/uploads", { method: "POST" });
   const uploadBody = await uploadResponse.json();
   if (!uploadResponse.ok) {
-    throw new Error(uploadBody.error ?? "Unable to prepare the upload.");
+    throw new Error(uploadBody.error ?? messages?.prepareUploadError ?? "Unable to prepare the upload.");
   }
 
   const storageResponse = await fetch(uploadBody.uploadUrl, {
@@ -24,7 +28,7 @@ async function uploadImage(file: File) {
   });
 
   if (!storageResponse.ok) {
-    throw new Error("Unable to upload the image.");
+    throw new Error(messages?.uploadImageError ?? "Unable to upload the image.");
   }
 
   const { storageId } = await storageResponse.json();
@@ -36,7 +40,7 @@ async function uploadImage(file: File) {
   });
   const urlBody = await urlResponse.json();
   if (!urlResponse.ok) {
-    throw new Error(urlBody.error ?? "Unable to read the uploaded image URL.");
+    throw new Error(urlBody.error ?? messages?.readImageUrlError ?? "Unable to read the uploaded image URL.");
   }
 
   return urlBody.url as string;
@@ -48,6 +52,7 @@ export function AvatarPicker({
   fallback,
   label,
   buttonLabel,
+  uploadMessages,
   disabled,
   className,
 }: {
@@ -56,6 +61,11 @@ export function AvatarPicker({
   fallback: string;
   label: string;
   buttonLabel: string;
+  uploadMessages?: {
+    prepareUploadError: string;
+    uploadImageError: string;
+    readImageUrlError: string;
+  };
   disabled?: boolean;
   className?: string;
 }) {
@@ -68,11 +78,11 @@ export function AvatarPicker({
 
     setIsUploading(true);
     try {
-      const nextUrl = await uploadImage(file);
+      const nextUrl = await uploadImage(file, uploadMessages);
       onChange(nextUrl);
       toast.success(label);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to upload the image.");
+      toast.error(error instanceof Error ? error.message : uploadMessages?.uploadImageError ?? "Unable to upload the image.");
     } finally {
       setIsUploading(false);
       if (inputRef.current) {

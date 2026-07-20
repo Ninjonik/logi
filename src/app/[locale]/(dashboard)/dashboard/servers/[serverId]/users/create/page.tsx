@@ -25,7 +25,7 @@ export default async function CreateServerUserPage({
     <>
       <PageHeader title={dictionary.userManagement.addPlayer} description={dictionary.userManagement.description} />
       <div className="px-4 lg:px-6">
-        <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} createMode />
+        <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} config={context.discordConfig} createMode />
       </div>
     </>
   );

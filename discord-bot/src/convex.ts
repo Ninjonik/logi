@@ -1,9 +1,9 @@
-import { ConvexHttpClient } from "convex/browser";
+import { ConvexReactClient } from "convex/react";
 import { makeFunctionReference } from "convex/server";
 
 import { env } from "./environment";
 
-export const convex = new ConvexHttpClient(env.convexUrl);
+export const convex = new ConvexReactClient(env.convexUrl);
 
 export const references = {
   acknowledgeAttendance: makeFunctionReference<"mutation">("rosters:acknowledgeAttendance"),
@@ -16,11 +16,14 @@ export const references = {
   createTicketThread: makeFunctionReference<"mutation">("discord:createTicketThread"),
   getEventInteractionContext: makeFunctionReference<"query">("discord:getEventInteractionContext"),
   getEventSignupContext: makeFunctionReference<"query">("discord:getEventSignupContext"),
+  getEventSyncContext: makeFunctionReference<"query">("discord:getEventSyncContext"),
   getMembershipApplicationPrereq: makeFunctionReference<"query">("discord:getMembershipApplicationPrereq"),
   getMembershipApplicationThreadContext: makeFunctionReference<"query">("discord:getMembershipApplicationThreadContext"),
   getMembershipCategoryContext: makeFunctionReference<"query">("discord:getMembershipCategoryContext"),
   getTicketCategoryContext: makeFunctionReference<"query">("discord:getTicketCategoryContext"),
   getTicketThreadContext: makeFunctionReference<"query">("discord:getTicketThreadContext"),
+  listEventSyncIndex: makeFunctionReference<"query">("discord:listEventSyncIndex"),
+  listGuildCacheSnapshot: makeFunctionReference<"query">("discord:listGuildCacheSnapshot"),
   listSyncPayloads: makeFunctionReference<"query">("discord:listSyncPayloads"),
   reconcileStatuses: makeFunctionReference<"mutation">("events:reconcileStatuses"),
   syncMemberAccess: makeFunctionReference<"mutation">("discord:syncMemberAccess"),

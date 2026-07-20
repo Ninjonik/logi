@@ -8,6 +8,7 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { AvatarPicker } from "@/components/app/avatar-picker";
+import { ConfigNotice } from "@/components/app/config-notice";
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,7 @@ import {
 import { fromDateTimeLocalInTimeZone, toDateTimeLocalInTimeZone } from "@/lib/timezone-datetime";
 import { cn } from "@/lib/utils";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
-import type { EventRecord, TopicPreset } from "@/types/domain";
+import type { DiscordConfig, EventRecord, TopicPreset } from "@/types/domain";
 
 type DiscordMetadata = {
   roles: DiscordSelectOption[];
@@ -121,6 +122,7 @@ export function EventFormPanel({
   canEdit,
   dictionary,
   createMode = false,
+  discordConfig,
 }: {
   event: EventRecord;
   serverId: string;
@@ -130,6 +132,7 @@ export function EventFormPanel({
   canEdit: boolean;
   dictionary: Dictionary;
   createMode?: boolean;
+  discordConfig?: DiscordConfig | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -168,6 +171,8 @@ export function EventFormPanel({
   const eventName = form.watch("name");
   const sideValue = form.watch("side");
   const mapValue = form.watch("map");
+  const pingClan = form.watch("pingClan");
+  const createForumChannel = form.watch("createForumChannel");
   const eventMatchValues = form.watch(["map", "side", "cap"]);
   const presetMatchValues = {
     map: eventMatchValues[0],
@@ -278,9 +283,9 @@ export function EventFormPanel({
 
     const body = await response.json();
     if (!response.ok) {
-      toast.error(body.error ?? "Unable to save event.");
+      toast.error(body.error ?? dictionary.event.saveError);
       form.setError("root", {
-        message: body.error ?? "Unable to save event.",
+        message: body.error ?? dictionary.event.saveError,
       });
       return;
     }
@@ -302,6 +307,34 @@ export function EventFormPanel({
       </CardHeader>
       <CardContent>
         <form className="space-y-6" onSubmit={form.handleSubmit(submit)}>
+          {eventKind === "match" && pingClan && !discordConfig?.announcementsChannelId ? (
+            <ConfigNotice
+              title={dictionary.event.notices.announcementsTitle}
+              href={canEdit ? `/${locale}/dashboard/servers/${serverId}/settings` : undefined}
+              ctaLabel={canEdit ? dictionary.event.notices.openClanSettings : undefined}
+            >
+              {dictionary.event.notices.announcementsDescription}
+            </ConfigNotice>
+          ) : null}
+          {eventKind === "match" && createForumChannel && !discordConfig?.forumCategoryId ? (
+            <ConfigNotice
+              title={dictionary.event.notices.forumTitle}
+              href={canEdit ? `/${locale}/dashboard/servers/${serverId}/settings` : undefined}
+              ctaLabel={canEdit ? dictionary.event.notices.openClanSettings : undefined}
+            >
+              {dictionary.event.notices.forumDescription}
+            </ConfigNotice>
+          ) : null}
+          {!discordConfig?.meetingChannelId ? (
+            <ConfigNotice
+              tone="info"
+              title={dictionary.event.notices.meetingAutomationTitle}
+              href={canEdit ? `/${locale}/dashboard/servers/${serverId}/settings` : undefined}
+              ctaLabel={canEdit ? dictionary.event.notices.openClanSettings : undefined}
+            >
+              {dictionary.event.notices.meetingAutomationDescription}
+            </ConfigNotice>
+          ) : null}
           {event.kind === "match" && event.eventResult ? (
             <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
               <div className="flex flex-wrap items-center gap-3">
@@ -340,8 +373,8 @@ export function EventFormPanel({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="match">{dictionary.sidebar.matches ?? "Matches"}</SelectItem>
-                      <SelectItem value="training">{dictionary.sidebar.trainings ?? "Trainings"}</SelectItem>
+                      <SelectItem value="match">{dictionary.sidebar.matches}</SelectItem>
+                      <SelectItem value="training">{dictionary.sidebar.trainings}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -376,11 +409,11 @@ export function EventFormPanel({
                   {selectedMapId ? (
                     <div className="min-w-0 space-y-2">
                       <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                        {dictionary.event.fields.mapVariant ?? "Variant"}
+                        {dictionary.event.fields.mapVariant}
                       </div>
                       <Select value={selectedMapTime} onValueChange={handleMapTimeSelection}>
                         <SelectTrigger className="w-full rounded-xl">
-                          <SelectValue placeholder={dictionary.event.fields.mapVariant ?? "Variant"} />
+                          <SelectValue placeholder={dictionary.event.fields.mapVariant} />
                         </SelectTrigger>
                         <SelectContent>
                           {timeOptions.map((option) => (
@@ -395,11 +428,11 @@ export function EventFormPanel({
                   {selectedMapId && selectedMapTime ? (
                     <div className="min-w-0 space-y-2">
                       <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                        {dictionary.event.fields.mapMode ?? "Mode"}
+                        {dictionary.event.fields.mapMode}
                       </div>
                       <Select value={selectedMapMode} onValueChange={handleMapModeSelection}>
                         <SelectTrigger className="w-full rounded-xl">
-                          <SelectValue placeholder={dictionary.event.fields.mapMode ?? "Mode"} />
+                          <SelectValue placeholder={dictionary.event.fields.mapMode} />
                         </SelectTrigger>
                         <SelectContent>
                           {modeOptions.map((option) => (
@@ -414,7 +447,7 @@ export function EventFormPanel({
                 </div>
                 {mapValue ? (
                   <p className="text-xs text-muted-foreground">
-                    {dictionary.event.fields.mapPresetCode ?? "Map preset code"}: <span className="font-mono">{mapValue}</span>
+                    {dictionary.event.fields.mapPresetCode}: <span className="font-mono">{mapValue}</span>
                   </p>
                 ) : null}
               </div>
@@ -431,9 +464,9 @@ export function EventFormPanel({
                 render={({ field }) => (
                   <AvatarPicker
                     value={field.value || ""}
-                  onChange={field.onChange}
+                    onChange={field.onChange}
                     fallback={eventName.slice(0, 2).toUpperCase() || "EV"}
-                    label={dictionary.event.fields.thumbnail ?? "Thumbnail"}
+                    label={dictionary.event.fields.thumbnail}
                     buttonLabel={dictionary.common.upload}
                     disabled={!canEdit || isPending}
                     className="rounded-2xl border border-border/60 p-4"
@@ -470,7 +503,7 @@ export function EventFormPanel({
             </div>
             ) : null}
             <div>
-              <FieldLabel label={dictionary.event.fields.meetingChannelId ?? "Meeting VC"}  />
+              <FieldLabel label={dictionary.event.fields.meetingChannelId}  />
               <Controller
                 control={form.control}
                 name="meetingChannelId"
@@ -479,7 +512,7 @@ export function EventFormPanel({
                     value={field.value || undefined}
                     onChange={(value) => field.onChange(value ?? "")}
                     options={meetingChannels}
-                    placeholder={dictionary.event.fields.meetingChannelId ?? "Meeting VC"}
+                    placeholder={dictionary.event.fields.meetingChannelId}
                     noneLabel={dictionary.shared.notSet}
                   />
                 )}
@@ -560,9 +593,9 @@ export function EventFormPanel({
             <div className="md:col-span-2">
               <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
                 <div>
-                  <FieldLabel label={dictionary.event.fields.createForumChannel ?? "Create forum channel"}  />
+                  <FieldLabel label={dictionary.event.fields.createForumChannel}  />
                   <p className="text-sm text-muted-foreground">
-                    {dictionary.event.createForumChannelDescription ?? "Create the Discord forum channel and its briefing topics for this event."}
+                    {dictionary.event.createForumChannelDescription}
                   </p>
                 </div>
                 <Controller
@@ -574,7 +607,7 @@ export function EventFormPanel({
             </div>
             ) : null}
             <div className="md:col-span-2">
-              <FieldLabel label={dictionary.event.fields.requiredRoleIds ?? "Required role IDs"} />
+              <FieldLabel label={dictionary.event.fields.requiredRoleIds} />
               <Controller
                 control={form.control}
                 name="requiredRoleIds"
@@ -583,13 +616,13 @@ export function EventFormPanel({
                     value={field.value ?? []}
                     onChange={field.onChange}
                     options={metadata?.roles ?? []}
-                    placeholder={dictionary.event.fields.requiredRoleIds ?? "Required role IDs"}
+                    placeholder={dictionary.event.fields.requiredRoleIds}
                   />
                 )}
               />
             </div>
             <div className="md:col-span-2">
-              <FieldLabel label={dictionary.event.fields.rewardRoleIds ?? "Reward role IDs"} />
+              <FieldLabel label={dictionary.event.fields.rewardRoleIds} />
               <Controller
                 control={form.control}
                 name="rewardRoleIds"
@@ -598,7 +631,7 @@ export function EventFormPanel({
                     value={field.value ?? []}
                     onChange={field.onChange}
                     options={metadata?.roles ?? []}
-                    placeholder={dictionary.event.fields.rewardRoleIds ?? "Reward role IDs"}
+                    placeholder={dictionary.event.fields.rewardRoleIds}
                   />
                 )}
               />

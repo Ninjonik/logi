@@ -48,5 +48,13 @@ export function getUserSafeErrorMessage(
     return "The link must point to /games/[id].";
   }
 
+  if (message.includes("Every squad needs at least one named role")) {
+    return "Each squad preset needs at least one named role.";
+  }
+
+  if (message.includes("Add at least one squad")) {
+    return "Add at least one squad.";
+  }
+
   return fallback;
 }

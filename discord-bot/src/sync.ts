@@ -56,7 +56,7 @@ export function createPollLoop(options: PollLoopOptions) {
   };
 }
 
-async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
+export async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
   await syncGuildMemberAccess(client, payload);
   await syncTicketPanel(client, payload);
   await syncMembershipPanel(client, payload);

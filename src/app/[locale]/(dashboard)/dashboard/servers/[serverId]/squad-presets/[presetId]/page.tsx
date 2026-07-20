@@ -42,7 +42,16 @@ export default async function SquadPresetDetailPage({
     <>
       <PageHeader title={preset.name} description={dictionary.presets.squadPresetPageDescription} />
       <div className="px-4 lg:px-6">
-        <SquadPresetEditor name={preset.name} squads={preset.squads} groups={groups} canEdit={canAdmin} dictionary={dictionary} />
+        <SquadPresetEditor
+          name={preset.name}
+          squads={preset.squads}
+          groups={groups}
+          canEdit={canAdmin}
+          dictionary={dictionary}
+          serverId={serverId}
+          locale={locale}
+          presetId={preset.id}
+        />
       </div>
     </>
   );

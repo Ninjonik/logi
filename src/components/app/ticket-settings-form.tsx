@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
 import { AvatarPicker } from "@/components/app/avatar-picker";
+import { ConfigNotice } from "@/components/app/config-notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,7 +55,7 @@ function buildDefaultTicketCategory(): EditableTicketCategory {
   };
 }
 
-function buildDefaultTicketSettings(config?: DiscordConfig | null): TicketSettings {
+function buildDefaultTicketSettings(dictionary: Dictionary, config?: DiscordConfig | null): TicketSettings {
   if (config?.ticketSettings) {
     return {
       ...config.ticketSettings,
@@ -79,8 +80,8 @@ function buildDefaultTicketSettings(config?: DiscordConfig | null): TicketSettin
     enabled: false,
     submitChannelId: "",
     ticketParentChannelId: "",
-    panelTitle: "Submit a ticket",
-    panelDescription: "Pick the category that fits your issue best and we will open a private support thread for you.",
+    panelTitle: dictionary.ticketSettings.defaultPanelTitle,
+    panelDescription: dictionary.ticketSettings.defaultPanelDescription,
     panelImageUrl: "",
     categories: [],
   };
@@ -115,7 +116,7 @@ export function TicketSettingsForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
-  const [ticketSettings, setTicketSettings] = useState<TicketSettings>(buildDefaultTicketSettings(config));
+  const [ticketSettings, setTicketSettings] = useState<TicketSettings>(buildDefaultTicketSettings(dictionary, config));
 
   useEffect(() => {
     fetch(`/api/servers/${serverId}/discord-metadata`)
@@ -136,6 +137,10 @@ export function TicketSettingsForm({
     () => buildTicketCategoryFieldPreview(ticketSettings.categories),
     [ticketSettings.categories],
   );
+  const missingTicketParts: string[] = [];
+  if (!ticketSettings.submitChannelId) missingTicketParts.push(dictionary.ticketSettings.submitChannel);
+  if (!ticketSettings.ticketParentChannelId) missingTicketParts.push(dictionary.ticketSettings.parentChannel);
+  if (!ticketSettings.categories.length) missingTicketParts.push(dictionary.ticketSettings.categoriesTitle);
 
   function patchTicketSettings(patch: Partial<TicketSettings>) {
     setTicketSettings((current) => ({ ...current, ...patch }));
@@ -221,6 +226,14 @@ export function TicketSettingsForm({
         <CardTitle>{dictionary.ticketSettings.title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {ticketSettings.enabled && missingTicketParts.length ? (
+          <ConfigNotice title={dictionary.ticketSettings.incompleteTitle}>
+            {dictionary.ticketSettings.incompleteDescription.replace("{items}", missingTicketParts.join(", "))}
+          </ConfigNotice>
+        ) : null}
+        <ConfigNotice tone="info" title={dictionary.ticketSettings.routingInfoTitle}>
+          {dictionary.ticketSettings.routingInfoDescription}
+        </ConfigNotice>
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/60 p-4">
           <div className="space-y-1">
             <h3 className="font-semibold">{dictionary.ticketSettings.enableTitle}</h3>
@@ -259,7 +272,7 @@ export function TicketSettingsForm({
             value={ticketSettings.panelTitle}
             onChange={(event) => patchTicketSettings({ panelTitle: event.target.value })}
             maxLength={256}
-            placeholder="Submit a ticket"
+            placeholder={dictionary.ticketSettings.defaultPanelTitle}
           />
           <p className="text-xs text-muted-foreground">{ticketSettings.panelTitle.length}/256</p>
         </div>

@@ -24,6 +24,13 @@ function normalizeConfigDoc<T extends { _id: unknown; defaultLanguage?: "en" | "
   };
 }
 
+function normalizeGuildDoc<T extends { _id: unknown; discordId?: string; id?: string }>(doc: T) {
+  return {
+    ...normalizeDoc(doc),
+    discordId: doc.discordId ?? doc.id ?? String(doc._id),
+  };
+}
+
 const ticketModalQuestionValidator = v.object({
   id: v.string(),
   label: v.string(),
@@ -389,6 +396,87 @@ export const listSyncPayloads = query({
         syncStates: guildSyncStates,
       };
     });
+  },
+});
+
+export const listGuildCacheSnapshot = query({
+  args: {
+    secret: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const [guilds, configs, groups, squadPresets, topicPresets] = await Promise.all([
+      ctx.db.query("guilds").collect(),
+      ctx.db.query("discordConfigs").collect(),
+      ctx.db.query("groups").collect(),
+      ctx.db.query("squadPresets").collect(),
+      ctx.db.query("topicPresets").collect(),
+    ]);
+
+    return {
+      guilds: guilds.map(normalizeGuildDoc),
+      configs: configs.map(normalizeConfigDoc),
+      groups: groups.map(normalizeDoc),
+      squadPresets: squadPresets.map(normalizeDoc),
+      topicPresets: topicPresets.map(normalizeDoc),
+    };
+  },
+});
+
+export const listEventSyncIndex = query({
+  args: {
+    secret: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const [events, rosters] = await Promise.all([
+      ctx.db.query("events").collect(),
+      ctx.db.query("rosters").collect(),
+    ]);
+
+    return {
+      events: events.map((event) => {
+        const normalized = normalizeEventDoc(event);
+        return {
+          id: normalized.id,
+          guildId: normalized.guildId,
+          status: normalized.status,
+          updatedAt: normalized.updatedAt,
+        };
+      }),
+      rosters: rosters.map((roster) => ({
+        ...normalizeDoc(roster),
+        eventId: String(roster.eventId),
+      })),
+    };
+  },
+});
+
+export const getEventSyncContext = query({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      return null;
+    }
+
+    const [roster, syncState] = await Promise.all([
+      ctx.db.query("rosters").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique(),
+      ctx.db.query("discordEventSyncs").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique(),
+    ]);
+
+    return {
+      event: normalizeEventDoc(event),
+      roster: roster ? { ...normalizeDoc(roster), eventId: String(roster.eventId) } : null,
+      syncState: syncState ? normalizeDoc(syncState) : null,
+    };
   },
 });
 

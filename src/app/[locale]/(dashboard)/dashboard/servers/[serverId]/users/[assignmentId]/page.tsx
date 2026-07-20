@@ -174,7 +174,7 @@ export default async function ServerUserDetailPage({
             },
           ]}
         />
-        <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} assignment={assignment} />
+        <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} assignment={assignment} config={context.discordConfig} />
       </div>
     </TablePageLayout>
   );

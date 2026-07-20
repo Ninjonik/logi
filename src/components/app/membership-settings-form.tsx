@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
 import { AvatarPicker } from "@/components/app/avatar-picker";
+import { ConfigNotice } from "@/components/app/config-notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import type { Dictionary } from "@/i18n/dictionaries";
 import type { DiscordConfig, MembershipCategory, MembershipSettings, TicketModalQuestion } from "@/types/domain";
 
 type DiscordMetadata = {
@@ -53,7 +55,7 @@ function buildDefaultCategory(): MembershipCategory {
   };
 }
 
-function buildDefaultSettings(config?: DiscordConfig | null): MembershipSettings {
+function buildDefaultSettings(dictionary: Dictionary, config?: DiscordConfig | null): MembershipSettings {
   if (config?.membershipSettings) {
     return {
       ...config.membershipSettings,
@@ -78,8 +80,8 @@ function buildDefaultSettings(config?: DiscordConfig | null): MembershipSettings
     enabled: false,
     submitChannelId: "",
     applicationParentChannelId: "",
-    panelTitle: "Apply to the clan",
-    panelDescription: "Pick the application type that matches you. If we still need your platform ID, we will guide you through it first.",
+    panelTitle: dictionary.membershipSettings.defaultPanelTitle,
+    panelDescription: dictionary.membershipSettings.defaultPanelDescription,
     panelImageUrl: "",
     autoAssignRecruitOnApply: false,
     categories: [],
@@ -102,14 +104,16 @@ function buildFieldPreview(categories: MembershipCategory[]) {
 export function MembershipSettingsForm({
   serverId,
   config,
+  dictionary,
 }: {
   serverId: string;
   config: DiscordConfig | null;
+  dictionary: Dictionary;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
-  const [settings, setSettings] = useState<MembershipSettings>(buildDefaultSettings(config));
+  const [settings, setSettings] = useState<MembershipSettings>(buildDefaultSettings(dictionary, config));
 
   useEffect(() => {
     fetch(`/api/servers/${serverId}/discord-metadata`)
@@ -127,6 +131,14 @@ export function MembershipSettingsForm({
   const textChannels = metadata?.channels?.filter((channel) => channel.type === 0) ?? [];
   const emojiOptions = metadata?.emojis ?? [];
   const preview = useMemo(() => buildFieldPreview(settings.categories), [settings.categories]);
+  const missingMembershipParts: string[] = [];
+  if (!settings.submitChannelId) missingMembershipParts.push(dictionary.membershipSettings.submitChannel);
+  if (!settings.applicationParentChannelId) missingMembershipParts.push(dictionary.membershipSettings.parentChannel);
+  if (!settings.categories.length) missingMembershipParts.push(dictionary.membershipSettings.categoriesTitle);
+  const memberCategoriesMissingRecruitRole = settings.categories.filter(
+    (category) => category.assignmentType === "member" && !category.recruitRoleId,
+  ).length;
+  const categoriesMissingFinalRole = settings.categories.filter((category) => !category.finalRoleId).length;
 
   function patchSettings(patch: Partial<MembershipSettings>) {
     setSettings((current) => ({ ...current, ...patch }));
@@ -193,79 +205,105 @@ export function MembershipSettingsForm({
 
     const body = await response.json();
     if (!response.ok) {
-      toast.error(body.error ?? "Unable to save membership settings.");
+      toast.error(body.error ?? dictionary.membershipSettings.saveError);
       return;
     }
 
-    toast.success("Membership settings saved.");
+    toast.success(dictionary.membershipSettings.saved);
     startTransition(() => router.refresh());
   }
 
   return (
     <Card className="rounded-2xl border-border/60">
       <CardHeader>
-        <CardTitle>Membership settings</CardTitle>
+        <CardTitle>{dictionary.membershipSettings.title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {settings.enabled && missingMembershipParts.length ? (
+          <ConfigNotice title={dictionary.membershipSettings.incompleteTitle}>
+            {dictionary.membershipSettings.incompleteDescription.replace("{items}", missingMembershipParts.join(", "))}
+          </ConfigNotice>
+        ) : null}
+        <ConfigNotice tone="info" title={dictionary.membershipSettings.roleSyncTitle}>
+          {dictionary.membershipSettings.roleSyncDescription}
+        </ConfigNotice>
+        {settings.enabled && (!config?.clanRoleId || memberCategoriesMissingRecruitRole > 0 || categoriesMissingFinalRole > 0) ? (
+          <ConfigNotice title={dictionary.membershipSettings.rolesMissingTitle}>
+            {!config?.clanRoleId ? dictionary.membershipSettings.rolesMissingClanRole : ""}
+            {memberCategoriesMissingRecruitRole > 0
+              ? dictionary.membershipSettings.rolesMissingRecruitRole
+                .replace("{count}", String(memberCategoriesMissingRecruitRole))
+                .replace("{noun}", memberCategoriesMissingRecruitRole === 1 ? dictionary.membershipSettings.singleCategory : dictionary.membershipSettings.multipleCategories)
+                .replace("{verb}", memberCategoriesMissingRecruitRole === 1 ? dictionary.membershipSettings.singleIs : dictionary.membershipSettings.pluralAre)
+              : ""}
+            {categoriesMissingFinalRole > 0
+              ? dictionary.membershipSettings.rolesMissingFinalRole
+                .replace("{count}", String(categoriesMissingFinalRole))
+                .replace("{noun}", categoriesMissingFinalRole === 1 ? dictionary.membershipSettings.singleCategory : dictionary.membershipSettings.multipleCategories)
+                .replace("{verb}", categoriesMissingFinalRole === 1 ? dictionary.membershipSettings.singleIs : dictionary.membershipSettings.pluralAre)
+              : ""}
+            {dictionary.membershipSettings.rolesMissingSummary}
+          </ConfigNotice>
+        ) : null}
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/60 p-4">
           <div className="space-y-1">
-            <h3 className="font-semibold">Enable membership applications</h3>
-            <p className="text-sm text-muted-foreground">Post a clan application embed in Discord and open staff-managed private threads from it.</p>
+            <h3 className="font-semibold">{dictionary.membershipSettings.enableTitle}</h3>
+            <p className="text-sm text-muted-foreground">{dictionary.membershipSettings.enableDescription}</p>
           </div>
           <Switch checked={settings.enabled} onCheckedChange={(checked) => patchSettings({ enabled: checked })} />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-2">
-            <Label>Submit embed channel</Label>
-            <DiscordEntitySelect value={settings.submitChannelId} onChange={(value) => patchSettings({ submitChannelId: value ?? "" })} options={textChannels} placeholder="Submit embed channel" />
+            <Label>{dictionary.membershipSettings.submitChannel}</Label>
+            <DiscordEntitySelect value={settings.submitChannelId} onChange={(value) => patchSettings({ submitChannelId: value ?? "" })} options={textChannels} placeholder={dictionary.membershipSettings.submitChannel} />
           </div>
           <div className="space-y-2">
-            <Label>Application thread parent</Label>
-            <DiscordEntitySelect value={settings.applicationParentChannelId} onChange={(value) => patchSettings({ applicationParentChannelId: value ?? "" })} options={textChannels} placeholder="Application thread parent" />
+            <Label>{dictionary.membershipSettings.parentChannel}</Label>
+            <DiscordEntitySelect value={settings.applicationParentChannelId} onChange={(value) => patchSettings({ applicationParentChannelId: value ?? "" })} options={textChannels} placeholder={dictionary.membershipSettings.parentChannel} />
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/60 p-4">
           <div className="space-y-1">
-            <h3 className="font-semibold">Skip pending phase</h3>
-            <p className="text-sm text-muted-foreground">New member applications start as recruits immediately after submission.</p>
+            <h3 className="font-semibold">{dictionary.membershipSettings.skipPendingTitle}</h3>
+            <p className="text-sm text-muted-foreground">{dictionary.membershipSettings.skipPendingDescription}</p>
           </div>
           <Switch checked={settings.autoAssignRecruitOnApply} onCheckedChange={(checked) => patchSettings({ autoAssignRecruitOnApply: checked })} />
         </div>
 
         <div className="space-y-2">
-          <Label>Panel title</Label>
+          <Label>{dictionary.membershipSettings.panelTitle}</Label>
           <Input value={settings.panelTitle} onChange={(event) => patchSettings({ panelTitle: event.target.value })} maxLength={256} className="rounded-xl" />
         </div>
         <div className="space-y-2">
-          <Label>Panel description</Label>
+          <Label>{dictionary.membershipSettings.panelDescription}</Label>
           <Textarea value={settings.panelDescription} onChange={(event) => patchSettings({ panelDescription: event.target.value })} maxLength={4096} className="min-h-32 rounded-xl" />
         </div>
         <div className="space-y-2">
-          <Label>Thumbnail image</Label>
+          <Label>{dictionary.membershipSettings.image}</Label>
           <AvatarPicker
             value={settings.panelImageUrl ?? ""}
             onChange={(value) => patchSettings({ panelImageUrl: value ?? "" })}
             fallback="CA"
-            label="Application thumbnail"
-            buttonLabel="Upload image"
+            label={dictionary.membershipSettings.applicationThumbnail}
+            buttonLabel={dictionary.common.upload}
           />
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h3 className="font-semibold">Application categories</h3>
-              <p className="text-sm text-muted-foreground">Each category becomes a button. Modal questions are optional and reuse the same pattern as tickets.</p>
+              <h3 className="font-semibold">{dictionary.membershipSettings.categoriesTitle}</h3>
+              <p className="text-sm text-muted-foreground">{dictionary.membershipSettings.categoriesDescription}</p>
             </div>
             <Button type="button" variant="secondary" className="rounded-xl" onClick={() => patchSettings({ categories: [...settings.categories, buildDefaultCategory()] })}>
               <Plus className="size-4" />
-              Add category
+              {dictionary.membershipSettings.addCategory}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Embed field usage: {preview.length} / {MAX_FIELD_LENGTH} {preview.tooLong ? "(too long, trim category descriptions before saving)" : ""}
+            {dictionary.membershipSettings.embedFieldUsage.replace("{length}", String(preview.length)).replace("{max}", String(MAX_FIELD_LENGTH))} {preview.tooLong ? dictionary.membershipSettings.embedFieldTooLong : ""}
           </p>
 
           {settings.categories.length ? settings.categories.map((category) => (
@@ -282,16 +320,16 @@ export function MembershipSettingsForm({
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Button label</Label>
+                  <Label>{dictionary.membershipSettings.buttonLabel}</Label>
                   <Input value={category.label} onChange={(event) => patchCategory(category.id, { label: event.target.value })} className="rounded-xl" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Application result</Label>
+                  <Label>{dictionary.membershipSettings.applicationResult}</Label>
                   <Select value={category.assignmentType} onValueChange={(value) => patchCategory(category.id, { assignmentType: value as "member" | "mercenary" })}>
                     <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="mercenary">Mercenary</SelectItem>
+                      <SelectItem value="member">{dictionary.userManagement.memberLabel}</SelectItem>
+                      <SelectItem value="mercenary">{dictionary.userManagement.mercLabel}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -299,60 +337,60 @@ export function MembershipSettingsForm({
 
               <div className="grid gap-4 lg:grid-cols-[1fr,2fr]">
                 <div className="space-y-2">
-                  <Label>Emoji</Label>
+                  <Label>{dictionary.ticketSettings.emoji}</Label>
                   <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_160px]">
                     <DiscordEntitySelect
                       value={emojiOptions.some((option) => option.id === category.emoji) ? category.emoji : undefined}
                       onChange={(value) => patchCategory(category.id, { emoji: value ?? "" })}
                       options={emojiOptions}
-                      placeholder="Pick server emoji"
+                      placeholder={dictionary.ticketSettings.pickServerEmoji}
                     />
                     <Input
                       value={category.emoji ?? ""}
                       onChange={(event) => patchCategory(category.id, { emoji: event.target.value })}
-                      placeholder="or type any emoji"
+                      placeholder={dictionary.ticketSettings.typeAnyEmoji}
                       maxLength={100}
                       className="rounded-xl"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{dictionary.ticketSettings.categoryDescription}</Label>
                   <Input value={category.description} onChange={(event) => patchCategory(category.id, { description: event.target.value })} className="rounded-xl" />
                 </div>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Recruit role for this category</Label>
+                  <Label>{dictionary.membershipSettings.recruitRole}</Label>
                   <DiscordEntitySelect
                     value={category.recruitRoleId}
                     onChange={(value) => patchCategory(category.id, { recruitRoleId: value ?? "" })}
                     options={roles}
-                    placeholder="Recruit role"
+                    placeholder={dictionary.membershipSettings.recruitRolePlaceholder}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Final role for this category</Label>
+                  <Label>{dictionary.membershipSettings.finalRole}</Label>
                   <DiscordEntitySelect
                     value={category.finalRoleId}
                     onChange={(value) => patchCategory(category.id, { finalRoleId: value ?? "" })}
                     options={roles}
-                    placeholder="Final role"
+                    placeholder={dictionary.membershipSettings.finalRolePlaceholder}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Support roles</Label>
-                <DiscordMultiEntitySelect value={category.supportRoleIds} onChange={(value) => patchCategory(category.id, { supportRoleIds: value })} options={roles} placeholder="Support roles" />
+                <Label>{dictionary.ticketSettings.supportRoles}</Label>
+                <DiscordMultiEntitySelect value={category.supportRoleIds} onChange={(value) => patchCategory(category.id, { supportRoleIds: value })} options={roles} placeholder={dictionary.ticketSettings.supportRoles} />
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <h5 className="font-medium">Modal questions</h5>
-                    <p className="text-sm text-muted-foreground">Up to 5 text inputs, just like the ticket modal flow.</p>
+                    <h5 className="font-medium">{dictionary.ticketSettings.modalQuestions}</h5>
+                    <p className="text-sm text-muted-foreground">{dictionary.membershipSettings.modalQuestionsDescription}</p>
                   </div>
                   <Button
                     type="button"
@@ -362,29 +400,29 @@ export function MembershipSettingsForm({
                     onClick={() => patchCategory(category.id, { modalQuestions: [...category.modalQuestions, buildDefaultQuestion()] })}
                   >
                     <Plus className="size-4" />
-                    Add question
+                    {dictionary.ticketSettings.addQuestion}
                   </Button>
                 </div>
 
                 {category.modalQuestions.length ? category.modalQuestions.map((question) => (
                   <div key={question.id} className="grid gap-4 rounded-2xl border border-border/60 p-4 lg:grid-cols-[2fr,1fr,auto]">
                     <div className="space-y-2">
-                      <Label>Question label</Label>
+                      <Label>{dictionary.ticketSettings.questionText}</Label>
                       <Input value={question.label} onChange={(event) => patchQuestion(category.id, question.id, { label: event.target.value })} className="rounded-xl" />
-                      <Input value={question.placeholder} onChange={(event) => patchQuestion(category.id, question.id, { placeholder: event.target.value })} placeholder="Placeholder" className="rounded-xl" />
+                      <Input value={question.placeholder} onChange={(event) => patchQuestion(category.id, question.id, { placeholder: event.target.value })} placeholder={dictionary.ticketSettings.placeholder} className="rounded-xl" />
                     </div>
                     <div className="space-y-2">
-                      <Label>Input style</Label>
+                      <Label>{dictionary.ticketSettings.inputStyle}</Label>
                       <Select value={question.style} onValueChange={(value) => patchQuestion(category.id, question.id, { style: value as "short" | "paragraph" })}>
                         <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="short">Short</SelectItem>
-                          <SelectItem value="paragraph">Paragraph</SelectItem>
+                          <SelectItem value="short">{dictionary.ticketSettings.shortInput}</SelectItem>
+                          <SelectItem value="paragraph">{dictionary.ticketSettings.paragraphInput}</SelectItem>
                         </SelectContent>
                       </Select>
                       <div className="flex items-center gap-3 pt-2">
                         <Switch checked={question.required} onCheckedChange={(checked) => patchQuestion(category.id, question.id, { required: checked })} />
-                        <span className="text-sm text-muted-foreground">Required</span>
+                        <span className="text-sm text-muted-foreground">{dictionary.ticketSettings.required}</span>
                       </div>
                     </div>
                     <Button type="button" variant="ghost" size="icon" className="self-start rounded-xl" onClick={() => patchCategory(category.id, { modalQuestions: category.modalQuestions.filter((item) => item.id !== question.id) })}>
@@ -393,20 +431,20 @@ export function MembershipSettingsForm({
                   </div>
                 )) : (
                   <div className="rounded-2xl border border-dashed border-border/60 p-4 text-sm text-muted-foreground">
-                    No modal questions yet. Leave this empty if the category should open the thread immediately after the precheck.
+                    {dictionary.membershipSettings.noQuestions}
                   </div>
                 )}
               </div>
             </div>
           )) : (
             <div className="rounded-2xl border border-dashed border-border/60 p-4 text-sm text-muted-foreground">
-              No application categories yet.
+              {dictionary.membershipSettings.noCategories}
             </div>
           )}
         </div>
 
         <Button className="rounded-xl" onClick={handleSave} disabled={isPending}>
-          Save membership settings
+          {dictionary.membershipSettings.save}
         </Button>
       </CardContent>
     </Card>
