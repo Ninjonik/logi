@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleIfNotLoggedIn } from "@/lib/auth";
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { confirmRosterAttendanceFromMeetingChannel } from "@/lib/server-discord-settings";
 import { getServerContext } from "@/lib/server-context";
 
@@ -21,6 +22,14 @@ export async function POST(
       guildId: serverContext.server.discordId,
       rosterId,
     });
+
+    const roster = serverContext.rosters.find((item) => item.id === rosterId);
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.rosters(serverId),
+      appCacheTags.roster(rosterId),
+      roster?.eventId ? appCacheTags.rosterImageEvent(roster.eventId) : undefined,
+    ]);
 
     return NextResponse.json(result);
   } catch (error) {

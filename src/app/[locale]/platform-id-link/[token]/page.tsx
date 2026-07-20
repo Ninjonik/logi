@@ -28,21 +28,13 @@ export default async function LocalizedPlatformIdLinkPage({
   return (
     <main className="mx-auto flex min-h-screen max-w-xl items-center px-6 py-16">
       <div className="w-full rounded-3xl border border-border/60 bg-card p-8 shadow-sm">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{dictionary.platformIdLink.title}</h1>
-          <p className="text-sm text-muted-foreground">
-            {dictionary.platformIdLink.description}
-          </p>
-        </div>
-        <div className="mt-8">
-          <PlatformIdLinkForm
-            token={token}
-            userName={tokenRecord?.userName ?? "Discord user"}
-            expired={isExpired}
-            locale={safeLocale}
-            dictionary={dictionary}
-          />
-        </div>
+        <PlatformIdLinkForm
+          token={token}
+          userName={tokenRecord?.userName ?? "Discord user"}
+          expired={isExpired}
+          locale={safeLocale}
+          dictionary={dictionary}
+        />
       </div>
     </main>
   );

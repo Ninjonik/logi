@@ -8,7 +8,10 @@ import {
   GuildScheduledEventStatus,
 } from "discord.js";
 
-import type { EventRecord } from "./types";
+import { getClanDiscordMessages } from "../../src/lib/clan-language";
+
+import { logWarn } from "./log";
+import type { ClanLanguage, EventRecord } from "./types";
 
 export type ScheduledLifecycle = "scheduled" | "active" | "completed" | "canceled";
 
@@ -37,11 +40,12 @@ export function getStoredScheduledEventStatus(status: ScheduledLifecycle) {
 export async function syncScheduledDiscordEvent(input: {
   guild: Guild;
   event: EventRecord;
+  language: ClanLanguage;
   meetingChannel: GuildBasedChannel | null;
   scheduledEventId?: string;
   desiredLifecycle: ScheduledLifecycle;
 }) {
-  const { guild, event, meetingChannel, scheduledEventId, desiredLifecycle } = input;
+  const { guild, event, language, meetingChannel, scheduledEventId, desiredLifecycle } = input;
   const isSupportedMeetingChannel =
     meetingChannel?.type === ChannelType.GuildVoice || meetingChannel?.type === ChannelType.GuildStageVoice;
 
@@ -72,23 +76,45 @@ export async function syncScheduledDiscordEvent(input: {
 
     scheduledEvent = await guild.scheduledEvents.create({
       name: event.name.slice(0, 100),
-      description: buildScheduledEventDescription(event),
+      description: buildScheduledEventDescription(event, language),
       scheduledStartTime,
       scheduledEndTime,
       privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
       entityType: GuildScheduledEventEntityType.Voice,
       channel: eventChannel.id,
+    }).catch((error) => {
+      logWarn("scheduled-events", "Failed to create scheduled Discord event", {
+        guildId: guild.id,
+        eventId: event.id,
+        channelId: eventChannel.id,
+        error,
+      });
+      return null;
     });
+    if (!scheduledEvent) {
+      return {
+        scheduledEventId: undefined,
+        scheduledEventStatus: scheduledEventId ? "canceled" as const : undefined,
+      };
+    }
   } else if (
     scheduledEvent.status !== GuildScheduledEventStatus.Completed &&
     scheduledEvent.status !== GuildScheduledEventStatus.Canceled
   ) {
-    await scheduledEvent.edit({
+    scheduledEvent = await scheduledEvent.edit({
       name: event.name.slice(0, 100),
-      description: buildScheduledEventDescription(event),
+      description: buildScheduledEventDescription(event, language),
       scheduledStartTime,
       scheduledEndTime,
       channel: eventChannel.id,
+    }).catch((error) => {
+      logWarn("scheduled-events", "Failed to edit scheduled Discord event", {
+        guildId: guild.id,
+        eventId: event.id,
+        scheduledEventId: scheduledEventId ?? scheduledEvent?.id,
+        error,
+      });
+      return scheduledEvent;
     });
   }
 
@@ -112,8 +138,24 @@ export async function syncScheduledDiscordEvent(input: {
           : GuildScheduledEventStatus.Canceled;
 
     if (scheduledEvent.status !== nextDiscordStatus) {
-      scheduledEvent = await scheduledEvent.edit({ status: nextDiscordStatus });
+      scheduledEvent = await scheduledEvent.edit({ status: nextDiscordStatus }).catch((error) => {
+        logWarn("scheduled-events", "Failed to advance scheduled Discord event status", {
+          guildId: guild.id,
+          eventId: event.id,
+          scheduledEventId: scheduledEvent?.id,
+          desiredLifecycle,
+          error,
+        });
+        return scheduledEvent;
+      });
     }
+  }
+
+  if (!scheduledEvent) {
+    return {
+      scheduledEventId: undefined,
+      scheduledEventStatus: desiredLifecycle,
+    };
   }
 
   return {
@@ -138,18 +180,19 @@ export async function cancelScheduledDiscordEvent(guild: Guild, scheduledEventId
   return true;
 }
 
-function buildScheduledEventDescription(event: EventRecord) {
+function buildScheduledEventDescription(event: EventRecord, language: ClanLanguage) {
+  const messages = getClanDiscordMessages(language);
   const lines = [
     event.description?.trim(),
     event.notes?.trim(),
-    event.kind === "match" && event.map ? `Map: ${event.map}` : null,
-    event.kind === "match" && event.side ? `Side: ${event.side}` : null,
-    event.kind === "match" && event.cap ? `Cap: ${event.cap}` : null,
-    event.server ? `Server: ${event.server}` : null,
-    event.kind === "match" && event.serverPassword ? `Password: ${event.serverPassword}` : null,
+    event.kind === "match" && event.map ? `${messages.scheduledEvent.map}: ${event.map}` : null,
+    event.kind === "match" && event.side ? `${messages.scheduledEvent.side}: ${event.side}` : null,
+    event.kind === "match" && event.cap ? `${messages.scheduledEvent.cap}: ${event.cap}` : null,
+    event.server ? `${messages.scheduledEvent.server}: ${event.server}` : null,
+    event.kind === "match" && event.serverPassword ? `${messages.scheduledEvent.password}: ${event.serverPassword}` : null,
   ].filter((line): line is string => Boolean(line));
 
-  return lines.join("\n").slice(0, 1000) || "Managed by Logi.";
+  return lines.join("\n").slice(0, 1000) || messages.scheduledEvent.managedFallback;
 }
 
 function resolveScheduledEndTime(event: EventRecord) {

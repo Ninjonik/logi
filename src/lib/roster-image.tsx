@@ -2,6 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
+import { appCacheTags } from "@/lib/cache-tags";
 import { getInternalAuthSecret, getSiteUrl } from "@/lib/env";
 
 type RosterImageContext = {
@@ -80,7 +81,8 @@ export async function getRosterImageContextCached(eventId: string) {
   "use cache";
 
   cacheLife("hours");
-  cacheTag(`roster-image:v3:${eventId}`);
+  cacheTag(appCacheTags.rosterImage());
+  cacheTag(appCacheTags.rosterImageEvent(eventId));
 
   return getRosterImageContext(eventId);
 }

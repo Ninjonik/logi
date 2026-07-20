@@ -14,8 +14,8 @@ import type {
   DiscordConfig,
   EventRecord,
   Group,
-  MembershipCategory,
   MembershipApplicationThreadRecord,
+  MembershipCategory,
   Roster,
   SyncPayload,
   TicketCategory,
@@ -41,9 +41,17 @@ export function buildAnnouncementMessage(payload: SyncPayload, event: EventRecor
 export function buildEventEmbed(config: DiscordConfig, groups: Group[], event: EventRecord, roster?: Roster) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const signupsByGroup = new Map<string, string[]>();
+  const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
 
-  for (const signUp of event.signUps) {
-    const key = signUp.group ?? SIGNUP_NOT_ATTENDING;
+  const participantSignups = event.participants.map((participant) => ({
+    userId: participant.userId,
+    group: participant.status === "attending" ? (participant.group ?? "ATTENDING") : SIGNUP_NOT_ATTENDING,
+  }));
+  const signups = participantSignups.length > 0 ? participantSignups : event.signUps;
+
+  for (const signUp of signups) {
+    const rawGroup = signUp.group ?? SIGNUP_NOT_ATTENDING;
+    const key = rawGroup === SIGNUP_NOT_ATTENDING ? SIGNUP_NOT_ATTENDING : (groupNameById.get(rawGroup) ?? rawGroup);
     const list = signupsByGroup.get(key) ?? [];
     list.push(`<@${signUp.userId}>`);
     signupsByGroup.set(key, list);
@@ -117,7 +125,7 @@ export function buildEventEmbed(config: DiscordConfig, groups: Group[], event: E
 
   embed.addFields(
     {
-      name: `✅ Attending (${attending.length})`,
+      name: `✅ ${messages.embed.attending} (${attending.length})`,
       value: attending.length ? attending.join(", ") : messages.embed.nobodyYet,
       inline: false,
     },
@@ -183,11 +191,19 @@ export function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord) {
       { name: messages.forum.cap, value: event.cap ?? messages.forum.notSet, inline: true },
       { name: messages.forum.server, value: event.server ?? messages.forum.notSet, inline: true },
       { name: messages.forum.serverPassword, value: event.serverPassword ?? messages.forum.notSet, inline: true },
-      { name: messages.forum.gameStart, value: formatInTimezone(event.gameStart, config.timezone, config.defaultLanguage), inline: true },
+      {
+        name: messages.forum.gameStart,
+        value: formatInTimezone(event.gameStart, config.timezone, config.defaultLanguage),
+        inline: true,
+      },
     );
   } else {
     embed.addFields(
-      { name: messages.embed.meeting, value: formatInTimezone(event.meetingStart, config.timezone, config.defaultLanguage), inline: true },
+      {
+        name: messages.embed.meeting,
+        value: formatInTimezone(event.meetingStart, config.timezone, config.defaultLanguage),
+        inline: true,
+      },
       { name: messages.forum.server, value: event.meetingChannelId ?? messages.forum.notSet, inline: true },
     );
   }
@@ -215,11 +231,12 @@ export function buildTicketPanelEmbed(config: DiscordConfig) {
     return null;
   }
 
+  const messages = getClanDiscordMessages(config.defaultLanguage);
   const embed = new EmbedBuilder()
     .setTitle(ticketSettings.panelTitle.slice(0, 256))
     .setDescription(ticketSettings.panelDescription.slice(0, 4096))
     .setColor("#3B82F6")
-    .setFooter({ text: "Managed by Logi tickets" });
+    .setFooter({ text: messages.panels.ticketManagedFooter });
 
   if (ticketSettings.panelImageUrl) {
     embed.setThumbnail(ticketSettings.panelImageUrl);
@@ -237,7 +254,7 @@ export function buildTicketPanelEmbed(config: DiscordConfig) {
   const fields: APIEmbedField[] = [];
   if (categoryFieldValue) {
     fields.push({
-      name: "Categories",
+      name: messages.panels.ticketCategories,
       value: categoryFieldValue,
       inline: false,
     });
@@ -290,11 +307,12 @@ export function buildMembershipPanelEmbed(config: DiscordConfig) {
     return null;
   }
 
+  const messages = getClanDiscordMessages(config.defaultLanguage);
   const embed = new EmbedBuilder()
     .setTitle(membershipSettings.panelTitle.slice(0, 256))
     .setDescription(membershipSettings.panelDescription.slice(0, 4096))
     .setColor("#16A34A")
-    .setFooter({ text: "Managed by Logi memberships" });
+    .setFooter({ text: messages.panels.membershipManagedFooter });
 
   if (membershipSettings.panelImageUrl) {
     embed.setThumbnail(membershipSettings.panelImageUrl);
@@ -311,7 +329,7 @@ export function buildMembershipPanelEmbed(config: DiscordConfig) {
 
   if (categoryFieldValue) {
     embed.addFields({
-      name: "Applications",
+      name: messages.panels.membershipApplications,
       value: categoryFieldValue,
       inline: false,
     });
@@ -355,14 +373,18 @@ export function buildMembershipPanelComponents(config: DiscordConfig) {
 }
 
 export function buildTicketThreadEmbed(input: {
+  language: ClanLanguage;
   category: TicketCategory;
   ticket: Pick<TicketThreadRecord, "ticketNumber" | "categoryLabel" | "creatorId">;
   answers: Array<{ label: string; value: string }>;
   creatorTag: string;
 }) {
+  const messages = getClanDiscordMessages(input.language);
   const embed = new EmbedBuilder()
-    .setTitle(`Ticket #${input.ticket.ticketNumber}`)
-    .setDescription(`Category: ${input.ticket.categoryLabel}\nCreated by: <@${input.ticket.creatorId}>`)
+    .setTitle(messages.ticket.threadTitle.replace("{number}", String(input.ticket.ticketNumber)))
+    .setDescription(
+      `${messages.ticket.category}: ${input.ticket.categoryLabel}\n${messages.ticket.createdBy}: <@${input.ticket.creatorId}>`,
+    )
     .setColor("#F59E0B");
 
   if (input.answers.length) {
@@ -375,29 +397,31 @@ export function buildTicketThreadEmbed(input: {
     );
   }
 
-  embed.setFooter({ text: `Opened by ${input.creatorTag}` });
+  embed.setFooter({ text: messages.ticket.openedBy.replace("{creatorTag}", input.creatorTag) });
   return embed;
 }
 
 export function buildMembershipApplicationThreadEmbed(input: {
+  language: ClanLanguage;
   category: MembershipCategory;
   application: Pick<MembershipApplicationThreadRecord, "applicationNumber" | "categoryLabel" | "creatorId" | "assignmentType">;
   answers: Array<{ label: string; value: string }>;
   creatorTag: string;
   assignmentStatus: "pending" | "recruit" | "active";
 }) {
+  const messages = getClanDiscordMessages(input.language);
   const resolvedStatus = input.assignmentStatus === "pending"
-    ? "Pending"
+    ? messages.membership.statusPending
     : input.assignmentStatus === "recruit"
-      ? "Recruit"
+      ? messages.membership.statusRecruit
       : input.application.assignmentType === "mercenary"
-        ? "Mercenary"
-        : "Member";
+        ? messages.membership.statusMercenary
+        : messages.membership.statusMember;
 
   const embed = new EmbedBuilder()
-    .setTitle(`Application #${input.application.applicationNumber}`)
+    .setTitle(messages.membership.threadTitle.replace("{number}", String(input.application.applicationNumber)))
     .setDescription(
-      `Category: ${input.application.categoryLabel}\nCreated by: <@${input.application.creatorId}>\nInitial status: ${resolvedStatus}`,
+      `${messages.membership.category}: ${input.application.categoryLabel}\n${messages.membership.createdBy}: <@${input.application.creatorId}>\n${messages.membership.initialStatus}: ${resolvedStatus}`,
     )
     .setColor("#16A34A");
 
@@ -411,7 +435,7 @@ export function buildMembershipApplicationThreadEmbed(input: {
     );
   }
 
-  embed.setFooter({ text: `Opened by ${input.creatorTag}` });
+  embed.setFooter({ text: messages.membership.openedBy.replace("{creatorTag}", input.creatorTag) });
   return embed;
 }
 

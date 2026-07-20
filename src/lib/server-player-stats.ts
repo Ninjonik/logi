@@ -2,6 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
+import { appCacheTags } from "@/lib/cache-tags";
 import { getInternalAuthSecret } from "@/lib/env";
 import type { EventRecord, PlayerMatchStats } from "@/types/domain";
 
@@ -58,7 +59,7 @@ export async function getPlayerStatsDocsCached(userId: string) {
   "use cache";
 
   cacheLife("weeks");
-  cacheTag(`player-stats:${userId}`);
+  cacheTag(appCacheTags.playerStats(userId));
 
   return await getPlayerStatsDocs(userId);
 }
@@ -67,7 +68,7 @@ export async function getPlayerStatsSummaryCached(userId: string, events: EventR
   "use cache";
 
   cacheLife("weeks");
-  cacheTag(`player-stats:${userId}`);
+  cacheTag(appCacheTags.playerStats(userId));
 
   const docs = await getPlayerStatsDocs(userId);
   const sortedMatches = sortPlayerMatches(

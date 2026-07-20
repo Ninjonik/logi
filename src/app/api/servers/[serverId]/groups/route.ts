@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { saveServerGroup } from "@/lib/server-groups";
 import { groupSchema } from "@/lib/validation/group";
@@ -15,6 +16,13 @@ export async function POST(
       serverId,
       ...body,
     });
+
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.groups(serverId),
+      appCacheTags.group(groupId),
+      appCacheTags.rosterImage(),
+    ]);
 
     return NextResponse.json({ groupId });
   } catch (error) {

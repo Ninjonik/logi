@@ -393,6 +393,7 @@ export const enMessages = {
     platformPlaceholder: "Select your platform",
     submit: "Submit platform ID",
     success: "Platform ID saved. You can close this page now and return to Discord.",
+    closePage: "You can close this page now.",
     genericError: "Unable to save platform ID.",
     guideLabel: "Open guide",
     steam: {
@@ -517,15 +518,15 @@ export const enMessages = {
     created: "Event created.",
     saved: "Event saved.",
     createDescription:
-      "This create flow intentionally matches the edit screen so backend wiring later can stay DRY.",
+      "Set up the event details, schedule, and Discord options before publishing it to your clan.",
     createPageDescription:
-      "New event flow using the same fields and edit mechanics as the detail page.",
+      "Create a new event with the same fields you can manage later from the event detail page.",
     relatedRoster: "Related roster",
     showRoster: "Show roster",
     rosterPublishedHint: "This event has a published roster. Open it from here when needed.",
     rosterDraftHint: "A roster is assigned, but it is still hidden from regular members.",
     rosterMissingHint:
-      "No roster is assigned yet. The future backend can initialize one from a squad preset for this event.",
+      "No roster is assigned yet. Add one later when you are ready to organize squads for this event.",
     detailMetaTitle: "Event details",
     requiredLabel: "Required",
     optionalLabel: "Optional",

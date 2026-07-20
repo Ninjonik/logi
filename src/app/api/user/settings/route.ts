@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { handleIfNotLoggedIn, updateCurrentPlayerProfile } from "@/lib/auth";
 
 export async function POST(request: Request) {
@@ -15,10 +16,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Avatar is required." }, { status: 400 });
     }
 
-    await updateCurrentPlayerProfile({
+    const userId = await updateCurrentPlayerProfile({
       avatar: body.avatar,
       platformIds: body.platformIds,
     });
+
+    revalidateCacheEntries([
+      appCacheTags.player(userId),
+      appCacheTags.users(),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

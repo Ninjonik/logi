@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { saveSquadPreset } from "@/lib/server-squad-presets";
 import { squadPresetSchema } from "@/lib/validation/squad-preset";
@@ -16,6 +17,12 @@ export async function PATCH(
       presetId,
       ...body,
     });
+
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.squadPresets(serverId),
+      appCacheTags.squadPreset(updatedPresetId),
+    ]);
 
     return NextResponse.json({ presetId: updatedPresetId });
   } catch (error) {

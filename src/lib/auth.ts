@@ -202,11 +202,13 @@ export async function updateCurrentPlayerProfile(input: { avatar: string; platfo
       userId: session.sub,
       platformIds: normalizedPlatformIds,
     });
-    return;
+    return session.sub;
   }
 
   await fetchMutation(clearPlatformIdsReference, {
     secret: getInternalAuthSecret(),
     userId: session.sub,
   });
+
+  return session.sub;
 }

@@ -20,6 +20,7 @@ import type * as players from "../players.js";
 import type * as rosters from "../rosters.js";
 import type * as serverData from "../serverData.js";
 import type * as serverSetup from "../serverSetup.js";
+import type * as squadPresets from "../squadPresets.js";
 import type * as topicPresets from "../topicPresets.js";
 import type * as uploads from "../uploads.js";
 import type * as userAssignments from "../userAssignments.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   rosters: typeof rosters;
   serverData: typeof serverData;
   serverSetup: typeof serverSetup;
+  squadPresets: typeof squadPresets;
   topicPresets: typeof topicPresets;
   uploads: typeof uploads;
   userAssignments: typeof userAssignments;

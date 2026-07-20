@@ -20,6 +20,7 @@ import { getClanDiscordMessages } from "../../src/lib/clan-language";
 import { SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
 import { convex, references } from "./convex";
 import { env } from "./environment";
+import { logError, logInfo, logWarn } from "./log";
 import { buildMembershipApplicationThreadEmbed, buildTicketThreadEmbed } from "./message-builders";
 import type { EventInteractionContext, MembershipApplicationThreadRecord, MembershipCategory, TicketCategory, TicketThreadRecord } from "./types";
 import { revalidateRosterImage, slugifyTicketLabel } from "./utils";
@@ -37,9 +38,30 @@ type TicketAnswer = {
 
 type MembershipAnswer = TicketAnswer;
 
-export function createInteractionHandler(options: InteractionHandlerOptions) {
-  const { enqueueEventSync, triggerPollSoon } = options;
+function formatTemplate(template: string, replacements: Record<string, string>) {
+  return Object.entries(replacements).reduce(
+    (message, [key, value]) => message.split(`{${key}}`).join(value),
+    template,
+  );
+}
 
+function getOutcomeLabel(language: "en" | "cs", outcome: "denied" | "pending" | "recruit" | "member" | "mercenary") {
+  const messages = getClanDiscordMessages(language);
+  switch (outcome) {
+    case "denied":
+      return messages.commands.outcomeDenied;
+    case "pending":
+      return messages.commands.outcomePending;
+    case "recruit":
+      return messages.commands.outcomeRecruit;
+    case "member":
+      return messages.commands.outcomeMember;
+    case "mercenary":
+      return messages.commands.outcomeMercenary;
+  }
+}
+
+export function createInteractionHandler(options: InteractionHandlerOptions) {
   return {
     async handleButtonInteraction(interaction: ButtonInteraction) {
       if (interaction.customId.startsWith("signup:") || interaction.customId.startsWith("attendance:")) {
@@ -74,38 +96,44 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     },
 
     async registerGuildCommands(guild: import("discord.js").Guild) {
+      const messages = getClanDiscordMessages(guild.preferredLocale === "cs" ? "cs" : "en");
       const commands = [
         new SlashCommandBuilder()
           .setName("close_ticket")
-          .setDescription("Close the current ticket thread.")
+          .setDescription(messages.commands.closeTicketDescription)
+          .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.closeTicketDescription })
           .addStringOption((option) =>
             option
               .setName("reason")
-              .setDescription("Reason shown to the ticket creator in DMs.")
+              .setDescription(messages.commands.reasonOptionDescription)
+              .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.reasonOptionDescription })
               .setMaxLength(500)
               .setRequired(false),
           )
           .setDMPermission(false),
         new SlashCommandBuilder()
           .setName("close_application")
-          .setDescription("Close the current membership application thread.")
+          .setDescription(messages.commands.closeApplicationDescription)
+          .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.closeApplicationDescription })
           .addStringOption((option) =>
             option
               .setName("outcome")
-              .setDescription("What the applicant should become after closing.")
+              .setDescription(messages.commands.outcomeOptionDescription)
+              .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.outcomeOptionDescription })
               .setRequired(true)
               .addChoices(
-                { name: "Denied", value: "denied" },
-                { name: "Pending", value: "pending" },
-                { name: "Recruit", value: "recruit" },
-                { name: "Member", value: "member" },
-                { name: "Mercenary", value: "mercenary" },
+                { name: getClanDiscordMessages("en").commands.outcomeDenied, value: "denied", name_localizations: { cs: getClanDiscordMessages("cs").commands.outcomeDenied } },
+                { name: getClanDiscordMessages("en").commands.outcomePending, value: "pending", name_localizations: { cs: getClanDiscordMessages("cs").commands.outcomePending } },
+                { name: getClanDiscordMessages("en").commands.outcomeRecruit, value: "recruit", name_localizations: { cs: getClanDiscordMessages("cs").commands.outcomeRecruit } },
+                { name: getClanDiscordMessages("en").commands.outcomeMember, value: "member", name_localizations: { cs: getClanDiscordMessages("cs").commands.outcomeMember } },
+                { name: getClanDiscordMessages("en").commands.outcomeMercenary, value: "mercenary", name_localizations: { cs: getClanDiscordMessages("cs").commands.outcomeMercenary } },
               ),
           )
           .addStringOption((option) =>
             option
               .setName("reason")
-              .setDescription("Reason shown to the applicant in DMs.")
+              .setDescription(messages.commands.reasonOptionDescription)
+              .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.reasonOptionDescription })
               .setMaxLength(500)
               .setRequired(false),
           )
@@ -117,22 +145,24 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
   };
 
   async function handleTicketButtonInteraction(interaction: ButtonInteraction) {
+    const fallbackMessages = getClanDiscordMessages("en");
     if (!interaction.guildId || !interaction.guild) {
-      await interaction.reply({ content: "Tickets can only be opened inside a server.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: fallbackMessages.ticket.serverOnly, flags: MessageFlags.Ephemeral });
       return;
     }
 
     const categoryId = interaction.customId.replace("ticket:", "");
     const context = await loadTicketCategoryContext(interaction.guildId, categoryId);
+    const messages = getClanDiscordMessages(context?.config.defaultLanguage);
     if (!context?.config.ticketSettings?.enabled) {
-      await interaction.reply({ content: "Ticket setup is not available right now.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: messages.ticket.unavailable, flags: MessageFlags.Ephemeral });
       return;
     }
 
     if (context.category.modalQuestions.length) {
       const modal = new ModalBuilder()
         .setCustomId(`ticket-modal:${categoryId}`)
-        .setTitle((context.category.label?.trim() || "Ticket details").slice(0, 45));
+        .setTitle((context.category.label?.trim() || messages.ticket.modalTitle).slice(0, 45));
 
       for (const question of context.category.modalQuestions.slice(0, 5)) {
         const input = new TextInputBuilder()
@@ -157,15 +187,17 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
   }
 
   async function handleTicketModalSubmit(interaction: ModalSubmitInteraction) {
+    const fallbackMessages = getClanDiscordMessages("en");
     if (!interaction.guildId) {
-      await interaction.reply({ content: "Tickets can only be opened inside a server.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: fallbackMessages.ticket.serverOnly, flags: MessageFlags.Ephemeral });
       return;
     }
 
     const categoryId = interaction.customId.replace("ticket-modal:", "");
     const context = await loadTicketCategoryContext(interaction.guildId, categoryId);
+    const messages = getClanDiscordMessages(context?.config.defaultLanguage);
     if (!context?.config.ticketSettings?.enabled) {
-      await interaction.reply({ content: "Ticket setup is not available right now.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: messages.ticket.unavailable, flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -179,8 +211,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
   }
 
   async function handleMembershipButtonInteraction(interaction: ButtonInteraction) {
+    const fallbackMessages = getClanDiscordMessages("en");
     if (!interaction.guildId || !interaction.guild) {
-      await interaction.reply({ content: "Applications can only be opened inside a server.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: fallbackMessages.membership.serverOnly, flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -197,19 +230,20 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       assignment: { id: string; membershipCategoryId?: string } | null;
       hasOpenApplication: boolean;
     } | null;
+    const messages = getClanDiscordMessages(prereq?.config.defaultLanguage);
 
     if (!prereq?.config.membershipSettings?.enabled) {
-      await interaction.reply({ content: "Membership applications are not available right now.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: messages.membership.unavailable, flags: MessageFlags.Ephemeral });
       return;
     }
 
     if (prereq.assignment) {
-      await interaction.reply({ content: "You are already added to this clan. Ask staff if your membership status needs to be changed.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: messages.membership.alreadyInClan, flags: MessageFlags.Ephemeral });
       return;
     }
 
     if (prereq.hasOpenApplication) {
-      await interaction.reply({ content: "You already have an open clan application. Wait for staff to close it before opening another.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: messages.membership.openApplicationExists, flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -223,10 +257,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         userAvatar: interaction.user.displayAvatarURL(),
       }) as { token: string };
       const link = `${env.appSiteUrl}/${prereq.config.defaultLanguage}/platform-id-link/${tokenResponse.token}`;
-      const dmSent = await sendPlatformIdDm(interaction, link);
+      const dmSent = await sendPlatformIdDm(interaction, link, prereq.config.defaultLanguage);
       const responseText = dmSent
-        ? "I sent you a DM with a direct link to submit your platform ID. Submit it there, then click this button again."
-        : `I could not DM you. Use this one-time link to submit your platform ID, then click the button again: ${link}`;
+        ? messages.membership.dmSent
+        : formatTemplate(messages.membership.dmFailed, { link });
       await interaction.reply({ content: responseText, flags: MessageFlags.Ephemeral });
       return;
     }
@@ -234,7 +268,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     if (prereq.category.modalQuestions.length) {
       const modal = new ModalBuilder()
         .setCustomId(`membership-modal:${categoryId}`)
-        .setTitle((prereq.category.label?.trim() || "Clan application").slice(0, 45));
+        .setTitle((prereq.category.label?.trim() || messages.membership.modalTitle).slice(0, 45));
 
       for (const question of prereq.category.modalQuestions.slice(0, 5)) {
         const input = new TextInputBuilder()
@@ -259,15 +293,17 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
   }
 
   async function handleMembershipModalSubmit(interaction: ModalSubmitInteraction) {
+    const fallbackMessages = getClanDiscordMessages("en");
     if (!interaction.guildId) {
-      await interaction.reply({ content: "Applications can only be opened inside a server.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: fallbackMessages.membership.serverOnly, flags: MessageFlags.Ephemeral });
       return;
     }
 
     const categoryId = interaction.customId.replace("membership-modal:", "");
     const context = await loadMembershipCategoryContext(interaction.guildId, categoryId);
+    const messages = getClanDiscordMessages(context?.config.defaultLanguage);
     if (!context?.config.membershipSettings?.enabled) {
-      await interaction.reply({ content: "Membership applications are not available right now.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: messages.membership.unavailable, flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -285,8 +321,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     category: TicketCategory,
     answers: TicketAnswer[],
   ) {
+    const fallbackMessages = getClanDiscordMessages("en");
     if (!interaction.guildId || !interaction.guild) {
-      await interaction.reply({ content: "Tickets can only be opened inside a server.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: fallbackMessages.ticket.serverOnly, flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -296,14 +333,15 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
     const categoryContext = await loadTicketCategoryContext(interaction.guildId, category.id);
     const ticketSettings = categoryContext?.config.ticketSettings;
+    const messages = getClanDiscordMessages(categoryContext?.config.defaultLanguage);
     if (!categoryContext || !ticketSettings?.ticketParentChannelId) {
-      await interaction.editReply({ content: "Ticket setup is incomplete." });
+      await interaction.editReply({ content: messages.ticket.setupIncomplete });
       return;
     }
 
     const parentChannel = await interaction.guild.channels.fetch(ticketSettings.ticketParentChannelId).catch(() => null);
     if (!parentChannel || parentChannel.type !== ChannelType.GuildText) {
-      await interaction.editReply({ content: "Ticket parent channel is not a text channel." });
+      await interaction.editReply({ content: messages.ticket.parentChannelNotText });
       return;
     }
 
@@ -315,13 +353,35 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       type: ChannelType.PrivateThread,
       invitable: false,
       reason: `Ticket ${category.id} opened by ${interaction.user.tag}`,
+    }).catch(async (error) => {
+      logError("interaction", "Failed to create ticket thread", {
+        guildId: interaction.guildId,
+        userId: interaction.user.id,
+        categoryId: category.id,
+        error,
+      });
+      await interaction.editReply({
+        content: messages.ticket.createThreadFailed,
+      }).catch(() => null);
+      return null;
     });
+    if (!thread) {
+      return;
+    }
 
     const supportMemberIds = resolveSupportMemberIds(interaction.guild, category.supportRoleIds, categoryContext.config.dashboardAdminRoleId);
     const participantIds = [...new Set([interaction.user.id, ...supportMemberIds])];
 
     for (const memberId of participantIds) {
-      await thread.members.add(memberId).catch(() => null);
+      await thread.members.add(memberId).catch((error) => {
+        logWarn("interaction", "Failed to add ticket thread member", {
+          guildId: interaction.guildId,
+          threadId: thread.id,
+          memberId,
+          error,
+        });
+        return null;
+      });
     }
 
     const recordResponse = await convex.mutation(references.createTicketThread, {
@@ -332,10 +392,26 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       creatorId: interaction.user.id,
       categoryId: category.id,
       answers,
+    }).catch(async (error) => {
+      logError("interaction", "Failed to create ticket thread record", {
+        guildId: interaction.guildId,
+        threadId: thread.id,
+        userId: interaction.user.id,
+        categoryId: category.id,
+        error,
+      });
+      return null;
     }) as {
       ticket: Pick<TicketThreadRecord, "ticketNumber" | "categoryLabel" | "threadId">;
       category: TicketCategory;
-    };
+    } | null;
+    if (!recordResponse) {
+      await cleanupThread(thread, "Ticket record creation failed");
+      await interaction.editReply({
+        content: messages.ticket.recordFailed,
+      }).catch(() => null);
+      return;
+    }
 
     const mentions = [
       `<@${interaction.user.id}>`,
@@ -346,6 +422,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       content: mentions,
       embeds: [
         buildTicketThreadEmbed({
+          language: categoryContext.config.defaultLanguage,
           category,
           ticket: {
             ticketNumber: recordResponse.ticket.ticketNumber,
@@ -359,19 +436,49 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
           creatorTag: interaction.user.tag,
         }),
       ],
+    }).catch(async (error) => {
+      logError("interaction", "Failed to send ticket starter message", {
+        guildId: interaction.guildId,
+        threadId: thread.id,
+        userId: interaction.user.id,
+        error,
+      });
+      return null;
     });
+    if (!starter) {
+      const ticketUrl = `https://discord.com/channels/${interaction.guildId}/${thread.id}`;
+      await interaction.editReply({
+        content: formatTemplate(messages.ticket.introFailed, { url: ticketUrl }),
+      }).catch(() => null);
+      return;
+    }
 
     await convex.mutation(references.updateTicketTranscriptMessage, {
       secret: env.internalSecret,
       threadId: thread.id,
       transcriptMessageId: starter.id,
-    }).catch(() => null);
+    }).catch((error) => {
+      logWarn("interaction", "Failed to store ticket transcript message id", {
+        guildId: interaction.guildId,
+        threadId: thread.id,
+        messageId: starter.id,
+        error,
+      });
+      return null;
+    });
 
-    await thread.setName(`${slugifyTicketLabel(recordResponse.ticket.categoryLabel)}-${recordResponse.ticket.ticketNumber}`.slice(0, 100)).catch(() => null);
+    await thread.setName(`${slugifyTicketLabel(recordResponse.ticket.categoryLabel)}-${recordResponse.ticket.ticketNumber}`.slice(0, 100)).catch((error) => {
+      logWarn("interaction", "Failed to rename ticket thread", {
+        guildId: interaction.guildId,
+        threadId: thread.id,
+        error,
+      });
+      return null;
+    });
 
     const ticketUrl = `https://discord.com/channels/${interaction.guildId}/${thread.id}`;
     await interaction.editReply({
-      content: `Your ticket has been created: ${ticketUrl}`,
+      content: formatTemplate(messages.ticket.created, { url: ticketUrl }),
     });
   }
 
@@ -380,8 +487,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     category: MembershipCategory,
     answers: MembershipAnswer[],
   ) {
+    const fallbackMessages = getClanDiscordMessages("en");
     if (!interaction.guildId || !interaction.guild) {
-      await interaction.reply({ content: "Applications can only be opened inside a server.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: fallbackMessages.membership.serverOnly, flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -391,8 +499,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
     const categoryContext = await loadMembershipCategoryContext(interaction.guildId, category.id);
     const membershipSettings = categoryContext?.config.membershipSettings;
+    const messages = getClanDiscordMessages(categoryContext?.config.defaultLanguage);
     if (!categoryContext || !membershipSettings?.applicationParentChannelId) {
-      await interaction.editReply({ content: "Membership application setup is incomplete." });
+      await interaction.editReply({ content: messages.membership.setupIncomplete });
       return;
     }
 
@@ -401,13 +510,13 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       userId: interaction.user.id,
     }) as { id: string } | null;
     if (existingAssignment) {
-      await interaction.editReply({ content: "You are already assigned to this clan." });
+      await interaction.editReply({ content: messages.membership.alreadyAssigned });
       return;
     }
 
     const parentChannel = await interaction.guild.channels.fetch(membershipSettings.applicationParentChannelId).catch(() => null);
     if (!parentChannel || parentChannel.type !== ChannelType.GuildText) {
-      await interaction.editReply({ content: "Application parent channel is not a text channel." });
+      await interaction.editReply({ content: messages.membership.parentChannelNotText });
       return;
     }
 
@@ -424,9 +533,33 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       secondaryGroupIds: [],
       paused: false,
       pausedNote: undefined,
-    }) as string;
+    }).catch(async (error) => {
+      logError("interaction", "Failed to create membership assignment before application thread", {
+        guildId: interaction.guildId,
+        userId: interaction.user.id,
+        categoryId: category.id,
+        error,
+      });
+      await interaction.editReply({
+        content: messages.membership.createAssignmentFailed,
+      }).catch(() => null);
+      return null;
+    }) as string | null;
+    if (!assignmentId) {
+      return;
+    }
 
-    await syncMembershipRoles(interaction.guild, interaction.user.id, categoryContext.config, undefined, undefined, undefined, category.assignmentType, initialStatus, category.id);
+    await syncMembershipRoles(
+      interaction.guild,
+      interaction.user.id,
+      categoryContext.config,
+      undefined,
+      undefined,
+      undefined,
+      category.assignmentType,
+      initialStatus,
+      category.id,
+    );
     await interaction.guild.members.fetch().catch(() => null);
 
     const thread = await (parentChannel as TextChannel).threads.create({
@@ -435,12 +568,43 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       type: ChannelType.PrivateThread,
       invitable: false,
       reason: `Application ${category.id} opened by ${interaction.user.tag}`,
+    }).catch(async (error) => {
+      logError("interaction", "Failed to create membership application thread", {
+        guildId: interaction.guildId,
+        userId: interaction.user.id,
+        categoryId: category.id,
+        error,
+      });
+      await rollbackMembershipApplicationSetup({
+        guild: interaction.guild!,
+        userId: interaction.user.id,
+        config: categoryContext.config,
+        assignmentId,
+        assignmentType: category.assignmentType,
+        assignmentStatus: initialStatus,
+        membershipCategoryId: category.id,
+      });
+      await interaction.editReply({
+        content: messages.membership.createThreadFailed,
+      }).catch(() => null);
+      return null;
     });
+    if (!thread) {
+      return;
+    }
 
     const supportMemberIds = resolveSupportMemberIds(interaction.guild, category.supportRoleIds, categoryContext.config.dashboardAdminRoleId);
     const participantIds = [...new Set([interaction.user.id, ...supportMemberIds])];
     for (const memberId of participantIds) {
-      await thread.members.add(memberId).catch(() => null);
+      await thread.members.add(memberId).catch((error) => {
+        logWarn("interaction", "Failed to add membership application thread member", {
+          guildId: interaction.guildId,
+          threadId: thread.id,
+          memberId,
+          error,
+        });
+        return null;
+      });
     }
 
     const recordResponse = await convex.mutation(references.createMembershipApplicationThread, {
@@ -453,9 +617,35 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       assignmentType: category.assignmentType,
       assignmentId: assignmentId as never,
       answers,
+    }).catch(async (error) => {
+      logError("interaction", "Failed to create membership application thread record", {
+        guildId: interaction.guildId,
+        threadId: thread.id,
+        userId: interaction.user.id,
+        categoryId: category.id,
+        assignmentId,
+        error,
+      });
+      return null;
     }) as {
       application: Pick<MembershipApplicationThreadRecord, "applicationNumber" | "categoryLabel" | "threadId">;
-    };
+    } | null;
+    if (!recordResponse) {
+      await cleanupThread(thread, "Membership application record creation failed");
+      await rollbackMembershipApplicationSetup({
+        guild: interaction.guild!,
+        userId: interaction.user.id,
+        config: categoryContext.config,
+        assignmentId,
+        assignmentType: category.assignmentType,
+        assignmentStatus: initialStatus,
+        membershipCategoryId: category.id,
+      });
+      await interaction.editReply({
+        content: messages.membership.recordFailed,
+      }).catch(() => null);
+      return;
+    }
 
     const mentions = [
       `<@${interaction.user.id}>`,
@@ -466,6 +656,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       content: mentions,
       embeds: [
         buildMembershipApplicationThreadEmbed({
+          language: categoryContext.config.defaultLanguage,
           category,
           application: {
             applicationNumber: recordResponse.application.applicationNumber,
@@ -481,25 +672,55 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
           assignmentStatus: initialStatus,
         }),
       ],
+    }).catch(async (error) => {
+      logError("interaction", "Failed to send membership application starter message", {
+        guildId: interaction.guildId,
+        threadId: thread.id,
+        userId: interaction.user.id,
+        error,
+      });
+      return null;
     });
+    if (!starter) {
+      const threadUrl = `https://discord.com/channels/${interaction.guildId}/${thread.id}`;
+      await interaction.editReply({
+        content: formatTemplate(messages.membership.introFailed, { url: threadUrl }),
+      }).catch(() => null);
+      return;
+    }
 
     await convex.mutation(references.updateMembershipApplicationTranscriptMessage, {
       secret: env.internalSecret,
       threadId: thread.id,
       transcriptMessageId: starter.id,
-    }).catch(() => null);
+    }).catch((error) => {
+      logWarn("interaction", "Failed to store membership application transcript message id", {
+        guildId: interaction.guildId,
+        threadId: thread.id,
+        messageId: starter.id,
+        error,
+      });
+      return null;
+    });
 
-    await thread.setName(`${slugifyTicketLabel(recordResponse.application.categoryLabel)}-${recordResponse.application.applicationNumber}`.slice(0, 100)).catch(() => null);
+    await thread.setName(`${slugifyTicketLabel(recordResponse.application.categoryLabel)}-${recordResponse.application.applicationNumber}`.slice(0, 100)).catch((error) => {
+      logWarn("interaction", "Failed to rename membership application thread", {
+        guildId: interaction.guildId,
+        threadId: thread.id,
+        error,
+      });
+      return null;
+    });
 
     const threadUrl = `https://discord.com/channels/${interaction.guildId}/${thread.id}`;
     await interaction.editReply({
-      content: `Your clan application has been created: ${threadUrl}`,
+      content: formatTemplate(messages.membership.created, { url: threadUrl }),
     });
   }
 
   async function handleCloseTicketCommand(interaction: ChatInputCommandInteraction) {
     if (!interaction.inGuild() || !interaction.channel?.isThread() || !interaction.guildId) {
-      await interaction.reply({ content: "Use this command inside a ticket thread.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: getClanDiscordMessages("en").ticket.closeCommandThreadOnly, flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -515,20 +736,21 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       ticket: TicketThreadRecord;
       category: TicketCategory | null;
     } | null;
+    const messages = getClanDiscordMessages(context?.config.defaultLanguage);
 
     if (!context) {
-      await interaction.editReply({ content: "This thread is not tracked as a ticket." });
+      await interaction.editReply({ content: messages.ticket.notTracked });
       return;
     }
 
     if (context.ticket.status === "closed") {
-      await interaction.editReply({ content: "This ticket is already closed." });
+      await interaction.editReply({ content: messages.ticket.alreadyClosed });
       return;
     }
 
     const member = interaction.member as GuildMember | null;
     if (!member) {
-      await interaction.editReply({ content: "Unable to verify your permissions for this ticket." });
+      await interaction.editReply({ content: messages.ticket.unableToVerifyPermissions });
       return;
     }
 
@@ -540,7 +762,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       supportRoleIds.some((roleId) => roleIds.includes(roleId));
 
     if (!canClose) {
-      await interaction.editReply({ content: "You do not have permission to close this ticket." });
+      await interaction.editReply({ content: messages.ticket.noClosePermission });
       return;
     }
 
@@ -556,30 +778,35 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     const creator = await interaction.client.users.fetch(context.ticket.creatorId).catch(() => null);
     if (creator) {
       const dmLines = [
-        `Your ticket #${context.ticket.ticketNumber} in **${guildName}** has been closed.`,
-        reason ? `Reason: ${reason}` : "No close reason was provided.",
+        formatTemplate(messages.ticket.closeDmClosed, {
+          number: String(context.ticket.ticketNumber),
+          guildName,
+        }),
+        reason ? `${messages.ticket.reasonLabel}: ${reason}` : messages.ticket.noCloseReasonProvided,
       ];
       await creator.send({ content: dmLines.join("\n") }).catch(() => null);
     }
 
     await interaction.channel.setName(`closed-${context.ticket.ticketNumber}`.slice(0, 100)).catch(() => null);
-    await interaction.channel.setLocked(true, reason ?? "Ticket closed").catch(() => null);
-    await interaction.channel.setArchived(true, reason ?? "Ticket closed").catch(() => null);
+    await interaction.channel.setLocked(true, reason ?? messages.ticket.closeAuditReason).catch(() => null);
+    await interaction.channel.setArchived(true, reason ?? messages.ticket.closeAuditReason).catch(() => null);
 
     await interaction.editReply({
-      content: reason ? `Ticket closed. Reason: ${reason}` : "Ticket closed.",
+      content: reason
+        ? formatTemplate(messages.ticket.closeReplyWithReason, { reason })
+        : messages.ticket.closeReply,
     });
   }
 
   async function handleCloseApplicationCommand(interaction: ChatInputCommandInteraction) {
     if (!interaction.inGuild() || !interaction.channel?.isThread() || !interaction.guildId) {
-      await interaction.reply({ content: "Use this command inside an application thread.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: getClanDiscordMessages("en").membership.closeCommandThreadOnly, flags: MessageFlags.Ephemeral });
       return;
     }
 
     const guild = interaction.guild;
     if (!guild) {
-      await interaction.reply({ content: "Unable to resolve the guild for this application.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: getClanDiscordMessages("en").membership.guildUnavailable, flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -594,20 +821,21 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       assignment: { id?: string; type: "member" | "mercenary"; status: "pending" | "recruit" | "active"; membershipCategoryId?: string } | null;
       category: MembershipCategory | null;
     } | null;
+    const messages = getClanDiscordMessages(context?.config.defaultLanguage);
 
     if (!context) {
-      await interaction.editReply({ content: "This thread is not tracked as a membership application." });
+      await interaction.editReply({ content: messages.membership.notTracked });
       return;
     }
 
     if (context.application.status === "closed") {
-      await interaction.editReply({ content: "This application is already closed." });
+      await interaction.editReply({ content: messages.membership.alreadyClosed });
       return;
     }
 
     const member = interaction.member as GuildMember | null;
     if (!member) {
-      await interaction.editReply({ content: "Unable to verify your permissions for this application." });
+      await interaction.editReply({ content: messages.membership.unableToVerifyPermissions });
       return;
     }
 
@@ -619,11 +847,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       supportRoleIds.some((roleId) => roleIds.includes(roleId));
 
     if (!canClose) {
-      await interaction.editReply({ content: "You do not have permission to close this application." });
+      await interaction.editReply({ content: messages.membership.noClosePermission });
       return;
     }
 
     const outcome = interaction.options.getString("outcome", true) as "denied" | "pending" | "recruit" | "member" | "mercenary";
+    const outcomeLabel = getOutcomeLabel(context.config.defaultLanguage, outcome);
     const reason = interaction.options.getString("reason")?.trim() || undefined;
 
     if (outcome === "denied") {
@@ -686,17 +915,24 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     const creator = await interaction.client.users.fetch(context.application.creatorId).catch(() => null);
     if (creator) {
       const lines = [
-        `Your clan application #${context.application.applicationNumber} in **${interaction.guild?.name ?? "this server"}** has been closed.`,
-        `Outcome: ${outcome}`,
-        reason ? `Reason: ${reason}` : "No close reason was provided.",
+        formatTemplate(messages.membership.closeDmClosed, {
+          number: String(context.application.applicationNumber),
+          guildName: interaction.guild?.name ?? "this server",
+        }),
+        `${messages.membership.outcomeLabel}: ${outcomeLabel}`,
+        reason ? `${messages.membership.reasonLabel}: ${reason}` : messages.membership.noCloseReasonProvided,
       ];
       await creator.send({ content: lines.join("\n") }).catch(() => null);
     }
 
     await interaction.channel.setName(`closed-${context.application.applicationNumber}`.slice(0, 100)).catch(() => null);
-    await interaction.channel.setLocked(true, reason ?? "Application closed").catch(() => null);
-    await interaction.channel.setArchived(true, reason ?? "Application closed").catch(() => null);
-    await interaction.editReply({ content: reason ? `Application closed as ${outcome}. Reason: ${reason}` : `Application closed as ${outcome}.` });
+    await interaction.channel.setLocked(true, reason ?? messages.membership.closeAuditReason).catch(() => null);
+    await interaction.channel.setArchived(true, reason ?? messages.membership.closeAuditReason).catch(() => null);
+    await interaction.editReply({
+      content: reason
+        ? formatTemplate(messages.membership.closeReplyWithReason, { outcome: outcomeLabel, reason })
+        : formatTemplate(messages.membership.closeReply, { outcome: outcomeLabel }),
+    });
   }
 }
 
@@ -791,6 +1027,11 @@ async function handleEventButtonInteraction(interaction: ButtonInteraction, opti
 
   options.enqueueEventSync(eventId);
   options.triggerPollSoon();
+  logInfo("interaction", "Queued event sync after signup change", {
+    eventId,
+    userId: interaction.user.id,
+    guildId: interaction.guildId,
+  });
 
   await interaction.reply({
     content:
@@ -840,24 +1081,30 @@ function resolveSupportMemberIds(guild: import("discord.js").Guild, supportRoleI
   return [...memberIds];
 }
 
-async function sendPlatformIdDm(interaction: ButtonInteraction, link: string) {
+async function sendPlatformIdDm(interaction: ButtonInteraction, link: string, language: "en" | "cs") {
   try {
+    const messages = getClanDiscordMessages(language);
     const dm = await interaction.user.createDM();
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setStyle(ButtonStyle.Link)
         .setURL(link)
-        .setLabel("Submit platform ID"),
+        .setLabel(messages.membership.platformIdButton),
     );
     await dm.send({
       content: [
-        "Before we can continue your clan application, we need a platform ID we can match to Hell Let Loose.",
-        "Use the button below to open the one-time submission page. When it says successful, close it and click the application button again in Discord.",
+        messages.membership.platformIdDmIntro,
+        messages.membership.platformIdDmInstruction,
       ].join("\n\n"),
       components: [row],
     });
     return true;
-  } catch {
+  } catch (error) {
+    logWarn("interaction", "Failed to DM platform ID link", {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      error,
+    });
     return false;
   }
 }
@@ -875,6 +1122,10 @@ async function syncMembershipRoles(
 ) {
   const member = await guild.members.fetch(userId).catch(() => null);
   if (!member) {
+    logWarn("interaction", "Skipping membership role sync because member could not be fetched", {
+      guildId: guild.id,
+      userId,
+    });
     return;
   }
 
@@ -883,15 +1134,80 @@ async function syncMembershipRoles(
 
   for (const roleId of afterRoles) {
     if (!beforeRoles.has(roleId)) {
-      await member.roles.add(roleId).catch(() => null);
+      await member.roles.add(roleId).catch((error) => {
+        logWarn("interaction", "Failed to add membership role", {
+          guildId: guild.id,
+          userId,
+          roleId,
+          error,
+        });
+        return null;
+      });
     }
   }
 
   for (const roleId of beforeRoles) {
     if (!afterRoles.has(roleId)) {
-      await member.roles.remove(roleId).catch(() => null);
+      await member.roles.remove(roleId).catch((error) => {
+        logWarn("interaction", "Failed to remove membership role", {
+          guildId: guild.id,
+          userId,
+          roleId,
+          error,
+        });
+        return null;
+      });
     }
   }
+}
+
+async function cleanupThread(thread: import("discord.js").ThreadChannel, reason: string) {
+  await thread.delete(reason).catch(async (error) => {
+    logWarn("interaction", "Failed to delete thread during cleanup", {
+      threadId: thread.id,
+      reason,
+      error,
+    });
+    await thread.setLocked(true, reason).catch(() => null);
+    await thread.setArchived(true, reason).catch(() => null);
+    return null;
+  });
+}
+
+async function rollbackMembershipApplicationSetup(input: {
+  guild: import("discord.js").Guild;
+  userId: string;
+  config: EventInteractionContext["config"];
+  assignmentId: string;
+  assignmentType: "member" | "mercenary";
+  assignmentStatus: "pending" | "recruit" | "active";
+  membershipCategoryId: string;
+}) {
+  const { guild, userId, config, assignmentId, assignmentType, assignmentStatus, membershipCategoryId } = input;
+  await convex.mutation(references.removeAssignment, {
+    secret: env.internalSecret,
+    assignmentId: assignmentId as never,
+  }).catch((error) => {
+    logWarn("interaction", "Failed to roll back membership assignment", {
+      guildId: guild.id,
+      userId,
+      assignmentId,
+      error,
+    });
+    return null;
+  });
+
+  await syncMembershipRoles(
+    guild,
+    userId,
+    config,
+    assignmentType,
+    assignmentStatus,
+    membershipCategoryId,
+    undefined,
+    undefined,
+    undefined,
+  );
 }
 
 function resolveMembershipRoleIds(
@@ -971,6 +1287,11 @@ async function handleAttendanceInteraction(
 
   options.enqueueEventSync(context.event.id);
   options.triggerPollSoon();
+  logInfo("interaction", "Queued event sync after attendance acknowledgement", {
+    eventId: context.event.id,
+    userId: interaction.user.id,
+    guildId: interaction.guildId,
+  });
 
   await interaction.reply({ content: messages.interaction.attendanceAcknowledged, ...replyOptions });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { CheckCircle2 } from "lucide-react";
 
 import { LocaleSwitcher } from "@/components/app/locale-switcher";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,11 @@ const PLATFORM_GUIDES: Record<PlatformKey, string> = {
   playstation: "https://www.playstation.com/en-us/support/account/change-online-id/",
 };
 
+const SUCCESS_CLOSE_COPY: Record<Locale, string> = {
+  en: "You can close this page now.",
+  cs: "Tuto stránku teď můžete zavřít.",
+};
+
 export function PlatformIdLinkForm({
   token,
   userName,
@@ -34,12 +40,14 @@ export function PlatformIdLinkForm({
 }) {
   const [platform, setPlatform] = useState<PlatformKey | "">("");
   const [platformId, setPlatformId] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
   const selectedPlatform = platform ? dictionary.platformIdLink[platform] : null;
+  const successCloseCopy = SUCCESS_CLOSE_COPY[locale];
 
   async function handleSubmit() {
-    setMessage(null);
+    setErrorMessage(null);
     startTransition(async () => {
       const response = await fetch(`/api/platform-id-link/${token}`, {
         method: "POST",
@@ -49,7 +57,11 @@ export function PlatformIdLinkForm({
         body: JSON.stringify({ platform, platformId }),
       });
       const body = await response.json();
-      setMessage(response.ok ? dictionary.platformIdLink.success : body.error ?? dictionary.platformIdLink.genericError);
+      if (response.ok) {
+        setIsSuccess(true);
+        return;
+      }
+      setErrorMessage(body.error ?? dictionary.platformIdLink.genericError);
     });
   }
 
@@ -61,8 +73,23 @@ export function PlatformIdLinkForm({
     );
   }
 
+  if (isSuccess) {
+    return (
+      <div className="flex min-h-[24rem] items-center justify-center">
+        <div className="flex flex-col items-center text-center">
+          <CheckCircle2 className="size-28 text-emerald-500 sm:size-36" strokeWidth={1.5} />
+          <p className="mt-6 max-w-sm text-sm text-muted-foreground sm:text-base">{successCloseCopy}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">{dictionary.platformIdLink.title}</h1>
+        <p className="text-sm text-muted-foreground">{dictionary.platformIdLink.description}</p>
+      </div>
       <div className="flex justify-end">
         <LocaleSwitcher locale={locale} dictionary={dictionary} />
       </div>
@@ -76,7 +103,7 @@ export function PlatformIdLinkForm({
           onValueChange={(value) => {
             setPlatform(value as PlatformKey);
             setPlatformId("");
-            setMessage(null);
+            setErrorMessage(null);
           }}
         >
           <SelectTrigger className="rounded-xl">
@@ -105,7 +132,7 @@ export function PlatformIdLinkForm({
               {selectedPlatform.guideLabel ?? dictionary.platformIdLink.guideLabel}
             </a>
             <ol className="mt-3 list-decimal space-y-1 pl-5">
-              {selectedPlatform.steps.map((step) => (
+              {selectedPlatform.steps.map((step: string) => (
                 <li key={step}>{step}</li>
               ))}
             </ol>
@@ -128,7 +155,7 @@ export function PlatformIdLinkForm({
         </>
       ) : null}
 
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {errorMessage ? <p className="text-sm text-muted-foreground">{errorMessage}</p> : null}
     </div>
   );
 }

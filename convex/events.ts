@@ -462,15 +462,21 @@ export const toggleSignUp = mutation({
 
     const existing = normalizedEvent.participants.find((participant) => participant.userId === args.userId);
     let participants = normalizedEvent.participants.filter((participant) => participant.userId !== args.userId);
-    const nextStatus = args.group && args.group !== SIGNUP_NOT_ATTENDING ? "attending" : "not_attending";
-    const shouldRemoveSignup = Boolean(existing && existing.status === nextStatus);
+    const normalizedNextGroup = args.group && args.group !== SIGNUP_NOT_ATTENDING ? args.group : null;
+    const nextStatus = normalizedNextGroup ? "attending" : "not_attending";
+    const existingGroup = existing?.status === "attending" ? (existing.group ?? null) : null;
+    const shouldRemoveSignup = Boolean(
+      existing &&
+      existing.status === nextStatus &&
+      existingGroup === normalizedNextGroup,
+    );
     const attending = !shouldRemoveSignup && nextStatus === "attending";
 
     if (!shouldRemoveSignup) {
       participants = [...participants, {
         userId: args.userId,
         status: nextStatus,
-        group: nextStatus === "attending" ? args.group : null,
+        group: normalizedNextGroup,
         updatedAt: new Date().toISOString(),
         completed: existing?.completed,
       }];

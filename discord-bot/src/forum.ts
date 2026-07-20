@@ -3,6 +3,7 @@ import { ChannelType, EmbedBuilder, ForumChannel } from "discord.js";
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 
 import { buildForumInfoEmbed, buildForumThreadName } from "./message-builders";
+import { logWarn } from "./log";
 import type { ClanLanguage, DiscordConfig, EventRecord, TopicPreset } from "./types";
 
 export async function syncForumChannel(input: {
@@ -25,21 +26,51 @@ export async function syncForumChannel(input: {
   let topicMessageIds: string[] = existingTopicMessageIds ?? [];
   let stateChanged = false;
 
-  let forumChannel: ForumChannel;
+  let forumChannel: ForumChannel | null = null;
   if (existingForumChannel?.type === ChannelType.GuildForum) {
     forumChannel = existingForumChannel as ForumChannel;
     await forumChannel.edit({
       name: buildForumThreadName(config, event),
       parent: forumCategoryId,
+    }).catch((error) => {
+      logWarn("forum", "Failed to update forum channel", {
+        guildId: guild.id,
+        forumChannelId: forumChannelId ?? existingForumChannel.id,
+        error,
+      });
+      return null;
     });
   } else {
     forumChannel = (await guild.channels.create({
       name: buildForumThreadName(config, event),
       type: ChannelType.GuildForum,
       parent: forumCategoryId,
-    })) as ForumChannel;
+    }).catch((error) => {
+      logWarn("forum", "Failed to create forum channel", {
+        guildId: guild.id,
+        forumCategoryId,
+        error,
+      });
+      return null;
+    })) as ForumChannel | null;
+    if (!forumChannel) {
+      return {
+        forumChannelId,
+        infoMessageId,
+        stateChanged,
+        topicMessageIds,
+      };
+    }
     channelId = forumChannel.id;
     stateChanged = true;
+  }
+  if (!forumChannel) {
+    return {
+      forumChannelId: channelId,
+      infoMessageId,
+      stateChanged,
+      topicMessageIds,
+    };
   }
 
   const activePosts = await forumChannel.threads.fetchActive().catch(() => null);
@@ -55,14 +86,37 @@ export async function syncForumChannel(input: {
   if (infoPost) {
     const starter = await infoPost.fetchStarterMessage().catch(() => null);
     if (starter) {
-      await starter.edit({ embeds: [infoEmbed] });
+      await starter.edit({ embeds: [infoEmbed] }).catch((error) => {
+        logWarn("forum", "Failed to edit forum info starter message", {
+          guildId: guild.id,
+          forumChannelId: forumChannel.id,
+          threadId: infoPost.id,
+          error,
+        });
+        return null;
+      });
       infoMessageId = starter.id;
     }
   } else {
     const createdPost = await forumChannel.threads.create({
       name: messages.forum.matchInformation,
       message: { embeds: [infoEmbed] },
+    }).catch((error) => {
+      logWarn("forum", "Failed to create forum info post", {
+        guildId: guild.id,
+        forumChannelId: forumChannel.id,
+        error,
+      });
+      return null;
     });
+    if (!createdPost) {
+      return {
+        forumChannelId: channelId,
+        infoMessageId,
+        stateChanged,
+        topicMessageIds,
+      };
+    }
     const starter = await createdPost.fetchStarterMessage().catch(() => null);
     infoMessageId = starter?.id;
     stateChanged = true;

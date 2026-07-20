@@ -14,6 +14,20 @@ const workerPort = parentPort;
 
 let tickCount = 0;
 
+process.on("unhandledRejection", (error) => {
+  workerPort.postMessage({
+    type: "error",
+    error: error instanceof Error ? error.message : String(error),
+  });
+});
+
+process.on("uncaughtExceptionMonitor", (error) => {
+  workerPort.postMessage({
+    type: "error",
+    error: error instanceof Error ? error.message : String(error),
+  });
+});
+
 async function runTick() {
   try {
     const changedEventIds = (await convex.mutation(references.reconcileStatuses, {
