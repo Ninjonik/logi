@@ -7,61 +7,19 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="added realtime state for roster view">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="countless bug fixes, added better logging, fixed i18n for discord bot">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/_generated/api.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/_generated/api.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/_generated/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/convex/_generated/api.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/_generated/dataModel.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/_generated/dataModel.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/_generated/server.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/_generated/server.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/_generated/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/convex/_generated/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/events.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/forum.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/forum.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/interactions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/interactions.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/message-builders.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/message-builders.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/runtime/fallback-worker.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/runtime/fallback-worker.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/runtime/guild-cache.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/runtime/guild-cache.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/runtime/sync-service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/runtime/sync-service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/scheduled-events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/scheduled-events.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/sync.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/sync.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/matches/[eventId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/matches/[eventId]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/matches/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/matches/create/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/trainings/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/trainings/create/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/platform-id-link/[token]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/platform-id-link/[token]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/cache/roster-image/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/cache/roster-image/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/discord-settings/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/discord-settings/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/events/[eventId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/events/[eventId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/events/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/events/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/frontend-settings/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/frontend-settings/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/groups/[groupId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/groups/[groupId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/groups/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/groups/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/helper-data/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/helper-data/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/rosters/[rosterId]/confirm-meeting-attendance/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/rosters/[rosterId]/confirm-meeting-attendance/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/squad-presets/[presetId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/squad-presets/[presetId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/squad-presets/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/squad-presets/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/topic-presets/[presetId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/topic-presets/[presetId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/topic-presets/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/topic-presets/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/users/auto-link-platform-ids/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/users/auto-link-platform-ids/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/users/import-discord/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/users/import-discord/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/user/settings/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/user/settings/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/discord-server-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/discord-server-settings-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/platform-id-link-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/platform-id-link-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/group-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/group-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/membership-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/membership-settings-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/squad-preset-editor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/squad-preset-editor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/ticket-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/ticket-settings-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/topic-preset-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/topic-preset-form.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/clan-language.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/clan-language.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/roster-image.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/roster-image.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-context.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-context.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-groups.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-groups.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-match-results.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-match-results.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-matches.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-matches.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-metadata.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-metadata.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-player-stats.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-player-stats.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-user-management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-user-management.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -253,7 +211,7 @@
       <workItem from="1784450150783" duration="57000" />
       <workItem from="1784450219841" duration="5375000" />
       <workItem from="1784473647742" duration="552000" />
-      <workItem from="1784560940538" duration="5901000" />
+      <workItem from="1784560940538" duration="8104000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -591,7 +549,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784474134098</updated>
     </task>
-    <option name="localTasksCounter" value="43" />
+    <task id="LOCAL-00043" summary="countless bug fixes, added better logging, fixed i18n for discord bot">
+      <option name="closed" value="true" />
+      <created>1784567689128</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1784567689128</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -611,7 +577,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="fixed build errors" />
     <MESSAGE value="better optimization, better homepage" />
     <MESSAGE value="fixed invite link to include permissions" />
     <MESSAGE value="fixed invite link to include permissions, fixed design inconsistencies in roster board" />
@@ -636,6 +601,7 @@
     <MESSAGE value="QoL changes, can edit squad presets now" />
     <MESSAGE value="better discord bot listeners for convex events instead of polling" />
     <MESSAGE value="added realtime state for roster view" />
-    <option name="LAST_COMMIT_MESSAGE" value="added realtime state for roster view" />
+    <MESSAGE value="countless bug fixes, added better logging, fixed i18n for discord bot" />
+    <option name="LAST_COMMIT_MESSAGE" value="countless bug fixes, added better logging, fixed i18n for discord bot" />
   </component>
 </project>

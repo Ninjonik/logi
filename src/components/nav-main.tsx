@@ -20,84 +20,100 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
+type NavItem = {
+  title: string
+  url: string
+  icon?: LucideIcon
+  isActive?: boolean
+  items?: NavItem[]
+}
+
+function hasActiveDescendant(item: NavItem, pathname: string): boolean {
+  if (item.isActive || pathname === item.url) {
+    return true
+  }
+
+  return item.items?.some((subItem) => hasActiveDescendant(subItem, pathname)) ?? false
+}
+
+function renderNavItems(items: NavItem[], pathname: string, depth = 0) {
+  const isHeavyServerRoute = (url: string) => url.includes("/dashboard/servers/")
+
+  return items.map((item) => (
+    <Collapsible
+      key={`${depth}-${item.title}-${item.url}`}
+      asChild
+      defaultOpen={hasActiveDescendant(item, pathname)}
+      className="group/collapsible"
+    >
+      {depth === 0 ? (
+        <SidebarMenuItem>
+          {item.items?.length ? (
+            <>
+              <CollapsibleTrigger asChild>
+                <SidebarMenuButton tooltip={item.title} className="cursor-pointer" isActive={pathname === item.url}>
+                  {item.icon && <item.icon />}
+                  <span>{item.title}</span>
+                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                </SidebarMenuButton>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  {renderNavItems(item.items, pathname, depth + 1)}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </>
+          ) : (
+            <SidebarMenuButton asChild tooltip={item.title} className="cursor-pointer" isActive={pathname === item.url}>
+              <Link href={item.url} prefetch={!isHeavyServerRoute(item.url)}>
+                {item.icon && <item.icon />}
+                <span>{item.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          )}
+        </SidebarMenuItem>
+      ) : (
+        <SidebarMenuSubItem>
+          {item.items?.length ? (
+            <>
+              <CollapsibleTrigger asChild>
+                <SidebarMenuSubButton className="cursor-pointer" isActive={pathname === item.url}>
+                  <span>{item.title}</span>
+                  <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                </SidebarMenuSubButton>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub className="mx-2 mt-1">
+                  {renderNavItems(item.items, pathname, depth + 1)}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </>
+          ) : (
+            <SidebarMenuSubButton asChild className="cursor-pointer" isActive={pathname === item.url}>
+              <Link href={item.url} prefetch={!isHeavyServerRoute(item.url)}>
+                <span>{item.title}</span>
+              </Link>
+            </SidebarMenuSubButton>
+          )}
+        </SidebarMenuSubItem>
+      )}
+    </Collapsible>
+  ))
+}
+
 export function NavMain({
   label,
   items,
 }: {
   label: string
-  items: {
-    title: string
-    url: string
-    icon?: LucideIcon
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-      isActive?: boolean
-    }[]
-  }[]
+  items: NavItem[]
 }) {
   const pathname = usePathname()
-  const isHeavyServerRoute = (url: string) => url.includes("/dashboard/servers/")
-
-  // Check if any subitem is active to determine if parent should be open
-  const shouldBeOpen = (item: typeof items[0]) => {
-    if (item.isActive) return true
-    return item.items?.some(subItem => pathname === subItem.url) || false
-  }
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
-      <SidebarMenu>
-        {items.map((item) => (
-          <Collapsible
-            key={item.title}
-            asChild
-            defaultOpen={shouldBeOpen(item)}
-            className="group/collapsible"
-          >
-            <SidebarMenuItem>
-              {item.items?.length ? (
-                <>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton tooltip={item.title} className="cursor-pointer">
-                      {item.icon && <item.icon />}
-                      <span>{item.title}</span>
-                      <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {item.items?.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild className="cursor-pointer" isActive={pathname === subItem.url}>
-                          <Link
-                              href={subItem.url}
-                              prefetch={!isHeavyServerRoute(subItem.url)}
-                              target={(item.title === "Auth Pages" || item.title === "Errors") ? "_blank" : undefined}
-                              rel={(item.title === "Auth Pages" || item.title === "Errors") ? "noopener noreferrer" : undefined}
-                            >
-                              <span>{subItem.title}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </>
-              ) : (
-                <SidebarMenuButton asChild tooltip={item.title} className="cursor-pointer" isActive={pathname === item.url}>
-                  <Link href={item.url} prefetch={!isHeavyServerRoute(item.url)}>
-                    {item.icon && <item.icon />}
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              )}
-            </SidebarMenuItem>
-          </Collapsible>
-        ))}
-      </SidebarMenu>
+      <SidebarMenu>{renderNavItems(items, pathname)}</SidebarMenu>
     </SidebarGroup>
   )
 }

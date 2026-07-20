@@ -6,6 +6,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
+import { EmojiPickerInput } from "@/components/app/emoji-picker-input";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
 import { AvatarPicker } from "@/components/app/avatar-picker";
 import { ConfigNotice } from "@/components/app/config-notice";
@@ -338,21 +339,13 @@ export function MembershipSettingsForm({
               <div className="grid gap-4 lg:grid-cols-[1fr,2fr]">
                 <div className="space-y-2">
                   <Label>{dictionary.ticketSettings.emoji}</Label>
-                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_160px]">
-                    <DiscordEntitySelect
-                      value={emojiOptions.some((option) => option.id === category.emoji) ? category.emoji : undefined}
-                      onChange={(value) => patchCategory(category.id, { emoji: value ?? "" })}
-                      options={emojiOptions}
-                      placeholder={dictionary.ticketSettings.pickServerEmoji}
-                    />
-                    <Input
-                      value={category.emoji ?? ""}
-                      onChange={(event) => patchCategory(category.id, { emoji: event.target.value })}
-                      placeholder={dictionary.ticketSettings.typeAnyEmoji}
-                      maxLength={100}
-                      className="rounded-xl"
-                    />
-                  </div>
+                  <EmojiPickerInput
+                    value={category.emoji ?? ""}
+                    onChange={(value) => patchCategory(category.id, { emoji: value ?? "" })}
+                    customEmojis={emojiOptions}
+                    placeholder={dictionary.emojiPicker.pickEmoji}
+                    labels={dictionary.emojiPicker}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>{dictionary.ticketSettings.categoryDescription}</Label>
@@ -405,29 +398,47 @@ export function MembershipSettingsForm({
                 </div>
 
                 {category.modalQuestions.length ? category.modalQuestions.map((question) => (
-                  <div key={question.id} className="grid gap-4 rounded-2xl border border-border/60 p-4 lg:grid-cols-[2fr,1fr,auto]">
-                    <div className="space-y-2">
-                      <Label>{dictionary.ticketSettings.questionText}</Label>
-                      <Input value={question.label} onChange={(event) => patchQuestion(category.id, question.id, { label: event.target.value })} className="rounded-xl" />
-                      <Input value={question.placeholder} onChange={(event) => patchQuestion(category.id, question.id, { placeholder: event.target.value })} placeholder={dictionary.ticketSettings.placeholder} className="rounded-xl" />
+                  <div key={question.id} className="space-y-3 rounded-xl border border-border/60 bg-muted/10 p-3">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          value={question.label}
+                          onChange={(event) => patchQuestion(category.id, question.id, { label: event.target.value })}
+                          placeholder={dictionary.ticketSettings.questionText}
+                          className="h-10 rounded-lg border-border/60 bg-background"
+                        />
+                        <Input
+                          value={question.placeholder}
+                          onChange={(event) => patchQuestion(category.id, question.id, { placeholder: event.target.value })}
+                          placeholder={dictionary.ticketSettings.placeholder}
+                          className="h-9 rounded-lg border-border/60 bg-background text-sm"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="mt-0.5 shrink-0 rounded-lg"
+                        onClick={() => patchCategory(category.id, { modalQuestions: category.modalQuestions.filter((item) => item.id !== question.id) })}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
                     </div>
-                    <div className="space-y-2">
-                      <Label>{dictionary.ticketSettings.inputStyle}</Label>
+                    <div className="flex flex-wrap items-center gap-2">
                       <Select value={question.style} onValueChange={(value) => patchQuestion(category.id, question.id, { style: value as "short" | "paragraph" })}>
-                        <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-8 min-w-32 rounded-lg border-border/60 bg-background px-2.5 text-xs">
+                          <SelectValue placeholder={dictionary.ticketSettings.inputStyle} />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="short">{dictionary.ticketSettings.shortInput}</SelectItem>
                           <SelectItem value="paragraph">{dictionary.ticketSettings.paragraphInput}</SelectItem>
                         </SelectContent>
                       </Select>
-                      <div className="flex items-center gap-3 pt-2">
+                      <label className="inline-flex h-8 items-center gap-2 rounded-lg border border-border/60 bg-background px-2.5 text-xs text-muted-foreground">
                         <Switch checked={question.required} onCheckedChange={(checked) => patchQuestion(category.id, question.id, { required: checked })} />
-                        <span className="text-sm text-muted-foreground">{dictionary.ticketSettings.required}</span>
-                      </div>
+                        <span>{dictionary.ticketSettings.required}</span>
+                      </label>
                     </div>
-                    <Button type="button" variant="ghost" size="icon" className="self-start rounded-xl" onClick={() => patchCategory(category.id, { modalQuestions: category.modalQuestions.filter((item) => item.id !== question.id) })}>
-                      <Trash2 className="size-4" />
-                    </Button>
                   </div>
                 )) : (
                   <div className="rounded-2xl border border-dashed border-border/60 p-4 text-sm text-muted-foreground">

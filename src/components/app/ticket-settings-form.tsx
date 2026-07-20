@@ -6,6 +6,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
+import { EmojiPickerInput } from "@/components/app/emoji-picker-input";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
 import { AvatarPicker } from "@/components/app/avatar-picker";
 import { ConfigNotice } from "@/components/app/config-notice";
@@ -350,20 +351,13 @@ export function TicketSettingsForm({
                 </div>
                 <div className="space-y-2">
                   <Label>{dictionary.ticketSettings.emoji}</Label>
-                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_160px]">
-                    <DiscordEntitySelect
-                      value={emojiOptions.some((option) => option.id === category.emoji) ? category.emoji : undefined}
-                      onChange={(value) => patchTicketCategory(category.id, { emoji: value ?? "" })}
-                      options={emojiOptions}
-                      placeholder={dictionary.ticketSettings.pickServerEmoji}
-                    />
-                    <Input
-                      value={category.emoji ?? ""}
-                      onChange={(event) => patchTicketCategory(category.id, { emoji: event.target.value })}
-                      placeholder={dictionary.ticketSettings.typeAnyEmoji}
-                      maxLength={100}
-                    />
-                  </div>
+                  <EmojiPickerInput
+                    value={category.emoji ?? ""}
+                    onChange={(value) => patchTicketCategory(category.id, { emoji: value ?? "" })}
+                    customEmojis={emojiOptions}
+                    placeholder={dictionary.emojiPicker.pickEmoji}
+                    labels={dictionary.emojiPicker}
+                  />
                 </div>
               </div>
 

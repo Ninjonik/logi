@@ -5,18 +5,13 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   ClipboardList,
-  FolderKanban,
   Home,
   LayoutDashboard,
   Settings,
   Shield,
   UserCog,
-  Users,
-  LayoutGrid,
-  FileText,
   ListTodo,
   CalendarIcon,
-  UserRoundPlus,
 } from "lucide-react";
 
 import { AppLogo } from "@/components/app/app-logo";
@@ -112,16 +107,35 @@ export function AppSidebar({
                       title: dictionary.sidebar.matches,
                       url: `${base}/matches`,
                       icon: CalendarIcon,
+                      items: [
+                        {
+                          title: dictionary.sidebar.matches,
+                          url: `${base}/matches`,
+                        },
+                        {
+                          title: dictionary.sidebar.topicPresets,
+                          url: `${base}/topic-presets`,
+                        },
+                        {
+                          title: dictionary.sidebar.rosters,
+                          url: `${base}/rosters`,
+                          items: [
+                            {
+                              title: dictionary.sidebar.rosters,
+                              url: `${base}/rosters`,
+                            },
+                            {
+                              title: dictionary.sidebar.squadPresets,
+                              url: `${base}/squad-presets`,
+                            },
+                          ],
+                        },
+                      ],
                     },
                     {
                       title: dictionary.sidebar.trainings,
                       url: `${base}/trainings`,
                       icon: Shield,
-                    },
-                    {
-                      title: dictionary.sidebar.rosters,
-                      url: `${base}/rosters`,
-                      icon: ClipboardList,
                     },
                   ]
                 : [
@@ -139,39 +153,33 @@ export function AppSidebar({
                   label: dictionary.sidebar.configuration,
                   items: [
                     {
-                      title: dictionary.sidebar.topicPresets,
-                      url: `${base}/topic-presets`,
-                      icon: FileText,
-                    },
-                    {
-                      title: dictionary.sidebar.squadPresets,
-                      url: `${base}/squad-presets`,
-                      icon: LayoutGrid,
-                    },
-                    {
-                      title: dictionary.sidebar.groups,
-                      url: `${base}/groups`,
-                      icon: Users,
-                    },
-                    {
-                      title: dictionary.sidebar.users,
-                      url: `${base}/users`,
+                      title: dictionary.sidebar.members,
+                      url: `${base}/members`,
                       icon: UserCog,
-                    },
-                    {
-                      title: dictionary.sidebar.serverSettings,
-                      url: `${base}/settings`,
-                      icon: Settings,
-                    },
-                    {
-                      title: dictionary.sidebar.memberships,
-                      url: `${base}/memberships`,
-                      icon: UserRoundPlus,
+                      items: [
+                        {
+                          title: dictionary.sidebar.users,
+                          url: `${base}/users`,
+                        },
+                        {
+                          title: dictionary.sidebar.memberships,
+                          url: `${base}/memberships`,
+                        },
+                        {
+                          title: dictionary.sidebar.groups,
+                          url: `${base}/groups`,
+                        },
+                      ],
                     },
                     {
                       title: dictionary.sidebar.tickets,
                       url: `${base}/tickets`,
                       icon: ListTodo,
+                    },
+                    {
+                      title: dictionary.sidebar.serverSettings,
+                      url: `${base}/settings`,
+                      icon: Settings,
                     },
                   ],
                 },

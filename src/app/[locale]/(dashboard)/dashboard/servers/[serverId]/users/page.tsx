@@ -15,6 +15,18 @@ import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerUserAssignments, getUsersByIds } from "@/lib/server-user-management";
 import { getServerContext } from "@/lib/server-context";
 
+function getAssignmentStatusLabel(
+  assignment: {
+    type: "member" | "mercenary";
+    status: "pending" | "recruit" | "active";
+  },
+  dictionary: ReturnType<typeof getDictionary>,
+) {
+  if (assignment.status === "pending") return dictionary.userManagement.pendingLabel;
+  if (assignment.status === "recruit") return dictionary.userManagement.recruitLabel;
+  return assignment.type === "mercenary" ? dictionary.userManagement.mercLabel : dictionary.userManagement.memberLabel;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -59,7 +71,7 @@ export default async function ServerUsersPage({
         String(user?.score ?? ""),
         groupNameById.get(assignment.primaryGroupId ?? ""),
         assignment.type,
-        assignment.paused ? dictionary.userManagement.paused : dictionary.userManagement.active,
+        getAssignmentStatusLabel(assignment, dictionary),
       ].filter(Boolean).join(" ");
     },
   });
@@ -146,13 +158,13 @@ export default async function ServerUsersPage({
               },
             },
             {
-              key: "state",
-              title: dictionary.userManagement.tableState,
+              key: "status",
+              title: dictionary.userManagement.tableStatus,
               render: (assignment) => (
                 <StatusBadge
-                  active={!assignment.paused}
-                  activeLabel={dictionary.userManagement.active}
-                  inactiveLabel={dictionary.userManagement.paused}
+                  active={assignment.status === "active"}
+                  activeLabel={getAssignmentStatusLabel(assignment, dictionary)}
+                  inactiveLabel={getAssignmentStatusLabel(assignment, dictionary)}
                 />
               ),
             },
