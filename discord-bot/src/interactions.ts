@@ -18,12 +18,13 @@ import {
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 
 import { SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
+import { revalidateAppData } from "./cache";
 import { convex, references } from "./convex";
 import { env } from "./environment";
 import { logError, logInfo, logWarn } from "./log";
 import { buildMembershipApplicationThreadEmbed, buildTicketThreadEmbed } from "./message-builders";
 import type { EventInteractionContext, MembershipApplicationThreadRecord, MembershipCategory, TicketCategory, TicketThreadRecord } from "./types";
-import { revalidateRosterImage, slugifyTicketLabel } from "./utils";
+import { slugifyTicketLabel } from "./utils";
 
 type InteractionHandlerOptions = {
   enqueueEventSync: (eventId: string) => void;
@@ -549,6 +550,13 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       return;
     }
 
+    await revalidateAppData({
+      type: "assignment-changed",
+      serverId: interaction.guildId,
+      userId: interaction.user.id,
+      assignmentId,
+    });
+
     await syncMembershipRoles(
       interaction.guild,
       interaction.user.id,
@@ -861,6 +869,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
           secret: env.internalSecret,
           assignmentId: context.application.assignmentId as never,
         }).catch(() => null);
+        await revalidateAppData({
+          type: "assignment-changed",
+          serverId: interaction.guildId,
+          userId: context.application.creatorId,
+          assignmentId: context.application.assignmentId,
+        });
       }
       await syncMembershipRoles(
         guild,
@@ -890,7 +904,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         paused: false,
         pausedNote: undefined,
       }) as string;
-      void assignmentId;
+      await revalidateAppData({
+        type: "assignment-changed",
+        serverId: interaction.guildId,
+        userId: context.application.creatorId,
+        assignmentId,
+      });
       await syncMembershipRoles(
         guild,
         context.application.creatorId,
@@ -1023,6 +1042,11 @@ async function handleEventButtonInteraction(interaction: ButtonInteraction, opti
     eventId: eventId as never,
     userId: interaction.user.id,
     group: isTrainingAttend ? TRAINING_ATTEND : (selectedGroup ? selectedGroup.name : SIGNUP_NOT_ATTENDING),
+  });
+  await revalidateAppData({
+    type: "event-changed",
+    serverId: context.event.guildId,
+    eventId,
   });
 
   options.enqueueEventSync(eventId);
@@ -1197,6 +1221,13 @@ async function rollbackMembershipApplicationSetup(input: {
     return null;
   });
 
+  await revalidateAppData({
+    type: "assignment-changed",
+    serverId: guild.id,
+    userId,
+    assignmentId,
+  });
+
   await syncMembershipRoles(
     guild,
     userId,
@@ -1283,7 +1314,20 @@ async function handleAttendanceInteraction(
     eventId: context.event.id as never,
     userId: interaction.user.id,
   });
-  await revalidateRosterImage(context.event.id);
+  if (context.roster) {
+    await revalidateAppData({
+      type: "roster-changed",
+      serverId: context.event.guildId,
+      rosterId: context.roster.id,
+      eventId: context.event.id,
+    });
+  } else {
+    await revalidateAppData({
+      type: "event-changed",
+      serverId: context.event.guildId,
+      eventId: context.event.id,
+    });
+  }
 
   options.enqueueEventSync(context.event.id);
   options.triggerPollSoon();

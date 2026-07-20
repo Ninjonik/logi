@@ -45,14 +45,6 @@ export function buildRosterImageUrl(eventId: string) {
   return url.toString();
 }
 
-export async function revalidateRosterImage(eventId: string) {
-  await fetch(new URL("/api/cache/roster-image", env.appSiteUrl), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ eventId, secret: env.internalSecret }),
-  }).catch(() => null);
-}
-
 export function pickButtonStyle(color: string) {
   const hex = color.replace(/^#/, "").trim();
   const r = parseInt(hex.substring(0, 2), 16);

@@ -3,6 +3,7 @@ import { ChannelType, Client, TextChannel } from "discord.js";
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 
 import { ATTENDANCE_OFFSETS_HOURS } from "./constants";
+import { revalidateAppData } from "./cache";
 import { convex, references } from "./convex";
 import { env } from "./environment";
 import { syncForumChannel } from "./forum";
@@ -229,6 +230,10 @@ async function syncTicketPanel(client: Client, payload: SyncPayload) {
       ticketPanelMessageId,
       ticketPanelLastConfigUpdatedAt: payload.config.updatedAt,
     });
+    await revalidateAppData({
+      type: "discord-config-changed",
+      serverId: payload.config.guildId,
+    });
   }
 }
 
@@ -297,6 +302,10 @@ async function syncMembershipPanel(client: Client, payload: SyncPayload) {
       membershipPanelMessageId,
       membershipPanelLastConfigUpdatedAt: payload.config.updatedAt,
     });
+    await revalidateAppData({
+      type: "discord-config-changed",
+      serverId: payload.config.guildId,
+    });
   }
 }
 
@@ -340,6 +349,10 @@ async function syncGuildMemberAccess(client: Client, payload: SyncPayload) {
         hasDashboardAccess,
       };
     }),
+  });
+  await revalidateAppData({
+    type: "server-context-changed",
+    serverId: payload.config.guildId,
   });
 }
 
