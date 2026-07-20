@@ -10,7 +10,6 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
 import { formatDateTime } from "@/lib/format";
-import { formatPlatformIds } from "@/lib/platform-ids";
 import { getAssignmentMetadata, getPlayerMetadata } from "@/lib/server-metadata";
 import { flattenPlayerMatches, getPlayerStatsDocsCached, getPlayerStatsSummaryCached, sortPlayerMatches } from "@/lib/server-player-stats";
 import { getServerContext } from "@/lib/server-context";
@@ -97,9 +96,7 @@ export default async function ServerUserDetailPage({
       header={
         <PageHeader
           title={user.name}
-          description={user.platformIds.length
-            ? dictionary.userManagement.platformConnectedAs.replace("{platformId}", formatPlatformIds(user.platformIds))
-            : dictionary.userManagement.platformNotConnected}
+          description={user.platformIds.length ? dictionary.userSettings.platformConnected : dictionary.userManagement.platformNotConnected}
         />
       }
     >

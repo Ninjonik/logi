@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { AutoLinkPlatformIdsButton } from "@/components/app/auto-link-platform-ids-button";
 import { ImportDiscordMembersButton } from "@/components/app/import-discord-members-button";
 import { PageHeader } from "@/components/app/page-header";
+import { PlatformIdList } from "@/components/app/platform-id-display";
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table";
 import { TablePageLayout } from "@/components/app/table-page-layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,10 +11,9 @@ import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
-import { formatPlatformIds } from "@/lib/platform-ids";
 import { getGuildMetadata } from "@/lib/server-metadata";
-import { getServerUserAssignments, getUsersByIds } from "@/lib/server-user-management";
 import { getServerContext } from "@/lib/server-context";
+import { getServerUserAssignments, getUsersByIds } from "@/lib/server-user-management";
 
 function getAssignmentStatusLabel(
   assignment: {
@@ -54,11 +54,13 @@ export default async function ServerUsersPage({
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
+
   const { groups, discordConfig } = context;
   const assignments = await getServerUserAssignments(serverId);
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
   const assignmentUserMap = new Map(assignmentUsers.map((user) => [user.discordId, user]));
+
   const paginated = getPaginatedRows({
     rows: assignments,
     searchParams: resolvedSearchParams,
@@ -78,11 +80,11 @@ export default async function ServerUsersPage({
 
   return (
     <TablePageLayout
-      header={
+      header={(
         <PageHeader
           title={dictionary.userManagement.title}
           description={dictionary.userManagement.description}
-          actions={
+          actions={(
             <div className="flex flex-wrap gap-2">
               <AutoLinkPlatformIdsButton serverId={serverId} dictionary={dictionary} />
               <ImportDiscordMembersButton
@@ -94,82 +96,84 @@ export default async function ServerUsersPage({
                 <a href={`/${locale}/dashboard/servers/${serverId}/users/create`}>{dictionary.userManagement.addPlayer}</a>
               </Button>
             </div>
-          }
+          )}
         />
-      }
+      )}
     >
-        <ResourceTable
-          className="h-full"
-          dictionary={dictionary}
-          rows={paginated.rows}
-          page={paginated.page}
-          pageSize={paginated.pageSize}
-          pageCount={paginated.pageCount}
-          totalRows={paginated.totalRows}
-          search={paginated.search}
-          searchPlaceholder={dictionary.userManagement.searchPlaceholder}
-          getHref={(assignment) => `/${locale}/dashboard/servers/${serverId}/users/${assignment.id}`}
-          columns={[
-            {
-              key: "player",
-              title: dictionary.userManagement.tablePlayer,
-              render: (assignment) => {
-                const user = assignmentUserMap.get(assignment.userId);
-                if (!user) return dictionary.common.unknown;
-                return (
-                  <div className="flex items-center gap-3">
-                    <Avatar className="size-9 rounded-lg">
-                      <AvatarImage src={user.avatar} alt={user.name} />
-                      <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {user.discordId}{user.platformIds.length ? ` • ${dictionary.userManagement.platformId}: ${formatPlatformIds(user.platformIds)}` : ""}
-                      </div>
+      <ResourceTable
+        className="h-full"
+        dictionary={dictionary}
+        rows={paginated.rows}
+        page={paginated.page}
+        pageSize={paginated.pageSize}
+        pageCount={paginated.pageCount}
+        totalRows={paginated.totalRows}
+        search={paginated.search}
+        searchPlaceholder={dictionary.userManagement.searchPlaceholder}
+        getHref={(assignment) => `/${locale}/dashboard/servers/${serverId}/users/${assignment.id}`}
+        columns={[
+          {
+            key: "player",
+            title: dictionary.userManagement.tablePlayer,
+            render: (assignment) => {
+              const user = assignmentUserMap.get(assignment.userId);
+              if (!user) return dictionary.common.unknown;
+
+              return (
+                <div className="flex items-center gap-3">
+                  <Avatar className="size-9 rounded-lg">
+                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-medium">{user.name}</div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>{user.discordId}</span>
+                      {user.platformIds.length ? <PlatformIdList platformIds={user.platformIds} dictionary={dictionary} compact /> : null}
                     </div>
                   </div>
-                );
-              },
+                </div>
+              );
             },
-            {
-              key: "type",
-              title: dictionary.userManagement.tableType,
-              render: (assignment) => assignment.type === "member" ? dictionary.userManagement.memberLabel : dictionary.userManagement.mercLabel,
-            },
-            {
-              key: "group",
-              title: dictionary.userManagement.tableGroup,
-              render: (assignment) => assignment.primaryGroupId ? groupNameById.get(assignment.primaryGroupId) ?? dictionary.userManagement.none : dictionary.userManagement.none,
-            },
-            {
-              key: "score",
-              title: dictionary.userManagement.tableScore,
-              render: (assignment) => {
-                const user = assignmentUserMap.get(assignment.userId);
-                if (!user) {
-                  return 0;
-                }
+          },
+          {
+            key: "type",
+            title: dictionary.userManagement.tableType,
+            render: (assignment) => assignment.type === "member" ? dictionary.userManagement.memberLabel : dictionary.userManagement.mercLabel,
+          },
+          {
+            key: "group",
+            title: dictionary.userManagement.tableGroup,
+            render: (assignment) => assignment.primaryGroupId ? groupNameById.get(assignment.primaryGroupId) ?? dictionary.userManagement.none : dictionary.userManagement.none,
+          },
+          {
+            key: "score",
+            title: dictionary.userManagement.tableScore,
+            render: (assignment) => {
+              const user = assignmentUserMap.get(assignment.userId);
+              if (!user) {
+                return 0;
+              }
 
-                const kd = user.performance?.averages.killDeathRatio;
-                return typeof kd === "number"
-                  ? `${user.score} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`
-                  : user.score;
-              },
+              const kd = user.performance?.averages.killDeathRatio;
+              return typeof kd === "number"
+                ? `${user.score} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`
+                : user.score;
             },
-            {
-              key: "status",
-              title: dictionary.userManagement.tableStatus,
-              render: (assignment) => (
-                <StatusBadge
-                  active={assignment.status === "active"}
-                  activeLabel={getAssignmentStatusLabel(assignment, dictionary)}
-                  inactiveLabel={getAssignmentStatusLabel(assignment, dictionary)}
-                />
-              ),
-            },
-          ]}
-        />
+          },
+          {
+            key: "status",
+            title: dictionary.userManagement.tableStatus,
+            render: (assignment) => (
+              <StatusBadge
+                active={assignment.status === "active"}
+                activeLabel={getAssignmentStatusLabel(assignment, dictionary)}
+                inactiveLabel={getAssignmentStatusLabel(assignment, dictionary)}
+              />
+            ),
+          },
+        ]}
+      />
     </TablePageLayout>
   );
 }

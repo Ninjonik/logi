@@ -7,20 +7,7 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="countless bug fixes, added better logging, fixed i18n for discord bot">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/group-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/group-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/membership-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/membership-settings-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/squad-preset-editor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/squad-preset-editor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/ticket-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/ticket-settings-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/topic-preset-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/topic-preset-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-    </list>
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="better topic preset editor + membership categories editor; QoL improvements" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -211,7 +198,7 @@
       <workItem from="1784450150783" duration="57000" />
       <workItem from="1784450219841" duration="5375000" />
       <workItem from="1784473647742" duration="552000" />
-      <workItem from="1784560940538" duration="8104000" />
+      <workItem from="1784560940538" duration="8414000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -557,7 +544,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784567689128</updated>
     </task>
-    <option name="localTasksCounter" value="44" />
+    <task id="LOCAL-00044" summary="better topic preset editor + membership categories editor; QoL improvements">
+      <option name="closed" value="true" />
+      <created>1784570149400</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1784570149400</updated>
+    </task>
+    <option name="localTasksCounter" value="45" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -577,7 +572,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="better optimization, better homepage" />
     <MESSAGE value="fixed invite link to include permissions" />
     <MESSAGE value="fixed invite link to include permissions, fixed design inconsistencies in roster board" />
     <MESSAGE value="fixed roster board layout err" />
@@ -602,6 +596,7 @@
     <MESSAGE value="better discord bot listeners for convex events instead of polling" />
     <MESSAGE value="added realtime state for roster view" />
     <MESSAGE value="countless bug fixes, added better logging, fixed i18n for discord bot" />
-    <option name="LAST_COMMIT_MESSAGE" value="countless bug fixes, added better logging, fixed i18n for discord bot" />
+    <MESSAGE value="better topic preset editor + membership categories editor; QoL improvements" />
+    <option name="LAST_COMMIT_MESSAGE" value="better topic preset editor + membership categories editor; QoL improvements" />
   </component>
 </project>

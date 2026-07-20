@@ -147,6 +147,11 @@ export function PlatformIdLinkForm({
               placeholder={selectedPlatform.placeholder}
               className="rounded-xl"
             />
+            {platformId.trim() ? (
+              <p className="text-sm text-muted-foreground">
+                {dictionary.shared.detectedPlatformId.replace("{platform}", `${selectedPlatform.label} ID`)}
+              </p>
+            ) : null}
           </div>
 
           <Button className="rounded-xl" onClick={handleSubmit} disabled={isPending || !platformId.trim()}>
