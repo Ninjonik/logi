@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { saveTopicPreset } from "@/lib/server-topic-presets";
 import { topicPresetSchema } from "@/lib/validation/topic-preset";
@@ -16,6 +17,12 @@ export async function PATCH(
       presetId,
       ...body,
     });
+
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.topicPresets(serverId),
+      appCacheTags.topicPreset(updatedPresetId),
+    ]);
 
     return NextResponse.json({ presetId: updatedPresetId });
   } catch (error) {

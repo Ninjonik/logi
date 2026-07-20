@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { concludeServerEvent, saveServerEvent } from "@/lib/server-events";
 import { importEventMatchResults } from "@/lib/server-match-results";
@@ -20,6 +20,13 @@ export async function PATCH(
       ...body,
       topicPresetId: body.topicPresetId || undefined,
     });
+
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.events(serverId),
+      appCacheTags.event(updatedEventId),
+      appCacheTags.rosterImageEvent(updatedEventId),
+    ]);
 
     return NextResponse.json({ eventId: updatedEventId });
   } catch (error) {
@@ -43,6 +50,12 @@ export async function POST(
 
     if (body?.action === "conclude") {
       await concludeServerEvent({ eventId });
+      revalidateCacheEntries([
+        appCacheTags.serverContext(serverId),
+        appCacheTags.events(serverId),
+        appCacheTags.event(eventId),
+        appCacheTags.rosterImageEvent(eventId),
+      ]);
       return NextResponse.json({ ok: true });
     }
 
@@ -59,9 +72,20 @@ export async function POST(
         matchLink: String(body.matchLink ?? ""),
       });
 
-      result.importedUserIds.forEach((userId) => {
-        revalidateTag(`player-stats:${userId}`, "max");
-      });
+      revalidateCacheEntries([
+        appCacheTags.serverContext(serverId),
+        appCacheTags.events(serverId),
+        appCacheTags.event(eventId),
+        appCacheTags.matches(serverId),
+        appCacheTags.match(eventId),
+        appCacheTags.rosters(serverId),
+        appCacheTags.rosterImageEvent(eventId),
+        ...result.importedUserIds.flatMap((userId) => [
+          appCacheTags.player(userId),
+          appCacheTags.playerStats(userId),
+          appCacheTags.users(),
+        ]),
+      ]);
       return NextResponse.json(result);
     }
 

@@ -1,9 +1,8 @@
-import type { Metadata } from "next";
-
 import { EventFormPanel } from "@/components/app/event-form-panel";
 import { PageHeader } from "@/components/app/page-header";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { createDraftEventSchedule } from "@/lib/event-draft";
 import { getServerContext } from "@/lib/server-context";
 
 export default async function CreateEventPage({
@@ -18,6 +17,7 @@ export default async function CreateEventPage({
   const topicPresets = context?.topicPresets ?? [];
   const timezone = context?.discordConfig?.timezone ?? "UTC";
   const discordConfig = context?.discordConfig ?? null;
+  const draftSchedule = createDraftEventSchedule();
 
   const draftEvent = {
     id: "draft-event",
@@ -35,19 +35,19 @@ export default async function CreateEventPage({
     map: "",
     cap: "",
     notes: "",
-    registrationEnd: "2026-07-12T14:00:00.000Z",
-    meetingStart: "2026-07-12T14:30:00.000Z",
-    gameStart: "2026-07-12T15:00:00.000Z",
-    gameEnd: "2026-07-12T17:00:00.000Z",
+    registrationEnd: draftSchedule.registrationEnd,
+    meetingStart: draftSchedule.meetingStart,
+    gameStart: draftSchedule.gameStart,
+    gameEnd: draftSchedule.gameEnd,
     pingClan: false,
     createForumChannel: true,
     status: "registration" as const,
-    statusUpdatedAt: "2026-07-06T18:00:00.000Z",
+    statusUpdatedAt: draftSchedule.statusUpdatedAt,
     attendanceReminderLog: [],
     participants: [],
     signUps: [],
-    createdAt: "2026-07-06T18:00:00.000Z",
-    updatedAt: "2026-07-06T18:00:00.000Z",
+    createdAt: draftSchedule.createdAt,
+    updatedAt: draftSchedule.updatedAt,
   };
 
   return (

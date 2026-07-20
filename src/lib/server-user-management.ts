@@ -2,6 +2,7 @@ import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 import { cache } from "react";
 
+import { appCacheTags, tagCacheEntries } from "@/lib/cache-tags";
 import { getInternalAuthSecret } from "@/lib/env";
 import { parsePlatformIdsInput } from "@/lib/platform-ids";
 import type { AppUser, Guild } from "@/types/domain";
@@ -33,20 +34,31 @@ export type ServerUserAssignment = {
 };
 
 export const getServerUserAssignments = cache(async function getServerUserAssignments(serverId: string): Promise<ServerUserAssignment[]> {
+  "use cache";
+  tagCacheEntries([appCacheTags.assignments(serverId)]);
   return (await fetchQuery(listAssignmentsReference, { serverId })) as ServerUserAssignment[];
 });
 
 export const getServerUserAssignment = cache(async function getServerUserAssignment(assignmentId: string) {
+  "use cache";
+  tagCacheEntries([appCacheTags.assignment(assignmentId)]);
   return (await fetchQuery(getAssignmentByIdReference, {
     assignmentId: assignmentId as never,
   })) as ServerUserAssignment | null;
 });
 
 export async function getUsersByIds(userIds: string[]) {
+  "use cache";
+  tagCacheEntries([
+    appCacheTags.users(),
+    ...userIds.map((userId) => appCacheTags.player(userId)),
+  ]);
   return (await fetchQuery(getUsersByIdsReference, { userIds })) as AppUser[];
 }
 
 export const listUsers = cache(async function listUsers() {
+  "use cache";
+  tagCacheEntries([appCacheTags.users()]);
   return (await fetchQuery(listUsersReference, {})) as AppUser[];
 });
 

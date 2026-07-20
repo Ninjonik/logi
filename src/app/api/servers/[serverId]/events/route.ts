@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { importServerEventsFromLinks } from "@/lib/server-match-results";
 import { saveServerEvent } from "@/lib/server-events";
@@ -20,9 +20,24 @@ export async function POST(
         linksInput: String(rawBody.links ?? ""),
       });
 
-      result.importedUserIds.forEach((userId) => {
-        revalidateTag(`player-stats:${userId}`, "max");
-      });
+      const importedEventIds = result.linkReports
+        .map((report) => report.eventId)
+        .filter((eventId): eventId is string => Boolean(eventId));
+      revalidateCacheEntries([
+        appCacheTags.serverContext(serverId),
+        appCacheTags.events(serverId),
+        appCacheTags.matches(serverId),
+        ...importedEventIds.flatMap((eventId) => [
+          appCacheTags.event(eventId),
+          appCacheTags.match(eventId),
+          appCacheTags.rosterImageEvent(eventId),
+        ]),
+        ...result.importedUserIds.flatMap((userId) => [
+          appCacheTags.player(userId),
+          appCacheTags.playerStats(userId),
+          appCacheTags.users(),
+        ]),
+      ]);
 
       return NextResponse.json(result);
     }
@@ -33,6 +48,13 @@ export async function POST(
       ...body,
       topicPresetId: body.topicPresetId || undefined,
     });
+
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.events(serverId),
+      appCacheTags.event(eventId),
+      appCacheTags.rosterImageEvent(eventId),
+    ]);
 
     return NextResponse.json({ eventId });
   } catch (error) {

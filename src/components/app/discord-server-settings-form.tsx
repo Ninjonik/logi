@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { getDictionary } from "@/i18n/dictionaries";
 import { supportedClanLanguages, type ClanLanguage } from "@/lib/clan-language";
 import { supportedTimezones } from "@/lib/discord-timezones";
 import type { DiscordConfig } from "@/types/domain";
@@ -19,6 +20,59 @@ type DiscordMetadata = {
   channels: Array<DiscordSelectOption & { type: number; parentId?: string }>;
   emojis: DiscordSelectOption[];
 };
+
+function remapLocalizedDefaults(config: DiscordConfig | null, nextLanguage: ClanLanguage) {
+  if (!config) {
+    return {
+      ticketSettings: undefined,
+      membershipSettings: undefined,
+    };
+  }
+
+  const previousLanguage = config.defaultLanguage ?? "en";
+  if (previousLanguage === nextLanguage) {
+    return {
+      ticketSettings: config.ticketSettings,
+      membershipSettings: config.membershipSettings,
+    };
+  }
+
+  const previousDictionary = getDictionary(previousLanguage);
+  const nextDictionary = getDictionary(nextLanguage);
+
+  const ticketSettings = config.ticketSettings
+    ? {
+        ...config.ticketSettings,
+        panelTitle:
+          config.ticketSettings.panelTitle === previousDictionary.ticketSettings.defaultPanelTitle
+            ? nextDictionary.ticketSettings.defaultPanelTitle
+            : config.ticketSettings.panelTitle,
+        panelDescription:
+          config.ticketSettings.panelDescription === previousDictionary.ticketSettings.defaultPanelDescription
+            ? nextDictionary.ticketSettings.defaultPanelDescription
+            : config.ticketSettings.panelDescription,
+      }
+    : config.ticketSettings;
+
+  const membershipSettings = config.membershipSettings
+    ? {
+        ...config.membershipSettings,
+        panelTitle:
+          config.membershipSettings.panelTitle === previousDictionary.membershipSettings.defaultPanelTitle
+            ? nextDictionary.membershipSettings.defaultPanelTitle
+            : config.membershipSettings.panelTitle,
+        panelDescription:
+          config.membershipSettings.panelDescription === previousDictionary.membershipSettings.defaultPanelDescription
+            ? nextDictionary.membershipSettings.defaultPanelDescription
+            : config.membershipSettings.panelDescription,
+      }
+    : config.membershipSettings;
+
+  return {
+    ticketSettings,
+    membershipSettings,
+  };
+}
 
 export function DiscordServerSettingsForm({
   serverId,
@@ -58,6 +112,7 @@ export function DiscordServerSettingsForm({
   const roles = metadata?.roles ?? [];
 
   async function handleSave() {
+    const remappedDefaults = remapLocalizedDefaults(config, defaultLanguage);
     const response = await fetch(`/api/servers/${serverId}/discord-settings`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -69,8 +124,8 @@ export function DiscordServerSettingsForm({
         meetingChannelId,
         clanRoleId,
         dashboardAdminRoleId,
-        ticketSettings: config?.ticketSettings,
-        membershipSettings: config?.membershipSettings,
+        ticketSettings: remappedDefaults.ticketSettings,
+        membershipSettings: remappedDefaults.membershipSettings,
       }),
     });
     const body = await response.json();

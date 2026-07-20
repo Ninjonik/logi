@@ -45,6 +45,7 @@ type ClanDiscordMessages = {
     managedFooter: string;
     nobodyYet: string;
     notAttending: string;
+    attending: string;
   };
   forum: {
     matchInformation: string;
@@ -70,6 +71,99 @@ type ClanDiscordMessages = {
   calendar: {
     fallbackDetails: string;
     fallbackLocation: string;
+  };
+  panels: {
+    ticketManagedFooter: string;
+    ticketCategories: string;
+    membershipManagedFooter: string;
+    membershipApplications: string;
+  };
+  commands: {
+    closeTicketDescription: string;
+    closeApplicationDescription: string;
+    reasonOptionDescription: string;
+    outcomeOptionDescription: string;
+    outcomeDenied: string;
+    outcomePending: string;
+    outcomeRecruit: string;
+    outcomeMember: string;
+    outcomeMercenary: string;
+  };
+  ticket: {
+    serverOnly: string;
+    unavailable: string;
+    modalTitle: string;
+    setupIncomplete: string;
+    parentChannelNotText: string;
+    createThreadFailed: string;
+    recordFailed: string;
+    introFailed: string;
+    created: string;
+    closeCommandThreadOnly: string;
+    notTracked: string;
+    alreadyClosed: string;
+    unableToVerifyPermissions: string;
+    noClosePermission: string;
+    closeDmClosed: string;
+    noCloseReasonProvided: string;
+    reasonLabel: string;
+    closeAuditReason: string;
+    closeReply: string;
+    closeReplyWithReason: string;
+    threadTitle: string;
+    category: string;
+    createdBy: string;
+    openedBy: string;
+  };
+  membership: {
+    serverOnly: string;
+    unavailable: string;
+    alreadyInClan: string;
+    openApplicationExists: string;
+    dmSent: string;
+    dmFailed: string;
+    modalTitle: string;
+    setupIncomplete: string;
+    alreadyAssigned: string;
+    parentChannelNotText: string;
+    createAssignmentFailed: string;
+    createThreadFailed: string;
+    recordFailed: string;
+    introFailed: string;
+    created: string;
+    closeCommandThreadOnly: string;
+    guildUnavailable: string;
+    notTracked: string;
+    alreadyClosed: string;
+    unableToVerifyPermissions: string;
+    noClosePermission: string;
+    closeDmClosed: string;
+    noCloseReasonProvided: string;
+    outcomeLabel: string;
+    reasonLabel: string;
+    closeAuditReason: string;
+    closeReply: string;
+    closeReplyWithReason: string;
+    platformIdButton: string;
+    platformIdDmIntro: string;
+    platformIdDmInstruction: string;
+    threadTitle: string;
+    category: string;
+    createdBy: string;
+    openedBy: string;
+    initialStatus: string;
+    statusPending: string;
+    statusRecruit: string;
+    statusMember: string;
+    statusMercenary: string;
+  };
+  scheduledEvent: {
+    map: string;
+    side: string;
+    cap: string;
+    server: string;
+    password: string;
+    managedFallback: string;
   };
   rosterImage: {
     roster: string;
@@ -135,6 +229,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       managedFooter: "Managed via Logi • Times adapt to your device",
       nobodyYet: "*Nobody yet*",
       notAttending: "Not Attending",
+      attending: "Attending",
     },
     forum: {
       matchInformation: "Match information",
@@ -160,6 +255,99 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     calendar: {
       fallbackDetails: "Operation briefing from Logi.",
       fallbackLocation: "Discord",
+    },
+    panels: {
+      ticketManagedFooter: "Managed by Logi tickets",
+      ticketCategories: "Categories",
+      membershipManagedFooter: "Managed by Logi memberships",
+      membershipApplications: "Applications",
+    },
+    commands: {
+      closeTicketDescription: "Close the current ticket thread.",
+      closeApplicationDescription: "Close the current membership application thread.",
+      reasonOptionDescription: "Reason shown to the user in DMs.",
+      outcomeOptionDescription: "What the applicant should become after closing.",
+      outcomeDenied: "Denied",
+      outcomePending: "Pending",
+      outcomeRecruit: "Recruit",
+      outcomeMember: "Member",
+      outcomeMercenary: "Mercenary",
+    },
+    ticket: {
+      serverOnly: "Tickets can only be opened inside a server.",
+      unavailable: "Ticket setup is not available right now.",
+      modalTitle: "Ticket details",
+      setupIncomplete: "Ticket setup is incomplete.",
+      parentChannelNotText: "Ticket parent channel is not a text channel.",
+      createThreadFailed: "I couldn't create the ticket thread. Check the bot's permissions for the ticket parent channel.",
+      recordFailed: "The ticket could not be recorded, so the thread was closed. Please try again.",
+      introFailed: "Your ticket thread was created, but I couldn't post the intro message: {url}",
+      created: "Your ticket has been created: {url}",
+      closeCommandThreadOnly: "Use this command inside a ticket thread.",
+      notTracked: "This thread is not tracked as a ticket.",
+      alreadyClosed: "This ticket is already closed.",
+      unableToVerifyPermissions: "Unable to verify your permissions for this ticket.",
+      noClosePermission: "You do not have permission to close this ticket.",
+      closeDmClosed: "Your ticket #{number} in **{guildName}** has been closed.",
+      noCloseReasonProvided: "No close reason was provided.",
+      reasonLabel: "Reason",
+      closeAuditReason: "Ticket closed",
+      closeReply: "Ticket closed.",
+      closeReplyWithReason: "Ticket closed. Reason: {reason}",
+      threadTitle: "Ticket #{number}",
+      category: "Category",
+      createdBy: "Created by",
+      openedBy: "Opened by {creatorTag}",
+    },
+    membership: {
+      serverOnly: "Applications can only be opened inside a server.",
+      unavailable: "Membership applications are not available right now.",
+      alreadyInClan: "You are already added to this clan. Ask staff if your membership status needs to be changed.",
+      openApplicationExists: "You already have an open clan application. Wait for staff to close it before opening another.",
+      dmSent: "I sent you a DM with a direct link to submit your platform ID. Submit it there, then click this button again.",
+      dmFailed: "I could not DM you. Use this one-time link to submit your platform ID, then click the button again: {link}",
+      modalTitle: "Clan application",
+      setupIncomplete: "Membership application setup is incomplete.",
+      alreadyAssigned: "You are already assigned to this clan.",
+      parentChannelNotText: "Application parent channel is not a text channel.",
+      createAssignmentFailed: "I couldn't create the membership assignment for this application. Please try again.",
+      createThreadFailed: "I couldn't create the application thread, so no application was opened. Check the bot's permissions and try again.",
+      recordFailed: "The application could not be recorded, so the thread was closed. Please try again.",
+      introFailed: "Your clan application thread was created, but I couldn't post the intro message: {url}",
+      created: "Your clan application has been created: {url}",
+      closeCommandThreadOnly: "Use this command inside an application thread.",
+      guildUnavailable: "Unable to resolve the guild for this application.",
+      notTracked: "This thread is not tracked as a membership application.",
+      alreadyClosed: "This application is already closed.",
+      unableToVerifyPermissions: "Unable to verify your permissions for this application.",
+      noClosePermission: "You do not have permission to close this application.",
+      closeDmClosed: "Your clan application #{number} in **{guildName}** has been closed.",
+      noCloseReasonProvided: "No close reason was provided.",
+      outcomeLabel: "Outcome",
+      reasonLabel: "Reason",
+      closeAuditReason: "Application closed",
+      closeReply: "Application closed as {outcome}.",
+      closeReplyWithReason: "Application closed as {outcome}. Reason: {reason}",
+      platformIdButton: "Submit platform ID",
+      platformIdDmIntro: "Before we can continue your clan application, we need a platform ID we can match to Hell Let Loose.",
+      platformIdDmInstruction: "Use the button below to open the one-time submission page. When it says successful, close it and click the application button again in Discord.",
+      threadTitle: "Application #{number}",
+      category: "Category",
+      createdBy: "Created by",
+      openedBy: "Opened by {creatorTag}",
+      initialStatus: "Initial status",
+      statusPending: "Pending",
+      statusRecruit: "Recruit",
+      statusMember: "Member",
+      statusMercenary: "Mercenary",
+    },
+    scheduledEvent: {
+      map: "Map",
+      side: "Side",
+      cap: "Cap",
+      server: "Server",
+      password: "Password",
+      managedFallback: "Managed by Logi.",
     },
     rosterImage: {
       roster: "Roster",
@@ -223,6 +411,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       managedFooter: "Spravováno přes Logi • Časy se přizpůsobí vašemu zařízení",
       nobodyYet: "*Zatím nikdo*",
       notAttending: "Neúčastní se",
+      attending: "Účastní se",
     },
     forum: {
       matchInformation: "Informace o zápasu",
@@ -248,6 +437,99 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     calendar: {
       fallbackDetails: "Briefing k operaci z Logi.",
       fallbackLocation: "Discord",
+    },
+    panels: {
+      ticketManagedFooter: "Spravováno přes Logi tickety",
+      ticketCategories: "Kategorie",
+      membershipManagedFooter: "Spravováno přes Logi přihlášky",
+      membershipApplications: "Přihlášky",
+    },
+    commands: {
+      closeTicketDescription: "Uzavře aktuální ticket vlákno.",
+      closeApplicationDescription: "Uzavře aktuální vlákno členské přihlášky.",
+      reasonOptionDescription: "Důvod zobrazený uživateli v DM.",
+      outcomeOptionDescription: "Čím se má žadatel po uzavření stát.",
+      outcomeDenied: "Zamítnuto",
+      outcomePending: "Čekající",
+      outcomeRecruit: "Rekrut",
+      outcomeMember: "Člen",
+      outcomeMercenary: "Žoldák",
+    },
+    ticket: {
+      serverOnly: "Tickety lze otevřít pouze uvnitř serveru.",
+      unavailable: "Nastavení ticketů teď není dostupné.",
+      modalTitle: "Detaily ticketu",
+      setupIncomplete: "Nastavení ticketů není kompletní.",
+      parentChannelNotText: "Nadřazený ticket kanál není textový kanál.",
+      createThreadFailed: "Nepodařilo se vytvořit ticket vlákno. Zkontrolujte oprávnění bota pro nadřazený ticket kanál.",
+      recordFailed: "Ticket se nepodařilo uložit, takže bylo vlákno uzavřeno. Zkuste to prosím znovu.",
+      introFailed: "Vaše ticket vlákno bylo vytvořeno, ale nepodařilo se odeslat úvodní zprávu: {url}",
+      created: "Váš ticket byl vytvořen: {url}",
+      closeCommandThreadOnly: "Tento příkaz použijte uvnitř ticket vlákna.",
+      notTracked: "Toto vlákno není evidováno jako ticket.",
+      alreadyClosed: "Tento ticket je už uzavřen.",
+      unableToVerifyPermissions: "Nepodařilo se ověřit vaše oprávnění pro tento ticket.",
+      noClosePermission: "Nemáte oprávnění tento ticket uzavřít.",
+      closeDmClosed: "Váš ticket #{number} v **{guildName}** byl uzavřen.",
+      noCloseReasonProvided: "Nebyl uveden důvod uzavření.",
+      reasonLabel: "Důvod",
+      closeAuditReason: "Ticket uzavřen",
+      closeReply: "Ticket uzavřen.",
+      closeReplyWithReason: "Ticket uzavřen. Důvod: {reason}",
+      threadTitle: "Ticket #{number}",
+      category: "Kategorie",
+      createdBy: "Vytvořil",
+      openedBy: "Otevřel {creatorTag}",
+    },
+    membership: {
+      serverOnly: "Přihlášky lze otevřít pouze uvnitř serveru.",
+      unavailable: "Členské přihlášky teď nejsou dostupné.",
+      alreadyInClan: "V tomto klanu už jste přidaní. Pokud je potřeba změnit váš členský stav, kontaktujte staff.",
+      openApplicationExists: "Už máte otevřenou klanovou přihlášku. Počkejte, až ji staff uzavře, než otevřete další.",
+      dmSent: "Poslal jsem vám DM s přímým odkazem pro zadání vašeho platform ID. Vyplňte ho tam a potom na toto tlačítko klikněte znovu.",
+      dmFailed: "Nepodařilo se mi vám poslat DM. Použijte tento jednorázový odkaz pro zadání vašeho platform ID a potom klikněte na tlačítko znovu: {link}",
+      modalTitle: "Klanová přihláška",
+      setupIncomplete: "Nastavení členských přihlášek není kompletní.",
+      alreadyAssigned: "K tomuto klanu už jste přiřazení.",
+      parentChannelNotText: "Nadřazený kanál přihlášek není textový kanál.",
+      createAssignmentFailed: "Nepodařilo se vytvořit členské přiřazení pro tuto přihlášku. Zkuste to prosím znovu.",
+      createThreadFailed: "Nepodařilo se vytvořit vlákno přihlášky, takže žádná přihláška nebyla otevřena. Zkontrolujte oprávnění bota a zkuste to znovu.",
+      recordFailed: "Přihlášku se nepodařilo uložit, takže bylo vlákno uzavřeno. Zkuste to prosím znovu.",
+      introFailed: "Vlákno vaší klanové přihlášky bylo vytvořeno, ale nepodařilo se odeslat úvodní zprávu: {url}",
+      created: "Vaše klanová přihláška byla vytvořena: {url}",
+      closeCommandThreadOnly: "Tento příkaz použijte uvnitř vlákna přihlášky.",
+      guildUnavailable: "Nepodařilo se určit server pro tuto přihlášku.",
+      notTracked: "Toto vlákno není evidováno jako členská přihláška.",
+      alreadyClosed: "Tato přihláška je už uzavřená.",
+      unableToVerifyPermissions: "Nepodařilo se ověřit vaše oprávnění pro tuto přihlášku.",
+      noClosePermission: "Nemáte oprávnění tuto přihlášku uzavřít.",
+      closeDmClosed: "Vaše klanová přihláška #{number} v **{guildName}** byla uzavřena.",
+      noCloseReasonProvided: "Nebyl uveden důvod uzavření.",
+      outcomeLabel: "Výsledek",
+      reasonLabel: "Důvod",
+      closeAuditReason: "Přihláška uzavřena",
+      closeReply: "Přihláška uzavřena jako {outcome}.",
+      closeReplyWithReason: "Přihláška uzavřena jako {outcome}. Důvod: {reason}",
+      platformIdButton: "Zadat platform ID",
+      platformIdDmIntro: "Než budeme moci pokračovat s vaší klanovou přihláškou, potřebujeme platform ID, které můžeme spárovat s Hell Let Loose.",
+      platformIdDmInstruction: "Použijte tlačítko níže pro otevření jednorázové stránky pro odeslání. Až uvidíte úspěšné potvrzení, zavřete ji a v Discordu znovu klikněte na tlačítko přihlášky.",
+      threadTitle: "Přihláška #{number}",
+      category: "Kategorie",
+      createdBy: "Vytvořil",
+      openedBy: "Otevřel {creatorTag}",
+      initialStatus: "Počáteční stav",
+      statusPending: "Čekající",
+      statusRecruit: "Rekrut",
+      statusMember: "Člen",
+      statusMercenary: "Žoldák",
+    },
+    scheduledEvent: {
+      map: "Mapa",
+      side: "Strana",
+      cap: "Cap",
+      server: "Server",
+      password: "Heslo",
+      managedFallback: "Spravováno přes Logi.",
     },
     rosterImage: {
       roster: "Soupiska",

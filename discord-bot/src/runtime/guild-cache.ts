@@ -1,5 +1,6 @@
 import { convex, references } from "../convex";
 import { env } from "../environment";
+import { logError, logInfo } from "../log";
 import type {
   DiscordConfig,
   Group,
@@ -29,19 +30,31 @@ export class GuildCache {
       secret: env.internalSecret,
     })) as GuildCacheSnapshot;
     this.applySnapshot(initialSnapshot);
+    logInfo("guild-cache", "Loaded initial guild snapshot", {
+      guildCount: initialSnapshot.guilds.length,
+      configCount: initialSnapshot.configs.length,
+    });
 
     const watch = convex.watchQuery(references.listGuildCacheSnapshot, {
       secret: env.internalSecret,
     });
     this.unsubscribe = watch.onUpdate(() => {
-      const snapshot = watch.localQueryResult() as GuildCacheSnapshot | undefined;
-      if (!snapshot) {
-        return;
-      }
+      try {
+        const snapshot = watch.localQueryResult() as GuildCacheSnapshot | undefined;
+        if (!snapshot) {
+          return;
+        }
 
-      const changedGuildIds = this.applySnapshot(snapshot);
-      if (changedGuildIds.length > 0) {
-        onGuildsChanged(changedGuildIds);
+        const changedGuildIds = this.applySnapshot(snapshot);
+        if (changedGuildIds.length > 0) {
+          logInfo("guild-cache", "Guild snapshot changed", {
+            changedGuildIds,
+            guildCount: snapshot.guilds.length,
+          });
+          onGuildsChanged(changedGuildIds);
+        }
+      } catch (error) {
+        logError("guild-cache", "Failed to process guild cache update", { error });
       }
     });
   }

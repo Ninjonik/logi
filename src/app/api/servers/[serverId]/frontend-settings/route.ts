@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleIfNotLoggedIn } from "@/lib/auth";
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getServerContext } from "@/lib/server-context";
 import { saveGuildFrontendSettings } from "@/lib/server-guild-settings";
 
@@ -50,6 +51,12 @@ export async function POST(request: Request, context: { params: Promise<{ server
         accepted: number;
       },
     });
+
+    revalidateCacheEntries([
+      appCacheTags.server(serverId),
+      appCacheTags.serverContext(serverId),
+      appCacheTags.rosters(serverId),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

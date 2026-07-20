@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { syncDiscordRolesForAssignment } from "@/lib/discord";
 import { getServerContext } from "@/lib/server-context";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
@@ -55,6 +56,15 @@ export async function POST(
       afterMembershipStatus: body.status,
       afterMembershipCategoryId: undefined,
     });
+
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.assignments(serverId),
+      appCacheTags.assignment(assignmentId),
+      appCacheTags.player(body.userId),
+      appCacheTags.users(),
+      appCacheTags.rosterImage(),
+    ]);
 
     return NextResponse.json({ assignmentId });
   } catch (error) {

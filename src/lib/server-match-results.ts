@@ -888,6 +888,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
       scannedPlayers: 0,
       matchedPlayers: 0,
       linkedUsers: 0,
+      linkedUserIds: [] as string[],
       alreadyLinkedUsers: 0,
       ambiguousUsers: 0,
       conflictedUsers: 0,
@@ -947,6 +948,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
   }
 
   let linkedUsers = 0;
+  const linkedUserIds = new Set<string>();
   let alreadyLinkedUsers = 0;
   let ambiguousUsers = 0;
   let conflictedUsers = 0;
@@ -982,6 +984,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
           });
           existingPlatformOwnerById.set(candidateId, user.discordId);
           linkedUsers += 1;
+          linkedUserIds.add(user.discordId);
         } catch (error) {
           conflictedUsers += 1;
           console.error("[match-results] auto-link:failed-save", {
@@ -1002,6 +1005,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
       });
       existingPlatformOwnerById.set(candidateId, user.discordId);
       linkedUsers += 1;
+      linkedUserIds.add(user.discordId);
     } catch (error) {
       conflictedUsers += 1;
       console.error("[match-results] auto-link:failed-save", {
@@ -1018,6 +1022,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
     scannedPlayers,
     matchedPlayers,
     linkedUsers,
+    linkedUserIds: [...linkedUserIds],
     alreadyLinkedUsers,
     ambiguousUsers,
     conflictedUsers,

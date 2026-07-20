@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { syncDiscordRolesForAssignment } from "@/lib/discord";
 import { getMembershipApplicationByAssignment } from "@/lib/server-discord-settings";
 import { getServerContext } from "@/lib/server-context";
@@ -69,6 +70,15 @@ export async function PATCH(
       afterMembershipCategoryId: effectiveMembershipCategoryId,
     });
 
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.assignments(serverId),
+      appCacheTags.assignment(updatedAssignmentId),
+      appCacheTags.player(body.userId),
+      appCacheTags.users(),
+      appCacheTags.rosterImage(),
+    ]);
+
     return NextResponse.json({ assignmentId: updatedAssignmentId });
   } catch (error) {
     logRouteError("assignments.update", error);
@@ -112,6 +122,14 @@ export async function DELETE(
         beforeMembershipCategoryId: effectiveMembershipCategoryId,
       });
     }
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.assignments(serverId),
+      appCacheTags.assignment(assignmentId),
+      existingAssignment?.userId ? appCacheTags.player(existingAssignment.userId) : undefined,
+      appCacheTags.users(),
+      appCacheTags.rosterImage(),
+    ]);
     return NextResponse.json({ ok: true });
   } catch (error) {
     logRouteError("assignments.delete", error);

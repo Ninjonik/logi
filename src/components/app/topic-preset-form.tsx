@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Paperclip, Plus, Save, Trash2, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -11,8 +11,16 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
+import {
+  getHllMapOptions,
+  getHllModeOptions,
+  getHllTimeOptions,
+  inferHllSelection,
+  resolveHllPresetCode,
+} from "@/lib/hll-map-presets";
 import { topicPresetSchema, type TopicPresetInput } from "@/lib/validation/topic-preset";
 import type { TopicPreset } from "@/types/domain";
 
@@ -102,6 +110,9 @@ export function TopicPresetForm({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [selectedMapId, setSelectedMapId] = useState("");
+  const [selectedMapTime, setSelectedMapTime] = useState("");
+  const [selectedMapMode, setSelectedMapMode] = useState("");
 
   const form = useForm<TopicPresetInput>({
     resolver: zodResolver(topicPresetSchema),
@@ -114,11 +125,64 @@ export function TopicPresetForm({
       topics: preset?.topics.length ? preset.topics.map((topic) => ({ ...topic, id: topic.id ?? crypto.randomUUID() })) : [newTopic(dictionary.presets.newTopic)],
     },
   });
+  const mapValue = form.watch("map");
+  const sideValue = form.watch("side");
+  const mapOptions = getHllMapOptions();
+  const timeOptions = selectedMapId ? getHllTimeOptions(selectedMapId) : [];
+  const modeOptions = selectedMapId ? getHllModeOptions(selectedMapId, selectedMapTime) : [];
 
   const topics = useFieldArray({
     control: form.control,
     name: "topics",
   });
+
+  useEffect(() => {
+    const inferredSelection = inferHllSelection(mapValue);
+    if (inferredSelection) {
+      setSelectedMapId(inferredSelection.mapId);
+      setSelectedMapTime(inferredSelection.time);
+      setSelectedMapMode(inferredSelection.mode);
+      return;
+    }
+
+    setSelectedMapId("");
+    setSelectedMapTime("");
+    setSelectedMapMode("");
+  }, [mapValue]);
+
+  useEffect(() => {
+    if (!selectedMapId || !selectedMapTime || !selectedMapMode) {
+      return;
+    }
+
+    const resolvedCode = resolveHllPresetCode({
+      mapId: selectedMapId,
+      time: selectedMapTime,
+      mode: selectedMapMode,
+      side: sideValue,
+    });
+
+    if (resolvedCode && resolvedCode !== mapValue) {
+      form.setValue("map", resolvedCode, { shouldDirty: true, shouldTouch: true });
+    }
+  }, [form, mapValue, selectedMapId, selectedMapMode, selectedMapTime, sideValue]);
+
+  function handleMapSelection(mapId: string) {
+    setSelectedMapId(mapId);
+    setSelectedMapTime("");
+    setSelectedMapMode("");
+    form.setValue("map", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+  }
+
+  function handleMapTimeSelection(time: string) {
+    setSelectedMapTime(time);
+    setSelectedMapMode("");
+    form.setValue("map", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+  }
+
+  function handleMapModeSelection(mode: string) {
+    setSelectedMapMode(mode);
+  }
 
   async function submit(values: TopicPresetInput) {
     const response = await fetch(
@@ -186,9 +250,70 @@ export function TopicPresetForm({
               <Input {...form.register("name")} className="rounded-xl" disabled={!canEdit} />
               {form.formState.errors.name ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.name.message}</p> : null}
             </div>
-            <div>
+            <div className="space-y-3 md:col-span-2">
               <FieldLabel label={dictionary.presets.fields.map} />
-              <Input {...form.register("map")} className="rounded-xl" disabled={!canEdit} />
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="min-w-0 space-y-2">
+                  <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                    {dictionary.presets.fields.map}
+                  </div>
+                  <Select value={selectedMapId} onValueChange={handleMapSelection} disabled={!canEdit}>
+                    <SelectTrigger className="w-full rounded-xl">
+                      <SelectValue placeholder={dictionary.presets.fields.map} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mapOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {selectedMapId ? (
+                  <div className="min-w-0 space-y-2">
+                    <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                      {dictionary.event.fields.mapVariant}
+                    </div>
+                    <Select value={selectedMapTime} onValueChange={handleMapTimeSelection} disabled={!canEdit}>
+                      <SelectTrigger className="w-full rounded-xl">
+                        <SelectValue placeholder={dictionary.event.fields.mapVariant} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timeOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
+                {selectedMapId && selectedMapTime ? (
+                  <div className="min-w-0 space-y-2">
+                    <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                      {dictionary.event.fields.mapMode}
+                    </div>
+                    <Select value={selectedMapMode} onValueChange={handleMapModeSelection} disabled={!canEdit}>
+                      <SelectTrigger className="w-full rounded-xl">
+                        <SelectValue placeholder={dictionary.event.fields.mapMode} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {modeOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
+              </div>
+              {mapValue ? (
+                <p className="text-xs text-muted-foreground">
+                  {dictionary.event.fields.mapPresetCode}: <span className="font-mono">{mapValue}</span>
+                </p>
+              ) : null}
             </div>
             <div>
               <FieldLabel label={dictionary.presets.fields.side} />
@@ -219,12 +344,12 @@ export function TopicPresetForm({
             </div>
 
             {topics.fields.map((topic, topicIndex) => (
-              <div key={topic.id} className="space-y-3 rounded-2xl border border-border/60 p-4">
-                <div className="flex gap-2">
+              <div key={topic.id} className="space-y-3 rounded-xl border border-border/60 bg-muted/10 p-3">
+                <div className="flex items-start gap-2">
                   <div className="flex-1">
                     <Input
                       {...form.register(`topics.${topicIndex}.title`)}
-                      className="rounded-xl"
+                      className="h-10 rounded-lg border-border/60 bg-background"
                       placeholder={dictionary.presets.newTopic}
                       disabled={!canEdit}
                     />
@@ -233,14 +358,15 @@ export function TopicPresetForm({
                     ) : null}
                   </div>
                   {canEdit ? (
-                    <Button type="button" variant="ghost" size="icon" className="rounded-xl" onClick={() => topics.remove(topicIndex)} disabled={topics.fields.length <= 1}>
+                    <Button type="button" variant="ghost" size="icon" className="mt-0.5 rounded-lg" onClick={() => topics.remove(topicIndex)} disabled={topics.fields.length <= 1}>
                       <Trash2 className="size-4" />
                     </Button>
                   ) : null}
                 </div>
                 <Textarea
                   {...form.register(`topics.${topicIndex}.body`)}
-                  className="min-h-24 rounded-xl"
+                  className="min-h-24 rounded-lg border-border/60 bg-background"
+                  placeholder={dictionary.presets.topicEditorDescription}
                   disabled={!canEdit}
                 />
                 <Controller
@@ -251,7 +377,7 @@ export function TopicPresetForm({
                       <Textarea
                         value={field.value.join("\n")}
                         onChange={(event) => field.onChange(event.target.value.split("\n").map((line) => line.trim()).filter(Boolean))}
-                        className="min-h-20 rounded-xl"
+                        className="min-h-20 rounded-lg border-border/60 bg-background text-sm"
                         placeholder={dictionary.presets.attachmentPlaceholder}
                         disabled={!canEdit}
                       />
@@ -260,7 +386,7 @@ export function TopicPresetForm({
                       ) : null}
                       <div className="flex flex-wrap items-center gap-2">
                         {canEdit ? (
-                          <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-xl border border-input bg-background px-4 py-2 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground">
+                          <label className="inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border/60 bg-background px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
                             <Upload className="size-4" />
                             {dictionary.common.upload}
                             <input
@@ -275,7 +401,7 @@ export function TopicPresetForm({
                           </label>
                         ) : null}
                         {field.value.length ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <span className="inline-flex h-8 items-center gap-1 rounded-lg border border-border/60 bg-background px-2.5 text-xs text-muted-foreground">
                             <Paperclip className="size-3" />
                             {field.value.length} {dictionary.presets.attachmentCountSuffix}
                           </span>

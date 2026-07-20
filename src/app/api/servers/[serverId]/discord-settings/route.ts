@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleIfNotLoggedIn } from "@/lib/auth";
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getServerContext } from "@/lib/server-context";
 import { saveDiscordConfig } from "@/lib/server-discord-settings";
 import { discordSettingsSchema } from "@/lib/validation/discord-settings";
@@ -31,6 +32,11 @@ export async function POST(request: Request, context: { params: Promise<{ server
       guildId: serverId,
       ...parsed.data,
     });
+
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.discordConfig(serverId),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

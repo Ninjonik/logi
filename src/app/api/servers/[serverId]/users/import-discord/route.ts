@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleIfNotLoggedIn } from "@/lib/auth";
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { fetchDiscordGuildMembers, getDiscordAvatarUrl, type DiscordGuildMember } from "@/lib/discord";
 import { getServerContext } from "@/lib/server-context";
 import { importDiscordMembersForServer, getServerUserAssignments, listUsers } from "@/lib/server-user-management";
@@ -123,6 +124,13 @@ export async function POST(
       assignmentType,
       members: membersToImport,
     });
+
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.assignments(serverId),
+      appCacheTags.users(),
+      appCacheTags.rosterImage(),
+    ]);
 
     return NextResponse.json({
       ...result,

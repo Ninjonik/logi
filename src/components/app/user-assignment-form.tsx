@@ -9,6 +9,7 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { ConfigNotice } from "@/components/app/config-notice";
+import { getDetectedPlatformHint, PlatformIdList } from "@/components/app/platform-id-display";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,7 @@ export function UserAssignmentForm({
   const assignmentType = form.watch("type");
   const primaryGroupId = form.watch("primaryGroupId");
   const secondaryGroupIds = form.watch("secondaryGroupIds");
+  const platformIdsValue = form.watch("platformIds") ?? "";
 
   const matches = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -469,7 +471,12 @@ export function UserAssignmentForm({
                   />
                 ) : (
                   <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
-                    {formatPlatformIds(selected.user.platformIds) || dictionary.shared.notSet}
+                    <PlatformIdList
+                      platformIds={selected.user.platformIds}
+                      dictionary={dictionary}
+                      showProfileLinks
+                      emptyLabel={dictionary.shared.notSet}
+                    />
                   </div>
                 )}
                 <p className="text-sm text-muted-foreground">
@@ -477,6 +484,9 @@ export function UserAssignmentForm({
                     ? dictionary.userManagement.platformConnectedAs.replace("{platformId}", formatPlatformIds(selected.user.platformIds))
                     : dictionary.userManagement.platformNotConnected}
                 </p>
+                {canEditFields && platformIdsValue.trim() ? (
+                  <p className="text-sm text-muted-foreground">{getDetectedPlatformHint(platformIdsValue, dictionary)}</p>
+                ) : null}
                 {form.formState.errors.platformIds ? (
                   <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.platformIds.message, dictionary)}</p>
                 ) : null}

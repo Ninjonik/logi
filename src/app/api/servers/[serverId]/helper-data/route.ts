@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { initializeDefaultHelperData, resetHelperData } from "@/lib/server-setup";
 
 const helperDataActionSchema = z.object({
@@ -20,6 +21,14 @@ export async function POST(
     } else {
       await resetHelperData(serverId);
     }
+
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.groups(serverId),
+      appCacheTags.topicPresets(serverId),
+      appCacheTags.squadPresets(serverId),
+      appCacheTags.rosterImage(),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

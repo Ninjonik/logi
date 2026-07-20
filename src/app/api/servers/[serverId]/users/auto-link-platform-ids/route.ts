@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleIfNotLoggedIn } from "@/lib/auth";
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { autoLinkPlatformIdsFromEventImports } from "@/lib/server-match-results";
 import { getServerContext } from "@/lib/server-context";
 
@@ -35,6 +36,11 @@ export async function POST(
       clanTag,
       sourceUrls,
     });
+
+    revalidateCacheEntries([
+      appCacheTags.users(),
+      ...result.linkedUserIds.map((userId) => appCacheTags.player(userId)),
+    ]);
 
     return NextResponse.json(result);
   } catch (error) {

@@ -6,6 +6,7 @@ import { CircleHelp, Gamepad2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AvatarPicker } from "@/components/app/avatar-picker";
+import { getDetectedPlatformHint, PlatformIdList } from "@/components/app/platform-id-display";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,6 +110,9 @@ export function UserSettingsForm({
               placeholder={dictionary.userSettings.platformIdPlaceholder}
               className="rounded-xl"
             />
+            {platformIds.trim() ? (
+              <p className="text-sm text-muted-foreground">{getDetectedPlatformHint(platformIds, dictionary)}</p>
+            ) : null}
           </div>
           <div className="md:col-span-2">
             <Button className="rounded-xl" onClick={handleSave} disabled={isPending}>
@@ -131,7 +135,14 @@ export function UserSettingsForm({
             </Badge>
             <div className="rounded-2xl border border-border/60 p-4">
               <div className="text-sm text-muted-foreground">{dictionary.userSettings.currentPlatformId}</div>
-              <div className="mt-2 break-all font-medium">{formatPlatformIds(user.platformIds) || dictionary.shared.notSet}</div>
+              <div className="mt-3">
+                <PlatformIdList
+                  platformIds={user.platformIds}
+                  dictionary={dictionary}
+                  showProfileLinks
+                  emptyLabel={dictionary.shared.notSet}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -8,6 +8,7 @@ import type { z } from "zod";
 import { toast } from "sonner";
 
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
+import { EmojiPickerInput } from "@/components/app/emoji-picker-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -200,15 +201,16 @@ export function GroupForm({
                 control={form.control}
                 name="discordEmoji"
                 render={({ field }) => (
-                  <DiscordEntitySelect
+                  <EmojiPickerInput
                     value={field.value}
                     onChange={(value) => field.onChange(value ?? "")}
-                    options={(metadata?.emojis ?? []).map((emoji) => ({
+                    customEmojis={(metadata?.emojis ?? []).map((emoji) => ({
                       id: emoji.id,
                       name: emoji.name,
                       imageUrl: emoji.imageUrl,
                     }))}
                     placeholder={dictionary.serverSettings.groupEmoji}
+                    labels={dictionary.emojiPicker}
                     noneLabel={dictionary.groups.none}
                   />
                 )}

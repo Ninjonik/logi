@@ -7,13 +7,7 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="QoL changes, can edit squad presets now">
-      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/convex.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/convex.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/sync.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/sync.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/types.ts" afterDir="false" />
-    </list>
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="QoL improvements" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -203,6 +197,8 @@
       <workItem from="1784306866768" duration="1272000" />
       <workItem from="1784450150783" duration="57000" />
       <workItem from="1784450219841" duration="5375000" />
+      <workItem from="1784473647742" duration="552000" />
+      <workItem from="1784560940538" duration="9018000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -524,7 +520,47 @@
       <option name="project" value="LOCAL" />
       <updated>1784454038097</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="better discord bot listeners for convex events instead of polling">
+      <option name="closed" value="true" />
+      <created>1784473747368</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1784473747368</updated>
+    </task>
+    <task id="LOCAL-00042" summary="added realtime state for roster view">
+      <option name="closed" value="true" />
+      <created>1784474134098</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1784474134098</updated>
+    </task>
+    <task id="LOCAL-00043" summary="countless bug fixes, added better logging, fixed i18n for discord bot">
+      <option name="closed" value="true" />
+      <created>1784567689128</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1784567689128</updated>
+    </task>
+    <task id="LOCAL-00044" summary="better topic preset editor + membership categories editor; QoL improvements">
+      <option name="closed" value="true" />
+      <created>1784570149400</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1784570149400</updated>
+    </task>
+    <task id="LOCAL-00045" summary="QoL improvements">
+      <option name="closed" value="true" />
+      <created>1784570902682</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1784570902682</updated>
+    </task>
+    <option name="localTasksCounter" value="46" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -544,11 +580,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="- better navbar" />
-    <MESSAGE value="better roster management, better user and clan settings (with ability to change avatar via uploading a file), better table views (+ SSR pagination + searching), better skeletons" />
-    <MESSAGE value="fixed build errors" />
-    <MESSAGE value="better optimization, better homepage" />
-    <MESSAGE value="fixed invite link to include permissions" />
     <MESSAGE value="fixed invite link to include permissions, fixed design inconsistencies in roster board" />
     <MESSAGE value="fixed roster board layout err" />
     <MESSAGE value="added concurrently for discord bot to be running as well" />
@@ -569,6 +600,11 @@
     <MESSAGE value="primary group is optional, better player assignment ui" />
     <MESSAGE value="added a simple ticket system" />
     <MESSAGE value="QoL changes, can edit squad presets now" />
-    <option name="LAST_COMMIT_MESSAGE" value="QoL changes, can edit squad presets now" />
+    <MESSAGE value="better discord bot listeners for convex events instead of polling" />
+    <MESSAGE value="added realtime state for roster view" />
+    <MESSAGE value="countless bug fixes, added better logging, fixed i18n for discord bot" />
+    <MESSAGE value="better topic preset editor + membership categories editor; QoL improvements" />
+    <MESSAGE value="QoL improvements" />
+    <option name="LAST_COMMIT_MESSAGE" value="QoL improvements" />
   </component>
 </project>

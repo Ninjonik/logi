@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { deleteServerGroup, saveServerGroup } from "@/lib/server-groups";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { groupSchema } from "@/lib/validation/group";
@@ -17,6 +18,13 @@ export async function PATCH(
       ...body,
     });
 
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.groups(serverId),
+      appCacheTags.group(updatedGroupId),
+      appCacheTags.rosterImage(),
+    ]);
+
     return NextResponse.json({ groupId: updatedGroupId });
   } catch (error) {
     logRouteError("groups.update", error);
@@ -31,11 +39,17 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ groupId: string }> },
+  { params }: { params: Promise<{ serverId: string; groupId: string }> },
 ) {
   try {
-    const { groupId } = await params;
+    const { serverId, groupId } = await params;
     await deleteServerGroup(groupId);
+    revalidateCacheEntries([
+      appCacheTags.serverContext(serverId),
+      appCacheTags.groups(serverId),
+      appCacheTags.group(groupId),
+      appCacheTags.rosterImage(),
+    ]);
     return NextResponse.json({ ok: true });
   } catch (error) {
     logRouteError("groups.delete", error);
