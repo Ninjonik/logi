@@ -22,6 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { formatPlatformIds } from "@/lib/platform-ids";
+import { getUserScoreForGuild } from "@/lib/user-scores";
 import type { UserAssignmentInput } from "@/lib/validation/user-assignment";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
@@ -100,7 +101,6 @@ export function UserAssignmentForm({
       status: assignment?.status ?? "active",
       primaryGroupId: assignment?.primaryGroupId ?? "",
       secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
-      score: initialSelectedUser?.score ?? 0,
       platformIds: formatPlatformIds(initialSelectedUser?.platformIds),
       paused: assignment?.paused ?? false,
       pausedNote: assignment?.pausedNote ?? "",
@@ -289,7 +289,6 @@ export function UserAssignmentForm({
                     type="button"
                     onClick={() => {
                       form.setValue("userId", user.discordId, { shouldValidate: true });
-                      form.setValue("score", user.score, { shouldValidate: true });
                       setQuery(user.name);
                       if (!canJoinAsMember && canJoinAsMercenary) {
                         form.setValue("type", "mercenary", { shouldValidate: true });
@@ -307,7 +306,7 @@ export function UserAssignmentForm({
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{user.name}</div>
                       <div className="truncate text-xs text-muted-foreground">
-                        {dictionary.userManagement.mainClan}: {user.guildId ?? dictionary.userManagement.none} • {user.score} {dictionary.navUser.scoreSuffix}
+                        {dictionary.userManagement.mainClan}: {user.guildId ?? dictionary.userManagement.none} • {getUserScoreForGuild(user, server.discordId)} {dictionary.navUser.scoreSuffix}
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -338,7 +337,7 @@ export function UserAssignmentForm({
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{selected.user.name}</div>
                   <div className="truncate text-sm text-muted-foreground">
-                    {selected.user.discordId} • {selected.user.score} {dictionary.navUser.scoreSuffix}
+                    {selected.user.discordId} • {getUserScoreForGuild(selected.user, server.discordId)} {dictionary.navUser.scoreSuffix}
                   </div>
                 </div>
                 <Badge variant={selected.canJoinAsMember ? "default" : "secondary"} className="rounded-full px-2.5">
@@ -443,21 +442,6 @@ export function UserAssignmentForm({
                     )
                   )}
                 />
-              </div>
-              <div className="space-y-2 md:col-span-3">
-                <Label>{dictionary.userManagement.tableScore}</Label>
-                {canEditFields ? (
-                  <Input
-                    type="number"
-                    step="1"
-                    {...form.register("score", { valueAsNumber: true })}
-                    className="rounded-xl"
-                  />
-                ) : (
-                  <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
-                    {form.getValues("score")}
-                  </div>
-                )}
               </div>
               <div className="space-y-2 md:col-span-3">
                 <Label>{dictionary.userManagement.platformId}</Label>

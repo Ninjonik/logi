@@ -1,6 +1,5 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
-import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds";
 import { getGuildDiscordId, getUserByDiscordId, getUserDiscordId } from "./identity";
 
 function normalizeDoc<T extends { _id: unknown }>(doc: T) {
@@ -16,6 +15,8 @@ function normalizeUserDoc<
     discordId?: string;
     id?: string;
     platformIds?: string[];
+    score?: number;
+    scores?: Record<string, number>;
   },
 >(user: T) {
   const legacyUser = user as T & { steamId?: string; platformId?: string };
@@ -30,33 +31,14 @@ function normalizeUserDoc<
         .map((entry) => entry.replace(/\s+/g, "").trim())
         .filter(Boolean),
     )],
+    scores: user.scores ?? {},
   };
 }
 
-function normalizeGuildDoc<
-  T extends {
-    _id: unknown;
-    rosterScoreSettings?: {
-      noResponse: number;
-      declined: number;
-      accepted: number;
-    };
-  },
->(guild: T) {
+function normalizeGuildDoc<T extends { _id: unknown }>(guild: T) {
   return {
     ...normalizeDoc(guild),
     discordId: getGuildDiscordId(guild),
-    rosterScoreSettings: {
-      noResponse: Number.isInteger(guild.rosterScoreSettings?.noResponse)
-        ? guild.rosterScoreSettings?.noResponse ?? DEFAULT_ROSTER_SCORE_SETTINGS.noResponse
-        : DEFAULT_ROSTER_SCORE_SETTINGS.noResponse,
-      declined: Number.isInteger(guild.rosterScoreSettings?.declined)
-        ? guild.rosterScoreSettings?.declined ?? DEFAULT_ROSTER_SCORE_SETTINGS.declined
-        : DEFAULT_ROSTER_SCORE_SETTINGS.declined,
-      accepted: Number.isInteger(guild.rosterScoreSettings?.accepted)
-        ? guild.rosterScoreSettings?.accepted ?? DEFAULT_ROSTER_SCORE_SETTINGS.accepted
-        : DEFAULT_ROSTER_SCORE_SETTINGS.accepted,
-    },
   };
 }
 
@@ -128,6 +110,9 @@ function normalizeEventDoc<
     attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
     participants?: Array<{ userId: string; status: "attending" | "not_attending"; group?: string | null; completed?: "passed" | "failed"; updatedAt: string }>;
     signUps?: Array<{ userId: string; group?: string | null }>;
+    scoreAppliedAt?: string;
+    scoreResolution?: "applied" | "skipped";
+    absenceNotices?: Array<{ userId: string; reason: string; createdAt: string }>;
     updatedAt?: string;
     createdAt?: string;
   },
@@ -154,6 +139,9 @@ function normalizeEventDoc<
     matchStatsId: event.matchStatsId ? String(event.matchStatsId) : undefined,
     matchId: event.matchStatsId ? String(event.matchStatsId) : undefined,
     attendanceReminderLog: event.attendanceReminderLog ?? [],
+    scoreAppliedAt: event.scoreAppliedAt,
+    scoreResolution: event.scoreResolution,
+    absenceNotices: event.absenceNotices ?? [],
     participants,
     signUps: participants.map((participant) => ({
       userId: participant.userId,

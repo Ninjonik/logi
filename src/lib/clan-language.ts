@@ -81,7 +81,14 @@ type ClanDiscordMessages = {
   commands: {
     closeTicketDescription: string;
     closeApplicationDescription: string;
+    noticeDescription: string;
+    noticeEventOptionDescription: string;
     reasonOptionDescription: string;
+    noticeReasonLabel: string;
+    noticeModalTitle: string;
+    noticeNoMatch: string;
+    noticeMultipleMatches: string;
+    noticeSaved: string;
     outcomeOptionDescription: string;
     outcomeDenied: string;
     outcomePending: string;
@@ -265,7 +272,14 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     commands: {
       closeTicketDescription: "Close the current ticket thread.",
       closeApplicationDescription: "Close the current membership application thread.",
+      noticeDescription: "Submit a late notice for an upcoming event.",
+      noticeEventOptionDescription: "Event name or Logi event ID.",
       reasonOptionDescription: "Reason shown to the user in DMs.",
+      noticeReasonLabel: "Why will you be late?",
+      noticeModalTitle: "Late notice",
+      noticeNoMatch: "I couldn't find an eligible event for that query in the final 60 minutes before meeting start.",
+      noticeMultipleMatches: "That matches multiple eligible events. Use a more specific event name or the Logi event ID.",
+      noticeSaved: "Your late notice has been saved.",
       outcomeOptionDescription: "What the applicant should become after closing.",
       outcomeDenied: "Denied",
       outcomePending: "Pending",
@@ -447,7 +461,14 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     commands: {
       closeTicketDescription: "Uzavře aktuální ticket vlákno.",
       closeApplicationDescription: "Uzavře aktuální vlákno členské přihlášky.",
+      noticeDescription: "Odešle notice o pozdním příchodu na nadcházející akci.",
+      noticeEventOptionDescription: "Název akce nebo Logi ID akce.",
       reasonOptionDescription: "Důvod zobrazený uživateli v DM.",
+      noticeReasonLabel: "Proč přijdete pozdě?",
+      noticeModalTitle: "Late notice",
+      noticeNoMatch: "Nepodařilo se najít vhodnou akci v posledních 60 minutách před začátkem srazu.",
+      noticeMultipleMatches: "Dotaz odpovídá více akcím. Použijte přesnější název nebo Logi ID akce.",
+      noticeSaved: "Vaše notice byla uložena.",
       outcomeOptionDescription: "Čím se má žadatel po uzavření stát.",
       outcomeDenied: "Zamítnuto",
       outcomePending: "Čekající",

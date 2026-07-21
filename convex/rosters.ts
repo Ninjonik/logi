@@ -11,6 +11,12 @@ const rosterPlayer = v.object({
   roleIcon: v.optional(v.string()),
 });
 
+const reserveAttendance = v.object({
+  userId: v.string(),
+  ack: v.boolean(),
+  confirmed: v.optional(v.boolean()),
+});
+
 const attendanceStatus = v.union(
   v.literal("pending"),
   v.literal("acknowledged"),
@@ -45,6 +51,7 @@ export const upsert = mutation({
     squadPresetId: v.optional(v.id("squadPresets")),
     squads: v.array(rosterSquad),
     reservePlayerIds: v.array(v.string()),
+    reserveAttendances: v.optional(v.array(reserveAttendance)),
     notAttendingPlayerIds: v.array(v.string()),
     streamerId: v.optional(v.string()),
     published: v.boolean(),
@@ -56,6 +63,7 @@ export const upsert = mutation({
     if (rosterId) {
       await ctx.db.patch(rosterId, {
         ...data,
+        reserveAttendances: data.reserveAttendances ?? [],
         updatedAt: now,
       });
       return rosterId;
@@ -69,6 +77,7 @@ export const upsert = mutation({
     if (existingForEvent) {
       await ctx.db.patch(existingForEvent._id, {
         ...data,
+        reserveAttendances: data.reserveAttendances ?? [],
         updatedAt: now,
       });
       return existingForEvent._id;
@@ -76,6 +85,7 @@ export const upsert = mutation({
 
     return await ctx.db.insert("rosters", {
       ...data,
+      reserveAttendances: data.reserveAttendances ?? [],
       createdAt: now,
       updatedAt: now,
     });
@@ -165,6 +175,25 @@ export const setAttendanceStatus = mutation({
         };
       }),
     }));
+    const reserveAttendances = (roster.reserveAttendances ?? []).map((entry) => {
+      if (entry.userId !== args.userId) {
+        return entry;
+      }
+
+      found = true;
+      return {
+        ...entry,
+        ...nextAttendance,
+      };
+    });
+
+    if (!found && roster.reservePlayerIds.includes(args.userId)) {
+      found = true;
+      reserveAttendances.push({
+        userId: args.userId,
+        ...nextAttendance,
+      });
+    }
 
     if (!found) {
       throw new Error("User is not on the roster.");
@@ -172,6 +201,7 @@ export const setAttendanceStatus = mutation({
 
     await ctx.db.patch(roster._id, {
       squads,
+      reserveAttendances,
       updatedAt: new Date().toISOString(),
     });
 

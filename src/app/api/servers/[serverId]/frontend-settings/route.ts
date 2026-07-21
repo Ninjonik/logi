@@ -19,25 +19,10 @@ export async function POST(request: Request, context: { params: Promise<{ server
       name?: string;
       avatar?: string;
       description?: string;
-      rosterScoreSettings?: {
-        noResponse?: number;
-        declined?: number;
-        accepted?: number;
-      };
     };
 
     if (!body.name?.trim() || !body.avatar?.trim()) {
       return NextResponse.json({ error: "Name and avatar are required." }, { status: 400 });
-    }
-
-    const rosterScoreSettings = {
-      noResponse: body.rosterScoreSettings?.noResponse,
-      declined: body.rosterScoreSettings?.declined,
-      accepted: body.rosterScoreSettings?.accepted,
-    };
-
-    if (!Object.values(rosterScoreSettings).every(Number.isInteger)) {
-      return NextResponse.json({ error: "Roster score settings must be integers." }, { status: 400 });
     }
 
     await saveGuildFrontendSettings({
@@ -45,11 +30,6 @@ export async function POST(request: Request, context: { params: Promise<{ server
       name: body.name,
       avatar: body.avatar,
       description: body.description,
-      rosterScoreSettings: rosterScoreSettings as {
-        noResponse: number;
-        declined: number;
-        accepted: number;
-      },
     });
 
     revalidateCacheEntries([

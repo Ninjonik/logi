@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, GripVertical, UserPlus } from "lucide-react";
+import { Check, Clock3, GripVertical, UserPlus } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
+import { getUserScoreForGuild } from "@/lib/user-scores";
 import type { AppUser, Group, Roster } from "@/types/domain";
 import type { DragState } from "@/components/app/roster-board-types";
 
@@ -49,6 +50,8 @@ export function RosterBoardAttendeeLists({
   handleDropOnReserve,
   handleDropOnNotAttending,
   setDragState,
+  serverDiscordId,
+  noticeReasonByUserId,
 }: {
   board: Roster;
   users: AppUser[];
@@ -73,6 +76,8 @@ export function RosterBoardAttendeeLists({
   handleDropOnReserve: (targetReserveId?: string) => void;
   handleDropOnNotAttending: () => void;
   setDragState: (state: DragState | null) => void;
+  serverDiscordId: string;
+  noticeReasonByUserId: Map<string, string>;
 }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -149,6 +154,8 @@ export function RosterBoardAttendeeLists({
               dragType="reserve"
               onDropUser={(userId) => handleDropOnReserve(userId)}
               setDragState={setDragState}
+              serverDiscordId={serverDiscordId}
+              noticeReasonByUserId={noticeReasonByUserId}
             />
           </ScrollArea>
         </CardContent>
@@ -227,6 +234,8 @@ export function RosterBoardAttendeeLists({
               muted
               onDropUser={() => handleDropOnNotAttending()}
               setDragState={setDragState}
+              serverDiscordId={serverDiscordId}
+              noticeReasonByUserId={noticeReasonByUserId}
             />
           </ScrollArea>
         </CardContent>
@@ -248,6 +257,8 @@ function GroupedUserList({
   muted,
   onDropUser,
   setDragState,
+  serverDiscordId,
+  noticeReasonByUserId,
 }: {
   users: RosterUser[];
   dictionary: Dictionary;
@@ -261,6 +272,8 @@ function GroupedUserList({
   muted?: boolean;
   onDropUser: (userId: string) => void;
   setDragState: (state: DragState | null) => void;
+  serverDiscordId: string;
+  noticeReasonByUserId: Map<string, string>;
 }) {
   const sections: Record<string, RosterUser[]> = {};
   users.forEach((user) => {
@@ -290,6 +303,7 @@ function GroupedUserList({
           )}
           {sections[sectionName].map((user) => {
             const assignment = assignmentsByUserId.get(user.discordId);
+            const noticeReason = noticeReasonByUserId.get(user.discordId);
 
             return (
               <div
@@ -315,8 +329,18 @@ function GroupedUserList({
                     <div className="flex flex-wrap items-center gap-1">
                       <div className="truncate text-xs font-medium leading-none">{user.name}</div>
                       <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
+                      {noticeReason ? (
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <Clock3 className="size-3.5 text-red-500" />
+                          </HoverCardTrigger>
+                          <HoverCardContent className="text-xs">
+                            {noticeReason}
+                          </HoverCardContent>
+                        </HoverCard>
+                      ) : null}
                     </div>
-                    <div className="truncate text-[10px] text-muted-foreground">{formatRosterScoreline(user, dictionary)}</div>
+                    <div className="truncate text-[10px] text-muted-foreground">{formatRosterScoreline(user, dictionary, serverDiscordId)}</div>
                   </div>
                 </div>
               </div>
@@ -333,13 +357,14 @@ function GroupedUserList({
   );
 }
 
-function formatRosterScoreline(user: AppUser, dictionary: Dictionary) {
+function formatRosterScoreline(user: AppUser, dictionary: Dictionary, serverDiscordId: string) {
+  const score = getUserScoreForGuild(user, serverDiscordId);
   const kd = user.performance?.averages.killDeathRatio;
   if (typeof kd !== "number") {
-    return `${user.score} ${dictionary.navUser.scoreSuffix}`;
+    return `${score} ${dictionary.navUser.scoreSuffix}`;
   }
 
-  return `${user.score} ${dictionary.navUser.scoreSuffix} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`;
+  return `${score} ${dictionary.navUser.scoreSuffix} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`;
 }
 
 function GroupBadge({

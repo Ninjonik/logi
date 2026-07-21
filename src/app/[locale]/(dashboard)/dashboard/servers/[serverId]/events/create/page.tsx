@@ -46,6 +46,7 @@ export default async function CreateEventPage({
     attendanceReminderLog: [],
     participants: [],
     signUps: [],
+    absenceNotices: [],
     createdAt: draftSchedule.createdAt,
     updatedAt: draftSchedule.updatedAt,
   };

@@ -86,6 +86,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await handleTicketModalSubmit(interaction);
       } else if (interaction.customId.startsWith("membership-modal:")) {
         await handleMembershipModalSubmit(interaction);
+      } else if (interaction.customId.startsWith("notice-modal:")) {
+        await handleNoticeModalSubmit(interaction);
       }
     },
 
@@ -94,6 +96,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await handleCloseTicketCommand(interaction);
       } else if (interaction.commandName === "close_application") {
         await handleCloseApplicationCommand(interaction);
+      } else if (interaction.commandName === "notice") {
+        await handleNoticeCommand(interaction);
       }
     },
 
@@ -138,6 +142,18 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
               .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.reasonOptionDescription })
               .setMaxLength(500)
               .setRequired(false),
+          )
+          .setDMPermission(false),
+        new SlashCommandBuilder()
+          .setName("notice")
+          .setDescription(messages.commands.noticeDescription)
+          .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.noticeDescription })
+          .addStringOption((option) =>
+            option
+              .setName("event")
+              .setDescription(messages.commands.noticeEventOptionDescription)
+              .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.noticeEventOptionDescription })
+              .setRequired(true),
           )
           .setDMPermission(false),
       ];
@@ -186,6 +202,84 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     await createDiscordTicket(interaction, context.category, []);
+  }
+
+  async function handleNoticeCommand(interaction: ChatInputCommandInteraction) {
+    const fallbackMessages = getClanDiscordMessages("en");
+    if (!interaction.guildId) {
+      await interaction.reply({ content: fallbackMessages.membership.serverOnly, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const query = interaction.options.getString("event", true).trim();
+    const guildConfig = await convex.query(references.getConfigByDiscordGuildId, {
+      guildId: interaction.guildId,
+    }).catch(() => null) as { defaultLanguage?: "en" | "cs" } | null;
+    const messages = getClanDiscordMessages(guildConfig?.defaultLanguage);
+
+    const matches = await convex.query(references.findNoticeTarget, {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      query,
+    }) as Array<{ id: string; name: string }>;
+
+    if (!matches.length) {
+      await interaction.reply({ content: messages.commands.noticeNoMatch, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    if (matches.length > 1) {
+      await interaction.reply({ content: messages.commands.noticeMultipleMatches, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const [event] = matches;
+    const modal = new ModalBuilder()
+      .setCustomId(`notice-modal:${event.id}`)
+      .setTitle(messages.commands.noticeModalTitle.slice(0, 45));
+
+    modal.addComponents(
+      new ActionRowBuilder<TextInputBuilder>().addComponents(
+        new TextInputBuilder()
+          .setCustomId("reason")
+          .setLabel(messages.commands.noticeReasonLabel.slice(0, 45))
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(true)
+          .setMaxLength(500),
+      ),
+    );
+
+    await interaction.showModal(modal);
+  }
+
+  async function handleNoticeModalSubmit(interaction: ModalSubmitInteraction) {
+    if (!interaction.guildId) {
+      await interaction.reply({ content: getClanDiscordMessages("en").membership.serverOnly, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const eventId = interaction.customId.replace("notice-modal:", "");
+    const guildConfig = await convex.query(references.getConfigByDiscordGuildId, {
+      guildId: interaction.guildId,
+    }).catch(() => null) as { defaultLanguage?: "en" | "cs" } | null;
+    const messages = getClanDiscordMessages(guildConfig?.defaultLanguage);
+
+    await convex.mutation(references.upsertNotice, {
+      secret: env.internalSecret,
+      eventId: eventId as never,
+      userId: interaction.user.id,
+      reason: interaction.fields.getTextInputValue("reason"),
+    });
+
+    await revalidateAppData({
+      type: "event-changed",
+      serverId: interaction.guildId,
+      eventId,
+    });
+    options.enqueueEventSync(eventId);
+    options.triggerPollSoon();
+
+    await interaction.reply({ content: messages.commands.noticeSaved, flags: MessageFlags.Ephemeral });
   }
 
   async function handleTicketModalSubmit(interaction: ModalSubmitInteraction) {

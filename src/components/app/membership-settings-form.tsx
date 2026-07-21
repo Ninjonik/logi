@@ -61,6 +61,15 @@ function buildDefaultSettings(dictionary: Dictionary, config?: DiscordConfig | n
     return {
       ...config.membershipSettings,
       panelImageUrl: config.membershipSettings.panelImageUrl ?? "",
+      rosterScoreSettings: {
+        noCategory: config.membershipSettings.rosterScoreSettings?.noCategory ?? 0,
+        declined: config.membershipSettings.rosterScoreSettings?.declined ?? 0,
+        rosterPresent: config.membershipSettings.rosterScoreSettings?.rosterPresent ?? 0,
+        reservePresent: config.membershipSettings.rosterScoreSettings?.reservePresent ?? 0,
+        rosterAbsent: config.membershipSettings.rosterScoreSettings?.rosterAbsent ?? 0,
+        reserveAbsent: config.membershipSettings.rosterScoreSettings?.reserveAbsent ?? 0,
+        excusedAbsence: config.membershipSettings.rosterScoreSettings?.excusedAbsence ?? 0,
+      },
       categories: config.membershipSettings.categories.map((category) => ({
         ...category,
         emoji: category.emoji ?? "",
@@ -85,6 +94,15 @@ function buildDefaultSettings(dictionary: Dictionary, config?: DiscordConfig | n
     panelDescription: dictionary.membershipSettings.defaultPanelDescription,
     panelImageUrl: "",
     autoAssignRecruitOnApply: false,
+    rosterScoreSettings: {
+      noCategory: 0,
+      declined: 0,
+      rosterPresent: 0,
+      reservePresent: 0,
+      rosterAbsent: 0,
+      reserveAbsent: 0,
+      excusedAbsence: 0,
+    },
     categories: [],
   };
 }
@@ -171,6 +189,7 @@ export function MembershipSettingsForm({
       panelDescription: settings.panelDescription,
       panelImageUrl: settings.panelImageUrl || undefined,
       autoAssignRecruitOnApply: settings.autoAssignRecruitOnApply,
+      rosterScoreSettings: settings.rosterScoreSettings,
       categories: settings.categories.map((category) => ({
         ...category,
         emoji: category.emoji?.trim() || undefined,
@@ -246,6 +265,112 @@ export function MembershipSettingsForm({
             {dictionary.membershipSettings.rolesMissingSummary}
           </ConfigNotice>
         ) : null}
+        <div className="space-y-3 rounded-2xl border border-border/60 p-4">
+          <div>
+            <div className="font-medium">{dictionary.serverSettings.rosterScoreTitle}</div>
+            <div className="text-sm text-muted-foreground">{dictionary.membershipSettings.rosterScoreDescription ?? dictionary.serverSettings.rosterScoreDescription}</div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{dictionary.membershipSettings.rosterScoreNoCategory ?? "No category / no reaction"}</Label>
+              <Input
+                value={String(settings.rosterScoreSettings?.noCategory ?? 0)}
+                onChange={(event) => patchSettings({
+                  rosterScoreSettings: {
+                    ...settings.rosterScoreSettings!,
+                    noCategory: Number.parseInt(event.target.value || "0", 10) || 0,
+                  },
+                })}
+                className="rounded-xl"
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{dictionary.serverSettings.rosterScoreDeclined}</Label>
+              <Input
+                value={String(settings.rosterScoreSettings?.declined ?? 0)}
+                onChange={(event) => patchSettings({
+                  rosterScoreSettings: {
+                    ...settings.rosterScoreSettings!,
+                    declined: Number.parseInt(event.target.value || "0", 10) || 0,
+                  },
+                })}
+                className="rounded-xl"
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{dictionary.membershipSettings.rosterScorePresentRoster ?? "Reacted and present in roster"}</Label>
+              <Input
+                value={String(settings.rosterScoreSettings?.rosterPresent ?? 0)}
+                onChange={(event) => patchSettings({
+                  rosterScoreSettings: {
+                    ...settings.rosterScoreSettings!,
+                    rosterPresent: Number.parseInt(event.target.value || "0", 10) || 0,
+                  },
+                })}
+                className="rounded-xl"
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{dictionary.membershipSettings.rosterScorePresentReserve ?? "Reacted and present in reserves"}</Label>
+              <Input
+                value={String(settings.rosterScoreSettings?.reservePresent ?? 0)}
+                onChange={(event) => patchSettings({
+                  rosterScoreSettings: {
+                    ...settings.rosterScoreSettings!,
+                    reservePresent: Number.parseInt(event.target.value || "0", 10) || 0,
+                  },
+                })}
+                className="rounded-xl"
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{dictionary.membershipSettings.rosterScoreAbsentRoster ?? "Reacted and absent from roster"}</Label>
+              <Input
+                value={String(settings.rosterScoreSettings?.rosterAbsent ?? 0)}
+                onChange={(event) => patchSettings({
+                  rosterScoreSettings: {
+                    ...settings.rosterScoreSettings!,
+                    rosterAbsent: Number.parseInt(event.target.value || "0", 10) || 0,
+                  },
+                })}
+                className="rounded-xl"
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{dictionary.membershipSettings.rosterScoreAbsentReserve ?? "Reacted and absent from reserves"}</Label>
+              <Input
+                value={String(settings.rosterScoreSettings?.reserveAbsent ?? 0)}
+                onChange={(event) => patchSettings({
+                  rosterScoreSettings: {
+                    ...settings.rosterScoreSettings!,
+                    reserveAbsent: Number.parseInt(event.target.value || "0", 10) || 0,
+                  },
+                })}
+                className="rounded-xl"
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>{dictionary.membershipSettings.rosterScoreExcusedAbsence ?? "Reacted, absent, but had notice"}</Label>
+              <Input
+                value={String(settings.rosterScoreSettings?.excusedAbsence ?? 0)}
+                onChange={(event) => patchSettings({
+                  rosterScoreSettings: {
+                    ...settings.rosterScoreSettings!,
+                    excusedAbsence: Number.parseInt(event.target.value || "0", 10) || 0,
+                  },
+                })}
+                className="rounded-xl"
+                inputMode="numeric"
+              />
+            </div>
+          </div>
+        </div>
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/60 p-4">
           <div className="space-y-1">
             <h3 className="font-semibold">{dictionary.membershipSettings.enableTitle}</h3>

@@ -4,9 +4,13 @@ import { getGuildByDiscordId, getGuildDiscordId, getUserByDiscordId } from "./id
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 export const DEFAULT_ROSTER_SCORE_SETTINGS = {
-  noResponse: -2,
+  noCategory: 0,
   declined: -1,
-  accepted: 1,
+  rosterPresent: 0,
+  reservePresent: 0,
+  rosterAbsent: 0,
+  reserveAbsent: 0,
+  excusedAbsence: 0,
 } as const;
 
 function assertInternalSecret(secret: string) {
@@ -17,31 +21,33 @@ function assertInternalSecret(secret: string) {
 
 function normalizeRosterScoreSettings(
   settings?: {
-    noResponse: number;
+    noCategory: number;
     declined: number;
-    accepted: number;
+    rosterPresent: number;
+    reservePresent: number;
+    rosterAbsent: number;
+    reserveAbsent: number;
+    excusedAbsence: number;
   },
 ) {
   return {
-    noResponse: Number.isInteger(settings?.noResponse) ? settings?.noResponse ?? DEFAULT_ROSTER_SCORE_SETTINGS.noResponse : DEFAULT_ROSTER_SCORE_SETTINGS.noResponse,
+    noCategory: Number.isInteger(settings?.noCategory) ? settings?.noCategory ?? DEFAULT_ROSTER_SCORE_SETTINGS.noCategory : DEFAULT_ROSTER_SCORE_SETTINGS.noCategory,
     declined: Number.isInteger(settings?.declined) ? settings?.declined ?? DEFAULT_ROSTER_SCORE_SETTINGS.declined : DEFAULT_ROSTER_SCORE_SETTINGS.declined,
-    accepted: Number.isInteger(settings?.accepted) ? settings?.accepted ?? DEFAULT_ROSTER_SCORE_SETTINGS.accepted : DEFAULT_ROSTER_SCORE_SETTINGS.accepted,
+    rosterPresent: Number.isInteger(settings?.rosterPresent) ? settings?.rosterPresent ?? DEFAULT_ROSTER_SCORE_SETTINGS.rosterPresent : DEFAULT_ROSTER_SCORE_SETTINGS.rosterPresent,
+    reservePresent: Number.isInteger(settings?.reservePresent) ? settings?.reservePresent ?? DEFAULT_ROSTER_SCORE_SETTINGS.reservePresent : DEFAULT_ROSTER_SCORE_SETTINGS.reservePresent,
+    rosterAbsent: Number.isInteger(settings?.rosterAbsent) ? settings?.rosterAbsent ?? DEFAULT_ROSTER_SCORE_SETTINGS.rosterAbsent : DEFAULT_ROSTER_SCORE_SETTINGS.rosterAbsent,
+    reserveAbsent: Number.isInteger(settings?.reserveAbsent) ? settings?.reserveAbsent ?? DEFAULT_ROSTER_SCORE_SETTINGS.reserveAbsent : DEFAULT_ROSTER_SCORE_SETTINGS.reserveAbsent,
+    excusedAbsence: Number.isInteger(settings?.excusedAbsence) ? settings?.excusedAbsence ?? DEFAULT_ROSTER_SCORE_SETTINGS.excusedAbsence : DEFAULT_ROSTER_SCORE_SETTINGS.excusedAbsence,
   };
 }
 
 function normalizeGuildDoc<T extends {
   _id: unknown;
-  rosterScoreSettings?: {
-    noResponse: number;
-    declined: number;
-    accepted: number;
-  };
 }>(guild: T) {
   return {
     ...guild,
     id: String(guild._id),
     discordId: getGuildDiscordId(guild),
-    rosterScoreSettings: normalizeRosterScoreSettings(guild.rosterScoreSettings),
   };
 }
 
@@ -130,7 +136,6 @@ export const syncManagedGuilds = mutation({
           name: guild.name,
           avatar: guild.avatar,
           botInside: guild.botInside,
-          rosterScoreSettings: normalizeRosterScoreSettings(existing.rosterScoreSettings),
           adminIds,
           updatedAt: now,
         });
@@ -157,7 +162,6 @@ export const syncManagedGuilds = mutation({
         name: guild.name,
         avatar: guild.avatar,
         description: undefined,
-        rosterScoreSettings: DEFAULT_ROSTER_SCORE_SETTINGS,
         botInside: guild.botInside,
         adminIds: [args.userId],
         memberIds: [],
@@ -230,11 +234,6 @@ export const updateFrontendSettings = mutation({
     name: v.string(),
     avatar: v.string(),
     description: v.optional(v.string()),
-    rosterScoreSettings: v.object({
-      noResponse: v.number(),
-      declined: v.number(),
-      accepted: v.number(),
-    }),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -249,7 +248,6 @@ export const updateFrontendSettings = mutation({
       name: args.name.trim(),
       avatar: args.avatar.trim(),
       description: args.description?.trim() || undefined,
-      rosterScoreSettings: normalizeRosterScoreSettings(args.rosterScoreSettings),
       updatedAt: new Date().toISOString(),
     });
 
@@ -265,22 +263,29 @@ export const backfillRosterScoreSettings = mutation({
     assertInternalSecret(args.secret);
 
     const now = new Date().toISOString();
-    const guilds = await ctx.db.query("guilds").collect();
+    const configs = await ctx.db.query("discordConfigs").collect();
     let patchedCount = 0;
 
-    for (const guild of guilds) {
-      const normalized = normalizeRosterScoreSettings(guild.rosterScoreSettings);
+    for (const config of configs) {
+      const normalized = normalizeRosterScoreSettings(config.membershipSettings?.rosterScoreSettings);
       const alreadyNormalized =
-        guild.rosterScoreSettings?.noResponse === normalized.noResponse &&
-        guild.rosterScoreSettings?.declined === normalized.declined &&
-        guild.rosterScoreSettings?.accepted === normalized.accepted;
+        config.membershipSettings?.rosterScoreSettings?.noCategory === normalized.noCategory &&
+        config.membershipSettings?.rosterScoreSettings?.declined === normalized.declined &&
+        config.membershipSettings?.rosterScoreSettings?.rosterPresent === normalized.rosterPresent &&
+        config.membershipSettings?.rosterScoreSettings?.reservePresent === normalized.reservePresent &&
+        config.membershipSettings?.rosterScoreSettings?.rosterAbsent === normalized.rosterAbsent &&
+        config.membershipSettings?.rosterScoreSettings?.reserveAbsent === normalized.reserveAbsent &&
+        config.membershipSettings?.rosterScoreSettings?.excusedAbsence === normalized.excusedAbsence;
 
       if (alreadyNormalized) {
         continue;
       }
 
-      await ctx.db.patch(guild._id, {
-        rosterScoreSettings: normalized,
+      await ctx.db.patch(config._id, {
+        membershipSettings: config.membershipSettings ? {
+          ...config.membershipSettings,
+          rosterScoreSettings: normalized,
+        } : undefined,
         updatedAt: now,
       });
       patchedCount += 1;

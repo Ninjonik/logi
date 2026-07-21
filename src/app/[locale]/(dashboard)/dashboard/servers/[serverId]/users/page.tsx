@@ -14,6 +14,7 @@ import { getPaginatedRows } from "@/lib/data-table";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getServerUserAssignments, getUsersByIds } from "@/lib/server-user-management";
+import { getUserScoreForGuild } from "@/lib/user-scores";
 
 function getAssignmentStatusLabel(
   assignment: {
@@ -70,7 +71,7 @@ export default async function ServerUsersPage({
         user?.name,
         user?.id,
         user?.platformIds?.join(" "),
-        String(user?.score ?? ""),
+        String(user ? getUserScoreForGuild(user, context.server.discordId) : ""),
         groupNameById.get(assignment.primaryGroupId ?? ""),
         assignment.type,
         getAssignmentStatusLabel(assignment, dictionary),
@@ -156,9 +157,10 @@ export default async function ServerUsersPage({
               }
 
               const kd = user.performance?.averages.killDeathRatio;
+              const score = getUserScoreForGuild(user, context.server.discordId);
               return typeof kd === "number"
-                ? `${user.score} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`
-                : user.score;
+                ? `${score} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`
+                : score;
             },
           },
           {

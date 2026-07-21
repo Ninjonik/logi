@@ -345,6 +345,7 @@ export const importDiscordMembers = mutation({
           mercenaryGuildIds: [],
           isStreamer: false,
           score: 0,
+          scores: {},
           performance: undefined,
           createdAt: now,
           updatedAt: now,

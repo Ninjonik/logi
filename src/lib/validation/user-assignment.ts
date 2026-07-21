@@ -7,7 +7,6 @@ export const userAssignmentSchema = z
     status: z.enum(["pending", "recruit", "active"]),
     primaryGroupId: z.string().trim().optional(),
     secondaryGroupIds: z.array(z.string()),
-    score: z.int(),
     platformIds: z.string().trim().optional(),
     paused: z.boolean(),
     pausedNote: z.string().trim().optional(),

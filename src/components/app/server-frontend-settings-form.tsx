@@ -29,9 +29,6 @@ export function ServerFrontendSettingsForm({
   const [name, setName] = useState(server.name);
   const [avatar, setAvatar] = useState(server.avatar);
   const [description, setDescription] = useState(server.description ?? "");
-  const [noResponseScore, setNoResponseScore] = useState(String(server.rosterScoreSettings.noResponse));
-  const [declinedScore, setDeclinedScore] = useState(String(server.rosterScoreSettings.declined));
-  const [acceptedScore, setAcceptedScore] = useState(String(server.rosterScoreSettings.accepted));
 
   async function handleSave() {
     const response = await fetch(`/api/servers/${server.id}/frontend-settings`, {
@@ -41,11 +38,6 @@ export function ServerFrontendSettingsForm({
         name,
         avatar,
         description,
-        rosterScoreSettings: {
-          noResponse: Number.parseInt(noResponseScore, 10),
-          declined: Number.parseInt(declinedScore, 10),
-          accepted: Number.parseInt(acceptedScore, 10),
-        },
       }),
     });
     const body = await response.json();
@@ -96,26 +88,6 @@ export function ServerFrontendSettingsForm({
               {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
               {copied ? dictionary.serverSettings.copiedLoginUrl : dictionary.serverSettings.copyLoginUrl}
             </Button>
-          </div>
-        </div>
-        <div className="space-y-3 rounded-2xl border border-border/60 p-4">
-          <div>
-            <div className="font-medium">{dictionary.serverSettings.rosterScoreTitle}</div>
-            <div className="text-sm text-muted-foreground">{dictionary.serverSettings.rosterScoreDescription}</div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label>{dictionary.serverSettings.rosterScoreNoResponse}</Label>
-              <Input value={noResponseScore} onChange={(event) => setNoResponseScore(event.target.value)} className="rounded-xl" inputMode="numeric" />
-            </div>
-            <div className="space-y-2">
-              <Label>{dictionary.serverSettings.rosterScoreDeclined}</Label>
-              <Input value={declinedScore} onChange={(event) => setDeclinedScore(event.target.value)} className="rounded-xl" inputMode="numeric" />
-            </div>
-            <div className="space-y-2">
-              <Label>{dictionary.serverSettings.rosterScoreAccepted}</Label>
-              <Input value={acceptedScore} onChange={(event) => setAcceptedScore(event.target.value)} className="rounded-xl" inputMode="numeric" />
-            </div>
           </div>
         </div>
         <Button className="rounded-xl" onClick={handleSave} disabled={isPending}>

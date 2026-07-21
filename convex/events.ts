@@ -44,22 +44,20 @@ type ParticipantRecord = {
   updatedAt: string;
 };
 
+type EventNoticeRecord = {
+  userId: string;
+  reason: string;
+  createdAt: string;
+};
+
+type ReserveAttendanceRecord = {
+  userId: string;
+  ack: boolean;
+  confirmed?: boolean;
+};
+
 function normalizeOptionalArray<T>(value: T[] | undefined) {
   return Array.isArray(value) ? value : [];
-}
-
-function getSignUpScoreCategory(
-  signUp: { group?: string | null } | undefined,
-): "noResponse" | "declined" | "accepted" {
-  if (!signUp || !signUp.group) {
-    return "noResponse";
-  }
-
-  if (signUp.group === SIGNUP_NOT_ATTENDING) {
-    return "declined";
-  }
-
-  return "accepted";
 }
 
 function normalizeParticipants(
@@ -150,6 +148,8 @@ function normalizeEventRecord<T extends {
   participants?: ParticipantRecord[];
   signUps?: Array<{ userId: string; group?: string | null }>;
   scoreAppliedAt?: string;
+  scoreResolution?: "applied" | "skipped";
+  absenceNotices?: EventNoticeRecord[];
   createdAt?: string;
   updatedAt?: string;
 }>(event: T) {
@@ -176,6 +176,8 @@ function normalizeEventRecord<T extends {
     participants,
     signUps: participantsToSignUps(participants),
     scoreAppliedAt: event.scoreAppliedAt,
+    scoreResolution: event.scoreResolution,
+    absenceNotices: normalizeOptionalArray(event.absenceNotices),
     updatedAt: event.updatedAt ?? timestamp,
   };
 }
@@ -228,6 +230,9 @@ async function reconcileRosterAttendance(ctx: MutationCtx, args: {
   if (!roster) return;
 
   const reservePlayerIds = roster.reservePlayerIds.filter((id) => id !== args.userId);
+  const reserveAttendances = normalizeOptionalArray(
+    (roster as typeof roster & { reserveAttendances?: ReserveAttendanceRecord[] }).reserveAttendances,
+  ).filter((entry) => entry.userId !== args.userId);
   const notAttendingPlayerIds = roster.notAttendingPlayerIds.filter((id) => id !== args.userId);
   let isAssignedToSlot = false;
 
@@ -255,6 +260,11 @@ async function reconcileRosterAttendance(ctx: MutationCtx, args: {
   if (args.attending) {
     if (!isAssignedToSlot) {
       reservePlayerIds.push(args.userId);
+      reserveAttendances.push({
+        userId: args.userId,
+        ack: false,
+        confirmed: false,
+      });
     }
   } else {
     notAttendingPlayerIds.push(args.userId);
@@ -263,9 +273,57 @@ async function reconcileRosterAttendance(ctx: MutationCtx, args: {
   await ctx.db.patch(roster._id, {
     squads,
     reservePlayerIds,
+    reserveAttendances,
     notAttendingPlayerIds,
     updatedAt: new Date().toISOString(),
   });
+}
+
+function isEventCancelledBeforeMeeting(event: ReturnType<typeof normalizeEventRecord>) {
+  const concludedAt = event.concludedAt ? new Date(event.concludedAt).getTime() : NaN;
+  const meetingStart = new Date(event.meetingStart).getTime();
+  return Number.isFinite(concludedAt) && Number.isFinite(meetingStart) && concludedAt < meetingStart;
+}
+
+function getReserveAttendance(
+  roster: { reserveAttendances?: ReserveAttendanceRecord[] } | null,
+  userId: string,
+) {
+  return normalizeOptionalArray(roster?.reserveAttendances).find((entry) => entry.userId === userId);
+}
+
+function buildRosterLookup(roster: {
+  squads: Array<{ players: Array<{ id?: string; ack: boolean; confirmed?: boolean }> }>;
+  reservePlayerIds: string[];
+  reserveAttendances?: ReserveAttendanceRecord[];
+} | null) {
+  const rosteredUserIds = new Set<string>();
+  const confirmedRosteredUserIds = new Set<string>();
+  const reserveUserIds = new Set<string>(roster?.reservePlayerIds ?? []);
+  const confirmedReserveUserIds = new Set<string>();
+
+  for (const squad of roster?.squads ?? []) {
+    for (const player of squad.players) {
+      if (!player.id) continue;
+      rosteredUserIds.add(player.id);
+      if (player.confirmed) {
+        confirmedRosteredUserIds.add(player.id);
+      }
+    }
+  }
+
+  for (const attendance of roster?.reserveAttendances ?? []) {
+    if (attendance.confirmed) {
+      confirmedReserveUserIds.add(attendance.userId);
+    }
+  }
+
+  return {
+    rosteredUserIds,
+    confirmedRosteredUserIds,
+    reserveUserIds,
+    confirmedReserveUserIds,
+  };
 }
 
 async function applyScoreToEventSignups(
@@ -278,41 +336,87 @@ async function applyScoreToEventSignups(
   }
 
   const normalizedEvent = normalizeEventRecord(event);
-  if (normalizedEvent.scoreAppliedAt || normalizedEvent.status === "registration") {
+  if (normalizedEvent.scoreResolution || normalizedEvent.status !== "concluded") {
     return false;
   }
 
-  const guild = await getGuildByDiscordId(ctx, normalizedEvent.guildId);
-  if (!guild) {
-    throw new Error("Server not found.");
+  if (isEventCancelledBeforeMeeting(normalizedEvent)) {
+    await ctx.db.patch(eventId, {
+      scoreResolution: "skipped",
+      updatedAt: new Date().toISOString(),
+    });
+    return false;
   }
 
-  const scoreSettings = guild.rosterScoreSettings ?? DEFAULT_ROSTER_SCORE_SETTINGS;
+  const config = await ctx.db
+    .query("discordConfigs")
+    .withIndex("guildId", (q) => q.eq("guildId", normalizedEvent.guildId))
+    .unique();
+  const scoreSettings = config?.membershipSettings?.rosterScoreSettings ?? DEFAULT_ROSTER_SCORE_SETTINGS;
   const assignments = await ctx.db
     .query("userAssignments")
     .withIndex("serverId", (q) => q.eq("serverId", normalizedEvent.guildId))
     .collect();
+  const roster = await ctx.db
+    .query("rosters")
+    .withIndex("eventId", (q) => q.eq("eventId", eventId))
+    .unique();
 
   const activeAssignments = assignments.filter((assignment) => !assignment.paused);
-  const signUpByUserId = new Map(normalizedEvent.signUps.map((signUp) => [signUp.userId, signUp]));
+  const participantByUserId = new Map(normalizedEvent.participants.map((participant) => [participant.userId, participant]));
+  const noticesByUserId = new Map(normalizedEvent.absenceNotices.map((notice) => [notice.userId, notice]));
+  const rosterLookup = buildRosterLookup(roster ? {
+    squads: roster.squads,
+    reservePlayerIds: roster.reservePlayerIds,
+    reserveAttendances: (roster as typeof roster & { reserveAttendances?: ReserveAttendanceRecord[] }).reserveAttendances,
+  } : null);
   const users = await Promise.all(
-      activeAssignments.map((assignment) => getUserByDiscordId(ctx, assignment.userId)),
+    activeAssignments.map((assignment) => getUserByDiscordId(ctx, assignment.userId)),
   );
 
   for (const user of users) {
     if (!user) continue;
-    const signUp = signUpByUserId.get(getUserDiscordId(user));
-    const category = getSignUpScoreCategory(signUp);
-    const delta = scoreSettings[category];
+    const userId = getUserDiscordId(user);
+    const participant = participantByUserId.get(userId);
+    let delta = scoreSettings.noCategory;
+
+    if (participant?.status === "not_attending") {
+      delta = scoreSettings.declined;
+    } else if (participant?.status === "attending") {
+      const hasNotice = noticesByUserId.has(userId);
+      const isRostered = rosterLookup.rosteredUserIds.has(userId);
+      const isReserve = rosterLookup.reserveUserIds.has(userId) || !isRostered;
+      const isConfirmedRoster = rosterLookup.confirmedRosteredUserIds.has(userId);
+      const isConfirmedReserve = rosterLookup.confirmedReserveUserIds.has(userId);
+
+      if (isConfirmedRoster) {
+        delta = scoreSettings.rosterPresent;
+      } else if (isConfirmedReserve) {
+        delta = scoreSettings.reservePresent;
+      } else if (hasNotice) {
+        delta = scoreSettings.excusedAbsence;
+      } else if (isRostered) {
+        delta = scoreSettings.rosterAbsent;
+      } else if (isReserve) {
+        delta = scoreSettings.reserveAbsent;
+      }
+    }
+
+    const scores = {
+      ...(user.scores ?? {}),
+      [normalizedEvent.guildId]: (user.scores?.[normalizedEvent.guildId] ?? user.score ?? 0) + delta,
+    };
 
     await ctx.db.patch(user._id, {
-      score: user.score + delta,
+      score: scores[normalizedEvent.guildId],
+      scores,
       updatedAt: new Date().toISOString(),
     });
   }
 
   await ctx.db.patch(eventId, {
     scoreAppliedAt: new Date().toISOString(),
+    scoreResolution: "applied",
     updatedAt: new Date().toISOString(),
   });
 
@@ -402,6 +506,8 @@ export const upsert = mutation({
         participants: normalizeParticipants(existing?.participants, existing?.signUps),
         signUps: normalizeOptionalArray(existing?.signUps),
         scoreAppliedAt: existing?.scoreAppliedAt,
+        scoreResolution: existing?.scoreResolution,
+        absenceNotices: normalizeOptionalArray(existing?.absenceNotices),
       });
 
       if (derivedStatus !== "registration") {
@@ -419,6 +525,8 @@ export const upsert = mutation({
       participants: [],
       signUps: [],
       scoreAppliedAt: undefined,
+      scoreResolution: undefined,
+      absenceNotices: [],
       eventResult: undefined,
       matchStatsId: undefined,
       createdAt: now,
@@ -436,6 +544,47 @@ export const getById = query({
   handler: async (ctx, args) => {
     const event = await ctx.db.get(args.eventId);
     return event ? { ...normalizeEventRecord(event), id: String(event._id) } : null;
+  },
+});
+
+export const findNoticeTarget = query({
+  args: {
+    guildId: v.string(),
+    userId: v.string(),
+    query: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const events = await ctx.db
+      .query("events")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .collect();
+
+    const normalizedQuery = args.query.trim().toLowerCase();
+    const now = Date.now();
+
+    return events
+      .map((event) => normalizeEventRecord(event))
+      .filter((event) => {
+        const meetingStart = new Date(event.meetingStart).getTime();
+        const noticeWindowStart = meetingStart - 60 * 60 * 1000;
+        const isEligibleTime = Number.isFinite(meetingStart) && now >= noticeWindowStart && now < meetingStart;
+        const participant = event.participants.find((entry) => entry.userId === args.userId);
+        if (!isEligibleTime || event.status === "concluded" || participant?.status !== "attending") {
+          return false;
+        }
+
+        if (!normalizedQuery) {
+          return true;
+        }
+
+        return event.name.toLowerCase().includes(normalizedQuery) || String(event._id).toLowerCase().includes(normalizedQuery);
+      })
+      .map((event) => ({
+        id: String(event._id),
+        name: event.name,
+        meetingStart: event.meetingStart,
+      }))
+      .slice(0, 5);
   },
 });
 
@@ -519,7 +668,7 @@ export const reconcileStatuses = mutation({
         !event.attendanceReminderLog ||
         !event.participants ||
         !event.signUps ||
-        (nextStatus !== "registration" && !event.scoreAppliedAt) ||
+        (nextStatus === "concluded" && !event.scoreResolution) ||
         !event.updatedAt;
 
       if (!shouldPatch) continue;
@@ -534,10 +683,12 @@ export const reconcileStatuses = mutation({
         participants: normalizedEvent.participants,
         signUps: normalizedEvent.signUps,
         scoreAppliedAt: event.scoreAppliedAt,
+        scoreResolution: event.scoreResolution,
+        absenceNotices: normalizedEvent.absenceNotices,
         updatedAt: now,
       });
 
-      if (nextStatus !== "registration") {
+      if (nextStatus === "concluded") {
         await applyScoreToEventSignups(ctx, event._id);
       }
       changedEventIds.push(String(event._id));
@@ -592,6 +743,55 @@ export const appendAttendanceReminderLog = mutation({
 
     await ctx.db.patch(args.eventId, {
       attendanceReminderLog: [...normalizedEvent.attendanceReminderLog, ...args.reminders],
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { ok: true };
+  },
+});
+
+export const upsertNotice = mutation({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+    userId: v.string(),
+    reason: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      throw new Error("Event not found.");
+    }
+
+    const normalizedEvent = normalizeEventRecord(event);
+    const now = Date.now();
+    const meetingStart = new Date(normalizedEvent.meetingStart).getTime();
+    const noticeWindowStart = meetingStart - 60 * 60 * 1000;
+
+    if (!Number.isFinite(meetingStart) || now < noticeWindowStart || now >= meetingStart) {
+      throw new Error("Notice can only be submitted in the final 60 minutes before meeting start.");
+    }
+
+    if (normalizedEvent.status === "concluded") {
+      throw new Error("This event is already concluded.");
+    }
+
+    const participant = normalizedEvent.participants.find((entry) => entry.userId === args.userId);
+    if (!participant || participant.status !== "attending") {
+      throw new Error("Only attending players can submit a notice.");
+    }
+
+    const notices = normalizedEvent.absenceNotices.filter((entry) => entry.userId !== args.userId);
+    notices.push({
+      userId: args.userId,
+      reason: args.reason.trim(),
+      createdAt: new Date().toISOString(),
+    });
+
+    await ctx.db.patch(args.eventId, {
+      absenceNotices: notices,
       updatedAt: new Date().toISOString(),
     });
 

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
+import { getPrimaryDisplayedScore } from "@/lib/user-scores";
 import type { Guild } from "@/types/domain";
 import type { AppUser } from "@/types/domain";
 
@@ -225,7 +226,7 @@ export function AppSidebar({
         <NavUser
           user={{
             name: user.name,
-            email: `${user.score} ${dictionary.navUser.scoreSuffix}`,
+            email: `${getPrimaryDisplayedScore(user)} ${dictionary.navUser.scoreSuffix}`,
             avatar: user.avatar,
           }}
           locale={locale}
