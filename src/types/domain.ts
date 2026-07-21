@@ -16,7 +16,8 @@ export type AppUser = {
   guildId?: string;
   mercenaryGuildIds: string[];
   isStreamer: boolean;
-  score: number;
+  score?: number;
+  scores: Record<string, number>;
   performance?: {
     matchesPlayed: number;
     averages: {
@@ -46,11 +47,6 @@ export type Guild = {
   name: string;
   avatar: string;
   description?: string;
-  rosterScoreSettings: {
-    noResponse: number;
-    declined: number;
-    accepted: number;
-  };
   botInside: boolean;
   canAdmin?: boolean;
   adminIds: string[];
@@ -114,6 +110,15 @@ export type MembershipSettings = {
   panelDescription: string;
   panelImageUrl?: string;
   autoAssignRecruitOnApply: boolean;
+  rosterScoreSettings?: {
+    noCategory: number;
+    declined: number;
+    rosterPresent: number;
+    reservePresent: number;
+    rosterAbsent: number;
+    reserveAbsent: number;
+    excusedAbsence: number;
+  };
   categories: MembershipCategory[];
 };
 
@@ -227,6 +232,12 @@ export type EventRecord = {
     group?: string | null;
   }[];
   scoreAppliedAt?: Timestamp;
+  scoreResolution?: "applied" | "skipped";
+  absenceNotices: {
+    userId: string;
+    reason: string;
+    createdAt: Timestamp;
+  }[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
@@ -428,6 +439,11 @@ export type Roster = {
   squadPresetId?: string;
   squads: RosterSquad[];
   reservePlayerIds: string[];
+  reserveAttendances?: {
+    userId: string;
+    ack: boolean;
+    confirmed?: boolean;
+  }[];
   notAttendingPlayerIds: string[];
   streamerId?: string;
   published: boolean;

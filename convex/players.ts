@@ -32,7 +32,8 @@ function toPlayer(user: {
   guildId?: string;
   mercenaryGuildIds: string[];
   isStreamer: boolean;
-  score: number;
+  score?: number;
+  scores?: Record<string, number>;
   performance?: {
     matchesPlayed: number;
     averages: {
@@ -54,6 +55,7 @@ function toPlayer(user: {
     discordId: getUserDiscordId(user),
     platformIds: normalizePlatformIds(user.platformIds ?? legacyUser.platformId ?? legacyUser.steamId),
     avatar: user.avatar || "https://cdn.discordapp.com/embed/avatars/0.png",
+    scores: user.scores ?? {},
   };
 }
 
@@ -101,6 +103,7 @@ export const syncDiscordProfile = mutation({
       mercenaryGuildIds: [],
       isStreamer: false,
       score: 0,
+      scores: {},
       performance: undefined,
       createdAt: now,
       updatedAt: now,
@@ -221,6 +224,7 @@ export const updateScore = mutation({
   args: {
     secret: v.string(),
     userId: v.string(),
+    guildId: v.string(),
     score: v.number(),
   },
   handler: async (ctx, args) => {
@@ -235,8 +239,14 @@ export const updateScore = mutation({
       throw new Error("Player not found.");
     }
 
+    const scores = {
+      ...(user.scores ?? {}),
+      [args.guildId]: args.score,
+    };
+
     await ctx.db.patch(user._id, {
       score: args.score,
+      scores,
       updatedAt: new Date().toISOString(),
     });
   },

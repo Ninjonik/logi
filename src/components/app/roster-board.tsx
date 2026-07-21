@@ -39,6 +39,7 @@ import type { ServerUserAssignment } from "@/lib/server-user-management";
 import type { AppUser, EventRecord, Group, Roster } from "@/types/domain";
 import { formatDateTime } from "@/lib/format";
 import { formatHllPresetLabel } from "@/lib/hll-map-presets";
+import { getUserScoreForGuild } from "@/lib/user-scores";
 
 function getCustomPlayerName(player: Roster["squads"][number]["players"][number]) {
   return player.customName?.trim() || undefined;
@@ -55,8 +56,8 @@ function clearRosterPlayerAssignment(player: Roster["squads"][number]["players"]
   player.confirmed = false;
 }
 
-function compareUsersByScoreThenName(a: AppUser, b: AppUser) {
-  return (b.score - a.score) || a.name.localeCompare(b.name);
+function compareUsersByScoreThenName(a: AppUser, b: AppUser, serverDiscordId: string) {
+  return (getUserScoreForGuild(b, serverDiscordId) - getUserScoreForGuild(a, serverDiscordId)) || a.name.localeCompare(b.name);
 }
 
 export function RosterBoard({
@@ -119,7 +120,14 @@ export function RosterBoard({
   const usersById = useMemo(() => new Map(users.map((user) => [user.discordId, user])), [users]);
   const assignmentsByUserId = useMemo(() => new Map(userAssignments.map((assignment) => [assignment.userId, assignment])), [userAssignments]);
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
-  const allUsersSorted = useMemo(() => users.slice().sort(compareUsersByScoreThenName), [users]);
+  const noticeReasonByUserId = useMemo(
+    () => new Map((event?.absenceNotices ?? []).map((notice) => [notice.userId, notice.reason])),
+    [event?.absenceNotices],
+  );
+  const allUsersSorted = useMemo(
+    () => users.slice().sort((a, b) => compareUsersByScoreThenName(a, b, event?.guildId ?? serverId)),
+    [event?.guildId, serverId, users],
+  );
   const normalizedReserveSearch = deferredReserveSearch.trim().toLowerCase();
   const normalizedNotAttendingSearch = deferredNotAttendingSearch.trim().toLowerCase();
   const sortedSquads = useMemo(
@@ -226,7 +234,7 @@ export function RosterBoard({
       .filter((user) => user.name.toLowerCase().includes(normalizedReserveSearch));
 
     return filtered
-      .sort(compareUsersByScoreThenName)
+      .sort((a, b) => compareUsersByScoreThenName(a, b, event?.guildId ?? serverId))
       .map((user) => ({
         ...user,
         _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.discordId), groupsById, dictionary),
@@ -240,7 +248,7 @@ export function RosterBoard({
       .map((id) => usersById.get(id))
       .filter((user): user is AppUser => Boolean(user))
       .filter((user) => user.name.toLowerCase().includes(normalizedNotAttendingSearch))
-      .sort(compareUsersByScoreThenName);
+      .sort((a, b) => compareUsersByScoreThenName(a, b, event?.guildId ?? serverId));
   }, [assignedPlayerIds, board, normalizedNotAttendingSearch, usersById]);
 
   const groupedNotAttendingUsers = useMemo(
@@ -932,6 +940,8 @@ export function RosterBoard({
               handleDropOnReserve={handleDropOnReserve}
               handleDropOnNotAttending={handleDropOnNotAttending}
               setDragState={setDragState}
+              serverDiscordId={event.guildId}
+              noticeReasonByUserId={noticeReasonByUserId}
             />
             <div className="space-y-2.5">
               {isLayoutMode ? (
@@ -988,6 +998,8 @@ export function RosterBoard({
                         groupsById={groupsById}
                         canAdmin={canAdmin}
                         setDragState={setDragState}
+                        serverDiscordId={event.guildId}
+                        noticeReasonByUserId={noticeReasonByUserId}
                       />
                     ))}
                     {groupEntry.subgroups.length > 0 && (
@@ -1021,6 +1033,8 @@ export function RosterBoard({
                                   groupsById={groupsById}
                                   canAdmin={canAdmin}
                                   setDragState={setDragState}
+                                  serverDiscordId={event.guildId}
+                                  noticeReasonByUserId={noticeReasonByUserId}
                                 />
                               ))
                         ))

@@ -11,7 +11,8 @@ const users = defineTable({
   guildId: v.optional(v.string()),
   mercenaryGuildIds: v.array(v.string()),
   isStreamer: v.boolean(),
-  score: v.number(),
+  score: v.optional(v.number()),
+  scores: v.optional(v.record(v.string(), v.number())),
   performance: v.optional(v.object({
     matchesPlayed: v.number(),
     averages: v.object({
@@ -81,9 +82,13 @@ const eventParticipant = v.object({
 });
 
 const rosterScoreSettings = v.object({
-  noResponse: v.number(),
+  noCategory: v.number(),
   declined: v.number(),
-  accepted: v.number(),
+  rosterPresent: v.number(),
+  reservePresent: v.number(),
+  rosterAbsent: v.number(),
+  reserveAbsent: v.number(),
+  excusedAbsence: v.number(),
 });
 
 const attendanceReminder = v.object({
@@ -139,6 +144,7 @@ const membershipSettings = v.object({
   panelDescription: v.string(),
   panelImageUrl: v.optional(v.string()),
   autoAssignRecruitOnApply: v.boolean(),
+  rosterScoreSettings: v.optional(rosterScoreSettings),
   categories: v.array(membershipCategory),
 });
 
@@ -264,6 +270,18 @@ const rosterPlayer = v.object({
   roleIcon: v.optional(v.string()),
 });
 
+const reserveAttendance = v.object({
+  userId: v.string(),
+  ack: v.boolean(),
+  confirmed: v.optional(v.boolean()),
+});
+
+const eventNotice = v.object({
+  userId: v.string(),
+  reason: v.string(),
+  createdAt: v.string(),
+});
+
 const rosterSquad = v.object({
   name: v.string(),
   group: v.string(),
@@ -299,7 +317,6 @@ export default defineSchema({
     name: v.string(),
     avatar: v.string(),
     description: v.optional(v.string()),
-    rosterScoreSettings: v.optional(rosterScoreSettings),
     botInside: v.boolean(),
     adminIds: v.array(v.string()),
     memberIds: v.array(v.string()),
@@ -380,6 +397,8 @@ export default defineSchema({
     participants: v.optional(v.array(eventParticipant)),
     signUps: v.optional(v.array(signUp)),
     scoreAppliedAt: v.optional(v.string()),
+    scoreResolution: v.optional(v.union(v.literal("applied"), v.literal("skipped"))),
+    absenceNotices: v.optional(v.array(eventNotice)),
     createdAt: v.string(),
     updatedAt: v.optional(v.string()),
   }).index("guildId", ["guildId"]),
@@ -406,6 +425,7 @@ export default defineSchema({
     squadPresetId: v.optional(v.id("squadPresets")),
     squads: v.array(rosterSquad),
     reservePlayerIds: v.array(v.string()),
+    reserveAttendances: v.optional(v.array(reserveAttendance)),
     notAttendingPlayerIds: v.array(v.string()),
     streamerId: v.optional(v.string()),
     published: v.boolean(),

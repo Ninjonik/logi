@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { getUserScoreForGuild } from "@/lib/user-scores";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
 import type { AppUser, EventRecord, Group, Roster, SquadPreset } from "@/types/domain";
 import { formatDateTime } from "@/lib/format";
@@ -65,11 +66,11 @@ export function RosterCreator({
     );
     const reservePlayerIds = users
       .filter((user) => attendingUserIds.has(user.discordId))
-      .sort((a, b) => (b.score - a.score) || a.name.localeCompare(b.name))
+      .sort((a, b) => (getUserScoreForGuild(b, serverId) - getUserScoreForGuild(a, serverId)) || a.name.localeCompare(b.name))
       .map((user) => user.discordId);
     const notAttendingPlayerIds = users
       .filter((user) => !attendingUserIds.has(user.discordId))
-      .sort((a, b) => (b.score - a.score) || a.name.localeCompare(b.name))
+      .sort((a, b) => (getUserScoreForGuild(b, serverId) - getUserScoreForGuild(a, serverId)) || a.name.localeCompare(b.name))
       .map((user) => user.discordId);
 
     return {
@@ -94,6 +95,11 @@ export function RosterCreator({
         ),
       })),
       reservePlayerIds,
+      reserveAttendances: reservePlayerIds.map((userId) => ({
+        userId,
+        ack: false,
+        confirmed: false,
+      })),
       notAttendingPlayerIds,
       published: false,
       createdAt: new Date().toISOString(),

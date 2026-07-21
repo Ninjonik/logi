@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronsUpDown,
   Circle,
+  Clock3,
   GripVertical,
   Plus,
   Trash2,
@@ -30,6 +31,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getUserScoreForGuild } from "@/lib/user-scores";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
@@ -59,17 +61,18 @@ function getAttendanceIcon(status: AttendanceStatus) {
   return <XCircle className="size-4 text-muted-foreground" />;
 }
 
-function compareUsersByScoreThenName(a: AppUser, b: AppUser) {
-  return (b.score - a.score) || a.name.localeCompare(b.name);
+function compareUsersByScoreThenName(a: AppUser, b: AppUser, serverDiscordId: string) {
+  return (getUserScoreForGuild(b, serverDiscordId) - getUserScoreForGuild(a, serverDiscordId)) || a.name.localeCompare(b.name);
 }
 
-function formatRosterScoreline(user: AppUser, dictionary: Dictionary) {
+function formatRosterScoreline(user: AppUser, dictionary: Dictionary, serverDiscordId: string) {
+  const score = getUserScoreForGuild(user, serverDiscordId);
   const kd = user.performance?.averages.killDeathRatio;
   if (typeof kd !== "number") {
-    return `${user.score} ${dictionary.navUser.scoreSuffix}`;
+    return `${score} ${dictionary.navUser.scoreSuffix}`;
   }
 
-  return `${user.score} ${dictionary.navUser.scoreSuffix} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`;
+  return `${score} ${dictionary.navUser.scoreSuffix} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`;
 }
 
 function getPrimaryGroupLabel(
@@ -155,6 +158,8 @@ export function SquadCard({
   groupsById,
   canAdmin,
   setDragState,
+  serverDiscordId,
+  noticeReasonByUserId,
 }: {
   squad: Roster["squads"][0];
   board: Roster;
@@ -182,6 +187,8 @@ export function SquadCard({
   groupsById: Map<string, Group>;
   canAdmin: boolean;
   setDragState: (state: DragState | null) => void;
+  serverDiscordId: string;
+  noticeReasonByUserId: Map<string, string>;
 }) {
   const [slotPickerOpen, setSlotPickerOpen] = useState<number | null>(null);
   const [slotSearches, setSlotSearches] = useState<Record<number, string>>({});
@@ -238,6 +245,7 @@ export function SquadCard({
           const placeholderName = getCustomPlayerName(player);
           const assignment = slotUser ? assignmentsByUserId.get(slotUser.discordId) : undefined;
           const attendanceStatus = getAttendanceStatus(player);
+          const noticeReason = slotUser ? noticeReasonByUserId.get(slotUser.discordId) : undefined;
 
           return (
             <div
@@ -294,10 +302,20 @@ export function SquadCard({
                           <div className="truncate text-xs font-medium leading-none">
                             {slotUser ? slotUser.name : placeholderName}{" "}
                             <span className="text-[10px] text-muted-foreground">
-                              ({slotUser ? formatRosterScoreline(slotUser, dictionary) : `0 ${dictionary.navUser.scoreSuffix}`})
+                              ({slotUser ? formatRosterScoreline(slotUser, dictionary, serverDiscordId) : `0 ${dictionary.navUser.scoreSuffix}`})
                             </span>
                           </div>
                           {slotUser ? <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} /> : null}
+                          {noticeReason ? (
+                            <HoverCard>
+                              <HoverCardTrigger asChild>
+                                <Clock3 className="size-3.5 text-red-500" />
+                              </HoverCardTrigger>
+                              <HoverCardContent className="text-xs">
+                                {noticeReason}
+                              </HoverCardContent>
+                            </HoverCard>
+                          ) : null}
                         </div>
                       </div>
                       {player.note && !isAssignmentMode ? (
@@ -520,7 +538,7 @@ export function SquadCard({
                                       return aAssignedElsewhere ? 1 : -1;
                                     }
 
-                                    return compareUsersByScoreThenName(a, b);
+                                    return compareUsersByScoreThenName(a, b, serverDiscordId);
                                   })
                                   .slice(0, 5)
                                   .map((user) => {
@@ -553,7 +571,7 @@ export function SquadCard({
                                         <div className="min-w-0 flex-1">
                                           <div className="truncate">{user.name}</div>
                                           <div className="truncate text-xs text-muted-foreground">
-                                            {getPrimaryGroupLabel(assignment, groupsById, dictionary)} • {formatRosterScoreline(user, dictionary)}
+                                            {getPrimaryGroupLabel(assignment, groupsById, dictionary)} • {formatRosterScoreline(user, dictionary, serverDiscordId)}
                                           </div>
                                           <div className="truncate text-xs text-muted-foreground/80">
                                             {getSecondaryGroupLabel(assignment, groupsById, dictionary)}

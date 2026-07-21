@@ -78,6 +78,15 @@ const membershipSettingsValidator = v.object({
   panelDescription: v.string(),
   panelImageUrl: v.optional(v.string()),
   autoAssignRecruitOnApply: v.boolean(),
+  rosterScoreSettings: v.optional(v.object({
+    noCategory: v.number(),
+    declined: v.number(),
+    rosterPresent: v.number(),
+    reservePresent: v.number(),
+    rosterAbsent: v.number(),
+    reserveAbsent: v.number(),
+    excusedAbsence: v.number(),
+  })),
   categories: v.array(membershipCategoryValidator),
 });
 
@@ -186,6 +195,20 @@ export const getConfigByGuild = query({
     const config = await ctx.db
       .query("discordConfigs")
       .withIndex("guildId", (q) => q.eq("guildId", getGuildDiscordId(guild)))
+      .unique();
+
+    return config ? normalizeConfigDoc(config) : null;
+  },
+});
+
+export const getConfigByDiscordGuildId = query({
+  args: {
+    guildId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
       .unique();
 
     return config ? normalizeConfigDoc(config) : null;
@@ -825,6 +848,7 @@ export const consumePlatformIdLinkToken = mutation({
         mercenaryGuildIds: [],
         isStreamer: false,
         score: 0,
+        scores: {},
         performance: undefined,
         createdAt: now,
         updatedAt: now,
@@ -1343,6 +1367,7 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
     );
 
     let rosteredCount = 0;
+    let reserveCount = 0;
     let updatedCount = 0;
     const updatedUserIds = new Set<string>();
 
@@ -1368,10 +1393,45 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
         };
       }),
     }));
+    const reserveAttendances = (roster.reserveAttendances ?? []).map((entry) => {
+      if (!memberIdsInMeetingChannel.has(entry.userId)) {
+        return entry;
+      }
+
+      reserveCount += 1;
+
+      if (entry.ack && entry.confirmed) {
+        return entry;
+      }
+
+      updatedCount += 1;
+      updatedUserIds.add(entry.userId);
+      return {
+        ...entry,
+        ack: true,
+        confirmed: true,
+      };
+    });
+
+    for (const userId of roster.reservePlayerIds) {
+      if (!memberIdsInMeetingChannel.has(userId) || reserveAttendances.some((entry) => entry.userId === userId)) {
+        continue;
+      }
+
+      reserveCount += 1;
+      updatedCount += 1;
+      updatedUserIds.add(userId);
+      reserveAttendances.push({
+        userId,
+        ack: true,
+        confirmed: true,
+      });
+    }
 
     if (updatedCount > 0) {
       await ctx.db.patch(roster._id, {
         squads,
+        reserveAttendances,
         updatedAt: new Date().toISOString(),
       });
     }
@@ -1379,6 +1439,7 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
     return {
       matchedVoiceCount: memberIdsInMeetingChannel.size,
       rosteredCount,
+      reserveCount,
       updatedCount,
       updatedUserIds: Array.from(updatedUserIds),
     };

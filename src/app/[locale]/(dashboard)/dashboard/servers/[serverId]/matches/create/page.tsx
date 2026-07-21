@@ -46,6 +46,7 @@ export default async function CreateMatchPage({
     attendanceReminderLog: [],
     participants: [],
     signUps: [],
+    absenceNotices: [],
     createdAt: draftSchedule.createdAt,
     updatedAt: draftSchedule.updatedAt,
   };

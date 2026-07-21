@@ -41,6 +41,7 @@ export default async function CreateTrainingPage({
     attendanceReminderLog: [],
     participants: [],
     signUps: [],
+    absenceNotices: [],
     createdAt: draftSchedule.createdAt,
     updatedAt: draftSchedule.updatedAt,
   };
