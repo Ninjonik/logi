@@ -1,7 +1,14 @@
 import { ConvexReactClient } from "convex/react";
 import { makeFunctionReference } from "convex/server";
+import WebSocket from "ws";
 
 import { env } from "./environment";
+
+// Node 20 on the production host does not expose a global WebSocket.
+// Convex's reactive client expects one for query watchers used by the bot.
+if (typeof globalThis.WebSocket === "undefined") {
+  globalThis.WebSocket = WebSocket as typeof globalThis.WebSocket;
+}
 
 export const convex = new ConvexReactClient(env.convexUrl);
 

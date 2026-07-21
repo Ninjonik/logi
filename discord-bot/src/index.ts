@@ -1,4 +1,5 @@
 import { Events } from "discord.js";
+import { createRequire } from "node:module";
 import { Worker } from "node:worker_threads";
 
 import { client } from "./discord-client";
@@ -8,6 +9,21 @@ import { logError, logInfo, logWarn } from "./log";
 import { DiscordSyncService } from "./runtime/sync-service";
 
 const syncService = new DiscordSyncService(client);
+const require = createRequire(import.meta.url);
+
+function getWorkerExecArgv() {
+  const hasTsxLoader = process.execArgv.some((value) => value.includes("tsx/dist/loader.mjs"));
+  if (hasTsxLoader) {
+    return process.execArgv;
+  }
+
+  return [
+    "--require",
+    require.resolve("tsx/preflight"),
+    "--import",
+    import.meta.resolve("tsx"),
+  ];
+}
 
 function triggerPollSoon() {
   logInfo("bot", "Requested near-term sync flush");
@@ -21,7 +37,7 @@ const interactionHandler = createInteractionHandler({
 
 function startFallbackWorker() {
   const fallbackWorker = new Worker(new URL("./runtime/fallback-worker.ts", import.meta.url), {
-    execArgv: process.execArgv,
+    execArgv: getWorkerExecArgv(),
   });
 
   fallbackWorker.on("message", (message: { type: string; eventIds?: string[]; error?: string }) => {
