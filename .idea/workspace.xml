@@ -7,40 +7,11 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="build bug fix">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="refactored the score system to be guild-independent">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/discord.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/events.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/guilds.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/guilds.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/players.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/players.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/rosters.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/rosters.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/serverData.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/serverData.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/userAssignments.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/userAssignments.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/discord-bot/src/convex.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/convex.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/interactions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/interactions.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/create/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/matches/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/matches/create/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/trainings/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/trainings/create/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/assignments/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/servers/[serverId]/frontend-settings/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/servers/[serverId]/frontend-settings/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/app-sidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/membership-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/membership-settings-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board-attendee-lists.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board-attendee-lists.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board-squad-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board-squad-card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/roster-creator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-creator.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/server-frontend-settings-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/server-frontend-settings-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/user-assignment-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/clan-language.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/clan-language.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-guild-settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-guild-settings.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-user-management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-user-management.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/validation/user-assignment.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/log.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/log.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,7 +25,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="371" />
+    <option name="cachedIndexableFilesCount" value="372" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -100,12 +71,12 @@
       </RecentBranches>
     </option>
   </component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Ninjonik/logi.git",
-    "accountId": "3787a58d-9ff7-4c97-8b11-eac11e8fe0a1"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Ninjonik/logi.git&quot;,
+    &quot;accountId&quot;: &quot;3787a58d-9ff7-4c97-8b11-eac11e8fe0a1&quot;
   }
-}]]></component>
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -133,36 +104,36 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "copilot.chat.legacySessionMetadata.migrated": "true",
-    "git-widget-placeholder": "dev",
-    "javascript.preferred.runtime.type.id": "node",
-    "js.debugger.nextJs.config.created.client": "true",
-    "js.debugger.nextJs.config.created.server": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/Users/admin/WebstormProjects/logi/public",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "pnpm",
-    "npm.Next.js: server-side.executor": "Run",
-    "settings.editor.selected.configurable": "junie.mcp",
-    "to.speed.mode.migration.done": "true",
-    "ts.external.directory.path": "/Users/peterzatko/WebstormProjects/logi/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;copilot.chat.legacySessionMetadata.migrated&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
+    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
+    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
+    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/admin/WebstormProjects/logi/public&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;pnpm&quot;,
+    &quot;npm.Next.js: server-side.executor&quot;: &quot;Run&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;junie.mcp&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/peterzatko/WebstormProjects/logi/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="ReactDesignerToolWindowState">
     <option name="myId2Visible">
       <map>
@@ -236,7 +207,8 @@
       <workItem from="1784450219841" duration="5375000" />
       <workItem from="1784473647742" duration="552000" />
       <workItem from="1784560940538" duration="9018000" />
-      <workItem from="1784637057142" duration="1016000" />
+      <workItem from="1784637057142" duration="2591000" />
+      <workItem from="1784641104830" duration="1331000" />
     </task>
     <task id="LOCAL-00001" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -622,7 +594,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784615117637</updated>
     </task>
-    <option name="localTasksCounter" value="49" />
+    <task id="LOCAL-00049" summary="refactored the score system to be guild-independent">
+      <option name="closed" value="true" />
+      <created>1784639067352</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1784639067353</updated>
+    </task>
+    <option name="localTasksCounter" value="50" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -642,7 +622,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="reverted: added concurrently for discord bot to be running as well; fixed: better discord image view; added language support for discord bot and roster images" />
     <MESSAGE value="better roster image design" />
     <MESSAGE value="added basic match details upload + player stats, added automatic roster confirmed status check, completed the score functionality on its basic level" />
     <MESSAGE value="better stats handling" />
@@ -667,6 +646,7 @@
     <MESSAGE value="split discord bot into more parts, fixed broken czech texts, added a special sign in page for clans only" />
     <MESSAGE value="better roster view, split it into multiple parts" />
     <MESSAGE value="build bug fix" />
-    <option name="LAST_COMMIT_MESSAGE" value="build bug fix" />
+    <MESSAGE value="refactored the score system to be guild-independent" />
+    <option name="LAST_COMMIT_MESSAGE" value="refactored the score system to be guild-independent" />
   </component>
 </project>
