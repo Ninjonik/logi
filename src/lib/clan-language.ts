@@ -315,7 +315,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     },
     membership: {
       serverOnly: "Applications can only be opened inside a server.",
-      unavailable: "Membership applications are not available right now.",
+      unavailable: "Membership applications are, at the moment, disabled.",
       alreadyInClan: "You are already added to this clan. Ask staff if your membership status needs to be changed.",
       openApplicationExists: "You already have an open clan application. Wait for staff to close it before opening another.",
       dmSent: "I sent you a DM with a direct link to submit your platform ID. Submit it there, then click this button again.",
@@ -478,7 +478,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     },
     ticket: {
       serverOnly: "Tickety lze otevřít pouze uvnitř serveru.",
-      unavailable: "Nastavení ticketů teď není dostupné.",
+      unavailable: "Nastavení ticketů aktuálně není povolené.",
       modalTitle: "Detaily ticketu",
       setupIncomplete: "Nastavení ticketů není kompletní.",
       parentChannelNotText: "Nadřazený ticket kanál není textový kanál.",

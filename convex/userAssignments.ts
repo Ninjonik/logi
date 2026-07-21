@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 import { getGuildByDiscordId, getGuildById, getGuildDiscordId, getUserByDiscordId } from "./identity";
+import { syncRosterMembershipForEvent } from "./rosterSync";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -93,6 +94,22 @@ async function rebuildMembershipState(
   }
 }
 
+async function syncOpenRostersForServer(ctx: MutationCtx, serverDiscordId: string) {
+  const events = await ctx.db
+    .query("events")
+    .withIndex("guildId", (q) => q.eq("guildId", serverDiscordId))
+    .collect();
+
+  for (const event of events) {
+    const registrationEndAt = new Date(event.registrationEnd).getTime();
+    if ((event.kind ?? "match") !== "match" || (Number.isFinite(registrationEndAt) && Date.now() >= registrationEndAt)) {
+      continue;
+    }
+
+    await syncRosterMembershipForEvent(ctx, event._id);
+  }
+}
+
 async function saveAssignmentWithServerDiscordId(
   ctx: MutationCtx,
   args: {
@@ -162,6 +179,7 @@ async function saveAssignmentWithServerDiscordId(
   }
 
   await rebuildMembershipState(ctx, args.serverDiscordId, [args.userId]);
+  await syncOpenRostersForServer(ctx, args.serverDiscordId);
   return String(assignmentId);
 }
 
@@ -282,6 +300,7 @@ export const remove = mutation({
 
     await ctx.db.delete(args.assignmentId);
     await rebuildMembershipState(ctx, assignment.serverId, [assignment.userId]);
+    await syncOpenRostersForServer(ctx, assignment.serverId);
   },
 });
 
@@ -398,6 +417,7 @@ export const importDiscordMembers = mutation({
 
     const touchedUserIds = [...new Set(args.members.map((member) => member.userId))];
     await rebuildMembershipState(ctx, serverDiscordId, touchedUserIds);
+    await syncOpenRostersForServer(ctx, serverDiscordId);
 
     return {
       importedCount: args.members.length,

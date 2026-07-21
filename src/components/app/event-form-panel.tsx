@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -14,8 +14,10 @@ import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +27,7 @@ import {
   getHllMapOptions,
   getHllModeOptions,
   getHllTimeOptions,
+  formatHllPresetLabel,
   inferHllSelection,
   isKnownHllPresetCode,
   resolveHllPresetCode,
@@ -37,6 +40,11 @@ import type { DiscordConfig, EventRecord, TopicPreset } from "@/types/domain";
 type DiscordMetadata = {
   roles: DiscordSelectOption[];
   channels: Array<DiscordSelectOption & { type: number; parentId?: string }>;
+};
+
+type TopicPresetOption = {
+  preset: TopicPreset;
+  match: ReturnType<typeof getPresetMatch>;
 };
 
 function FieldLabel({
@@ -58,6 +66,15 @@ function normalizeMatchValue(value?: string) {
   return value?.trim().toLowerCase() ?? "";
 }
 
+type TopicPresetMatchContext = {
+  mapCode?: string;
+  mapId?: string;
+  time?: string;
+  mode?: string;
+  side?: string;
+  cap?: string;
+};
+
 function getOutcomeLabel(outcome: "victory" | "defeat" | "draw", dictionary: Dictionary) {
   switch (outcome) {
     case "victory":
@@ -71,25 +88,51 @@ function getOutcomeLabel(outcome: "victory" | "defeat" | "draw", dictionary: Dic
   }
 }
 
-function getPresetMatch(preset: TopicPreset, eventValues: Pick<EventInput, "map" | "side" | "cap">) {
-  const fields = [
-    { key: "map", label: "Map", eventValue: eventValues.map, presetValue: preset.map },
-    { key: "side", label: "Side", eventValue: eventValues.side, presetValue: preset.side },
-    { key: "cap", label: "Point", eventValue: eventValues.cap, presetValue: preset.cap },
-  ];
+function getPresetMatch(preset: TopicPreset, context: TopicPresetMatchContext) {
+  const presetSelection = inferHllSelection(preset.map);
+  const hasComparableMapCode = Boolean(context.mapCode && preset.map);
+  const hasComparableMapId = Boolean(context.mapId && presetSelection?.mapId);
+  const hasComparableTime = Boolean(context.time && presetSelection?.time);
+  const hasComparableMode = Boolean(context.mode && presetSelection?.mode);
+  const hasComparableSide = Boolean(context.side && preset.side);
+  const hasComparableCap = Boolean(context.cap && preset.cap);
 
-  const matchedFields = fields
-    .filter((field) => {
-      const eventValue = normalizeMatchValue(field.eventValue);
-      const presetValue = normalizeMatchValue(field.presetValue);
-      return Boolean(eventValue && presetValue && eventValue === presetValue);
-    })
-    .map((field) => field.label);
+  const exactMapCodeMatch = hasComparableMapCode && normalizeMatchValue(context.mapCode) === normalizeMatchValue(preset.map);
+  const mapIdMatch = hasComparableMapId && context.mapId === presetSelection?.mapId;
+  const timeMatch = hasComparableTime && context.time === presetSelection?.time;
+  const modeMatch = hasComparableMode && context.mode === presetSelection?.mode;
+  const sideMatch = hasComparableSide && normalizeMatchValue(context.side) === normalizeMatchValue(preset.side);
+  const capMatch = hasComparableCap && normalizeMatchValue(context.cap) === normalizeMatchValue(preset.cap);
+
+  const matchedFields = [
+    exactMapCodeMatch || mapIdMatch ? "Map" : null,
+    timeMatch ? "Time" : null,
+    modeMatch ? "Mode" : null,
+    sideMatch ? "Side" : null,
+    capMatch ? "Point" : null,
+  ].filter((value): value is string => Boolean(value));
+
+  const score =
+    (exactMapCodeMatch ? 200 : 0) +
+    (mapIdMatch ? 120 : 0) +
+    (modeMatch ? 30 : 0) +
+    (timeMatch ? 20 : 0) +
+    (sideMatch ? 8 : 0) +
+    (capMatch ? 4 : 0);
+
+  const comparableFieldCount = [
+    hasComparableMapCode || hasComparableMapId,
+    hasComparableTime,
+    hasComparableMode,
+    hasComparableSide,
+    hasComparableCap,
+  ].filter(Boolean).length;
 
   return {
-    score: matchedFields.length,
-    isFullMatch: matchedFields.length === fields.length,
+    score,
+    isFullMatch: comparableFieldCount > 0 && matchedFields.length === comparableFieldCount,
     label: matchedFields.join(" + "),
+    metaLabel: formatHllPresetLabel(preset.map) ?? preset.map ?? "",
   };
 }
 
@@ -111,6 +154,87 @@ function resolveTrainingEndTime(values: EventInput, timezone: string) {
   }
 
   return new Date(meetingStartMs + 90 * 60 * 1000).toISOString();
+}
+
+function TopicPresetSelect({
+  value,
+  onChange,
+  options,
+  dictionary,
+}: {
+  value?: string;
+  onChange: (value: string) => void;
+  options: TopicPresetOption[];
+  dictionary: Dictionary;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedOption = options.find(({ preset }) => preset.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" className="h-auto w-full justify-between rounded-xl py-3">
+          <span className="flex min-w-0 flex-col items-start text-left">
+            <span className="truncate font-medium">
+              {selectedOption?.preset.name ?? dictionary.event.noPreset}
+            </span>
+            {selectedOption?.match.metaLabel ? (
+              <span className="truncate text-xs text-muted-foreground">{selectedOption.match.metaLabel}</span>
+            ) : null}
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[420px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={dictionary.event.topicPreset} />
+          <CommandList>
+            <CommandEmpty>No results.</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                value={dictionary.event.noPreset}
+                onSelect={() => {
+                  onChange("");
+                  setOpen(false);
+                }}
+              >
+                <Check className={cn("mr-2 size-4", !value ? "opacity-100" : "opacity-0")} />
+                {dictionary.event.noPreset}
+              </CommandItem>
+              {options.map(({ preset, match }) => (
+                <CommandItem
+                  key={preset.id}
+                  value={[preset.name, match.metaLabel, preset.side, preset.cap, preset.map].filter(Boolean).join(" ")}
+                  onSelect={() => {
+                    onChange(preset.id);
+                    setOpen(false);
+                  }}
+                >
+                  <Check className={cn("mr-2 mt-0.5 size-4 shrink-0", value === preset.id ? "opacity-100" : "opacity-0")} />
+                  <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{preset.name}</div>
+                      {match.metaLabel ? (
+                        <div className="truncate text-xs text-muted-foreground">{match.metaLabel}</div>
+                      ) : null}
+                    </div>
+                    {match.score > 0 ? (
+                      <Badge
+                        variant={match.isFullMatch ? "default" : "secondary"}
+                        className="shrink-0 rounded-md"
+                      >
+                        {match.isFullMatch ? dictionary.event.topicPresetCompleteMatch : dictionary.event.topicPresetPartialMatch}
+                      </Badge>
+                    ) : null}
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export function EventFormPanel({
@@ -183,6 +307,31 @@ export function EventFormPanel({
   const mapOptions = getHllMapOptions();
   const timeOptions = selectedMapId ? getHllTimeOptions(selectedMapId) : [];
   const modeOptions = selectedMapId ? getHllModeOptions(selectedMapId, selectedMapTime) : [];
+  const presetMatchContext = useMemo<TopicPresetMatchContext>(
+    () => ({
+      mapCode: mapValue,
+      mapId: selectedMapId || inferHllSelection(mapValue)?.mapId,
+      time: selectedMapTime || inferHllSelection(mapValue)?.time,
+      mode: selectedMapMode || inferHllSelection(mapValue)?.mode,
+      side: sideValue,
+      cap: presetMatchValues.cap,
+    }),
+    [mapValue, presetMatchValues.cap, selectedMapId, selectedMapMode, selectedMapTime, sideValue],
+  );
+  const topicPresetOptions = useMemo(
+    () =>
+      topicPresets
+        .map((preset) => ({
+          preset,
+          match: getPresetMatch(preset, presetMatchContext),
+        }))
+        .sort((left, right) =>
+          right.match.score - left.match.score ||
+          right.match.label.length - left.match.label.length ||
+          left.preset.name.localeCompare(right.preset.name),
+        ),
+    [presetMatchContext, topicPresets],
+  );
 
   useEffect(() => {
     if (!canEdit) return;
@@ -549,38 +698,12 @@ export function EventFormPanel({
                 control={form.control}
                 name="topicPresetId"
                 render={({ field }) => (
-                  <Select value={field.value || "__none__"} onValueChange={(value) => field.onChange(value === "__none__" ? "" : value)}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">{dictionary.event.noPreset}</SelectItem>
-                      {topicPresets.map((preset) => {
-                        const match = getPresetMatch(preset, presetMatchValues);
-
-                        return (
-                          <SelectItem
-                            key={preset.id}
-                            value={preset.id}
-                            className={cn(
-                              match.score > 0 && "bg-primary/5 font-medium",
-                              match.isFullMatch && "bg-primary/10 text-primary",
-                            )}
-                          >
-                            <span className="flex w-full min-w-0 items-center justify-between gap-3">
-                              <span className="min-w-0 truncate">{preset.name}</span>
-                              {match.score > 0 ? (
-                                <Badge variant={match.isFullMatch ? "default" : "secondary"} className="shrink-0 rounded-md">
-                                  <Check className="mr-1 size-3" />
-                                  {match.isFullMatch ? dictionary.event.topicPresetCompleteMatch : dictionary.event.topicPresetPartialMatch}
-                                </Badge>
-                              ) : null}
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <TopicPresetSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={topicPresetOptions}
+                    dictionary={dictionary}
+                  />
                 )}
               />
             </div>

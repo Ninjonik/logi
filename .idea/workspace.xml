@@ -7,7 +7,23 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="fixed build error" />
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/convex/rosterSync.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/events.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/rosters.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/rosters.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/serverData.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/serverData.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/userAssignments.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/userAssignments.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/sync/attendance-reminders.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/sync/attendance-reminders.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/[rosterId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/[rosterId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/create/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/event-form-panel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board-attendee-lists.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board-attendee-lists.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-creator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-creator.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -204,14 +220,9 @@
       <workItem from="1784560940538" duration="9018000" />
       <workItem from="1784637057142" duration="2591000" />
       <workItem from="1784641104830" duration="1604000" />
-    </task>
-    <task id="LOCAL-00002" summary="kept nextjs version only">
-      <option name="closed" value="true" />
-      <created>1783349289101</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1783349289101</updated>
+      <workItem from="1784643196275" duration="193000" />
+      <workItem from="1784644234573" duration="14000" />
+      <workItem from="1784644291126" duration="1271000" />
     </task>
     <task id="LOCAL-00003" summary="initial version, frontend logic only with mock data, no backend">
       <option name="closed" value="true" />
@@ -597,7 +608,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784642541766</updated>
     </task>
-    <option name="localTasksCounter" value="51" />
+    <task id="LOCAL-00051" summary="better text for unavailable membership applications">
+      <option name="closed" value="true" />
+      <created>1784644336910</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1784644336910</updated>
+    </task>
+    <option name="localTasksCounter" value="52" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -617,7 +636,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="added basic match details upload + player stats, added automatic roster confirmed status check, completed the score functionality on its basic level" />
     <MESSAGE value="better stats handling" />
     <MESSAGE value="fixed height issues in roster discord image" />
     <MESSAGE value="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)" />
@@ -642,6 +660,7 @@
     <MESSAGE value="build bug fix" />
     <MESSAGE value="refactored the score system to be guild-independent" />
     <MESSAGE value="fixed logging and websocket system" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed logging and websocket system" />
+    <MESSAGE value="better text for unavailable membership applications" />
+    <option name="LAST_COMMIT_MESSAGE" value="better text for unavailable membership applications" />
   </component>
 </project>

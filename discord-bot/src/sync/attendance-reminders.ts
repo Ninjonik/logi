@@ -56,61 +56,61 @@ export async function processAttendanceReminders(client: Client, queuedEventIds:
 
     const now = Date.now();
     const remindersToLog: Array<{ userId: string; offsetHours: number; sentAt: string }> = [];
+    const eventMessageUrl =
+      buildDiscordMessageLink(
+        payload.config.guildId,
+        syncState?.announcementChannelId,
+        syncState?.announcementMessageId,
+      ) ??
+      buildDiscordMessageLink(
+        payload.config.guildId,
+        syncState?.forumChannelId,
+        syncState?.infoMessageId,
+      );
+    const messages = getClanDiscordMessages(payload.config.defaultLanguage);
+    const message = [
+      `${messages.reminders.title} **${event.name}**.`,
+      messages.reminders.body,
+      `${messages.reminders.meeting}: <t:${Math.floor(meetingStartMs / 1000)}:F>`,
+      eventMessageUrl
+        ? `${messages.reminders.eventThread}: [${messages.reminders.openInDiscord}](${eventMessageUrl})`
+        : null,
+    ]
+      .filter((line): line is string => Boolean(line))
+      .join("\n");
 
-    for (const offsetHours of ATTENDANCE_OFFSETS_HOURS) {
-      const triggerTime = meetingStartMs - offsetHours * 60 * 60 * 1000;
-      if (now < triggerTime) continue;
-
-      for (const userId of unacknowledgedUserIds) {
-        const alreadySent = event.attendanceReminderLog.some(
+    for (const userId of unacknowledgedUserIds) {
+      const dueOffsets = ATTENDANCE_OFFSETS_HOURS
+        .filter((offsetHours) => now >= meetingStartMs - offsetHours * 60 * 60 * 1000)
+        .filter((offsetHours) => !event.attendanceReminderLog.some(
           (entry) => entry.userId === userId && entry.offsetHours === offsetHours,
-        );
-        if (alreadySent) continue;
+        ))
+        .sort((left, right) => left - right);
 
-        const user = await client.users.fetch(userId).catch(() => null);
-        if (!user) continue;
+      const offsetHours = dueOffsets[0];
+      if (offsetHours === undefined) continue;
 
-        const sentAt = new Date().toISOString();
-        const eventMessageUrl =
-          buildDiscordMessageLink(
-            payload.config.guildId,
-            syncState?.announcementChannelId,
-            syncState?.announcementMessageId,
-          ) ??
-          buildDiscordMessageLink(
-            payload.config.guildId,
-            syncState?.forumChannelId,
-            syncState?.infoMessageId,
-          );
-        const messages = getClanDiscordMessages(payload.config.defaultLanguage);
-        const message = [
-          `${messages.reminders.title} **${event.name}**.`,
-          messages.reminders.body,
-          `${messages.reminders.meeting}: <t:${Math.floor(meetingStartMs / 1000)}:F>`,
-          eventMessageUrl
-            ? `${messages.reminders.eventThread}: [${messages.reminders.openInDiscord}](${eventMessageUrl})`
-            : null,
-        ]
-          .filter((line): line is string => Boolean(line))
-          .join("\n");
+      const user = await client.users.fetch(userId).catch(() => null);
+      if (!user) continue;
 
-        try {
-          await user.send({
-            content: message,
-            components: buildAttendanceReminderComponents(event.id, payload.config.defaultLanguage),
-          });
-          logInfo("attendance-reminders", "Sent attendance reminder", {
-            eventId: event.id,
-            guildId: payload.config.guildId,
-            userId,
-            offsetHours,
-          });
-        } catch {
-          continue;
-        }
+      const sentAt = new Date().toISOString();
 
-        remindersToLog.push({ userId, offsetHours, sentAt });
+      try {
+        await user.send({
+          content: message,
+          components: buildAttendanceReminderComponents(event.id, payload.config.defaultLanguage),
+        });
+        logInfo("attendance-reminders", "Sent attendance reminder", {
+          eventId: event.id,
+          guildId: payload.config.guildId,
+          userId,
+          offsetHours,
+        });
+      } catch {
+        continue;
       }
+
+      remindersToLog.push({ userId, offsetHours, sentAt });
     }
 
     if (remindersToLog.length) {
