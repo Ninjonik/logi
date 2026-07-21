@@ -6,6 +6,7 @@ import { buildDiscordAuthorizationUrl } from "@/lib/discord";
 
 const STATE_COOKIE = "discord_oauth_state";
 const REDIRECT_COOKIE = "discord_oauth_redirect";
+const GUILD_COOKIE = "discord_oauth_guild";
 
 function sanitizeRedirect(value: string | null) {
   if (!value || !value.startsWith("/")) {
@@ -16,6 +17,7 @@ function sanitizeRedirect(value: string | null) {
 
 export async function GET(request: NextRequest) {
   const redirectTo = sanitizeRedirect(request.nextUrl.searchParams.get("redirectTo"));
+  const guildId = request.nextUrl.searchParams.get("guildId");
   const state = randomBytes(24).toString("hex");
   const cookieStore = await cookies();
 
@@ -33,6 +35,17 @@ export async function GET(request: NextRequest) {
     path: "/",
     maxAge: 60 * 10,
   });
+  if (guildId && /^\d{5,32}$/.test(guildId)) {
+    cookieStore.set(GUILD_COOKIE, guildId, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 10,
+    });
+  } else {
+    cookieStore.delete(GUILD_COOKIE);
+  }
 
   return NextResponse.redirect(buildDiscordAuthorizationUrl(state));
 }

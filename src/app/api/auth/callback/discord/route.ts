@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-import { createSessionToken, setSessionToken, syncCurrentPlayerFromDiscord, syncManagedGuildsForCurrentPlayer } from "@/lib/auth";
+import { createSessionToken, setPrimaryGuildForCurrentPlayer, setSessionToken, syncCurrentPlayerFromDiscord, syncManagedGuildsForCurrentPlayer } from "@/lib/auth";
 import {
   exchangeDiscordCode,
   fetchDiscordGuilds,
@@ -15,10 +15,12 @@ import { getSiteUrl } from "@/lib/env";
 
 const STATE_COOKIE = "discord_oauth_state";
 const REDIRECT_COOKIE = "discord_oauth_redirect";
+const GUILD_COOKIE = "discord_oauth_guild";
 
 function cleanOauthCookies(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   cookieStore.delete(STATE_COOKIE);
   cookieStore.delete(REDIRECT_COOKIE);
+  cookieStore.delete(GUILD_COOKIE);
 }
 
 export async function GET(request: NextRequest) {
@@ -27,6 +29,7 @@ export async function GET(request: NextRequest) {
   const state = request.nextUrl.searchParams.get("state");
   const expectedState = cookieStore.get(STATE_COOKIE)?.value;
   const redirectTo = cookieStore.get(REDIRECT_COOKIE)?.value ?? "/en/dashboard";
+  const requestedGuildId = cookieStore.get(GUILD_COOKIE)?.value;
 
   if (!code || !state || !expectedState || state !== expectedState) {
     cleanOauthCookies(cookieStore);
@@ -56,6 +59,9 @@ export async function GET(request: NextRequest) {
         })),
     );
     await syncManagedGuildsForCurrentPlayer(userId, managedGuilds);
+    if (requestedGuildId && discordGuilds.some((guild) => guild.id === requestedGuildId)) {
+      await setPrimaryGuildForCurrentPlayer(userId, requestedGuildId);
+    }
     const sessionToken = await createSessionToken(session);
     await setSessionToken(sessionToken);
     cleanOauthCookies(cookieStore);

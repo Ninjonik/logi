@@ -7,6 +7,7 @@ import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-set
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
+import { getSiteUrl } from "@/lib/env";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
@@ -34,12 +35,13 @@ export default async function ServerSettingsPage({
   const context = await getServerContext(serverId);
   if (!context) return null;
   const { server, canAdmin } = context;
+  const guildLoginUrl = `${getSiteUrl()}/${locale}/guild-login/${server.discordId}`;
 
   return (
     <>
       <PageHeader title={dictionary.serverSettings.title} description={dictionary.serverSettings.pageDescription} />
       <div className="space-y-6 px-4 lg:px-6">
-        {canAdmin ? <ServerFrontendSettingsForm server={server} dictionary={dictionary} /> : null}
+        {canAdmin ? <ServerFrontendSettingsForm server={server} dictionary={dictionary} guildLoginUrl={guildLoginUrl} /> : null}
         {canAdmin ? (
           <DiscordServerSettingsForm
             serverId={serverId}

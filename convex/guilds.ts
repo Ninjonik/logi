@@ -212,6 +212,17 @@ export const getById = query({
   },
 });
 
+export const getByDiscordId = query({
+  args: {
+    discordId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const guild = await getGuildByDiscordId(ctx, args.discordId);
+
+    return guild ? normalizeGuildDoc(guild) : null;
+  },
+});
+
 export const updateFrontendSettings = mutation({
   args: {
     secret: v.string(),
