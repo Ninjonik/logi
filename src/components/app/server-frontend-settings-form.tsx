@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 import { AvatarPicker } from "@/components/app/avatar-picker";
@@ -16,12 +17,15 @@ import type { Guild } from "@/types/domain";
 export function ServerFrontendSettingsForm({
   server,
   dictionary,
+  guildLoginUrl,
 }: {
   server: Guild;
   dictionary: Dictionary;
+  guildLoginUrl: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [copied, setCopied] = useState(false);
   const [name, setName] = useState(server.name);
   const [avatar, setAvatar] = useState(server.avatar);
   const [description, setDescription] = useState(server.description ?? "");
@@ -54,6 +58,12 @@ export function ServerFrontendSettingsForm({
     startTransition(() => router.refresh());
   }
 
+  async function handleCopyLoginUrl() {
+    await navigator.clipboard.writeText(guildLoginUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  }
+
   return (
     <Card className="rounded-2xl border-border/60">
       <CardHeader>
@@ -77,6 +87,16 @@ export function ServerFrontendSettingsForm({
         <div className="space-y-2">
           <Label>{dictionary.event.fields.description}</Label>
           <Textarea value={description} onChange={(event) => setDescription(event.target.value)} className="min-h-28 rounded-xl" />
+        </div>
+        <div className="space-y-2">
+          <Label>{dictionary.serverSettings.guildLoginUrl}</Label>
+          <div className="flex gap-2">
+            <Input value={guildLoginUrl} readOnly disabled className="rounded-xl disabled:cursor-text disabled:opacity-100" />
+            <Button type="button" variant="outline" className="shrink-0 rounded-xl" onClick={handleCopyLoginUrl}>
+              {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+              {copied ? dictionary.serverSettings.copiedLoginUrl : dictionary.serverSettings.copyLoginUrl}
+            </Button>
+          </div>
         </div>
         <div className="space-y-3 rounded-2xl border border-border/60 p-4">
           <div>

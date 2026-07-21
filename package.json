@@ -6,6 +6,7 @@
     "dev": "next dev",
     "dev:all": "concurrently \"next dev\" \"tsx discord-bot/src/index.ts\"",
     "bot:dev": "tsx discord-bot/src/index.ts",
+    "bot:test": "node --import tsx --test \"discord-bot/src/**/*.test.ts\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

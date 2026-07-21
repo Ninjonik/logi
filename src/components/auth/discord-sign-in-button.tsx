@@ -4,10 +4,16 @@ import { Button } from "@/components/ui/button";
 export function DiscordSignInButton({
                                       redirectTo,
                                       label,
+                                      guildId,
                                     }: {
   redirectTo: string;
   label: string;
+  guildId?: string;
 }) {
+  const href = guildId
+    ? `/api/auth/discord?redirectTo=${encodeURIComponent(redirectTo)}&guildId=${encodeURIComponent(guildId)}`
+    : `/api/auth/discord?redirectTo=${encodeURIComponent(redirectTo)}`;
+
   return (
     <Button
       asChild
@@ -15,7 +21,7 @@ export function DiscordSignInButton({
       className="h-12 w-full rounded-xl bg-[#5865F2] text-white hover:bg-[#4752c4]"
     >
       <Link
-        href={`/api/auth/discord?redirectTo=${encodeURIComponent(redirectTo)}`}
+        href={href}
         className="flex items-center gap-2"
       >
         <svg

@@ -12,6 +12,7 @@ import type { AppUser, Guild } from "@/types/domain";
 const getUserByIdReference = makeFunctionReference<"query">("players:getById");
 const getVisibleGuildsReference = makeFunctionReference<"query">("guilds:visibleForUser");
 const syncDiscordProfileReference = makeFunctionReference<"mutation">("players:syncDiscordProfile");
+const setPrimaryGuildReference = makeFunctionReference<"mutation">("players:setPrimaryGuild");
 const syncManagedGuildsReference = makeFunctionReference<"mutation">("guilds:syncManagedGuilds");
 const updatePlatformIdsReference = makeFunctionReference<"mutation">("players:updatePlatformIds");
 const clearPlatformIdsReference = makeFunctionReference<"mutation">("players:clearPlatformIds");
@@ -154,6 +155,14 @@ export async function syncManagedGuildsForCurrentPlayer(userId: string, guilds: 
     secret: getInternalAuthSecret(),
     userId,
     guilds,
+  });
+}
+
+export async function setPrimaryGuildForCurrentPlayer(userId: string, guildId: string) {
+  return await fetchMutation(setPrimaryGuildReference, {
+    secret: getInternalAuthSecret(),
+    userId,
+    guildId,
   });
 }
 

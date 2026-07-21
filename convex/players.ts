@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-import { getUserByDiscordId, getUserDiscordId } from "./identity";
+import { getGuildByDiscordId, getUserByDiscordId, getUserDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -145,6 +145,34 @@ export const updatePlatformIds = mutation({
       platformIds: normalizedPlatformIds,
       updatedAt: new Date().toISOString(),
     });
+  },
+});
+
+export const setPrimaryGuild = mutation({
+  args: {
+    secret: v.string(),
+    userId: v.string(),
+    guildId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const [user, guild] = await Promise.all([
+      getUserByDiscordId(ctx, args.userId),
+      getGuildByDiscordId(ctx, args.guildId),
+    ]);
+
+    if (!user || !guild) {
+      return null;
+    }
+
+    await ctx.db.patch(user._id, {
+      guildId: args.guildId,
+      mercenaryGuildIds: user.mercenaryGuildIds.filter((guildId) => guildId !== args.guildId),
+      updatedAt: new Date().toISOString(),
+    });
+
+    return args.guildId;
   },
 });
 

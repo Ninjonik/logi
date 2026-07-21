@@ -14,11 +14,11 @@ export const metadata: Metadata = {
     template: "%s | Logi",
   },
   description:
-    "Frontend preview for a Hell Let Loose event organizer built for clans, rosters, briefings, and operations.",
+    "Free open-source admin tool for Hell Let Loose clans, rosters, events, briefings, and Discord coordination.",
   openGraph: {
     title: "Logi",
     description:
-      "Prepare clan events, squad presets, topic briefings, and publish rosters from one dashboard.",
+      "Plan Hell Let Loose clan events, build rosters, prepare briefings, and coordinate through Discord.",
     siteName: "Logi",
     type: "website",
   },

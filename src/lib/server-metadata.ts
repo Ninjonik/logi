@@ -3,6 +3,7 @@ import { fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
 const getGuildByIdReference = makeFunctionReference<"query">("guilds:getById");
+const getGuildByDiscordIdReference = makeFunctionReference<"query">("guilds:getByDiscordId");
 const getEventByIdReference = makeFunctionReference<"query">("events:getById");
 const getGroupByIdReference = makeFunctionReference<"query">("groups:getById");
 const getRosterByIdReference = makeFunctionReference<"query">("serverData:getRosterById");
@@ -17,6 +18,12 @@ export async function getGuildMetadata(serverId: string) {
   if (serverId.startsWith("sample-")) return null;
   tagCacheEntries([appCacheTags.server(serverId)]);
   return await fetchQuery(getGuildByIdReference, { guildId: serverId as never });
+}
+
+export async function getGuildMetadataByDiscordId(discordId: string) {
+  "use cache";
+  tagCacheEntries([appCacheTags.server(discordId)]);
+  return await fetchQuery(getGuildByDiscordIdReference, { discordId });
 }
 
 export async function getEventMetadata(eventId: string) {
