@@ -4,6 +4,7 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds";
 import { getGuildByDiscordId, getGuildById, getGuildDiscordId, getUserByDiscordId, getUserDiscordId } from "./identity";
+import { syncRosterMembershipForUser } from "./rosterSync";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -210,73 +211,6 @@ function deriveEventStatus(event: {
     return "closed" as const;
   }
   return "registration" as const;
-}
-
-async function reconcileRosterAttendance(ctx: MutationCtx, args: {
-  eventId: Id<"events">;
-  userId: string;
-  attending: boolean;
-}) {
-  const event = await ctx.db.get(args.eventId);
-  if (!event || (event.kind ?? "match") !== "match") {
-    return;
-  }
-
-  const roster = await ctx.db
-    .query("rosters")
-    .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
-    .unique();
-
-  if (!roster) return;
-
-  const reservePlayerIds = roster.reservePlayerIds.filter((id) => id !== args.userId);
-  const reserveAttendances = normalizeOptionalArray(
-    (roster as typeof roster & { reserveAttendances?: ReserveAttendanceRecord[] }).reserveAttendances,
-  ).filter((entry) => entry.userId !== args.userId);
-  const notAttendingPlayerIds = roster.notAttendingPlayerIds.filter((id) => id !== args.userId);
-  let isAssignedToSlot = false;
-
-  const squads = roster.squads.map((squad) => ({
-    ...squad,
-    players: squad.players.map((player) => {
-      if (player.id !== args.userId) {
-        return player;
-      }
-
-      if (args.attending) {
-        isAssignedToSlot = true;
-        return player;
-      }
-
-      return {
-        ...player,
-        id: undefined,
-        ack: false,
-        confirmed: false,
-      };
-    }),
-  }));
-
-  if (args.attending) {
-    if (!isAssignedToSlot) {
-      reservePlayerIds.push(args.userId);
-      reserveAttendances.push({
-        userId: args.userId,
-        ack: false,
-        confirmed: false,
-      });
-    }
-  } else {
-    notAttendingPlayerIds.push(args.userId);
-  }
-
-  await ctx.db.patch(roster._id, {
-    squads,
-    reservePlayerIds,
-    reserveAttendances,
-    notAttendingPlayerIds,
-    updatedAt: new Date().toISOString(),
-  });
 }
 
 function isEventCancelledBeforeMeeting(event: ReturnType<typeof normalizeEventRecord>) {
@@ -619,8 +553,6 @@ export const toggleSignUp = mutation({
       existing.status === nextStatus &&
       existingGroup === normalizedNextGroup,
     );
-    const attending = !shouldRemoveSignup && nextStatus === "attending";
-
     if (!shouldRemoveSignup) {
       participants = [...participants, {
         userId: args.userId,
@@ -638,11 +570,7 @@ export const toggleSignUp = mutation({
       signUps,
       updatedAt: new Date().toISOString(),
     });
-    await reconcileRosterAttendance(ctx, {
-      eventId: args.eventId,
-      userId: args.userId,
-      attending,
-    });
+    await syncRosterMembershipForUser(ctx, args.eventId, args.userId);
 
     return signUps;
   },

@@ -10,6 +10,7 @@ import {
   Save,
   Send,
   Settings2,
+  WandSparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation } from "convex/react";
@@ -124,6 +125,24 @@ export function RosterBoard({
     () => new Map((event?.absenceNotices ?? []).map((notice) => [notice.userId, notice.reason])),
     [event?.absenceNotices],
   );
+  const participantStatusByUserId = useMemo(
+    () => new Map((event?.participants ?? []).map((participant) => [participant.userId, participant.status])),
+    [event?.participants],
+  );
+  const notAttendingIndicatorByUserId = useMemo(() => {
+    const entries: Array<[string, "declined" | "no_response"]> = [];
+
+    for (const userId of board?.notAttendingPlayerIds ?? []) {
+      const participantStatus = participantStatusByUserId.get(userId);
+      if (participantStatus) {
+        entries.push([userId, "declined"]);
+      } else {
+        entries.push([userId, "no_response"]);
+      }
+    }
+
+    return new Map(entries);
+  }, [board?.notAttendingPlayerIds, participantStatusByUserId]);
   const allUsersSorted = useMemo(
     () => users.slice().sort((a, b) => compareUsersByScoreThenName(a, b, event?.guildId ?? serverId)),
     [event?.guildId, serverId, users],
@@ -678,6 +697,79 @@ export function RosterBoard({
     setDragState(null);
   }
 
+  function autoFillRoster() {
+    setIsDirty(true);
+    setBoard((current) => {
+      if (!current) return current;
+      const next = structuredClone(current);
+      const availableUserIds = [...(next.reservePlayerIds || [])];
+      const assignedFromAutoFill = new Set<string>();
+
+      const getGroupMatchRank = (userId: string, squadGroup: string) => {
+        const assignment = assignmentsByUserId.get(userId);
+        if (!assignment) return 2;
+
+        const primaryGroup = assignment.primaryGroupId ? groupsById.get(assignment.primaryGroupId)?.name : undefined;
+        if (primaryGroup === squadGroup) return 0;
+
+        const hasSecondaryMatch = (assignment.secondaryGroupIds || [])
+          .some((groupId) => groupsById.get(groupId)?.name === squadGroup);
+        if (hasSecondaryMatch) return 1;
+
+        return 2;
+      };
+
+      const getCandidateScore = (userId: string, squadGroup: string) => {
+        const user = usersById.get(userId);
+        if (!user) return Number.NEGATIVE_INFINITY;
+
+        const matchRank = getGroupMatchRank(userId, squadGroup);
+        const score = getUserScoreForGuild(user, event?.guildId ?? serverId);
+        return (2 - matchRank) * 1_000_000 + score;
+      };
+
+      for (const squad of next.squads) {
+        for (const player of squad.players) {
+          if (player.id || getCustomPlayerName(player)) {
+            continue;
+          }
+
+          let bestCandidateIndex = -1;
+          let bestCandidateScore = Number.NEGATIVE_INFINITY;
+
+          for (let index = 0; index < availableUserIds.length; index += 1) {
+            const userId = availableUserIds[index];
+            if (assignedFromAutoFill.has(userId)) {
+              continue;
+            }
+
+            const candidateScore = getCandidateScore(userId, squad.group);
+            if (candidateScore > bestCandidateScore) {
+              bestCandidateScore = candidateScore;
+              bestCandidateIndex = index;
+            }
+          }
+
+          if (bestCandidateIndex < 0) {
+            continue;
+          }
+
+          const [userId] = availableUserIds.splice(bestCandidateIndex, 1);
+          assignedFromAutoFill.add(userId);
+          player.id = userId;
+          player.customName = undefined;
+          player.ack = false;
+          player.confirmed = false;
+        }
+      }
+
+      next.reservePlayerIds = availableUserIds;
+      return next;
+    });
+
+    toast.success(dictionary.roster.autoFilled);
+  }
+
   const handleSave = async (published: boolean = false) => {
     if (!board || !event) return;
 
@@ -865,6 +957,17 @@ export function RosterBoard({
                 </Tooltip>
               )
             ) : null}
+            {mode === "assignment" ? (
+              <Button
+                variant="outline"
+                className={actionControlClass}
+                onClick={autoFillRoster}
+                disabled={isPending || isConfirmingMeetingChannel}
+              >
+                <WandSparkles className="size-4" />
+                {dictionary.roster.autoFill}
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               className={actionControlClass}
@@ -942,6 +1045,7 @@ export function RosterBoard({
               setDragState={setDragState}
               serverDiscordId={event.guildId}
               noticeReasonByUserId={noticeReasonByUserId}
+              notAttendingIndicatorByUserId={notAttendingIndicatorByUserId}
             />
             <div className="space-y-2.5">
               {isLayoutMode ? (

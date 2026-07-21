@@ -39,7 +39,18 @@ export default async function RosterDetailPage({
   const { rosters, events, canAdmin, assignments = [], groups = [], discordConfig } = context;
   const roster = rosters.find((item) => item.id === rosterId);
   const event = events.find((item) => item.id === roster?.eventId);
-  const users = await getUsersByIds(assignments.map((assignment) => assignment.userId));
+  const users = await getUsersByIds(
+    Array.from(
+      new Set([
+        ...assignments.map((assignment) => assignment.userId),
+        ...(event?.participants.map((participant) => participant.userId) ?? []),
+        ...(event?.signUps.map((signUp) => signUp.userId) ?? []),
+        ...(roster?.reservePlayerIds ?? []),
+        ...(roster?.notAttendingPlayerIds ?? []),
+        ...(roster?.squads.flatMap((squad) => squad.players.map((player) => player.id).filter(Boolean) as string[]) ?? []),
+      ]),
+    ),
+  );
   const user = await getLoggedInUser();
   if (!user) return null;
 

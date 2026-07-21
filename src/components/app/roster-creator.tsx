@@ -13,6 +13,41 @@ import { formatDateTime } from "@/lib/format";
 
 const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING";
 
+function getTrackedSignupUserIds(
+  event: EventRecord,
+  userAssignments: ServerUserAssignment[],
+  users: AppUser[],
+) {
+  const trackedUserIds = new Set<string>();
+  const registrationEndAt = new Date(event.registrationEnd).getTime();
+  const assignmentCutoff = Number.isFinite(registrationEndAt)
+    ? Math.min(Date.now(), registrationEndAt)
+    : Date.now();
+
+  for (const participant of event.participants) {
+    trackedUserIds.add(participant.userId);
+  }
+
+  for (const signUp of event.signUps) {
+    trackedUserIds.add(signUp.userId);
+  }
+
+  for (const assignment of userAssignments) {
+    const createdAt = new Date(assignment.createdAt).getTime();
+    if (Number.isFinite(createdAt) && createdAt > assignmentCutoff) {
+      continue;
+    }
+
+    trackedUserIds.add(assignment.userId);
+  }
+
+  return new Set(
+    users
+      .filter((user) => trackedUserIds.has(user.discordId) || trackedUserIds.has(user.id))
+      .map((user) => user.discordId),
+  );
+}
+
 export function RosterCreator({
   events,
   rosters,
@@ -59,16 +94,29 @@ export function RosterCreator({
   const draftRoster = useMemo(() => {
     if (!selectedEvent || !selectedPreset) return undefined;
 
+    const trackedUserIds = getTrackedSignupUserIds(selectedEvent, userAssignments, users);
+    const attendingSignupIds = new Set(
+      (selectedEvent.participants?.length
+        ? selectedEvent.participants
+            .filter((participant) => participant.status === "attending")
+            .map((participant) => participant.userId)
+        : selectedEvent.signUps
+            .filter((signUp) => signUp.group !== SIGNUP_NOT_ATTENDING)
+            .map((signUp) => signUp.userId)),
+    );
     const attendingUserIds = new Set(
-      selectedEvent.signUps
-        .filter((signUp) => signUp.group !== SIGNUP_NOT_ATTENDING)
-        .map((signUp) => signUp.userId),
+      users
+        .filter((user) => trackedUserIds.has(user.discordId))
+        .filter((user) => attendingSignupIds.has(user.discordId) || attendingSignupIds.has(user.id))
+        .map((user) => user.discordId),
     );
     const reservePlayerIds = users
+      .filter((user) => trackedUserIds.has(user.discordId))
       .filter((user) => attendingUserIds.has(user.discordId))
       .sort((a, b) => (getUserScoreForGuild(b, serverId) - getUserScoreForGuild(a, serverId)) || a.name.localeCompare(b.name))
       .map((user) => user.discordId);
     const notAttendingPlayerIds = users
+      .filter((user) => trackedUserIds.has(user.discordId))
       .filter((user) => !attendingUserIds.has(user.discordId))
       .sort((a, b) => (getUserScoreForGuild(b, serverId) - getUserScoreForGuild(a, serverId)) || a.name.localeCompare(b.name))
       .map((user) => user.discordId);
@@ -105,7 +153,7 @@ export function RosterCreator({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     } as Roster;
-  }, [selectedEvent, selectedPreset, serverId, users]);
+  }, [selectedEvent, selectedPreset, serverId, userAssignments, users]);
   const showSetupCard = !selectedEvent || !selectedPreset;
 
   return (

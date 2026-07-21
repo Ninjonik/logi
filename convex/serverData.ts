@@ -347,7 +347,13 @@ export const getRosterDetail = query({
     ]);
 
     const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
-    const relevantUserIds = [...new Set(assignments.map((assignment) => assignment.userId))];
+    const relevantUserIds = [...new Set([
+      ...assignments.map((assignment) => assignment.userId),
+      ...normalizeEventDoc(event).participants.map((participant) => participant.userId),
+      ...roster.reservePlayerIds,
+      ...roster.notAttendingPlayerIds,
+      ...roster.squads.flatMap((squad) => squad.players.map((player) => player.id).filter(Boolean) as string[]),
+    ])];
     const users = await Promise.all(relevantUserIds.map((userId) => getUserByDiscordId(ctx, userId)));
 
     return {

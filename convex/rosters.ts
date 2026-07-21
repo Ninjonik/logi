@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { mergeRosterWithEventState } from "./rosterSync";
 
 const rosterPlayer = v.object({
   id: v.optional(v.string()),
@@ -59,11 +60,37 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     const { rosterId, ...data } = args;
     const now = new Date().toISOString();
+    const event = await ctx.db.get(args.eventId);
+    const assignments = event
+      ? await ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", event.guildId)).collect()
+      : [];
 
     if (rosterId) {
+      const existingRoster = await ctx.db.get(rosterId);
+      if (!existingRoster) {
+        throw new Error("Roster not found.");
+      }
+
+      const mergedRoster = event
+        ? mergeRosterWithEventState({
+            ...existingRoster,
+            ...data,
+            reserveAttendances: data.reserveAttendances ?? existingRoster.reserveAttendances ?? [],
+          }, event, assignments)
+        : {
+            ...existingRoster,
+            ...data,
+            reserveAttendances: data.reserveAttendances ?? existingRoster.reserveAttendances ?? [],
+          };
+
       await ctx.db.patch(rosterId, {
-        ...data,
-        reserveAttendances: data.reserveAttendances ?? [],
+        squadPresetId: mergedRoster.squadPresetId,
+        squads: mergedRoster.squads,
+        reservePlayerIds: mergedRoster.reservePlayerIds,
+        reserveAttendances: mergedRoster.reserveAttendances ?? [],
+        notAttendingPlayerIds: mergedRoster.notAttendingPlayerIds,
+        streamerId: mergedRoster.streamerId,
+        published: mergedRoster.published,
         updatedAt: now,
       });
       return rosterId;
@@ -75,17 +102,63 @@ export const upsert = mutation({
       .unique();
 
     if (existingForEvent) {
+      const mergedRoster = event
+        ? mergeRosterWithEventState({
+            ...existingForEvent,
+            ...data,
+            reserveAttendances: data.reserveAttendances ?? existingForEvent.reserveAttendances ?? [],
+          }, event, assignments)
+        : {
+            ...existingForEvent,
+            ...data,
+            reserveAttendances: data.reserveAttendances ?? existingForEvent.reserveAttendances ?? [],
+          };
+
       await ctx.db.patch(existingForEvent._id, {
-        ...data,
-        reserveAttendances: data.reserveAttendances ?? [],
+        squadPresetId: mergedRoster.squadPresetId,
+        squads: mergedRoster.squads,
+        reservePlayerIds: mergedRoster.reservePlayerIds,
+        reserveAttendances: mergedRoster.reserveAttendances ?? [],
+        notAttendingPlayerIds: mergedRoster.notAttendingPlayerIds,
+        streamerId: mergedRoster.streamerId,
+        published: mergedRoster.published,
         updatedAt: now,
       });
       return existingForEvent._id;
     }
 
+    const mergedRoster = event
+      ? mergeRosterWithEventState({
+          _id: undefined as never,
+          eventId: args.eventId,
+          squadPresetId: data.squadPresetId,
+          squads: data.squads,
+          reservePlayerIds: data.reservePlayerIds,
+          reserveAttendances: data.reserveAttendances ?? [],
+          notAttendingPlayerIds: data.notAttendingPlayerIds,
+          streamerId: data.streamerId,
+          published: data.published,
+        }, event, assignments)
+      : {
+          eventId: args.eventId,
+          squadPresetId: data.squadPresetId,
+          squads: data.squads,
+          reservePlayerIds: data.reservePlayerIds,
+          reserveAttendances: data.reserveAttendances ?? [],
+          notAttendingPlayerIds: data.notAttendingPlayerIds,
+          streamerId: data.streamerId,
+          published: data.published,
+        };
+
     return await ctx.db.insert("rosters", {
-      ...data,
-      reserveAttendances: data.reserveAttendances ?? [],
+      eventId: args.eventId,
+      squadPresetId: mergedRoster.squadPresetId,
+      squads: mergedRoster.squads,
+      reservePlayerIds: mergedRoster.reservePlayerIds,
+      reserveAttendances: mergedRoster.reserveAttendances ?? [],
+      notAttendingPlayerIds: mergedRoster.notAttendingPlayerIds,
+      streamerId: mergedRoster.streamerId,
+      published: mergedRoster.published,
       createdAt: now,
       updatedAt: now,
     });

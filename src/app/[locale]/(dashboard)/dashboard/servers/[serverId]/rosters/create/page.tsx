@@ -15,7 +15,16 @@ export default async function CreateRosterPage({
   const context = await getServerContext(serverId);
   if (!context) return null;
   const { events, rosters, squadPresets, canAdmin, assignments = [], groups = [], discordConfig } = context;
-  const reserveUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
+  const rosterUserIds = Array.from(
+    new Set([
+      ...assignments.map((assignment) => assignment.userId),
+      ...events.flatMap((event) => [
+        ...event.signUps.map((signUp) => signUp.userId),
+        ...event.participants.map((participant) => participant.userId),
+      ]),
+    ]),
+  );
+  const reserveUsers = await getUsersByIds(rosterUserIds);
 
   return (
     <>

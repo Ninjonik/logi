@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock3, GripVertical, UserPlus } from "lucide-react";
+import { Ban, Check, Clock3, GripVertical, MessageCircleOff, UserPlus } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +52,7 @@ export function RosterBoardAttendeeLists({
   setDragState,
   serverDiscordId,
   noticeReasonByUserId,
+  notAttendingIndicatorByUserId,
 }: {
   board: Roster;
   users: AppUser[];
@@ -78,6 +79,7 @@ export function RosterBoardAttendeeLists({
   setDragState: (state: DragState | null) => void;
   serverDiscordId: string;
   noticeReasonByUserId: Map<string, string>;
+  notAttendingIndicatorByUserId: Map<string, "declined" | "no_response">;
 }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -156,6 +158,7 @@ export function RosterBoardAttendeeLists({
               setDragState={setDragState}
               serverDiscordId={serverDiscordId}
               noticeReasonByUserId={noticeReasonByUserId}
+              notAttendingIndicatorByUserId={new Map()}
             />
           </ScrollArea>
         </CardContent>
@@ -236,6 +239,7 @@ export function RosterBoardAttendeeLists({
               setDragState={setDragState}
               serverDiscordId={serverDiscordId}
               noticeReasonByUserId={noticeReasonByUserId}
+              notAttendingIndicatorByUserId={notAttendingIndicatorByUserId}
             />
           </ScrollArea>
         </CardContent>
@@ -259,6 +263,7 @@ function GroupedUserList({
   setDragState,
   serverDiscordId,
   noticeReasonByUserId,
+  notAttendingIndicatorByUserId,
 }: {
   users: RosterUser[];
   dictionary: Dictionary;
@@ -274,6 +279,7 @@ function GroupedUserList({
   setDragState: (state: DragState | null) => void;
   serverDiscordId: string;
   noticeReasonByUserId: Map<string, string>;
+  notAttendingIndicatorByUserId: Map<string, "declined" | "no_response">;
 }) {
   const sections: Record<string, RosterUser[]> = {};
   users.forEach((user) => {
@@ -304,6 +310,7 @@ function GroupedUserList({
           {sections[sectionName].map((user) => {
             const assignment = assignmentsByUserId.get(user.discordId);
             const noticeReason = noticeReasonByUserId.get(user.discordId);
+            const notAttendingIndicator = notAttendingIndicatorByUserId.get(user.discordId);
 
             return (
               <div
@@ -336,6 +343,22 @@ function GroupedUserList({
                           </HoverCardTrigger>
                           <HoverCardContent className="text-xs">
                             {noticeReason}
+                          </HoverCardContent>
+                        </HoverCard>
+                      ) : null}
+                      {notAttendingIndicator ? (
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            {notAttendingIndicator === "declined" ? (
+                              <Ban className="size-3.5 text-amber-500" />
+                            ) : (
+                              <MessageCircleOff className="size-3.5 text-muted-foreground" />
+                            )}
+                          </HoverCardTrigger>
+                          <HoverCardContent className="text-xs">
+                            {notAttendingIndicator === "declined"
+                              ? dictionary.roster.declinedSignup
+                              : dictionary.roster.noSignupResponse}
                           </HoverCardContent>
                         </HoverCard>
                       ) : null}
