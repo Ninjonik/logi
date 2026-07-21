@@ -100,52 +100,55 @@ export function RosterCreator({
       updatedAt: new Date().toISOString(),
     } as Roster;
   }, [selectedEvent, selectedPreset, serverId, users]);
+  const showSetupCard = !selectedEvent || !selectedPreset;
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-2xl border-border/70 bg-card">
-        <CardHeader>
-          <CardTitle className="text-lg">{dictionary.roster.setupRoster}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>{dictionary.roster.selectEvent}</Label>
-            <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder={dictionary.roster.selectEventPlaceholder} />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                {availableEvents.map((event) => (
-                  <SelectItem key={event.id} value={event.id}>
-                    {event.name} ({formatDateTime(event.meetingStart, timezone)})
-                  </SelectItem>
-                ))}
-                {availableEvents.length === 0 && (
-                  <div className="p-2 text-center text-sm text-muted-foreground">
-                    {dictionary.roster.noEventsAvailable}
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+      {showSetupCard ? (
+        <Card className="rounded-2xl border-border/70 bg-card">
+          <CardHeader>
+            <CardTitle className="text-lg">{dictionary.roster.setupRoster}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{dictionary.roster.selectEvent}</Label>
+              <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder={dictionary.roster.selectEventPlaceholder} />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {availableEvents.map((event) => (
+                    <SelectItem key={event.id} value={event.id}>
+                      {event.name} ({formatDateTime(event.meetingStart, timezone)})
+                    </SelectItem>
+                  ))}
+                  {availableEvents.length === 0 && (
+                    <div className="p-2 text-center text-sm text-muted-foreground">
+                      {dictionary.roster.noEventsAvailable}
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="space-y-2">
-            <Label>{dictionary.roster.selectPreset}</Label>
-            <Select value={selectedPresetId} onValueChange={setSelectedPresetId}>
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder={dictionary.roster.selectPresetPlaceholder} />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                {squadPresets.map((preset) => (
-                  <SelectItem key={preset.id} value={preset.id}>
-                    {preset.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="space-y-2">
+              <Label>{dictionary.roster.selectPreset}</Label>
+              <Select value={selectedPresetId} onValueChange={setSelectedPresetId}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder={dictionary.roster.selectPresetPlaceholder} />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {squadPresets.map((preset) => (
+                    <SelectItem key={preset.id} value={preset.id}>
+                      {preset.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {draftRoster && selectedEvent ? (
         <RosterBoard
