@@ -7,13 +7,7 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="split discord bot into more parts, fixed broken czech texts, added a special sign in page for clans only">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/roster-creator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-creator.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-    </list>
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="better roster view, split it into multiple parts" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -575,7 +569,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784611556252</updated>
     </task>
-    <option name="localTasksCounter" value="47" />
+    <task id="LOCAL-00047" summary="better roster view, split it into multiple parts">
+      <option name="closed" value="true" />
+      <created>1784614991040</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1784614991040</updated>
+    </task>
+    <option name="localTasksCounter" value="48" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -595,7 +597,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="fixed roster board layout err" />
     <MESSAGE value="added concurrently for discord bot to be running as well" />
     <MESSAGE value="reverted: added concurrently for discord bot to be running as well; fixed: better discord image view; added language support for discord bot and roster images" />
     <MESSAGE value="better roster image design" />
@@ -620,6 +621,7 @@
     <MESSAGE value="better topic preset editor + membership categories editor; QoL improvements" />
     <MESSAGE value="QoL improvements" />
     <MESSAGE value="split discord bot into more parts, fixed broken czech texts, added a special sign in page for clans only" />
-    <option name="LAST_COMMIT_MESSAGE" value="split discord bot into more parts, fixed broken czech texts, added a special sign in page for clans only" />
+    <MESSAGE value="better roster view, split it into multiple parts" />
+    <option name="LAST_COMMIT_MESSAGE" value="better roster view, split it into multiple parts" />
   </component>
 </project>

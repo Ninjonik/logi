@@ -33,6 +33,10 @@ export async function generateMetadata({ params }: GuildLoginPageProps): Promise
   };
 }
 
+export function generateStaticParams() {
+  return [{ serverId: "sample-server" }];
+}
+
 export default async function GuildLoginPage({ params }: GuildLoginPageProps) {
   await connection();
 
