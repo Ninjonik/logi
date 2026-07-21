@@ -7,12 +7,7 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="refactored the score system to be guild-independent">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/convex.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/convex.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord-bot/src/log.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/log.ts" afterDir="false" />
-    </list>
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="fixed build error" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -208,15 +203,7 @@
       <workItem from="1784473647742" duration="552000" />
       <workItem from="1784560940538" duration="9018000" />
       <workItem from="1784637057142" duration="2591000" />
-      <workItem from="1784641104830" duration="1331000" />
-    </task>
-    <task id="LOCAL-00001" summary="kept nextjs version only">
-      <option name="closed" value="true" />
-      <created>1783349277979</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1783349277979</updated>
+      <workItem from="1784641104830" duration="1604000" />
     </task>
     <task id="LOCAL-00002" summary="kept nextjs version only">
       <option name="closed" value="true" />
@@ -602,7 +589,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784639067353</updated>
     </task>
-    <option name="localTasksCounter" value="50" />
+    <task id="LOCAL-00050" summary="fixed logging and websocket system">
+      <option name="closed" value="true" />
+      <created>1784642541765</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1784642541766</updated>
+    </task>
+    <option name="localTasksCounter" value="51" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -622,7 +617,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="better roster image design" />
     <MESSAGE value="added basic match details upload + player stats, added automatic roster confirmed status check, completed the score functionality on its basic level" />
     <MESSAGE value="better stats handling" />
     <MESSAGE value="fixed height issues in roster discord image" />
@@ -647,6 +641,7 @@
     <MESSAGE value="better roster view, split it into multiple parts" />
     <MESSAGE value="build bug fix" />
     <MESSAGE value="refactored the score system to be guild-independent" />
-    <option name="LAST_COMMIT_MESSAGE" value="refactored the score system to be guild-independent" />
+    <MESSAGE value="fixed logging and websocket system" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed logging and websocket system" />
   </component>
 </project>

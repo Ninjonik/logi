@@ -14,17 +14,20 @@ function formatValue(value: unknown): string {
   if (typeof value === "number" || typeof value === "boolean" || value === null) return String(value);
   if (Array.isArray(value)) return `[${value.map((item) => formatValue(item)).join(",")}]`;
   if (value instanceof Error) {
+    const errorWithCause = value as Error & { cause?: unknown };
+    const cause = errorWithCause.cause;
+
     return JSON.stringify({
       name: value.name,
       message: value.message,
       stack: value.stack,
-      cause: value.cause instanceof Error
+      cause: cause instanceof Error
         ? {
-            name: value.cause.name,
-            message: value.cause.message,
-            stack: value.cause.stack,
+            name: cause.name,
+            message: cause.message,
+            stack: cause.stack,
           }
-        : value.cause,
+        : cause,
     });
   }
 
