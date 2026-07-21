@@ -7,7 +7,8 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="better text for unavailable membership applications">
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/convex/rosterSync.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/events.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/rosters.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/rosters.ts" afterDir="false" />
@@ -221,7 +222,7 @@
       <workItem from="1784641104830" duration="1604000" />
       <workItem from="1784643196275" duration="193000" />
       <workItem from="1784644234573" duration="14000" />
-      <workItem from="1784644291126" duration="1259000" />
+      <workItem from="1784644291126" duration="1271000" />
     </task>
     <task id="LOCAL-00003" summary="initial version, frontend logic only with mock data, no backend">
       <option name="closed" value="true" />
