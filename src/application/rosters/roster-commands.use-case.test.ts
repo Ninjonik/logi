@@ -69,3 +69,35 @@ test("UpdateRosterAttendanceUseCase updates reserve attendance confirmation stat
 
   assert.deepEqual(repo.rosters.get("roster-1")?.reserveAttendances, [{ userId: "user-1", ack: true, confirmed: true }]);
 });
+
+test("UpdateRosterAttendanceUseCase updates squad player attendance", async () => {
+  const repo = new InMemoryRosterCommandRepository(
+    new Map([["roster-1", {
+      id: "roster-1",
+      eventId: "event-1",
+      squads: [{
+        name: "Able",
+        group: "INF",
+        order: 1,
+        color: "#fff",
+        players: [{ id: "user-1", ack: false, confirmed: false }],
+      }],
+      reservePlayerIds: [],
+      reserveAttendances: [],
+      notAttendingPlayerIds: [],
+      published: false,
+    }]]),
+    null,
+    [],
+  );
+
+  await new UpdateRosterAttendanceUseCase(repo).acknowledge("event-1", "user-1");
+
+  assert.deepEqual(repo.rosters.get("roster-1")?.squads[0]?.players[0], { id: "user-1", ack: true, confirmed: false });
+});
+
+test("UpdateRosterAttendanceUseCase rejects missing rosters", async () => {
+  const repo = new InMemoryRosterCommandRepository(new Map(), null, []);
+
+  await assert.rejects(() => new UpdateRosterAttendanceUseCase(repo).setStatus("event-1", "user-1", "confirmed"), /Roster not found/);
+});

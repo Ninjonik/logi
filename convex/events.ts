@@ -8,21 +8,24 @@ import { ReconcileEventStatusesUseCase } from "../src/application/events/reconci
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case";
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case";
 import { UpsertNoticeUseCase } from "../src/application/events/upsert-notice.use-case";
-import { findEligibleNoticeTargets } from "../src/domain/events/notice-policy";
 import { normalizeEventRecord } from "../src/domain/events/normalization";
 import { systemClock } from "../src/domain/shared/clock";
 import { ConvexEventCommandRepository, ConvexEventScoreRepository, DelegatingEventScorePort } from "../src/infrastructure/convex/event-command-repositories";
 import { ConvexEventWorkflowRepository, ConvexEventWorkflowSyncPort } from "../src/infrastructure/convex/event-workflow-repositories";
+import {
+  handleAppendAttendanceReminderLog,
+  handleConcludeEvent,
+  handleFindNoticeTarget,
+  handleReconcileStatuses,
+  handleSetEventResult,
+  handleToggleSignup,
+  handleUpsertEvent,
+  handleUpsertNotice,
+} from "../src/infrastructure/convex/event-handlers";
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds";
 import { getGuildById, getGuildDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
-
-function assertInternalSecret(secret: string) {
-  if (secret !== INTERNAL_AUTH_SECRET) {
-    throw new Error("Unauthorized.");
-  }
-}
 
 const attendanceReminder = v.object({
   userId: v.string(),
@@ -81,41 +84,22 @@ export const upsert = mutation({
     topicPresetId: v.optional(v.id("topicPresets")),
   },
   handler: async (ctx, args) => {
-    assertInternalSecret(args.secret);
-
-    const guild = await getGuildById(ctx, args.serverId);
-    if (!guild) {
-      throw new Error("Server not found.");
-    }
-    const guildDiscordId = getGuildDiscordId(guild);
-    const useCase = new UpsertEventUseCase(
-      new ConvexEventCommandRepository(ctx),
-      new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),
-      systemClock,
-    );
-    return await useCase.execute({
-      eventId: args.eventId ? String(args.eventId) : undefined,
-      guildId: guildDiscordId,
-      kind: args.kind,
-      name: args.name,
-      description: args.description,
-      thumbnailUrl: args.thumbnailUrl,
-      meetingChannelId: args.meetingChannelId,
-      requiredRoleIds: args.requiredRoleIds,
-      rewardRoleIds: args.rewardRoleIds,
-      server: args.server,
-      serverPassword: args.serverPassword,
-      side: args.side,
-      map: args.map,
-      cap: args.cap,
-      notes: args.notes,
-      registrationEnd: args.registrationEnd,
-      meetingStart: args.meetingStart,
-      gameStart: args.gameStart,
-      gameEnd: args.gameEnd,
-      pingClan: args.pingClan,
-      createForumChannel: args.createForumChannel,
-      topicPresetId: args.topicPresetId ? String(args.topicPresetId) : undefined,
+    return await handleUpsertEvent({
+      secret: args.secret,
+      expectedSecret: INTERNAL_AUTH_SECRET,
+      args: {
+        ...args,
+        serverId: String(args.serverId),
+        eventId: args.eventId ? String(args.eventId) : undefined,
+        topicPresetId: args.topicPresetId ? String(args.topicPresetId) : undefined,
+      },
+      getGuildById: async (serverId) => await getGuildById(ctx, serverId),
+      getGuildDiscordId,
+      createUseCase: () => new UpsertEventUseCase(
+        new ConvexEventCommandRepository(ctx),
+        new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),
+        systemClock,
+      ),
     });
   },
 });
@@ -142,25 +126,12 @@ export const findNoticeTarget = query({
       .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
       .collect();
 
-    return findEligibleNoticeTargets({
-      events: events.map((event) => {
-        const normalized = normalizeEventRecord(event);
-        return {
-          id: String(event._id),
-          name: event.name,
-          meetingStart: normalized.meetingStart,
-          status: normalized.status,
-          participants: normalized.participants,
-        };
-      }),
+    return handleFindNoticeTarget({
+      events,
       userId: args.userId,
       query: args.query,
       now: new Date(),
-    }).map((event) => ({
-      id: event.id,
-      name: event.name,
-      meetingStart: event.meetingStart,
-    }));
+    });
   },
 });
 
@@ -172,16 +143,19 @@ export const toggleSignUp = mutation({
     group: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
-    assertInternalSecret(args.secret);
-    const useCase = new ToggleSignupUseCase(
-      new ConvexEventWorkflowRepository(ctx),
-      new ConvexEventWorkflowSyncPort(ctx),
-      systemClock,
-    );
-    return await useCase.execute({
+    return await handleToggleSignup({
+      secret: args.secret,
+      expectedSecret: INTERNAL_AUTH_SECRET,
+      args: {
       eventId: String(args.eventId),
       userId: args.userId,
       group: args.group,
+      },
+      createUseCase: () => new ToggleSignupUseCase(
+        new ConvexEventWorkflowRepository(ctx),
+        new ConvexEventWorkflowSyncPort(ctx),
+        systemClock,
+      ),
     });
   },
 });
@@ -191,13 +165,15 @@ export const reconcileStatuses = mutation({
     secret: v.string(),
   },
   handler: async (ctx, args) => {
-    assertInternalSecret(args.secret);
-    const useCase = new ReconcileEventStatusesUseCase(
-      new ConvexEventCommandRepository(ctx),
-      new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),
-      systemClock,
-    );
-    return await useCase.execute();
+    return await handleReconcileStatuses({
+      secret: args.secret,
+      expectedSecret: INTERNAL_AUTH_SECRET,
+      createUseCase: () => new ReconcileEventStatusesUseCase(
+        new ConvexEventCommandRepository(ctx),
+        new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),
+        systemClock,
+      ),
+    });
   },
 });
 
@@ -207,13 +183,16 @@ export const conclude = mutation({
     eventId: v.id("events"),
   },
   handler: async (ctx, args) => {
-    assertInternalSecret(args.secret);
-    const useCase = new ConcludeEventUseCase(
-      new ConvexEventCommandRepository(ctx),
-      new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),
-      systemClock,
-    );
-    return await useCase.execute(String(args.eventId));
+    return await handleConcludeEvent({
+      secret: args.secret,
+      expectedSecret: INTERNAL_AUTH_SECRET,
+      eventId: String(args.eventId),
+      createUseCase: () => new ConcludeEventUseCase(
+        new ConvexEventCommandRepository(ctx),
+        new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),
+        systemClock,
+      ),
+    });
   },
 });
 
@@ -224,21 +203,14 @@ export const appendAttendanceReminderLog = mutation({
     reminders: v.array(attendanceReminder),
   },
   handler: async (ctx, args) => {
-    assertInternalSecret(args.secret);
-
-    const event = await ctx.db.get(args.eventId);
-    if (!event) {
-      throw new Error("Event not found.");
-    }
-
-    const normalizedEvent = normalizeEventRecord(event);
-
-    await ctx.db.patch(args.eventId, {
-      attendanceReminderLog: [...normalizedEvent.attendanceReminderLog, ...args.reminders],
-      updatedAt: new Date().toISOString(),
+    return await handleAppendAttendanceReminderLog({
+      secret: args.secret,
+      expectedSecret: INTERNAL_AUTH_SECRET,
+      eventId: String(args.eventId),
+      reminders: args.reminders,
+      getEventById: async (eventId) => await ctx.db.get(eventId as Id<"events">),
+      patchEvent: async (eventId, patch) => await ctx.db.patch(eventId as Id<"events">, patch),
     });
-
-    return { ok: true };
   },
 });
 
@@ -250,15 +222,18 @@ export const upsertNotice = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
-    assertInternalSecret(args.secret);
-    const useCase = new UpsertNoticeUseCase(
-      new ConvexEventWorkflowRepository(ctx),
-      systemClock,
-    );
-    return await useCase.execute({
-      eventId: String(args.eventId),
-      userId: args.userId,
-      reason: args.reason,
+    return await handleUpsertNotice({
+      secret: args.secret,
+      expectedSecret: INTERNAL_AUTH_SECRET,
+      args: {
+        eventId: String(args.eventId),
+        userId: args.userId,
+        reason: args.reason,
+      },
+      createUseCase: () => new UpsertNoticeUseCase(
+        new ConvexEventWorkflowRepository(ctx),
+        systemClock,
+      ),
     });
   },
 });
@@ -270,18 +245,13 @@ export const setResult = mutation({
     eventResult,
   },
   handler: async (ctx, args) => {
-    assertInternalSecret(args.secret);
-
-    const event = await ctx.db.get(args.eventId);
-    if (!event) {
-      throw new Error("Event not found.");
-    }
-
-    await ctx.db.patch(args.eventId, {
+    return await handleSetEventResult({
+      secret: args.secret,
+      expectedSecret: INTERNAL_AUTH_SECRET,
+      eventId: String(args.eventId),
       eventResult: args.eventResult,
-      updatedAt: new Date().toISOString(),
+      getEventById: async (eventId) => await ctx.db.get(eventId as Id<"events">),
+      patchEvent: async (eventId, patch) => await ctx.db.patch(eventId as Id<"events">, patch),
     });
-
-    return { ok: true };
   },
 });
