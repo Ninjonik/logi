@@ -6,7 +6,7 @@ import {
   normalizeDoc,
   normalizeEventDoc,
   normalizeGuildDoc,
-} from "./discord-shared";
+} from "./discord_shared";
 
 export const listSyncPayloads = query({
   args: { secret: v.string() },

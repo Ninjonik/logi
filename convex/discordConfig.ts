@@ -6,7 +6,7 @@ import {
   membershipSettingsValidator,
   normalizeConfigDoc,
   ticketSettingsValidator,
-} from "./discord-shared";
+} from "./discord_shared";
 
 export const getConfigByGuild = query({
   args: {

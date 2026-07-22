@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getUserByDiscordId } from "./identity";
-import { assertInternalSecret, normalizeDoc } from "./discord-shared";
+import { assertInternalSecret, normalizeDoc } from "./discord_shared";
 
 export const createPlatformIdLinkToken = mutation({
   args: {

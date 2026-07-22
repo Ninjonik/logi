@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getUserByDiscordId } from "./identity";
-import { assertInternalSecret, normalizeConfigDoc, normalizeDoc, normalizeUserDoc } from "./discord-shared";
+import { assertInternalSecret, normalizeConfigDoc, normalizeDoc, normalizeUserDoc } from "./discord_shared";
 
 export const getTicketCategoryContext = query({
   args: { secret: v.string(), guildId: v.string(), categoryId: v.string() },

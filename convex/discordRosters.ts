@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getUserByDiscordId } from "./identity";
-import { assertInternalSecret, normalizeConfigDoc, normalizeDoc, normalizeEventDoc, normalizeUserDoc } from "./discord-shared";
+import { assertInternalSecret, normalizeConfigDoc, normalizeDoc, normalizeEventDoc, normalizeUserDoc } from "./discord_shared";
 
 export const getRosterImageContext = query({
   args: { secret: v.string(), eventId: v.id("events") },
