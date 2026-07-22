@@ -1,8 +1,8 @@
 "use client";
 
+import { makeFunctionReference } from "convex/server";
 import { useQuery } from "convex/react";
 
-import { api } from "../../../convex/_generated/api";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { DiscordConfig, EventRecord, Group, Roster, AppUser } from "@/types/domain";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
@@ -34,8 +34,10 @@ type LiveRosterDetail = {
   discordConfig: DiscordConfig | null;
 };
 
+const getRosterDetailReference = makeFunctionReference<"query">("serverRosters:getRosterDetail");
+
 export function LiveRosterBoard(props: LiveRosterBoardProps) {
-  const liveData = useQuery(api.serverData.getRosterDetail, {
+  const liveData = useQuery(getRosterDetailReference, {
     userId: props.userId,
     serverId: props.serverId as never,
     rosterId: props.rosterId as never,

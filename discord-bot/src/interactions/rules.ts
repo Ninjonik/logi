@@ -1,16 +1,8 @@
+import { canAcceptSignups } from "../../../src/domain/events/status";
 import type { EventInteractionContext, MembershipCategory } from "../types";
 
 export function isSignupOpen(event: Pick<EventInteractionContext["event"], "kind" | "registrationEnd" | "status">) {
-  if (event.status === "registration") {
-    return true;
-  }
-
-  if (event.kind !== "training" || event.status !== "starting") {
-    return false;
-  }
-
-  const registrationEnd = new Date(event.registrationEnd).getTime();
-  return Number.isFinite(registrationEnd) && Date.now() < registrationEnd;
+  return canAcceptSignups(event, new Date(Date.now()));
 }
 
 export function resolveMembershipRoleIds(

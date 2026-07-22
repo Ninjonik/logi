@@ -1,5 +1,10 @@
 import type { Client } from "discord.js";
 
+import {
+  buildEventSignatureMap,
+  buildGuildPayload as buildGuildPayloadShared,
+  getChangedEventIds,
+} from "../../../src/application/discord-sync/payload-builder";
 import { convex, references } from "../convex";
 import { env } from "../environment";
 import { logError, logInfo, logWarn } from "../log";
@@ -212,20 +217,10 @@ export class DiscordSyncService {
 
   private applyEventIndex(index: EventSyncIndex, initialLoad: boolean) {
     const nextEventIndexById = new Map(index.events.map((event) => [event.id, event]));
-    const nextRosterIndexByEventId = new Map(index.rosters.map((roster) => [roster.eventId, roster]));
-    const nextEventSignatureById = new Map<string, string>();
-
-    for (const event of index.events) {
-      const roster = nextRosterIndexByEventId.get(event.id);
-      nextEventSignatureById.set(event.id, `${event.updatedAt}|${roster?.updatedAt ?? "no-roster"}`);
-    }
-
-    const queuedDueToIndexChanges: string[] = [];
-    for (const [eventId, signature] of nextEventSignatureById) {
-      if (initialLoad || this.eventSignatureById.get(eventId) !== signature) {
-        this.queuedEventIds.add(eventId);
-        queuedDueToIndexChanges.push(eventId);
-      }
+    const { rosterIndexByEventId: nextRosterIndexByEventId, signatures: nextEventSignatureById } = buildEventSignatureMap(index);
+    const queuedDueToIndexChanges = getChangedEventIds(nextEventSignatureById, this.eventSignatureById, initialLoad);
+    for (const eventId of queuedDueToIndexChanges) {
+      this.queuedEventIds.add(eventId);
     }
 
     this.eventIndexById.clear();
@@ -310,14 +305,8 @@ export class DiscordSyncService {
 }
 
 function buildGuildPayload(runtime: GuildRuntimeData, contexts: Array<EventSyncContext | null>): SyncPayload {
-  const filteredContexts = contexts.filter((context): context is EventSyncContext => Boolean(context));
-
-  return {
-    config: runtime.config!,
-    groups: runtime.groups,
-    topicPresets: runtime.topicPresets,
-    events: filteredContexts.map((context) => context.event),
-    rosters: filteredContexts.flatMap((context) => (context.roster ? [context.roster] : [])),
-    syncStates: filteredContexts.flatMap((context) => (context.syncState ? [context.syncState] : [])),
-  };
+  return buildGuildPayloadShared(
+    runtime as GuildRuntimeData & { config: NonNullable<GuildRuntimeData["config"]> },
+    contexts,
+  ) as SyncPayload;
 }

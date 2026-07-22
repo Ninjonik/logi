@@ -6,7 +6,7 @@ import { PlatformIdLinkForm } from "@/components/app/platform-id-link-form";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 
-const getPlatformIdLinkTokenReference = makeFunctionReference<"query">("discord:getPlatformIdLinkToken");
+const getPlatformIdLinkTokenReference = makeFunctionReference<"query">("platformIdLinks:getPlatformIdLinkToken");
 
 export const metadata: Metadata = {
   title: "Link platform ID",

@@ -5,8 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getInternalAuthSecret } from "@/lib/env";
 import { parsePlatformIdsInput } from "@/lib/platform-ids";
 
-const getPlatformIdLinkTokenReference = makeFunctionReference<"query">("discord:getPlatformIdLinkToken");
-const consumePlatformIdLinkTokenReference = makeFunctionReference<"mutation">("discord:consumePlatformIdLinkToken");
+const getPlatformIdLinkTokenReference = makeFunctionReference<"query">("platformIdLinks:getPlatformIdLinkToken");
+const consumePlatformIdLinkTokenReference = makeFunctionReference<"mutation">("platformIdLinks:consumePlatformIdLinkToken");
 
 export async function GET(
   _request: NextRequest,

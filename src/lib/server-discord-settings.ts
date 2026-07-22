@@ -4,9 +4,9 @@ import { makeFunctionReference } from "convex/server";
 import { getInternalAuthSecret } from "@/lib/env";
 import type { DiscordConfig, MembershipSettings, TicketSettings } from "@/types/domain";
 
-const getConfigByGuildReference = makeFunctionReference<"query">("discord:getConfigByGuild");
-const getMembershipApplicationByAssignmentReference = makeFunctionReference<"query">("discord:getMembershipApplicationByAssignment");
-const upsertConfigReference = makeFunctionReference<"mutation">("discord:upsertConfig");
+const getConfigByGuildReference = makeFunctionReference<"query">("discordConfig:getConfigByGuild");
+const getMembershipApplicationByAssignmentReference = makeFunctionReference<"query">("discordMembership:getMembershipApplicationByAssignment");
+const upsertConfigReference = makeFunctionReference<"mutation">("discordConfig:upsertConfig");
 
 export async function getDiscordConfigByGuild(guildId: string) {
   return (await fetchQuery(getConfigByGuildReference, { guildId: guildId as never })) as DiscordConfig | null;
@@ -46,7 +46,7 @@ export async function saveDiscordConfig(input: {
   });
 }
 
-const confirmRosterAttendanceFromMeetingChannelReference = makeFunctionReference<"mutation">("discord:confirmRosterAttendanceFromMeetingChannel");
+const confirmRosterAttendanceFromMeetingChannelReference = makeFunctionReference<"mutation">("discordRosters:confirmRosterAttendanceFromMeetingChannel");
 
 export async function confirmRosterAttendanceFromMeetingChannel(input: {
   guildId: string;

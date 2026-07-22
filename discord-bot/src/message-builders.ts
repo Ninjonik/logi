@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
+import { canAcceptSignups } from "../../src/domain/events/status";
 
 import { SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
 import type {
@@ -444,16 +445,7 @@ function shouldShowPublishedRosterImage(event: EventRecord, roster?: Roster) {
 }
 
 function isSignupOpen(event: EventRecord) {
-  if (event.status === "registration") {
-    return true;
-  }
-
-  if (event.kind !== "training" || event.status !== "starting") {
-    return false;
-  }
-
-  const registrationEnd = new Date(event.registrationEnd).getTime();
-  return Number.isFinite(registrationEnd) && Date.now() < registrationEnd;
+  return canAcceptSignups(event, new Date(Date.now()));
 }
 
 function buildSignupButtons(config: DiscordConfig, groups: Group[], eventId: string, event: EventRecord) {
