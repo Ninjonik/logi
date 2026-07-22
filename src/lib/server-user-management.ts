@@ -1,64 +1,35 @@
-import { fetchMutation, fetchQuery } from "convex/nextjs";
-import { makeFunctionReference } from "convex/server";
 import { cache } from "react";
 
-import { appCacheTags, tagCacheEntries } from "@/lib/cache-tags";
-import { getInternalAuthSecret } from "@/lib/env";
-import { parsePlatformIdsInput } from "@/lib/platform-ids";
 import type { AppUser, Guild } from "@/types/domain";
+import {
+  deleteServerUserAssignmentCommand,
+  importDiscordMembersForServerCommand,
+  savePlayerPlatformIdCommand,
+  saveServerUserAssignmentCommand,
+} from "@/lib/gateways/assignment-commands";
+import {
+  getServerUserAssignmentReadModel,
+  getServerUserAssignmentsReadModel,
+  type ServerUserAssignmentReadModel,
+} from "@/lib/read-models/assignments";
+import { getUsersReadModelByIds, listUsersReadModel } from "@/lib/read-models/users";
 
-const listAssignmentsReference = makeFunctionReference<"query">("userAssignments:listForServer");
-const getAssignmentByIdReference = makeFunctionReference<"query">("userAssignments:getById");
-const getUsersByIdsReference = makeFunctionReference<"query">("serverData:getUsersByIds");
-const listUsersReference = makeFunctionReference<"query">("serverData:listUsers");
-const upsertAssignmentReference = makeFunctionReference<"mutation">("userAssignments:upsert");
-const importDiscordMembersReference = makeFunctionReference<"mutation">("userAssignments:importDiscordMembers");
-const removeAssignmentReference = makeFunctionReference<"mutation">("userAssignments:remove");
-const updatePlatformIdsReference = makeFunctionReference<"mutation">("players:updatePlatformIds");
-const clearPlatformIdsReference = makeFunctionReference<"mutation">("players:clearPlatformIds");
-
-export type ServerUserAssignment = {
-  id: string;
-  userId: string;
-  serverId: string;
-  type: "member" | "mercenary";
-  status: "pending" | "recruit" | "active";
-  membershipCategoryId?: string;
-  primaryGroupId?: string;
-  secondaryGroupIds: string[];
-  paused: boolean;
-  pausedNote?: string;
-  createdAt: string;
-  updatedAt: string;
-};
+export type ServerUserAssignment = ServerUserAssignmentReadModel;
 
 export const getServerUserAssignments = cache(async function getServerUserAssignments(serverId: string): Promise<ServerUserAssignment[]> {
-  "use cache";
-  tagCacheEntries([appCacheTags.assignments(serverId)]);
-  return (await fetchQuery(listAssignmentsReference, { serverId })) as ServerUserAssignment[];
+  return await getServerUserAssignmentsReadModel(serverId);
 });
 
 export const getServerUserAssignment = cache(async function getServerUserAssignment(assignmentId: string) {
-  "use cache";
-  tagCacheEntries([appCacheTags.assignment(assignmentId)]);
-  return (await fetchQuery(getAssignmentByIdReference, {
-    assignmentId: assignmentId as never,
-  })) as ServerUserAssignment | null;
+  return await getServerUserAssignmentReadModel(assignmentId);
 });
 
 export async function getUsersByIds(userIds: string[]) {
-  "use cache";
-  tagCacheEntries([
-    appCacheTags.users(),
-    ...userIds.map((userId) => appCacheTags.player(userId)),
-  ]);
-  return (await fetchQuery(getUsersByIdsReference, { userIds })) as AppUser[];
+  return await getUsersReadModelByIds(userIds);
 }
 
 export const listUsers = cache(async function listUsers() {
-  "use cache";
-  tagCacheEntries([appCacheTags.users()]);
-  return (await fetchQuery(listUsersReference, {})) as AppUser[];
+  return await listUsersReadModel();
 });
 
 export async function getAssignmentUser(assignment: ServerUserAssignment) {
@@ -95,46 +66,18 @@ export async function saveServerUserAssignment(input: {
   paused: boolean;
   pausedNote?: string;
 }) {
-  return await fetchMutation(upsertAssignmentReference, {
-    secret: getInternalAuthSecret(),
-    assignmentId: input.assignmentId as never,
-    userId: input.userId,
-    serverId: input.serverId,
-    type: input.type,
-    status: input.status,
-    membershipCategoryId: input.membershipCategoryId,
-    primaryGroupId: (input.primaryGroupId || undefined) as never,
-    secondaryGroupIds: input.secondaryGroupIds as never,
-    paused: input.paused,
-    pausedNote: input.pausedNote,
-  });
+  return await saveServerUserAssignmentCommand(input);
 }
 
 export async function deleteServerUserAssignment(assignmentId: string) {
-  return await fetchMutation(removeAssignmentReference, {
-    secret: getInternalAuthSecret(),
-    assignmentId: assignmentId as never,
-  });
+  return await deleteServerUserAssignmentCommand(assignmentId);
 }
 
 export async function savePlayerPlatformId(input: {
   userId: string;
   platformIds?: string | string[];
 }) {
-  const normalizedPlatformIds = parsePlatformIdsInput(input.platformIds);
-
-  if (normalizedPlatformIds.length === 0) {
-    return await fetchMutation(clearPlatformIdsReference, {
-      secret: getInternalAuthSecret(),
-      userId: input.userId,
-    });
-  }
-
-  return await fetchMutation(updatePlatformIdsReference, {
-    secret: getInternalAuthSecret(),
-    userId: input.userId,
-    platformIds: normalizedPlatformIds,
-  });
+  return await savePlayerPlatformIdCommand(input);
 }
 
 export async function importDiscordMembersForServer(input: {
@@ -147,15 +90,7 @@ export async function importDiscordMembersForServer(input: {
     secondaryGroupIds: string[];
   }>;
 }) {
-  return await fetchMutation(importDiscordMembersReference, {
-    secret: getInternalAuthSecret(),
-    serverId: input.serverId,
-    assignmentType: input.assignmentType,
-    members: input.members.map((member) => ({
-      ...member,
-      secondaryGroupIds: member.secondaryGroupIds as never,
-    })) as never,
-  }) as {
+  return await importDiscordMembersForServerCommand(input) as {
     importedCount: number;
     createdUsers: number;
     updatedUsers: number;

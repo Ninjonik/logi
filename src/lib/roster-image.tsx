@@ -68,7 +68,7 @@ type RosterImageContext = {
   }>;
 };
 
-const getRosterImageContextReference = makeFunctionReference<"query">("discord:getRosterImageContext");
+const getRosterImageContextReference = makeFunctionReference<"query">("discordRosters:getRosterImageContext");
 
 export async function getRosterImageContext(eventId: string) {
   return (await fetchQuery(getRosterImageContextReference, {

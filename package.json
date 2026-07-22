@@ -6,9 +6,12 @@
     "dev": "next dev",
     "dev:all": "concurrently \"next dev\" \"tsx discord-bot/src/index.ts\"",
     "bot:dev": "tsx discord-bot/src/index.ts",
+    "test": "node --import tsx --test \"src/**/*.test.ts\" \"discord-bot/src/**/*.test.ts\"",
+    "test:domain": "node --import tsx --test \"src/domain/**/*.test.ts\"",
     "bot:test": "node --import tsx --test \"discord-bot/src/**/*.test.ts\"",
     "build": "next build",
     "start": "next start",
+    "typecheck": ".\\node_modules\\.bin\\tsc.cmd --noEmit",
     "lint": "next lint"
   },
   "dependencies": {
