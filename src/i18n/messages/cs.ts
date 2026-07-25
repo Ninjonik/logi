@@ -40,7 +40,7 @@ export const csMessages = {
     botStatus: "Stav bota",
     botInstalled: "Nainstalován",
     botMissing: "Chybí",
-    refreshBotStatus: "Obnovit stav bota",
+    refreshBotStatus: "Obnovit",
     refreshingBotStatus: "Obnovuje se stav bota...",
     botStatusRefreshed: "Stav bota byl obnoven.",
     botStatusRefreshError: "Stav bota se nepodařilo obnovit.",

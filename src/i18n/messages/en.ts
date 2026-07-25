@@ -40,7 +40,7 @@ export const enMessages = {
     botStatus: "Bot status",
     botInstalled: "Installed",
     botMissing: "Missing",
-    refreshBotStatus: "Refresh bot status",
+    refreshBotStatus: "Refresh",
     refreshingBotStatus: "Refreshing bot status...",
     botStatusRefreshed: "Bot status refreshed.",
     botStatusRefreshError: "Unable to refresh bot status.",
