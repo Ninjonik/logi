@@ -37,6 +37,10 @@ export const csMessages = {
     openServer: "Otevřít klan",
     inviteBot: "Pozvat bota",
     inviteBotHint: "Některé spravované klany ještě potřebují Discord bota, než je půjde tady plně otevřít.",
+    inviteBotModalTitle: "Než pozvete bota",
+    inviteBotModalDescription: "Dejte roli bota nad všechny Discord role, které má Logi přidávat nebo odebírat. Pokud bude role bota níž, Discord tyto změny zablokuje, i když má bot správná oprávnění.",
+    inviteBotModalNotApplicable: "Tento klan teď nemá nastavené žádné Discord role, které by měl Logi přidávat nebo odebírat, takže se toto upozornění na pořadí rolí zatím nepoužije.",
+    inviteBotModalConfirm: "Otevřít Discord pozvánku",
     botStatus: "Stav bota",
     botInstalled: "Nainstalován",
     botMissing: "Chybí",
@@ -399,6 +403,11 @@ export const csMessages = {
     missingRecruitRoleDescription: "Tato kategorie nemá nastavenou recruit roli. ",
     missingFinalRoleDescription: "Tato kategorie nemá nastavenou finální roli. ",
     missingCategoryRolesSummary: "Logi bude membership status držet tady, ale odpovídající Discord role se pro tuto fázi nepřidá.",
+    linkMissingDiscordIds: "Doplnit chybÄ›jÃ­cÃ­ Discord ID",
+    linkMissingDiscordIdsDescription: "SpÃ¡rujte importovanÃ© hrÃ¡Äe bez Discord ID s Äleny z vybranÃ© Discord role.",
+    linkMissingDiscordIdsHint: "JmÃ©na se pÅ™ed porovnÃ¡nÃ­m normalizujÃ­ a propojÃ­ se prvnÃ­ odpovÃ­dajÃ­cÃ­ Discord Älen.",
+    linkMissingDiscordIdsSuccess: "Propojeno {linked} importovanÃ½ch hrÃ¡ÄÅ¯ z {scanned} kandidÃ¡tÅ¯.",
+    linkMissingDiscordIdsMerged: "{count} importovanÃ½ch hrÃ¡ÄskÃ½ch zÃ¡znamÅ¯ bylo slouÄeno s existujÃ­cÃ­mi Discord ÃºÄty.",
   },
   navUser: {
     scoreSuffix: "skóre",
@@ -650,6 +659,9 @@ export const csMessages = {
       pingClan: "Upozornit klan (Ping)",
       createForumChannel: "Vytvořit forum kanál",
     },
+    importEventPlayers: "Importovat a pÃ¡rovat hrÃ¡Äe",
+    importEventPlayersDescription: "SpÃ¡ruje importovanÃ© HLL hrÃ¡Äe s databÃ¡zÃ­, doplnÃ­ chybÄ›jÃ­cÃ­ platform ID a podle potÅ™eby vytvoÅ™Ã­ novÃ© hrÃ¡Äe.",
+    importEventPlayersHint: "JmÃ©na hrÃ¡ÄÅ¯ se porovnÃ¡vajÃ­ po odebrÃ¡nÃ­ clan tagu, pÅ™evodu na malÃ¡ pÃ­smena a odstranÄ›nÃ­ speciÃ¡lnÃ­ch znakÅ¯.",
   },
   presets: {
     topicTitle: "Šablony témat",
@@ -764,6 +776,9 @@ export const csMessages = {
     helperDataTitle: "Pomocná data",
     helperDataBody:
       "Skupiny, šablony jednotek a šablony témat slouží jen jako zdroje pro kopírování. Jejich reset nikdy nepřepíše staré akce ani soupisky.",
+    importsTitle: "Importy",
+    importsBody:
+      "HromadnÃ© importy akcÃ­, hrÃ¡ÄÅ¯ a platformnÃ­ch identit jsou tady na jednom mÃ­stÄ›, aby admin nÃ¡stroje nebyly rozhÃ¡zenÃ© po aplikaci.",
   },
   shared: {
     openColumn: "Otevřít",

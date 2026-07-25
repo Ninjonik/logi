@@ -14,7 +14,7 @@ function createDeps() {
     revalidated: [] as string[][],
     savedEvents: [] as Array<Record<string, unknown>>,
     concluded: [] as Array<{ eventId: string }>,
-    importedEventLinks: [] as Array<{ serverId: string; linksInput: string }>,
+    importedEventLinks: [] as Array<{ serverId: string; linksInput: string; importPlayers?: boolean; clanTag?: string }>,
     importedMatchResults: [] as Array<{ serverId: string; eventId: string; eventSide?: string; matchLink: string }>,
     requestedMetadata: [] as string[],
     logged: [] as Array<{ scope: string; error: unknown }>,
@@ -31,7 +31,7 @@ function createDeps() {
       concludeServerEvent: async (input: { eventId: string }) => {
         calls.concluded.push(input);
       },
-      importServerEventsFromLinks: async (input: { serverId: string; linksInput: string }) => {
+      importServerEventsFromLinks: async (input: { serverId: string; linksInput: string; importPlayers?: boolean; clanTag?: string }) => {
         calls.importedEventLinks.push(input);
         return {
           importedUserIds: ["user-1"],
@@ -118,6 +118,12 @@ test("server events POST imports events and revalidates imported entity tags", a
 
   assert.equal(response.status, 200);
   assert.equal(calls.importedEventLinks.length, 1);
+  assert.deepEqual(calls.importedEventLinks[0], {
+    serverId: "guild-1",
+    linksInput: "https://example.com/games/123",
+    importPlayers: false,
+    clanTag: undefined,
+  });
   assert.deepEqual(calls.revalidated[0], [
     "server-context:guild-1",
     "events:guild-1",

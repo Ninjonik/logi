@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Download, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
@@ -39,7 +38,6 @@ export function ImportDiscordMembersButton({
   dictionary: Dictionary;
   defaultRoleId?: string;
 }) {
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
   const [roleId, setRoleId] = useState(defaultRoleId ?? "");
@@ -88,7 +86,7 @@ export function ImportDiscordMembersButton({
       }
 
       setIsOpen(false);
-      router.refresh();
+      window.location.reload();
     });
   }
 

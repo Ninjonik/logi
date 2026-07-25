@@ -154,6 +154,8 @@ type ClanDiscordMessages = {
     platformIdButton: string;
     platformIdDmIntro: string;
     platformIdDmInstruction: string;
+    platformIdReadyDm: string;
+    platformIdReadyInteraction: string;
     threadTitle: string;
     category: string;
     createdBy: string;
@@ -318,7 +320,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       unavailable: "Membership applications are, at the moment, disabled.",
       alreadyInClan: "You are already added to this clan. Ask staff if your membership status needs to be changed.",
       openApplicationExists: "You already have an open clan application. Wait for staff to close it before opening another.",
-      dmSent: "I sent you a DM with a direct link to submit your platform ID. Submit it there, then click this button again.",
+      dmSent: "I sent you a DM with a direct link to submit your platform ID. Open it here: {link}. Submit it there, then click this button again.",
       dmFailed: "I could not DM you. Use this one-time link to submit your platform ID, then click the button again: {link}",
       modalTitle: "Clan application",
       setupIncomplete: "Membership application setup is incomplete.",
@@ -345,6 +347,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       platformIdButton: "Submit platform ID",
       platformIdDmIntro: "Before we can continue your clan application, we need a platform ID we can match to Hell Let Loose.",
       platformIdDmInstruction: "Use the button below to open the one-time submission page. When it says successful, close it and click the application button again in Discord.",
+      platformIdReadyDm: "Your platform ID is saved. You can join the clan now. Open the clan application message here and click it again: {link}",
+      platformIdReadyInteraction: "Your platform ID is saved. You can join the clan now. Open the clan application message here and click it again: {link}",
       threadTitle: "Application #{number}",
       category: "Category",
       createdBy: "Created by",
@@ -507,7 +511,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       unavailable: "Členské přihlášky teď nejsou dostupné.",
       alreadyInClan: "V tomto klanu už jste přidaní. Pokud je potřeba změnit váš členský stav, kontaktujte staff.",
       openApplicationExists: "Už máte otevřenou klanovou přihlášku. Počkejte, až ji staff uzavře, než otevřete další.",
-      dmSent: "Poslal jsem vám DM s přímým odkazem pro zadání vašeho platform ID. Vyplňte ho tam a potom na toto tlačítko klikněte znovu.",
+      dmSent: "Poslal jsem vám DM s přímým odkazem pro zadání vašeho platform ID. Otevřete ho tady: {link}. Vyplňte ho tam a potom na toto tlačítko klikněte znovu.",
       dmFailed: "Nepodařilo se mi vám poslat DM. Použijte tento jednorázový odkaz pro zadání vašeho platform ID a potom klikněte na tlačítko znovu: {link}",
       modalTitle: "Klanová přihláška",
       setupIncomplete: "Nastavení členských přihlášek není kompletní.",
@@ -534,6 +538,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       platformIdButton: "Zadat platform ID",
       platformIdDmIntro: "Než budeme moci pokračovat s vaší klanovou přihláškou, potřebujeme platform ID, které můžeme spárovat s Hell Let Loose.",
       platformIdDmInstruction: "Použijte tlačítko níže pro otevření jednorázové stránky pro odeslání. Až uvidíte úspěšné potvrzení, zavřete ji a v Discordu znovu klikněte na tlačítko přihlášky.",
+      platformIdReadyDm: "Vaše platform ID je uložené. Teď už se můžete do klanu přihlásit. Otevřete si znovu zprávu s přihláškou tady a klikněte na ni znovu: {link}",
+      platformIdReadyInteraction: "Vaše platform ID je uložené. Teď už se můžete do klanu přihlásit. Otevřete si znovu zprávu s přihláškou tady a klikněte na ni znovu: {link}",
       threadTitle: "Přihláška #{number}",
       category: "Kategorie",
       createdBy: "Vytvořil",

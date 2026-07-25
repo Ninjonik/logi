@@ -1,6 +1,13 @@
 import { saveServerEvent, saveServerEventResult } from "@/lib/server-events";
 import { saveServerMatch } from "@/lib/server-matches";
-import { getServerUserAssignments, getUsersByIds, listUsers, savePlayerPlatformId } from "@/lib/server-user-management";
+import {
+  getServerUserAssignments,
+  getUsersByIds,
+  linkImportedDiscordProfile,
+  listUsers,
+  savePlayerPlatformId,
+  upsertImportedPlayer,
+} from "@/lib/server-user-management";
 import { savePlayerMatchStats } from "@/lib/server-player-stats";
 
 type ExternalTeam = string;
@@ -128,6 +135,14 @@ function toErrorMessage(error: unknown, fallback: string) {
 
 function normalizeValue(value: string | undefined) {
   return value?.trim().toLowerCase() ?? "";
+}
+
+function normalizeComparableName(value: string | undefined) {
+  return (value ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
 }
 
 function isUnknownTeam(value: string | undefined) {
@@ -272,10 +287,14 @@ function stripClanTag(playerName: string, clanTag: string) {
   return strippedName || null;
 }
 
+function toImportedUserId(platformId: string) {
+  return `imported:${normalizeValue(platformId)}`;
+}
+
 function buildUniqueUserMap(users: Awaited<ReturnType<typeof getUsersByIds>>) {
   const counts = new Map<string, number>();
   for (const user of users) {
-    const normalizedName = normalizeValue(user.name);
+    const normalizedName = normalizeComparableName(user.name);
     if (!normalizedName) {
       continue;
     }
@@ -284,13 +303,38 @@ function buildUniqueUserMap(users: Awaited<ReturnType<typeof getUsersByIds>>) {
 
   return new Map(
     users.flatMap((user) => {
-      const normalizedName = normalizeValue(user.name);
+      const normalizedName = normalizeComparableName(user.name);
       if (!normalizedName || counts.get(normalizedName) !== 1) {
         return [];
       }
       return [[normalizedName, user] as const];
     }),
   );
+}
+
+function buildUserNameMap(users: Awaited<ReturnType<typeof listUsers>>) {
+  const byName = new Map<string, typeof users>();
+
+  for (const user of users) {
+    const normalizedName = normalizeComparableName(user.name);
+    if (!normalizedName) {
+      continue;
+    }
+
+    const existing = byName.get(normalizedName) ?? [];
+    existing.push(user);
+    byName.set(normalizedName, existing);
+  }
+
+  return byName;
+}
+
+function resolveImportedPlayerName(playerName: string, clanTag: string | undefined) {
+  if (!clanTag) {
+    return playerName.trim() || playerName;
+  }
+
+  return stripClanTag(playerName, clanTag) ?? (playerName.trim() || playerName);
 }
 
 function resolveLocalTeam(eventSide: string | undefined, payload: ScoreboardResponse["result"]) {
@@ -355,15 +399,16 @@ function buildEventResult(eventSide: string | undefined, sourceUrl: string, mapI
   };
 }
 
-async function buildServerUserLookups(serverId: string) {
+async function buildServerUserLookups(serverId: string, importPlayers: boolean) {
   const assignments = await getServerUserAssignments(serverId);
-  const users = await getUsersByIds(assignments.map((assignment) => assignment.userId));
+  const assignedUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
+  const allUsers = importPlayers ? await listUsers() : assignedUsers;
 
   console.log("[match-results] import:candidate-pool", {
     serverId,
     assignmentCount: assignments.length,
-    userCount: users.length,
-    users: users.map((user) => ({
+    userCount: allUsers.length,
+    users: allUsers.map((user) => ({
       userId: user.discordId,
       name: user.name,
       platformIds: user.platformIds,
@@ -372,18 +417,11 @@ async function buildServerUserLookups(serverId: string) {
   });
 
   const usersByPlatformId = new Map(
-    users.flatMap((user) =>
+    allUsers.flatMap((user) =>
       user.platformIds.map((platformId) => [normalizeValue(platformId), user] as const),
     ),
   );
-  const usersByName = new Map(
-    users.flatMap((user) => {
-      const exactName = normalizeValue(user.name);
-      const normalizedNickname = user.name;
-      const aliases = [...new Set([exactName, normalizedNickname].filter(Boolean))];
-      return aliases.map((alias) => [alias, user] as const);
-    }),
-  );
+  const usersByName = buildUserNameMap(allUsers);
 
   return { usersByPlatformId, usersByName };
 }
@@ -394,20 +432,22 @@ async function preparePlayerImports(input: {
   sourceUrl: string;
   mapId: string;
   eventIdForLogs: string;
+  importPlayers?: boolean;
+  clanTag?: string;
 }) {
-  const { usersByPlatformId, usersByName } = await buildServerUserLookups(input.serverId);
+  const { usersByPlatformId, usersByName } = await buildServerUserLookups(input.serverId, Boolean(input.importPlayers));
   const importedAt = new Date().toISOString();
   const sideCounts = new Map<string, { count: number; value: string }>();
+  const importedUserIds = new Set<string>();
+  const entries: PreparedPlayerImport[] = [];
 
-  const entries = input.payload.player_stats.flatMap((player) => {
+  for (const player of input.payload.player_stats) {
     const normalizedPlayerId = normalizeValue(player.player_id);
-    const normalizedPlayerName = normalizeValue(player.player);
-    const normalizedPlayerNickname = player.player;
+    const importedPlayerName = resolveImportedPlayerName(player.player, input.clanTag);
+    const normalizedPlayerName = normalizeComparableName(importedPlayerName);
     const matchedByPlatformId = usersByPlatformId.get(normalizedPlayerId);
-    const matchedByName = matchedByPlatformId
-      ? undefined
-      : usersByName.get(normalizedPlayerName) ?? usersByName.get(normalizedPlayerNickname);
-    const matchedUser = matchedByPlatformId ?? matchedByName;
+    const matchedByName = matchedByPlatformId ? undefined : usersByName.get(normalizedPlayerName)?.[0];
+    let matchedUser = matchedByPlatformId ?? matchedByName;
 
     console.log("[match-results] import:player-match-attempt", {
       eventId: input.eventIdForLogs,
@@ -415,7 +455,7 @@ async function preparePlayerImports(input: {
       externalPlayerName: player.player,
       normalizedPlayerId,
       normalizedPlayerName,
-      normalizedPlayerNickname,
+      importPlayers: Boolean(input.importPlayers),
       team: player.team.side,
       stats: {
         kills: player.kills,
@@ -435,13 +475,59 @@ async function preparePlayerImports(input: {
     });
 
     if (!matchedUser) {
+      if (!input.importPlayers || !normalizedPlayerId) {
+        console.log("[match-results] import:player-skipped", {
+          eventId: input.eventIdForLogs,
+          externalPlayerId: player.player_id,
+          externalPlayerName: player.player,
+          reason: input.importPlayers ? "missing-platform-id" : "no-clan-match",
+        });
+        continue;
+      }
+
+      const created = await upsertImportedPlayer({
+        id: toImportedUserId(normalizedPlayerId),
+        name: importedPlayerName,
+        platformId: normalizedPlayerId,
+      });
+
+      matchedUser = {
+        id: created.userId,
+        discordId: created.userId,
+        linkedDiscordId: undefined,
+        hasDiscordLink: false,
+        platformIds: [normalizedPlayerId],
+        name: importedPlayerName,
+        avatar: "https://cdn.discordapp.com/embed/avatars/0.png",
+        managedGuildIds: [],
+        guildId: undefined,
+        mercenaryGuildIds: [],
+        isStreamer: false,
+        scores: {},
+        createdAt: importedAt,
+        updatedAt: importedAt,
+      };
+      usersByPlatformId.set(normalizedPlayerId, matchedUser);
+      const nameMatches = usersByName.get(normalizedPlayerName) ?? [];
+      nameMatches.push(matchedUser);
+      usersByName.set(normalizedPlayerName, nameMatches);
+    } else if (input.importPlayers && normalizedPlayerId && !matchedUser.platformIds.some((platformId) => normalizeValue(platformId) === normalizedPlayerId)) {
+      await savePlayerPlatformId({
+        userId: matchedUser.id,
+        platformIds: [...matchedUser.platformIds, normalizedPlayerId],
+      });
+      matchedUser.platformIds = [...matchedUser.platformIds, normalizedPlayerId];
+      usersByPlatformId.set(normalizedPlayerId, matchedUser);
+    }
+
+    if (!matchedUser) {
       console.log("[match-results] import:player-skipped", {
         eventId: input.eventIdForLogs,
         externalPlayerId: player.player_id,
         externalPlayerName: player.player,
         reason: "no-clan-match",
       });
-      return [];
+      continue;
     }
 
     if (!isUnknownTeam(player.team.side)) {
@@ -453,7 +539,7 @@ async function preparePlayerImports(input: {
       });
     }
 
-    return [{
+    entries.push({
       id: player.player_id,
       userId: matchedUser.id,
       latestName: player.player,
@@ -473,8 +559,9 @@ async function preparePlayerImports(input: {
         defense: player.defense,
         support: player.support,
       },
-    }] satisfies PreparedPlayerImport[];
-  });
+    });
+    importedUserIds.add(matchedUser.id);
+  }
 
   const rankedSides = [...sideCounts.values()].sort((left, right) => right.count - left.count);
   const inferredEventSide = rankedSides.length === 0
@@ -486,7 +573,7 @@ async function preparePlayerImports(input: {
   return {
     entries,
     inferredEventSide,
-    importedUserIds: [...new Set(entries.map((entry) => entry.userId))],
+    importedUserIds: [...importedUserIds],
   };
 }
 
@@ -677,6 +764,8 @@ export async function importEventMatchResults(input: {
 export async function importServerEventsFromLinks(input: {
   serverId: string;
   linksInput: string;
+  importPlayers?: boolean;
+  clanTag?: string;
 }) {
   const links = normalizeImportedEventLinks(input.linksInput);
   if (links.length === 0) {
@@ -725,6 +814,8 @@ export async function importServerEventsFromLinks(input: {
         sourceUrl,
         mapId,
         eventIdForLogs: `import:${mapId}`,
+        importPlayers: input.importPlayers,
+        clanTag: input.clanTag,
       });
       const inferredEventSide = preparedImport.inferredEventSide;
 
@@ -902,7 +993,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
   const uniqueUsersByName = buildUniqueUserMap(assignedUsers);
   const existingPlatformOwnerById = new Map(
     allUsers.flatMap((user) =>
-      user.platformIds.map((platformId) => [normalizeValue(platformId), user.discordId] as const),
+      user.platformIds.map((platformId) => [normalizeValue(platformId), user.id] as const),
     ),
   );
 
@@ -954,7 +1045,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
   let conflictedUsers = 0;
 
   for (const user of assignedUsers) {
-    const candidateIds = candidateIdsByUserId.get(user.discordId);
+    const candidateIds = candidateIdsByUserId.get(user.id);
     if (!candidateIds || candidateIds.size === 0) {
       continue;
     }
@@ -968,7 +1059,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
     const existingPlatformIds = user.platformIds.map((platformId) => normalizeValue(platformId)).filter(Boolean);
     const existingOwnerId = existingPlatformOwnerById.get(candidateId);
 
-    if (existingOwnerId && existingOwnerId !== user.discordId) {
+    if (existingOwnerId && existingOwnerId !== user.id) {
       conflictedUsers += 1;
       continue;
     }
@@ -979,17 +1070,17 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
       } else {
         try {
           await savePlayerPlatformId({
-            userId: user.discordId,
+            userId: user.id,
             platformIds: [...user.platformIds, candidateId],
           });
-          existingPlatformOwnerById.set(candidateId, user.discordId);
+          existingPlatformOwnerById.set(candidateId, user.id);
           linkedUsers += 1;
-          linkedUserIds.add(user.discordId);
+          linkedUserIds.add(user.id);
         } catch (error) {
           conflictedUsers += 1;
           console.error("[match-results] auto-link:failed-save", {
             serverId: input.serverId,
-            userId: user.discordId,
+            userId: user.id,
             candidateId,
             error,
           });
@@ -1000,17 +1091,17 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
 
     try {
       await savePlayerPlatformId({
-        userId: user.discordId,
+        userId: user.id,
         platformIds: [candidateId],
       });
-      existingPlatformOwnerById.set(candidateId, user.discordId);
+      existingPlatformOwnerById.set(candidateId, user.id);
       linkedUsers += 1;
-      linkedUserIds.add(user.discordId);
+      linkedUserIds.add(user.id);
     } catch (error) {
       conflictedUsers += 1;
       console.error("[match-results] auto-link:failed-save", {
         serverId: input.serverId,
-        userId: user.discordId,
+        userId: user.id,
         candidateId,
         error,
       });
@@ -1027,5 +1118,61 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
     ambiguousUsers,
     conflictedUsers,
     failedEvents,
+  };
+}
+
+export async function linkMissingDiscordIdsFromRole(input: {
+  serverUserIds: string[];
+  roleMembers: Array<{
+    discordId: string;
+    name: string;
+    avatar: string;
+  }>;
+}) {
+  const users = await listUsers();
+  const serverUserIdSet = new Set(input.serverUserIds);
+  const candidates = users.filter((user) => !user.hasDiscordLink && serverUserIdSet.has(user.id));
+  const roleMembersByName = new Map<string, typeof input.roleMembers>();
+
+  for (const member of input.roleMembers) {
+    const normalizedName = normalizeComparableName(member.name);
+    if (!normalizedName) {
+      continue;
+    }
+
+    const existing = roleMembersByName.get(normalizedName) ?? [];
+    existing.push(member);
+    roleMembersByName.set(normalizedName, existing);
+  }
+
+  let linkedUsers = 0;
+  let mergedUsers = 0;
+  const linkedUserIds = new Set<string>();
+
+  for (const user of candidates) {
+    const match = roleMembersByName.get(normalizeComparableName(user.name))?.[0];
+    if (!match) {
+      continue;
+    }
+
+    const result = await linkImportedDiscordProfile({
+      userId: user.id,
+      discordId: match.discordId,
+      name: match.name,
+      avatar: match.avatar,
+    });
+
+    linkedUsers += 1;
+    if (result.merged) {
+      mergedUsers += 1;
+    }
+    linkedUserIds.add(result.userId);
+  }
+
+  return {
+    scannedUsers: candidates.length,
+    linkedUsers,
+    mergedUsers,
+    linkedUserIds: [...linkedUserIds],
   };
 }

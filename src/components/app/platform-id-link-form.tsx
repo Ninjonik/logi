@@ -42,9 +42,9 @@ export function PlatformIdLinkForm({
   const [platformId, setPlatformId] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(SUCCESS_CLOSE_COPY[locale]);
   const [isPending, startTransition] = useTransition();
   const selectedPlatform = platform ? dictionary.platformIdLink[platform] : null;
-  const successCloseCopy = SUCCESS_CLOSE_COPY[locale];
 
   async function handleSubmit() {
     setErrorMessage(null);
@@ -58,6 +58,7 @@ export function PlatformIdLinkForm({
       });
       const body = await response.json();
       if (response.ok) {
+        setSuccessMessage(body.message ?? SUCCESS_CLOSE_COPY[locale]);
         setIsSuccess(true);
         return;
       }
@@ -78,7 +79,7 @@ export function PlatformIdLinkForm({
       <div className="flex min-h-[24rem] items-center justify-center">
         <div className="flex flex-col items-center text-center">
           <CheckCircle2 className="size-28 text-emerald-500 sm:size-36" strokeWidth={1.5} />
-          <p className="mt-6 max-w-sm text-sm text-muted-foreground sm:text-base">{successCloseCopy}</p>
+          <p className="mt-6 max-w-sm text-sm text-muted-foreground sm:text-base">{successMessage}</p>
         </div>
       </div>
     );

@@ -16,6 +16,7 @@ import {
 } from "discord.js";
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
+import { buildDiscordMessageUrl } from "../../src/lib/discord";
 
 import { revalidateAppData } from "./cache";
 import { convex, references } from "./convex";
@@ -338,11 +339,22 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         userId: interaction.user.id,
         userName: interaction.user.globalName ?? interaction.user.username,
         userAvatar: interaction.user.displayAvatarURL(),
+        language: prereq.config.defaultLanguage,
+        applyMessageUrl:
+          prereq.config.membershipSettings?.submitChannelId && prereq.config.membershipPanelMessageId
+            ? buildDiscordMessageUrl(
+              interaction.guildId,
+              prereq.config.membershipSettings.submitChannelId,
+              prereq.config.membershipPanelMessageId,
+            )
+            : undefined,
+        interactionToken: interaction.token,
+        interactionApplicationId: interaction.applicationId,
       }) as { token: string };
       const link = `${env.appSiteUrl}/${prereq.config.defaultLanguage}/platform-id-link/${tokenResponse.token}`;
-      const dmSent = await sendPlatformIdDm(interaction, link, prereq.config.defaultLanguage);
-      const responseText = dmSent
-        ? messages.membership.dmSent
+      const dmMessageUrl = await sendPlatformIdDm(interaction, link, prereq.config.defaultLanguage);
+      const responseText = dmMessageUrl
+        ? formatTemplate(messages.membership.dmSent, { link: dmMessageUrl })
         : formatTemplate(messages.membership.dmFailed, { link });
       await interaction.reply({ content: responseText, flags: MessageFlags.Ephemeral });
       return;

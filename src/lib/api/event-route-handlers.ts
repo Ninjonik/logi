@@ -9,7 +9,7 @@ type EventRouteDeps<TEventInput> = {
   eventSchema: ZodType<TEventInput>;
   saveServerEvent: (input: any) => Promise<string>;
   concludeServerEvent: (input: { eventId: string }) => Promise<void>;
-  importServerEventsFromLinks: (input: { serverId: string; linksInput: string }) => Promise<{
+  importServerEventsFromLinks: (input: { serverId: string; linksInput: string; importPlayers?: boolean; clanTag?: string }) => Promise<{
     importedUserIds: string[];
     linkReports: Array<{ eventId?: string }>;
     [key: string]: unknown;
@@ -68,6 +68,8 @@ export function createServerEventsPostHandler<TEventInput>(deps: EventRouteDeps<
         const result = await deps.importServerEventsFromLinks({
           serverId,
           linksInput: String((rawBody as { links?: unknown } | null | undefined)?.links ?? ""),
+          importPlayers: Boolean((rawBody as { importPlayers?: unknown } | null | undefined)?.importPlayers),
+          clanTag: String((rawBody as { clanTag?: unknown } | null | undefined)?.clanTag ?? "").trim() || undefined,
         });
 
         const importedEventIds = result.linkReports

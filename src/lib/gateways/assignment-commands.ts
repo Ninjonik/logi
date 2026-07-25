@@ -9,6 +9,8 @@ const importDiscordMembersReference = makeFunctionReference<"mutation">("userAss
 const removeAssignmentReference = makeFunctionReference<"mutation">("userAssignments:remove");
 const updatePlatformIdsReference = makeFunctionReference<"mutation">("players:updatePlatformIds");
 const clearPlatformIdsReference = makeFunctionReference<"mutation">("players:clearPlatformIds");
+const upsertImportedProfileReference = makeFunctionReference<"mutation">("players:upsertImportedProfile");
+const linkImportedDiscordProfileReference = makeFunctionReference<"mutation">("players:linkImportedDiscordProfile");
 
 export async function saveServerUserAssignmentCommand(input: {
   assignmentId?: string;
@@ -89,4 +91,38 @@ export async function savePlayerPlatformIdCommand(input: {
     userId: input.userId,
     platformIds: normalizedPlatformIds,
   });
+}
+
+export async function upsertImportedPlayerCommand(input: {
+  id: string;
+  name: string;
+  platformId: string;
+}) {
+  return await fetchMutation(upsertImportedProfileReference, {
+    secret: getInternalAuthSecret(),
+    id: input.id,
+    name: input.name,
+    platformId: input.platformId,
+  }) as {
+    userId: string;
+    action: "created" | "updated";
+  };
+}
+
+export async function linkImportedDiscordProfileCommand(input: {
+  userId: string;
+  discordId: string;
+  name: string;
+  avatar: string;
+}) {
+  return await fetchMutation(linkImportedDiscordProfileReference, {
+    secret: getInternalAuthSecret(),
+    userId: input.userId,
+    discordId: input.discordId,
+    name: input.name,
+    avatar: input.avatar,
+  }) as {
+    userId: string;
+    merged: boolean;
+  };
 }

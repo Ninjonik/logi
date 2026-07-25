@@ -4,8 +4,10 @@ import type { AppUser, Guild } from "@/types/domain";
 import {
   deleteServerUserAssignmentCommand,
   importDiscordMembersForServerCommand,
+  linkImportedDiscordProfileCommand,
   savePlayerPlatformIdCommand,
   saveServerUserAssignmentCommand,
+  upsertImportedPlayerCommand,
 } from "@/lib/gateways/assignment-commands";
 import {
   getServerUserAssignmentReadModel,
@@ -78,6 +80,23 @@ export async function savePlayerPlatformId(input: {
   platformIds?: string | string[];
 }) {
   return await savePlayerPlatformIdCommand(input);
+}
+
+export async function upsertImportedPlayer(input: {
+  id: string;
+  name: string;
+  platformId: string;
+}) {
+  return await upsertImportedPlayerCommand(input);
+}
+
+export async function linkImportedDiscordProfile(input: {
+  userId: string;
+  discordId: string;
+  name: string;
+  avatar: string;
+}) {
+  return await linkImportedDiscordProfileCommand(input);
 }
 
 export async function importDiscordMembersForServer(input: {

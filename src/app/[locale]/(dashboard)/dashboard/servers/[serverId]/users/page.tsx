@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 
-import { AutoLinkPlatformIdsButton } from "@/components/app/auto-link-platform-ids-button";
-import { ImportDiscordMembersButton } from "@/components/app/import-discord-members-button";
 import { PageHeader } from "@/components/app/page-header";
 import { PlatformIdList } from "@/components/app/platform-id-display";
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table";
@@ -56,7 +54,7 @@ export default async function ServerUsersPage({
   const context = await getServerContext(serverId);
   if (!context) return null;
 
-  const { groups, discordConfig } = context;
+  const { groups } = context;
   const assignments = await getServerUserAssignments(serverId);
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
@@ -87,12 +85,6 @@ export default async function ServerUsersPage({
           description={dictionary.userManagement.description}
           actions={(
             <div className="flex flex-wrap gap-2">
-              <AutoLinkPlatformIdsButton serverId={serverId} dictionary={dictionary} />
-              <ImportDiscordMembersButton
-                serverId={serverId}
-                dictionary={dictionary}
-                defaultRoleId={discordConfig?.clanRoleId}
-              />
               <Button asChild className="rounded-xl">
                 <a href={`/${locale}/dashboard/servers/${serverId}/users/create`}>{dictionary.userManagement.addPlayer}</a>
               </Button>

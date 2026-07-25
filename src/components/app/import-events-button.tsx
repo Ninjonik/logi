@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -37,9 +39,12 @@ export function ImportEventsButton({
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [links, setLinks] = useState("");
+  const [importPlayers, setImportPlayers] = useState(false);
+  const [clanTag, setClanTag] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const normalizedLinks = useMemo(() => normalizeLinks(links), [links]);
+  const normalizedClanTag = useMemo(() => clanTag.trim(), [clanTag]);
   const linkCount = normalizedLinks ? normalizedLinks.split("\n").length : 0;
 
   function handleSubmit() {
@@ -50,6 +55,8 @@ export function ImportEventsButton({
         body: JSON.stringify({
           action: "importEvents",
           links: normalizedLinks,
+          importPlayers,
+          clanTag: importPlayers ? normalizedClanTag : undefined,
         }),
       });
 
@@ -75,6 +82,8 @@ export function ImportEventsButton({
 
       setIsOpen(false);
       setLinks("");
+      setImportPlayers(false);
+      setClanTag("");
       router.refresh();
     });
   }
@@ -99,11 +108,37 @@ export function ImportEventsButton({
             value={links}
             onChange={(event) => setLinks(event.target.value)}
             placeholder={"https://event.hllserver.app/games/xxxx\nhttps://event.hllserver.app/games/yyyy"}
-            className="min-h-36 rounded-xl"
+            className="h-64 resize-none overflow-y-auto rounded-xl"
           />
           <p className="text-sm text-muted-foreground">
             {dictionary.event.importEventsHint.replace("{count}", String(linkCount))}
           </p>
+        </div>
+        <div className="space-y-3 rounded-xl border border-border/60 p-4">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="import-event-players"
+              checked={importPlayers}
+              onCheckedChange={(checked) => setImportPlayers(checked === true)}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="import-event-players">{dictionary.event.importEventPlayers}</Label>
+              <p className="text-sm text-muted-foreground">{dictionary.event.importEventPlayersDescription}</p>
+            </div>
+          </div>
+          {importPlayers ? (
+            <div className="space-y-2">
+              <Label htmlFor="event-import-clan-tag">{dictionary.userManagement.clanTag}</Label>
+              <Input
+                id="event-import-clan-tag"
+                value={clanTag}
+                onChange={(event) => setClanTag(event.target.value)}
+                placeholder={dictionary.userManagement.clanTagPlaceholder}
+                className="rounded-xl"
+              />
+              <p className="text-sm text-muted-foreground">{dictionary.event.importEventPlayersHint}</p>
+            </div>
+          ) : null}
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" className="rounded-xl" onClick={() => setIsOpen(false)} disabled={isPending}>
@@ -113,7 +148,7 @@ export function ImportEventsButton({
             type="button"
             className="rounded-xl"
             onClick={handleSubmit}
-            disabled={isPending || !normalizedLinks}
+            disabled={isPending || !normalizedLinks || (importPlayers && !normalizedClanTag)}
           >
             {isPending ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
             {dictionary.event.importEvents}

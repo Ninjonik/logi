@@ -63,11 +63,17 @@ export function buildEventBasePayload(input: EventUpsertInput) {
 export function buildCreateEventRecord(input: EventUpsertInput, now: Date) {
   const nowIso = now.toISOString();
   const base = buildEventBasePayload(input);
+  const derivedStatus: EventStatus = deriveEventStatus({
+    registrationEnd: input.registrationEnd,
+    meetingStart: input.meetingStart,
+    gameEnd: input.gameEnd,
+  }, now);
 
   return {
     ...base,
-    status: "registration" as const,
+    status: derivedStatus,
     statusUpdatedAt: nowIso,
+    concludedAt: derivedStatus === "concluded" ? nowIso : undefined,
     attendanceReminderLog: [],
     participants: [],
     signUps: [],

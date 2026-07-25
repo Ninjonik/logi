@@ -9,6 +9,8 @@ export type AppUser = {
   _reserveSection?: string;
   id: string;
   discordId: string;
+  linkedDiscordId?: string;
+  hasDiscordLink: boolean;
   platformIds: string[];
   name: string;
   avatar: string;

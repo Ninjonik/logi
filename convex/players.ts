@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-import { getGuildByDiscordId, getUserByDiscordId, getUserDiscordId } from "./identity";
+import { getGuildByDiscordId, getUserByDiscordId, getUserDiscordId, getUserByIdentifier, getUserStableId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -19,6 +19,44 @@ function normalizePlatformIds(value: string | string[] | undefined) {
       .map((entry) => entry.replace(/\s+/g, "").trim())
       .filter(Boolean),
   )];
+}
+
+function buildPerformanceSummary(matches: Array<{
+  kills: number;
+  killDeathRatio: number;
+  deaths: number;
+  offense: number;
+  defense: number;
+  support: number;
+}>) {
+  const divisor = matches.length || 1;
+  const totals = matches.reduce((acc, match) => ({
+    kills: acc.kills + match.kills,
+    killDeathRatio: acc.killDeathRatio + match.killDeathRatio,
+    deaths: acc.deaths + match.deaths,
+    offense: acc.offense + match.offense,
+    defense: acc.defense + match.defense,
+    support: acc.support + match.support,
+  }), {
+    kills: 0,
+    killDeathRatio: 0,
+    deaths: 0,
+    offense: 0,
+    defense: 0,
+    support: 0,
+  });
+
+  return {
+    matchesPlayed: matches.length,
+    averages: {
+      kills: totals.kills / divisor,
+      killDeathRatio: totals.killDeathRatio / divisor,
+      deaths: totals.deaths / divisor,
+      offense: totals.offense / divisor,
+      defense: totals.defense / divisor,
+      support: totals.support / divisor,
+    },
+  };
 }
 
 function toPlayer(user: {
@@ -51,8 +89,10 @@ function toPlayer(user: {
   const legacyUser = user as typeof user & { steamId?: string; platformId?: string };
   return {
     ...user,
-    id: String(user._id),
+    id: getUserStableId(user),
     discordId: getUserDiscordId(user),
+    linkedDiscordId: user.discordId,
+    hasDiscordLink: Boolean(user.discordId),
     platformIds: normalizePlatformIds(user.platformIds ?? legacyUser.platformId ?? legacyUser.steamId),
     avatar: user.avatar || "https://cdn.discordapp.com/embed/avatars/0.png",
     scores: user.scores ?? {},
@@ -64,7 +104,7 @@ export const getById = query({
     userId: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await getUserByDiscordId(ctx, args.userId);
+    const user = await getUserByIdentifier(ctx, args.userId);
 
     return user ? toPlayer(user) : null;
   },
@@ -122,7 +162,7 @@ export const updatePlatformIds = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const user = await getUserByDiscordId(ctx, args.userId);
+    const user = await getUserByIdentifier(ctx, args.userId);
     if (!user) {
       throw new Error("Player not found.");
     }
@@ -187,7 +227,7 @@ export const clearPlatformIds = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const user = await getUserByDiscordId(ctx, args.userId);
+    const user = await getUserByIdentifier(ctx, args.userId);
     if (!user) {
       throw new Error("Player not found.");
     }
@@ -208,7 +248,7 @@ export const updateProfile = mutation({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const user = await getUserByDiscordId(ctx, args.userId);
+    const user = await getUserByIdentifier(ctx, args.userId);
     if (!user) {
       throw new Error("Player not found.");
     }
@@ -234,7 +274,7 @@ export const updateScore = mutation({
       throw new Error("Score must be an integer.");
     }
 
-    const user = await getUserByDiscordId(ctx, args.userId);
+    const user = await getUserByIdentifier(ctx, args.userId);
     if (!user) {
       throw new Error("Player not found.");
     }
@@ -249,5 +289,135 @@ export const updateScore = mutation({
       scores,
       updatedAt: new Date().toISOString(),
     });
+  },
+});
+
+export const upsertImportedProfile = mutation({
+  args: {
+    secret: v.string(),
+    id: v.string(),
+    name: v.string(),
+    platformId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const now = new Date().toISOString();
+    const normalizedPlatformIds = normalizePlatformIds([args.platformId]);
+    const existing = await getUserByIdentifier(ctx, args.id);
+    const avatar = existing?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        name: args.name.trim(),
+        avatar,
+        platformIds: [...new Set([
+          ...normalizePlatformIds(existing.platformIds),
+          ...normalizedPlatformIds,
+        ])],
+        updatedAt: now,
+      });
+      return { userId: getUserStableId(existing), action: "updated" as const };
+    }
+
+    await ctx.db.insert("users", {
+      id: args.id,
+      discordId: undefined,
+      name: args.name.trim(),
+      avatar,
+      platformIds: normalizedPlatformIds,
+      managedGuildIds: [],
+      guildId: undefined,
+      mercenaryGuildIds: [],
+      isStreamer: false,
+      score: 0,
+      scores: {},
+      performance: undefined,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { userId: args.id, action: "created" as const };
+  },
+});
+
+export const linkImportedDiscordProfile = mutation({
+  args: {
+    secret: v.string(),
+    userId: v.string(),
+    discordId: v.string(),
+    name: v.string(),
+    avatar: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const now = new Date().toISOString();
+    const importedUser = await getUserByIdentifier(ctx, args.userId);
+    if (!importedUser) {
+      throw new Error("Player not found.");
+    }
+
+    const existingDiscordUser = await getUserByDiscordId(ctx, args.discordId);
+    const mergedPlatformIds = [...new Set([
+      ...normalizePlatformIds(importedUser.platformIds),
+      ...normalizePlatformIds(existingDiscordUser?.platformIds),
+    ])];
+
+    if (existingDiscordUser && existingDiscordUser._id !== importedUser._id) {
+      await ctx.db.patch(existingDiscordUser._id, {
+        name: args.name.trim(),
+        avatar: args.avatar.trim() || existingDiscordUser.avatar,
+        platformIds: mergedPlatformIds,
+        updatedAt: now,
+      });
+
+      const importedStats = await ctx.db
+        .query("playerStats")
+        .withIndex("userId", (q) => q.eq("userId", getUserStableId(importedUser)))
+        .collect();
+
+      for (const stat of importedStats) {
+        const matches = Object.fromEntries(
+          Object.entries(stat.matches).map(([eventId, match]) => [
+            eventId,
+            {
+              ...match,
+              userId: getUserStableId(existingDiscordUser),
+            },
+          ]),
+        );
+
+        await ctx.db.patch(stat._id, {
+          userId: getUserStableId(existingDiscordUser),
+          matches,
+          updatedAt: now,
+        });
+      }
+
+      const relatedStats = await ctx.db
+        .query("playerStats")
+        .withIndex("userId", (q) => q.eq("userId", getUserStableId(existingDiscordUser)))
+        .collect();
+
+      await ctx.db.patch(existingDiscordUser._id, {
+        performance: buildPerformanceSummary(relatedStats.flatMap((doc) => Object.values(doc.matches))),
+        updatedAt: now,
+      });
+
+      await ctx.db.delete(importedUser._id);
+
+      return { userId: getUserStableId(existingDiscordUser), merged: true };
+    }
+
+    await ctx.db.patch(importedUser._id, {
+      discordId: args.discordId,
+      name: args.name.trim(),
+      avatar: args.avatar.trim() || importedUser.avatar,
+      platformIds: mergedPlatformIds,
+      updatedAt: now,
+    });
+
+    return { userId: getUserStableId(importedUser), merged: false };
   },
 });

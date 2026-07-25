@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 
 import { getClanDiscordMessages } from "../../../src/lib/clan-language";
+import { buildDiscordMessageUrl } from "../../../src/lib/discord";
 
 import { revalidateAppData } from "../cache";
 import { convex, references } from "../convex";
@@ -88,21 +89,21 @@ export async function sendPlatformIdDm(interaction: ButtonInteraction, link: str
         .setURL(link)
         .setLabel(messages.membership.platformIdButton),
     );
-    await dm.send({
+    const message = await dm.send({
       content: [
         messages.membership.platformIdDmIntro,
         messages.membership.platformIdDmInstruction,
       ].join("\n\n"),
       components: [row],
     });
-    return true;
+    return buildDiscordMessageUrl("@me", message.channelId, message.id);
   } catch (error) {
     logWarn("interaction", "Failed to DM platform ID link", {
       guildId: interaction.guildId,
       userId: interaction.user.id,
       error,
     });
-    return false;
+    return null;
   }
 }
 

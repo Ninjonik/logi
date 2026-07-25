@@ -1,6 +1,6 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
-import { getUserByDiscordId } from "./identity";
+import { getUserByIdentifier } from "./identity";
 import { normalizeUserDoc } from "../src/infrastructure/convex/server-read-model";
 
 export const getUsersByIds = query({
@@ -9,7 +9,7 @@ export const getUsersByIds = query({
   },
   handler: async (ctx, args) => {
     const uniqueIds = [...new Set(args.userIds)];
-    const users = await Promise.all(uniqueIds.map((userId) => getUserByDiscordId(ctx, userId)));
+    const users = await Promise.all(uniqueIds.map((userId) => getUserByIdentifier(ctx, userId)));
 
     return users
       .filter((user): user is NonNullable<typeof user> => Boolean(user))
