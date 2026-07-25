@@ -81,6 +81,7 @@ type ClanDiscordMessages = {
   commands: {
     closeTicketDescription: string;
     closeApplicationDescription: string;
+    linkDescription: string;
     noticeDescription: string;
     noticeEventOptionDescription: string;
     reasonOptionDescription: string;
@@ -89,12 +90,22 @@ type ClanDiscordMessages = {
     noticeNoMatch: string;
     noticeMultipleMatches: string;
     noticeSaved: string;
+    linkDmSent: string;
+    linkDmFailed: string;
     outcomeOptionDescription: string;
     outcomeDenied: string;
     outcomePending: string;
     outcomeRecruit: string;
     outcomeMember: string;
     outcomeMercenary: string;
+  };
+  platformLink: {
+    button: string;
+    dmIntro: string;
+    dmInstruction: string;
+    readyDm: string;
+    readyInteraction: string;
+    successPage: string;
   };
   ticket: {
     serverOnly: string;
@@ -113,6 +124,9 @@ type ClanDiscordMessages = {
     noClosePermission: string;
     closeDmClosed: string;
     noCloseReasonProvided: string;
+    closeEmbedTitle: string;
+    closedByLabel: string;
+    closedAtLabel: string;
     reasonLabel: string;
     closeAuditReason: string;
     closeReply: string;
@@ -146,6 +160,9 @@ type ClanDiscordMessages = {
     noClosePermission: string;
     closeDmClosed: string;
     noCloseReasonProvided: string;
+    closeEmbedTitle: string;
+    closedByLabel: string;
+    closedAtLabel: string;
     outcomeLabel: string;
     reasonLabel: string;
     closeAuditReason: string;
@@ -274,6 +291,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     commands: {
       closeTicketDescription: "Close the current ticket thread.",
       closeApplicationDescription: "Close the current membership application thread.",
+      linkDescription: "Open a one-time page to link your platform ID.",
       noticeDescription: "Submit a late notice for an upcoming event.",
       noticeEventOptionDescription: "Event name or Logi event ID.",
       reasonOptionDescription: "Reason shown to the user in DMs.",
@@ -282,12 +300,22 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       noticeNoMatch: "I couldn't find an eligible event for that query in the final 60 minutes before meeting start.",
       noticeMultipleMatches: "That matches multiple eligible events. Use a more specific event name or the Logi event ID.",
       noticeSaved: "Your late notice has been saved.",
+      linkDmSent: "I sent you a DM with a direct link to submit your platform ID. Open it here: {link}. Submit it there and I will confirm when it is saved.",
+      linkDmFailed: "I could not DM you. Use this one-time link to submit your platform ID: {link}",
       outcomeOptionDescription: "What the applicant should become after closing.",
       outcomeDenied: "Denied",
       outcomePending: "Pending",
       outcomeRecruit: "Recruit",
       outcomeMember: "Member",
       outcomeMercenary: "Mercenary",
+    },
+    platformLink: {
+      button: "Submit platform ID",
+      dmIntro: "Before we can continue, we need a platform ID we can match to Hell Let Loose.",
+      dmInstruction: "Use the button below to open the one-time submission page. When it says successful, you can close it.",
+      readyDm: "Your platform ID has been linked successfully.",
+      readyInteraction: "Your platform ID has been linked successfully.",
+      successPage: "Platform ID linked successfully. You can close this page now.",
     },
     ticket: {
       serverOnly: "Tickets can only be opened inside a server.",
@@ -306,6 +334,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       noClosePermission: "You do not have permission to close this ticket.",
       closeDmClosed: "Your ticket #{number} in **{guildName}** has been closed.",
       noCloseReasonProvided: "No close reason was provided.",
+      closeEmbedTitle: "Ticket closed",
+      closedByLabel: "Closed by",
+      closedAtLabel: "Closed at",
       reasonLabel: "Reason",
       closeAuditReason: "Ticket closed",
       closeReply: "Ticket closed.",
@@ -339,6 +370,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       noClosePermission: "You do not have permission to close this application.",
       closeDmClosed: "Your clan application #{number} in **{guildName}** has been closed.",
       noCloseReasonProvided: "No close reason was provided.",
+      closeEmbedTitle: "Application closed",
+      closedByLabel: "Closed by",
+      closedAtLabel: "Closed at",
       outcomeLabel: "Outcome",
       reasonLabel: "Reason",
       closeAuditReason: "Application closed",
@@ -465,6 +499,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     commands: {
       closeTicketDescription: "Uzavře aktuální ticket vlákno.",
       closeApplicationDescription: "Uzavře aktuální vlákno členské přihlášky.",
+      linkDescription: "Otevře jednorázovou stránku pro propojení vašeho platform ID.",
       noticeDescription: "Odešle notice o pozdním příchodu na nadcházející akci.",
       noticeEventOptionDescription: "Název akce nebo Logi ID akce.",
       reasonOptionDescription: "Důvod zobrazený uživateli v DM.",
@@ -473,12 +508,22 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       noticeNoMatch: "Nepodařilo se najít vhodnou akci v posledních 60 minutách před začátkem srazu.",
       noticeMultipleMatches: "Dotaz odpovídá více akcím. Použijte přesnější název nebo Logi ID akce.",
       noticeSaved: "Vaše notice byla uložena.",
+      linkDmSent: "Poslal jsem vám DM s přímým odkazem pro zadání vašeho platform ID. Otevřete ho tady: {link}. Vyplňte ho tam a já potvrdím, až bude uložené.",
+      linkDmFailed: "Nepodařilo se mi vám poslat DM. Použijte tento jednorázový odkaz pro zadání vašeho platform ID: {link}",
       outcomeOptionDescription: "Čím se má žadatel po uzavření stát.",
       outcomeDenied: "Zamítnuto",
       outcomePending: "Čekající",
       outcomeRecruit: "Rekrut",
       outcomeMember: "Člen",
       outcomeMercenary: "Žoldák",
+    },
+    platformLink: {
+      button: "Zadat platform ID",
+      dmIntro: "Než budeme moci pokračovat, potřebujeme platform ID, které můžeme spárovat s Hell Let Loose.",
+      dmInstruction: "Použijte tlačítko níže pro otevření jednorázové stránky pro odeslání. Až uvidíte úspěšné potvrzení, můžete ji zavřít.",
+      readyDm: "Vaše platform ID bylo úspěšně propojeno.",
+      readyInteraction: "Vaše platform ID bylo úspěšně propojeno.",
+      successPage: "Platform ID bylo úspěšně propojeno. Tuto stránku teď můžete zavřít.",
     },
     ticket: {
       serverOnly: "Tickety lze otevřít pouze uvnitř serveru.",
@@ -497,6 +542,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       noClosePermission: "Nemáte oprávnění tento ticket uzavřít.",
       closeDmClosed: "Váš ticket #{number} v **{guildName}** byl uzavřen.",
       noCloseReasonProvided: "Nebyl uveden důvod uzavření.",
+      closeEmbedTitle: "Ticket uzavřen",
+      closedByLabel: "Uzavřel",
+      closedAtLabel: "Uzavřeno",
       reasonLabel: "Důvod",
       closeAuditReason: "Ticket uzavřen",
       closeReply: "Ticket uzavřen.",
@@ -530,6 +578,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       noClosePermission: "Nemáte oprávnění tuto přihlášku uzavřít.",
       closeDmClosed: "Vaše klanová přihláška #{number} v **{guildName}** byla uzavřena.",
       noCloseReasonProvided: "Nebyl uveden důvod uzavření.",
+      closeEmbedTitle: "Přihláška uzavřena",
+      closedByLabel: "Uzavřel",
+      closedAtLabel: "Uzavřeno",
       outcomeLabel: "Výsledek",
       reasonLabel: "Důvod",
       closeAuditReason: "Přihláška uzavřena",

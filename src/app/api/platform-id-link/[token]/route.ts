@@ -53,6 +53,7 @@ export async function POST(
       guildId: string;
       userId: string;
       language: "en" | "cs";
+      completionMode: "membership" | "link";
       applyMessageUrl?: string;
       interactionToken?: string;
       interactionApplicationId?: string;
@@ -61,7 +62,7 @@ export async function POST(
     const messages = getClanDiscordMessages(result.language);
     const applicationMessageUrl = result.applyMessageUrl;
 
-    if (applicationMessageUrl) {
+    if (result.completionMode === "membership" && applicationMessageUrl) {
       const dmContent = formatTemplate(messages.membership.platformIdReadyDm, {
         link: applicationMessageUrl,
       });
@@ -85,9 +86,29 @@ export async function POST(
       }
     }
 
+    if (result.completionMode === "link") {
+      try {
+        await sendDiscordBotDm(result.userId, messages.platformLink.readyDm);
+      } catch {
+        if (result.interactionToken && result.interactionApplicationId) {
+          try {
+            await editDiscordInteractionOriginalResponse({
+              applicationId: result.interactionApplicationId,
+              interactionToken: result.interactionToken,
+              content: messages.platformLink.readyInteraction,
+            });
+          } catch {
+            // Best effort only. The platform ID was still saved successfully.
+          }
+        }
+      }
+    }
+
     return NextResponse.json({
       ok: true,
-      message: "Platform ID saved. Return to Discord and click the clan application message again.",
+      message: result.completionMode === "membership"
+        ? "Platform ID saved. Return to Discord and click the clan application message again."
+        : messages.platformLink.successPage,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to save platform ID.";

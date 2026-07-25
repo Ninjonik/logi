@@ -5,6 +5,7 @@ import {
   ButtonStyle,
   ChannelType,
   ChatInputCommandInteraction,
+  EmbedBuilder,
   GuildMember,
   MessageFlags,
   ModalBuilder,
@@ -30,7 +31,7 @@ import {
   loadTicketCategoryContext,
   resolveSupportMemberIds,
   rollbackMembershipApplicationSetup,
-  sendPlatformIdDm,
+  startPlatformIdLinkFlow,
   syncMembershipRoles,
 } from "./interactions/shared";
 import { logError, logInfo, logWarn } from "./log";
@@ -50,6 +51,57 @@ type TicketAnswer = {
 };
 
 type MembershipAnswer = TicketAnswer;
+
+function formatDiscordTimestamp(date: Date) {
+  return `<t:${Math.floor(date.getTime() / 1000)}:F>`;
+}
+
+function buildTicketCloseEmbed(input: {
+  messages: ReturnType<typeof getClanDiscordMessages>;
+  ticketNumber: number;
+  closerId: string;
+  closedAt: Date;
+  reason?: string;
+}) {
+  const { messages, ticketNumber, closerId, closedAt, reason } = input;
+  const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle(`${messages.ticket.closeEmbedTitle} #${ticketNumber}`)
+    .addFields(
+      { name: messages.ticket.closedByLabel, value: `<@${closerId}>`, inline: true },
+      { name: messages.ticket.closedAtLabel, value: formatDiscordTimestamp(closedAt), inline: true },
+    )
+    .setTimestamp(closedAt);
+
+  if (reason) {
+    embed.addFields({ name: messages.ticket.reasonLabel, value: reason });
+  }
+
+  return embed;
+}
+
+function buildMembershipApplicationCloseEmbed(input: {
+  messages: ReturnType<typeof getClanDiscordMessages>;
+  applicationNumber: number;
+  closerId: string;
+  closedAt: Date;
+  outcomeLabel: string;
+  reason?: string;
+}) {
+  const { messages, applicationNumber, closerId, closedAt, outcomeLabel, reason } = input;
+
+  return new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle(`${messages.membership.closeEmbedTitle} #${applicationNumber}`)
+    .addFields(
+      { name: messages.membership.closedByLabel, value: `<@${closerId}>`, inline: true },
+      { name: messages.membership.closedAtLabel, value: formatDiscordTimestamp(closedAt), inline: true },
+      reason
+        ? { name: messages.membership.reasonLabel, value: reason }
+        : { name: messages.membership.outcomeLabel, value: outcomeLabel },
+    )
+    .setTimestamp(closedAt);
+}
 
 export function createInteractionHandler(options: InteractionHandlerOptions) {
   return {
@@ -84,6 +136,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await handleCloseTicketCommand(interaction);
       } else if (interaction.commandName === "close_application") {
         await handleCloseApplicationCommand(interaction);
+      } else if (interaction.commandName === "link") {
+        await handleLinkCommand(interaction);
       } else if (interaction.commandName === "notice") {
         await handleNoticeCommand(interaction);
       }
@@ -143,6 +197,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
               .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.noticeEventOptionDescription })
               .setRequired(true),
           )
+          .setDMPermission(false),
+        new SlashCommandBuilder()
+          .setName("link")
+          .setDescription(messages.commands.linkDescription)
+          .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.linkDescription })
           .setDMPermission(false),
       ];
 
@@ -270,6 +329,26 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     await interaction.reply({ content: messages.commands.noticeSaved, flags: MessageFlags.Ephemeral });
   }
 
+  async function handleLinkCommand(interaction: ChatInputCommandInteraction) {
+    const fallbackMessages = getClanDiscordMessages("en");
+    if (!interaction.guildId) {
+      await interaction.reply({ content: fallbackMessages.membership.serverOnly, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const guildConfig = await convex.query(references.getConfigByDiscordGuildId, {
+      guildId: interaction.guildId,
+    }).catch(() => null) as { defaultLanguage?: "en" | "cs" } | null;
+    const language = guildConfig?.defaultLanguage ?? "en";
+    const responseText = await startPlatformIdLinkFlow(interaction, {
+      guildId: interaction.guildId,
+      language,
+      completionMode: "link",
+    });
+
+    await interaction.reply({ content: responseText, flags: MessageFlags.Ephemeral });
+  }
+
   async function handleTicketModalSubmit(interaction: ModalSubmitInteraction) {
     const fallbackMessages = getClanDiscordMessages("en");
     if (!interaction.guildId) {
@@ -332,14 +411,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     if (!prereq.user || !prereq.user.platformIds?.length) {
-      const tokenResponse = await convex.mutation(references.createPlatformIdLinkToken, {
-        secret: env.internalSecret,
+      const responseText = await startPlatformIdLinkFlow(interaction, {
         guildId: interaction.guildId,
         categoryId,
-        userId: interaction.user.id,
-        userName: interaction.user.globalName ?? interaction.user.username,
-        userAvatar: interaction.user.displayAvatarURL(),
         language: prereq.config.defaultLanguage,
+        completionMode: "membership",
         applyMessageUrl:
           prereq.config.membershipSettings?.submitChannelId && prereq.config.membershipPanelMessageId
             ? buildDiscordMessageUrl(
@@ -348,14 +424,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
               prereq.config.membershipPanelMessageId,
             )
             : undefined,
-        interactionToken: interaction.token,
-        interactionApplicationId: interaction.applicationId,
-      }) as { token: string };
-      const link = `${env.appSiteUrl}/${prereq.config.defaultLanguage}/platform-id-link/${tokenResponse.token}`;
-      const dmMessageUrl = await sendPlatformIdDm(interaction, link, prereq.config.defaultLanguage);
-      const responseText = dmMessageUrl
-        ? formatTemplate(messages.membership.dmSent, { link: dmMessageUrl })
-        : formatTemplate(messages.membership.dmFailed, { link });
+      });
       await interaction.reply({ content: responseText, flags: MessageFlags.Ephemeral });
       return;
     }
@@ -869,6 +938,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     const reason = interaction.options.getString("reason")?.trim() || undefined;
+    const closedAt = new Date();
 
     await convex.mutation(references.closeTicketThread, {
       secret: env.internalSecret,
@@ -888,6 +958,16 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       ];
       await creator.send({ content: dmLines.join("\n") }).catch(() => null);
     }
+
+    await interaction.channel.send({
+      embeds: [buildTicketCloseEmbed({
+        messages,
+        ticketNumber: context.ticket.ticketNumber,
+        closerId: interaction.user.id,
+        closedAt,
+        reason,
+      })],
+    }).catch(() => null);
 
     await interaction.channel.setName(`closed-${context.ticket.ticketNumber}`.slice(0, 100)).catch(() => null);
     await interaction.channel.setLocked(true, reason ?? messages.ticket.closeAuditReason).catch(() => null);
@@ -956,6 +1036,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     const outcome = interaction.options.getString("outcome", true) as "denied" | "pending" | "recruit" | "member" | "mercenary";
     const outcomeLabel = getOutcomeLabel(context.config.defaultLanguage, outcome);
     const reason = interaction.options.getString("reason")?.trim() || undefined;
+    const closedAt = new Date();
 
     if (outcome === "denied") {
       if (context.application.assignmentId) {
@@ -1037,6 +1118,17 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       ];
       await creator.send({ content: lines.join("\n") }).catch(() => null);
     }
+
+    await interaction.channel.send({
+      embeds: [buildMembershipApplicationCloseEmbed({
+        messages,
+        applicationNumber: context.application.applicationNumber,
+        closerId: interaction.user.id,
+        closedAt,
+        outcomeLabel,
+        reason,
+      })],
+    }).catch(() => null);
 
     await interaction.channel.setName(`closed-${context.application.applicationNumber}`.slice(0, 100)).catch(() => null);
     await interaction.channel.setLocked(true, reason ?? messages.membership.closeAuditReason).catch(() => null);

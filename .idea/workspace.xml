@@ -9,40 +9,24 @@
   <component name="ChangeListManager">
     <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="better texts">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/identity.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/identity.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/matchStats.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/matchStats.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/platformIdLinks.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/platformIdLinks.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/playerStats.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/playerStats.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/players.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/players.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/convex/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/convex/users.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/users.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/discord-bot/src/interactions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/interactions.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/discord-bot/src/interactions/shared.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/interactions/shared.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/matches/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/matches/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/api/platform-id-link/[token]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/platform-id-link/[token]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/application/events/upsert-event.use-case.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/application/events/upsert-event.use-case.test.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/import-discord-members-button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/import-discord-members-button.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/app/import-events-button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/import-events-button.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/platform-id-display.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/platform-id-display.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/platform-id-link-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/platform-id-link-form.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app/server-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/server-card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/domain/events/upsert-policy.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/domain/events/upsert-policy.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/infrastructure/convex/server-read-model.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/infrastructure/convex/server-read-model.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/match-details.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/match-details.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/submit-match-results-button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/submit-match-results-button.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/api/event-route-handlers.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/event-route-handlers.test.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/api/event-route-handlers.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/api/event-route-handlers.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/cache-tags.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/cache-tags.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/clan-language.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/clan-language.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/discord.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/discord.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/gateways/assignment-commands.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/gateways/assignment-commands.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/read-models/assignments.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/read-models/assignments.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/read-models/server-context.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/read-models/server-context.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/read-models/users.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/read-models/users.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/server-match-results.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-match-results.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/server-player-stats.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-player-stats.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/server-user-management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/server-user-management.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/domain.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/domain.ts" afterDir="false" />
     </list>
@@ -163,7 +147,7 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "pnpm",
     "npm.Next.js: server-side.executor": "Run",
-    "settings.editor.selected.configurable": "junie.mcp",
+    "settings.editor.selected.configurable": "preferences.keymap",
     "to.speed.mode.migration.done": "true",
     "ts.external.directory.path": "C:\\Users\\admin\\WebstormProjects\\logi\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
@@ -252,7 +236,7 @@
       <workItem from="1784743567623" duration="34000" />
       <workItem from="1784799001718" duration="595000" />
       <workItem from="1784808188370" duration="1076000" />
-      <workItem from="1784970414614" duration="6811000" />
+      <workItem from="1784970414614" duration="11613000" />
     </task>
     <task id="LOCAL-00005" summary="basic auth system + oath for discord and steam done">
       <option name="closed" value="true" />

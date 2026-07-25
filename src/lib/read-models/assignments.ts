@@ -1,6 +1,5 @@
 import { fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
-import { cache } from "react";
 
 import { appCacheTags, tagCacheEntries } from "@/lib/cache-tags";
 
@@ -22,16 +21,16 @@ export type ServerUserAssignmentReadModel = {
   updatedAt: string;
 };
 
-export const getServerUserAssignmentsReadModel = cache(async function getServerUserAssignmentsReadModel(serverId: string): Promise<ServerUserAssignmentReadModel[]> {
+export async function getServerUserAssignmentsReadModel(serverId: string): Promise<ServerUserAssignmentReadModel[]> {
   "use cache";
   tagCacheEntries([appCacheTags.assignments(serverId)]);
   return (await fetchQuery(listAssignmentsReference, { serverId })) as ServerUserAssignmentReadModel[];
-});
+}
 
-export const getServerUserAssignmentReadModel = cache(async function getServerUserAssignmentReadModel(assignmentId: string) {
+export async function getServerUserAssignmentReadModel(assignmentId: string) {
   "use cache";
   tagCacheEntries([appCacheTags.assignment(assignmentId)]);
   return (await fetchQuery(getAssignmentByIdReference, {
     assignmentId: assignmentId as never,
   })) as ServerUserAssignmentReadModel | null;
-});
+}

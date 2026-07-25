@@ -9,18 +9,7 @@ function assertInternalSecret(secret: string) {
   }
 }
 
-const statBreakdown = v.object({
-  infantry: v.optional(v.number()),
-  mine: v.optional(v.number()),
-  sniper: v.optional(v.number()),
-  armor: v.optional(v.number()),
-  satchel: v.optional(v.number()),
-  grenade: v.optional(v.number()),
-  machine_gun: v.optional(v.number()),
-  bazooka: v.optional(v.number()),
-  artillery: v.optional(v.number()),
-  commander: v.optional(v.number()),
-});
+const statBreakdown = v.record(v.string(), v.number());
 
 const matchPlayerTeam = v.object({
   side: v.string(),

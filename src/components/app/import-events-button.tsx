@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 
@@ -28,6 +29,17 @@ function normalizeLinks(value: string) {
     .filter(Boolean)
     .join("\n");
 }
+
+type ImportProgress = {
+  phase: "queued" | "fetching" | "importing" | "completed";
+  total: number;
+  fetched: number;
+  processed: number;
+  successful: number;
+  failed: number;
+  percent: number;
+  currentLink?: string;
+};
 
 export function ImportEventsButton({
   serverId,
@@ -41,14 +53,26 @@ export function ImportEventsButton({
   const [links, setLinks] = useState("");
   const [importPlayers, setImportPlayers] = useState(false);
   const [clanTag, setClanTag] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
+  const [progress, setProgress] = useState<ImportProgress | null>(null);
 
   const normalizedLinks = useMemo(() => normalizeLinks(links), [links]);
   const normalizedClanTag = useMemo(() => clanTag.trim(), [clanTag]);
   const linkCount = normalizedLinks ? normalizedLinks.split("\n").length : 0;
 
-  function handleSubmit() {
-    startTransition(async () => {
+  async function handleSubmit() {
+    setIsPending(true);
+    setProgress({
+      phase: "queued",
+      total: linkCount,
+      fetched: 0,
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      percent: 0,
+    });
+
+    try {
       const response = await fetch(`/api/servers/${serverId}/events`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -57,26 +81,79 @@ export function ImportEventsButton({
           links: normalizedLinks,
           importPlayers,
           clanTag: importPlayers ? normalizedClanTag : undefined,
+          streamProgress: true,
         }),
       });
 
-      const body = await response.json();
-      console.log("[import-events] response", body);
       if (!response.ok) {
+        const body = await response.json();
         toast.error(body.error ?? dictionary.common.error);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        toast.error(dictionary.common.error);
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finalResult: any = null;
+      let streamError: string | null = null;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.trim()) {
+            continue;
+          }
+
+          const payload = JSON.parse(line) as {
+            type: "progress" | "result" | "error";
+            progress?: ImportProgress;
+            result?: any;
+            error?: string;
+          };
+
+          if (payload.type === "progress" && payload.progress) {
+            setProgress(payload.progress);
+          } else if (payload.type === "result") {
+            finalResult = payload.result;
+          } else if (payload.type === "error") {
+            streamError = payload.error ?? dictionary.common.error;
+          }
+        }
+      }
+
+      if (streamError) {
+        toast.error(streamError);
+        return;
+      }
+
+      if (!finalResult) {
+        toast.error(dictionary.common.error);
         return;
       }
 
       toast.success(
         dictionary.event.importEventsSuccess
-          .replace("{events}", String(body.importedEvents ?? 0))
-          .replace("{players}", String(body.importedPlayers ?? 0)),
+          .replace("{events}", String(finalResult.importedEvents ?? 0))
+          .replace("{players}", String(finalResult.importedPlayers ?? 0)),
       );
 
-      if (Array.isArray(body.failedLinks) && body.failedLinks.length > 0) {
+      if (Array.isArray(finalResult.failedLinks) && finalResult.failedLinks.length > 0) {
         toast.error(
           dictionary.event.importEventsPartial
-            .replace("{failed}", String(body.failedLinks.length)),
+            .replace("{failed}", String(finalResult.failedLinks.length)),
         );
       }
 
@@ -85,7 +162,10 @@ export function ImportEventsButton({
       setImportPlayers(false);
       setClanTag("");
       router.refresh();
-    });
+    } finally {
+      setIsPending(false);
+      setProgress(null);
+    }
   }
 
   return (
@@ -140,6 +220,20 @@ export function ImportEventsButton({
             </div>
           ) : null}
         </div>
+        {progress ? (
+          <div className="space-y-2 rounded-xl border border-border/60 p-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Import progress</span>
+              <span>{progress.percent}%</span>
+            </div>
+            <Progress value={progress.percent} className="h-2.5" />
+            <p className="text-sm text-muted-foreground">
+              {progress.phase === "fetching"
+                ? `Fetched ${progress.fetched}/${progress.total} scoreboards`
+                : `Processed ${progress.processed}/${progress.total} events • ${progress.successful} imported • ${progress.failed} failed`}
+            </p>
+          </div>
+        ) : null}
         <DialogFooter>
           <Button type="button" variant="outline" className="rounded-xl" onClick={() => setIsOpen(false)} disabled={isPending}>
             {dictionary.common.cancel}

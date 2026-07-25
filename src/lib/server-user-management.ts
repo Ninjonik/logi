@@ -1,5 +1,3 @@
-import { cache } from "react";
-
 import type { AppUser, Guild } from "@/types/domain";
 import {
   deleteServerUserAssignmentCommand,
@@ -14,25 +12,29 @@ import {
   getServerUserAssignmentsReadModel,
   type ServerUserAssignmentReadModel,
 } from "@/lib/read-models/assignments";
-import { getUsersReadModelByIds, listUsersReadModel } from "@/lib/read-models/users";
+import { getUsersReadModelByIds, listUsersReadModel, listUsersReadModelUncached } from "@/lib/read-models/users";
 
 export type ServerUserAssignment = ServerUserAssignmentReadModel;
 
-export const getServerUserAssignments = cache(async function getServerUserAssignments(serverId: string): Promise<ServerUserAssignment[]> {
+export async function getServerUserAssignments(serverId: string): Promise<ServerUserAssignment[]> {
   return await getServerUserAssignmentsReadModel(serverId);
-});
+}
 
-export const getServerUserAssignment = cache(async function getServerUserAssignment(assignmentId: string) {
+export async function getServerUserAssignment(assignmentId: string) {
   return await getServerUserAssignmentReadModel(assignmentId);
-});
+}
 
 export async function getUsersByIds(userIds: string[]) {
   return await getUsersReadModelByIds(userIds);
 }
 
-export const listUsers = cache(async function listUsers() {
+export async function listUsers() {
   return await listUsersReadModel();
-});
+}
+
+export async function listUsersUncached() {
+  return await listUsersReadModelUncached();
+}
 
 export async function getAssignmentUser(assignment: ServerUserAssignment) {
   const users = await getUsersByIds([assignment.userId]);
@@ -88,6 +90,20 @@ export async function upsertImportedPlayer(input: {
   platformId: string;
 }) {
   return await upsertImportedPlayerCommand(input);
+}
+
+export async function saveImportedClanMember(input: {
+  userId: string;
+  serverId: string;
+}) {
+  return await saveServerUserAssignmentCommand({
+    userId: input.userId,
+    serverId: input.serverId,
+    type: "member",
+    status: "active",
+    secondaryGroupIds: [],
+    paused: false,
+  });
 }
 
 export async function linkImportedDiscordProfile(input: {

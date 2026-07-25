@@ -1,9 +1,7 @@
 import { fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
-import { cache } from "react";
 
 import { getLoggedInUser } from "@/lib/auth";
-import { appCacheTags, tagCacheEntries } from "@/lib/cache-tags";
 import type { AppUser, DiscordConfig, EventRecord, Group, Guild, Roster, SquadPreset, TopicPreset } from "@/types/domain";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
 
@@ -22,38 +20,22 @@ export type ServerContextReadModel = {
   discordConfig: DiscordConfig | null;
 };
 
-async function getServerContextCached(serverId: string, userId: string): Promise<ServerContextReadModel | null> {
-  "use cache";
-
-  tagCacheEntries([
-    appCacheTags.server(serverId),
-    appCacheTags.serverContext(serverId),
-    appCacheTags.events(serverId),
-    appCacheTags.rosters(serverId),
-    appCacheTags.groups(serverId),
-    appCacheTags.assignments(serverId),
-    appCacheTags.topicPresets(serverId),
-    appCacheTags.squadPresets(serverId),
-    appCacheTags.discordConfig(serverId),
-    appCacheTags.player(userId),
-    appCacheTags.matches(serverId),
-  ]);
-
+async function getServerContextSnapshot(serverId: string, userId: string): Promise<ServerContextReadModel | null> {
   return (await fetchQuery(getServerContextReference, {
     userId,
     serverId: serverId as never,
   })) as ServerContextReadModel | null;
 }
 
-export const getServerContextReadModel = cache(async function getServerContextReadModel(serverId: string): Promise<ServerContextReadModel | null> {
+export async function getServerContextReadModel(serverId: string): Promise<ServerContextReadModel | null> {
   const user = await getLoggedInUser();
   if (!user) {
     return null;
   }
 
   try {
-    return await getServerContextCached(serverId, user.discordId);
+    return await getServerContextSnapshot(serverId, user.discordId);
   } catch {
     return null;
   }
-});
+}
