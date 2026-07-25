@@ -15,10 +15,11 @@ export default async function CreateRosterPage({
   const context = await getServerContext(serverId);
   if (!context) return null;
   const { events, rosters, squadPresets, canAdmin, assignments = [], groups = [], discordConfig } = context;
+  const rosterEligibleEvents = events.filter((event) => event.status !== "concluded");
   const rosterUserIds = Array.from(
     new Set([
       ...assignments.map((assignment) => assignment.userId),
-      ...events.flatMap((event) => [
+      ...rosterEligibleEvents.flatMap((event) => [
         ...event.signUps.map((signUp) => signUp.userId),
         ...event.participants.map((participant) => participant.userId),
       ]),
@@ -34,7 +35,7 @@ export default async function CreateRosterPage({
       />
       <div className="px-4 lg:px-6">
         <RosterCreator
-          events={events}
+          events={rosterEligibleEvents}
           rosters={rosters}
           squadPresets={squadPresets}
           users={reserveUsers}

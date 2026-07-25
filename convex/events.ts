@@ -129,7 +129,7 @@ export const findNoticeTarget = query({
     return handleFindNoticeTarget({
       events,
       userId: args.userId,
-      query: args.query,
+      query: args.query.trim(),
       now: new Date(),
     });
   },

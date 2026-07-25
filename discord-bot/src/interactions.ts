@@ -1,5 +1,6 @@
 import {
   ActionRowBuilder,
+  AutocompleteInteraction,
   ButtonInteraction,
   ButtonBuilder,
   ButtonStyle,
@@ -131,6 +132,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       }
     },
 
+    async handleAutocompleteInteraction(interaction: AutocompleteInteraction) {
+      if (interaction.commandName === "notice") {
+        await handleNoticeAutocomplete(interaction);
+      }
+    },
+
     async handleChatInputCommand(interaction: ChatInputCommandInteraction) {
       if (interaction.commandName === "close_ticket") {
         await handleCloseTicketCommand(interaction);
@@ -195,7 +202,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
               .setName("event")
               .setDescription(messages.commands.noticeEventOptionDescription)
               .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.noticeEventOptionDescription })
-              .setRequired(true),
+              .setRequired(true)
+              .setAutocomplete(true),
           )
           .setDMPermission(false),
         new SlashCommandBuilder()
@@ -258,7 +266,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       return;
     }
 
-    const query = interaction.options.getString("event", true).trim();
+    const eventSelection = interaction.options.getString("event", true).trim();
     const guildConfig = await convex.query(references.getConfigByDiscordGuildId, {
       guildId: interaction.guildId,
     }).catch(() => null) as { defaultLanguage?: "en" | "cs" } | null;
@@ -267,11 +275,32 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     const matches = await convex.query(references.findNoticeTarget, {
       guildId: interaction.guildId,
       userId: interaction.user.id,
-      query,
+      query: eventSelection,
     }) as Array<{ id: string; name: string }>;
+
+    logInfo("interaction", "Resolved notice command candidates", {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      eventSelection,
+      matchCount: matches.length,
+      matchIds: matches.map((event) => event.id),
+      matchNames: matches.map((event) => event.name),
+    });
+
+    const exactIdMatch = matches.find((event) => event.id === eventSelection);
+    if (exactIdMatch) {
+      await openNoticeModal(interaction, exactIdMatch.id, messages.commands.noticeModalTitle, messages.commands.noticeReasonLabel);
+      return;
+    }
 
     if (!matches.length) {
       await interaction.reply({ content: messages.commands.noticeNoMatch, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const exactNameMatches = matches.filter((event) => event.name.trim().toLowerCase() === eventSelection.toLowerCase());
+    if (exactNameMatches.length === 1) {
+      await openNoticeModal(interaction, exactNameMatches[0].id, messages.commands.noticeModalTitle, messages.commands.noticeReasonLabel);
       return;
     }
 
@@ -280,16 +309,72 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       return;
     }
 
-    const [event] = matches;
+    await openNoticeModal(interaction, matches[0].id, messages.commands.noticeModalTitle, messages.commands.noticeReasonLabel);
+  }
+
+  async function handleNoticeAutocomplete(interaction: AutocompleteInteraction) {
+    if (!interaction.guildId) {
+      logInfo("interaction", "Ignored notice autocomplete outside guild", {
+        userId: interaction.user.id,
+      });
+      await interaction.respond([]);
+      return;
+    }
+
+    const query = interaction.options.getFocused(true);
+    if (query.name !== "event") {
+      logInfo("interaction", "Ignored notice autocomplete for unexpected option", {
+        guildId: interaction.guildId,
+        userId: interaction.user.id,
+        optionName: query.name,
+      });
+      await interaction.respond([]);
+      return;
+    }
+
+    logInfo("interaction", "Received notice autocomplete", {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      query: String(query.value ?? ""),
+    });
+
+    const matches = await convex.query(references.findNoticeTarget, {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      query: String(query.value ?? ""),
+    }).catch(() => []) as Array<{ id: string; name: string; gameStart?: string }>;
+
+    logInfo("interaction", "Resolved notice autocomplete candidates", {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      query: String(query.value ?? ""),
+      matchCount: matches.length,
+      matchIds: matches.map((event) => event.id),
+      matchNames: matches.map((event) => event.name),
+      matchGameStarts: matches.map((event) => event.gameStart),
+    });
+
+    await interaction.respond(matches.slice(0, 25).map((event) => ({
+      name: formatNoticeAutocompleteLabel(event.name, event.gameStart),
+      value: event.id,
+    })));
+  }
+
+  async function openNoticeModal(
+    interaction: ChatInputCommandInteraction,
+    eventId: string,
+    modalTitle: string,
+    reasonLabel: string,
+  ) {
     const modal = new ModalBuilder()
-      .setCustomId(`notice-modal:${event.id}`)
-      .setTitle(messages.commands.noticeModalTitle.slice(0, 45));
+      .setCustomId(`notice-modal:${eventId}`)
+      .setTitle(modalTitle.slice(0, 45));
 
     modal.addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(
         new TextInputBuilder()
           .setCustomId("reason")
-          .setLabel(messages.commands.noticeReasonLabel.slice(0, 45))
+          .setLabel(reasonLabel.slice(0, 45))
           .setStyle(TextInputStyle.Paragraph)
           .setRequired(true)
           .setMaxLength(500),
@@ -297,6 +382,26 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     );
 
     await interaction.showModal(modal);
+  }
+
+  function formatNoticeAutocompleteLabel(name: string, gameStart?: string) {
+    if (!gameStart) {
+      return name.slice(0, 100);
+    }
+
+    const timestamp = new Date(gameStart);
+    if (Number.isNaN(timestamp.getTime())) {
+      return name.slice(0, 100);
+    }
+
+    return `${name} • ${timestamp.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "UTC",
+    })} UTC`.slice(0, 100);
   }
 
   async function handleNoticeModalSubmit(interaction: ModalSubmitInteraction) {

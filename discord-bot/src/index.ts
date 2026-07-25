@@ -112,6 +112,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
+    if (interaction.isAutocomplete()) {
+      await interactionHandler.handleAutocompleteInteraction(interaction);
+      return;
+    }
+
     if (interaction.isChatInputCommand()) {
       await interactionHandler.handleChatInputCommand(interaction);
     }
@@ -134,6 +139,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
     }
   }
+});
+
+client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+  const guildId = newState.guild.id ?? oldState.guild.id;
+  if (!guildId) {
+    return;
+  }
+
+  const oldChannelId = oldState.channelId ?? undefined;
+  const newChannelId = newState.channelId ?? undefined;
+  if (oldChannelId === newChannelId) {
+    return;
+  }
+
+  logInfo("voice-state", "Queued guild sync from voice state update", {
+    guildId,
+    userId: newState.id ?? oldState.id,
+    oldChannelId,
+    newChannelId,
+  });
+  syncService.queueGuildSync(guildId);
+  syncService.triggerSoon(250);
 });
 
 client.on(Events.Error, (error) => {

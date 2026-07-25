@@ -6,6 +6,7 @@ export type EventWorkflowRecord = {
   kind?: "match" | "training";
   registrationEnd: string;
   meetingStart: string;
+  gameStart?: string;
   gameEnd: string;
   status?: EventStatus;
   participants?: EventParticipant[];

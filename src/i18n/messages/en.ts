@@ -543,6 +543,7 @@ export const enMessages = {
     confirmingFromMeetingChannel: "Confirming from meeting VC...",
     confirmedFromMeetingChannel: "Confirmed {count} rostered player(s) from the meeting VC.",
     noRosterPlayersInMeetingChannel: "No rostered players were found in the meeting VC.",
+    noNewMeetingChannelAttendanceChanges: "Rostered player(s) were found in the meeting VC, but no new attendance changes were needed.",
     attendancePending: "Not acknowledged",
     attendanceAcknowledged: "Acknowledged",
     attendanceConfirmed: "Confirmed",

@@ -19,18 +19,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GroupInlineIcons } from "@/components/app/group-inline-icons";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandLoadMore,
   CommandList,
 } from "@/components/ui/command";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { compareRosterCandidates, getAssignedElsewhereUserIds, getUserSignupLabel } from "@/lib/roster-assignment";
 import { getUserScoreForGuild } from "@/lib/user-scores";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -59,10 +62,6 @@ function getAttendanceIcon(status: AttendanceStatus) {
   }
 
   return <XCircle className="size-4 text-muted-foreground" />;
-}
-
-function compareUsersByScoreThenName(a: AppUser, b: AppUser, serverDiscordId: string) {
-  return (getUserScoreForGuild(b, serverDiscordId) - getUserScoreForGuild(a, serverDiscordId)) || a.name.localeCompare(b.name);
 }
 
 function formatRosterScoreline(user: AppUser, dictionary: Dictionary, serverDiscordId: string) {
@@ -156,6 +155,8 @@ export function SquadCard({
   usersById,
   assignmentsByUserId,
   groupsById,
+  participantStatusByUserId,
+  signupGroupByUserId,
   canAdmin,
   setDragState,
   serverDiscordId,
@@ -185,6 +186,8 @@ export function SquadCard({
   usersById: Map<string, AppUser>;
   assignmentsByUserId: Map<string, ServerUserAssignment>;
   groupsById: Map<string, Group>;
+  participantStatusByUserId: Map<string, "attending" | "not_attending">;
+  signupGroupByUserId: Map<string, string | null>;
   canAdmin: boolean;
   setDragState: (state: DragState | null) => void;
   serverDiscordId: string;
@@ -192,11 +195,20 @@ export function SquadCard({
 }) {
   const [slotPickerOpen, setSlotPickerOpen] = useState<number | null>(null);
   const [slotSearches, setSlotSearches] = useState<Record<number, string>>({});
+  const [slotVisibleCounts, setSlotVisibleCounts] = useState<Record<number, number>>({});
   const [moveMenuOpen, setMoveMenuOpen] = useState<number | null>(null);
   const [attendanceMenuOpen, setAttendanceMenuOpen] = useState<number | null>(null);
   const isLayoutMode = mode === "layout";
   const isAssignmentMode = mode === "assignment";
   const isViewMode = mode === "view";
+  const rankingContext = {
+    usersById,
+    assignmentsByUserId,
+    groupsById,
+    signupGroupByUserId,
+    participantStatusByUserId,
+    serverDiscordId,
+  };
 
   return (
     <Card
@@ -246,6 +258,22 @@ export function SquadCard({
           const assignment = slotUser ? assignmentsByUserId.get(slotUser.discordId) : undefined;
           const attendanceStatus = getAttendanceStatus(player);
           const noticeReason = slotUser ? noticeReasonByUserId.get(slotUser.discordId) : undefined;
+          const signupRoleLabel = slotUser ? getUserSignupLabel(slotUser.discordId, signupGroupByUserId) : null;
+          const assignedElsewhereUserIds = getAssignedElsewhereUserIds(board, { squadIndex, playerIndex });
+          const filteredUsers = allUsersSorted
+            .filter((user) => user.name.toLowerCase().includes((slotSearches[playerIndex] ?? "").trim().toLowerCase()))
+            .sort((a, b) => compareRosterCandidates(
+              a.discordId,
+              b.discordId,
+              rankingContext,
+              {
+                squadGroup: squad.group,
+                roleName: player.roleName,
+                roleIcon: player.roleIcon,
+              },
+              { assignedElsewhereUserIds },
+            ));
+          const visibleCount = slotVisibleCounts[playerIndex] ?? 5;
 
           return (
             <div
@@ -300,12 +328,8 @@ export function SquadCard({
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <div className="truncate text-xs font-medium leading-none">
-                            {slotUser ? slotUser.name : placeholderName}{" "}
-                            <span className="text-[10px] text-muted-foreground">
-                              ({slotUser ? formatRosterScoreline(slotUser, dictionary, serverDiscordId) : `0 ${dictionary.navUser.scoreSuffix}`})
-                            </span>
+                            {slotUser ? slotUser.name : placeholderName}
                           </div>
-                          {slotUser ? <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} /> : null}
                           {noticeReason ? (
                             <HoverCard>
                               <HoverCardTrigger asChild>
@@ -317,6 +341,16 @@ export function SquadCard({
                             </HoverCard>
                           ) : null}
                         </div>
+                        {slotUser ? (
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                            <GroupInlineIcons
+                              assignment={assignment}
+                              groupsById={groupsById}
+                              signupGroupName={signupRoleLabel}
+                            />
+                            <span className="truncate">{formatRosterScoreline(slotUser, dictionary, serverDiscordId)}</span>
+                          </div>
+                        ) : null}
                       </div>
                       {player.note && !isAssignmentMode ? (
                         <div className="max-w-28 truncate text-[10px] text-muted-foreground">{player.note}</div>
@@ -487,7 +521,10 @@ export function SquadCard({
                           <Command shouldFilter={false}>
                             <CommandInput
                               value={slotSearches[playerIndex] ?? ""}
-                              onValueChange={(value) => setSlotSearches((current) => ({ ...current, [playerIndex]: value }))}
+                              onValueChange={(value) => {
+                                setSlotSearches((current) => ({ ...current, [playerIndex]: value }));
+                                setSlotVisibleCounts((current) => ({ ...current, [playerIndex]: 5 }));
+                              }}
                               placeholder={dictionary.common.openSlot}
                             />
                             <CommandList>
@@ -516,40 +553,12 @@ export function SquadCard({
                                 </CommandGroup>
                               ) : null}
                               <CommandGroup>
-                                {allUsersSorted
-                                  .filter((user) => user.name.toLowerCase().includes((slotSearches[playerIndex] ?? "").trim().toLowerCase()))
-                                  .sort((a, b) => {
-                                    const aAssignedElsewhere = board.squads.some((currentSquad, currentSquadIndex) =>
-                                      currentSquad.players.some(
-                                        (currentPlayer, currentPlayerIndex) =>
-                                          !(currentSquadIndex === squadIndex && currentPlayerIndex === playerIndex) &&
-                                          currentPlayer.id === a.discordId,
-                                      ),
-                                    );
-                                    const bAssignedElsewhere = board.squads.some((currentSquad, currentSquadIndex) =>
-                                      currentSquad.players.some(
-                                        (currentPlayer, currentPlayerIndex) =>
-                                          !(currentSquadIndex === squadIndex && currentPlayerIndex === playerIndex) &&
-                                          currentPlayer.id === b.discordId,
-                                      ),
-                                    );
-
-                                    if (aAssignedElsewhere !== bAssignedElsewhere) {
-                                      return aAssignedElsewhere ? 1 : -1;
-                                    }
-
-                                    return compareUsersByScoreThenName(a, b, serverDiscordId);
-                                  })
-                                  .slice(0, 5)
+                                {filteredUsers
+                                  .slice(0, visibleCount)
                                   .map((user) => {
                                     const assignment = assignmentsByUserId.get(user.discordId);
-                                    const assignedElsewhere = board.squads.some((currentSquad, currentSquadIndex) =>
-                                      currentSquad.players.some(
-                                        (currentPlayer, currentPlayerIndex) =>
-                                          !(currentSquadIndex === squadIndex && currentPlayerIndex === playerIndex) &&
-                                          currentPlayer.id === user.discordId,
-                                      ),
-                                    );
+                                    const assignedElsewhere = assignedElsewhereUserIds.has(user.discordId);
+                                    const userSignupLabel = getUserSignupLabel(user.discordId, signupGroupByUserId);
 
                                     return (
                                       <CommandItem
@@ -569,7 +578,14 @@ export function SquadCard({
                                           <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
                                         </Avatar>
                                         <div className="min-w-0 flex-1">
-                                          <div className="truncate">{user.name}</div>
+                                          <div className="flex items-center gap-1.5">
+                                            <div className="truncate">{user.name}</div>
+                                            {userSignupLabel ? (
+                                              <Badge variant="outline" className="rounded-full px-1.5 py-0 text-[10px]">
+                                                {userSignupLabel}
+                                              </Badge>
+                                            ) : null}
+                                          </div>
                                           <div className="truncate text-xs text-muted-foreground">
                                             {getPrimaryGroupLabel(assignment, groupsById, dictionary)} • {formatRosterScoreline(user, dictionary, serverDiscordId)}
                                           </div>
@@ -581,6 +597,16 @@ export function SquadCard({
                                       </CommandItem>
                                     );
                                   })}
+                                {filteredUsers.length > visibleCount ? (
+                                  <CommandLoadMore
+                                    onClick={() => setSlotVisibleCounts((current) => ({
+                                      ...current,
+                                      [playerIndex]: visibleCount + 5,
+                                    }))}
+                                  >
+                                    Show 5 more
+                                  </CommandLoadMore>
+                                ) : null}
                               </CommandGroup>
                             </CommandList>
                           </Command>

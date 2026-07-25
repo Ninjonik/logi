@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GroupInlineIcons } from "@/components/app/group-inline-icons";
 import {
   Command,
   CommandEmpty,
@@ -24,13 +25,14 @@ import { getUserScoreForGuild } from "@/lib/user-scores";
 import type { AppUser, Group, Roster } from "@/types/domain";
 import type { DragState } from "@/components/app/roster-board-types";
 
-type RosterUser = AppUser & { _reserveSection?: string };
+type RosterUser = AppUser & { _reserveSection?: string; signupRoleLabel?: string };
 
 export function RosterBoardAttendeeLists({
   board,
   users,
   reserveUsers,
   groupedNotAttendingUsers,
+  allUsersSorted,
   assignmentsByUserId,
   groupsById,
   dictionary,
@@ -58,6 +60,7 @@ export function RosterBoardAttendeeLists({
   users: AppUser[];
   reserveUsers: RosterUser[];
   groupedNotAttendingUsers: RosterUser[];
+  allUsersSorted: AppUser[];
   assignmentsByUserId: Map<string, ServerUserAssignment>;
   groupsById: Map<string, Group>;
   dictionary: Dictionary;
@@ -84,7 +87,7 @@ export function RosterBoardAttendeeLists({
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card className="gap-0 rounded-2xl border-border/70 bg-card" onDragOver={(event) => isAssignmentMode && event.preventDefault()} onDrop={() => handleDropOnReserve()}>
-        <CardHeader className="grid grid-rows-[1.5rem_2rem] gap-3 px-6 pb-4 pt-6">
+        <CardHeader className="grid grid-rows-[1.5rem_2rem] gap-2 p-4">
           <div className="flex h-6 items-center justify-between">
             <CardTitle className="text-sm">{dictionary.common.reserves}</CardTitle>
             {isAssignmentMode && (
@@ -109,7 +112,7 @@ export function RosterBoardAttendeeLists({
                     <CommandList>
                       <CommandEmpty>{dictionary.userManagement.noResults}</CommandEmpty>
                       <CommandGroup>
-                        {users.map((user) => (
+                        {allUsersSorted.map((user) => (
                           <CommandItem
                             key={user.id}
                             value={user.name}
@@ -142,8 +145,8 @@ export function RosterBoardAttendeeLists({
             className="h-8 rounded-xl px-2 text-xs"
           />
         </CardHeader>
-        <CardContent className="px-6 pb-6">
-          <ScrollArea className="pr-1">
+        <CardContent className="p-4 pt-0">
+          <ScrollArea className="h-[11rem] pr-1">
             <GroupedUserList
               users={reserveUsers}
               dictionary={dictionary}
@@ -165,7 +168,7 @@ export function RosterBoardAttendeeLists({
       </Card>
 
       <Card className="gap-0 rounded-2xl border-border/70 bg-card" onDragOver={(event) => isAssignmentMode && event.preventDefault()} onDrop={() => handleDropOnNotAttending()}>
-        <CardHeader className="grid grid-rows-[1.5rem_2rem] gap-3 px-6 pb-4 pt-6">
+        <CardHeader className="grid grid-rows-[1.5rem_2rem] gap-2 p-4">
           <div className="flex h-6 items-center justify-between">
             <CardTitle className="text-sm">{dictionary.roster.notAttending}</CardTitle>
             {isAssignmentMode && (
@@ -190,7 +193,7 @@ export function RosterBoardAttendeeLists({
                     <CommandList>
                       <CommandEmpty>{dictionary.userManagement.noResults}</CommandEmpty>
                       <CommandGroup>
-                        {users.map((user) => (
+                        {allUsersSorted.map((user) => (
                           <CommandItem
                             key={user.id}
                             value={user.name}
@@ -223,8 +226,8 @@ export function RosterBoardAttendeeLists({
             className="h-8 rounded-xl px-2 text-xs"
           />
         </CardHeader>
-        <CardContent className="px-6 pb-6">
-          <ScrollArea className="pr-1">
+        <CardContent className="p-4 pt-0">
+          <ScrollArea className="h-[11rem] pr-1">
             <GroupedUserList
               users={groupedNotAttendingUsers}
               dictionary={dictionary}
@@ -307,72 +310,81 @@ function GroupedUserList({
               <div className="h-px flex-1 bg-border/40" />
             </div>
           )}
-          {sections[sectionName].map((user) => {
-            const assignment = assignmentsByUserId.get(user.discordId);
-            const noticeReason = noticeReasonByUserId.get(user.discordId);
-            const notAttendingIndicator = notAttendingIndicatorByUserId.get(user.discordId);
+          <div className="flex flex-wrap gap-2">
+            {sections[sectionName].map((user) => {
+              const assignment = assignmentsByUserId.get(user.discordId);
+              const noticeReason = noticeReasonByUserId.get(user.discordId);
+              const notAttendingIndicator = notAttendingIndicatorByUserId.get(user.discordId);
 
-            return (
-              <div
-                key={user.id}
-                onDragOver={(event) => isAssignmentMode && event.preventDefault()}
-                onDrop={() => onDropUser(user.discordId)}
-              >
+              return (
                 <div
-                  draggable={isAssignmentMode && canAdmin}
-                  onDragStart={() => setDragState({ type: dragType, userId: user.discordId })}
-                  onDragEnd={() => setDragState(null)}
-                  className={[
-                    "flex min-h-10 min-w-0 cursor-grab items-center gap-2 rounded-lg border border-border/70 bg-background px-3 py-2",
-                    muted ? "opacity-60" : "",
-                  ].join(" ")}
+                  key={user.id}
+                  onDragOver={(event) => isAssignmentMode && event.preventDefault()}
+                  onDrop={() => onDropUser(user.discordId)}
+                  className="basis-full md:basis-[calc(50%-0.25rem)]"
                 >
-                  {isAssignmentMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
-                  <Avatar className="size-5 shrink-0 rounded-md">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1">
-                      <div className="truncate text-xs font-medium leading-none">{user.name}</div>
-                      <GroupBadge assignment={assignment} groupsById={groupsById} dictionary={dictionary} />
-                      {noticeReason ? (
-                        <HoverCard>
-                          <HoverCardTrigger asChild>
-                            <Clock3 className="size-3.5 text-red-500" />
-                          </HoverCardTrigger>
-                          <HoverCardContent className="text-xs">
-                            {noticeReason}
-                          </HoverCardContent>
-                        </HoverCard>
-                      ) : null}
-                      {notAttendingIndicator ? (
-                        <HoverCard>
-                          <HoverCardTrigger asChild>
-                            {notAttendingIndicator === "declined" ? (
-                              <Ban className="size-3.5 text-amber-500" />
-                            ) : (
-                              <MessageCircleOff className="size-3.5 text-muted-foreground" />
-                            )}
-                          </HoverCardTrigger>
-                          <HoverCardContent className="text-xs">
-                            {notAttendingIndicator === "declined"
-                              ? dictionary.roster.declinedSignup
-                              : dictionary.roster.noSignupResponse}
-                          </HoverCardContent>
-                        </HoverCard>
-                      ) : null}
+                  <div
+                    draggable={isAssignmentMode && canAdmin}
+                    onDragStart={() => setDragState({ type: dragType, userId: user.discordId })}
+                    onDragEnd={() => setDragState(null)}
+                    className={[
+                      "flex min-h-9 min-w-0 cursor-grab items-center gap-2 rounded-lg border border-border/70 bg-background p-2",
+                      muted ? "opacity-60" : "",
+                    ].join(" ")}
+                  >
+                    {isAssignmentMode && canAdmin ? <GripVertical className="size-4 text-muted-foreground" /> : null}
+                    <Avatar className="size-5 shrink-0 rounded-md">
+                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <div className="truncate text-xs font-medium leading-none">{user.name}</div>
+                        {noticeReason ? (
+                          <HoverCard>
+                            <HoverCardTrigger asChild>
+                              <Clock3 className="size-3.5 text-red-500" />
+                            </HoverCardTrigger>
+                            <HoverCardContent className="text-xs">
+                              {noticeReason}
+                            </HoverCardContent>
+                          </HoverCard>
+                        ) : null}
+                        {notAttendingIndicator ? (
+                          <HoverCard>
+                            <HoverCardTrigger asChild>
+                              {notAttendingIndicator === "declined" ? (
+                                <Ban className="size-3.5 text-amber-500" />
+                              ) : (
+                                <MessageCircleOff className="size-3.5 text-muted-foreground" />
+                              )}
+                            </HoverCardTrigger>
+                            <HoverCardContent className="text-xs">
+                              {notAttendingIndicator === "declined"
+                                ? dictionary.roster.declinedSignup
+                                : dictionary.roster.noSignupResponse}
+                            </HoverCardContent>
+                          </HoverCard>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <GroupInlineIcons
+                          assignment={assignment}
+                          groupsById={groupsById}
+                          signupGroupName={user.signupRoleLabel}
+                        />
+                        <span className="truncate">{formatRosterScoreline(user, dictionary, serverDiscordId)}</span>
+                      </div>
                     </div>
-                    <div className="truncate text-[10px] text-muted-foreground">{formatRosterScoreline(user, dictionary, serverDiscordId)}</div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       ))}
       {!users.length ? (
-        <div className="rounded-lg border border-dashed border-border/80 px-2 py-4 text-center text-xs text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-border/80 p-2 text-center text-xs text-muted-foreground">
           {emptyLabel}
         </div>
       ) : null}
@@ -390,37 +402,3 @@ function formatRosterScoreline(user: AppUser, dictionary: Dictionary, serverDisc
   return `${score} ${dictionary.navUser.scoreSuffix} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`;
 }
 
-function GroupBadge({
-  assignment,
-  groupsById,
-  dictionary,
-}: {
-  assignment?: ServerUserAssignment;
-  groupsById: Map<string, Group>;
-  dictionary: Dictionary;
-}) {
-  const primaryGroup = assignment?.primaryGroupId ? groupsById.get(assignment.primaryGroupId) : undefined;
-  const secondaryGroups = (assignment?.secondaryGroupIds || [])
-    .map((groupId) => groupsById.get(groupId as never))
-    .filter((group): group is Group => Boolean(group)) ?? [];
-
-  if (!primaryGroup) {
-    return null;
-  }
-
-  return (
-    <HoverCard>
-      <HoverCardTrigger asChild>
-        <Badge variant="secondary" className="max-w-full rounded-full px-2 py-0 text-[10px]">
-          {primaryGroup.name}
-        </Badge>
-      </HoverCardTrigger>
-      <HoverCardContent className="space-y-2">
-        <div className="font-medium">{primaryGroup.name}</div>
-        <div className="text-xs text-muted-foreground">
-          {secondaryGroups.length ? secondaryGroups.map((group) => group.name).join(", ") : dictionary.userManagement.noSecondaryGroups}
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  );
-}

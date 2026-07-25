@@ -40,6 +40,11 @@ import type { ServerUserAssignment } from "@/lib/server-user-management";
 import type { AppUser, EventRecord, Group, Roster } from "@/types/domain";
 import { formatDateTime } from "@/lib/format";
 import { formatHllPresetLabel } from "@/lib/hll-map-presets";
+import {
+  compareRosterCandidates,
+  getSignupGroupByUserId,
+  getUserSignupLabel,
+} from "@/lib/roster-assignment";
 import { getUserScoreForGuild } from "@/lib/user-scores";
 
 function getCustomPlayerName(player: Roster["squads"][number]["players"][number]) {
@@ -55,10 +60,6 @@ function clearRosterPlayerAssignment(player: Roster["squads"][number]["players"]
   player.customName = undefined;
   player.ack = false;
   player.confirmed = false;
-}
-
-function compareUsersByScoreThenName(a: AppUser, b: AppUser, serverDiscordId: string) {
-  return (getUserScoreForGuild(b, serverDiscordId) - getUserScoreForGuild(a, serverDiscordId)) || a.name.localeCompare(b.name);
 }
 
 export function RosterBoard({
@@ -129,6 +130,15 @@ export function RosterBoard({
     () => new Map((event?.participants ?? []).map((participant) => [participant.userId, participant.status])),
     [event?.participants],
   );
+  const signupGroupByUserId = useMemo(() => getSignupGroupByUserId(event), [event]);
+  const rankingContext = useMemo(() => ({
+    usersById,
+    assignmentsByUserId,
+    groupsById,
+    signupGroupByUserId,
+    participantStatusByUserId,
+    serverDiscordId: event?.guildId ?? serverId,
+  }), [assignmentsByUserId, event?.guildId, groupsById, participantStatusByUserId, serverId, signupGroupByUserId, usersById]);
   const notAttendingIndicatorByUserId = useMemo(() => {
     const entries: Array<[string, "declined" | "no_response"]> = [];
 
@@ -144,8 +154,10 @@ export function RosterBoard({
     return new Map(entries);
   }, [board?.notAttendingPlayerIds, participantStatusByUserId]);
   const allUsersSorted = useMemo(
-    () => users.slice().sort((a, b) => compareUsersByScoreThenName(a, b, event?.guildId ?? serverId)),
-    [event?.guildId, serverId, users],
+    () => users
+      .slice()
+      .sort((a, b) => compareRosterCandidates(a.discordId, b.discordId, rankingContext)),
+    [rankingContext, users],
   );
   const normalizedReserveSearch = deferredReserveSearch.trim().toLowerCase();
   const normalizedNotAttendingSearch = deferredNotAttendingSearch.trim().toLowerCase();
@@ -253,12 +265,13 @@ export function RosterBoard({
       .filter((user) => user.name.toLowerCase().includes(normalizedReserveSearch));
 
     return filtered
-      .sort((a, b) => compareUsersByScoreThenName(a, b, event?.guildId ?? serverId))
+      .sort((a, b) => compareRosterCandidates(a.discordId, b.discordId, rankingContext))
       .map((user) => ({
         ...user,
         _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.discordId), groupsById, dictionary),
+        signupRoleLabel: getUserSignupLabel(user.discordId, signupGroupByUserId) ?? undefined,
       }));
-  }, [assignedPlayerIds, assignmentsByUserId, board, dictionary, groupsById, normalizedReserveSearch, usersById]);
+  }, [assignedPlayerIds, assignmentsByUserId, board, dictionary, groupsById, normalizedReserveSearch, rankingContext, signupGroupByUserId, usersById]);
 
   const notAttendingUsers = useMemo(() => {
     if (!board) return [];
@@ -267,15 +280,16 @@ export function RosterBoard({
       .map((id) => usersById.get(id))
       .filter((user): user is AppUser => Boolean(user))
       .filter((user) => user.name.toLowerCase().includes(normalizedNotAttendingSearch))
-      .sort((a, b) => compareUsersByScoreThenName(a, b, event?.guildId ?? serverId));
-  }, [assignedPlayerIds, board, normalizedNotAttendingSearch, usersById]);
+      .sort((a, b) => compareRosterCandidates(a.discordId, b.discordId, rankingContext));
+  }, [assignedPlayerIds, board, normalizedNotAttendingSearch, rankingContext, usersById]);
 
   const groupedNotAttendingUsers = useMemo(
     () => notAttendingUsers.map((user) => ({
       ...user,
       _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.discordId), groupsById, dictionary),
+      signupRoleLabel: getUserSignupLabel(user.discordId, signupGroupByUserId) ?? undefined,
     })),
-    [assignmentsByUserId, dictionary, groupsById, notAttendingUsers],
+    [assignmentsByUserId, dictionary, groupsById, notAttendingUsers, signupGroupByUserId],
   );
 
   if (!event) {
@@ -705,29 +719,6 @@ export function RosterBoard({
       const availableUserIds = [...(next.reservePlayerIds || [])];
       const assignedFromAutoFill = new Set<string>();
 
-      const getGroupMatchRank = (userId: string, squadGroup: string) => {
-        const assignment = assignmentsByUserId.get(userId);
-        if (!assignment) return 2;
-
-        const primaryGroup = assignment.primaryGroupId ? groupsById.get(assignment.primaryGroupId)?.name : undefined;
-        if (primaryGroup === squadGroup) return 0;
-
-        const hasSecondaryMatch = (assignment.secondaryGroupIds || [])
-          .some((groupId) => groupsById.get(groupId)?.name === squadGroup);
-        if (hasSecondaryMatch) return 1;
-
-        return 2;
-      };
-
-      const getCandidateScore = (userId: string, squadGroup: string) => {
-        const user = usersById.get(userId);
-        if (!user) return Number.NEGATIVE_INFINITY;
-
-        const matchRank = getGroupMatchRank(userId, squadGroup);
-        const score = getUserScoreForGuild(user, event?.guildId ?? serverId);
-        return (2 - matchRank) * 1_000_000 + score;
-      };
-
       for (const squad of next.squads) {
         for (const player of squad.players) {
           if (player.id || getCustomPlayerName(player)) {
@@ -735,7 +726,6 @@ export function RosterBoard({
           }
 
           let bestCandidateIndex = -1;
-          let bestCandidateScore = Number.NEGATIVE_INFINITY;
 
           for (let index = 0; index < availableUserIds.length; index += 1) {
             const userId = availableUserIds[index];
@@ -743,9 +733,17 @@ export function RosterBoard({
               continue;
             }
 
-            const candidateScore = getCandidateScore(userId, squad.group);
-            if (candidateScore > bestCandidateScore) {
-              bestCandidateScore = candidateScore;
+            if (bestCandidateIndex < 0) {
+              bestCandidateIndex = index;
+              continue;
+            }
+
+            const isBetterCandidate = compareRosterCandidates(userId, availableUserIds[bestCandidateIndex], rankingContext, {
+              squadGroup: squad.group,
+              roleName: player.roleName,
+              roleIcon: player.roleIcon,
+            }) < 0;
+            if (isBetterCandidate) {
               bestCandidateIndex = index;
             }
           }
@@ -911,10 +909,13 @@ export function RosterBoard({
 
       router.refresh();
 
+      const matchedRosterCount = Number(body.rosteredCount ?? 0) + Number(body.reserveCount ?? 0);
       toast.success(
         body.updatedCount > 0
           ? dictionary.roster.confirmedFromMeetingChannel.replace("{count}", String(body.updatedCount))
-          : dictionary.roster.noRosterPlayersInMeetingChannel,
+          : matchedRosterCount > 0
+            ? dictionary.roster.noNewMeetingChannelAttendanceChanges
+            : dictionary.roster.noRosterPlayersInMeetingChannel,
       );
     } catch (error) {
       console.error("Failed to confirm roster from meeting channel:", error);
@@ -1019,34 +1020,37 @@ export function RosterBoard({
             <RosterInfoCard label={dictionary.roster.notes} value={event.notes ?? dictionary.roster.noExtraNotes} />
           </div>
           <div className="flex flex-col gap-4">
-            <RosterBoardAttendeeLists
-              board={board}
-              users={users}
-              reserveUsers={reserveUsers}
-              groupedNotAttendingUsers={groupedNotAttendingUsers}
-              assignmentsByUserId={assignmentsByUserId}
-              groupsById={groupsById}
-              dictionary={dictionary}
-              reserveSearch={reserveSearch}
-              setReserveSearch={setReserveSearch}
-              notAttendingSearch={notAttendingSearch}
-              setNotAttendingSearch={setNotAttendingSearch}
-              focusedGroup={focusedGroup}
-              isAssignmentMode={isAssignmentMode}
-              canAdmin={canAdmin}
-              userPickerOpen={userPickerOpen}
-              setUserPickerOpen={setUserPickerOpen}
-              notAttendingPickerOpen={notAttendingPickerOpen}
-              setNotAttendingPickerOpen={setNotAttendingPickerOpen}
-              addPlayerToReserve={addPlayerToReserve}
-              addPlayerToNotAttending={addPlayerToNotAttending}
-              handleDropOnReserve={handleDropOnReserve}
-              handleDropOnNotAttending={handleDropOnNotAttending}
-              setDragState={setDragState}
-              serverDiscordId={event.guildId}
-              noticeReasonByUserId={noticeReasonByUserId}
-              notAttendingIndicatorByUserId={notAttendingIndicatorByUserId}
-            />
+            {mode !== "view" ? (
+              <RosterBoardAttendeeLists
+                board={board}
+                users={users}
+                reserveUsers={reserveUsers}
+                groupedNotAttendingUsers={groupedNotAttendingUsers}
+                allUsersSorted={allUsersSorted}
+                assignmentsByUserId={assignmentsByUserId}
+                groupsById={groupsById}
+                dictionary={dictionary}
+                reserveSearch={reserveSearch}
+                setReserveSearch={setReserveSearch}
+                notAttendingSearch={notAttendingSearch}
+                setNotAttendingSearch={setNotAttendingSearch}
+                focusedGroup={focusedGroup}
+                isAssignmentMode={isAssignmentMode}
+                canAdmin={canAdmin}
+                userPickerOpen={userPickerOpen}
+                setUserPickerOpen={setUserPickerOpen}
+                notAttendingPickerOpen={notAttendingPickerOpen}
+                setNotAttendingPickerOpen={setNotAttendingPickerOpen}
+                addPlayerToReserve={addPlayerToReserve}
+                addPlayerToNotAttending={addPlayerToNotAttending}
+                handleDropOnReserve={handleDropOnReserve}
+                handleDropOnNotAttending={handleDropOnNotAttending}
+                setDragState={setDragState}
+                serverDiscordId={event.guildId}
+                noticeReasonByUserId={noticeReasonByUserId}
+                notAttendingIndicatorByUserId={notAttendingIndicatorByUserId}
+              />
+            ) : null}
             <div className="space-y-2.5">
               {isLayoutMode ? (
                 <div className="md:col-span-2">
@@ -1100,6 +1104,8 @@ export function RosterBoard({
                         usersById={usersById}
                         assignmentsByUserId={assignmentsByUserId}
                         groupsById={groupsById}
+                        participantStatusByUserId={participantStatusByUserId}
+                        signupGroupByUserId={signupGroupByUserId}
                         canAdmin={canAdmin}
                         setDragState={setDragState}
                         serverDiscordId={event.guildId}
@@ -1135,6 +1141,8 @@ export function RosterBoard({
                                   usersById={usersById}
                                   assignmentsByUserId={assignmentsByUserId}
                                   groupsById={groupsById}
+                                  participantStatusByUserId={participantStatusByUserId}
+                                  signupGroupByUserId={signupGroupByUserId}
                                   canAdmin={canAdmin}
                                   setDragState={setDragState}
                                   serverDiscordId={event.guildId}

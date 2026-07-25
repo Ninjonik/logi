@@ -542,6 +542,7 @@ export const csMessages = {
     confirmingFromMeetingChannel: "Potvrzuji ze srazového VC...",
     confirmedFromMeetingChannel: "Potvrzeno {count} hráčů ze soupisky podle srazového VC.",
     noRosterPlayersInMeetingChannel: "Ve srazovém VC nebyli nalezeni žádní hráči ze soupisky.",
+    noNewMeetingChannelAttendanceChanges: "Hráči ze soupisky byli ve srazovém VC nalezeni, ale nebylo potřeba provést žádné nové změny docházky.",
     attendancePending: "Nepotvrzeno",
     attendanceAcknowledged: "Potvrzeno účastníkem",
     attendanceConfirmed: "Potvrzeno adminem",
