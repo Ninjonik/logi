@@ -45,7 +45,6 @@ export function SubmitMatchResultsButton({
       });
 
       const body = await response.json();
-      console.log("[submit-match-results] response", body);
       if (!response.ok) {
         toast.error(body.error ?? dictionary.common.error);
         return;

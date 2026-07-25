@@ -3,11 +3,13 @@ import {
   ButtonBuilder,
   ButtonStyle,
   type ButtonInteraction,
+  type ChatInputCommandInteraction,
   type Guild,
   type ThreadChannel,
 } from "discord.js";
 
 import { getClanDiscordMessages } from "../../../src/lib/clan-language";
+import { buildDiscordMessageUrl } from "../../../src/lib/discord";
 
 import { revalidateAppData } from "../cache";
 import { convex, references } from "../convex";
@@ -79,30 +81,83 @@ export function resolveSupportMemberIds(guild: Guild, supportRoleIds: string[], 
 }
 
 export async function sendPlatformIdDm(interaction: ButtonInteraction, link: string, language: "en" | "cs") {
+  return sendPlatformIdDmWithCopy(interaction, link, language, "membership");
+}
+
+export async function startPlatformIdLinkFlow(
+  interaction: ButtonInteraction | ChatInputCommandInteraction,
+  input: {
+    guildId: string;
+    language: "en" | "cs";
+    completionMode: "membership" | "link";
+    categoryId?: string;
+    applyMessageUrl?: string;
+  },
+) {
+  const tokenResponse = await convex.mutation(references.createPlatformIdLinkToken, {
+    secret: env.internalSecret,
+    guildId: input.guildId,
+    categoryId: input.categoryId,
+    userId: interaction.user.id,
+    userName: interaction.user.globalName ?? interaction.user.username,
+    userAvatar: interaction.user.displayAvatarURL(),
+    language: input.language,
+    completionMode: input.completionMode,
+    applyMessageUrl: input.applyMessageUrl,
+    interactionToken: interaction.token,
+    interactionApplicationId: interaction.applicationId,
+  }) as { token: string };
+  const link = `${env.appSiteUrl}/${input.language}/platform-id-link/${tokenResponse.token}`;
+  const dmMessageUrl = await sendPlatformIdDmWithCopy(interaction, link, input.language, input.completionMode);
+  const messages = getClanDiscordMessages(input.language);
+
+  if (input.completionMode === "membership") {
+    return dmMessageUrl
+      ? formatTemplate(messages.membership.dmSent, { link: dmMessageUrl })
+      : formatTemplate(messages.membership.dmFailed, { link });
+  }
+
+  return dmMessageUrl
+    ? formatTemplate(messages.commands.linkDmSent, { link: dmMessageUrl })
+    : formatTemplate(messages.commands.linkDmFailed, { link });
+}
+
+async function sendPlatformIdDmWithCopy(
+  interaction: ButtonInteraction | ChatInputCommandInteraction,
+  link: string,
+  language: "en" | "cs",
+  completionMode: "membership" | "link",
+) {
   try {
     const messages = getClanDiscordMessages(language);
     const dm = await interaction.user.createDM();
+    const content = completionMode === "membership"
+      ? [
+        messages.membership.platformIdDmIntro,
+        messages.membership.platformIdDmInstruction,
+      ]
+      : [
+        messages.platformLink.dmIntro,
+        messages.platformLink.dmInstruction,
+      ];
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setStyle(ButtonStyle.Link)
         .setURL(link)
-        .setLabel(messages.membership.platformIdButton),
+        .setLabel(completionMode === "membership" ? messages.membership.platformIdButton : messages.platformLink.button),
     );
-    await dm.send({
-      content: [
-        messages.membership.platformIdDmIntro,
-        messages.membership.platformIdDmInstruction,
-      ].join("\n\n"),
+    const message = await dm.send({
+      content: content.join("\n\n"),
       components: [row],
     });
-    return true;
+    return buildDiscordMessageUrl("@me", message.channelId, message.id);
   } catch (error) {
     logWarn("interaction", "Failed to DM platform ID link", {
       guildId: interaction.guildId,
       userId: interaction.user.id,
       error,
     });
-    return false;
+    return null;
   }
 }
 

@@ -1,6 +1,5 @@
 import { fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
-import { cache } from "react";
 
 import { appCacheTags, tagCacheEntries } from "@/lib/cache-tags";
 import type { AppUser } from "@/types/domain";
@@ -17,8 +16,12 @@ export async function getUsersReadModelByIds(userIds: string[]) {
   return (await fetchQuery(getUsersByIdsReference, { userIds })) as AppUser[];
 }
 
-export const listUsersReadModel = cache(async function listUsersReadModel() {
+export async function listUsersReadModel() {
   "use cache";
   tagCacheEntries([appCacheTags.users()]);
   return (await fetchQuery(listUsersReference, {})) as AppUser[];
-});
+}
+
+export async function listUsersReadModelUncached() {
+  return (await fetchQuery(listUsersReference, {})) as AppUser[];
+}

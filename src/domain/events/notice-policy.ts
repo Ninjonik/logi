@@ -4,7 +4,7 @@ export function findEligibleNoticeTargets(input: {
   events: Array<{
     id: string;
     name: string;
-    meetingStart: string;
+    gameStart: string;
     status: EventStatus;
     participants: EventParticipant[];
   }>;
@@ -17,9 +17,8 @@ export function findEligibleNoticeTargets(input: {
 
   return input.events
     .filter((event) => {
-      const meetingStart = new Date(event.meetingStart).getTime();
-      const noticeWindowStart = meetingStart - 60 * 60 * 1000;
-      const isEligibleTime = Number.isFinite(meetingStart) && nowValue >= noticeWindowStart && nowValue < meetingStart;
+      const gameStart = new Date(event.gameStart).getTime();
+      const isEligibleTime = Number.isFinite(gameStart) && nowValue < gameStart;
       const participant = event.participants.find((entry) => entry.userId === input.userId);
 
       if (!isEligibleTime || event.status === "concluded" || participant?.status !== "attending") {
@@ -32,12 +31,12 @@ export function findEligibleNoticeTargets(input: {
 
       return event.name.toLowerCase().includes(normalizedQuery) || event.id.toLowerCase().includes(normalizedQuery);
     })
-    .slice(0, 5);
+    .slice(0, 25);
 }
 
 export function upsertNotice(input: {
   event: {
-    meetingStart: string;
+    gameStart: string;
     status: EventStatus;
     participants: EventParticipant[];
     absenceNotices: EventNotice[];
@@ -47,11 +46,10 @@ export function upsertNotice(input: {
   now: Date;
 }) {
   const nowValue = input.now.getTime();
-  const meetingStart = new Date(input.event.meetingStart).getTime();
-  const noticeWindowStart = meetingStart - 60 * 60 * 1000;
+  const gameStart = new Date(input.event.gameStart).getTime();
 
-  if (!Number.isFinite(meetingStart) || nowValue < noticeWindowStart || nowValue >= meetingStart) {
-    throw new Error("Notice can only be submitted in the final 60 minutes before meeting start.");
+  if (!Number.isFinite(gameStart) || nowValue >= gameStart) {
+    throw new Error("Notice can only be submitted before game start.");
   }
 
   if (input.event.status === "concluded") {

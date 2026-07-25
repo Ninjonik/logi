@@ -159,6 +159,7 @@ test("handleFindNoticeTarget maps normalized event records through the notice fi
       name: "Match Alpha",
       registrationEnd: "2026-07-22T09:00:00.000Z",
       meetingStart: "2026-07-22T11:00:00.000Z",
+      gameStart: "2026-07-22T12:00:00.000Z",
       gameEnd: "2026-07-22T13:00:00.000Z",
       status: "starting",
       participants: [{ userId: "user-1", status: "attending", updatedAt: "2026-07-22T08:00:00.000Z" }],
@@ -171,6 +172,6 @@ test("handleFindNoticeTarget maps normalized event records through the notice fi
   assert.deepEqual(result, [{
     id: "event-1",
     name: "Match Alpha",
-    meetingStart: "2026-07-22T11:00:00.000Z",
+    gameStart: "2026-07-22T12:00:00.000Z",
   }]);
 });

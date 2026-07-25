@@ -21,6 +21,7 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
       kind: event.kind,
       registrationEnd: event.registrationEnd,
       meetingStart: event.meetingStart,
+      gameStart: event.gameStart,
       gameEnd: event.gameEnd,
       status: event.status,
       participants: event.participants,

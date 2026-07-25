@@ -9,7 +9,13 @@ type EventRouteDeps<TEventInput> = {
   eventSchema: ZodType<TEventInput>;
   saveServerEvent: (input: any) => Promise<string>;
   concludeServerEvent: (input: { eventId: string }) => Promise<void>;
-  importServerEventsFromLinks: (input: { serverId: string; linksInput: string }) => Promise<{
+  importServerEventsFromLinks: (input: {
+    serverId: string;
+    linksInput: string;
+    importPlayers?: boolean;
+    clanTag?: string;
+    onProgress?: (progress: Record<string, unknown>) => void;
+  }) => Promise<{
     importedUserIds: string[];
     linkReports: Array<{ eventId?: string }>;
     [key: string]: unknown;
@@ -33,6 +39,7 @@ type EventRouteDeps<TEventInput> = {
     matches(serverId: string): string;
     match(eventId: string): string;
     rosters(serverId: string): string;
+    assignments(serverId: string): string;
     player(userId: string): string;
     playerStats(userId: string): string;
     users(): string;
@@ -55,6 +62,63 @@ function buildImportedUserTags(
   ]);
 }
 
+function createImportEventsStream(deps: EventRouteDeps<unknown>, input: {
+  serverId: string;
+  linksInput: string;
+  importPlayers?: boolean;
+  clanTag?: string;
+}) {
+  const encoder = new TextEncoder();
+
+  return new Response(new ReadableStream({
+    async start(controller) {
+      const emit = (payload: Record<string, unknown>) => {
+        controller.enqueue(encoder.encode(`${JSON.stringify(payload)}\n`));
+      };
+
+      try {
+        const result = await deps.importServerEventsFromLinks({
+          ...input,
+          onProgress: (progress) => emit({ type: "progress", progress }),
+        });
+
+        const importedEventIds = result.linkReports
+          .map((report) => report.eventId)
+          .filter((eventId): eventId is string => Boolean(eventId));
+
+        deps.revalidateCacheEntries([
+          deps.appCacheTags.serverContext(input.serverId),
+          deps.appCacheTags.events(input.serverId),
+          deps.appCacheTags.matches(input.serverId),
+          deps.appCacheTags.rosters(input.serverId),
+          deps.appCacheTags.assignments(input.serverId),
+          ...importedEventIds.flatMap((eventId) => [
+            deps.appCacheTags.event(eventId),
+            deps.appCacheTags.match(eventId),
+            deps.appCacheTags.rosterImageEvent(eventId),
+          ]),
+          ...buildImportedUserTags(result.importedUserIds, deps.appCacheTags),
+        ]);
+
+        emit({ type: "result", result });
+      } catch (error) {
+        deps.logRouteError("events.create", error);
+        emit({
+          type: "error",
+          error: deps.getUserSafeErrorMessage(error, "Unable to save the event."),
+        });
+      } finally {
+        controller.close();
+      }
+    },
+  }), {
+    headers: {
+      "content-type": "application/x-ndjson; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
 export function createServerEventsPostHandler<TEventInput>(deps: EventRouteDeps<TEventInput>) {
   return async function POST(
     request: JsonRequest,
@@ -65,9 +129,20 @@ export function createServerEventsPostHandler<TEventInput>(deps: EventRouteDeps<
       const rawBody = await request.json();
 
       if ((rawBody as { action?: string } | null | undefined)?.action === "importEvents") {
-        const result = await deps.importServerEventsFromLinks({
+        const streamProgress = Boolean((rawBody as { streamProgress?: unknown } | null | undefined)?.streamProgress);
+        const importInput = {
           serverId,
           linksInput: String((rawBody as { links?: unknown } | null | undefined)?.links ?? ""),
+          importPlayers: Boolean((rawBody as { importPlayers?: unknown } | null | undefined)?.importPlayers),
+          clanTag: String((rawBody as { clanTag?: unknown } | null | undefined)?.clanTag ?? "").trim() || undefined,
+        };
+
+        if (streamProgress) {
+          return createImportEventsStream(deps, importInput);
+        }
+
+        const result = await deps.importServerEventsFromLinks({
+          ...importInput,
         });
 
         const importedEventIds = result.linkReports
@@ -78,6 +153,8 @@ export function createServerEventsPostHandler<TEventInput>(deps: EventRouteDeps<
           deps.appCacheTags.serverContext(serverId),
           deps.appCacheTags.events(serverId),
           deps.appCacheTags.matches(serverId),
+          deps.appCacheTags.rosters(serverId),
+          deps.appCacheTags.assignments(serverId),
           ...importedEventIds.flatMap((eventId) => [
             deps.appCacheTags.event(eventId),
             deps.appCacheTags.match(eventId),
@@ -191,6 +268,7 @@ export function createServerEventPostHandler<TEventInput>(deps: EventRouteDeps<T
           deps.appCacheTags.matches(serverId),
           deps.appCacheTags.match(eventId),
           deps.appCacheTags.rosters(serverId),
+          deps.appCacheTags.assignments(serverId),
           deps.appCacheTags.rosterImageEvent(eventId),
           ...buildImportedUserTags(result.importedUserIds, deps.appCacheTags),
         ]);

@@ -2,11 +2,20 @@ import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 import { NextRequest, NextResponse } from "next/server";
 
+import { getClanDiscordMessages } from "@/lib/clan-language";
+import { editDiscordInteractionOriginalResponse, sendDiscordBotDm } from "@/lib/discord";
 import { getInternalAuthSecret } from "@/lib/env";
 import { parsePlatformIdsInput } from "@/lib/platform-ids";
 
 const getPlatformIdLinkTokenReference = makeFunctionReference<"query">("platformIdLinks:getPlatformIdLinkToken");
 const consumePlatformIdLinkTokenReference = makeFunctionReference<"mutation">("platformIdLinks:consumePlatformIdLinkToken");
+
+function formatTemplate(template: string, replacements: Record<string, string>) {
+  return Object.entries(replacements).reduce(
+    (message, [key, value]) => message.split(`{${key}}`).join(value),
+    template,
+  );
+}
 
 export async function GET(
   _request: NextRequest,
@@ -35,15 +44,71 @@ export async function POST(
   }
 
   try {
-    await fetchMutation(consumePlatformIdLinkTokenReference, {
+    const result = await fetchMutation(consumePlatformIdLinkTokenReference, {
       secret: getInternalAuthSecret(),
       token,
       platformId: platformIds[0],
-    });
+    }) as {
+      ok: true;
+      guildId: string;
+      userId: string;
+      language: "en" | "cs";
+      completionMode: "membership" | "link";
+      applyMessageUrl?: string;
+      interactionToken?: string;
+      interactionApplicationId?: string;
+    };
+
+    const messages = getClanDiscordMessages(result.language);
+    const applicationMessageUrl = result.applyMessageUrl;
+
+    if (result.completionMode === "membership" && applicationMessageUrl) {
+      const dmContent = formatTemplate(messages.membership.platformIdReadyDm, {
+        link: applicationMessageUrl,
+      });
+
+      try {
+        await sendDiscordBotDm(result.userId, dmContent);
+      } catch {
+        if (result.interactionToken && result.interactionApplicationId) {
+          try {
+            await editDiscordInteractionOriginalResponse({
+              applicationId: result.interactionApplicationId,
+              interactionToken: result.interactionToken,
+              content: formatTemplate(messages.membership.platformIdReadyInteraction, {
+                link: applicationMessageUrl,
+              }),
+            });
+          } catch {
+            // Best effort only. The platform ID was still saved successfully.
+          }
+        }
+      }
+    }
+
+    if (result.completionMode === "link") {
+      try {
+        await sendDiscordBotDm(result.userId, messages.platformLink.readyDm);
+      } catch {
+        if (result.interactionToken && result.interactionApplicationId) {
+          try {
+            await editDiscordInteractionOriginalResponse({
+              applicationId: result.interactionApplicationId,
+              interactionToken: result.interactionToken,
+              content: messages.platformLink.readyInteraction,
+            });
+          } catch {
+            // Best effort only. The platform ID was still saved successfully.
+          }
+        }
+      }
+    }
 
     return NextResponse.json({
       ok: true,
-      message: "Platform ID saved. You can close this page now and return to Discord.",
+      message: result.completionMode === "membership"
+        ? "Platform ID saved. Return to Discord and click the clan application message again."
+        : messages.platformLink.successPage,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to save platform ID.";

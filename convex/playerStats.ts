@@ -163,3 +163,26 @@ export const listForUser = query({
     return docs.map(normalizeDoc);
   },
 });
+
+export const listUserIdsForEvents = query({
+  args: {
+    eventIds: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const eventIdSet = new Set(args.eventIds);
+    const docs = await ctx.db.query("playerStats").collect();
+    const userIds = new Set<string>();
+
+    for (const doc of docs) {
+      if (!doc.userId) {
+        continue;
+      }
+
+      if (Object.keys(doc.matches).some((eventId) => eventIdSet.has(eventId))) {
+        userIds.add(doc.userId);
+      }
+    }
+
+    return [...userIds];
+  },
+});

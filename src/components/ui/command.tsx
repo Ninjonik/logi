@@ -169,6 +169,23 @@ function CommandShortcut({
   )
 }
 
+function CommandLoadMore({
+  className,
+  ...props
+}: React.ComponentProps<"button">) {
+  return (
+    <button
+      type="button"
+      data-slot="command-load-more"
+      className={cn(
+        "text-muted-foreground hover:bg-accent hover:text-accent-foreground flex w-full items-center justify-center rounded-sm px-2 py-2 text-sm outline-hidden transition-colors",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
 export {
   Command,
   CommandDialog,
@@ -179,4 +196,5 @@ export {
   CommandItem,
   CommandShortcut,
   CommandSeparator,
+  CommandLoadMore,
 }

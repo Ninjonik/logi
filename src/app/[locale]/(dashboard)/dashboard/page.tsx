@@ -1,14 +1,30 @@
 import type { Metadata } from "next";
 import { Bot } from "lucide-react";
 
+import { BotInviteButton } from "@/components/app/bot-invite-button";
 import { PageHeader } from "@/components/app/page-header";
 import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-button";
 import { ServerCard } from "@/components/app/server-card";
-import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth";
 import { buildDiscordBotInviteUrl } from "@/lib/discord";
+import { getServerContext } from "@/lib/server-context";
+
+function requiresBotRoleHierarchySetup(
+  context: Awaited<ReturnType<typeof getServerContext>>,
+) {
+  if (!context) {
+    return false;
+  }
+
+  const hasGroupRoleSync = context.groups.some((group) => Boolean(group.discordRoleId));
+  const hasMembershipRoleSync =
+    Boolean(context.discordConfig?.clanRoleId) ||
+    Boolean(context.discordConfig?.membershipSettings?.categories.some((category) => category.recruitRoleId || category.finalRoleId));
+
+  return hasGroupRoleSync || hasMembershipRoleSync;
+}
 
 export async function generateMetadata({
   params,
@@ -43,6 +59,14 @@ export default async function DashboardHomePage({
   const readyManagedServers = managedServers.filter((guild) => guild.botInside);
   const managedServersMissingBot = managedServers.filter((guild) => !guild.botInside);
   const mercenaryServers = visibleGuilds.filter((guild) => user.mercenaryGuildIds.includes(guild.discordId));
+  const inviteRoleHierarchyByGuildId = new Map<string, boolean>(
+    await Promise.all(
+      managedServersMissingBot.map(async (guild) => [
+        guild.id,
+        requiresBotRoleHierarchySetup(await getServerContext(guild.id)),
+      ] as const),
+    ),
+  );
 
   return (
     <>
@@ -54,7 +78,13 @@ export default async function DashboardHomePage({
               {dictionary.dashboard.homeServer}
             </h2>
             <div className="grid gap-4 xl:grid-cols-2">
-              <ServerCard locale={safeLocale} guild={mainServer} label={dictionary.dashboard.homeServer} dictionary={dictionary} />
+              <ServerCard
+                locale={safeLocale}
+                guild={mainServer}
+                label={dictionary.dashboard.homeServer}
+                dictionary={dictionary}
+                inviteRoleHierarchyRelevant={inviteRoleHierarchyByGuildId.get(mainServer.id) ?? false}
+              />
             </div>
           </section>
         ) : null}
@@ -75,12 +105,19 @@ export default async function DashboardHomePage({
                 <div className="flex flex-wrap gap-2">
                   <RefreshBotStatusButton dictionary={dictionary} />
                   {managedServersMissingBot.map((guild) => (
-                    <Button key={guild.id} asChild variant="outline" className="rounded-full">
-                      <a href={buildDiscordBotInviteUrl(guild.discordId)} target="_blank" rel="noreferrer">
+                    <BotInviteButton
+                      key={guild.id}
+                      dictionary={dictionary}
+                      inviteUrl={buildDiscordBotInviteUrl(guild.discordId)}
+                      roleHierarchyRelevant={inviteRoleHierarchyByGuildId.get(guild.id) ?? false}
+                      variant="outline"
+                      className="rounded-full"
+                    >
+                      <>
                         <Bot className="size-4" />
                         {guild.name}
-                      </a>
-                    </Button>
+                      </>
+                    </BotInviteButton>
                   ))}
                 </div>
               ) : null}
@@ -88,7 +125,14 @@ export default async function DashboardHomePage({
             {readyManagedServers.length ? (
               <div className="grid gap-4 xl:grid-cols-2">
                 {readyManagedServers.map((guild) => (
-                  <ServerCard key={guild.id} locale={safeLocale} guild={guild} label={dictionary.dashboard.managedServers} dictionary={dictionary} />
+                  <ServerCard
+                    key={guild.id}
+                    locale={safeLocale}
+                    guild={guild}
+                    label={dictionary.dashboard.managedServers}
+                    dictionary={dictionary}
+                    inviteRoleHierarchyRelevant={inviteRoleHierarchyByGuildId.get(guild.id) ?? false}
+                  />
                 ))}
               </div>
             ) : null}

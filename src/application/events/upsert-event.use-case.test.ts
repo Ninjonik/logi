@@ -62,6 +62,27 @@ test("UpsertEventUseCase creates a new event record", async () => {
   assert.equal(scores.calls.length, 0);
 });
 
+test("UpsertEventUseCase creates imported past matches as concluded", async () => {
+  const repo = new InMemoryEventCommandRepository(new Map());
+  const scores = new RecordingScorePort();
+  const useCase = new UpsertEventUseCase(repo, scores, new FakeClock(new Date("2026-07-25T12:00:00.000Z")));
+
+  const eventId = await useCase.execute({
+    guildId: "guild-1",
+    kind: "match",
+    name: "Imported Match",
+    registrationEnd: "2026-07-21T10:00:00.000Z",
+    meetingStart: "2026-07-21T11:00:00.000Z",
+    gameStart: "2026-07-21T12:00:00.000Z",
+    gameEnd: "2026-07-21T14:00:00.000Z",
+    pingClan: false,
+  });
+
+  assert.equal(repo.events.get(eventId)?.status, "concluded");
+  assert.equal(repo.events.get(eventId)?.concludedAt, "2026-07-25T12:00:00.000Z");
+  assert.deepEqual(scores.calls, []);
+});
+
 test("UpsertEventUseCase updates an existing event and triggers scoring when concluded", async () => {
   const repo = new InMemoryEventCommandRepository(new Map([
     ["event-1", {

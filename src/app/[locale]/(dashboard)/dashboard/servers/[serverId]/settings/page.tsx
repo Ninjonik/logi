@@ -3,7 +3,11 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/app/page-header";
 import { DiscordServerSettingsForm } from "@/components/app/discord-server-settings-form";
 import { HelperDataActions } from "@/components/app/helper-data-actions";
+import { ImportDiscordMembersButton } from "@/components/app/import-discord-members-button";
+import { ImportEventsButton } from "@/components/app/import-events-button";
+import { LinkMissingDiscordIdsButton } from "@/components/app/link-missing-discord-ids-button";
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form";
+import { AutoLinkPlatformIdsButton } from "@/components/app/auto-link-platform-ids-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
@@ -48,6 +52,30 @@ export default async function ServerSettingsPage({
             dictionary={dictionary}
             config={context.discordConfig}
           />
+        ) : null}
+        {canAdmin ? (
+          <Card className="rounded-2xl border-border/60">
+            <CardHeader>
+              <CardTitle>{dictionary.clan.importsTitle}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">{dictionary.clan.importsBody}</p>
+              <div className="flex flex-wrap gap-3">
+                <ImportEventsButton serverId={serverId} dictionary={dictionary} />
+                <ImportDiscordMembersButton
+                  serverId={serverId}
+                  dictionary={dictionary}
+                  defaultRoleId={context.discordConfig?.clanRoleId}
+                />
+                <AutoLinkPlatformIdsButton serverId={serverId} dictionary={dictionary} />
+                <LinkMissingDiscordIdsButton
+                  serverId={serverId}
+                  dictionary={dictionary}
+                  defaultRoleId={context.discordConfig?.clanRoleId}
+                />
+              </div>
+            </CardContent>
+          </Card>
         ) : null}
         {canAdmin ? (
           <Card className="rounded-2xl border-border/60">

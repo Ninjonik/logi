@@ -1,6 +1,17 @@
+import { availableParallelism, cpus } from "node:os";
+
 import { saveServerEvent, saveServerEventResult } from "@/lib/server-events";
+import { getGuildMetadata } from "@/lib/server-metadata";
 import { saveServerMatch } from "@/lib/server-matches";
-import { getServerUserAssignments, getUsersByIds, listUsers, savePlayerPlatformId } from "@/lib/server-user-management";
+import {
+  getServerUserAssignments,
+  getUsersByIds,
+  linkImportedDiscordProfile,
+  listUsersUncached,
+  saveImportedClanMember,
+  savePlayerPlatformId,
+  upsertImportedPlayer,
+} from "@/lib/server-user-management";
 import { savePlayerMatchStats } from "@/lib/server-player-stats";
 
 type ExternalTeam = string;
@@ -122,12 +133,64 @@ type ImportDiagnostics = {
   eventResultSaved: ImportStageStatus;
 };
 
+type ImportProgress = {
+  phase: "queued" | "fetching" | "importing" | "completed";
+  total: number;
+  fetched: number;
+  processed: number;
+  successful: number;
+  failed: number;
+  percent: number;
+  currentLink?: string;
+};
+
+type FetchedScoreboardResult =
+  | {
+      ok: true;
+      link: string;
+      fetched: Awaited<ReturnType<typeof fetchScoreboard>>;
+    }
+  | {
+      ok: false;
+      link: string;
+      error: string;
+    };
+
 function toErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
 
+function toLoggedError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    };
+  }
+
+  return {
+    message: String(error),
+  };
+}
+
+function logImportError(scope: string, context: Record<string, unknown>, error: unknown) {
+  console.error(`[match-results] ${scope}`, {
+    ...context,
+    error: toLoggedError(error),
+  });
+}
+
 function normalizeValue(value: string | undefined) {
   return value?.trim().toLowerCase() ?? "";
+}
+
+function normalizeComparableName(value: string | undefined) {
+  return (value ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
 }
 
 function isUnknownTeam(value: string | undefined) {
@@ -225,11 +288,6 @@ export function extractMatchIdFromLink(value: string) {
 
 async function fetchScoreboard(matchLink: string) {
   const { apiUrl, mapId, sourceUrl } = extractMatchIdFromLink(matchLink);
-  console.log("[match-results] fetch:start", {
-    sourceUrl,
-    apiUrl,
-    mapId,
-  });
   const response = await fetch(apiUrl, {
     method: "GET",
     cache: "no-store",
@@ -243,14 +301,6 @@ async function fetchScoreboard(matchLink: string) {
   if (payload.failed || !payload.result) {
     throw new Error(payload.error ?? "Unable to fetch match results.");
   }
-
-  console.log("[match-results] fetch:success", {
-    sourceUrl,
-    mapId,
-    status: response.status,
-    importedPlayers: payload.result.player_stats.length,
-    score: payload.result.result,
-  });
 
   return { apiUrl, mapId, sourceUrl, payload };
 }
@@ -272,10 +322,89 @@ function stripClanTag(playerName: string, clanTag: string) {
   return strippedName || null;
 }
 
+function toImportedUserId(platformId: string) {
+  return `imported:${normalizeValue(platformId)}`;
+}
+
+function resolveFetchConcurrency(totalLinks: number) {
+  const parallelism = typeof availableParallelism === "function"
+    ? availableParallelism()
+    : cpus().length;
+
+  return Math.max(1, Math.min(totalLinks, parallelism));
+}
+
+function calculateImportPercent(progress: Pick<ImportProgress, "total" | "fetched" | "processed">) {
+  if (progress.total <= 0) {
+    return 0;
+  }
+
+  const fetchWeight = 40;
+  const importWeight = 60;
+  return Math.min(
+    100,
+    Math.round(
+      ((progress.fetched / progress.total) * fetchWeight) +
+      ((progress.processed / progress.total) * importWeight),
+    ),
+  );
+}
+
+async function fetchScoreboardsWithProgress(input: {
+  links: string[];
+  onProgress?: (progress: ImportProgress) => void;
+}) {
+  const results = new Array<FetchedScoreboardResult>(input.links.length);
+  const total = input.links.length;
+  const concurrency = resolveFetchConcurrency(total);
+  let nextIndex = 0;
+  let fetched = 0;
+
+  async function worker() {
+    while (true) {
+      const index = nextIndex;
+      nextIndex += 1;
+      if (index >= total) {
+        return;
+      }
+
+      const link = input.links[index]!;
+      try {
+        results[index] = {
+          ok: true,
+          link,
+          fetched: await fetchScoreboard(link),
+        };
+      } catch (error) {
+        results[index] = {
+          ok: false,
+          link,
+          error: toErrorMessage(error, "Unable to fetch match results."),
+        };
+      } finally {
+        fetched += 1;
+        input.onProgress?.({
+          phase: "fetching",
+          total,
+          fetched,
+          processed: 0,
+          successful: 0,
+          failed: 0,
+          percent: calculateImportPercent({ total, fetched, processed: 0 }),
+          currentLink: link,
+        });
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  return results;
+}
+
 function buildUniqueUserMap(users: Awaited<ReturnType<typeof getUsersByIds>>) {
   const counts = new Map<string, number>();
   for (const user of users) {
-    const normalizedName = normalizeValue(user.name);
+    const normalizedName = normalizeComparableName(user.name);
     if (!normalizedName) {
       continue;
     }
@@ -284,13 +413,42 @@ function buildUniqueUserMap(users: Awaited<ReturnType<typeof getUsersByIds>>) {
 
   return new Map(
     users.flatMap((user) => {
-      const normalizedName = normalizeValue(user.name);
+      const normalizedName = normalizeComparableName(user.name);
       if (!normalizedName || counts.get(normalizedName) !== 1) {
         return [];
       }
       return [[normalizedName, user] as const];
     }),
   );
+}
+
+function buildUserNameMap(users: Awaited<ReturnType<typeof listUsersUncached>>) {
+  const byName = new Map<string, typeof users>();
+
+  for (const user of users) {
+    const normalizedName = normalizeComparableName(user.name);
+    if (!normalizedName) {
+      continue;
+    }
+
+    const existing = byName.get(normalizedName) ?? [];
+    existing.push(user);
+    byName.set(normalizedName, existing);
+  }
+
+  return byName;
+}
+
+function canImportExistingUserToServer(user: Awaited<ReturnType<typeof listUsersUncached>>[number], serverDiscordId: string) {
+  return !user.guildId || user.guildId === serverDiscordId;
+}
+
+function resolveImportedPlayerName(playerName: string, clanTag: string | undefined) {
+  if (!clanTag) {
+    return playerName.trim() || playerName;
+  }
+
+  return stripClanTag(playerName, clanTag) ?? (playerName.trim() || playerName);
 }
 
 function resolveLocalTeam(eventSide: string | undefined, payload: ScoreboardResponse["result"]) {
@@ -355,37 +513,24 @@ function buildEventResult(eventSide: string | undefined, sourceUrl: string, mapI
   };
 }
 
-async function buildServerUserLookups(serverId: string) {
+async function buildServerUserLookups(serverId: string, importPlayers: boolean) {
+  const server = await getGuildMetadata(serverId);
+  const serverDiscordId = server?.discordId ?? "";
   const assignments = await getServerUserAssignments(serverId);
-  const users = await getUsersByIds(assignments.map((assignment) => assignment.userId));
-
-  console.log("[match-results] import:candidate-pool", {
-    serverId,
-    assignmentCount: assignments.length,
-    userCount: users.length,
-    users: users.map((user) => ({
-      userId: user.discordId,
-      name: user.name,
-      platformIds: user.platformIds,
-      normalizedName: user.name,
-    })),
-  });
+  const assignedUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
+  const assignedUserIds = new Set(assignedUsers.map((user) => user.id));
+  const allUsers = importPlayers
+    ? (await listUsersUncached()).filter((user) => assignedUserIds.has(user.id) || canImportExistingUserToServer(user, serverDiscordId))
+    : assignedUsers;
 
   const usersByPlatformId = new Map(
-    users.flatMap((user) =>
+    allUsers.flatMap((user) =>
       user.platformIds.map((platformId) => [normalizeValue(platformId), user] as const),
     ),
   );
-  const usersByName = new Map(
-    users.flatMap((user) => {
-      const exactName = normalizeValue(user.name);
-      const normalizedNickname = user.name;
-      const aliases = [...new Set([exactName, normalizedNickname].filter(Boolean))];
-      return aliases.map((alias) => [alias, user] as const);
-    }),
-  );
+  const usersByName = buildUserNameMap(allUsers);
 
-  return { usersByPlatformId, usersByName };
+  return { usersByPlatformId, usersByName, serverDiscordId };
 }
 
 async function preparePlayerImports(input: {
@@ -394,54 +539,75 @@ async function preparePlayerImports(input: {
   sourceUrl: string;
   mapId: string;
   eventIdForLogs: string;
+  importPlayers?: boolean;
+  clanTag?: string;
 }) {
-  const { usersByPlatformId, usersByName } = await buildServerUserLookups(input.serverId);
+  const { usersByPlatformId, usersByName, serverDiscordId } = await buildServerUserLookups(input.serverId, Boolean(input.importPlayers));
   const importedAt = new Date().toISOString();
   const sideCounts = new Map<string, { count: number; value: string }>();
+  const importedUserIds = new Set<string>();
+  const entries: PreparedPlayerImport[] = [];
 
-  const entries = input.payload.player_stats.flatMap((player) => {
+  for (const player of input.payload.player_stats) {
     const normalizedPlayerId = normalizeValue(player.player_id);
-    const normalizedPlayerName = normalizeValue(player.player);
-    const normalizedPlayerNickname = player.player;
+    const strippedName = input.clanTag ? stripClanTag(player.player, input.clanTag) : null;
+    const importedPlayerName = resolveImportedPlayerName(player.player, input.clanTag);
+    const normalizedPlayerName = normalizeComparableName(importedPlayerName);
     const matchedByPlatformId = usersByPlatformId.get(normalizedPlayerId);
-    const matchedByName = matchedByPlatformId
-      ? undefined
-      : usersByName.get(normalizedPlayerName) ?? usersByName.get(normalizedPlayerNickname);
-    const matchedUser = matchedByPlatformId ?? matchedByName;
-
-    console.log("[match-results] import:player-match-attempt", {
-      eventId: input.eventIdForLogs,
-      externalPlayerId: player.player_id,
-      externalPlayerName: player.player,
-      normalizedPlayerId,
-      normalizedPlayerName,
-      normalizedPlayerNickname,
-      team: player.team.side,
-      stats: {
-        kills: player.kills,
-        deaths: player.deaths,
-        killDeathRatio: player.kill_death_ratio,
-        offense: player.offense,
-        defense: player.defense,
-        support: player.support,
-      },
-      matchedBy: matchedByPlatformId ? "platformId" : matchedByName ? "nickname" : "none",
-      matchedUser: matchedUser ? {
-        userId: matchedUser.id,
-        name: matchedUser.name,
-        platformIds: matchedUser.platformIds,
-        normalizedName: matchedUser.name,
-      } : null,
-    });
+    const matchedByName = matchedByPlatformId ? undefined : usersByName.get(normalizedPlayerName)?.[0];
+    let matchedUser = matchedByPlatformId ?? matchedByName;
 
     if (!matchedUser) {
-      console.log("[match-results] import:player-skipped", {
-        eventId: input.eventIdForLogs,
-        externalPlayerId: player.player_id,
-        externalPlayerName: player.player,
-        reason: "no-clan-match",
+      if (!input.importPlayers || !normalizedPlayerId) {
+        continue;
+      }
+
+      if (!strippedName) {
+        continue;
+      }
+
+      const created = await upsertImportedPlayer({
+        id: toImportedUserId(normalizedPlayerId),
+        name: importedPlayerName,
+        platformId: normalizedPlayerId,
       });
-      return [];
+
+      if (created.action === "created" && serverDiscordId) {
+        await saveImportedClanMember({
+          userId: created.userId,
+          serverId: input.serverId,
+        });
+      }
+
+      matchedUser = {
+        id: created.userId,
+        discordId: created.userId,
+        linkedDiscordId: undefined,
+        hasDiscordLink: false,
+        platformIds: [normalizedPlayerId],
+        name: importedPlayerName,
+        avatar: "https://cdn.discordapp.com/embed/avatars/0.png",
+        managedGuildIds: [],
+        guildId: serverDiscordId || undefined,
+        mercenaryGuildIds: [],
+        isStreamer: false,
+        scores: {},
+        createdAt: importedAt,
+        updatedAt: importedAt,
+      };
+      usersByPlatformId.set(normalizedPlayerId, matchedUser);
+      usersByName.set(normalizedPlayerName, [matchedUser]);
+    } else if (input.importPlayers && normalizedPlayerId && !matchedUser.platformIds.some((platformId: string) => normalizeValue(platformId) === normalizedPlayerId)) {
+      await savePlayerPlatformId({
+        userId: matchedUser.id,
+        platformIds: [...matchedUser.platformIds, normalizedPlayerId],
+      });
+      matchedUser.platformIds = [...matchedUser.platformIds, normalizedPlayerId];
+      usersByPlatformId.set(normalizedPlayerId, matchedUser);
+    }
+
+    if (!matchedUser) {
+      continue;
     }
 
     if (!isUnknownTeam(player.team.side)) {
@@ -453,7 +619,7 @@ async function preparePlayerImports(input: {
       });
     }
 
-    return [{
+    entries.push({
       id: player.player_id,
       userId: matchedUser.id,
       latestName: player.player,
@@ -473,8 +639,9 @@ async function preparePlayerImports(input: {
         defense: player.defense,
         support: player.support,
       },
-    }] satisfies PreparedPlayerImport[];
-  });
+    });
+    importedUserIds.add(matchedUser.id);
+  }
 
   const rankedSides = [...sideCounts.values()].sort((left, right) => right.count - left.count);
   const inferredEventSide = rankedSides.length === 0
@@ -486,7 +653,7 @@ async function preparePlayerImports(input: {
   return {
     entries,
     inferredEventSide,
-    importedUserIds: [...new Set(entries.map((entry) => entry.userId))],
+    importedUserIds: [...importedUserIds],
   };
 }
 
@@ -535,148 +702,105 @@ export async function importEventMatchResults(input: {
     eventResultPrepared: { ok: false },
     eventResultSaved: { ok: false },
   };
+  let sourceUrl = input.matchLink;
+  let mapId: string | undefined;
+  let apiUrl: string | undefined;
+  let matchId: number | undefined;
 
-  const { apiUrl, mapId, sourceUrl, payload } = await fetchScoreboard(input.matchLink);
-  const sanitizedPayload = sanitizeScoreboardResult(payload.result);
-  diagnostics.scoreboardFetched = { ok: true };
-  console.log("[match-results] import:start", {
-    serverId: input.serverId,
-    eventId: input.eventId,
-    eventSide: input.eventSide,
-    sourceUrl,
-    apiUrl,
-    mapId,
-  });
-  console.log("[match-results] import:payload", {
-    eventId: input.eventId,
-    mapId,
-    mapName: sanitizedPayload.map.pretty_name,
-    endedAt: sanitizedPayload.end,
-    importedPlayers: sanitizedPayload.player_stats.length,
-    score: sanitizedPayload.result,
-  });
-
-  const preparedImport = await preparePlayerImports({
-    serverId: input.serverId,
-    payload: sanitizedPayload,
-    sourceUrl,
-    mapId,
-    eventIdForLogs: input.eventId,
-  });
-
-  await savePlayerMatchStats({
-    entries: preparedImport.entries.map((entry) => ({
-      ...entry,
-      eventId: input.eventId,
-    })),
-  });
-  diagnostics.playerStatsSaved = { ok: true };
-  console.log("[match-results] import:player-stats-saved", {
-    eventId: input.eventId,
-    savedCount: preparedImport.entries.length,
-    savedPlayers: preparedImport.entries.map((entry) => ({
-      externalId: entry.id,
-      userId: entry.userId,
-      latestName: entry.latestName,
-    })),
-  });
-
-  console.log("[match-results] import:match-save:start", {
-    eventId: input.eventId,
-    sourceUrl,
-    matchId: payload.result.id,
-  });
   try {
-    const savedMatchId = await saveServerMatch({
-      eventId: input.eventId,
-      sourceUrl,
-      raw: sanitizedPayload,
-    });
-    diagnostics.matchSaved = { ok: true };
-    console.log("[match-results] import:match-save:success", {
-      eventId: input.eventId,
-      sourceUrl,
-      matchId: sanitizedPayload.id,
-      savedMatchId,
-    });
-  } catch (error) {
-    const message = toErrorMessage(error, "Unable to save raw match.");
-    diagnostics.matchSaved = { ok: false, error: message };
-    console.error("[match-results] import:match-save:failed", {
-      eventId: input.eventId,
-      sourceUrl,
-      matchId: sanitizedPayload.id,
-      error,
-    });
-    throw error;
-  }
+    const fetched = await fetchScoreboard(input.matchLink);
+    ({ apiUrl, mapId, sourceUrl } = fetched);
+    const sanitizedPayload = sanitizeScoreboardResult(fetched.payload.result);
+    diagnostics.scoreboardFetched = { ok: true };
+    matchId = sanitizedPayload.id;
 
-  const resolvedEventSide = input.eventSide ?? preparedImport.inferredEventSide;
-  const eventResult = buildEventResult(resolvedEventSide, sourceUrl, mapId, sanitizedPayload);
-  diagnostics.eventResultPrepared = eventResult
-    ? { ok: true }
-    : {
-        ok: false,
-        skippedReason: !resolvedEventSide
-          ? "No event side was provided or inferred."
-          : `Event side "${resolvedEventSide}" did not match imported teams.`,
-      };
-  console.log("[match-results] import:event-result", {
-    eventId: input.eventId,
-    eventSide: resolvedEventSide,
-    resolved: Boolean(eventResult),
-    eventResult,
-    skippedReason: diagnostics.eventResultPrepared.skippedReason,
-  });
-  if (eventResult) {
-    console.log("[match-results] import:event-result-save:start", {
-      eventId: input.eventId,
-      outcome: eventResult.outcome,
-      score: eventResult.score,
+    const preparedImport = await preparePlayerImports({
+      serverId: input.serverId,
+      payload: sanitizedPayload,
+      sourceUrl,
+      mapId,
+      eventIdForLogs: input.eventId,
     });
+
+    await savePlayerMatchStats({
+      entries: preparedImport.entries.map((entry) => ({
+        ...entry,
+        eventId: input.eventId,
+      })),
+    });
+    diagnostics.playerStatsSaved = { ok: true };
+
     try {
-      await saveServerEventResult({
+      await saveServerMatch({
         eventId: input.eventId,
-        eventResult,
+        sourceUrl,
+        raw: sanitizedPayload,
       });
-      diagnostics.eventResultSaved = { ok: true };
-      console.log("[match-results] import:event-result-save:success", {
-        eventId: input.eventId,
-      });
+      diagnostics.matchSaved = { ok: true };
     } catch (error) {
-      const message = toErrorMessage(error, "Unable to save event result.");
-      diagnostics.eventResultSaved = { ok: false, error: message };
-      console.error("[match-results] import:event-result-save:failed", {
-        eventId: input.eventId,
-        error,
-      });
+      const message = toErrorMessage(error, "Unable to save raw match.");
+      diagnostics.matchSaved = { ok: false, error: message };
       throw error;
     }
-  } else {
-    diagnostics.eventResultSaved = {
-      ok: false,
-      error: diagnostics.eventResultPrepared.skippedReason ?? "Event result was not prepared.",
+
+    const resolvedEventSide = input.eventSide ?? preparedImport.inferredEventSide;
+    const eventResult = buildEventResult(resolvedEventSide, sourceUrl, mapId, sanitizedPayload);
+    diagnostics.eventResultPrepared = eventResult
+      ? { ok: true }
+      : {
+          ok: false,
+          skippedReason: !resolvedEventSide
+            ? "No event side was provided or inferred."
+            : `Event side "${resolvedEventSide}" did not match imported teams.`,
+        };
+    if (eventResult) {
+      try {
+        await saveServerEventResult({
+          eventId: input.eventId,
+          eventResult,
+        });
+        diagnostics.eventResultSaved = { ok: true };
+      } catch (error) {
+        const message = toErrorMessage(error, "Unable to save event result.");
+        diagnostics.eventResultSaved = { ok: false, error: message };
+        throw error;
+      }
+    } else {
+      diagnostics.eventResultSaved = {
+        ok: false,
+        error: diagnostics.eventResultPrepared.skippedReason ?? "Event result was not prepared.",
+      };
+    }
+
+    return {
+      importedPlayers: preparedImport.entries.length,
+      importedUserIds: preparedImport.importedUserIds,
+      matchSaved: diagnostics.matchSaved.ok,
+      eventResultSaved: Boolean(eventResult),
+      diagnostics,
     };
+  } catch (error) {
+    logImportError("import:failed", {
+      serverId: input.serverId,
+      eventId: input.eventId,
+      eventSide: input.eventSide,
+      matchLink: input.matchLink,
+      sourceUrl,
+      apiUrl,
+      mapId,
+      matchId,
+      diagnostics,
+    }, error);
+    throw error;
   }
-
-  const summary = {
-    importedPlayers: preparedImport.entries.length,
-    importedUserIds: preparedImport.importedUserIds,
-    matchSaved: diagnostics.matchSaved.ok,
-    eventResultSaved: Boolean(eventResult),
-    diagnostics,
-  };
-  console.log("[match-results] import:complete", {
-    eventId: input.eventId,
-    summary,
-  });
-
-  return summary;
 }
 
 export async function importServerEventsFromLinks(input: {
   serverId: string;
   linksInput: string;
+  importPlayers?: boolean;
+  clanTag?: string;
+  onProgress?: (progress: ImportProgress) => void;
 }) {
   const links = normalizeImportedEventLinks(input.linksInput);
   if (links.length === 0) {
@@ -698,10 +822,27 @@ export async function importServerEventsFromLinks(input: {
   let importedPlayers = 0;
   let eventResultsSaved = 0;
   let matchesSaved = 0;
+  let processed = 0;
 
-  for (const link of links) {
+  input.onProgress?.({
+    phase: "queued",
+    total: links.length,
+    fetched: 0,
+    processed: 0,
+    successful: 0,
+    failed: 0,
+    percent: 0,
+  });
+
+  const fetchedResults = await fetchScoreboardsWithProgress({
+    links,
+    onProgress: input.onProgress,
+  });
+
+  for (const fetchedResult of fetchedResults) {
+    const link = fetchedResult.link;
     const diagnostics: ImportDiagnostics = {
-      scoreboardFetched: { ok: false },
+      scoreboardFetched: { ok: fetchedResult.ok, error: fetchedResult.ok ? undefined : fetchedResult.error },
       playerStatsSaved: { ok: false },
       matchSaved: { ok: false },
       eventResultPrepared: { ok: false },
@@ -709,15 +850,12 @@ export async function importServerEventsFromLinks(input: {
     };
     let eventId: string | undefined;
     try {
-      const { mapId, sourceUrl, payload } = await fetchScoreboard(link);
+      if (!fetchedResult.ok) {
+        throw new Error(fetchedResult.error);
+      }
+
+      const { mapId, sourceUrl, payload } = fetchedResult.fetched;
       const sanitizedPayload = sanitizeScoreboardResult(payload.result);
-      diagnostics.scoreboardFetched = { ok: true };
-      console.log("[match-results] bulk-import:payload", {
-        serverId: input.serverId,
-        mapId,
-        sourceUrl,
-        importedPlayers: sanitizedPayload.player_stats.length,
-      });
 
       const preparedImport = await preparePlayerImports({
         serverId: input.serverId,
@@ -725,14 +863,11 @@ export async function importServerEventsFromLinks(input: {
         sourceUrl,
         mapId,
         eventIdForLogs: `import:${mapId}`,
+        importPlayers: input.importPlayers,
+        clanTag: input.clanTag,
       });
       const inferredEventSide = preparedImport.inferredEventSide;
 
-      console.log("[match-results] bulk-import:event-save:start", {
-        serverId: input.serverId,
-        sourceUrl,
-        mapId,
-      });
       const createdEventId = await saveServerEvent({
         serverId: input.serverId,
         kind: "match",
@@ -744,11 +879,6 @@ export async function importServerEventsFromLinks(input: {
         }),
       });
       eventId = createdEventId;
-      console.log("[match-results] bulk-import:event-save:success", {
-        sourceUrl,
-        mapId,
-        eventId,
-      });
 
       await savePlayerMatchStats({
         entries: preparedImport.entries.map((entry) => ({
@@ -757,33 +887,14 @@ export async function importServerEventsFromLinks(input: {
         })),
       });
       diagnostics.playerStatsSaved = { ok: true };
-      console.log("[match-results] bulk-import:player-stats-saved", {
-        sourceUrl,
-        mapId,
-        eventId,
-        savedCount: preparedImport.entries.length,
-      });
 
-      console.log("[match-results] bulk-import:match-save:start", {
-        sourceUrl,
-        mapId,
-        eventId,
-        matchId: payload.result.id,
-      });
-      const savedMatchId = await saveServerMatch({
+      await saveServerMatch({
         eventId: createdEventId,
         sourceUrl,
         raw: sanitizedPayload,
       });
       diagnostics.matchSaved = { ok: true };
       matchesSaved += 1;
-      console.log("[match-results] bulk-import:match-save:success", {
-        sourceUrl,
-        mapId,
-        eventId,
-        matchId: sanitizedPayload.id,
-        savedMatchId,
-      });
 
       const eventResult = buildEventResult(inferredEventSide, sourceUrl, mapId, sanitizedPayload);
       diagnostics.eventResultPrepared = eventResult
@@ -795,35 +906,17 @@ export async function importServerEventsFromLinks(input: {
               : `Inferred side "${inferredEventSide}" did not match imported teams.`,
           };
       if (eventResult) {
-        console.log("[match-results] bulk-import:event-result-save:start", {
-          sourceUrl,
-          mapId,
-          eventId,
-          outcome: eventResult.outcome,
-          score: eventResult.score,
-        });
         await saveServerEventResult({
           eventId: createdEventId,
           eventResult,
         });
         diagnostics.eventResultSaved = { ok: true };
         eventResultsSaved += 1;
-        console.log("[match-results] bulk-import:event-result-save:success", {
-          sourceUrl,
-          mapId,
-          eventId,
-        });
       } else {
         diagnostics.eventResultSaved = {
           ok: false,
           error: diagnostics.eventResultPrepared.skippedReason ?? "Event result was not prepared.",
         };
-        console.log("[match-results] bulk-import:event-result-skipped", {
-          sourceUrl,
-          mapId,
-          eventId,
-          skippedReason: diagnostics.eventResultPrepared.skippedReason,
-        });
       }
 
       importedEvents += 1;
@@ -839,13 +932,14 @@ export async function importServerEventsFromLinks(input: {
       });
     } catch (error) {
       const message = toErrorMessage(error, "Unable to import this event.");
-      console.error("[match-results] bulk-import:failed", {
+      logImportError("bulk-import:failed", {
         serverId: input.serverId,
         link,
         eventId,
+        importPlayers: Boolean(input.importPlayers),
+        clanTag: input.clanTag,
         diagnostics,
-        error,
-      });
+      }, error);
       errors.push({
         link,
         error: message,
@@ -857,6 +951,22 @@ export async function importServerEventsFromLinks(input: {
         eventResultSaved: diagnostics.eventResultSaved.ok,
         diagnostics,
         error: message,
+      });
+    } finally {
+      processed += 1;
+      input.onProgress?.({
+        phase: processed === links.length ? "completed" : "importing",
+        total: links.length,
+        fetched: fetchedResults.length,
+        processed,
+        successful: importedEvents,
+        failed: errors.length,
+        percent: processed === links.length ? 100 : calculateImportPercent({
+          total: links.length,
+          fetched: fetchedResults.length,
+          processed,
+        }),
+        currentLink: link,
       });
     }
   }
@@ -898,11 +1008,11 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
 
   const assignments = await getServerUserAssignments(input.serverId);
   const assignedUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
-  const allUsers = await listUsers();
+  const allUsers = await listUsersUncached();
   const uniqueUsersByName = buildUniqueUserMap(assignedUsers);
   const existingPlatformOwnerById = new Map(
     allUsers.flatMap((user) =>
-      user.platformIds.map((platformId) => [normalizeValue(platformId), user.discordId] as const),
+      user.platformIds.map((platformId) => [normalizeValue(platformId), user.id] as const),
     ),
   );
 
@@ -939,11 +1049,10 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
       }
     } catch (error) {
       failedEvents += 1;
-      console.error("[match-results] auto-link:failed-event", {
+      logImportError("auto-link:failed-event", {
         serverId: input.serverId,
         sourceUrl,
-        error,
-      });
+      }, error);
     }
   }
 
@@ -954,7 +1063,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
   let conflictedUsers = 0;
 
   for (const user of assignedUsers) {
-    const candidateIds = candidateIdsByUserId.get(user.discordId);
+    const candidateIds = candidateIdsByUserId.get(user.id);
     if (!candidateIds || candidateIds.size === 0) {
       continue;
     }
@@ -968,7 +1077,7 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
     const existingPlatformIds = user.platformIds.map((platformId) => normalizeValue(platformId)).filter(Boolean);
     const existingOwnerId = existingPlatformOwnerById.get(candidateId);
 
-    if (existingOwnerId && existingOwnerId !== user.discordId) {
+    if (existingOwnerId && existingOwnerId !== user.id) {
       conflictedUsers += 1;
       continue;
     }
@@ -979,20 +1088,19 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
       } else {
         try {
           await savePlayerPlatformId({
-            userId: user.discordId,
+            userId: user.id,
             platformIds: [...user.platformIds, candidateId],
           });
-          existingPlatformOwnerById.set(candidateId, user.discordId);
+          existingPlatformOwnerById.set(candidateId, user.id);
           linkedUsers += 1;
-          linkedUserIds.add(user.discordId);
+          linkedUserIds.add(user.id);
         } catch (error) {
           conflictedUsers += 1;
-          console.error("[match-results] auto-link:failed-save", {
+          logImportError("auto-link:failed-save", {
             serverId: input.serverId,
-            userId: user.discordId,
+            userId: user.id,
             candidateId,
-            error,
-          });
+          }, error);
         }
       }
       continue;
@@ -1000,20 +1108,19 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
 
     try {
       await savePlayerPlatformId({
-        userId: user.discordId,
+        userId: user.id,
         platformIds: [candidateId],
       });
-      existingPlatformOwnerById.set(candidateId, user.discordId);
+      existingPlatformOwnerById.set(candidateId, user.id);
       linkedUsers += 1;
-      linkedUserIds.add(user.discordId);
+      linkedUserIds.add(user.id);
     } catch (error) {
       conflictedUsers += 1;
-      console.error("[match-results] auto-link:failed-save", {
+      logImportError("auto-link:failed-save", {
         serverId: input.serverId,
-        userId: user.discordId,
+        userId: user.id,
         candidateId,
-        error,
-      });
+      }, error);
     }
   }
 
@@ -1027,5 +1134,61 @@ export async function autoLinkPlatformIdsFromEventImports(input: {
     ambiguousUsers,
     conflictedUsers,
     failedEvents,
+  };
+}
+
+export async function linkMissingDiscordIdsFromRole(input: {
+  serverUserIds: string[];
+  roleMembers: Array<{
+    discordId: string;
+    name: string;
+    avatar: string;
+  }>;
+}) {
+  const users = await listUsersUncached();
+  const serverUserIdSet = new Set(input.serverUserIds);
+  const candidates = users.filter((user) => !user.hasDiscordLink && serverUserIdSet.has(user.id));
+  const roleMembersByName = new Map<string, typeof input.roleMembers>();
+
+  for (const member of input.roleMembers) {
+    const normalizedName = normalizeComparableName(member.name);
+    if (!normalizedName) {
+      continue;
+    }
+
+    const existing = roleMembersByName.get(normalizedName) ?? [];
+    existing.push(member);
+    roleMembersByName.set(normalizedName, existing);
+  }
+
+  let linkedUsers = 0;
+  let mergedUsers = 0;
+  const linkedUserIds = new Set<string>();
+
+  for (const user of candidates) {
+    const match = roleMembersByName.get(normalizeComparableName(user.name))?.[0];
+    if (!match) {
+      continue;
+    }
+
+    const result = await linkImportedDiscordProfile({
+      userId: user.id,
+      discordId: match.discordId,
+      name: match.name,
+      avatar: match.avatar,
+    });
+
+    linkedUsers += 1;
+    if (result.merged) {
+      mergedUsers += 1;
+    }
+    linkedUserIds.add(result.userId);
+  }
+
+  return {
+    scannedUsers: candidates.length,
+    linkedUsers,
+    mergedUsers,
+    linkedUserIds: [...linkedUserIds],
   };
 }

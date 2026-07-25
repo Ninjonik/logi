@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { ImportEventsButton } from "@/components/app/import-events-button";
 import { PageHeader } from "@/components/app/page-header";
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table";
 import { TablePageLayout } from "@/components/app/table-page-layout";
@@ -79,7 +78,6 @@ export default async function EventsPage({
             description={dictionary.event.listDescription}
             actions={canAdmin ? (
               <div className="flex flex-wrap gap-2">
-                <ImportEventsButton serverId={serverId} dictionary={dictionary} />
                 <Button asChild className="rounded-xl">
                   <a href={`/${locale}/dashboard/servers/${serverId}/events/create`}>{dictionary.common.createEvent}</a>
                 </Button>

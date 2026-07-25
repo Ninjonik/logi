@@ -7,10 +7,15 @@ export const createPlatformIdLinkToken = mutation({
   args: {
     secret: v.string(),
     guildId: v.string(),
-    categoryId: v.string(),
+    categoryId: v.optional(v.string()),
     userId: v.string(),
     userName: v.string(),
     userAvatar: v.optional(v.string()),
+    language: v.union(v.literal("en"), v.literal("cs")),
+    completionMode: v.optional(v.union(v.literal("membership"), v.literal("link"))),
+    applyMessageUrl: v.optional(v.string()),
+    interactionToken: v.optional(v.string()),
+    interactionApplicationId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -26,6 +31,11 @@ export const createPlatformIdLinkToken = mutation({
       userName: args.userName,
       userAvatar: args.userAvatar,
       categoryId: args.categoryId,
+      language: args.language,
+      completionMode: args.completionMode,
+      applyMessageUrl: args.applyMessageUrl,
+      interactionToken: args.interactionToken,
+      interactionApplicationId: args.interactionApplicationId,
       expiresAt,
       consumedAt: undefined,
       createdAt: now.toISOString(),
@@ -84,6 +94,15 @@ export const consumePlatformIdLinkToken = mutation({
     }
 
     await ctx.db.patch(doc._id, { consumedAt: now, updatedAt: now });
-    return { ok: true };
+    return {
+      ok: true,
+      guildId: doc.guildId,
+      userId: doc.userId,
+      language: doc.language,
+      completionMode: doc.completionMode ?? "membership",
+      applyMessageUrl: doc.applyMessageUrl,
+      interactionToken: doc.interactionToken,
+      interactionApplicationId: doc.interactionApplicationId,
+    };
   },
 });

@@ -22,7 +22,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { formatDateTime, formatTime } from "@/lib/format";
 import type { MatchRecord, MatchStatBreakdown, MatchTeamSide } from "@/types/domain";
 
-const TYPE_LABELS: Array<{ key: keyof MatchStatBreakdown; label: string }> = [
+const TYPE_LABELS: Array<{ key: string; label: string }> = [
   { key: "infantry", label: "Infantry" },
   { key: "machine_gun", label: "Machine Gun" },
   { key: "artillery", label: "Artillery" },

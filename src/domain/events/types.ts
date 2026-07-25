@@ -49,6 +49,7 @@ export type AttendanceReminder = {
 export type EventLike = {
   registrationEnd: string;
   meetingStart: string;
+  gameStart?: string;
   gameEnd: string;
   kind?: EventKind;
   createForumChannel?: boolean;

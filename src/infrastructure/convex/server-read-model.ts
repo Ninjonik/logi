@@ -1,5 +1,5 @@
 import { normalizeEventRecord } from "@/domain/events/normalization";
-import { getGuildDiscordId, getUserDiscordId } from "../../../convex/identity";
+import { getGuildDiscordId, getUserDiscordId, getUserStableId } from "../../../convex/identity";
 
 type UnknownDoc = { _id: unknown };
 
@@ -24,8 +24,10 @@ export function normalizeUserDoc<
 
   return {
     ...user,
-    id: String(user._id),
+    id: getUserStableId(user),
     discordId: getUserDiscordId(user),
+    linkedDiscordId: user.discordId,
+    hasDiscordLink: Boolean(user.discordId),
     platformIds: [...new Set(
       (user.platformIds ?? [legacyUser.platformId ?? legacyUser.steamId].filter(Boolean))
         .flatMap((entry) => String(entry).split(","))

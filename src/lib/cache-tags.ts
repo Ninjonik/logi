@@ -32,5 +32,5 @@ export function tagCacheEntries(tags: Array<string | null | undefined | false>) 
 
 export function revalidateCacheEntries(tags: Array<string | null | undefined | false>) {
   const uniqueTags = [...new Set(tags.filter((tag): tag is string => Boolean(tag)))];
-  uniqueTags.forEach((tag) => revalidateTag(tag, "max"));
+  uniqueTags.forEach((tag) => revalidateTag(tag, { expire: 0 }));
 }

@@ -135,7 +135,7 @@ export function handleFindNoticeTarget(input: {
       return {
         id: String(event._id),
         name: event.name,
-        meetingStart: normalized.meetingStart,
+        gameStart: normalized.gameStart ?? normalized.meetingStart,
         status: normalized.status,
         participants: normalized.participants,
       };
@@ -146,7 +146,7 @@ export function handleFindNoticeTarget(input: {
   }).map((event) => ({
     id: event.id,
     name: event.name,
-    meetingStart: event.meetingStart,
+    gameStart: event.gameStart,
   }));
 }
 

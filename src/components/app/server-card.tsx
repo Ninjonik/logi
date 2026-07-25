@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Bot, ShieldCheck, Users } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BotInviteButton } from "@/components/app/bot-invite-button";
 import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,11 +17,13 @@ export function ServerCard({
   guild,
   label,
   dictionary,
+  inviteRoleHierarchyRelevant = false,
 }: {
   locale: Locale;
   guild: Guild;
   label: string;
   dictionary: Dictionary;
+  inviteRoleHierarchyRelevant?: boolean;
 }) {
   return (
     <Card className="overflow-hidden rounded-2xl border-border/60 bg-card/80 shadow-sm pt-0">
@@ -75,12 +78,17 @@ export function ServerCard({
           </Button>
         ) : (
           <div className="flex w-full gap-2">
-            <Button asChild className="flex-1 rounded-xl">
-              <Link href={buildDiscordBotInviteUrl(guild.discordId)}>
+            <BotInviteButton
+              dictionary={dictionary}
+              inviteUrl={buildDiscordBotInviteUrl(guild.discordId)}
+              roleHierarchyRelevant={inviteRoleHierarchyRelevant}
+              className="flex-1 rounded-xl"
+            >
+              <>
                 {dictionary.dashboard.inviteBot}
                 <ArrowRight className="size-4" />
-              </Link>
-            </Button>
+              </>
+            </BotInviteButton>
             <RefreshBotStatusButton dictionary={dictionary} />
           </div>
         )}

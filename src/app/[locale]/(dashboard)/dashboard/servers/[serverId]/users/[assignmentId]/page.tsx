@@ -11,7 +11,7 @@ import { isLocale } from "@/i18n/config";
 import { getPaginatedRows } from "@/lib/data-table";
 import { formatDateTime } from "@/lib/format";
 import { getAssignmentMetadata, getPlayerMetadata } from "@/lib/server-metadata";
-import { flattenPlayerMatches, getPlayerStatsDocsCached, getPlayerStatsSummaryCached, sortPlayerMatches } from "@/lib/server-player-stats";
+import { buildPlayerStatsSummary, flattenPlayerMatches, getPlayerStatsDocs, sortPlayerMatches } from "@/lib/server-player-stats";
 import { getServerContext } from "@/lib/server-context";
 import {
   getEligibleUsersForServer,
@@ -59,13 +59,12 @@ export default async function ServerUserDetailPage({
 
   if (!assignment || !user) return null;
 
-  const playerStatsDocs = await getPlayerStatsDocsCached(user.discordId);
+  const playerStatsDocs = await getPlayerStatsDocs(user.id);
   const sortedMatches = sortPlayerMatches(
     flattenPlayerMatches(playerStatsDocs),
     new Map(context.events.map((event) => [event.id, event])),
   );
-  const recentSummary = await getPlayerStatsSummaryCached(user.discordId, context.events);
-  const storedPerformance = user.performance;
+  const recentSummary = buildPlayerStatsSummary(sortedMatches);
   const paginatedMatches = getPaginatedRows({
     rows: sortedMatches,
     searchParams: resolvedSearchParams,
@@ -102,12 +101,12 @@ export default async function ServerUserDetailPage({
     >
       <div className="flex min-h-0 flex-col gap-6 overflow-y-auto pb-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <StatCard title={dictionary.userManagement.averageKills} value={formatAverage(storedPerformance?.averages.kills ?? recentSummary.averages.kills)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Target} />
-          <StatCard title={dictionary.userManagement.averageKd} value={formatAverage(storedPerformance?.averages.killDeathRatio ?? recentSummary.averages.killDeathRatio)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Swords} />
-          <StatCard title={dictionary.userManagement.averageDeaths} value={formatAverage(storedPerformance?.averages.deaths ?? recentSummary.averages.deaths)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Skull} />
-          <StatCard title={dictionary.userManagement.averageOffense} value={formatAverage(storedPerformance?.averages.offense ?? recentSummary.averages.offense)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Activity} />
-          <StatCard title={dictionary.userManagement.averageDefense} value={formatAverage(storedPerformance?.averages.defense ?? recentSummary.averages.defense)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Shield} />
-          <StatCard title={dictionary.userManagement.averageSupport} value={formatAverage(storedPerformance?.averages.support ?? recentSummary.averages.support)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(storedPerformance?.matchesPlayed ?? sortedMatches.length))} icon={Wrench} />
+          <StatCard title={dictionary.userManagement.averageKills} value={formatAverage(recentSummary.averages.kills)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(sortedMatches.length))} icon={Target} />
+          <StatCard title={dictionary.userManagement.averageKd} value={formatAverage(recentSummary.averages.killDeathRatio)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(sortedMatches.length))} icon={Swords} />
+          <StatCard title={dictionary.userManagement.averageDeaths} value={formatAverage(recentSummary.averages.deaths)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(sortedMatches.length))} icon={Skull} />
+          <StatCard title={dictionary.userManagement.averageOffense} value={formatAverage(recentSummary.averages.offense)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(sortedMatches.length))} icon={Activity} />
+          <StatCard title={dictionary.userManagement.averageDefense} value={formatAverage(recentSummary.averages.defense)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(sortedMatches.length))} icon={Shield} />
+          <StatCard title={dictionary.userManagement.averageSupport} value={formatAverage(recentSummary.averages.support)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(sortedMatches.length))} icon={Wrench} />
         </div>
         <ResourceTable
           className="h-auto max-h-[32rem]"

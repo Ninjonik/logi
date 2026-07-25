@@ -24,7 +24,7 @@ export class UpsertNoticeUseCase {
     const normalizedEvent = normalizeEventRecord(event, now);
     const absenceNotices = upsertNotice({
       event: {
-        meetingStart: normalizedEvent.meetingStart,
+        gameStart: normalizedEvent.gameStart ?? normalizedEvent.meetingStart,
         status: normalizedEvent.status,
         participants: normalizedEvent.participants,
         absenceNotices: normalizedEvent.absenceNotices,

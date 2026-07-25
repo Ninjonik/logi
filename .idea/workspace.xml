@@ -7,15 +7,27 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="discord &lt;-&gt; dashboard cache revalidation">
-      <change afterPath="$PROJECT_DIR$/public/docs/privacy-policy.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/public/docs/tos.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/app/[locale]/privacy-policy/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/app/[locale]/tos/page.tsx" afterDir="false" />
+    <list default="true" id="5c5176ee-3a6d-4b09-8400-f57acc070057" name="Changes" comment="better texts">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bun.lock" beforeDir="false" afterPath="$PROJECT_DIR$/bun.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/globals.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/convex/events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/convex/events.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discord-bot/src/interactions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/discord-bot/src/interactions.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/create/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/create/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/application/events/ports.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/application/events/ports.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/application/events/upsert-notice.use-case.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/application/events/upsert-notice.use-case.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board-attendee-lists.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board-attendee-lists.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board-squad-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board-squad-card.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app/roster-board.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/app/roster-board.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/command.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/command.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/events/notice-policy.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/domain/events/notice-policy.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/events/notice-policy.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/domain/events/notice-policy.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/events/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/domain/events/types.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/i18n/messages/cs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/cs.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/i18n/messages/en.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/i18n/messages/en.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/infrastructure/convex/event-handlers.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/infrastructure/convex/event-handlers.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/infrastructure/convex/event-handlers.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/infrastructure/convex/event-handlers.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/infrastructure/convex/event-workflow-repositories.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/infrastructure/convex/event-workflow-repositories.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/clan-language.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/clan-language.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -134,7 +146,7 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "pnpm",
     "npm.Next.js: server-side.executor": "Run",
-    "settings.editor.selected.configurable": "junie.mcp",
+    "settings.editor.selected.configurable": "preferences.keymap",
     "to.speed.mode.migration.done": "true",
     "ts.external.directory.path": "C:\\Users\\admin\\WebstormProjects\\logi\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
@@ -223,23 +235,7 @@
       <workItem from="1784743567623" duration="34000" />
       <workItem from="1784799001718" duration="595000" />
       <workItem from="1784808188370" duration="1076000" />
-      <workItem from="1784970414614" duration="1559000" />
-    </task>
-    <task id="LOCAL-00003" summary="initial version, frontend logic only with mock data, no backend">
-      <option name="closed" value="true" />
-      <created>1783355532213</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1783355532213</updated>
-    </task>
-    <task id="LOCAL-00004" summary="some other better stuff, gotta compeltley rework the auth">
-      <option name="closed" value="true" />
-      <created>1783364166546</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1783364166546</updated>
+      <workItem from="1784970414614" duration="15180000" />
     </task>
     <task id="LOCAL-00005" summary="basic auth system + oath for discord and steam done">
       <option name="closed" value="true" />
@@ -617,7 +613,23 @@
       <option name="project" value="LOCAL" />
       <updated>1784644336910</updated>
     </task>
-    <option name="localTasksCounter" value="52" />
+    <task id="LOCAL-00052" summary="added privacy policy &amp; terms of service">
+      <option name="closed" value="true" />
+      <created>1784971994559</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1784971994559</updated>
+    </task>
+    <task id="LOCAL-00053" summary="better texts">
+      <option name="closed" value="true" />
+      <created>1784974336028</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1784974336028</updated>
+    </task>
+    <option name="localTasksCounter" value="54" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -637,8 +649,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="better stats handling" />
-    <MESSAGE value="fixed height issues in roster discord image" />
     <MESSAGE value="added the ability to import stuff (events + player), renamed steamid to platformid, removed steam oauth, better role management (connected with discord)" />
     <MESSAGE value="discord events integration" />
     <MESSAGE value="refactored event system, added trainings, re-added import default data button" />
@@ -662,6 +672,8 @@
     <MESSAGE value="refactored the score system to be guild-independent" />
     <MESSAGE value="fixed logging and websocket system" />
     <MESSAGE value="better text for unavailable membership applications" />
-    <option name="LAST_COMMIT_MESSAGE" value="better text for unavailable membership applications" />
+    <MESSAGE value="added privacy policy &amp; terms of service" />
+    <MESSAGE value="better texts" />
+    <option name="LAST_COMMIT_MESSAGE" value="better texts" />
   </component>
 </project>

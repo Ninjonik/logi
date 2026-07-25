@@ -8,6 +8,7 @@ import type { EventRecord, PlayerMatchStats } from "@/types/domain";
 
 const listPlayerStatsForUserReference = makeFunctionReference<"query">("playerStats:listForUser");
 const upsertPlayerMatchesReference = makeFunctionReference<"mutation">("playerStats:upsertMatches");
+const listUserIdsForEventsReference = makeFunctionReference<"query">("playerStats:listUserIdsForEvents");
 
 type PlayerStatsDoc = {
   id: string;
@@ -53,6 +54,16 @@ export async function getPlayerStatsDocs(userId: string) {
   return (await fetchQuery(listPlayerStatsForUserReference, {
     userId,
   })) as PlayerStatsDoc[];
+}
+
+export async function getPlayerStatsUserIdsForEvents(eventIds: string[]) {
+  if (eventIds.length === 0) {
+    return [] as string[];
+  }
+
+  return (await fetchQuery(listUserIdsForEventsReference, {
+    eventIds,
+  })) as string[];
 }
 
 export async function getPlayerStatsDocsCached(userId: string) {

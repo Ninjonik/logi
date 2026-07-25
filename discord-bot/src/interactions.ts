@@ -1,10 +1,12 @@
 import {
   ActionRowBuilder,
+  AutocompleteInteraction,
   ButtonInteraction,
   ButtonBuilder,
   ButtonStyle,
   ChannelType,
   ChatInputCommandInteraction,
+  EmbedBuilder,
   GuildMember,
   MessageFlags,
   ModalBuilder,
@@ -16,6 +18,7 @@ import {
 } from "discord.js";
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
+import { buildDiscordMessageUrl } from "../../src/lib/discord";
 
 import { revalidateAppData } from "./cache";
 import { convex, references } from "./convex";
@@ -29,7 +32,7 @@ import {
   loadTicketCategoryContext,
   resolveSupportMemberIds,
   rollbackMembershipApplicationSetup,
-  sendPlatformIdDm,
+  startPlatformIdLinkFlow,
   syncMembershipRoles,
 } from "./interactions/shared";
 import { logError, logInfo, logWarn } from "./log";
@@ -49,6 +52,57 @@ type TicketAnswer = {
 };
 
 type MembershipAnswer = TicketAnswer;
+
+function formatDiscordTimestamp(date: Date) {
+  return `<t:${Math.floor(date.getTime() / 1000)}:F>`;
+}
+
+function buildTicketCloseEmbed(input: {
+  messages: ReturnType<typeof getClanDiscordMessages>;
+  ticketNumber: number;
+  closerId: string;
+  closedAt: Date;
+  reason?: string;
+}) {
+  const { messages, ticketNumber, closerId, closedAt, reason } = input;
+  const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle(`${messages.ticket.closeEmbedTitle} #${ticketNumber}`)
+    .addFields(
+      { name: messages.ticket.closedByLabel, value: `<@${closerId}>`, inline: true },
+      { name: messages.ticket.closedAtLabel, value: formatDiscordTimestamp(closedAt), inline: true },
+    )
+    .setTimestamp(closedAt);
+
+  if (reason) {
+    embed.addFields({ name: messages.ticket.reasonLabel, value: reason });
+  }
+
+  return embed;
+}
+
+function buildMembershipApplicationCloseEmbed(input: {
+  messages: ReturnType<typeof getClanDiscordMessages>;
+  applicationNumber: number;
+  closerId: string;
+  closedAt: Date;
+  outcomeLabel: string;
+  reason?: string;
+}) {
+  const { messages, applicationNumber, closerId, closedAt, outcomeLabel, reason } = input;
+
+  return new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle(`${messages.membership.closeEmbedTitle} #${applicationNumber}`)
+    .addFields(
+      { name: messages.membership.closedByLabel, value: `<@${closerId}>`, inline: true },
+      { name: messages.membership.closedAtLabel, value: formatDiscordTimestamp(closedAt), inline: true },
+      reason
+        ? { name: messages.membership.reasonLabel, value: reason }
+        : { name: messages.membership.outcomeLabel, value: outcomeLabel },
+    )
+    .setTimestamp(closedAt);
+}
 
 export function createInteractionHandler(options: InteractionHandlerOptions) {
   return {
@@ -78,11 +132,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       }
     },
 
+    async handleAutocompleteInteraction(interaction: AutocompleteInteraction) {
+      if (interaction.commandName === "notice") {
+        await handleNoticeAutocomplete(interaction);
+      }
+    },
+
     async handleChatInputCommand(interaction: ChatInputCommandInteraction) {
       if (interaction.commandName === "close_ticket") {
         await handleCloseTicketCommand(interaction);
       } else if (interaction.commandName === "close_application") {
         await handleCloseApplicationCommand(interaction);
+      } else if (interaction.commandName === "link") {
+        await handleLinkCommand(interaction);
       } else if (interaction.commandName === "notice") {
         await handleNoticeCommand(interaction);
       }
@@ -140,8 +202,14 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
               .setName("event")
               .setDescription(messages.commands.noticeEventOptionDescription)
               .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.noticeEventOptionDescription })
-              .setRequired(true),
+              .setRequired(true)
+              .setAutocomplete(true),
           )
+          .setDMPermission(false),
+        new SlashCommandBuilder()
+          .setName("link")
+          .setDescription(messages.commands.linkDescription)
+          .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.linkDescription })
           .setDMPermission(false),
       ];
 
@@ -198,7 +266,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       return;
     }
 
-    const query = interaction.options.getString("event", true).trim();
+    const eventSelection = interaction.options.getString("event", true).trim();
     const guildConfig = await convex.query(references.getConfigByDiscordGuildId, {
       guildId: interaction.guildId,
     }).catch(() => null) as { defaultLanguage?: "en" | "cs" } | null;
@@ -207,11 +275,32 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     const matches = await convex.query(references.findNoticeTarget, {
       guildId: interaction.guildId,
       userId: interaction.user.id,
-      query,
+      query: eventSelection,
     }) as Array<{ id: string; name: string }>;
+
+    logInfo("interaction", "Resolved notice command candidates", {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      eventSelection,
+      matchCount: matches.length,
+      matchIds: matches.map((event) => event.id),
+      matchNames: matches.map((event) => event.name),
+    });
+
+    const exactIdMatch = matches.find((event) => event.id === eventSelection);
+    if (exactIdMatch) {
+      await openNoticeModal(interaction, exactIdMatch.id, messages.commands.noticeModalTitle, messages.commands.noticeReasonLabel);
+      return;
+    }
 
     if (!matches.length) {
       await interaction.reply({ content: messages.commands.noticeNoMatch, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const exactNameMatches = matches.filter((event) => event.name.trim().toLowerCase() === eventSelection.toLowerCase());
+    if (exactNameMatches.length === 1) {
+      await openNoticeModal(interaction, exactNameMatches[0].id, messages.commands.noticeModalTitle, messages.commands.noticeReasonLabel);
       return;
     }
 
@@ -220,16 +309,72 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       return;
     }
 
-    const [event] = matches;
+    await openNoticeModal(interaction, matches[0].id, messages.commands.noticeModalTitle, messages.commands.noticeReasonLabel);
+  }
+
+  async function handleNoticeAutocomplete(interaction: AutocompleteInteraction) {
+    if (!interaction.guildId) {
+      logInfo("interaction", "Ignored notice autocomplete outside guild", {
+        userId: interaction.user.id,
+      });
+      await interaction.respond([]);
+      return;
+    }
+
+    const query = interaction.options.getFocused(true);
+    if (query.name !== "event") {
+      logInfo("interaction", "Ignored notice autocomplete for unexpected option", {
+        guildId: interaction.guildId,
+        userId: interaction.user.id,
+        optionName: query.name,
+      });
+      await interaction.respond([]);
+      return;
+    }
+
+    logInfo("interaction", "Received notice autocomplete", {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      query: String(query.value ?? ""),
+    });
+
+    const matches = await convex.query(references.findNoticeTarget, {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      query: String(query.value ?? ""),
+    }).catch(() => []) as Array<{ id: string; name: string; gameStart?: string }>;
+
+    logInfo("interaction", "Resolved notice autocomplete candidates", {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      query: String(query.value ?? ""),
+      matchCount: matches.length,
+      matchIds: matches.map((event) => event.id),
+      matchNames: matches.map((event) => event.name),
+      matchGameStarts: matches.map((event) => event.gameStart),
+    });
+
+    await interaction.respond(matches.slice(0, 25).map((event) => ({
+      name: formatNoticeAutocompleteLabel(event.name, event.gameStart),
+      value: event.id,
+    })));
+  }
+
+  async function openNoticeModal(
+    interaction: ChatInputCommandInteraction,
+    eventId: string,
+    modalTitle: string,
+    reasonLabel: string,
+  ) {
     const modal = new ModalBuilder()
-      .setCustomId(`notice-modal:${event.id}`)
-      .setTitle(messages.commands.noticeModalTitle.slice(0, 45));
+      .setCustomId(`notice-modal:${eventId}`)
+      .setTitle(modalTitle.slice(0, 45));
 
     modal.addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(
         new TextInputBuilder()
           .setCustomId("reason")
-          .setLabel(messages.commands.noticeReasonLabel.slice(0, 45))
+          .setLabel(reasonLabel.slice(0, 45))
           .setStyle(TextInputStyle.Paragraph)
           .setRequired(true)
           .setMaxLength(500),
@@ -237,6 +382,26 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     );
 
     await interaction.showModal(modal);
+  }
+
+  function formatNoticeAutocompleteLabel(name: string, gameStart?: string) {
+    if (!gameStart) {
+      return name.slice(0, 100);
+    }
+
+    const timestamp = new Date(gameStart);
+    if (Number.isNaN(timestamp.getTime())) {
+      return name.slice(0, 100);
+    }
+
+    return `${name} • ${timestamp.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "UTC",
+    })} UTC`.slice(0, 100);
   }
 
   async function handleNoticeModalSubmit(interaction: ModalSubmitInteraction) {
@@ -267,6 +432,26 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     options.triggerPollSoon();
 
     await interaction.reply({ content: messages.commands.noticeSaved, flags: MessageFlags.Ephemeral });
+  }
+
+  async function handleLinkCommand(interaction: ChatInputCommandInteraction) {
+    const fallbackMessages = getClanDiscordMessages("en");
+    if (!interaction.guildId) {
+      await interaction.reply({ content: fallbackMessages.membership.serverOnly, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const guildConfig = await convex.query(references.getConfigByDiscordGuildId, {
+      guildId: interaction.guildId,
+    }).catch(() => null) as { defaultLanguage?: "en" | "cs" } | null;
+    const language = guildConfig?.defaultLanguage ?? "en";
+    const responseText = await startPlatformIdLinkFlow(interaction, {
+      guildId: interaction.guildId,
+      language,
+      completionMode: "link",
+    });
+
+    await interaction.reply({ content: responseText, flags: MessageFlags.Ephemeral });
   }
 
   async function handleTicketModalSubmit(interaction: ModalSubmitInteraction) {
@@ -331,19 +516,20 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     if (!prereq.user || !prereq.user.platformIds?.length) {
-      const tokenResponse = await convex.mutation(references.createPlatformIdLinkToken, {
-        secret: env.internalSecret,
+      const responseText = await startPlatformIdLinkFlow(interaction, {
         guildId: interaction.guildId,
         categoryId,
-        userId: interaction.user.id,
-        userName: interaction.user.globalName ?? interaction.user.username,
-        userAvatar: interaction.user.displayAvatarURL(),
-      }) as { token: string };
-      const link = `${env.appSiteUrl}/${prereq.config.defaultLanguage}/platform-id-link/${tokenResponse.token}`;
-      const dmSent = await sendPlatformIdDm(interaction, link, prereq.config.defaultLanguage);
-      const responseText = dmSent
-        ? messages.membership.dmSent
-        : formatTemplate(messages.membership.dmFailed, { link });
+        language: prereq.config.defaultLanguage,
+        completionMode: "membership",
+        applyMessageUrl:
+          prereq.config.membershipSettings?.submitChannelId && prereq.config.membershipPanelMessageId
+            ? buildDiscordMessageUrl(
+              interaction.guildId,
+              prereq.config.membershipSettings.submitChannelId,
+              prereq.config.membershipPanelMessageId,
+            )
+            : undefined,
+      });
       await interaction.reply({ content: responseText, flags: MessageFlags.Ephemeral });
       return;
     }
@@ -857,6 +1043,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     const reason = interaction.options.getString("reason")?.trim() || undefined;
+    const closedAt = new Date();
 
     await convex.mutation(references.closeTicketThread, {
       secret: env.internalSecret,
@@ -876,6 +1063,16 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       ];
       await creator.send({ content: dmLines.join("\n") }).catch(() => null);
     }
+
+    await interaction.channel.send({
+      embeds: [buildTicketCloseEmbed({
+        messages,
+        ticketNumber: context.ticket.ticketNumber,
+        closerId: interaction.user.id,
+        closedAt,
+        reason,
+      })],
+    }).catch(() => null);
 
     await interaction.channel.setName(`closed-${context.ticket.ticketNumber}`.slice(0, 100)).catch(() => null);
     await interaction.channel.setLocked(true, reason ?? messages.ticket.closeAuditReason).catch(() => null);
@@ -944,6 +1141,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     const outcome = interaction.options.getString("outcome", true) as "denied" | "pending" | "recruit" | "member" | "mercenary";
     const outcomeLabel = getOutcomeLabel(context.config.defaultLanguage, outcome);
     const reason = interaction.options.getString("reason")?.trim() || undefined;
+    const closedAt = new Date();
 
     if (outcome === "denied") {
       if (context.application.assignmentId) {
@@ -1025,6 +1223,17 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       ];
       await creator.send({ content: lines.join("\n") }).catch(() => null);
     }
+
+    await interaction.channel.send({
+      embeds: [buildMembershipApplicationCloseEmbed({
+        messages,
+        applicationNumber: context.application.applicationNumber,
+        closerId: interaction.user.id,
+        closedAt,
+        outcomeLabel,
+        reason,
+      })],
+    }).catch(() => null);
 
     await interaction.channel.setName(`closed-${context.application.applicationNumber}`.slice(0, 100)).catch(() => null);
     await interaction.channel.setLocked(true, reason ?? messages.membership.closeAuditReason).catch(() => null);

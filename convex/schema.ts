@@ -163,18 +163,7 @@ const eventResult = v.object({
   }),
 });
 
-const statBreakdown = v.object({
-  infantry: v.optional(v.number()),
-  mine: v.optional(v.number()),
-  sniper: v.optional(v.number()),
-  armor: v.optional(v.number()),
-  satchel: v.optional(v.number()),
-  grenade: v.optional(v.number()),
-  machine_gun: v.optional(v.number()),
-  bazooka: v.optional(v.number()),
-  artillery: v.optional(v.number()),
-  commander: v.optional(v.number()),
-});
+const statBreakdown = v.record(v.string(), v.number());
 
 const matchPlayerTeam = v.object({
   side: v.string(),
@@ -535,7 +524,15 @@ export default defineSchema({
     userId: v.string(),
     userName: v.string(),
     userAvatar: v.optional(v.string()),
-    categoryId: v.string(),
+    categoryId: v.optional(v.string()),
+    language: v.union(v.literal("en"), v.literal("cs")),
+    completionMode: v.optional(v.union(
+      v.literal("membership"),
+      v.literal("link"),
+    )),
+    applyMessageUrl: v.optional(v.string()),
+    interactionToken: v.optional(v.string()),
+    interactionApplicationId: v.optional(v.string()),
     expiresAt: v.string(),
     consumedAt: v.optional(v.string()),
     createdAt: v.string(),

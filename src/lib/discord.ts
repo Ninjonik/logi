@@ -57,6 +57,15 @@ export type DiscordGuildMember = {
   roles: string[];
 };
 
+type DiscordDmChannel = {
+  id: string;
+};
+
+type DiscordApiMessage = {
+  id: string;
+  channel_id: string;
+};
+
 export function getDiscordAvatarUrl(user: DiscordUser) {
   if (!user.avatar) {
     return "https://cdn.discordapp.com/embed/avatars/0.png";
@@ -71,6 +80,12 @@ export function getDiscordGuildIconUrl(guild: Pick<DiscordGuild, "id" | "icon">)
   }
 
   return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=256`;
+}
+
+export function buildDiscordMessageUrl(guildId: string, channelId: string, messageId?: string) {
+  return messageId
+    ? `https://discord.com/channels/${guildId}/${channelId}/${messageId}`
+    : `https://discord.com/channels/${guildId}/${channelId}`;
 }
 
 export function buildDiscordAuthorizationUrl(state: string) {
@@ -213,6 +228,61 @@ async function fetchDiscordBot(path: string, init?: RequestInit) {
   }
 
   return response;
+}
+
+export async function sendDiscordBotDm(userId: string, content: string) {
+  const dmChannelResponse = await fetchDiscordBot("/users/@me/channels", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      recipient_id: userId,
+    }),
+  });
+  const dmChannel = await dmChannelResponse.json() as DiscordDmChannel;
+
+  const messageResponse = await fetchDiscordBot(`/channels/${dmChannel.id}/messages`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      content,
+    }),
+  });
+  const message = await messageResponse.json() as DiscordApiMessage;
+
+  return {
+    channelId: message.channel_id,
+    messageId: message.id,
+    messageUrl: buildDiscordMessageUrl("@me", message.channel_id, message.id),
+  };
+}
+
+export async function editDiscordInteractionOriginalResponse(input: {
+  applicationId: string;
+  interactionToken: string;
+  content: string;
+}) {
+  const response = await fetch(
+    `https://discord.com/api/v10/webhooks/${input.applicationId}/${input.interactionToken}/messages/@original`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        content: input.content,
+        components: [],
+      }),
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to edit original Discord interaction response.");
+  }
 }
 
 export async function fetchDiscordGuildRoles(guildId: string) {

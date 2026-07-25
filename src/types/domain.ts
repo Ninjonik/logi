@@ -9,6 +9,8 @@ export type AppUser = {
   _reserveSection?: string;
   id: string;
   discordId: string;
+  linkedDiscordId?: string;
+  hasDiscordLink: boolean;
   platformIds: string[];
   name: string;
   avatar: string;
@@ -244,18 +246,7 @@ export type EventRecord = {
 
 export type MatchTeamSide = string;
 
-export type MatchStatBreakdown = Partial<{
-  infantry: number;
-  mine: number;
-  sniper: number;
-  armor: number;
-  satchel: number;
-  grenade: number;
-  machine_gun: number;
-  bazooka: number;
-  artillery: number;
-  commander: number;
-}>;
+export type MatchStatBreakdown = Record<string, number>;
 
 export type MatchStatsRecord = {
   id: string;
