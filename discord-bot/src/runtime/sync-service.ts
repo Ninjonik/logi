@@ -268,7 +268,7 @@ export class DiscordSyncService {
       rosterCount: payload.rosters.length,
       syncStateCount: payload.syncStates.length,
     });
-    await syncGuildPayload(this.client, queuedEventIds, payload);
+    await syncGuildPayload(this.client, queuedEventIds, payload, "full");
   }
 
   private async syncEvent(eventId: string, queuedEventIds: Set<string>) {
@@ -294,7 +294,7 @@ export class DiscordSyncService {
       rosterCount: payload.rosters.length,
       hasSyncState: payload.syncStates.length > 0,
     });
-    await syncGuildPayload(this.client, queuedEventIds, payload);
+    await syncGuildPayload(this.client, queuedEventIds, payload, "events_only");
   }
 
   private async loadEventSyncContext(eventId: string) {
