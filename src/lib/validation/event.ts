@@ -22,6 +22,7 @@ export const eventSchema = z
     pingClan: z.boolean(),
     createForumChannel: z.boolean().default(false),
     topicPresetId: z.string().trim().optional(),
+    stratmapIds: z.array(z.string().trim()).default([]),
   })
   .superRefine((value, ctx) => {
     const registrationEnd = new Date(value.registrationEnd);

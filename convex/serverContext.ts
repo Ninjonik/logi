@@ -8,6 +8,7 @@ import {
   normalizeDoc,
   normalizeEventDoc,
   normalizeGuildDoc,
+  normalizeStratmapDoc,
   normalizeUserDoc,
 } from "../src/infrastructure/convex/server-read-model";
 
@@ -41,10 +42,11 @@ export const getServerContext = query({
       userId: args.userId,
       discordAccess,
     });
-    const [events, topicPresets, squadPresets, groups, assignments, discordConfig] = await Promise.all([
+    const [events, topicPresets, squadPresets, stratmaps, groups, assignments, discordConfig] = await Promise.all([
       ctx.db.query("events").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect(),
       ctx.db.query("topicPresets").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect(),
       ctx.db.query("squadPresets").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect(),
+      ctx.db.query("stratmaps").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect(),
       ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).collect(),
       ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", serverDiscordId)).collect(),
       ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", serverDiscordId)).unique(),
@@ -60,6 +62,7 @@ export const getServerContext = query({
       events: events.map(normalizeEventDoc),
       topicPresets: topicPresets.map(normalizeDoc),
       squadPresets: squadPresets.map(normalizeDoc),
+      stratmaps: stratmaps.map(normalizeStratmapDoc),
       rosters: relevantRosters.map(normalizeDoc),
       groups: groups.map(normalizeDoc),
       assignments: assignments.map((assignment) => normalizeAssignmentDoc(assignment, groupNameById)),

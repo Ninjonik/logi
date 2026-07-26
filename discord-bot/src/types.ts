@@ -203,6 +203,7 @@ export type EventRecord = {
   pingClan: boolean;
   createForumChannel: boolean;
   topicPresetId?: string;
+  stratmapIds?: string[];
   status: "registration" | "closed" | "starting" | "concluded";
   statusUpdatedAt: string;
   concludedAt?: string;

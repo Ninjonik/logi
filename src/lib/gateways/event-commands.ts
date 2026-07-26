@@ -30,6 +30,7 @@ export async function saveServerEventCommand(input: {
   pingClan: boolean;
   createForumChannel: boolean;
   topicPresetId?: string;
+  stratmapIds?: string[];
 }) {
   return await fetchMutation(upsertEventReference, {
     secret: getInternalAuthSecret(),
@@ -55,6 +56,7 @@ export async function saveServerEventCommand(input: {
     pingClan: input.pingClan,
     createForumChannel: input.createForumChannel,
     topicPresetId: input.topicPresetId as never,
+    stratmapIds: input.stratmapIds,
   });
 }
 

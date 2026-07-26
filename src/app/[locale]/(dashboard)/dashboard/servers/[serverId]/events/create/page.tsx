@@ -15,6 +15,7 @@ export default async function CreateEventPage({
   const context = await getServerContext(serverId);
   const canAdmin = context?.canAdmin ?? false;
   const topicPresets = context?.topicPresets ?? [];
+  const stratmaps = context?.stratmaps ?? [];
   const timezone = context?.discordConfig?.timezone ?? "UTC";
   const discordConfig = context?.discordConfig ?? null;
   const draftSchedule = createDraftEventSchedule();
@@ -41,6 +42,7 @@ export default async function CreateEventPage({
     gameEnd: draftSchedule.gameEnd,
     pingClan: false,
     createForumChannel: true,
+    stratmapIds: [],
     status: "registration" as const,
     statusUpdatedAt: draftSchedule.statusUpdatedAt,
     attendanceReminderLog: [],
@@ -55,7 +57,7 @@ export default async function CreateEventPage({
     <>
       <PageHeader title={dictionary.event.createTitle} description={dictionary.event.createPageDescription} />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={draftEvent} serverId={serverId} locale={locale} topicPresets={topicPresets} timezone={timezone} canEdit={canAdmin} dictionary={dictionary} createMode discordConfig={discordConfig} />
+        <EventFormPanel event={draftEvent} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} timezone={timezone} canEdit={canAdmin} dictionary={dictionary} createMode discordConfig={discordConfig} />
       </div>
     </>
   );

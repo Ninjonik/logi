@@ -11,6 +11,7 @@ import { AvatarPicker } from "@/components/app/avatar-picker";
 import { ConfigNotice } from "@/components/app/config-notice";
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
+import { HllMapSelector } from "@/components/app/hll-map-selector";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,18 +25,15 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { supportedTimezones } from "@/lib/discord-timezones";
 import {
-  getHllMapOptions,
-  getHllModeOptions,
-  getHllTimeOptions,
   formatHllPresetLabel,
+  inferHllBaseMapId,
   inferHllSelection,
-  isKnownHllPresetCode,
   resolveHllPresetCode,
 } from "@/lib/hll-map-presets";
 import { fromDateTimeLocalInTimeZone, toDateTimeLocalInTimeZone } from "@/lib/timezone-datetime";
 import { cn } from "@/lib/utils";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
-import type { DiscordConfig, EventRecord, TopicPreset } from "@/types/domain";
+import type { DiscordConfig, EventRecord, StratmapRecord, TopicPreset } from "@/types/domain";
 
 type DiscordMetadata = {
   roles: DiscordSelectOption[];
@@ -90,15 +88,16 @@ function getOutcomeLabel(outcome: "victory" | "defeat" | "draw", dictionary: Dic
 
 function getPresetMatch(preset: TopicPreset, context: TopicPresetMatchContext) {
   const presetSelection = inferHllSelection(preset.map);
+  const presetMapId = presetSelection?.mapId ?? inferHllBaseMapId(preset.map);
   const hasComparableMapCode = Boolean(context.mapCode && preset.map);
-  const hasComparableMapId = Boolean(context.mapId && presetSelection?.mapId);
+  const hasComparableMapId = Boolean(context.mapId && presetMapId);
   const hasComparableTime = Boolean(context.time && presetSelection?.time);
   const hasComparableMode = Boolean(context.mode && presetSelection?.mode);
   const hasComparableSide = Boolean(context.side && preset.side);
   const hasComparableCap = Boolean(context.cap && preset.cap);
 
   const exactMapCodeMatch = hasComparableMapCode && normalizeMatchValue(context.mapCode) === normalizeMatchValue(preset.map);
-  const mapIdMatch = hasComparableMapId && context.mapId === presetSelection?.mapId;
+  const mapIdMatch = hasComparableMapId && context.mapId === presetMapId;
   const timeMatch = hasComparableTime && context.time === presetSelection?.time;
   const modeMatch = hasComparableMode && context.mode === presetSelection?.mode;
   const sideMatch = hasComparableSide && normalizeMatchValue(context.side) === normalizeMatchValue(preset.side);
@@ -189,7 +188,7 @@ function TopicPresetSelect({
         <Command>
           <CommandInput placeholder={dictionary.event.topicPreset} />
           <CommandList>
-            <CommandEmpty>No results.</CommandEmpty>
+            <CommandEmpty>{dictionary.shared.noMatchingResults}</CommandEmpty>
             <CommandGroup>
               <CommandItem
                 value={dictionary.event.noPreset}
@@ -237,11 +236,86 @@ function TopicPresetSelect({
   );
 }
 
+function StratmapMultiSelect({
+  value,
+  onChange,
+  stratmaps,
+  dictionary,
+}: {
+  value: string[];
+  onChange: (value: string[]) => void;
+  stratmaps: StratmapRecord[];
+  dictionary: Dictionary;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedIds = new Set(value);
+
+  function toggle(stratmapId: string) {
+    if (selectedIds.has(stratmapId)) {
+      onChange(value.filter((id) => id !== stratmapId));
+      return;
+    }
+
+    onChange([...value, stratmapId]);
+  }
+
+  const selectedLabels = stratmaps
+    .filter((stratmap) => selectedIds.has(stratmap.id))
+    .map((stratmap) => stratmap.title);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" className="h-auto min-h-11 w-full justify-between rounded-xl py-3">
+          <span className="flex min-w-0 flex-1 flex-wrap gap-2 text-left">
+            {selectedLabels.length ? (
+              selectedLabels.map((label) => (
+                <Badge key={label} variant="secondary" className="rounded-md">
+                  {label}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-sm text-muted-foreground">{dictionary.shared.notSet}</span>
+            )}
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[420px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={dictionary.event.fields.stratmaps} />
+          <CommandList>
+            <CommandEmpty>{dictionary.shared.noMatchingResults}</CommandEmpty>
+            <CommandGroup>
+              {stratmaps.map((stratmap) => (
+                <CommandItem
+                  key={stratmap.id}
+                  value={[stratmap.title, stratmap.baseMapId, stratmap.side, stratmap.strongpointId].filter(Boolean).join(" ")}
+                  onSelect={() => toggle(stratmap.id)}
+                >
+                  <Check className={cn("mr-2 size-4", selectedIds.has(stratmap.id) ? "opacity-100" : "opacity-0")} />
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate font-medium">{stratmap.title}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {[stratmap.baseMapId, stratmap.side, stratmap.strongpointId].filter(Boolean).join(" • ")}
+                    </span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function EventFormPanel({
   event,
   serverId,
   locale,
   topicPresets,
+  stratmaps,
   timezone = "UTC",
   canEdit,
   dictionary,
@@ -252,6 +326,7 @@ export function EventFormPanel({
   serverId: string;
   locale: string;
   topicPresets: TopicPreset[];
+  stratmaps: StratmapRecord[];
   timezone?: string;
   canEdit: boolean;
   dictionary: Dictionary;
@@ -288,6 +363,7 @@ export function EventFormPanel({
       pingClan: event.pingClan,
       createForumChannel: event.createForumChannel,
       topicPresetId: event.topicPresetId ?? "",
+      stratmapIds: event.stratmapIds ?? [],
     },
   });
   const eventKind = form.watch("kind");
@@ -304,9 +380,6 @@ export function EventFormPanel({
     cap: eventMatchValues[2],
   };
   const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
-  const mapOptions = getHllMapOptions();
-  const timeOptions = selectedMapId ? getHllTimeOptions(selectedMapId) : [];
-  const modeOptions = selectedMapId ? getHllModeOptions(selectedMapId, selectedMapTime) : [];
   const presetMatchContext = useMemo<TopicPresetMatchContext>(
     () => ({
       mapCode: mapValue,
@@ -392,6 +465,7 @@ export function EventFormPanel({
     setSelectedMapId(mapId);
     setSelectedMapTime("");
     setSelectedMapMode("");
+    form.setValue("cap", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
   }
 
   function handleMapTimeSelection(time: string) {
@@ -416,6 +490,7 @@ export function EventFormPanel({
         : resolveTrainingEndTime(values, timezone),
       createForumChannel: values.kind === "match" ? values.createForumChannel : false,
       topicPresetId: values.topicPresetId || undefined,
+      stratmapIds: values.stratmapIds,
       thumbnailUrl: values.thumbnailUrl || undefined,
     };
 
@@ -537,63 +612,33 @@ export function EventFormPanel({
             {eventKind === "match" ? (
               <div className="space-y-3 md:col-span-2">
                 <FieldLabel label={dictionary.event.fields.map}  />
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div className="min-w-0 space-y-2">
-                    <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                      {dictionary.event.fields.map}
-                    </div>
-                    <Select value={selectedMapId} onValueChange={handleMapSelection}>
-                      <SelectTrigger className="w-full rounded-xl">
-                        <SelectValue placeholder={dictionary.event.fields.map} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mapOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {selectedMapId ? (
-                    <div className="min-w-0 space-y-2">
-                      <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                        {dictionary.event.fields.mapVariant}
-                      </div>
-                      <Select value={selectedMapTime} onValueChange={handleMapTimeSelection}>
-                        <SelectTrigger className="w-full rounded-xl">
-                          <SelectValue placeholder={dictionary.event.fields.mapVariant} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ) : null}
-                  {selectedMapId && selectedMapTime ? (
-                    <div className="min-w-0 space-y-2">
-                      <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                        {dictionary.event.fields.mapMode}
-                      </div>
-                      <Select value={selectedMapMode} onValueChange={handleMapModeSelection}>
-                        <SelectTrigger className="w-full rounded-xl">
-                          <SelectValue placeholder={dictionary.event.fields.mapMode} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {modeOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ) : null}
-                </div>
+                  <HllMapSelector
+                    mapId={selectedMapId}
+                    onMapIdChange={(value) => {
+                      handleMapSelection(value);
+                      form.setValue("map", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                    }}
+                    time={selectedMapTime}
+                    onTimeChange={(value) => {
+                      handleMapTimeSelection(value);
+                      form.setValue("map", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                    }}
+                    mode={selectedMapMode}
+                    onModeChange={handleMapModeSelection}
+                    pointValue={form.watch("cap")}
+                    onPointValueChange={(value) => form.setValue("cap", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
+                    includeVariants
+                    labels={{
+                      map: dictionary.event.fields.map,
+                      mapSearch: dictionary.event.fields.map,
+                      time: dictionary.event.fields.mapVariant,
+                      mode: dictionary.event.fields.mapMode,
+                      point: dictionary.event.fields.capMode,
+                      pointSearch: dictionary.event.fields.capMode,
+                      optional: dictionary.shared.notSet,
+                      noResults: dictionary.shared.noMatchingResults,
+                    }}
+                  />
                 {mapValue ? (
                   <p className="text-xs text-muted-foreground">
                     {dictionary.event.fields.mapPresetCode}: <span className="font-mono">{mapValue}</span>
@@ -631,12 +676,6 @@ export function EventFormPanel({
             <div>
               <FieldLabel label={dictionary.event.fields.side}  />
               <Input {...form.register("side")} className="rounded-xl" />
-            </div>
-            ) : null}
-            {eventKind === "match" ? (
-            <div>
-              <FieldLabel label={dictionary.event.fields.capMode}  />
-              <Input {...form.register("cap")} className="rounded-xl" />
             </div>
             ) : null}
             {eventKind === "match" ? (
@@ -712,6 +751,23 @@ export function EventFormPanel({
               <FieldLabel label={dictionary.event.fields.notes}  />
               <Textarea {...form.register("notes")} className="min-h-28 rounded-xl" />
             </div>
+            {eventKind === "match" ? (
+            <div className="md:col-span-2">
+              <FieldLabel label={dictionary.event.fields.stratmaps}  />
+              <Controller
+                control={form.control}
+                name="stratmapIds"
+                render={({ field }) => (
+                  <StratmapMultiSelect
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    stratmaps={stratmaps}
+                    dictionary={dictionary}
+                  />
+                )}
+              />
+            </div>
+            ) : null}
             {eventKind === "match" ? (
             <div className="md:col-span-2">
               <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">

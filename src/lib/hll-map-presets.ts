@@ -206,6 +206,20 @@ export function getDefaultHllSelection(mapId: string): MapSelection | null {
   return { mapId, time, mode };
 }
 
+export function inferHllBaseMapId(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = parsePresetCode(value);
+  if (parsed) {
+    return parsed.mapId;
+  }
+
+  const direct = MAP_DEFINITIONS.find((definition) => definition.id === value);
+  return direct?.id ?? null;
+}
+
 export function inferHllSelection(code?: string | null): MapSelection | null {
   if (!code) {
     return null;
@@ -267,6 +281,11 @@ export function isKnownHllPresetCode(code?: string | null) {
 export function formatHllPresetLabel(code?: string | null) {
   if (!code) {
     return null;
+  }
+
+  const direct = MAP_DEFINITIONS.find((definition) => definition.id === code);
+  if (direct) {
+    return direct.name;
   }
 
   const parsed = parsePresetCode(code);

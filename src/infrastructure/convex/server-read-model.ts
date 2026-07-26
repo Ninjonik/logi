@@ -55,6 +55,7 @@ export function normalizeEventDoc<T extends {
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
+  stratmapIds?: string[];
   createForumChannel?: boolean;
   status?: "registration" | "closed" | "starting" | "concluded";
   statusUpdatedAt?: string;
@@ -115,6 +116,17 @@ export function normalizeAssignmentDoc<
     secondaryGroups: secondaryGroupIds
       .map((groupId) => groupNameById.get(groupId))
       .filter((groupName): groupName is string => Boolean(groupName)),
+  };
+}
+
+export function normalizeStratmapDoc<
+  T extends UnknownDoc & {
+    eventId?: unknown;
+  },
+>(stratmap: T) {
+  return {
+    ...normalizeDoc(stratmap),
+    eventId: stratmap.eventId ? String(stratmap.eventId) : undefined,
   };
 }
 

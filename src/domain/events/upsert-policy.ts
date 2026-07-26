@@ -26,6 +26,7 @@ export type EventUpsertInput = {
   pingClan: boolean;
   createForumChannel?: boolean;
   topicPresetId?: string;
+  stratmapIds?: string[];
 };
 
 function trimOptional(value: string | undefined) {
@@ -57,6 +58,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
     pingClan: input.pingClan,
     createForumChannel: kind === "training" ? false : input.createForumChannel ?? true,
     topicPresetId: input.topicPresetId,
+    stratmapIds: normalizeOptionalArray(input.stratmapIds).map((id) => id.trim()).filter(Boolean),
   };
 }
 

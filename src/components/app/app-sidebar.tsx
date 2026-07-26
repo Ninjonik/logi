@@ -12,6 +12,7 @@ import {
   UserCog,
   ListTodo,
   CalendarIcon,
+  Map,
 } from "lucide-react";
 
 import { AppLogo } from "@/components/app/app-logo";
@@ -116,6 +117,11 @@ export function AppSidebar({
                         {
                           title: dictionary.sidebar.topicPresets,
                           url: `${base}/topic-presets`,
+                        },
+                        {
+                          title: dictionary.sidebar.stratmaps,
+                          url: `${base}/stratmaps`,
+                          icon: Map,
                         },
                         {
                           title: dictionary.sidebar.rosters,

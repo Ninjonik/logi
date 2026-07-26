@@ -2,7 +2,7 @@ import { fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
 import { getLoggedInUser } from "@/lib/auth";
-import type { AppUser, DiscordConfig, EventRecord, Group, Guild, Roster, SquadPreset, TopicPreset } from "@/types/domain";
+import type { AppUser, DiscordConfig, EventRecord, Group, Guild, Roster, SquadPreset, StratmapRecord, TopicPreset } from "@/types/domain";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
 
 const getServerContextReference = makeFunctionReference<"query">("serverContext:getServerContext");
@@ -15,6 +15,7 @@ export type ServerContextReadModel = {
   topicPresets: TopicPreset[];
   squadPresets: SquadPreset[];
   rosters: Roster[];
+  stratmaps: StratmapRecord[];
   groups: Group[];
   assignments: ServerUserAssignment[];
   discordConfig: DiscordConfig | null;
