@@ -93,6 +93,8 @@ export class UpsertRosterUseCase {
           } as RosterCommandRecord,
           event,
           assignments,
+          new Date(),
+          { preservePlacedUsers: true },
         )
       : {
           ...(existing ?? {}),

@@ -50,6 +50,47 @@ test("UpsertRosterUseCase adds tracked attendees to reserve when creating a rost
   assert.deepEqual(repo.rosters.get("roster-1")?.reservePlayerIds, ["user-1"]);
 });
 
+test("UpsertRosterUseCase preserves manually assigned users added after registration closed", async () => {
+  const repo = new InMemoryRosterCommandRepository(
+    new Map([["roster-1", {
+      id: "roster-1",
+      eventId: "event-1",
+      squads: [],
+      reservePlayerIds: [],
+      reserveAttendances: [],
+      notAttendingPlayerIds: [],
+      published: true,
+    }]]),
+    {
+      guildId: "guild-1",
+      registrationEnd: "2026-07-21T10:00:00.000Z",
+      participants: [],
+      updatedAt: "2026-07-21T12:00:00.000Z",
+      createdAt: "2026-07-20T10:00:00.000Z",
+    },
+    [{ userId: "late-user", serverId: "guild-1", createdAt: "2026-07-21T11:00:00.000Z" }],
+  );
+
+  const rosterId = await new UpsertRosterUseCase(repo).execute({
+    rosterId: "roster-1",
+    eventId: "event-1",
+    squads: [{
+      name: "Able",
+      group: "INF",
+      order: 1,
+      color: "#fff",
+      players: [{ id: "late-user", ack: false, confirmed: false }],
+    }],
+    reservePlayerIds: [],
+    reserveAttendances: [],
+    notAttendingPlayerIds: [],
+    published: true,
+  });
+
+  assert.equal(rosterId, "roster-1");
+  assert.equal(repo.rosters.get("roster-1")?.squads[0]?.players[0]?.id, "late-user");
+});
+
 test("UpdateRosterAttendanceUseCase updates reserve attendance confirmation state", async () => {
   const repo = new InMemoryRosterCommandRepository(
     new Map([["roster-1", {

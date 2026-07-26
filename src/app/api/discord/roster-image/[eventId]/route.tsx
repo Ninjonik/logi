@@ -40,7 +40,7 @@ const SMALL_GROUP_MAX_SQUADS = 2;
 const LARGE_GROUP_MAX_PER_ROW = 4;
 
 type Player = { id?: string; customName?: string; ack: boolean; confirmed?: boolean; roleName?: string; roleIcon?: string; note?: string };
-type Squad = { name: string; color: string; players: Player[] };
+type Squad = { name: string; color: string; icon?: string; players: Player[] };
 type GroupSection = { group: string; color: string; squads: Squad[] };
 
 function getFilledPlayerName(player: Player, userName?: string | null) {
@@ -416,6 +416,15 @@ export async function GET(
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 4px", width: "100%" }}>
                         <div style={{ width: "4px", height: "14px", borderRadius: "999px", background: squad.color }} />
+                        {squad.icon ? (
+                          <img
+                            src={resolveAssetUrl(request, squad.icon)}
+                            alt=""
+                            width="16"
+                            height="16"
+                            style={{ display: "flex", width: "16px", height: "16px", objectFit: "contain" }}
+                          />
+                        ) : null}
                         <div style={{ display: "flex", fontSize: "16px", fontWeight: 700, color: squad.color }}>{squad.name}</div>
                         <div style={{ display: "flex", fontSize: "10px", color: "#94a3b8", marginLeft: "auto", textAlign: "center" }}>
                           {`${squad.players.length} ${messages.rosterImage.slots}`}

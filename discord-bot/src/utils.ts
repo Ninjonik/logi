@@ -39,9 +39,16 @@ export function formatEventStatus(status: EventRecord["status"], language: ClanL
   }
 }
 
-export function buildRosterImageUrl(eventId: string) {
+function buildRosterImageCacheKey(eventId: string, rosterUpdatedAt?: string) {
+  const versionSource = rosterUpdatedAt ? `${eventId}:${rosterUpdatedAt}` : `${eventId}:${Date.now()}`;
+  return Buffer.from(versionSource).toString("base64url");
+}
+
+export function buildRosterImageUrl(eventId: string, rosterUpdatedAt?: string) {
   const url = new URL(`/api/discord/roster-image/${eventId}`, env.appSiteUrl);
   url.searchParams.set("secret", env.internalSecret);
+  url.searchParams.set("fresh", "1");
+  url.searchParams.set("cb", buildRosterImageCacheKey(eventId, rosterUpdatedAt));
   return url.toString();
 }
 
