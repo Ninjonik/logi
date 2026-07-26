@@ -7,20 +7,29 @@ import { syncGuildMemberAccess } from "./sync/member-access";
 import { syncMembershipPanel, syncTicketPanel } from "./sync/panels";
 import type { SyncPayload } from "./types";
 
-export async function syncGuildPayload(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
+export async function syncGuildPayload(
+  client: Client,
+  queuedEventIds: Set<string>,
+  payload: SyncPayload,
+  mode: "full" | "events_only" = "full",
+) {
   logInfo("guild-sync", "Syncing guild payload", {
     guildId: payload.config.guildId,
     eventCount: payload.events.length,
     rosterCount: payload.rosters.length,
     syncStateCount: payload.syncStates.length,
+    mode,
   });
 
-  await runGuildSyncStep("member access sync", payload, () => syncGuildMemberAccess(client, payload));
-  await runGuildSyncStep("ticket panel sync", payload, () => syncTicketPanel(client, payload));
-  await runGuildSyncStep("membership panel sync", payload, () => syncMembershipPanel(client, payload));
-  await runGuildSyncStep("attendance reminder sync", payload, () =>
-    processAttendanceReminders(client, queuedEventIds, payload),
-  );
+  if (mode === "full") {
+    await runGuildSyncStep("member access sync", payload, () => syncGuildMemberAccess(client, payload));
+    await runGuildSyncStep("ticket panel sync", payload, () => syncTicketPanel(client, payload));
+    await runGuildSyncStep("membership panel sync", payload, () => syncMembershipPanel(client, payload));
+    await runGuildSyncStep("attendance reminder sync", payload, () =>
+      processAttendanceReminders(client, queuedEventIds, payload),
+    );
+  }
+
   await syncPayloadEvents(client, queuedEventIds, payload);
 }
 

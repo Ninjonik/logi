@@ -14,6 +14,10 @@ import {
 import type { EventRecord, SyncPayload, SyncState } from "../types";
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules";
 
+function shouldShowPublishedRosterImage(event: EventRecord, rosterUpdatedAt?: string) {
+  return Boolean(rosterUpdatedAt && (event.status === "closed" || event.status === "starting"));
+}
+
 export async function syncPayloadEvents(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
   for (const event of payload.events) {
     const state = payload.syncStates.find((item) => item.eventId === event.id);
@@ -123,6 +127,10 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
       const existingMessage = announcementMessageId
         ? await textChannel.messages.fetch(announcementMessageId).catch(() => null)
         : null;
+      const shouldRecreateAnnouncementForRosterImage =
+        Boolean(existingMessage) &&
+        shouldShowPublishedRosterImage(event, roster?.updatedAt) &&
+        state?.lastRosterUpdatedAt !== roster?.updatedAt;
 
       if (event.status === "concluded") {
         if (existingMessage) {
@@ -134,6 +142,19 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
           });
           announcementMessageId = undefined;
         }
+      } else if (existingMessage && shouldRecreateAnnouncementForRosterImage) {
+        await existingMessage.delete().catch(() => null);
+        const created = await textChannel.send({ embeds: [embed], components });
+        announcementMessageId = created.id;
+        logInfo("announcement", "Recreated event announcement for roster image refresh", {
+          eventId: event.id,
+          guildId: payload.config.guildId,
+          channelId: textChannel.id,
+          previousMessageId: existingMessage.id,
+          messageId: created.id,
+          previousRosterUpdatedAt: state?.lastRosterUpdatedAt,
+          rosterUpdatedAt: roster?.updatedAt,
+        });
       } else if (existingMessage) {
         await existingMessage.edit({ embeds: [embed], components });
         logInfo("announcement", "Updated event announcement", {
