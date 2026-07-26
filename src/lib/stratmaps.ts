@@ -69,6 +69,7 @@ export type StratmapOverlaySettings = {
   overlayTeam: "a" | "b";
   showArtillery: boolean;
   showRepairStations: boolean;
+  showSpawnRanges: boolean;
 };
 
 export type StratmapStrokeStyle = "solid" | "dashed" | "dotted";
@@ -116,6 +117,7 @@ export type StratmapLineElement = StratmapElementBase & {
   points: Array<{ x: number; y: number }>;
   startStyle?: StratmapArrowStyle;
   endStyle?: StratmapArrowStyle;
+  showDistance?: boolean;
 };
 
 export type StratmapShapeElement = StratmapElementBase & {
@@ -206,6 +208,7 @@ export function buildDefaultStratmapState(baseMapId: string): StratmapState {
           overlayTeam: "a",
           showArtillery: false,
           showRepairStations: false,
+          showSpawnRanges: false,
         },
         elements: [],
         pings: [],
@@ -241,6 +244,7 @@ export function parseStratmapState(stateJson?: string | null, fallbackMapId?: st
           overlayTeam: slide.overlays?.overlayTeam ?? slide.overlays?.offensiveGarrisonSide ?? "a",
           showArtillery: slide.overlays?.showArtillery ?? false,
           showRepairStations: slide.overlays?.showRepairStations ?? false,
+          showSpawnRanges: slide.overlays?.showSpawnRanges ?? false,
         },
         elements: slide.elements.map((element) => (
           element.kind === "icon"

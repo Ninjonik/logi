@@ -1,6 +1,6 @@
 "use client";
 
-import { Circle as CircleIcon, Crosshair, Eraser, Minus, MousePointer2, PenLine, Plus, Redo2, Shapes, Square, Type, Undo2 } from "lucide-react";
+import { Circle as CircleIcon, Crosshair, Eraser, Minus, MousePointer2, PenLine, Pentagon, Plus, Redo2, Ruler, Shapes, Square, Type, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -40,6 +40,8 @@ export function StratmapToolbar({
       <ToolButton active={tool === "select"} onClick={() => onToolChange("select")} icon={MousePointer2} label={dictionary.stratmaps.selectTool} />
       <ToolButton active={tool === "freehand"} onClick={() => onToolChange("freehand")} icon={PenLine} label={dictionary.stratmaps.drawTool} />
       <ToolButton active={tool === "line"} onClick={() => onToolChange("line")} icon={Minus} label={dictionary.stratmaps.lineTool} />
+      <ToolButton active={tool === "polygon"} onClick={() => onToolChange("polygon")} icon={Pentagon} label={dictionary.stratmaps.polygonTool} />
+      <ToolButton active={tool === "measure"} onClick={() => onToolChange("measure")} icon={Ruler} label={dictionary.stratmaps.measureTool} />
       <ToolButton active={tool === "rectangle"} onClick={() => onToolChange("rectangle")} icon={Square} label={dictionary.stratmaps.rectTool} />
       <ToolButton active={tool === "ellipse"} onClick={() => onToolChange("ellipse")} icon={CircleIcon} label={dictionary.stratmaps.circleTool} />
       <ToolButton active={tool === "text"} onClick={() => onToolChange("text")} icon={Type} label={dictionary.stratmaps.text} />

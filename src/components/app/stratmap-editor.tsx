@@ -23,7 +23,7 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         slides={editor.state.slides}
         selectedSlideId={editor.selectedSlideId}
         selectedMap={editor.selectedMap}
-        activeOverlays={editor.activeSlide?.overlays ?? { showGrid: true, showAllStrongpoints: true, visibleStrongpointIds: [], showOffensiveGarrisons: false, overlayTeam: "a", showArtillery: false, showRepairStations: false }}
+        activeOverlays={editor.activeSlide?.overlays ?? { showGrid: true, showAllStrongpoints: true, visibleStrongpointIds: [], showOffensiveGarrisons: false, overlayTeam: "a", showArtillery: false, showRepairStations: false, showSpawnRanges: false }}
         onTitleChange={editor.setTitle}
         onDescriptionChange={editor.setDescription}
         onBaseMapChange={editor.handleBaseMapChange}
@@ -61,6 +61,7 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         onResetZoom={editor.resetZoom}
         onToolChange={editor.setTool}
         onWheel={editor.handleBoardWheel}
+        onContextMenu={editor.handleBoardContextMenu}
         onPointerDown={editor.handlePointerDown}
         onPointerMove={editor.handlePointerMove}
         onPointerUp={editor.handlePointerUp}
@@ -78,6 +79,9 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         fillColor={editor.fillColor}
         strokeWidth={editor.strokeWidth}
         lineStyle={editor.lineStyle}
+        lineStartStyle={editor.lineStartStyle}
+        lineEndStyle={editor.lineEndStyle}
+        showLineDistance={editor.showLineDistance}
         textValue={editor.textValue}
         textSize={editor.textSize}
         iconId={editor.iconId}
@@ -88,6 +92,9 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         onFillColorChange={editor.setFillColor}
         onStrokeWidthChange={editor.setStrokeWidth}
         onLineStyleChange={editor.setLineStyle}
+        onLineStartStyleChange={editor.setLineStartStyle}
+        onLineEndStyleChange={editor.setLineEndStyle}
+        onShowLineDistanceChange={editor.setShowLineDistance}
         onTextValueChange={editor.setTextValue}
         onTextSizeChange={editor.setTextSize}
         onIconChange={editor.setIconId}

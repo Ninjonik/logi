@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
-import type { StratmapElement, StratmapElementAttachment } from "@/lib/stratmaps";
+import type { StratmapArrowStyle, StratmapElement, StratmapElementAttachment } from "@/lib/stratmaps";
 
 export function SelectionInspector({
   dictionary,
@@ -32,6 +34,7 @@ export function SelectionInspector({
   if (!selectedElement) return null;
   if (canAdmin && selectedElement.kind === "icon") return <IconInspector {...{ dictionary, strokeColor, selectedElement, isUploadingIconAttachments, onElementChange, onUpload }} />;
   if (canAdmin && selectedElement.kind === "text") return <TextInspector {...{ dictionary, selectedElement, onElementChange }} />;
+  if (canAdmin && selectedElement.kind === "line") return <LineInspector {...{ dictionary, selectedElement, onElementChange }} />;
   return <Card className="rounded-xl border-border/60"><CardHeader className="px-3 py-3"><CardTitle className="text-base">{dictionary.stratmaps.selectedElement}</CardTitle></CardHeader><CardContent className="px-3 pb-3 text-xs text-muted-foreground">{dictionary.stratmaps.selectedElementHint}</CardContent></Card>;
 }
 
@@ -168,5 +171,37 @@ function TextInspector({ dictionary, selectedElement, onElementChange }: { dicti
         <div className="space-y-1.5"><Label className="text-xs">{dictionary.stratmaps.fontSize}</Label><Input type="number" min={16} max={96} value={selectedElement.fontSize} onChange={(event) => onElementChange((element) => element.kind === "text" ? { ...element, fontSize: Number(event.target.value) || 16 } : element)} className="h-9 rounded-lg text-sm" /></div>
       </CardContent>
     </Card>
+  );
+}
+
+function LineInspector({ dictionary, selectedElement, onElementChange }: { dictionary: Dictionary; selectedElement: Extract<StratmapElement, { kind: "line" }>; onElementChange: (updater: (element: StratmapElement) => StratmapElement) => void; }) {
+  return (
+    <Card className="rounded-xl border-border/60">
+      <CardHeader className="px-3 py-3"><CardTitle className="text-base">{dictionary.stratmaps.selectedElement}</CardTitle></CardHeader>
+      <CardContent className="space-y-3 px-3 pb-3">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1.5"><Label className="text-xs">{dictionary.stratmaps.lineStart}</Label><ArrowStyleSelect value={selectedElement.startStyle ?? "none"} onChange={(value) => onElementChange((element) => element.kind === "line" ? { ...element, startStyle: value } : element)} dictionary={dictionary} /></div>
+          <div className="space-y-1.5"><Label className="text-xs">{dictionary.stratmaps.lineEnd}</Label><ArrowStyleSelect value={selectedElement.endStyle ?? "none"} onChange={(value) => onElementChange((element) => element.kind === "line" ? { ...element, endStyle: value } : element)} dictionary={dictionary} /></div>
+        </div>
+        <div className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2">
+          <Label className="text-xs">{dictionary.stratmaps.showDistance}</Label>
+          <Switch checked={selectedElement.showDistance ?? false} onCheckedChange={(checked) => onElementChange((element) => element.kind === "line" ? { ...element, showDistance: checked } : element)} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ArrowStyleSelect({ value, onChange, dictionary }: { value: StratmapArrowStyle; onChange: (value: StratmapArrowStyle) => void; dictionary: Dictionary }) {
+  return (
+    <Select value={value} onValueChange={(next) => onChange(next as StratmapArrowStyle)}>
+      <SelectTrigger className="h-9 rounded-lg text-sm"><SelectValue /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">{dictionary.stratmaps.none}</SelectItem>
+        <SelectItem value="arrow">{dictionary.stratmaps.arrow}</SelectItem>
+        <SelectItem value="circle">{dictionary.stratmaps.circleMarker}</SelectItem>
+        <SelectItem value="square">{dictionary.stratmaps.squareMarker}</SelectItem>
+      </SelectContent>
+    </Select>
   );
 }

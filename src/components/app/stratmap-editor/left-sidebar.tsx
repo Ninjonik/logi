@@ -124,6 +124,7 @@ function OverlaysCard(props: { dictionary: Dictionary; canAdmin: boolean; select
         <ToggleRow label={dictionary.stratmaps.defaultGarrisons} checked={activeOverlays.showOffensiveGarrisons} onCheckedChange={(checked) => onOverlayChange({ showOffensiveGarrisons: checked })} />
         <ToggleRow label={dictionary.stratmaps.artillery} checked={activeOverlays.showArtillery} onCheckedChange={(checked) => onOverlayChange({ showArtillery: checked })} />
         <ToggleRow label={dictionary.stratmaps.repairStations} checked={activeOverlays.showRepairStations} onCheckedChange={(checked) => onOverlayChange({ showRepairStations: checked })} />
+        <ToggleRow label={dictionary.stratmaps.spawnRanges} checked={activeOverlays.showSpawnRanges} onCheckedChange={(checked) => onOverlayChange({ showSpawnRanges: checked })} />
         <div className="space-y-1.5">
           <Label className="text-xs">{dictionary.stratmaps.overlaySide}</Label>
           <Select value={activeOverlays.overlayTeam} onValueChange={(value) => onOverlayChange({ overlayTeam: value as OverlayTeam })}><SelectTrigger className="h-9 rounded-lg text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="a">{dictionary.stratmaps.sideA}</SelectItem><SelectItem value="b">{dictionary.stratmaps.sideB}</SelectItem></SelectContent></Select>

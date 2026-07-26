@@ -28,7 +28,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider
-      className="h-dvh overflow-hidden"
+      className="min-h-dvh"
       style={
         {
           "--sidebar-width": "18rem",
@@ -46,9 +46,9 @@ export default async function DashboardLayout({
         activeServerId={undefined}
         canAdmin={false}
       />
-      <SidebarInset className="h-full min-h-0 bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)] overflow-hidden">
+      <SidebarInset className="min-h-dvh bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)] overflow-x-hidden">
         <SiteHeader locale={safeLocale} dictionary={dictionary} servers={visibleServers} user={user} />
-        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden py-6">{children}</div>
+        <div className="flex flex-1 flex-col gap-6 py-6">{children}</div>
         <SiteFooter dictionary={dictionary} />
       </SidebarInset>
     </SidebarProvider>
