@@ -171,6 +171,7 @@ export class DiscordSyncService {
           });
         }
 
+        const queuedEventIdsForCycle = new Set(this.queuedEventIds);
         const guildIds = [...this.queuedGuildIds];
         this.queuedGuildIds.clear();
         if (guildIds.length > 0) {
@@ -181,7 +182,7 @@ export class DiscordSyncService {
         }
         for (const guildId of guildIds) {
           try {
-            await this.syncGuild(guildId);
+            await this.syncGuild(guildId, queuedEventIdsForCycle);
           } catch (error) {
             logError("sync-service", "Discord bot guild sync failed", {
               guildId,
@@ -190,7 +191,7 @@ export class DiscordSyncService {
           }
         }
 
-        const eventIds = [...this.queuedEventIds];
+        const eventIds = [...queuedEventIdsForCycle];
         this.queuedEventIds.clear();
         if (eventIds.length > 0) {
           logInfo("sync-service", "Processing queued events", {
@@ -200,7 +201,7 @@ export class DiscordSyncService {
         }
         for (const eventId of eventIds) {
           try {
-            await this.syncEvent(eventId);
+            await this.syncEvent(eventId, queuedEventIdsForCycle);
           } catch (error) {
             logError("sync-service", "Discord bot queued event sync failed", {
               eventId,
@@ -249,7 +250,7 @@ export class DiscordSyncService {
     }
   }
 
-  private async syncGuild(guildId: string) {
+  private async syncGuild(guildId: string, queuedEventIds: Set<string>) {
     const runtime = this.guildCache.get(guildId);
     if (!runtime?.config) {
       logWarn("sync-service", "Skipping guild sync because config is missing", { guildId });
@@ -267,10 +268,10 @@ export class DiscordSyncService {
       rosterCount: payload.rosters.length,
       syncStateCount: payload.syncStates.length,
     });
-    await syncGuildPayload(this.client, this.queuedEventIds, payload);
+    await syncGuildPayload(this.client, queuedEventIds, payload);
   }
 
-  private async syncEvent(eventId: string) {
+  private async syncEvent(eventId: string, queuedEventIds: Set<string>) {
     const context = await this.loadEventSyncContext(eventId);
     if (!context) {
       logWarn("sync-service", "Skipping event sync because context was not found", { eventId });
@@ -293,7 +294,7 @@ export class DiscordSyncService {
       rosterCount: payload.rosters.length,
       hasSyncState: payload.syncStates.length > 0,
     });
-    await syncGuildPayload(this.client, this.queuedEventIds, payload);
+    await syncGuildPayload(this.client, queuedEventIds, payload);
   }
 
   private async loadEventSyncContext(eventId: string) {
