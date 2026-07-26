@@ -31,6 +31,7 @@ type RosterImageContext = {
       group: string;
       color: string;
       order: number;
+      icon?: string;
       players: Array<{
         id?: string;
         customName?: string;
@@ -87,8 +88,15 @@ export async function getRosterImageContextCached(eventId: string) {
   return getRosterImageContext(eventId);
 }
 
-export function buildRosterImageUrl(eventId: string) {
+function buildRosterImageCacheKey(eventId: string, rosterUpdatedAt?: string) {
+  const versionSource = rosterUpdatedAt ? `${eventId}:${rosterUpdatedAt}` : `${eventId}:${Date.now()}`;
+  return Buffer.from(versionSource).toString("base64url");
+}
+
+export function buildRosterImageUrl(eventId: string, rosterUpdatedAt?: string) {
   const url = new URL(`/api/discord/roster-image/${eventId}`, getSiteUrl());
   url.searchParams.set("secret", getInternalAuthSecret());
+  url.searchParams.set("fresh", "1");
+  url.searchParams.set("cb", buildRosterImageCacheKey(eventId, rosterUpdatedAt));
   return url.toString();
 }

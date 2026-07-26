@@ -123,10 +123,16 @@ export function mergeRosterWithEventState<T extends RosterLike>(
   event: EventRecord,
   assignments: AssignmentRecord[],
   now: Date = new Date(),
+  options?: { preservePlacedUsers?: boolean },
 ) {
   const next = structuredClone(roster);
   const trackedUserIds = buildTrackedUserIds(event, assignments, now);
   const participantStatusByUserId = buildParticipantStatusByUserId(event, now);
+  const preservedUserIds = options?.preservePlacedUsers ? getRosteredUserIds(next) : new Set<string>();
+
+  for (const userId of preservedUserIds) {
+    trackedUserIds.add(userId);
+  }
 
   for (const userId of getRosteredUserIds(next)) {
     if (!trackedUserIds.has(userId)) {

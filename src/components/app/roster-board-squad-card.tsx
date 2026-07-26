@@ -316,7 +316,7 @@ export function SquadCard({
                       }}
                       onDragEnd={() => setDragState(null)}
                       className={cn(
-                        "flex min-w-0 items-center rounded-lg border border-border/60 bg-background",
+                        "flex min-w-0 min-h-10 items-center rounded-lg border border-border/60 bg-background",
                         isAssignmentMode && canAdmin && slotUser ? "cursor-grab gap-1.5 px-1.5 py-1" : "gap-1 px-1.5 py-1",
                       )}
                     >
@@ -503,7 +503,7 @@ export function SquadCard({
                   </div>
                 ) : (
                   <div>
-                    <div className="flex min-w-0 items-center gap-1 rounded-lg border border-dashed border-border/80 bg-background px-1.5 py-1">
+                    <div className="flex min-w-0 min-h-10 items-center gap-1 rounded-lg border border-dashed border-border/80 bg-background px-1.5 py-1">
                       <Popover open={isAssignmentMode && slotPickerOpen === playerIndex} onOpenChange={(open) => setSlotPickerOpen(open ? playerIndex : null)}>
                         <PopoverTrigger asChild>
                           <button

@@ -93,7 +93,7 @@ export function buildEventEmbed(config: DiscordConfig, groups: Group[], event: E
   }
 
   if (event.kind === "match" && shouldShowPublishedRosterImage(event, roster)) {
-    embed.setImage(buildRosterImageUrl(event.id));
+    embed.setImage(buildRosterImageUrl(event.id, roster?.updatedAt));
     return embed;
   }
 
