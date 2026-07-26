@@ -70,4 +70,5 @@ export type EventLike = {
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
+  stratmapIds?: string[];
 };

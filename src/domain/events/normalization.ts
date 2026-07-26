@@ -20,6 +20,7 @@ export function normalizeEventRecord<
     meetingChannelId: event.meetingChannelId,
     requiredRoleIds: normalizeOptionalArray(event.requiredRoleIds),
     rewardRoleIds: normalizeOptionalArray(event.rewardRoleIds),
+    stratmapIds: normalizeOptionalArray(event.stratmapIds),
     createForumChannel: resolveCreateForumChannel(event),
     status,
     statusUpdatedAt: timestamps.statusUpdatedAt,

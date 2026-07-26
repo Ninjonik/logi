@@ -1,0 +1,356 @@
+[
+  {
+    "id": "garry",
+    "label": "Garrison",
+    "category": "spawns",
+    "iconPath": "/stratmap/assets/garry-plain.png"
+  },
+  {
+    "id": "airhead",
+    "label": "Airhead",
+    "category": "spawns",
+    "iconPath": "/stratmap/assets/airhead-plain.png"
+  },
+  {
+    "id": "halftrack",
+    "label": "Halftrack",
+    "category": "spawns",
+    "iconPath": "/stratmap/assets/halftrack-plain.png"
+  },
+  {
+    "id": "outpost-normal",
+    "label": "Outpost",
+    "category": "spawns",
+    "iconPath": "/stratmap/assets/outpost-normal-plain.png"
+  },
+  {
+    "id": "outpost-recon",
+    "label": "Recon Outpost",
+    "category": "spawns",
+    "iconPath": "/stratmap/assets/outpost-recon-plain.png"
+  },
+  {
+    "id": "forward",
+    "label": "Forward Position",
+    "category": "spawns",
+    "iconPath": "/stratmap/assets/forward-plain.png"
+  },
+  {
+    "id": "tank-heavy",
+    "label": "Heavy Tank",
+    "category": "vehicles",
+    "iconPath": "/stratmap/assets/tank-heavy.png"
+  },
+  {
+    "id": "tank-med",
+    "label": "Medium Tank",
+    "category": "vehicles",
+    "iconPath": "/stratmap/assets/tank-med.png"
+  },
+  {
+    "id": "tank-light",
+    "label": "Light Tank",
+    "category": "vehicles",
+    "iconPath": "/stratmap/assets/tank-light.png"
+  },
+  {
+    "id": "tank-recon",
+    "label": "Recon Tank",
+    "category": "vehicles",
+    "iconPath": "/stratmap/assets/tank-recon.png"
+  },
+  {
+    "id": "truck-jeep",
+    "label": "Jeep",
+    "category": "vehicles",
+    "iconPath": "/stratmap/assets/truck-jeep.png"
+  },
+  {
+    "id": "truck-supply",
+    "label": "Supply Truck",
+    "category": "vehicles",
+    "iconPath": "/stratmap/assets/truck-supply.png"
+  },
+  {
+    "id": "truck-transport",
+    "label": "Transport Truck",
+    "category": "vehicles",
+    "iconPath": "/stratmap/assets/truck-transport.png"
+  },
+  {
+    "id": "class-commander",
+    "label": "Commander",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-commander.png"
+  },
+  {
+    "id": "class-officer",
+    "label": "Officer",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-officer.png"
+  },
+  {
+    "id": "class-rifleman",
+    "label": "Rifleman",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-rifleman.png"
+  },
+  {
+    "id": "class-assault",
+    "label": "Assault",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-assault.png"
+  },
+  {
+    "id": "class-auto-rifleman",
+    "label": "Automatic Rifleman",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-auto-rifleman.png"
+  },
+  {
+    "id": "class-medic",
+    "label": "Medic",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-medic.png"
+  },
+  {
+    "id": "class-support",
+    "label": "Support",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-support.png"
+  },
+  {
+    "id": "class-machine-gunner",
+    "label": "Machine Gunner",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-machine-gunner.png"
+  },
+  {
+    "id": "class-anti-tank",
+    "label": "Anti-Tank",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-anti-tank.png"
+  },
+  {
+    "id": "class-engineer",
+    "label": "Engineer",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-engineer.png"
+  },
+  {
+    "id": "class-spotter",
+    "label": "Spotter",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-spotter.png"
+  },
+  {
+    "id": "class-sniper",
+    "label": "Sniper",
+    "category": "classes",
+    "iconPath": "/stratmap/assets/class-sniper.png"
+  },
+  {
+    "id": "at-gun",
+    "label": "AT Gun",
+    "category": "buildables",
+    "iconPath": "/stratmap/assets/at-gun-plain.png"
+  },
+  {
+    "id": "repair-station",
+    "label": "Repair Station",
+    "category": "buildables",
+    "iconPath": "/stratmap/assets/repair-station.png"
+  },
+  {
+    "id": "node-batch",
+    "label": "Batch of Nodes",
+    "category": "buildables",
+    "iconPath": "/stratmap/assets/node-batch.png"
+  },
+  {
+    "id": "node-manpower",
+    "label": "Manpower Node",
+    "category": "buildables",
+    "iconPath": "/stratmap/assets/node-manpower.png"
+  },
+  {
+    "id": "node-munition",
+    "label": "Munitions Node",
+    "category": "buildables",
+    "iconPath": "/stratmap/assets/node-munition.png"
+  },
+  {
+    "id": "node-fuel",
+    "label": "Fuel Node",
+    "category": "buildables",
+    "iconPath": "/stratmap/assets/node-fuel.png"
+  },
+  {
+    "id": "supplies-50",
+    "label": "Supplies (50)",
+    "category": "placeables",
+    "iconPath": "/stratmap/assets/supplies-50.png"
+  },
+  {
+    "id": "supplies-50x2",
+    "label": "Supplies (50 x 2)",
+    "category": "placeables",
+    "iconPath": "/stratmap/assets/supplies-50x2.png"
+  },
+  {
+    "id": "supplies-100",
+    "label": "Supplies (100)",
+    "category": "placeables",
+    "iconPath": "/stratmap/assets/supplies-100.png"
+  },
+  {
+    "id": "supplies-150",
+    "label": "Supplies (150)",
+    "category": "placeables",
+    "iconPath": "/stratmap/assets/supplies-150.png"
+  },
+  {
+    "id": "supplies-150x2",
+    "label": "Supplies (150 x 2)",
+    "category": "placeables",
+    "iconPath": "/stratmap/assets/supplies-150x2.png"
+  },
+  {
+    "id": "box-ammo",
+    "label": "Ammo Box",
+    "category": "placeables",
+    "iconPath": "/stratmap/assets/box-ammo.png"
+  },
+  {
+    "id": "box-explosive",
+    "label": "Explosive Box",
+    "category": "placeables",
+    "iconPath": "/stratmap/assets/box-explosive.png"
+  },
+  {
+    "id": "box-bandage",
+    "label": "Bandage Box",
+    "category": "placeables",
+    "iconPath": "/stratmap/assets/box-bandage.png"
+  },
+  {
+    "id": "mine-at",
+    "label": "AT Mine",
+    "category": "placeables",
+    "iconPath": "/stratmap/assets/mine-at.png"
+  },
+  {
+    "id": "mine-ap",
+    "label": "AP Mine",
+    "category": "placeables",
+    "iconPath": "/stratmap/assets/mine-ap.png"
+  },
+  {
+    "id": "arty-effect",
+    "label": "Artillery with Full AOE",
+    "category": "markers",
+    "iconPath": "/stratmap/assets/arty-effect.png"
+  },
+  {
+    "id": "enemy-garry",
+    "label": "Enemy Garrison",
+    "category": "markers",
+    "iconPath": "/stratmap/assets/enemy-garry.png"
+  },
+  {
+    "id": "enemy-infantry",
+    "label": "Enemy Infantry",
+    "category": "markers",
+    "iconPath": "/stratmap/assets/enemy-infantry.png"
+  },
+  {
+    "id": "enemy-op",
+    "label": "Enemy Outpost",
+    "category": "markers",
+    "iconPath": "/stratmap/assets/enemy-op.png"
+  },
+  {
+    "id": "enemy-tank",
+    "label": "Enemy Tank",
+    "category": "markers",
+    "iconPath": "/stratmap/assets/enemy-tank.png"
+  },
+  {
+    "id": "enemy-vehicle",
+    "label": "Enemy Light Vehicle",
+    "category": "markers",
+    "iconPath": "/stratmap/assets/enemy-vehicle.png"
+  },
+  {
+    "id": "supply-drop",
+    "label": "Supply Drop",
+    "category": "abilities",
+    "iconPath": "/stratmap/assets/supply-drop.png"
+  },
+  {
+    "id": "ammo-drop",
+    "label": "Ammo Drop",
+    "category": "abilities",
+    "iconPath": "/stratmap/assets/ammo-drop.png"
+  },
+  {
+    "id": "airhead-drop",
+    "label": "Airhead Drop",
+    "category": "abilities",
+    "iconPath": "/stratmap/assets/airhead-drop.png"
+  },
+  {
+    "id": "reinforce",
+    "label": "Reinforce",
+    "category": "abilities",
+    "iconPath": "/stratmap/assets/reinforce.png"
+  },
+  {
+    "id": "precision-strike",
+    "label": "Precision Strike",
+    "category": "abilities",
+    "iconPath": "/stratmap/assets/precision-strike.png"
+  },
+  {
+    "id": "strafing-run",
+    "label": "Strafing Run",
+    "category": "abilities",
+    "iconPath": "/stratmap/assets/strafing-run.png"
+  },
+  {
+    "id": "bombing-run",
+    "label": "Bombing Run",
+    "category": "abilities",
+    "iconPath": "/stratmap/assets/bombing-run.png"
+  },
+  {
+    "id": "katyusha-strike",
+    "label": "Katyusha Strike",
+    "category": "abilities",
+    "iconPath": "/stratmap/assets/katyusha-strike.png"
+  },
+  {
+    "id": "render-distance-radiuses",
+    "label": "Render Distance Radiuses",
+    "category": "special",
+    "iconPath": "/stratmap/assets/render-distance-radiuses.png"
+  },
+  {
+    "id": "plain-grid",
+    "label": "Plain Grid",
+    "category": "special",
+    "iconPath": "/stratmap/assets/plain-grid.png"
+  },
+  {
+    "id": "center-mark",
+    "label": "Center Mark",
+    "category": "special",
+    "iconPath": "/stratmap/assets/center-mark.png"
+  },
+  {
+    "id": "arty",
+    "label": "Artillery",
+    "category": "special",
+    "iconPath": "/stratmap/assets/arty.png"
+  }
+]

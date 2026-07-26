@@ -6,45 +6,8 @@ import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { uploadFileToConvex } from "@/lib/client-uploads";
 import { cn } from "@/lib/utils";
-
-async function uploadImage(file: File, messages?: {
-  prepareUploadError: string;
-  uploadImageError: string;
-  readImageUrlError: string;
-}) {
-  const uploadResponse = await fetch("/api/uploads", { method: "POST" });
-  const uploadBody = await uploadResponse.json();
-  if (!uploadResponse.ok) {
-    throw new Error(uploadBody.error ?? messages?.prepareUploadError ?? "Unable to prepare the upload.");
-  }
-
-  const storageResponse = await fetch(uploadBody.uploadUrl, {
-    method: "POST",
-    headers: {
-      "content-type": file.type || "application/octet-stream",
-    },
-    body: file,
-  });
-
-  if (!storageResponse.ok) {
-    throw new Error(messages?.uploadImageError ?? "Unable to upload the image.");
-  }
-
-  const { storageId } = await storageResponse.json();
-
-  const urlResponse = await fetch("/api/uploads/url", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ storageId, filename: file.name }),
-  });
-  const urlBody = await urlResponse.json();
-  if (!urlResponse.ok) {
-    throw new Error(urlBody.error ?? messages?.readImageUrlError ?? "Unable to read the uploaded image URL.");
-  }
-
-  return urlBody.url as string;
-}
 
 export function AvatarPicker({
   value,
@@ -78,7 +41,12 @@ export function AvatarPicker({
 
     setIsUploading(true);
     try {
-      const nextUrl = await uploadImage(file, uploadMessages);
+      const nextUpload = await uploadFileToConvex(file, {
+        prepareUploadError: uploadMessages?.prepareUploadError,
+        uploadFileError: uploadMessages?.uploadImageError,
+        readFileUrlError: uploadMessages?.readImageUrlError,
+      });
+      const nextUrl = nextUpload.url;
       onChange(nextUrl);
       toast.success(label);
     } catch (error) {

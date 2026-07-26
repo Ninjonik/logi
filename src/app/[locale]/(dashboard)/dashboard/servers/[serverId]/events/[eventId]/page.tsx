@@ -38,9 +38,10 @@ export default async function EventDetailPage({
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { events, rosters, canAdmin, topicPresets, discordConfig } = context;
+  const { events, rosters, canAdmin, topicPresets, stratmaps, discordConfig } = context;
   const event = events.find((item) => item.id === eventId);
   const roster = rosters.find((item) => item.eventId === eventId);
+  const attachedStratmaps = stratmaps.filter((stratmap) => event?.stratmapIds.includes(stratmap.id));
 
   if (!event) return null;
 
@@ -54,6 +55,11 @@ export default async function EventDetailPage({
         badge={`${event.cap ? `${event.cap} • ` : ""}${statusMeta?.label}`}
         actions={
           <div className="flex flex-wrap gap-2">
+            {attachedStratmaps.map((stratmap) => (
+              <Button key={stratmap.id} asChild variant="outline" className="rounded-xl">
+                <a href={`/${locale}/stratmaps/${stratmap.id}`}>{stratmap.title}</a>
+              </Button>
+            ))}
             {roster?.published ? (
               <Button asChild variant="outline" className="rounded-xl">
                 <a href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}>{dictionary.event.showRoster}</a>
@@ -84,7 +90,7 @@ export default async function EventDetailPage({
         }
       />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
+        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
       </div>
     </>
   );

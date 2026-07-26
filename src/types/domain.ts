@@ -198,6 +198,7 @@ export type EventRecord = {
   pingClan: boolean;
   createForumChannel: boolean;
   topicPresetId?: string;
+  stratmapIds: string[];
   status: EventStatus;
   statusUpdatedAt: Timestamp;
   concludedAt?: Timestamp;
@@ -240,6 +241,21 @@ export type EventRecord = {
     reason: string;
     createdAt: Timestamp;
   }[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
+export type StratmapRecord = {
+  id: string;
+  guildId: string;
+  eventId?: string;
+  title: string;
+  description?: string;
+  baseMapId: string;
+  side?: string;
+  strongpointId?: string;
+  state: string;
+  createdBy: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };

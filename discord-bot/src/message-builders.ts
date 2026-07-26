@@ -174,7 +174,7 @@ export function buildEventComponents(config: DiscordConfig, groups: Group[], eve
   ];
 }
 
-export function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord) {
+export function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord, stratmapLinks: string[] = []) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const embed = new EmbedBuilder()
     .setTitle(event.name)
@@ -198,6 +198,13 @@ export function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord) {
         inline: true,
       },
     );
+    if (stratmapLinks.length) {
+      embed.addFields({
+        name: "Stratmaps",
+        value: stratmapLinks.join("\n").slice(0, 1024),
+        inline: false,
+      });
+    }
   } else {
     embed.addFields(
       {

@@ -82,6 +82,7 @@ export const upsert = mutation({
     pingClan: v.boolean(),
     createForumChannel: v.optional(v.boolean()),
     topicPresetId: v.optional(v.id("topicPresets")),
+    stratmapIds: v.optional(v.array(v.id("stratmaps"))),
   },
   handler: async (ctx, args) => {
     return await handleUpsertEvent({
@@ -92,6 +93,7 @@ export const upsert = mutation({
         serverId: String(args.serverId),
         eventId: args.eventId ? String(args.eventId) : undefined,
         topicPresetId: args.topicPresetId ? String(args.topicPresetId) : undefined,
+        stratmapIds: args.stratmapIds?.map((value) => String(value)),
       },
       getGuildById: async (serverId) => await getGuildById(ctx, serverId),
       getGuildDiscordId,

@@ -3,6 +3,7 @@ import { ChannelType, EmbedBuilder, ForumChannel } from "discord.js";
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 
 import { buildForumInfoEmbed, buildForumThreadName } from "./message-builders";
+import { env } from "./environment";
 import { logWarn } from "./log";
 import type { ClanLanguage, DiscordConfig, EventRecord, TopicPreset } from "./types";
 
@@ -81,7 +82,8 @@ export async function syncForumChannel(input: {
     getClanDiscordMessages("cs").forum.matchInformation,
   ];
   const infoPost = existingPosts.find((post) => infoPostNames.includes(post.name));
-  const infoEmbed = buildForumInfoEmbed(config, event);
+  const stratmapLinks = (event.stratmapIds ?? []).map((stratmapId) => `${env.appSiteUrl}/${config.defaultLanguage}/stratmaps/${stratmapId}`);
+  const infoEmbed = buildForumInfoEmbed(config, event, stratmapLinks);
 
   if (infoPost) {
     const starter = await infoPost.fetchStarterMessage().catch(() => null);

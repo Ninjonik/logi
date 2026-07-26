@@ -372,6 +372,7 @@ export default defineSchema({
     pingClan: v.boolean(),
     createForumChannel: v.optional(v.boolean()),
     topicPresetId: v.optional(v.id("topicPresets")),
+    stratmapIds: v.optional(v.array(v.id("stratmaps"))),
     status: v.optional(v.union(
       v.literal("registration"),
       v.literal("closed"),
@@ -391,6 +392,21 @@ export default defineSchema({
     createdAt: v.string(),
     updatedAt: v.optional(v.string()),
   }).index("guildId", ["guildId"]),
+  stratmaps: defineTable({
+    guildId: v.string(),
+    eventId: v.optional(v.id("events")),
+    title: v.string(),
+    description: v.optional(v.string()),
+    baseMapId: v.string(),
+    side: v.optional(v.string()),
+    strongpointId: v.optional(v.string()),
+    state: v.string(),
+    createdBy: v.string(),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("guildId", ["guildId"])
+    .index("eventId", ["eventId"]),
   topicPresets: defineTable({
     guildId: v.string(),
     name: v.string(),

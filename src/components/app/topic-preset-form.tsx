@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Paperclip, Plus, Save, Trash2, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -8,19 +8,13 @@ import { Controller, useFieldArray, useForm } from "react-hook-form";
 import type { FieldErrors } from "react-hook-form";
 import { toast } from "sonner";
 
+import { HllMapSelector } from "@/components/app/hll-map-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
-import {
-  getHllMapOptions,
-  getHllModeOptions,
-  getHllTimeOptions,
-  inferHllSelection,
-  resolveHllPresetCode,
-} from "@/lib/hll-map-presets";
+import { uploadFileToConvex } from "@/lib/client-uploads";
 import { topicPresetSchema, type TopicPresetInput } from "@/lib/validation/topic-preset";
 import type { TopicPreset } from "@/types/domain";
 
@@ -63,36 +57,6 @@ function getFirstErrorMessage(errors: FieldErrors<TopicPresetInput>): string | u
   return undefined;
 }
 
-async function uploadAttachment(file: File) {
-  const uploadResponse = await fetch("/api/uploads", { method: "POST" });
-  const uploadBody = await uploadResponse.json();
-  if (!uploadResponse.ok) {
-    throw new Error(uploadBody.error ?? "Unable to prepare the upload.");
-  }
-
-  const storageResponse = await fetch(uploadBody.uploadUrl, {
-    method: "POST",
-    headers: { "content-type": file.type || "application/octet-stream" },
-    body: file,
-  });
-  const storageBody = await storageResponse.json();
-  if (!storageResponse.ok) {
-    throw new Error("Unable to upload the file.");
-  }
-
-  const urlResponse = await fetch("/api/uploads/url", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ storageId: storageBody.storageId, filename: file.name }),
-  });
-  const urlBody = await urlResponse.json();
-  if (!urlResponse.ok) {
-    throw new Error(urlBody.error ?? "Unable to read the uploaded file URL.");
-  }
-
-  return urlBody.url as string;
-}
-
 export function TopicPresetForm({
   preset,
   serverId,
@@ -110,9 +74,6 @@ export function TopicPresetForm({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [selectedMapId, setSelectedMapId] = useState("");
-  const [selectedMapTime, setSelectedMapTime] = useState("");
-  const [selectedMapMode, setSelectedMapMode] = useState("");
 
   const form = useForm<TopicPresetInput>({
     resolver: zodResolver(topicPresetSchema),
@@ -125,64 +86,11 @@ export function TopicPresetForm({
       topics: preset?.topics.length ? preset.topics.map((topic) => ({ ...topic, id: topic.id ?? crypto.randomUUID() })) : [newTopic(dictionary.presets.newTopic)],
     },
   });
-  const mapValue = form.watch("map");
-  const sideValue = form.watch("side");
-  const mapOptions = getHllMapOptions();
-  const timeOptions = selectedMapId ? getHllTimeOptions(selectedMapId) : [];
-  const modeOptions = selectedMapId ? getHllModeOptions(selectedMapId, selectedMapTime) : [];
 
   const topics = useFieldArray({
     control: form.control,
     name: "topics",
   });
-
-  useEffect(() => {
-    const inferredSelection = inferHllSelection(mapValue);
-    if (inferredSelection) {
-      setSelectedMapId(inferredSelection.mapId);
-      setSelectedMapTime(inferredSelection.time);
-      setSelectedMapMode(inferredSelection.mode);
-      return;
-    }
-
-    setSelectedMapId("");
-    setSelectedMapTime("");
-    setSelectedMapMode("");
-  }, [mapValue]);
-
-  useEffect(() => {
-    if (!selectedMapId || !selectedMapTime || !selectedMapMode) {
-      return;
-    }
-
-    const resolvedCode = resolveHllPresetCode({
-      mapId: selectedMapId,
-      time: selectedMapTime,
-      mode: selectedMapMode,
-      side: sideValue,
-    });
-
-    if (resolvedCode && resolvedCode !== mapValue) {
-      form.setValue("map", resolvedCode, { shouldDirty: true, shouldTouch: true });
-    }
-  }, [form, mapValue, selectedMapId, selectedMapMode, selectedMapTime, sideValue]);
-
-  function handleMapSelection(mapId: string) {
-    setSelectedMapId(mapId);
-    setSelectedMapTime("");
-    setSelectedMapMode("");
-    form.setValue("map", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
-  }
-
-  function handleMapTimeSelection(time: string) {
-    setSelectedMapTime(time);
-    setSelectedMapMode("");
-    form.setValue("map", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
-  }
-
-  function handleMapModeSelection(mode: string) {
-    setSelectedMapMode(mode);
-  }
 
   async function submit(values: TopicPresetInput) {
     const response = await fetch(
@@ -214,7 +122,8 @@ export function TopicPresetForm({
 
     try {
       for (const file of Array.from(files)) {
-        const url = await uploadAttachment(file);
+        const upload = await uploadFileToConvex(file);
+        const url = upload.url;
         const current = form.getValues(`topics.${topicIndex}.attachments`) ?? [];
         form.setValue(`topics.${topicIndex}.attachments`, [...current, url], {
           shouldDirty: true,
@@ -252,76 +161,31 @@ export function TopicPresetForm({
             </div>
             <div className="space-y-3 md:col-span-2">
               <FieldLabel label={dictionary.presets.fields.map} />
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="min-w-0 space-y-2">
-                  <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                    {dictionary.presets.fields.map}
-                  </div>
-                  <Select value={selectedMapId} onValueChange={handleMapSelection} disabled={!canEdit}>
-                    <SelectTrigger className="w-full rounded-xl">
-                      <SelectValue placeholder={dictionary.presets.fields.map} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mapOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {selectedMapId ? (
-                  <div className="min-w-0 space-y-2">
-                    <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                      {dictionary.event.fields.mapVariant}
-                    </div>
-                    <Select value={selectedMapTime} onValueChange={handleMapTimeSelection} disabled={!canEdit}>
-                      <SelectTrigger className="w-full rounded-xl">
-                        <SelectValue placeholder={dictionary.event.fields.mapVariant} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : null}
-                {selectedMapId && selectedMapTime ? (
-                  <div className="min-w-0 space-y-2">
-                    <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                      {dictionary.event.fields.mapMode}
-                    </div>
-                    <Select value={selectedMapMode} onValueChange={handleMapModeSelection} disabled={!canEdit}>
-                      <SelectTrigger className="w-full rounded-xl">
-                        <SelectValue placeholder={dictionary.event.fields.mapMode} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {modeOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : null}
-              </div>
-              {mapValue ? (
-                <p className="text-xs text-muted-foreground">
-                  {dictionary.event.fields.mapPresetCode}: <span className="font-mono">{mapValue}</span>
-                </p>
-              ) : null}
+              <HllMapSelector
+                mapId={form.watch("map") ?? ""}
+                onMapIdChange={(value) => {
+                  form.setValue("map", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                  form.setValue("cap", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                }}
+                pointValue={form.watch("cap") ?? ""}
+                onPointValueChange={(value) => form.setValue("cap", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
+                includeVariants={false}
+                disabled={!canEdit}
+                labels={{
+                  map: dictionary.presets.fields.map,
+                  mapSearch: dictionary.presets.fields.map,
+                  time: dictionary.event.fields.mapVariant,
+                  mode: dictionary.event.fields.mapMode,
+                  point: dictionary.presets.fields.cap,
+                  pointSearch: dictionary.presets.fields.cap,
+                  optional: dictionary.shared.notSet,
+                  noResults: dictionary.shared.noMatchingResults,
+                }}
+              />
             </div>
             <div>
               <FieldLabel label={dictionary.presets.fields.side} />
               <Input {...form.register("side")} className="rounded-xl" disabled={!canEdit} />
-            </div>
-            <div>
-              <FieldLabel label={dictionary.presets.fields.cap} />
-              <Input {...form.register("cap")} className="rounded-xl" disabled={!canEdit} />
             </div>
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.presets.fields.notes} />
