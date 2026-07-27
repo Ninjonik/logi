@@ -147,9 +147,34 @@ export function AppSidebar({
                   ]
                 : [
                     {
+                      title: dictionary.sidebar.events,
+                      url: `${base}/events`,
+                      icon: ListTodo,
+                    },
+                    {
+                      title: dictionary.sidebar.matches,
+                      url: `${base}/matches`,
+                      icon: CalendarIcon,
+                    },
+                    {
+                      title: dictionary.sidebar.trainings,
+                      url: `${base}/trainings`,
+                      icon: Shield,
+                    },
+                    {
+                      title: dictionary.sidebar.stratmaps,
+                      url: `${base}/stratmaps`,
+                      icon: Map,
+                    },
+                    {
                       title: dictionary.sidebar.rosters,
                       url: `${base}/rosters`,
                       icon: ClipboardList,
+                    },
+                    {
+                      title: dictionary.sidebar.users,
+                      url: `${base}/users`,
+                      icon: UserCog,
                     },
                   ]),
             ],

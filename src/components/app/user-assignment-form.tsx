@@ -72,6 +72,7 @@ export function UserAssignmentForm({
   groups,
   assignment,
   config,
+  canManage = false,
   createMode = false,
 }: {
   server: Guild;
@@ -81,6 +82,7 @@ export function UserAssignmentForm({
   groups: Group[];
   assignment?: ServerUserAssignment;
   config?: DiscordConfig | null;
+  canManage?: boolean;
   createMode?: boolean;
 }) {
   const router = useRouter();
@@ -131,7 +133,7 @@ export function UserAssignmentForm({
   const memberDisabled = selected ? !selected.canJoinAsMember : false;
   const mercDisabled = selected ? !selected.canJoinAsMercenary : false;
   const showPlayerPicker = createMode;
-  const canEditFields = createMode || isEditing;
+  const canEditFields = canManage && (createMode || isEditing);
   const membershipCategory = assignment?.membershipCategoryId
     ? config?.membershipSettings?.categories.find((item) => item.id === assignment.membershipCategoryId)
     : undefined;
@@ -243,7 +245,7 @@ export function UserAssignmentForm({
     <Card className="shrink-0 rounded-2xl border-border/60">
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <CardTitle>{createMode ? dictionary.userManagement.addPlayer : dictionary.userManagement.editAssignment}</CardTitle>
-        {!createMode ? (
+        {!createMode && canManage ? (
           <div className="flex flex-wrap justify-end gap-3">
             <Button
               type="button"

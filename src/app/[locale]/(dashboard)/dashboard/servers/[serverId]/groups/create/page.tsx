@@ -12,7 +12,7 @@ export default async function CreateGroupPage({
   const { locale, serverId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
-  if (!context) return null;
+  if (!context?.canAdmin) return null;
 
   return (
     <>
@@ -22,6 +22,7 @@ export default async function CreateGroupPage({
           serverId={serverId}
           locale={locale}
           dictionary={dictionary}
+          canEdit={context.canAdmin}
           createMode
           availableGroups={context.groups ?? []}
         />

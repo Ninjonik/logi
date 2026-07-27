@@ -16,7 +16,7 @@ export default async function CreateServerUserPage({
   const safeLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
-  if (!context) return null;
+  if (!context?.canAdmin) return null;
   const { server, groups = [], assignments } = context;
 
   const eligibleUsers = await getEligibleUsersForServer(server, assignments);
@@ -25,7 +25,7 @@ export default async function CreateServerUserPage({
     <>
       <PageHeader title={dictionary.userManagement.addPlayer} description={dictionary.userManagement.description} />
       <div className="px-4 lg:px-6">
-        <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} config={context.discordConfig} createMode />
+        <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} config={context.discordConfig} canManage createMode />
       </div>
     </>
   );

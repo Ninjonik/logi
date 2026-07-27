@@ -36,7 +36,7 @@ export default async function GroupsPage({
   const resolvedSearchParams = await searchParams;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
-  if (!context) return null;
+  if (!context?.canAdmin) return null;
 
   const { groups = [], assignments = [], canAdmin } = context;
   const paginated = getPaginatedRows({

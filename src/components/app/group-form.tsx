@@ -35,6 +35,7 @@ export function GroupForm({
   locale,
   dictionary,
   group,
+  canEdit = false,
   createMode = false,
   availableGroups = [],
 }: {
@@ -42,6 +43,7 @@ export function GroupForm({
   locale: string;
   dictionary: Dictionary;
   group?: Group;
+  canEdit?: boolean;
   createMode?: boolean;
   availableGroups?: Group[];
 }) {
@@ -62,11 +64,16 @@ export function GroupForm({
   });
 
   useEffect(() => {
+    if (!canEdit) {
+      setMetadata(null);
+      return;
+    }
+
     fetch(`/api/servers/${serverId}/discord-metadata`)
       .then((response) => response.json())
       .then((body) => setMetadata(body))
       .catch(() => setMetadata(null));
-  }, [serverId]);
+  }, [canEdit, serverId]);
 
   const filteredParentGroups = availableGroups.filter(
     (g) => g.id !== group?.id && !g.parentId,
@@ -138,17 +145,17 @@ export function GroupForm({
           <div className="grid gap-4 md:grid-cols-[1fr_112px_112px]">
             <div className="space-y-2">
               <Label>{dictionary.groups.name}</Label>
-              <Input {...form.register("name")} className="rounded-xl" />
+              <Input {...form.register("name")} className="rounded-xl" disabled={!canEdit} />
               {form.formState.errors.name ? <p className="text-sm text-destructive">{form.formState.errors.name.message}</p> : null}
             </div>
             <div className="space-y-2">
               <Label>{dictionary.groups.order}</Label>
-              <Input type="number" {...form.register("order", { valueAsNumber: true })} className="rounded-xl" />
+              <Input type="number" {...form.register("order", { valueAsNumber: true })} className="rounded-xl" disabled={!canEdit} />
               {form.formState.errors.order ? <p className="text-sm text-destructive">{form.formState.errors.order.message}</p> : null}
             </div>
             <div className="space-y-2">
               <Label>{dictionary.groups.color}</Label>
-              <Input type="color" {...form.register("color")} className="h-11 rounded-xl p-1" />
+              <Input type="color" {...form.register("color")} className="h-11 rounded-xl p-1" disabled={!canEdit} />
               {form.formState.errors.color ? <p className="text-sm text-destructive">{form.formState.errors.color.message}</p> : null}
             </div>
           </div>
@@ -158,7 +165,7 @@ export function GroupForm({
               control={form.control}
               name="parentId"
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value ?? "none"}>
+                <Select onValueChange={field.onChange} value={field.value ?? "none"} disabled={!canEdit}>
                   <SelectTrigger className="rounded-xl">
                     <SelectValue placeholder={dictionary.groups.none} />
                   </SelectTrigger>
@@ -176,7 +183,7 @@ export function GroupForm({
           </div>
           <div className="space-y-2">
             <Label>{dictionary.groups.descriptionLabel}</Label>
-            <Textarea {...form.register("description")} className="min-h-28 rounded-xl" />
+            <Textarea {...form.register("description")} className="min-h-28 rounded-xl" disabled={!canEdit} />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -219,10 +226,10 @@ export function GroupForm({
           </div>
           {form.formState.errors.root ? <p className="text-sm text-destructive">{form.formState.errors.root.message}</p> : null}
           <div className="flex flex-wrap gap-3">
-            <Button className="rounded-xl" type="submit" disabled={isPending || form.formState.isSubmitting}>
+            <Button className="rounded-xl" type="submit" disabled={!canEdit || isPending || form.formState.isSubmitting}>
               {dictionary.common.save}
             </Button>
-            {group ? (
+            {group && canEdit ? (
               <Button
                 type="button"
                 variant="destructive"
@@ -233,6 +240,7 @@ export function GroupForm({
                 {dictionary.common.clear}
               </Button>
             ) : null}
+            {!canEdit ? <p className="self-center text-sm text-muted-foreground">{dictionary.common.adminOnly}</p> : null}
           </div>
         </form>
       </CardContent>
