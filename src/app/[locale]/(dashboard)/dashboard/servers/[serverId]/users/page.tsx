@@ -54,7 +54,7 @@ export default async function ServerUsersPage({
   const context = await getServerContext(serverId);
   if (!context) return null;
 
-  const { groups } = context;
+  const { groups, canAdmin } = context;
   const assignments = await getServerUserAssignments(serverId);
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
@@ -83,13 +83,13 @@ export default async function ServerUsersPage({
         <PageHeader
           title={dictionary.userManagement.title}
           description={dictionary.userManagement.description}
-          actions={(
+          actions={canAdmin ? (
             <div className="flex flex-wrap gap-2">
               <Button asChild className="rounded-xl">
                 <a href={`/${locale}/dashboard/servers/${serverId}/users/create`}>{dictionary.userManagement.addPlayer}</a>
               </Button>
             </div>
-          )}
+          ) : undefined}
         />
       )}
     >

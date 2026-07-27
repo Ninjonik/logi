@@ -236,6 +236,36 @@ function TopicPresetSelect({
   );
 }
 
+function ReadOnlyValue({
+  value,
+  emptyLabel,
+  className = "",
+}: {
+  value?: string | null;
+  emptyLabel: string;
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm ${className}`.trim()}>
+      {value?.trim() || emptyLabel}
+    </div>
+  );
+}
+
+function ReadOnlyList({
+  values,
+  emptyLabel,
+}: {
+  values: string[];
+  emptyLabel: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
+      {values.length ? values.join(", ") : emptyLabel}
+    </div>
+  );
+}
+
 function StratmapMultiSelect({
   value,
   onChange,
@@ -380,6 +410,14 @@ export function EventFormPanel({
     cap: eventMatchValues[2],
   };
   const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
+  const roleNameById = useMemo(
+    () => new Map((metadata?.roles ?? []).map((role) => [role.id, role.name])),
+    [metadata?.roles],
+  );
+  const channelNameById = useMemo(
+    () => new Map(meetingChannels.map((channel) => [channel.id, channel.name])),
+    [meetingChannels],
+  );
   const presetMatchContext = useMemo<TopicPresetMatchContext>(
     () => ({
       mapCode: mapValue,
@@ -588,30 +626,35 @@ export function EventFormPanel({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <FieldLabel label={dictionary.event.fields.kind} required />
-              <Controller
-                control={form.control}
-                name="kind"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={(value) => field.onChange(value as EventInput["kind"])}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="match">{dictionary.sidebar.matches}</SelectItem>
-                      <SelectItem value="training">{dictionary.sidebar.trainings}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="kind"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={(value) => field.onChange(value as EventInput["kind"])}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="match">{dictionary.sidebar.matches}</SelectItem>
+                        <SelectItem value="training">{dictionary.sidebar.trainings}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              ) : (
+                <ReadOnlyValue value={eventKind === "training" ? dictionary.sidebar.trainings : dictionary.sidebar.matches} emptyLabel={dictionary.shared.notSet} />
+              )}
             </div>
             <div>
               <FieldLabel label={dictionary.event.fields.name} required  />
-              <Input {...form.register("name")} className="rounded-xl" />
+              {canEdit ? <Input {...form.register("name")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("name")} emptyLabel={dictionary.shared.notSet} />}
               {form.formState.errors.name ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.name.message}</p> : null}
             </div>
             {eventKind === "match" ? (
               <div className="space-y-3 md:col-span-2">
                 <FieldLabel label={dictionary.event.fields.map}  />
+                {canEdit ? (
                   <HllMapSelector
                     mapId={selectedMapId}
                     onMapIdChange={(value) => {
@@ -639,6 +682,9 @@ export function EventFormPanel({
                       noResults: dictionary.shared.noMatchingResults,
                     }}
                   />
+                ) : (
+                  <ReadOnlyValue value={formatHllPresetLabel(mapValue) ?? mapValue} emptyLabel={dictionary.shared.notSet} />
+                )}
                 {mapValue ? (
                   <p className="text-xs text-muted-foreground">
                     {dictionary.event.fields.mapPresetCode}: <span className="font-mono">{mapValue}</span>
@@ -652,80 +698,94 @@ export function EventFormPanel({
               </div>
             </div>
             <div className="md:col-span-2">
-              <Controller
-                control={form.control}
-                name="thumbnailUrl"
-                render={({ field }) => (
-                  <AvatarPicker
-                    value={field.value || ""}
-                    onChange={field.onChange}
-                    fallback={eventName.slice(0, 2).toUpperCase() || "EV"}
-                    label={dictionary.event.fields.thumbnail}
-                    buttonLabel={dictionary.common.upload}
-                    disabled={!canEdit || isPending}
-                    className="rounded-2xl border border-border/60 p-4"
-                  />
-                )}
-              />
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="thumbnailUrl"
+                  render={({ field }) => (
+                    <AvatarPicker
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      fallback={eventName.slice(0, 2).toUpperCase() || "EV"}
+                      label={dictionary.event.fields.thumbnail}
+                      buttonLabel={dictionary.common.upload}
+                      disabled={!canEdit || isPending}
+                      className="rounded-2xl border border-border/60 p-4"
+                    />
+                  )}
+                />
+              ) : (
+                <ReadOnlyValue value={form.watch("thumbnailUrl")} emptyLabel={dictionary.shared.notSet} />
+              )}
             </div>
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.description}  />
-              <Textarea {...form.register("description")} className="min-h-24 rounded-xl" />
+              {canEdit ? <Textarea {...form.register("description")} className="min-h-24 rounded-xl" /> : <ReadOnlyValue value={form.watch("description")} emptyLabel={dictionary.shared.notSet} className="min-h-24 whitespace-pre-wrap" />}
             </div>
             {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.side}  />
-              <Input {...form.register("side")} className="rounded-xl" />
+              {canEdit ? <Input {...form.register("side")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("side")} emptyLabel={dictionary.shared.notSet} />}
             </div>
             ) : null}
             {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.server}  />
-              <Input {...form.register("server")} autoComplete="one-time-code" className="rounded-xl" />
+              {canEdit ? <Input {...form.register("server")} autoComplete="one-time-code" className="rounded-xl" /> : <ReadOnlyValue value={form.watch("server")} emptyLabel={dictionary.shared.notSet} />}
             </div>
             ) : null}
             {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.serverPassword}  />
-              <Input {...form.register("serverPassword")} autoComplete={"new-password"} className="rounded-xl" />
+              {canEdit ? <Input {...form.register("serverPassword")} autoComplete={"new-password"} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("serverPassword")} emptyLabel={dictionary.shared.notSet} />}
             </div>
             ) : null}
             <div>
               <FieldLabel label={dictionary.event.fields.meetingChannelId}  />
-              <Controller
-                control={form.control}
-                name="meetingChannelId"
-                render={({ field }) => (
-                  <DiscordEntitySelect
-                    value={field.value || undefined}
-                    onChange={(value) => field.onChange(value ?? "")}
-                    options={meetingChannels}
-                    placeholder={dictionary.event.fields.meetingChannelId}
-                    noneLabel={dictionary.shared.notSet}
-                  />
-                )}
-              />
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="meetingChannelId"
+                  render={({ field }) => (
+                    <DiscordEntitySelect
+                      value={field.value || undefined}
+                      onChange={(value) => field.onChange(value ?? "")}
+                      options={meetingChannels}
+                      placeholder={dictionary.event.fields.meetingChannelId}
+                      noneLabel={dictionary.shared.notSet}
+                    />
+                  )}
+                />
+              ) : (
+                <ReadOnlyValue
+                  value={(() => {
+                    const meetingChannelId = form.watch("meetingChannelId");
+                    return meetingChannelId ? (channelNameById.get(meetingChannelId) ?? meetingChannelId) : undefined;
+                  })()}
+                  emptyLabel={dictionary.shared.notSet}
+                />
+              )}
             </div>
             <div>
               <FieldLabel label={dictionary.event.fields.registrationEnd} required  />
-              <Input type="datetime-local" {...form.register("registrationEnd")} className="rounded-xl" />
+              {canEdit ? <Input type="datetime-local" {...form.register("registrationEnd")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("registrationEnd")} emptyLabel={dictionary.shared.notSet} />}
               {form.formState.errors.registrationEnd ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.registrationEnd.message}</p> : null}
             </div>
             <div>
               <FieldLabel label={dictionary.event.fields.meetingStart} required  />
-              <Input type="datetime-local" {...form.register("meetingStart")} className="rounded-xl" />
+              {canEdit ? <Input type="datetime-local" {...form.register("meetingStart")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("meetingStart")} emptyLabel={dictionary.shared.notSet} />}
               {form.formState.errors.meetingStart ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.meetingStart.message}</p> : null}
             </div>
             {eventKind === "match" ? (
               <>
                 <div>
                   <FieldLabel label={dictionary.event.fields.gameStart} required  />
-                  <Input type="datetime-local" {...form.register("gameStart")} className="rounded-xl" />
+                  {canEdit ? <Input type="datetime-local" {...form.register("gameStart")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("gameStart")} emptyLabel={dictionary.shared.notSet} />}
                   {form.formState.errors.gameStart ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.gameStart.message}</p> : null}
                 </div>
                 <div>
                   <FieldLabel label={dictionary.event.fields.gameEnd} required  />
-                  <Input type="datetime-local" {...form.register("gameEnd")} className="rounded-xl" />
+                  {canEdit ? <Input type="datetime-local" {...form.register("gameEnd")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("gameEnd")} emptyLabel={dictionary.shared.notSet} />}
                   {form.formState.errors.gameEnd ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.gameEnd.message}</p> : null}
                 </div>
               </>
@@ -733,109 +793,135 @@ export function EventFormPanel({
             {eventKind === "match" ? (
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.topicPreset}  />
-              <Controller
-                control={form.control}
-                name="topicPresetId"
-                render={({ field }) => (
-                  <TopicPresetSelect
-                    value={field.value}
-                    onChange={field.onChange}
-                    options={topicPresetOptions}
-                    dictionary={dictionary}
-                  />
-                )}
-              />
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="topicPresetId"
+                  render={({ field }) => (
+                    <TopicPresetSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={topicPresetOptions}
+                      dictionary={dictionary}
+                    />
+                  )}
+                />
+              ) : (
+                <ReadOnlyValue value={topicPresets.find((preset) => preset.id === form.watch("topicPresetId"))?.name} emptyLabel={dictionary.event.noPreset} />
+              )}
             </div>
             ) : null}
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.notes}  />
-              <Textarea {...form.register("notes")} className="min-h-28 rounded-xl" />
+              {canEdit ? <Textarea {...form.register("notes")} className="min-h-28 rounded-xl" /> : <ReadOnlyValue value={form.watch("notes")} emptyLabel={dictionary.shared.notSet} className="min-h-28 whitespace-pre-wrap" />}
             </div>
             {eventKind === "match" ? (
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.stratmaps}  />
-              <Controller
-                control={form.control}
-                name="stratmapIds"
-                render={({ field }) => (
-                  <StratmapMultiSelect
-                    value={field.value ?? []}
-                    onChange={field.onChange}
-                    stratmaps={stratmaps}
-                    dictionary={dictionary}
-                  />
-                )}
-              />
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="stratmapIds"
+                  render={({ field }) => (
+                    <StratmapMultiSelect
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                      stratmaps={stratmaps}
+                      dictionary={dictionary}
+                    />
+                  )}
+                />
+              ) : (
+                <ReadOnlyList values={(form.watch("stratmapIds") ?? []).map((id) => stratmaps.find((item) => item.id === id)?.title ?? id)} emptyLabel={dictionary.shared.notSet} />
+              )}
             </div>
             ) : null}
             {eventKind === "match" ? (
             <div className="md:col-span-2">
-              <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
-                <div>
-                  <FieldLabel label={dictionary.event.fields.createForumChannel}  />
-                  <p className="text-sm text-muted-foreground">
-                    {dictionary.event.createForumChannelDescription}
-                  </p>
+              {canEdit ? (
+                <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                  <div>
+                    <FieldLabel label={dictionary.event.fields.createForumChannel}  />
+                    <p className="text-sm text-muted-foreground">
+                      {dictionary.event.createForumChannelDescription}
+                    </p>
+                  </div>
+                  <Controller
+                    control={form.control}
+                    name="createForumChannel"
+                    render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
+                  />
                 </div>
-                <Controller
-                  control={form.control}
-                  name="createForumChannel"
-                  render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
-                />
-              </div>
+              ) : (
+                <ReadOnlyValue value={form.watch("createForumChannel") ? dictionary.tables.enabled : dictionary.tables.disabled} emptyLabel={dictionary.shared.notSet} />
+              )}
             </div>
             ) : null}
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.requiredRoleIds} />
-              <Controller
-                control={form.control}
-                name="requiredRoleIds"
-                render={({ field }) => (
-                  <DiscordMultiEntitySelect
-                    value={field.value ?? []}
-                    onChange={field.onChange}
-                    options={metadata?.roles ?? []}
-                    placeholder={dictionary.event.fields.requiredRoleIds}
-                  />
-                )}
-              />
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="requiredRoleIds"
+                  render={({ field }) => (
+                    <DiscordMultiEntitySelect
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                      options={metadata?.roles ?? []}
+                      placeholder={dictionary.event.fields.requiredRoleIds}
+                    />
+                  )}
+                />
+              ) : (
+                <ReadOnlyList values={(form.watch("requiredRoleIds") ?? []).map((id) => roleNameById.get(id) ?? id)} emptyLabel={dictionary.shared.notSet} />
+              )}
             </div>
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.rewardRoleIds} />
-              <Controller
-                control={form.control}
-                name="rewardRoleIds"
-                render={({ field }) => (
-                  <DiscordMultiEntitySelect
-                    value={field.value ?? []}
-                    onChange={field.onChange}
-                    options={metadata?.roles ?? []}
-                    placeholder={dictionary.event.fields.rewardRoleIds}
-                  />
-                )}
-              />
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="rewardRoleIds"
+                  render={({ field }) => (
+                    <DiscordMultiEntitySelect
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                      options={metadata?.roles ?? []}
+                      placeholder={dictionary.event.fields.rewardRoleIds}
+                    />
+                  )}
+                />
+              ) : (
+                <ReadOnlyList values={(form.watch("rewardRoleIds") ?? []).map((id) => roleNameById.get(id) ?? id)} emptyLabel={dictionary.shared.notSet} />
+              )}
             </div>
             {eventKind === "match" ? (
             <div className="md:col-span-2">
-              <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
-                <div>
-                  <FieldLabel label={dictionary.event.fields.pingClan}  />
+              {canEdit ? (
+                <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                  <div>
+                    <FieldLabel label={dictionary.event.fields.pingClan}  />
+                  </div>
+                  <Controller
+                    control={form.control}
+                    name="pingClan"
+                    render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
+                  />
                 </div>
-                <Controller
-                  control={form.control}
-                  name="pingClan"
-                  render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
-                />
-              </div>
+              ) : (
+                <ReadOnlyValue value={form.watch("pingClan") ? dictionary.tables.enabled : dictionary.tables.disabled} emptyLabel={dictionary.shared.notSet} />
+              )}
             </div>
             ) : null}
           </div>
           {form.formState.errors.root ? <p className="text-sm text-destructive">{form.formState.errors.root.message}</p> : null}
-          <div className="flex flex-wrap gap-3">
-            <Button className="rounded-xl" type="submit" disabled={!canEdit || isPending || form.formState.isSubmitting}>
-              {dictionary.common.save}
-            </Button>
-          </div>
+          {canEdit ? (
+            <div className="flex flex-wrap gap-3">
+              <Button className="rounded-xl" type="submit" disabled={!canEdit || isPending || form.formState.isSubmitting}>
+                {dictionary.common.save}
+              </Button>
+            </div>
+          ) : null}
         </form>
       </CardContent>
     </Card>

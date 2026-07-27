@@ -281,13 +281,14 @@ export function TopicPresetForm({
           {form.formState.errors.topics?.root ? <p className="text-sm text-destructive">{form.formState.errors.topics.root.message}</p> : null}
           {form.formState.errors.root ? <p className="text-sm text-destructive">{form.formState.errors.root.message}</p> : null}
 
-          <div className="flex flex-wrap gap-3">
-            <Button className="rounded-xl" type="submit" disabled={disabled}>
-              {form.formState.isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
-              {dictionary.common.save}
-            </Button>
-            {!canEdit ? <p className="self-center text-sm text-muted-foreground">{dictionary.common.adminOnly}</p> : null}
-          </div>
+          {canEdit ? (
+            <div className="flex flex-wrap gap-3">
+              <Button className="rounded-xl" type="submit" disabled={disabled}>
+                {form.formState.isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
+                {dictionary.common.save}
+              </Button>
+            </div>
+          ) : null}
         </form>
       </CardContent>
     </Card>

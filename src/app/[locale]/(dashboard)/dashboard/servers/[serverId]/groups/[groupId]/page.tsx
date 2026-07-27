@@ -32,7 +32,7 @@ export default async function GroupDetailPage({
   const { locale, serverId, groupId } = await params;
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
-  if (!context) return null;
+  if (!context?.canAdmin) return null;
 
   const group = (context.groups ?? []).find((item) => item.id === groupId);
   if (!group) return null;
@@ -45,6 +45,7 @@ export default async function GroupDetailPage({
           serverId={serverId}
           locale={locale}
           dictionary={dictionary}
+          canEdit={context.canAdmin}
           group={group}
           availableGroups={context.groups ?? []}
         />
