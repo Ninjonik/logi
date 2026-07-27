@@ -1,21 +1,16 @@
 "use client";
 
 import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent, MouseEvent as ReactMouseEvent } from "react";
-import { Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Dictionary } from "@/i18n/dictionaries";
+import { Card, CardContent } from "@/components/ui/card";
 import type { HllStratmapMap, StratmapElement, StratmapSlide } from "@/lib/stratmaps";
 
 import { LivePingLayer } from "./live-ping-layer";
 import { RenderedElement } from "./rendered-element";
-import { StratmapToolbar } from "./toolbar";
 import type { DragState, Tool, Viewport } from "./types";
 import { buildLinePath, buildShapeBounds, formatDistanceLabel, getOverlayItems, getPathLabelAngle, getPathLabelPoint } from "./utils";
 
 export function StratmapBoard({
-  dictionary,
   svgRef,
   viewport,
   tool,
@@ -28,15 +23,6 @@ export function StratmapBoard({
   strokeColor,
   fillColor,
   strokeWidth,
-  canUndo,
-  canRedo,
-  selectionCount,
-  onUndo,
-  onRedo,
-  onZoomIn,
-  onZoomOut,
-  onResetZoom,
-  onToolChange,
   onWheel,
   onPointerDown,
   onPointerMove,
@@ -46,9 +32,7 @@ export function StratmapBoard({
   onStartMove,
   onHoverElement,
   onClearHover,
-  onRemoveSelected,
 }: {
-  dictionary: Dictionary;
   svgRef: React.RefObject<SVGSVGElement | null>;
   viewport: Viewport;
   tool: Tool;
@@ -61,15 +45,6 @@ export function StratmapBoard({
   strokeColor: string;
   fillColor: string;
   strokeWidth: number;
-  canUndo: boolean;
-  canRedo: boolean;
-  selectionCount: number;
-  onUndo: () => void;
-  onRedo: () => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onResetZoom: () => void;
-  onToolChange: (tool: Tool) => void;
   onWheel: (event: ReactWheelEvent<SVGSVGElement>) => void;
   onPointerDown: (event: ReactPointerEvent<SVGSVGElement>) => void;
   onPointerMove: (event: ReactPointerEvent<SVGSVGElement>) => void;
@@ -79,21 +54,15 @@ export function StratmapBoard({
   onStartMove: (elementId: string, event: ReactPointerEvent<SVGGElement>) => void;
   onHoverElement: (elementId: string) => void;
   onClearHover: (elementId: string) => void;
-  onRemoveSelected: () => void;
 }) {
   return (
     <Card className="flex min-h-0 flex-col rounded-xl border-border/60">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 px-3 py-3">
-        <div><CardTitle className="text-base">{dictionary.stratmaps.board}</CardTitle><p className="text-xs text-muted-foreground">{selectedMap ? `${selectedMap.name} | ${activeSlide?.name ?? dictionary.stratmaps.slides}` : dictionary.shared.notSet}</p></div>
-        <StratmapToolbar dictionary={dictionary} tool={tool} canUndo={canUndo} canRedo={canRedo} onUndo={onUndo} onRedo={onRedo} onZoomIn={onZoomIn} onZoomOut={onZoomOut} onResetZoom={onResetZoom} onToolChange={onToolChange} />
-      </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 flex-col space-y-2 px-3 pb-3">
+      <CardContent className="flex min-h-0 flex-1 flex-col space-y-2 px-3 py-3">
         <div className="flex min-h-0 flex-1 rounded-xl border border-border/60 bg-black/95 p-2">
           <svg ref={svgRef} viewBox={`${viewport.x} ${viewport.y} ${viewport.size} ${viewport.size}`} className={`size-full select-none rounded-lg bg-black ${tool === "select" ? "cursor-default" : "cursor-crosshair"}`} style={{ userSelect: "none", WebkitUserSelect: "none", touchAction: "none" }} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerLeave} onContextMenu={onContextMenu}>
       <BoardLayers selectedMap={selectedMap} activeSlide={activeSlide} overlayStrongpointIds={overlayStrongpointIds} selectedElementIds={selectedElementIds} hoveredElementId={hoveredElementId} dragState={dragState} strokeColor={strokeColor} fillColor={fillColor} strokeWidth={strokeWidth} onStartMove={onStartMove} onHoverElement={onHoverElement} onClearHover={onClearHover} />
           </svg>
         </div>
-        {selectionCount ? <div className="flex flex-wrap gap-2"><Button variant="outline" className="h-8 rounded-lg px-3 text-xs" onClick={onRemoveSelected}><Trash2 className="size-4" />{dictionary.stratmaps.deleteSelected}</Button><div className="flex items-center text-xs text-muted-foreground">{selectionCount === 1 ? dictionary.stratmaps.oneSelected : dictionary.stratmaps.multipleSelected.replace("{count}", String(selectionCount))}</div></div> : null}
       </CardContent>
     </Card>
   );

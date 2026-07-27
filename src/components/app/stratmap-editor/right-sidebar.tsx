@@ -6,6 +6,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import type { HllStratmapCatalogItem, StratmapArrowStyle, StratmapElement } from "@/lib/stratmaps";
 
 import { SelectionInspector } from "./selection-inspector";
+import { StratmapToolbar } from "./toolbar";
 import { ToolPropertiesPanel } from "./tool-properties-panel";
 import type { Tool } from "./types";
 
@@ -13,6 +14,8 @@ export function StratmapRightSidebar({
   dictionary,
   canAdmin,
   tool,
+  canUndo,
+  canRedo,
   strokeColor,
   fillColor,
   strokeWidth,
@@ -27,6 +30,12 @@ export function StratmapRightSidebar({
   selectedElement,
   isUploadingIconAttachments,
   onStrokeColorChange,
+  onUndo,
+  onRedo,
+  onZoomIn,
+  onZoomOut,
+  onResetZoom,
+  onToolChange,
   onFillColorChange,
   onStrokeWidthChange,
   onLineStyleChange,
@@ -42,6 +51,8 @@ export function StratmapRightSidebar({
   dictionary: Dictionary;
   canAdmin: boolean;
   tool: Tool;
+  canUndo: boolean;
+  canRedo: boolean;
   strokeColor: string;
   fillColor: string;
   strokeWidth: number;
@@ -56,6 +67,12 @@ export function StratmapRightSidebar({
   selectedElement: StratmapElement | null;
   isUploadingIconAttachments: boolean;
   onStrokeColorChange: (value: string) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onResetZoom: () => void;
+  onToolChange: (tool: Tool) => void;
   onFillColorChange: (value: string) => void;
   onStrokeWidthChange: (value: number) => void;
   onLineStyleChange: (value: "solid" | "dashed" | "dotted") => void;
@@ -70,6 +87,7 @@ export function StratmapRightSidebar({
 }) {
   return (
     <div className="space-y-2 overflow-y-auto pl-1">
+      <StratmapToolbar {...{ dictionary, tool, canUndo, canRedo, onUndo, onRedo, onZoomIn, onZoomOut, onResetZoom, onToolChange }} />
       <ToolPropertiesPanel {...{ dictionary, tool, strokeColor, fillColor, strokeWidth, lineStyle, lineStartStyle, lineEndStyle, showLineDistance, textValue, textSize, iconId, catalogGroups, onStrokeColorChange, onFillColorChange, onStrokeWidthChange, onLineStyleChange, onLineStartStyleChange, onLineEndStyleChange, onShowLineDistanceChange, onTextValueChange, onTextSizeChange, onIconChange }} />
       <SelectionInspector {...{ dictionary, canAdmin, strokeColor, selectedElement, isUploadingIconAttachments, onElementChange: onSelectedElementChange, onUpload }} />
     </div>

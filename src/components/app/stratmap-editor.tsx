@@ -38,7 +38,6 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         onToggleStrongpoint={editor.toggleStrongpoint}
       />
       <StratmapBoard
-        dictionary={props.dictionary}
         svgRef={editor.svgRef}
         viewport={editor.viewport}
         tool={editor.tool}
@@ -51,15 +50,6 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         strokeColor={editor.strokeColor}
         fillColor={editor.fillColor}
         strokeWidth={editor.strokeWidth}
-        canUndo={editor.canUndo}
-        canRedo={editor.canRedo}
-        selectionCount={editor.selectedElementIds.length}
-        onUndo={editor.undo}
-        onRedo={editor.redo}
-        onZoomIn={editor.zoomIn}
-        onZoomOut={editor.zoomOut}
-        onResetZoom={editor.resetZoom}
-        onToolChange={editor.setTool}
         onWheel={editor.handleBoardWheel}
         onContextMenu={editor.handleBoardContextMenu}
         onPointerDown={editor.handlePointerDown}
@@ -69,12 +59,13 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         onStartMove={editor.startMove}
         onHoverElement={editor.setHoveredElementId}
         onClearHover={(elementId) => editor.setHoveredElementId((current) => current === elementId ? null : current)}
-        onRemoveSelected={editor.removeSelectedElements}
       />
       <StratmapRightSidebar
         dictionary={props.dictionary}
         canAdmin={editor.canAdmin}
         tool={editor.tool}
+        canUndo={editor.canUndo}
+        canRedo={editor.canRedo}
         strokeColor={editor.strokeColor}
         fillColor={editor.fillColor}
         strokeWidth={editor.strokeWidth}
@@ -89,6 +80,12 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         selectedElement={editor.selectedElement}
         isUploadingIconAttachments={editor.isUploadingIconAttachments}
         onStrokeColorChange={editor.setStrokeColor}
+        onUndo={editor.undo}
+        onRedo={editor.redo}
+        onZoomIn={editor.zoomIn}
+        onZoomOut={editor.zoomOut}
+        onResetZoom={editor.resetZoom}
+        onToolChange={editor.setTool}
         onFillColorChange={editor.setFillColor}
         onStrokeWidthChange={editor.setStrokeWidth}
         onLineStyleChange={editor.setLineStyle}
