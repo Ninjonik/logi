@@ -1,10 +1,12 @@
 export type EventStatus = "registration" | "closed" | "starting" | "concluded";
 export type EventKind = "match" | "training";
+export type MatchTypeCategory = string;
 export type ParticipantStatus = "attending" | "not_attending";
 export type ParticipantCompletionStatus = "passed" | "failed";
 
 export const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING";
 export const SIGNUP_ATTENDING = "ATTENDING";
+export const SIGNUP_GENERAL = "GENERAL";
 
 export type EventParticipant = {
   userId: string;
@@ -52,6 +54,7 @@ export type EventLike = {
   gameStart?: string;
   gameEnd: string;
   kind?: EventKind;
+  matchType?: MatchTypeCategory;
   createForumChannel?: boolean;
   status?: EventStatus;
   statusUpdatedAt?: string;
@@ -71,4 +74,6 @@ export type EventLike = {
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
   stratmapIds?: string[];
+  signupGroupIds?: string[];
+  useGeneralSignup?: boolean;
 };

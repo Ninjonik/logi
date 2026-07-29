@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getGuildById, getGuildDiscordId } from "./identity";
 import {
   assertInternalSecret,
+  calendarCategoriesValidator,
   membershipSettingsValidator,
   normalizeConfigDoc,
   ticketSettingsValidator,
@@ -47,6 +48,8 @@ export const upsertConfig = mutation({
     timezone: v.string(),
     defaultLanguage: v.union(v.literal("en"), v.literal("cs")),
     announcementsChannelId: v.optional(v.string()),
+    calendarChannelId: v.optional(v.string()),
+    calendarCategories: v.optional(calendarCategoriesValidator),
     forumCategoryId: v.optional(v.string()),
     meetingChannelId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),
@@ -68,6 +71,8 @@ export const upsertConfig = mutation({
       timezone: args.timezone,
       defaultLanguage: args.defaultLanguage,
       announcementsChannelId: args.announcementsChannelId?.trim() || undefined,
+      calendarChannelId: args.calendarChannelId?.trim() || undefined,
+      calendarCategories: (args.calendarCategories ?? []).map((value) => value.trim()).filter(Boolean),
       forumCategoryId: args.forumCategoryId?.trim() || undefined,
       meetingChannelId: args.meetingChannelId?.trim() || undefined,
       clanRoleId: args.clanRoleId?.trim() || undefined,
@@ -147,6 +152,36 @@ export const updateMembershipPanelState = mutation({
     await ctx.db.patch(config._id, {
       membershipPanelMessageId: args.membershipPanelMessageId,
       membershipPanelLastConfigUpdatedAt: args.membershipPanelLastConfigUpdatedAt,
+    });
+
+    return { ok: true };
+  },
+});
+
+export const updateCalendarPanelState = mutation({
+  args: {
+    secret: v.string(),
+    guildId: v.string(),
+    calendarMessageChannelId: v.optional(v.string()),
+    calendarMessageId: v.optional(v.string()),
+    calendarMessageLastConfigUpdatedAt: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const config = await ctx.db
+      .query("discordConfigs")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .unique();
+
+    if (!config) {
+      throw new Error("Discord config not found.");
+    }
+
+    await ctx.db.patch(config._id, {
+      calendarMessageChannelId: args.calendarMessageChannelId,
+      calendarMessageId: args.calendarMessageId,
+      calendarMessageLastConfigUpdatedAt: args.calendarMessageLastConfigUpdatedAt,
     });
 
     return { ok: true };

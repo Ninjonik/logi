@@ -7,6 +7,7 @@ type ClanDiscordMessages = {
   buttons: {
     acknowledgeAttendance: string;
     attend: string;
+    generalSignup: string;
     addToCalendar: string;
     decline: string;
   };
@@ -71,6 +72,11 @@ type ClanDiscordMessages = {
   calendar: {
     fallbackDetails: string;
     fallbackLocation: string;
+    panelTitle: string;
+    panelEmpty: string;
+    panelCategories: string;
+    matchLabel: string;
+    trainingLabel: string;
   };
   panels: {
     ticketManagedFooter: string;
@@ -217,6 +223,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     buttons: {
       acknowledgeAttendance: "Acknowledge attendance",
       attend: "Attend",
+      generalSignup: "General signup",
       addToCalendar: "Add to Calendar",
       decline: "Decline",
     },
@@ -281,6 +288,11 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     calendar: {
       fallbackDetails: "Operation briefing from Logi.",
       fallbackLocation: "Discord",
+      panelTitle: "Calendar",
+      panelEmpty: "No upcoming events are scheduled right now.",
+      panelCategories: "Categories",
+      matchLabel: "Match",
+      trainingLabel: "Training",
     },
     panels: {
       ticketManagedFooter: "Managed by Logi tickets",
@@ -425,6 +437,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     buttons: {
       acknowledgeAttendance: "Potvrdit účast",
       attend: "Zúčastním se",
+      generalSignup: "Obecný signup",
       addToCalendar: "Přidat do kalendáře",
       decline: "Odmítnout",
     },
@@ -489,6 +502,11 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     calendar: {
       fallbackDetails: "Briefing k operaci z Logi.",
       fallbackLocation: "Discord",
+      panelTitle: "Kalendář",
+      panelEmpty: "Momentálně nejsou naplánované žádné nadcházející akce.",
+      panelCategories: "Kategorie",
+      matchLabel: "Zápas",
+      trainingLabel: "Výcvik",
     },
     panels: {
       ticketManagedFooter: "Spravováno přes Logi tickety",

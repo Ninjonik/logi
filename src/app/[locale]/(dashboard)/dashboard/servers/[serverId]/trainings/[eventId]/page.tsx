@@ -16,7 +16,7 @@ export default async function TrainingDetailPage({
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { events, canAdmin, topicPresets, stratmaps, discordConfig } = context;
+  const { events, canAdmin, topicPresets, stratmaps, discordConfig, groups } = context;
   const event = events.find((item) => item.id === eventId && item.kind === "training");
   if (!event) return null;
 
@@ -33,7 +33,7 @@ export default async function TrainingDetailPage({
         ) : undefined}
       />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} />
+        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} groups={groups} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
       </div>
     </>
   );

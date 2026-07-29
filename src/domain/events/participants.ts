@@ -13,7 +13,7 @@ export function normalizeParticipants(
 
   return normalizeOptionalArray(signUps).map((signUp) => ({
     userId: signUp.userId,
-    status: signUp.group && signUp.group !== SIGNUP_NOT_ATTENDING ? "attending" as const : "not_attending" as const,
+    status: signUp.group === SIGNUP_NOT_ATTENDING ? "not_attending" as const : "attending" as const,
     group: signUp.group ?? null,
     updatedAt: nowIso,
   }));

@@ -19,6 +19,8 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
       id: String(event._id),
       guildId: event.guildId,
       kind: event.kind,
+      signupGroupIds: event.signupGroupIds,
+      useGeneralSignup: event.useGeneralSignup,
       registrationEnd: event.registrationEnd,
       meetingStart: event.meetingStart,
       gameStart: event.gameStart,
@@ -30,6 +32,24 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
       updatedAt: event.updatedAt,
       createdAt: event.createdAt,
     };
+  }
+
+  async getAssignmentForUser(serverId: string, userId: string) {
+    const assignment = await this.ctx.db
+      .query("userAssignments")
+      .withIndex("serverId_userId", (q) => q.eq("serverId", serverId).eq("userId", userId))
+      .unique();
+
+    return assignment
+      ? {
+          primaryGroupId: assignment.primaryGroupId ? String(assignment.primaryGroupId) : undefined,
+        }
+      : null;
+  }
+
+  async getGroupNameById(groupId: string) {
+    const group = await this.ctx.db.get(groupId as Id<"groups">);
+    return group?.name ?? null;
   }
 
   async saveSignupState(eventId: string, input: {

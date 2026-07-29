@@ -1,6 +1,7 @@
 import type { Clock } from "@/application/ports/clock";
 import { normalizeEventRecord } from "@/domain/events/normalization";
 import { toggleSignup } from "@/domain/events/signup-policy";
+import { SIGNUP_GENERAL } from "@/domain/events/types";
 
 import type { EventWorkflowRepository, EventWorkflowSyncPort } from "./ports";
 
@@ -23,11 +24,25 @@ export class ToggleSignupUseCase {
 
     const now = this.clock.now();
     const normalizedEvent = normalizeEventRecord(event, now);
+    let nextGroup = input.group;
+
+    if (normalizedEvent.kind === "match" && input.group === SIGNUP_GENERAL) {
+      const assignment = await this.events.getAssignmentForUser(normalizedEvent.guildId, input.userId);
+      const primaryGroupId = assignment?.primaryGroupId;
+      const allowedGroupIds = new Set(normalizedEvent.signupGroupIds ?? []);
+
+      if (primaryGroupId && allowedGroupIds.has(primaryGroupId)) {
+        nextGroup = await this.events.getGroupNameById(primaryGroupId);
+      } else {
+        nextGroup = null;
+      }
+    }
+
     const next = toggleSignup({
       participants: normalizedEvent.participants,
       event: normalizedEvent,
       userId: input.userId,
-      group: input.group,
+      group: nextGroup,
       now,
     });
 

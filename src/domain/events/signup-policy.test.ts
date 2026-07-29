@@ -138,7 +138,7 @@ test("toggleSignup records not attending signups and removes them on second clic
       status: "registration",
     },
     userId: "user-1",
-    group: null,
+    group: SIGNUP_NOT_ATTENDING,
     now: new Date("2026-01-01T09:05:00.000Z"),
   });
 

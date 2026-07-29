@@ -16,6 +16,7 @@ export default async function CreateMatchPage({
   const canAdmin = context?.canAdmin ?? false;
   const topicPresets = context?.topicPresets ?? [];
   const stratmaps = context?.stratmaps ?? [];
+  const groups = context?.groups ?? [];
   const timezone = context?.discordConfig?.timezone ?? "UTC";
   const discordConfig = context?.discordConfig ?? null;
   const draftSchedule = createDraftEventSchedule();
@@ -43,6 +44,8 @@ export default async function CreateMatchPage({
     pingClan: false,
     createForumChannel: true,
     stratmapIds: [],
+    signupGroupIds: groups.map((group) => group.id),
+    useGeneralSignup: false,
     status: "registration" as const,
     statusUpdatedAt: draftSchedule.statusUpdatedAt,
     attendanceReminderLog: [],
@@ -57,7 +60,7 @@ export default async function CreateMatchPage({
     <>
       <PageHeader title={dictionary.event.createTitle} description={dictionary.event.createPageDescription} />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={draftEvent} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} timezone={timezone} canEdit={canAdmin} dictionary={dictionary} createMode discordConfig={discordConfig} />
+        <EventFormPanel event={draftEvent} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} groups={groups} timezone={timezone} canEdit={canAdmin} dictionary={dictionary} createMode discordConfig={discordConfig} />
       </div>
     </>
   );

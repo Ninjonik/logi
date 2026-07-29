@@ -18,7 +18,7 @@ export default async function MatchDetailPage({
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { events, rosters, canAdmin, topicPresets, stratmaps, discordConfig } = context;
+  const { events, rosters, canAdmin, topicPresets, stratmaps, discordConfig, groups } = context;
   const event = events.find((item) => item.id === eventId && item.kind === "match");
   const roster = rosters.find((item) => item.eventId === eventId);
   if (!event) return null;
@@ -54,7 +54,7 @@ export default async function MatchDetailPage({
         )}
       />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
+        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} groups={groups} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
       </div>
     </>
   );

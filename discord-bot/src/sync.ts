@@ -4,7 +4,7 @@ import { logError, logInfo } from "./log";
 import { processAttendanceReminders } from "./sync/attendance-reminders";
 import { syncPayloadEvents } from "./sync/events";
 import { syncGuildMemberAccess } from "./sync/member-access";
-import { syncMembershipPanel, syncTicketPanel } from "./sync/panels";
+import { syncCalendarPanel, syncMembershipPanel, syncTicketPanel } from "./sync/panels";
 import type { SyncPayload } from "./types";
 
 export async function syncGuildPayload(
@@ -25,6 +25,7 @@ export async function syncGuildPayload(
     await runGuildSyncStep("member access sync", payload, () => syncGuildMemberAccess(client, payload));
     await runGuildSyncStep("ticket panel sync", payload, () => syncTicketPanel(client, payload));
     await runGuildSyncStep("membership panel sync", payload, () => syncMembershipPanel(client, payload));
+    await runGuildSyncStep("calendar panel sync", payload, () => syncCalendarPanel(client, payload));
     await runGuildSyncStep("attendance reminder sync", payload, () =>
       processAttendanceReminders(client, queuedEventIds, payload),
     );

@@ -9,6 +9,7 @@ import { convex, references } from "../convex";
 import { env } from "../environment";
 import { logError, logInfo, logWarn } from "../log";
 import { syncGuildPayload } from "../sync";
+import { syncCalendarPanel } from "../sync/panels";
 import type { EventSyncContext, EventSyncIndex, SyncPayload } from "../types";
 
 import { GuildCache, type GuildRuntimeData } from "./guild-cache";
@@ -295,6 +296,7 @@ export class DiscordSyncService {
       hasSyncState: payload.syncStates.length > 0,
     });
     await syncGuildPayload(this.client, queuedEventIds, payload, "events_only");
+    await this.syncGuildCalendar(context.event.guildId);
   }
 
   private async loadEventSyncContext(eventId: string) {
@@ -302,6 +304,20 @@ export class DiscordSyncService {
       secret: env.internalSecret,
       eventId: eventId as never,
     })) as EventSyncContext | null;
+  }
+
+  private async syncGuildCalendar(guildId: string) {
+    const runtime = this.guildCache.get(guildId);
+    if (!runtime?.config) {
+      return;
+    }
+
+    const eventIds = [...this.eventIndexById.values()]
+      .filter((event) => event.guildId === guildId)
+      .map((event) => event.id);
+    const contexts = await Promise.all(eventIds.map((eventId) => this.loadEventSyncContext(eventId)));
+    const payload = buildGuildPayload(runtime, contexts);
+    await syncCalendarPanel(this.client, payload);
   }
 }
 

@@ -56,6 +56,11 @@ export type DiscordConfig = {
   timezone: string;
   defaultLanguage: ClanLanguage;
   announcementsChannelId?: string;
+  calendarChannelId?: string;
+  calendarCategories: string[];
+  calendarMessageChannelId?: string;
+  calendarMessageId?: string;
+  calendarMessageLastConfigUpdatedAt?: string;
   forumCategoryId?: string;
   meetingChannelId?: string;
   clanRoleId?: string;
@@ -184,12 +189,15 @@ export type EventRecord = {
   id: string;
   guildId: string;
   kind: "match" | "training";
+  matchType?: string;
   name: string;
   description?: string;
   thumbnailUrl?: string;
   meetingChannelId?: string;
   requiredRoleIds: string[];
   rewardRoleIds: string[];
+  signupGroupIds?: string[];
+  useGeneralSignup?: boolean;
   server?: string;
   serverPassword?: string;
   side?: string;
@@ -300,5 +308,9 @@ export type EventInteractionContext = {
   config: DiscordConfig;
   event: EventRecord;
   groups: Group[];
+  assignments?: Array<{
+    userId: string;
+    primaryGroupId?: string;
+  }>;
   roster: Roster | null;
 };

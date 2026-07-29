@@ -5,6 +5,7 @@ import { convex, references } from "../convex";
 import { env } from "../environment";
 import { logInfo, logWarn } from "../log";
 import {
+  buildCalendarPanelEmbed,
   buildMembershipPanelComponents,
   buildMembershipPanelEmbed,
   buildTicketPanelComponents,
@@ -148,6 +149,101 @@ export async function syncMembershipPanel(client: Client, payload: SyncPayload) 
       guildId: payload.config.guildId,
       membershipPanelMessageId,
       membershipPanelLastConfigUpdatedAt: payload.config.updatedAt,
+    });
+    await revalidateAppData({
+      type: "discord-config-changed",
+      serverId: payload.config.guildId,
+    });
+  }
+}
+
+export async function syncCalendarPanel(client: Client, payload: SyncPayload) {
+  const guild = await client.guilds.fetch(payload.config.guildId).catch(() => null);
+  if (!guild) {
+    logWarn("calendar-panel", "Skipping calendar panel sync because guild could not be fetched", {
+      guildId: payload.config.guildId,
+    });
+    return;
+  }
+
+  const storedChannelId = payload.config.calendarMessageChannelId;
+  const storedMessageId = payload.config.calendarMessageId;
+
+  if (!payload.config.calendarChannelId) {
+    if (storedChannelId && storedMessageId) {
+      const previousChannel = await guild.channels.fetch(storedChannelId).catch(() => null);
+      if (previousChannel?.isTextBased() && previousChannel.type === ChannelType.GuildText) {
+        await (previousChannel as TextChannel).messages.fetch(storedMessageId).then((message) => message.delete()).catch(() => null);
+      }
+      await convex.mutation(references.updateCalendarPanelState, {
+        secret: env.internalSecret,
+        guildId: payload.config.guildId,
+        calendarMessageChannelId: undefined,
+        calendarMessageId: undefined,
+        calendarMessageLastConfigUpdatedAt: payload.config.updatedAt,
+      });
+      await revalidateAppData({
+        type: "discord-config-changed",
+        serverId: payload.config.guildId,
+      });
+    }
+    logInfo("calendar-panel", "Skipping calendar panel sync because calendar channel is not configured", {
+      guildId: payload.config.guildId,
+    });
+    return;
+  }
+
+  const channel = await guild.channels.fetch(payload.config.calendarChannelId).catch(() => null);
+  if (!channel?.isTextBased() || channel.type !== ChannelType.GuildText) {
+    logWarn("calendar-panel", "Skipping calendar panel sync because calendar channel is unavailable or not text", {
+      guildId: payload.config.guildId,
+      channelId: payload.config.calendarChannelId,
+    });
+    return;
+  }
+
+  const textChannel = channel as TextChannel;
+
+  if (storedChannelId && storedChannelId !== textChannel.id && storedMessageId) {
+    const previousChannel = await guild.channels.fetch(storedChannelId).catch(() => null);
+    if (previousChannel?.isTextBased() && previousChannel.type === ChannelType.GuildText) {
+      await (previousChannel as TextChannel).messages.fetch(storedMessageId).then((message) => message.delete()).catch(() => null);
+    }
+  }
+
+  const currentMessage = storedMessageId && storedChannelId === textChannel.id
+    ? await textChannel.messages.fetch(storedMessageId).catch(() => null)
+    : null;
+  const embed = buildCalendarPanelEmbed(payload.config, payload.events);
+
+  let calendarMessageId = storedMessageId;
+  if (currentMessage) {
+    await currentMessage.edit({ embeds: [embed], components: [] });
+    logInfo("calendar-panel", "Updated existing calendar panel message", {
+      guildId: payload.config.guildId,
+      messageId: currentMessage.id,
+    });
+  } else {
+    const created = await textChannel.send({ embeds: [embed] });
+    calendarMessageId = created.id;
+    logInfo("calendar-panel", "Created calendar panel message", {
+      guildId: payload.config.guildId,
+      channelId: textChannel.id,
+      messageId: created.id,
+    });
+  }
+
+  if (
+    calendarMessageId !== payload.config.calendarMessageId ||
+    textChannel.id !== payload.config.calendarMessageChannelId ||
+    payload.config.calendarMessageLastConfigUpdatedAt !== payload.config.updatedAt
+  ) {
+    await convex.mutation(references.updateCalendarPanelState, {
+      secret: env.internalSecret,
+      guildId: payload.config.guildId,
+      calendarMessageChannelId: textChannel.id,
+      calendarMessageId,
+      calendarMessageLastConfigUpdatedAt: payload.config.updatedAt,
     });
     await revalidateAppData({
       type: "discord-config-changed",

@@ -11,12 +11,15 @@ export async function saveServerEventCommand(input: {
   eventId?: string;
   serverId: string;
   kind: "match" | "training";
+  matchType?: string;
   name: string;
   description?: string;
   thumbnailUrl?: string;
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
+  signupGroupIds?: string[];
+  useGeneralSignup?: boolean;
   server?: string;
   serverPassword?: string;
   side?: string;
@@ -37,12 +40,15 @@ export async function saveServerEventCommand(input: {
     eventId: input.eventId as never,
     serverId: input.serverId,
     kind: input.kind,
+    matchType: input.matchType,
     name: input.name,
     description: input.description,
     thumbnailUrl: input.thumbnailUrl,
     meetingChannelId: input.meetingChannelId,
     requiredRoleIds: input.requiredRoleIds,
     rewardRoleIds: input.rewardRoleIds,
+    signupGroupIds: input.signupGroupIds,
+    useGeneralSignup: input.useGeneralSignup,
     server: input.server,
     serverPassword: input.serverPassword,
     side: input.side,

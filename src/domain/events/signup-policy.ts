@@ -21,7 +21,7 @@ export function toggleSignup(input: {
   const existing = input.participants.find((participant) => participant.userId === input.userId);
   let participants = input.participants.filter((participant) => participant.userId !== input.userId);
   const normalizedNextGroup = input.group && input.group !== SIGNUP_NOT_ATTENDING ? input.group : null;
-  const nextStatus = normalizedNextGroup ? "attending" : "not_attending";
+  const nextStatus = input.group === SIGNUP_NOT_ATTENDING ? "not_attending" : "attending";
   const existingGroup = existing?.status === "attending" ? (existing.group ?? null) : null;
   const shouldRemoveSignup = Boolean(
     existing &&

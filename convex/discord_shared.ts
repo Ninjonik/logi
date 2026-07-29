@@ -17,6 +17,9 @@ export function normalizeConfigDoc<T extends { _id: unknown; defaultLanguage?: "
   return {
     ...normalizeReadModelDoc(doc),
     defaultLanguage: doc.defaultLanguage ?? "en",
+    calendarCategories: Array.isArray((doc as { calendarCategories?: string[] }).calendarCategories)
+      ? (doc as { calendarCategories?: string[] }).calendarCategories ?? []
+      : [],
   };
 }
 
@@ -85,3 +88,5 @@ export const membershipSettingsValidator = v.object({
   })),
   categories: v.array(membershipCategoryValidator),
 });
+
+export const calendarCategoriesValidator = v.array(v.string());

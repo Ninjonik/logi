@@ -51,10 +51,13 @@ export function normalizeEventDoc<T extends {
   meetingStart: string;
   gameEnd: string;
   kind?: "match" | "training";
+  matchType?: string;
   thumbnailUrl?: string;
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
+  signupGroupIds?: string[];
+  useGeneralSignup?: boolean;
   stratmapIds?: string[];
   createForumChannel?: boolean;
   status?: "registration" | "closed" | "starting" | "concluded";
