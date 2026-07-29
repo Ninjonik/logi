@@ -510,6 +510,7 @@ export const enMessages = {
     modeAssignment: "Roster editor",
     updatePublished: "Update published roster",
     publishRoster: "Publish roster",
+    unpublishRoster: "Unpublish roster",
     publishConfirmTitle: "Publish roster?",
     publishConfirmDescription: "Members will see the published version immediately.",
     setupRoster: "Setup Roster",

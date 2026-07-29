@@ -10,6 +10,7 @@ import {
   Save,
   Send,
   Settings2,
+  EyeOff,
   WandSparkles,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -988,7 +989,17 @@ export function RosterBoard({
                 {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
                 {dictionary.roster.publishRoster}
               </Button>
-            ) : null}
+            ) : (
+              <Button
+                variant="outline"
+                className={actionControlClass}
+                onClick={() => handleSave(false)}
+                disabled={isPending || isConfirmingMeetingChannel}
+              >
+                {isPending ? <Loader2 className="size-4 animate-spin" /> : <EyeOff className="size-4" />}
+                {dictionary.roster.unpublishRoster}
+              </Button>
+            )}
           </div>
         </div>
       ) : null}
