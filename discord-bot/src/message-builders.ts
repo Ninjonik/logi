@@ -9,7 +9,7 @@ import {
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 import { canAcceptSignups } from "../../src/domain/events/status";
 
-import { SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
+import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
 import type {
   ClanLanguage,
   DiscordConfig,
@@ -51,7 +51,7 @@ export function buildEventEmbed(config: DiscordConfig, groups: Group[], event: E
   const signups = participantSignups.length > 0 ? participantSignups : event.signUps;
 
   for (const signUp of signups) {
-    const rawGroup = signUp.group ?? SIGNUP_NOT_ATTENDING;
+    const rawGroup = signUp.group ?? "ATTENDING";
     const key = rawGroup === SIGNUP_NOT_ATTENDING ? SIGNUP_NOT_ATTENDING : (groupNameById.get(rawGroup) ?? rawGroup);
     const list = signupsByGroup.get(key) ?? [];
     list.push(`<@${signUp.userId}>`);
@@ -98,11 +98,22 @@ export function buildEventEmbed(config: DiscordConfig, groups: Group[], event: E
   }
 
   if (event.kind === "match") {
-    for (const group of groups) {
+    const configuredGroupIds = event.signupGroupIds?.length ? new Set(event.signupGroupIds) : null;
+    const visibleGroups = configuredGroupIds ? groups.filter((group) => configuredGroupIds.has(group.id)) : groups;
+    for (const group of visibleGroups) {
       const members = signupsByGroup.get(group.name) ?? [];
       embed.addFields({
         name: `${group.discordEmoji ?? "👥"} ${group.name} (${members.length})`,
         value: members.length ? members.join(", ") : messages.embed.nobodyYet,
+        inline: false,
+      });
+    }
+
+    const generalAttending = signupsByGroup.get("ATTENDING") ?? [];
+    if (generalAttending.length > 0) {
+      embed.addFields({
+        name: `âœ… ${messages.embed.attending} (${generalAttending.length})`,
+        value: generalAttending.join(", "),
         inline: false,
       });
     }
@@ -380,6 +391,92 @@ export function buildMembershipPanelComponents(config: DiscordConfig) {
   return rows;
 }
 
+function normalizeCalendarCategory(value?: string) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function resolveCalendarEventLabel(config: DiscordConfig, event: EventRecord) {
+  const messages = getClanDiscordMessages(config.defaultLanguage);
+  if (event.kind === "training") {
+    return messages.calendar.trainingLabel;
+  }
+
+  const configuredCategory = config.calendarCategories.find(
+    (category) => normalizeCalendarCategory(category) === normalizeCalendarCategory(event.matchType),
+  );
+
+  return configuredCategory ?? event.matchType?.trim() ?? messages.calendar.matchLabel;
+}
+
+function formatCalendarDate(timestamp: string, timezone: string, language: ClanLanguage) {
+  return new Intl.DateTimeFormat(configureLocale(language), {
+    timeZone: timezone,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(timestamp));
+}
+
+function formatCalendarTime(timestamp: string, timezone: string, language: ClanLanguage) {
+  return new Intl.DateTimeFormat(configureLocale(language), {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(timestamp));
+}
+
+function configureLocale(language: ClanLanguage) {
+  return language === "cs" ? "cs-CZ" : "en-GB";
+}
+
+export function buildCalendarPanelEmbed(config: DiscordConfig, events: EventRecord[]) {
+  const messages = getClanDiscordMessages(config.defaultLanguage);
+  const now = Date.now();
+  const upcomingEvents = [...events]
+    .filter((event) => new Date(event.gameEnd).getTime() >= now && event.status !== "concluded")
+    .sort((left, right) => new Date(left.meetingStart).getTime() - new Date(right.meetingStart).getTime())
+    .slice(0, 20);
+
+  const groupedEvents = new Map<string, string[]>();
+  for (const event of upcomingEvents) {
+    const dateLabel = formatCalendarDate(event.gameStart, config.timezone, config.defaultLanguage);
+    const timeLabel = `${formatCalendarTime(event.gameStart, config.timezone, config.defaultLanguage)} - ${formatCalendarTime(event.gameEnd, config.timezone, config.defaultLanguage)}`;
+    const categoryLabel = resolveCalendarEventLabel(config, event);
+    const line = `• ${event.name}${categoryLabel ? ` - ${categoryLabel}` : ""} (${timeLabel})`;
+    const bucket = groupedEvents.get(dateLabel) ?? [];
+    bucket.push(line);
+    groupedEvents.set(dateLabel, bucket);
+  }
+
+  const embed = new EmbedBuilder()
+    .setTitle(`📅 ${messages.calendar.panelTitle}`)
+    .setColor("#2563EB")
+    .setFooter({ text: `${messages.embed.managedFooter} • ${config.timezone}` });
+
+  if (config.calendarCategories.length) {
+    embed.setDescription(`${messages.calendar.panelCategories}: ${config.calendarCategories.join(", ")}`);
+  }
+
+  if (!upcomingEvents.length) {
+    if (!config.calendarCategories.length) {
+      embed.setDescription(messages.calendar.panelEmpty);
+    }
+    return embed;
+  }
+
+  for (const [dateLabel, lines] of groupedEvents) {
+    embed.addFields({
+      name: dateLabel,
+      value: lines.join("\n").slice(0, 1024),
+      inline: false,
+    });
+  }
+
+  return embed;
+}
+
 export function buildTicketThreadEmbed(input: {
   language: ClanLanguage;
   category: TicketCategory;
@@ -478,8 +575,16 @@ function buildSignupButtons(config: DiscordConfig, groups: Group[], eventId: str
     ];
   }
 
+  const configuredGroupIds = event.signupGroupIds?.length ? new Set(event.signupGroupIds) : null;
+  const visibleGroups = configuredGroupIds ? groups.filter((group) => configuredGroupIds.has(group.id)) : groups;
   const allButtons = [
-    ...groups.map((group) => {
+    ...(event.useGeneralSignup ? [
+      new ButtonBuilder()
+        .setCustomId(`signup:${eventId}:${encodeURIComponent(SIGNUP_GENERAL)}`)
+        .setStyle(ButtonStyle.Primary)
+        .setLabel(messages.buttons.generalSignup),
+    ] : []),
+    ...visibleGroups.map((group) => {
       const button = new ButtonBuilder()
         .setCustomId(`signup:${eventId}:${encodeURIComponent(group.id)}`)
         .setStyle(pickButtonStyle(group.color));

@@ -24,6 +24,8 @@ export async function saveDiscordConfig(input: {
   timezone: string;
   defaultLanguage: "en" | "cs";
   announcementsChannelId?: string;
+  calendarChannelId?: string;
+  calendarCategories?: string[];
   forumCategoryId?: string;
   meetingChannelId?: string;
   clanRoleId?: string;
@@ -37,6 +39,8 @@ export async function saveDiscordConfig(input: {
     timezone: input.timezone,
     defaultLanguage: input.defaultLanguage,
     announcementsChannelId: input.announcementsChannelId,
+    calendarChannelId: input.calendarChannelId,
+    calendarCategories: input.calendarCategories,
     forumCategoryId: input.forumCategoryId,
     meetingChannelId: input.meetingChannelId,
     clanRoleId: input.clanRoleId,

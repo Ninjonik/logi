@@ -38,7 +38,7 @@ export default async function EventDetailPage({
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { events, rosters, canAdmin, topicPresets, stratmaps, discordConfig } = context;
+  const { events, rosters, canAdmin, topicPresets, stratmaps, discordConfig, groups } = context;
   const event = events.find((item) => item.id === eventId);
   const roster = rosters.find((item) => item.eventId === eventId);
   const attachedStratmaps = stratmaps.filter((stratmap) => event?.stratmapIds.includes(stratmap.id));
@@ -90,7 +90,7 @@ export default async function EventDetailPage({
         }
       />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
+        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} groups={groups} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
       </div>
     </>
   );

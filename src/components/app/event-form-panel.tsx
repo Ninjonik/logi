@@ -15,6 +15,7 @@ import { HllMapSelector } from "@/components/app/hll-map-selector";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +34,7 @@ import {
 import { fromDateTimeLocalInTimeZone, toDateTimeLocalInTimeZone } from "@/lib/timezone-datetime";
 import { cn } from "@/lib/utils";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
-import type { DiscordConfig, EventRecord, StratmapRecord, TopicPreset } from "@/types/domain";
+import type { DiscordConfig, EventRecord, Group, StratmapRecord, TopicPreset } from "@/types/domain";
 
 type DiscordMetadata = {
   roles: DiscordSelectOption[];
@@ -346,6 +347,7 @@ export function EventFormPanel({
   locale,
   topicPresets,
   stratmaps,
+  groups,
   timezone = "UTC",
   canEdit,
   dictionary,
@@ -357,6 +359,7 @@ export function EventFormPanel({
   locale: string;
   topicPresets: TopicPreset[];
   stratmaps: StratmapRecord[];
+  groups: Group[];
   timezone?: string;
   canEdit: boolean;
   dictionary: Dictionary;
@@ -374,6 +377,7 @@ export function EventFormPanel({
     resolver: zodResolver(eventSchema),
     defaultValues: {
       kind: event.kind ?? "match",
+      matchType: event.matchType ?? "",
       name: event.name ?? "",
       description: event.description ?? "",
       thumbnailUrl: event.thumbnailUrl ?? "",
@@ -394,6 +398,8 @@ export function EventFormPanel({
       createForumChannel: event.createForumChannel,
       topicPresetId: event.topicPresetId ?? "",
       stratmapIds: event.stratmapIds ?? [],
+      signupGroupIds: event.signupGroupIds ?? groups.map((group) => group.id),
+      useGeneralSignup: event.useGeneralSignup ?? false,
     },
   });
   const eventKind = form.watch("kind");
@@ -529,6 +535,8 @@ export function EventFormPanel({
       createForumChannel: values.kind === "match" ? values.createForumChannel : false,
       topicPresetId: values.topicPresetId || undefined,
       stratmapIds: values.stratmapIds,
+      signupGroupIds: values.kind === "match" ? values.signupGroupIds : [],
+      useGeneralSignup: values.kind === "match" ? values.useGeneralSignup : false,
       thumbnailUrl: values.thumbnailUrl || undefined,
     };
 
@@ -724,6 +732,12 @@ export function EventFormPanel({
             </div>
             {eventKind === "match" ? (
             <div>
+              <FieldLabel label={dictionary.event.fields.matchType}  />
+              {canEdit ? <Input {...form.register("matchType")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("matchType")} emptyLabel={dictionary.shared.notSet} />}
+            </div>
+            ) : null}
+            {eventKind === "match" ? (
+            <div>
               <FieldLabel label={dictionary.event.fields.side}  />
               {canEdit ? <Input {...form.register("side")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("side")} emptyLabel={dictionary.shared.notSet} />}
             </div>
@@ -833,6 +847,65 @@ export function EventFormPanel({
                 />
               ) : (
                 <ReadOnlyList values={(form.watch("stratmapIds") ?? []).map((id) => stratmaps.find((item) => item.id === id)?.title ?? id)} emptyLabel={dictionary.shared.notSet} />
+              )}
+            </div>
+            ) : null}
+            {eventKind === "match" ? (
+            <div className="md:col-span-2">
+              {canEdit ? (
+                <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                  <div>
+                    <FieldLabel label={dictionary.event.fields.useGeneralSignup} />
+                    <p className="text-sm text-muted-foreground">{dictionary.event.generalSignupDescription}</p>
+                  </div>
+                  <Controller
+                    control={form.control}
+                    name="useGeneralSignup"
+                    render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
+                  />
+                </div>
+              ) : (
+                <ReadOnlyValue value={form.watch("useGeneralSignup") ? dictionary.tables.enabled : dictionary.tables.disabled} emptyLabel={dictionary.shared.notSet} />
+              )}
+            </div>
+            ) : null}
+            {eventKind === "match" ? (
+            <div className="md:col-span-2">
+              <FieldLabel label={dictionary.event.fields.signupGroupIds} />
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="signupGroupIds"
+                  render={({ field }) => {
+                    const selectedIds = new Set(field.value ?? []);
+
+                    return (
+                      <div className="space-y-3 rounded-xl border border-border/60 p-4">
+                        <p className="text-sm text-muted-foreground">{dictionary.event.signupGroupsDescription}</p>
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {groups.map((group) => (
+                            <label key={group.id} className="flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2">
+                              <Checkbox
+                                checked={selectedIds.has(group.id)}
+                                onCheckedChange={(checked) => {
+                                  const nextValues = checked
+                                    ? [...selectedIds, group.id]
+                                    : [...selectedIds].filter((groupId) => groupId !== group.id);
+                                  field.onChange(nextValues);
+                                }}
+                              />
+                              <span className="size-3 rounded-full border border-border/60" style={{ backgroundColor: group.color }} />
+                              <span className="text-sm">{group.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                        {!groups.length ? <div className="text-sm text-muted-foreground">{dictionary.shared.nothingCreatedYet}</div> : null}
+                      </div>
+                    );
+                  }}
+                />
+              ) : (
+                <ReadOnlyList values={(form.watch("signupGroupIds") ?? []).map((id) => groups.find((group) => group.id === id)?.name ?? id)} emptyLabel={dictionary.shared.notSet} />
               )}
             </div>
             ) : null}

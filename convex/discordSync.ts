@@ -122,11 +122,12 @@ export const getEventSignupContext = query({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const [config, event, groups, roster] = await Promise.all([
+    const [config, event, groups, roster, assignments] = await Promise.all([
       ctx.db.query("discordConfigs").withIndex("guildId", (q) => q.eq("guildId", args.guildId)).unique(),
       ctx.db.get(args.eventId),
       ctx.db.query("groups").withIndex("guildId", (q) => q.eq("guildId", args.guildId)).collect(),
       ctx.db.query("rosters").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique(),
+      ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", args.guildId)).collect(),
     ]);
 
     if (!config || !event || event.guildId !== args.guildId) {
@@ -137,6 +138,10 @@ export const getEventSignupContext = query({
       config: normalizeConfigDoc(config),
       event: normalizeEventDoc(event),
       groups: groups.map(normalizeDoc),
+      assignments: assignments.map((assignment) => ({
+        userId: assignment.userId,
+        primaryGroupId: assignment.primaryGroupId ? String(assignment.primaryGroupId) : undefined,
+      })),
       roster: roster ? normalizeDoc(roster) : null,
     };
   },

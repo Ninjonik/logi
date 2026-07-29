@@ -1,10 +1,22 @@
 import type { EventWorkflowRecord, EventWorkflowRepository, EventWorkflowSyncPort } from "@/application/events/ports";
 
 export class InMemoryEventWorkflowRepository implements EventWorkflowRepository {
-  constructor(public readonly events: Map<string, EventWorkflowRecord>) {}
+  constructor(
+    public readonly events: Map<string, EventWorkflowRecord>,
+    private readonly assignments = new Map<string, { primaryGroupId?: string }>(),
+    private readonly groupNames = new Map<string, string>(),
+  ) {}
 
   async getById(eventId: string): Promise<EventWorkflowRecord | null> {
     return this.events.get(eventId) ?? null;
+  }
+
+  async getAssignmentForUser(serverId: string, userId: string) {
+    return this.assignments.get(`${serverId}:${userId}`) ?? null;
+  }
+
+  async getGroupNameById(groupId: string) {
+    return this.groupNames.get(groupId) ?? null;
   }
 
   async saveSignupState(eventId: string, input: {

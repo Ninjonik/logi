@@ -4,6 +4,7 @@ export type EventStatus = "registration" | "closed" | "starting" | "concluded";
 
 export type EventOutcome = "victory" | "defeat" | "draw";
 export type EventKind = "match" | "training";
+export type MatchTypeCategory = string;
 
 export type AppUser = {
   _reserveSection?: string;
@@ -130,6 +131,11 @@ export type DiscordConfig = {
   timezone: string;
   defaultLanguage: "en" | "cs";
   announcementsChannelId?: string;
+  calendarChannelId?: string;
+  calendarCategories: MatchTypeCategory[];
+  calendarMessageChannelId?: string;
+  calendarMessageId?: string;
+  calendarMessageLastConfigUpdatedAt?: string;
   forumCategoryId?: string;
   meetingChannelId?: string;
   clanRoleId?: string;
@@ -179,6 +185,7 @@ export type EventRecord = {
   id: string;
   guildId: string;
   kind: EventKind;
+  matchType?: MatchTypeCategory;
   name: string;
   description?: string;
   thumbnailUrl?: string;
@@ -199,6 +206,8 @@ export type EventRecord = {
   createForumChannel: boolean;
   topicPresetId?: string;
   stratmapIds: string[];
+  signupGroupIds?: string[];
+  useGeneralSignup?: boolean;
   status: EventStatus;
   statusUpdatedAt: Timestamp;
   concludedAt?: Timestamp;

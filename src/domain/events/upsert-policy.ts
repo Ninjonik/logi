@@ -7,6 +7,7 @@ import type { EventKind, EventLike, EventStatus } from "./types";
 export type EventUpsertInput = {
   guildId: string;
   kind?: EventKind;
+  matchType?: string;
   name: string;
   description?: string;
   thumbnailUrl?: string;
@@ -27,6 +28,8 @@ export type EventUpsertInput = {
   createForumChannel?: boolean;
   topicPresetId?: string;
   stratmapIds?: string[];
+  signupGroupIds?: string[];
+  useGeneralSignup?: boolean;
 };
 
 function trimOptional(value: string | undefined) {
@@ -39,6 +42,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
   return {
     guildId: input.guildId,
     kind,
+    matchType: kind === "match" ? trimOptional(input.matchType) : undefined,
     name: input.name.trim(),
     description: trimOptional(input.description),
     thumbnailUrl: trimOptional(input.thumbnailUrl),
@@ -59,6 +63,8 @@ export function buildEventBasePayload(input: EventUpsertInput) {
     createForumChannel: kind === "training" ? false : input.createForumChannel ?? true,
     topicPresetId: input.topicPresetId,
     stratmapIds: normalizeOptionalArray(input.stratmapIds).map((id) => id.trim()).filter(Boolean),
+    signupGroupIds: kind === "training" ? [] : normalizeOptionalArray(input.signupGroupIds).map((id) => id.trim()).filter(Boolean),
+    useGeneralSignup: kind === "match" ? Boolean(input.useGeneralSignup) : false,
   };
 }
 

@@ -4,6 +4,8 @@ export type EventWorkflowRecord = {
   id: string;
   guildId: string;
   kind?: "match" | "training";
+  signupGroupIds?: string[];
+  useGeneralSignup?: boolean;
   registrationEnd: string;
   meetingStart: string;
   gameStart?: string;
@@ -18,6 +20,10 @@ export type EventWorkflowRecord = {
 
 export interface EventWorkflowRepository {
   getById(eventId: string): Promise<EventWorkflowRecord | null>;
+  getAssignmentForUser(serverId: string, userId: string): Promise<{
+    primaryGroupId?: string;
+  } | null>;
+  getGroupNameById(groupId: string): Promise<string | null>;
   saveSignupState(eventId: string, input: {
     participants: EventParticipant[];
     signUps: EventSignup[];

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -89,10 +90,13 @@ export function DiscordServerSettingsForm({
   const [timezone, setTimezone] = useState(config?.timezone ?? "UTC");
   const [defaultLanguage, setDefaultLanguage] = useState<ClanLanguage>(config?.defaultLanguage ?? "en");
   const [announcementsChannelId, setAnnouncementsChannelId] = useState<string | undefined>(config?.announcementsChannelId);
+  const [calendarChannelId, setCalendarChannelId] = useState<string | undefined>(config?.calendarChannelId);
+  const [calendarCategories, setCalendarCategories] = useState<string[]>(config?.calendarCategories ?? []);
   const [forumCategoryId, setForumCategoryId] = useState<string | undefined>(config?.forumCategoryId);
   const [meetingChannelId, setMeetingChannelId] = useState<string | undefined>(config?.meetingChannelId);
   const [clanRoleId, setClanRoleId] = useState<string | undefined>(config?.clanRoleId);
   const [dashboardAdminRoleId, setDashboardAdminRoleId] = useState<string | undefined>(config?.dashboardAdminRoleId);
+  const [nextCalendarCategory, setNextCalendarCategory] = useState("");
 
   useEffect(() => {
     fetch(`/api/servers/${serverId}/discord-metadata`)
@@ -111,6 +115,16 @@ export function DiscordServerSettingsForm({
   const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
   const roles = metadata?.roles ?? [];
 
+  function addCalendarCategory() {
+    const trimmed = nextCalendarCategory.trim();
+    if (!trimmed || calendarCategories.some((value) => value.toLowerCase() === trimmed.toLowerCase())) {
+      return;
+    }
+
+    setCalendarCategories((current) => [...current, trimmed]);
+    setNextCalendarCategory("");
+  }
+
   async function handleSave() {
     const remappedDefaults = remapLocalizedDefaults(config, defaultLanguage);
     const response = await fetch(`/api/servers/${serverId}/discord-settings`, {
@@ -120,6 +134,8 @@ export function DiscordServerSettingsForm({
         timezone,
         defaultLanguage,
         announcementsChannelId,
+        calendarChannelId,
+        calendarCategories,
         forumCategoryId,
         meetingChannelId,
         clanRoleId,
@@ -177,6 +193,45 @@ export function DiscordServerSettingsForm({
         <div className="space-y-2">
           <Label>{dictionary.serverSettings.announcementsChannelId}</Label>
           <DiscordEntitySelect value={announcementsChannelId} onChange={setAnnouncementsChannelId} options={announcementChannels} placeholder={dictionary.serverSettings.announcementsChannelId} />
+        </div>
+        <div className="space-y-2">
+          <Label>{dictionary.serverSettings.calendarChannelId}</Label>
+          <DiscordEntitySelect value={calendarChannelId} onChange={setCalendarChannelId} options={announcementChannels} placeholder={dictionary.serverSettings.calendarChannelId} />
+        </div>
+        <div className="space-y-3">
+          <Label>{dictionary.serverSettings.calendarCategories}</Label>
+          <div className="flex gap-2">
+            <Input
+              value={nextCalendarCategory}
+              onChange={(event) => setNextCalendarCategory(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  addCalendarCategory();
+                }
+              }}
+              className="rounded-xl"
+              placeholder={dictionary.serverSettings.calendarCategoriesPlaceholder}
+            />
+            <Button type="button" variant="outline" className="rounded-xl" onClick={addCalendarCategory}>
+              {dictionary.common.create}
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {calendarCategories.length ? calendarCategories.map((category) => (
+              <Button
+                key={category}
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => setCalendarCategories((current) => current.filter((value) => value !== category))}
+              >
+                {category} ×
+              </Button>
+            )) : (
+              <p className="text-sm text-muted-foreground">{dictionary.serverSettings.calendarCategoriesHint}</p>
+            )}
+          </div>
         </div>
         <div className="space-y-2">
           <Label>{dictionary.serverSettings.forumCategoryId}</Label>

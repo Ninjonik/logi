@@ -2,7 +2,7 @@ import { type ButtonInteraction, type GuildMember } from "discord.js";
 
 import { getClanDiscordMessages } from "../../../src/lib/clan-language";
 import { revalidateAppData } from "../cache";
-import { SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "../constants";
+import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "../constants";
 import { convex, references } from "../convex";
 import { env } from "../environment";
 import { logInfo } from "../log";
@@ -62,12 +62,14 @@ export async function handleEventButtonInteraction(
 
   const member = interaction.member as GuildMember | null;
   const isTrainingAttend = context.event.kind === "training" && groupId === TRAINING_ATTEND;
+  const isGeneralSignup = context.event.kind === "match" && groupId === SIGNUP_GENERAL;
+  const configuredGroupIds = context.event.signupGroupIds?.length ? new Set(context.event.signupGroupIds) : null;
   const selectedGroup =
-    groupId === SIGNUP_NOT_ATTENDING || isTrainingAttend
+    groupId === SIGNUP_NOT_ATTENDING || isTrainingAttend || isGeneralSignup
       ? null
-      : context.groups.find((group) => group.id === groupId);
+      : context.groups.find((group) => group.id === groupId && (!configuredGroupIds || configuredGroupIds.has(group.id)));
 
-  if (!selectedGroup && groupId !== SIGNUP_NOT_ATTENDING && !isTrainingAttend) {
+  if (!selectedGroup && groupId !== SIGNUP_NOT_ATTENDING && !isTrainingAttend && !isGeneralSignup) {
     await interaction.reply({
       content: getClanDiscordMessages(context.config.defaultLanguage).interaction.invalidSignupButton,
       ephemeral: true,
@@ -98,12 +100,19 @@ export async function handleEventButtonInteraction(
     });
     return;
   }
+  if (isGeneralSignup && !context.event.useGeneralSignup) {
+    await interaction.reply({
+      content: getClanDiscordMessages(context.config.defaultLanguage).interaction.invalidSignupButton,
+      ephemeral: true,
+    });
+    return;
+  }
 
   await convex.mutation(references.toggleSignUp, {
     secret: env.internalSecret,
     eventId: eventId as never,
     userId: interaction.user.id,
-    group: isTrainingAttend ? TRAINING_ATTEND : (selectedGroup ? selectedGroup.name : SIGNUP_NOT_ATTENDING),
+    group: isTrainingAttend ? TRAINING_ATTEND : isGeneralSignup ? SIGNUP_GENERAL : (selectedGroup ? selectedGroup.name : SIGNUP_NOT_ATTENDING),
   });
   await revalidateAppData({
     type: "event-changed",
