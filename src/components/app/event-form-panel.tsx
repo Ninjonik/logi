@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { supportedTimezones } from "@/lib/discord-timezones";
+import { getEventCategoryLabel } from "@/lib/event-categories";
 import {
   formatHllPresetLabel,
   inferHllBaseMapId,
@@ -34,7 +35,7 @@ import {
 import { fromDateTimeLocalInTimeZone, toDateTimeLocalInTimeZone } from "@/lib/timezone-datetime";
 import { cn } from "@/lib/utils";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
-import type { DiscordConfig, EventRecord, Group, StratmapRecord, TopicPreset } from "@/types/domain";
+import type { DiscordConfig, EventCategory, EventRecord, Group, StratmapRecord, TopicPreset } from "@/types/domain";
 
 type DiscordMetadata = {
   roles: DiscordSelectOption[];
@@ -348,6 +349,7 @@ export function EventFormPanel({
   topicPresets,
   stratmaps,
   groups,
+  eventCategories = [],
   timezone = "UTC",
   canEdit,
   dictionary,
@@ -360,6 +362,7 @@ export function EventFormPanel({
   topicPresets: TopicPreset[];
   stratmaps: StratmapRecord[];
   groups: Group[];
+  eventCategories?: EventCategory[];
   timezone?: string;
   canEdit: boolean;
   dictionary: Dictionary;
@@ -405,6 +408,7 @@ export function EventFormPanel({
   const eventKind = form.watch("kind");
   const detailBasePath = eventKind === "training" ? "trainings" : "matches";
   const eventName = form.watch("name");
+  const eventCategoryValue = form.watch("matchType");
   const sideValue = form.watch("side");
   const mapValue = form.watch("map");
   const pingClan = form.watch("pingClan");
@@ -730,12 +734,35 @@ export function EventFormPanel({
               <FieldLabel label={dictionary.event.fields.description}  />
               {canEdit ? <Textarea {...form.register("description")} className="min-h-24 rounded-xl" /> : <ReadOnlyValue value={form.watch("description")} emptyLabel={dictionary.shared.notSet} className="min-h-24 whitespace-pre-wrap" />}
             </div>
-            {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.matchType}  />
-              {canEdit ? <Input {...form.register("matchType")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("matchType")} emptyLabel={dictionary.shared.notSet} />}
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="matchType"
+                  render={({ field }) => (
+                    <Select value={field.value || "__none"} onValueChange={(value) => field.onChange(value === "__none" ? "" : value)}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder={dictionary.shared.notSet} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none">{dictionary.shared.notSet}</SelectItem>
+                        {eventCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {[category.emoji, category.label].filter(Boolean).join(" ")}
+                          </SelectItem>
+                        ))}
+                        {field.value && !eventCategories.some((category) => category.id === field.value) ? (
+                          <SelectItem value={field.value}>{field.value}</SelectItem>
+                        ) : null}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              ) : (
+                <ReadOnlyValue value={getEventCategoryLabel({ matchType: eventCategoryValue }, eventCategories)} emptyLabel={dictionary.shared.notSet} />
+              )}
             </div>
-            ) : null}
             {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.side}  />

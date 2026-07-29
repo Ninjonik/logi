@@ -1,19 +1,23 @@
 "use client";
 
 import Link from "next/link";
+
 import { MonthCalendarView } from "@/components/app/month-calendar-view";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Dictionary } from "@/i18n/dictionaries";
-import type { EventRecord, Roster } from "@/types/domain";
 import type { Locale } from "@/i18n/config";
+import type { Dictionary } from "@/i18n/dictionaries";
+import { getEventCategoryPresentation } from "@/lib/event-categories";
 import { formatDateTime } from "@/lib/format";
 import { formatHllPresetLabel } from "@/lib/hll-map-presets";
+import type { EventCategory, EventRecord, Roster } from "@/types/domain";
 
 export function CalendarView({
   locale,
   serverId,
   events,
+  eventCategories = [],
   rosters,
   timezone,
   dictionary,
@@ -21,6 +25,7 @@ export function CalendarView({
   locale: Locale;
   serverId: string;
   events: EventRecord[];
+  eventCategories?: EventCategory[];
   rosters: Roster[];
   timezone?: string;
   dictionary: Dictionary;
@@ -31,18 +36,35 @@ export function CalendarView({
 
   return (
     <div className="space-y-6">
-      <MonthCalendarView locale={locale} serverId={serverId} events={events} timezone={timezone} dictionary={dictionary} />
+      <MonthCalendarView
+        locale={locale}
+        serverId={serverId}
+        events={events}
+        eventCategories={eventCategories}
+        timezone={timezone}
+        dictionary={dictionary}
+      />
       <div className="grid gap-4 xl:grid-cols-3">
         {highlightedEvents.map((event) => {
           const roster = rosters.find((item) => item.eventId === event.id);
           const detailPath = event.kind === "training" ? "trainings" : "matches";
+          const category = getEventCategoryPresentation(event, eventCategories);
           const tertiaryValue = event.kind === "training"
             ? (event.meetingChannelId || "Discord")
             : `${formatHllPresetLabel(event.map) ?? event.map ?? "TBD"} • ${event.side ?? "TBD"}`;
 
           return (
-            <Card key={event.id} className="rounded-2xl border-border/60">
+            <Card key={event.id} className="rounded-2xl border-border/60" style={{ boxShadow: `inset 4px 0 0 ${category.color}` }}>
               <CardHeader>
+                {category.label ? (
+                  <Badge
+                    variant="outline"
+                    className="mb-2 rounded-full"
+                    style={{ borderColor: `${category.color}66`, color: category.color, backgroundColor: `${category.color}14` }}
+                  >
+                    {[category.emoji, category.label].filter(Boolean).join(" ")}
+                  </Badge>
+                ) : null}
                 <CardTitle className="text-xl">{event.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">{event.description}</p>
               </CardHeader>

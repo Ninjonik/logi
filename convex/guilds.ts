@@ -234,6 +234,12 @@ export const updateFrontendSettings = mutation({
     name: v.string(),
     avatar: v.string(),
     description: v.optional(v.string()),
+    eventCategories: v.optional(v.array(v.object({
+      id: v.string(),
+      label: v.string(),
+      color: v.string(),
+      emoji: v.optional(v.string()),
+    }))),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -248,6 +254,14 @@ export const updateFrontendSettings = mutation({
       name: args.name.trim(),
       avatar: args.avatar.trim(),
       description: args.description?.trim() || undefined,
+      eventCategories: (args.eventCategories ?? [])
+        .map((category) => ({
+          id: category.id.trim(),
+          label: category.label.trim(),
+          color: category.color.trim(),
+          emoji: category.emoji?.trim() || undefined,
+        }))
+        .filter((category) => category.id && category.label && category.color),
       updatedAt: new Date().toISOString(),
     });
 
