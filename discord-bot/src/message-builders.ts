@@ -545,7 +545,7 @@ export function buildMembershipApplicationThreadEmbed(input: {
 }
 
 function shouldShowPublishedRosterImage(event: EventRecord, roster?: Roster) {
-  return Boolean(roster?.published && (event.status === "closed" || event.status === "starting"));
+  return Boolean(event.kind === "match" && roster?.published);
 }
 
 function isSignupOpen(event: EventRecord) {
