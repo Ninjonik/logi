@@ -19,6 +19,12 @@ export async function POST(request: Request, context: { params: Promise<{ server
       name?: string;
       avatar?: string;
       description?: string;
+      eventCategories?: Array<{
+        id?: string;
+        label?: string;
+        color?: string;
+        emoji?: string;
+      }>;
     };
 
     if (!body.name?.trim() || !body.avatar?.trim()) {
@@ -30,6 +36,14 @@ export async function POST(request: Request, context: { params: Promise<{ server
       name: body.name,
       avatar: body.avatar,
       description: body.description,
+      eventCategories: (body.eventCategories ?? [])
+        .map((category) => ({
+          id: category.id?.trim() ?? "",
+          label: category.label?.trim() ?? "",
+          color: category.color?.trim() ?? "",
+          emoji: category.emoji?.trim() || undefined,
+        }))
+        .filter((category) => category.id && category.label && category.color),
     });
 
     revalidateCacheEntries([

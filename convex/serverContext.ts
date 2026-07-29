@@ -59,6 +59,7 @@ export const getServerContext = query({
       user: normalizeUserDoc(user),
       server: normalizeGuildDoc(server),
       canAdmin,
+      memberRoleIds: discordAccess?.roleIds ?? [],
       events: events.map(normalizeEventDoc),
       topicPresets: topicPresets.map(normalizeDoc),
       squadPresets: squadPresets.map(normalizeDoc),

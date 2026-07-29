@@ -42,6 +42,16 @@ export function normalizeGuildDoc<T extends UnknownDoc>(guild: T & { discordId?:
   return {
     ...normalizeDoc(guild),
     discordId: getGuildDiscordId(guild),
+    eventCategories: Array.isArray((guild as { eventCategories?: unknown[] }).eventCategories)
+      ? ((guild as {
+        eventCategories?: Array<{ id: string; label: string; color: string; emoji?: string }>;
+      }).eventCategories ?? []).map((category) => ({
+        id: category.id,
+        label: category.label,
+        color: category.color,
+        emoji: category.emoji,
+      }))
+      : [],
   };
 }
 

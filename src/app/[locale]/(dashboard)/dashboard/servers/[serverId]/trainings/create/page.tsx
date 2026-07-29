@@ -55,7 +55,7 @@ export default async function CreateTrainingPage({
     <>
       <PageHeader title={dictionary.sidebar.trainings} description={dictionary.event.createPageDescription} />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={draftEvent} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} groups={groups} timezone={timezone} canEdit={canAdmin} dictionary={dictionary} createMode discordConfig={discordConfig} />
+        <EventFormPanel event={draftEvent} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} groups={groups} eventCategories={context?.server.eventCategories ?? []} timezone={timezone} canEdit={canAdmin} dictionary={dictionary} createMode discordConfig={discordConfig} />
       </div>
     </>
   );

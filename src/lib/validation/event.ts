@@ -3,7 +3,7 @@ import { z } from "zod";
 export const eventSchema = z
   .object({
     kind: z.enum(["match", "training"]),
-    matchType: z.string().trim().max(80, "Match type must be 80 characters or fewer.").optional(),
+    matchType: z.string().trim().max(80, "Event category must be 80 characters or fewer.").optional(),
     name: z.string().trim().min(1, "Event name is required."),
     description: z.string().trim().optional(),
     thumbnailUrl: z.string().trim().url("Thumbnail must be a valid URL.").optional().or(z.literal("")),

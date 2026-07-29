@@ -42,7 +42,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
   return {
     guildId: input.guildId,
     kind,
-    matchType: kind === "match" ? trimOptional(input.matchType) : undefined,
+    matchType: trimOptional(input.matchType),
     name: input.name.trim(),
     description: trimOptional(input.description),
     thumbnailUrl: trimOptional(input.thumbnailUrl),

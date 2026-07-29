@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   addMonths,
@@ -17,14 +16,16 @@ import {
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { EventCalendarEventDialog } from "@/components/app/event-calendar-event-dialog";
+import { EmojiValue } from "@/components/app/emoji-value";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Dictionary } from "@/i18n/dictionaries";
-import { cn } from "@/lib/utils";
 import type { Locale } from "@/i18n/config";
-import type { EventRecord } from "@/types/domain";
+import type { Dictionary } from "@/i18n/dictionaries";
+import { getEventCategoryPresentation } from "@/lib/event-categories";
 import { formatDateKey, formatTime } from "@/lib/format";
-import { formatHllPresetLabel } from "@/lib/hll-map-presets";
+import { cn } from "@/lib/utils";
+import type { EventCategory, EventRecord, Group } from "@/types/domain";
 
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -32,14 +33,20 @@ export function MonthCalendarView({
   locale,
   serverId,
   events,
+  groups,
+  eventCategories = [],
   timezone,
   dictionary,
+  signupLanguage,
 }: {
   locale: Locale;
   serverId: string;
   events: EventRecord[];
+  groups: Group[];
+  eventCategories?: EventCategory[];
   timezone?: string;
   dictionary: Dictionary;
+  signupLanguage: "en" | "cs";
 }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     if (events[0]) return startOfMonth(parseISO(events[0].meetingStart));
@@ -119,18 +126,41 @@ export function MonthCalendarView({
                   ) : null}
                 </div>
                 <div className="space-y-2">
-                  {dayEvents.slice(0, 4).map((event) => (
-                    <Link
-                      key={event.id}
-                      href={`/${locale}/dashboard/servers/${serverId}/${event.kind === "training" ? "trainings" : "matches"}/${event.id}`}
-                      className="block rounded-xl border border-border/60 bg-card px-2.5 py-2 transition hover:border-primary/40 hover:bg-primary/5"
-                    >
-                      <div className="truncate text-xs font-semibold">{event.name}</div>
-                      <div className="mt-1 text-[11px] text-muted-foreground">
-                        {formatTime(event.meetingStart, timezone)} • {formatHllPresetLabel(event.map) ?? event.map}
-                      </div>
-                    </Link>
-                  ))}
+                  {dayEvents.slice(0, 4).map((event) => {
+                    const category = getEventCategoryPresentation(event, eventCategories);
+
+                    return (
+                      <EventCalendarEventDialog
+                        key={event.id}
+                        locale={locale}
+                        serverId={serverId}
+                        event={event}
+                        groups={groups}
+                        eventCategories={eventCategories}
+                        timezone={timezone}
+                        dictionary={dictionary}
+                        signupLanguage={signupLanguage}
+                        trigger={(
+                          <button
+                            type="button"
+                            className="block w-full rounded-xl border bg-card px-2.5 py-2 text-left transition hover:bg-primary/5"
+                            style={{ borderColor: `${category.color}66`, boxShadow: `inset 3px 0 0 ${category.color}` }}
+                          >
+                            <div className="truncate text-xs font-semibold">
+                              <span className="inline-flex items-center gap-1.5">
+                                <EmojiValue value={category.emoji} />
+                                <span className="truncate">{event.name}</span>
+                              </span>
+                            </div>
+                            <div className="mt-1 truncate text-[11px] text-muted-foreground">
+                              {formatTime(event.meetingStart, timezone)}
+                              {category.label ? ` • ${category.label}` : ""}
+                            </div>
+                          </button>
+                        )}
+                      />
+                    );
+                  })}
                   {dayEvents.length > 4 ? (
                     <div className="px-1 text-[11px] text-muted-foreground">
                       +{dayEvents.length - 4} {dictionary.calendarPage.moreEvents}

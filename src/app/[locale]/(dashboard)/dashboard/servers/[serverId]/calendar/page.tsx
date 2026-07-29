@@ -30,7 +30,7 @@ export default async function ServerCalendarPage({
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { events, rosters, discordConfig } = context;
+  const { events, rosters, discordConfig, server, groups } = context;
 
   return (
     <>
@@ -39,7 +39,7 @@ export default async function ServerCalendarPage({
         description={dictionary.calendarPage.description}
       />
       <div className="px-4 lg:px-6">
-        <CalendarView locale={locale as "en"} serverId={serverId} events={events} rosters={rosters} timezone={discordConfig?.timezone} dictionary={dictionary} />
+        <CalendarView locale={locale as "en"} serverId={serverId} events={events} groups={groups} eventCategories={server.eventCategories ?? []} rosters={rosters} timezone={discordConfig?.timezone} dictionary={dictionary} signupLanguage={discordConfig?.defaultLanguage ?? "en"} />
       </div>
     </>
   );

@@ -75,6 +75,7 @@ test("normalizeDoc, normalizeGuildDoc, and normalizeUserDoc normalize identifier
     discordId: "discord-1",
     name: "Guild",
     id: "guild-1",
+    eventCategories: [],
   });
 
   const user = normalizeUserDoc({
@@ -106,7 +107,7 @@ test("normalizeEventDoc normalizes participants, ids, and optional match referen
   assert.equal(normalized.matchId, "99");
   assert.deepEqual(normalized.participants, [
     { userId: "user-1", status: "attending", group: "INF", updatedAt: "2026-07-21T08:00:00.000Z" },
-    { userId: "user-2", status: "not_attending", group: null, updatedAt: "2026-07-21T08:00:00.000Z" },
+    { userId: "user-2", status: "attending", group: null, updatedAt: "2026-07-21T08:00:00.000Z" },
   ]);
 });
 

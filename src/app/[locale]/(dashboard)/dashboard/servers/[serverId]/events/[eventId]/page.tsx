@@ -90,7 +90,7 @@ export default async function EventDetailPage({
         }
       />
       <div className="px-4 lg:px-6">
-        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} groups={groups} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
+        <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} groups={groups} eventCategories={context.server.eventCategories ?? []} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
       </div>
     </>
   );

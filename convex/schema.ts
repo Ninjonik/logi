@@ -126,6 +126,13 @@ const membershipCategory = v.object({
   assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
 });
 
+const eventCategory = v.object({
+  id: v.string(),
+  label: v.string(),
+  color: v.string(),
+  emoji: v.optional(v.string()),
+});
+
 const ticketSettings = v.object({
   enabled: v.boolean(),
   submitChannelId: v.optional(v.string()),
@@ -306,6 +313,7 @@ export default defineSchema({
     name: v.string(),
     avatar: v.string(),
     description: v.optional(v.string()),
+    eventCategories: v.optional(v.array(eventCategory)),
     botInside: v.boolean(),
     adminIds: v.array(v.string()),
     memberIds: v.array(v.string()),

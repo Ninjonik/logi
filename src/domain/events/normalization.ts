@@ -16,7 +16,7 @@ export function normalizeEventRecord<
   return {
     ...event,
     kind: event.kind ?? "match",
-    matchType: event.kind === "training" ? undefined : event.matchType?.trim() || undefined,
+    matchType: event.matchType?.trim() || undefined,
     thumbnailUrl: event.thumbnailUrl,
     meetingChannelId: event.meetingChannelId,
     requiredRoleIds: normalizeOptionalArray(event.requiredRoleIds),

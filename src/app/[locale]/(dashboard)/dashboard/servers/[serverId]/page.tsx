@@ -4,10 +4,14 @@ import { addDays, format } from "date-fns";
 
 import { PageHeader } from "@/components/app/page-header";
 import { StatCard } from "@/components/app/stat-card";
+import { EventCalendarEventDialog } from "@/components/app/event-calendar-event-dialog";
+import { EmojiValue } from "@/components/app/emoji-value";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { type Locale, isLocale } from "@/i18n/config";
+import { getEventCategoryPresentation } from "@/lib/event-categories";
 import { formatDateKey, formatTime } from "@/lib/format";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
@@ -206,18 +210,41 @@ export default async function ServerOverviewPage({
                     </div>
                     <div className="mt-3 space-y-2">
                       {dayEvents.length ? (
-                        dayEvents.slice(0, 3).map((event) => (
-                          <a
-                            key={event.id}
-                            href={`/${safeLocale}/dashboard/servers/${serverId}/${event.kind === "training" ? "trainings" : "matches"}/${event.id}`}
-                            className="block rounded-xl border border-border/60 px-2.5 py-2 transition hover:border-primary/40 hover:bg-primary/5"
-                          >
-                            <div className="truncate text-sm font-medium">{event.name}</div>
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              {formatTime(event.meetingStart, discordConfig?.timezone)}
-                            </div>
-                          </a>
-                        ))
+                        dayEvents.slice(0, 3).map((event) => {
+                          const category = getEventCategoryPresentation(event, server.eventCategories ?? []);
+
+                          return (
+                            <EventCalendarEventDialog
+                              key={event.id}
+                              locale={safeLocale}
+                              serverId={serverId}
+                              event={event}
+                              groups={groups}
+                              eventCategories={server.eventCategories ?? []}
+                              timezone={discordConfig?.timezone}
+                              dictionary={dictionary}
+                              signupLanguage={discordConfig?.defaultLanguage ?? "en"}
+                              trigger={(
+                                <button
+                                  type="button"
+                                  className="block w-full rounded-xl border px-2.5 py-2 text-left transition hover:border-primary/40 hover:bg-primary/5"
+                                  style={{ borderColor: `${category.color}66`, boxShadow: `inset 3px 0 0 ${category.color}` }}
+                                >
+                                  <div className="truncate text-sm font-medium">
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <EmojiValue value={category.emoji} />
+                                      <span className="truncate">{event.name}</span>
+                                    </span>
+                                  </div>
+                                  <div className="mt-1 text-xs text-muted-foreground">
+                                    {formatTime(event.meetingStart, discordConfig?.timezone)}
+                                    {category.label ? ` • ${category.label}` : ""}
+                                  </div>
+                                </button>
+                              )}
+                            />
+                          );
+                        })
                       ) : (
                         <div className="rounded-xl border border-dashed border-border/60 px-2.5 py-4 text-center text-xs text-muted-foreground">
                           {dictionary.calendarCards.noEvents}
@@ -238,6 +265,20 @@ export default async function ServerOverviewPage({
         {nextEvent ? (
           <Card className="rounded-2xl border-border/60">
             <CardHeader>
+              {getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).label ? (
+                <Badge
+                  variant="outline"
+                  className="mb-2 rounded-full"
+                  style={{
+                    borderColor: `${getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).color}66`,
+                    color: getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).color,
+                    backgroundColor: `${getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).color}14`,
+                  }}
+                >
+                  <EmojiValue value={getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).emoji} />
+                  <span>{getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).label}</span>
+                </Badge>
+              ) : null}
               <CardTitle>{nextEvent.name}</CardTitle>
               <p className="text-sm text-muted-foreground">{nextEvent.description || dictionary.event.listDescription}</p>
             </CardHeader>

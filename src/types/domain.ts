@@ -6,6 +6,13 @@ export type EventOutcome = "victory" | "defeat" | "draw";
 export type EventKind = "match" | "training";
 export type MatchTypeCategory = string;
 
+export type EventCategory = {
+  id: string;
+  label: string;
+  color: string;
+  emoji?: string;
+};
+
 export type AppUser = {
   _reserveSection?: string;
   id: string;
@@ -50,6 +57,7 @@ export type Guild = {
   name: string;
   avatar: string;
   description?: string;
+  eventCategories?: EventCategory[];
   botInside: boolean;
   canAdmin?: boolean;
   adminIds: string[];

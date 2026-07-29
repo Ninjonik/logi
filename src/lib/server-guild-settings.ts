@@ -10,6 +10,12 @@ export async function saveGuildFrontendSettings(input: {
   name: string;
   avatar: string;
   description?: string;
+  eventCategories?: Array<{
+    id: string;
+    label: string;
+    color: string;
+    emoji?: string;
+  }>;
 }) {
   return await fetchMutation(updateFrontendSettingsReference, {
     secret: getInternalAuthSecret(),
@@ -17,5 +23,6 @@ export async function saveGuildFrontendSettings(input: {
     name: input.name,
     avatar: input.avatar,
     description: input.description,
+    eventCategories: input.eventCategories,
   });
 }
