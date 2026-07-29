@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { EmojiValue } from "@/components/app/emoji-value";
 import { MonthCalendarView } from "@/components/app/month-calendar-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,24 +12,28 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { getEventCategoryPresentation } from "@/lib/event-categories";
 import { formatDateTime } from "@/lib/format";
 import { formatHllPresetLabel } from "@/lib/hll-map-presets";
-import type { EventCategory, EventRecord, Roster } from "@/types/domain";
+import type { EventCategory, EventRecord, Group, Roster } from "@/types/domain";
 
 export function CalendarView({
   locale,
   serverId,
   events,
+  groups,
   eventCategories = [],
   rosters,
   timezone,
   dictionary,
+  signupLanguage,
 }: {
   locale: Locale;
   serverId: string;
   events: EventRecord[];
+  groups: Group[];
   eventCategories?: EventCategory[];
   rosters: Roster[];
   timezone?: string;
   dictionary: Dictionary;
+  signupLanguage: "en" | "cs";
 }) {
   const highlightedEvents = [...events]
     .sort((a, b) => new Date(a.meetingStart).getTime() - new Date(b.meetingStart).getTime())
@@ -40,9 +45,11 @@ export function CalendarView({
         locale={locale}
         serverId={serverId}
         events={events}
+        groups={groups}
         eventCategories={eventCategories}
         timezone={timezone}
         dictionary={dictionary}
+        signupLanguage={signupLanguage}
       />
       <div className="grid gap-4 xl:grid-cols-3">
         {highlightedEvents.map((event) => {
@@ -62,7 +69,8 @@ export function CalendarView({
                     className="mb-2 rounded-full"
                     style={{ borderColor: `${category.color}66`, color: category.color, backgroundColor: `${category.color}14` }}
                   >
-                    {[category.emoji, category.label].filter(Boolean).join(" ")}
+                    <EmojiValue value={category.emoji} />
+                    <span>{category.label}</span>
                   </Badge>
                 ) : null}
                 <CardTitle className="text-xl">{event.name}</CardTitle>

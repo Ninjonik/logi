@@ -223,7 +223,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     buttons: {
       acknowledgeAttendance: "Acknowledge attendance",
       attend: "Attend",
-      generalSignup: "General signup",
+      generalSignup: "Sign up",
       addToCalendar: "Add to Calendar",
       decline: "Decline",
     },
@@ -437,7 +437,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     buttons: {
       acknowledgeAttendance: "Potvrdit účast",
       attend: "Zúčastním se",
-      generalSignup: "Obecný signup",
+      generalSignup: "Přihlásit se",
       addToCalendar: "Přidat do kalendáře",
       decline: "Odmítnout",
     },

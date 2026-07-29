@@ -7,6 +7,7 @@ export type ParticipantCompletionStatus = "passed" | "failed";
 export const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING";
 export const SIGNUP_ATTENDING = "ATTENDING";
 export const SIGNUP_GENERAL = "GENERAL";
+export const TRAINING_ATTEND = "ATTEND";
 
 export type EventParticipant = {
   userId: string;

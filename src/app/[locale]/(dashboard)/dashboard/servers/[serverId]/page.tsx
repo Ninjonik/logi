@@ -4,6 +4,8 @@ import { addDays, format } from "date-fns";
 
 import { PageHeader } from "@/components/app/page-header";
 import { StatCard } from "@/components/app/stat-card";
+import { EventCalendarEventDialog } from "@/components/app/event-calendar-event-dialog";
+import { EmojiValue } from "@/components/app/emoji-value";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -212,18 +214,35 @@ export default async function ServerOverviewPage({
                           const category = getEventCategoryPresentation(event, server.eventCategories ?? []);
 
                           return (
-                            <a
+                            <EventCalendarEventDialog
                               key={event.id}
-                              href={`/${safeLocale}/dashboard/servers/${serverId}/${event.kind === "training" ? "trainings" : "matches"}/${event.id}`}
-                              className="block rounded-xl border px-2.5 py-2 transition hover:border-primary/40 hover:bg-primary/5"
-                              style={{ borderColor: `${category.color}66`, boxShadow: `inset 3px 0 0 ${category.color}` }}
-                            >
-                              <div className="truncate text-sm font-medium">{[category.emoji, event.name].filter(Boolean).join(" ")}</div>
-                              <div className="mt-1 text-xs text-muted-foreground">
-                                {formatTime(event.meetingStart, discordConfig?.timezone)}
-                                {category.label ? ` • ${category.label}` : ""}
-                              </div>
-                            </a>
+                              locale={safeLocale}
+                              serverId={serverId}
+                              event={event}
+                              groups={groups}
+                              eventCategories={server.eventCategories ?? []}
+                              timezone={discordConfig?.timezone}
+                              dictionary={dictionary}
+                              signupLanguage={discordConfig?.defaultLanguage ?? "en"}
+                              trigger={(
+                                <button
+                                  type="button"
+                                  className="block w-full rounded-xl border px-2.5 py-2 text-left transition hover:border-primary/40 hover:bg-primary/5"
+                                  style={{ borderColor: `${category.color}66`, boxShadow: `inset 3px 0 0 ${category.color}` }}
+                                >
+                                  <div className="truncate text-sm font-medium">
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <EmojiValue value={category.emoji} />
+                                      <span className="truncate">{event.name}</span>
+                                    </span>
+                                  </div>
+                                  <div className="mt-1 text-xs text-muted-foreground">
+                                    {formatTime(event.meetingStart, discordConfig?.timezone)}
+                                    {category.label ? ` • ${category.label}` : ""}
+                                  </div>
+                                </button>
+                              )}
+                            />
                           );
                         })
                       ) : (
@@ -256,7 +275,8 @@ export default async function ServerOverviewPage({
                     backgroundColor: `${getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).color}14`,
                   }}
                 >
-                  {[getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).emoji, getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).label].filter(Boolean).join(" ")}
+                  <EmojiValue value={getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).emoji} />
+                  <span>{getEventCategoryPresentation(nextEvent, server.eventCategories ?? []).label}</span>
                 </Badge>
               ) : null}
               <CardTitle>{nextEvent.name}</CardTitle>

@@ -11,6 +11,7 @@ import { AvatarPicker } from "@/components/app/avatar-picker";
 import { ConfigNotice } from "@/components/app/config-notice";
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
+import { EmojiValue } from "@/components/app/emoji-value";
 import { HllMapSelector } from "@/components/app/hll-map-selector";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -704,6 +705,12 @@ export function EventFormPanel({
                 ) : null}
               </div>
             ) : null}
+            {eventKind === "match" ? (
+            <div>
+              <FieldLabel label={dictionary.event.fields.side}  />
+              {canEdit ? <Input {...form.register("side")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("side")} emptyLabel={dictionary.shared.notSet} />}
+            </div>
+            ) : null}
             <div className="md:col-span-2">
               <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
                 {dictionary.serverSettings.timezone}: {supportedTimezones.includes(timezone as (typeof supportedTimezones)[number]) ? timezone : "UTC"}
@@ -734,7 +741,7 @@ export function EventFormPanel({
               <FieldLabel label={dictionary.event.fields.description}  />
               {canEdit ? <Textarea {...form.register("description")} className="min-h-24 rounded-xl" /> : <ReadOnlyValue value={form.watch("description")} emptyLabel={dictionary.shared.notSet} className="min-h-24 whitespace-pre-wrap" />}
             </div>
-            <div>
+            <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.matchType}  />
               {canEdit ? (
                 <Controller
@@ -749,7 +756,10 @@ export function EventFormPanel({
                         <SelectItem value="__none">{dictionary.shared.notSet}</SelectItem>
                         {eventCategories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
-                            {[category.emoji, category.label].filter(Boolean).join(" ")}
+                            <span className="inline-flex items-center gap-2">
+                              <EmojiValue value={category.emoji} />
+                              <span>{category.label}</span>
+                            </span>
                           </SelectItem>
                         ))}
                         {field.value && !eventCategories.some((category) => category.id === field.value) ? (
@@ -764,49 +774,43 @@ export function EventFormPanel({
               )}
             </div>
             {eventKind === "match" ? (
-            <div>
-              <FieldLabel label={dictionary.event.fields.side}  />
-              {canEdit ? <Input {...form.register("side")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("side")} emptyLabel={dictionary.shared.notSet} />}
+            <div className="md:col-span-2 md:grid md:grid-cols-3 md:gap-4">
+              <div>
+                <FieldLabel label={dictionary.event.fields.meetingChannelId}  />
+                {canEdit ? (
+                  <Controller
+                    control={form.control}
+                    name="meetingChannelId"
+                    render={({ field }) => (
+                      <DiscordEntitySelect
+                        value={field.value || undefined}
+                        onChange={(value) => field.onChange(value ?? "")}
+                        options={meetingChannels}
+                        placeholder={dictionary.event.fields.meetingChannelId}
+                        noneLabel={dictionary.shared.notSet}
+                      />
+                    )}
+                  />
+                ) : (
+                  <ReadOnlyValue
+                    value={(() => {
+                      const meetingChannelId = form.watch("meetingChannelId");
+                      return meetingChannelId ? (channelNameById.get(meetingChannelId) ?? meetingChannelId) : undefined;
+                    })()}
+                    emptyLabel={dictionary.shared.notSet}
+                  />
+                )}
+              </div>
+              <div>
+                <FieldLabel label={dictionary.event.fields.server}  />
+                {canEdit ? <Input {...form.register("server")} autoComplete="one-time-code" className="rounded-xl" /> : <ReadOnlyValue value={form.watch("server")} emptyLabel={dictionary.shared.notSet} />}
+              </div>
+              <div>
+                <FieldLabel label={dictionary.event.fields.serverPassword}  />
+                {canEdit ? <Input {...form.register("serverPassword")} autoComplete={"new-password"} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("serverPassword")} emptyLabel={dictionary.shared.notSet} />}
+              </div>
             </div>
             ) : null}
-            {eventKind === "match" ? (
-            <div>
-              <FieldLabel label={dictionary.event.fields.server}  />
-              {canEdit ? <Input {...form.register("server")} autoComplete="one-time-code" className="rounded-xl" /> : <ReadOnlyValue value={form.watch("server")} emptyLabel={dictionary.shared.notSet} />}
-            </div>
-            ) : null}
-            {eventKind === "match" ? (
-            <div>
-              <FieldLabel label={dictionary.event.fields.serverPassword}  />
-              {canEdit ? <Input {...form.register("serverPassword")} autoComplete={"new-password"} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("serverPassword")} emptyLabel={dictionary.shared.notSet} />}
-            </div>
-            ) : null}
-            <div>
-              <FieldLabel label={dictionary.event.fields.meetingChannelId}  />
-              {canEdit ? (
-                <Controller
-                  control={form.control}
-                  name="meetingChannelId"
-                  render={({ field }) => (
-                    <DiscordEntitySelect
-                      value={field.value || undefined}
-                      onChange={(value) => field.onChange(value ?? "")}
-                      options={meetingChannels}
-                      placeholder={dictionary.event.fields.meetingChannelId}
-                      noneLabel={dictionary.shared.notSet}
-                    />
-                  )}
-                />
-              ) : (
-                <ReadOnlyValue
-                  value={(() => {
-                    const meetingChannelId = form.watch("meetingChannelId");
-                    return meetingChannelId ? (channelNameById.get(meetingChannelId) ?? meetingChannelId) : undefined;
-                  })()}
-                  emptyLabel={dictionary.shared.notSet}
-                />
-              )}
-            </div>
             <div>
               <FieldLabel label={dictionary.event.fields.registrationEnd} required  />
               {canEdit ? <Input type="datetime-local" {...form.register("registrationEnd")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("registrationEnd")} emptyLabel={dictionary.shared.notSet} />}

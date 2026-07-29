@@ -1,13 +1,12 @@
 import { type ButtonInteraction, type GuildMember } from "discord.js";
 
 import { getClanDiscordMessages } from "../../../src/lib/clan-language";
+import { resolveEventSignupSelection } from "../../../src/lib/event-signup";
 import { revalidateAppData } from "../cache";
-import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "../constants";
 import { convex, references } from "../convex";
 import { env } from "../environment";
 import { logInfo } from "../log";
 import type { EventInteractionContext } from "../types";
-import { isSignupOpen } from "./rules";
 
 type InteractionHandlerOptions = {
   enqueueEventSync: (eventId: string) => void;
@@ -52,57 +51,26 @@ export async function handleEventButtonInteraction(
     return;
   }
 
-  if (!isSignupOpen(context.event)) {
-    await interaction.reply({
-      content: getClanDiscordMessages(context.config.defaultLanguage).interaction.registrationClosed,
-      ephemeral: true,
-    });
-    return;
-  }
-
   const member = interaction.member as GuildMember | null;
-  const isTrainingAttend = context.event.kind === "training" && groupId === TRAINING_ATTEND;
-  const isGeneralSignup = context.event.kind === "match" && groupId === SIGNUP_GENERAL;
-  const configuredGroupIds = context.event.signupGroupIds?.length ? new Set(context.event.signupGroupIds) : null;
-  const selectedGroup =
-    groupId === SIGNUP_NOT_ATTENDING || isTrainingAttend || isGeneralSignup
-      ? null
-      : context.groups.find((group) => group.id === groupId && (!configuredGroupIds || configuredGroupIds.has(group.id)));
+  const messages = getClanDiscordMessages(context.config.defaultLanguage);
+  const resolved = resolveEventSignupSelection({
+    event: context.event,
+    groups: context.groups,
+    memberRoleIds: member ? [...member.roles.cache.keys()] : null,
+    actionId: groupId,
+    labels: {
+      registrationClosed: messages.interaction.registrationClosed,
+      invalidSignupButton: messages.interaction.invalidSignupButton,
+      unableToResolveMembership: messages.interaction.unableToResolveMembership,
+      missingRequiredRole: messages.interaction.missingRequiredRole,
+      signupUpdated: messages.interaction.signupUpdated,
+      markedNotAttending: messages.interaction.markedNotAttending,
+    },
+  });
 
-  if (!selectedGroup && groupId !== SIGNUP_NOT_ATTENDING && !isTrainingAttend && !isGeneralSignup) {
+  if (!resolved.ok) {
     await interaction.reply({
-      content: getClanDiscordMessages(context.config.defaultLanguage).interaction.invalidSignupButton,
-      ephemeral: true,
-    });
-    return;
-  }
-  if (!member) {
-    await interaction.reply({
-      content: getClanDiscordMessages(context.config.defaultLanguage).interaction.unableToResolveMembership,
-      ephemeral: true,
-    });
-    return;
-  }
-  if (
-    context.event.requiredRoleIds.length > 0 &&
-    !context.event.requiredRoleIds.some((roleId) => member.roles.cache.has(roleId))
-  ) {
-    await interaction.reply({
-      content: getClanDiscordMessages(context.config.defaultLanguage).interaction.missingRequiredRole,
-      ephemeral: true,
-    });
-    return;
-  }
-  if (selectedGroup && selectedGroup.discordRoleId && !member.roles.cache.has(selectedGroup.discordRoleId)) {
-    await interaction.reply({
-      content: getClanDiscordMessages(context.config.defaultLanguage).interaction.missingRequiredRole,
-      ephemeral: true,
-    });
-    return;
-  }
-  if (isGeneralSignup && !context.event.useGeneralSignup) {
-    await interaction.reply({
-      content: getClanDiscordMessages(context.config.defaultLanguage).interaction.invalidSignupButton,
+      content: resolved.error,
       ephemeral: true,
     });
     return;
@@ -112,7 +80,7 @@ export async function handleEventButtonInteraction(
     secret: env.internalSecret,
     eventId: eventId as never,
     userId: interaction.user.id,
-    group: isTrainingAttend ? TRAINING_ATTEND : isGeneralSignup ? SIGNUP_GENERAL : (selectedGroup ? selectedGroup.name : SIGNUP_NOT_ATTENDING),
+    group: resolved.group,
   });
   await revalidateAppData({
     type: "event-changed",
@@ -129,10 +97,7 @@ export async function handleEventButtonInteraction(
   });
 
   await interaction.reply({
-    content:
-      selectedGroup || isTrainingAttend
-        ? getClanDiscordMessages(context.config.defaultLanguage).interaction.signupUpdated
-        : getClanDiscordMessages(context.config.defaultLanguage).interaction.markedNotAttending,
+    content: resolved.successMessage,
     ephemeral: true,
   });
 }

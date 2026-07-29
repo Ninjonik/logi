@@ -98,7 +98,7 @@ export function buildEventEmbed(config: DiscordConfig, groups: Group[], event: E
   }
 
   if (event.kind === "match") {
-    const configuredGroupIds = event.signupGroupIds?.length ? new Set(event.signupGroupIds) : null;
+    const configuredGroupIds = event.signupGroupIds ? new Set(event.signupGroupIds) : null;
     const visibleGroups = configuredGroupIds ? groups.filter((group) => configuredGroupIds.has(group.id)) : groups;
     for (const group of visibleGroups) {
       const members = signupsByGroup.get(group.name) ?? [];
@@ -575,13 +575,14 @@ function buildSignupButtons(config: DiscordConfig, groups: Group[], eventId: str
     ];
   }
 
-  const configuredGroupIds = event.signupGroupIds?.length ? new Set(event.signupGroupIds) : null;
+  const configuredGroupIds = event.signupGroupIds ? new Set(event.signupGroupIds) : null;
   const visibleGroups = configuredGroupIds ? groups.filter((group) => configuredGroupIds.has(group.id)) : groups;
   const allButtons = [
     ...(event.useGeneralSignup ? [
       new ButtonBuilder()
         .setCustomId(`signup:${eventId}:${encodeURIComponent(SIGNUP_GENERAL)}`)
-        .setStyle(ButtonStyle.Primary)
+        .setStyle(ButtonStyle.Success)
+        .setEmoji("✅")
         .setLabel(messages.buttons.generalSignup),
     ] : []),
     ...visibleGroups.map((group) => {
