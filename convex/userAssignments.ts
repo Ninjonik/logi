@@ -201,6 +201,7 @@ export const importDiscordMembers = mutation({
       userId: v.string(),
       name: v.string(),
       avatar: v.string(),
+      nickname: v.optional(v.string()),
       secondaryGroupIds: v.array(v.id("groups")),
     })),
   },
@@ -225,6 +226,7 @@ export const importDiscordMembers = mutation({
         userId: member.userId,
         name: member.name,
         avatar: member.avatar,
+        nickname: member.nickname,
         secondaryGroupIds: member.secondaryGroupIds.map((groupId) => String(groupId)),
       })),
     });
