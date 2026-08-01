@@ -440,11 +440,29 @@ function buildUserNameMap(users: Awaited<ReturnType<typeof listUsersUncached>>) 
   return byName;
 }
 
+function buildUserNicknameMap(users: Awaited<ReturnType<typeof listUsersUncached>>, serverDiscordId: string) {
+  const byNickname = new Map<string, typeof users>();
+
+  for (const user of users) {
+    const normalizedNickname = normalizeComparableName(user.nicknames?.[serverDiscordId]);
+    if (!normalizedNickname) {
+      continue;
+    }
+
+    const existing = byNickname.get(normalizedNickname) ?? [];
+    existing.push(user);
+    byNickname.set(normalizedNickname, existing);
+  }
+
+  return byNickname;
+}
+
 function resolveImportedUserMatch(input: {
   normalizedPlayerId: string;
   normalizedPlayerName: string;
   usersByPlatformId: Map<string, Awaited<ReturnType<typeof listUsersUncached>>[number]>;
   usersByName: Map<string, Awaited<ReturnType<typeof listUsersUncached>>>;
+  usersByNickname: Map<string, Awaited<ReturnType<typeof listUsersUncached>>>;
 }) {
   const matchedByPlatformId = input.usersByPlatformId.get(input.normalizedPlayerId);
   if (matchedByPlatformId) {
@@ -455,7 +473,15 @@ function resolveImportedUserMatch(input: {
   }
 
   const matchedByName = input.usersByName.get(input.normalizedPlayerName);
-  if (!matchedByName || matchedByName.length !== 1) {
+  if (matchedByName && matchedByName.length === 1) {
+    return {
+      user: matchedByName[0],
+      byPlatformId: false,
+    };
+  }
+
+  const matchedByNickname = input.usersByNickname.get(input.normalizedPlayerName);
+  if (!matchedByNickname || matchedByNickname.length !== 1) {
     return {
       user: undefined,
       byPlatformId: false,
@@ -463,7 +489,7 @@ function resolveImportedUserMatch(input: {
   }
 
   return {
-    user: matchedByName[0],
+    user: matchedByNickname[0],
     byPlatformId: false,
   };
 }
@@ -561,8 +587,9 @@ async function buildServerUserLookups(serverId: string, importPlayers: boolean) 
     ),
   );
   const usersByName = buildUserNameMap(nameMatchUsers);
+  const usersByNickname = buildUserNicknameMap(nameMatchUsers, serverDiscordId);
 
-  return { usersByPlatformId, usersByName, serverDiscordId };
+  return { usersByPlatformId, usersByName, usersByNickname, serverDiscordId };
 }
 
 async function preparePlayerImports(input: {
@@ -574,7 +601,7 @@ async function preparePlayerImports(input: {
   importPlayers?: boolean;
   clanTag?: string;
 }) {
-  const { usersByPlatformId, usersByName, serverDiscordId } = await buildServerUserLookups(input.serverId, Boolean(input.importPlayers));
+  const { usersByPlatformId, usersByName, usersByNickname, serverDiscordId } = await buildServerUserLookups(input.serverId, Boolean(input.importPlayers));
   const importedAt = new Date().toISOString();
   const sideCounts = new Map<string, { count: number; value: string }>();
   const importedUserIds = new Set<string>();
@@ -591,6 +618,7 @@ async function preparePlayerImports(input: {
       normalizedPlayerName,
       usersByPlatformId,
       usersByName,
+      usersByNickname,
     });
     let matchedUser = matched.user;
 
@@ -623,6 +651,7 @@ async function preparePlayerImports(input: {
         hasDiscordLink: false,
         platformIds: [normalizedPlayerId],
         name: importedPlayerName,
+        nicknames: {},
         avatar: "https://cdn.discordapp.com/embed/avatars/0.png",
         managedGuildIds: [],
         guildId: serverDiscordId || undefined,

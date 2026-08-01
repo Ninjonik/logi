@@ -150,16 +150,23 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
     userId: string;
     name: string;
     avatar: string;
+    serverDiscordId?: string;
+    nickname?: string;
     nowIso: string;
   }): Promise<"created" | "updated"> {
     const existingUser = await this.ctx.db.query("users").withIndex("discordId", (q) => q.eq("discordId", input.userId)).unique()
       ?? await this.ctx.db.query("users").withIndex("id", (q) => q.eq("id", input.userId)).unique();
     const avatar = input.avatar || existingUser?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
+    const nicknames = {
+      ...(existingUser?.nicknames ?? {}),
+      ...(input.serverDiscordId && input.nickname ? { [input.serverDiscordId]: input.nickname } : {}),
+    };
 
     if (existingUser) {
       await this.ctx.db.patch(existingUser._id, {
         name: input.name,
         avatar,
+        nicknames,
         updatedAt: input.nowIso,
       });
       return "updated";
@@ -169,6 +176,7 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
       discordId: input.userId,
       id: input.userId,
       name: input.name,
+      nicknames,
       avatar,
       managedGuildIds: [],
       guildId: undefined,

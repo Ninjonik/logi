@@ -9,7 +9,7 @@ export class InMemoryAssignmentCommandRepository implements AssignmentCommandRep
     public readonly openEventIdsByServer: Map<string, string[]>,
   public readonly serverMembershipPatches: Array<{ serverDiscordId: string; patch: any }> = [],
   public readonly userMembershipPatches: Array<{ userId: string; patch: any }> = [],
-  public readonly importedUsers: Map<string, { name: string; avatar: string; createdAt: string; updatedAt: string }> = new Map(),
+  public readonly importedUsers: Map<string, { name: string; avatar: string; nicknames: Record<string, string>; createdAt: string; updatedAt: string }> = new Map(),
   ) {}
 
   async serverExists(serverDiscordId: string): Promise<boolean> {
@@ -94,16 +94,23 @@ export class InMemoryAssignmentCommandRepository implements AssignmentCommandRep
     userId: string;
     name: string;
     avatar: string;
+    serverDiscordId?: string;
+    nickname?: string;
     nowIso: string;
   }): Promise<"created" | "updated"> {
     const existing = this.importedUsers.get(input.userId);
     const avatar = input.avatar || existing?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
+    const nicknames = {
+      ...(existing?.nicknames ?? {}),
+      ...(input.serverDiscordId && input.nickname ? { [input.serverDiscordId]: input.nickname } : {}),
+    };
 
     if (existing) {
       this.importedUsers.set(input.userId, {
         ...existing,
         name: input.name,
         avatar,
+        nicknames,
         updatedAt: input.nowIso,
       });
       return "updated";
@@ -113,6 +120,7 @@ export class InMemoryAssignmentCommandRepository implements AssignmentCommandRep
     this.importedUsers.set(input.userId, {
       name: input.name,
       avatar,
+      nicknames,
       createdAt: input.nowIso,
       updatedAt: input.nowIso,
     });

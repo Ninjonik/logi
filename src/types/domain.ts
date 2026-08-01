@@ -21,6 +21,7 @@ export type AppUser = {
   hasDiscordLink: boolean;
   platformIds: string[];
   name: string;
+  nicknames: Record<string, string>;
   avatar: string;
   managedGuildIds: string[];
   guildId?: string;

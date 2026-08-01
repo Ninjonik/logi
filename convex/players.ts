@@ -63,6 +63,7 @@ function toPlayer(user: {
   _id: unknown;
   discordId?: string;
   id?: string;
+  nicknames?: Record<string, string>;
   platformIds?: string[];
   name: string;
   avatar: string;
@@ -93,6 +94,7 @@ function toPlayer(user: {
     discordId: getUserDiscordId(user),
     linkedDiscordId: user.discordId,
     hasDiscordLink: Boolean(user.discordId),
+    nicknames: user.nicknames ?? {},
     platformIds: normalizePlatformIds(user.platformIds ?? legacyUser.platformId ?? legacyUser.steamId),
     avatar: user.avatar || "https://cdn.discordapp.com/embed/avatars/0.png",
     scores: user.scores ?? {},
@@ -137,6 +139,7 @@ export const syncDiscordProfile = mutation({
       discordId: args.id,
       id: args.id,
       name: args.name,
+      nicknames: {},
       avatar: args.avatar,
       managedGuildIds: [],
       guildId: undefined,
@@ -324,6 +327,7 @@ export const upsertImportedProfile = mutation({
       id: args.id,
       discordId: undefined,
       name: args.name.trim(),
+      nicknames: {},
       avatar,
       platformIds: normalizedPlatformIds,
       managedGuildIds: [],
@@ -368,6 +372,10 @@ export const linkImportedDiscordProfile = mutation({
       await ctx.db.patch(existingDiscordUser._id, {
         name: args.name.trim(),
         avatar: args.avatar.trim() || existingDiscordUser.avatar,
+        nicknames: {
+          ...(existingDiscordUser.nicknames ?? {}),
+          ...(importedUser.nicknames ?? {}),
+        },
         platformIds: mergedPlatformIds,
         updatedAt: now,
       });
@@ -414,6 +422,7 @@ export const linkImportedDiscordProfile = mutation({
       discordId: args.discordId,
       name: args.name.trim(),
       avatar: args.avatar.trim() || importedUser.avatar,
+      nicknames: importedUser.nicknames ?? {},
       platformIds: mergedPlatformIds,
       updatedAt: now,
     });

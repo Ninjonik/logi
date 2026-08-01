@@ -15,6 +15,7 @@ export function normalizeUserDoc<
     _id: unknown;
     discordId?: string;
     id?: string;
+    nicknames?: Record<string, string>;
     platformIds?: string[];
     score?: number;
     scores?: Record<string, number>;
@@ -28,6 +29,7 @@ export function normalizeUserDoc<
     discordId: getUserDiscordId(user),
     linkedDiscordId: user.discordId,
     hasDiscordLink: Boolean(user.discordId),
+    nicknames: user.nicknames ?? {},
     platformIds: [...new Set(
       (user.platformIds ?? [legacyUser.platformId ?? legacyUser.steamId].filter(Boolean))
         .flatMap((entry) => String(entry).split(","))

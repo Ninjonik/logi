@@ -18,6 +18,7 @@ export class ImportDiscordMembersUseCase {
       userId: string;
       name: string;
       avatar: string;
+      nickname?: string;
       secondaryGroupIds: string[];
     }>;
   }) {
@@ -46,6 +47,8 @@ export class ImportDiscordMembersUseCase {
         userId: member.userId,
         name: member.name,
         avatar: member.avatar,
+        serverDiscordId: input.serverDiscordId,
+        nickname: member.nickname,
         nowIso,
       });
       if (userResult === "created") {

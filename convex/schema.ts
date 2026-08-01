@@ -5,6 +5,7 @@ const users = defineTable({
   discordId: v.optional(v.string()),
   id: v.optional(v.string()),
   name: v.string(),
+  nicknames: v.optional(v.record(v.string(), v.string())),
   platformIds: v.optional(v.array(v.string())),
   avatar: v.string(),
   managedGuildIds: v.array(v.string()),

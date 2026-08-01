@@ -23,8 +23,12 @@ function canImportUserAsType(input: {
   return true;
 }
 
-function getDisplayName(member: DiscordGuildMember) {
-  return member.nick?.trim() || member.user?.global_name?.trim() || member.user?.username?.trim() || member.user?.id || "Unknown";
+function getDiscordName(member: DiscordGuildMember) {
+  return member.user?.global_name?.trim() || member.user?.username?.trim() || member.user?.id || "Unknown";
+}
+
+function getGuildNickname(member: DiscordGuildMember) {
+  return member.nick?.trim() || undefined;
 }
 
 export async function POST(
@@ -96,7 +100,8 @@ export async function POST(
 
       return [{
         userId: member.user.id,
-        name: getDisplayName(member),
+        name: getDiscordName(member),
+        nickname: getGuildNickname(member),
         avatar: getDiscordAvatarUrl({
           id: member.user.id,
           username: member.user.username,
