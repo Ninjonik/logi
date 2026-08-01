@@ -8,6 +8,7 @@ import {
   getUsersByIds,
   linkImportedDiscordProfile,
   listUsersUncached,
+  reassignImportedMember,
   saveImportedClanMember,
   savePlayerPlatformId,
   upsertImportedPlayer,
@@ -439,6 +440,34 @@ function buildUserNameMap(users: Awaited<ReturnType<typeof listUsersUncached>>) 
   return byName;
 }
 
+function resolveImportedUserMatch(input: {
+  normalizedPlayerId: string;
+  normalizedPlayerName: string;
+  usersByPlatformId: Map<string, Awaited<ReturnType<typeof listUsersUncached>>[number]>;
+  usersByName: Map<string, Awaited<ReturnType<typeof listUsersUncached>>>;
+}) {
+  const matchedByPlatformId = input.usersByPlatformId.get(input.normalizedPlayerId);
+  if (matchedByPlatformId) {
+    return {
+      user: matchedByPlatformId,
+      byPlatformId: true,
+    };
+  }
+
+  const matchedByName = input.usersByName.get(input.normalizedPlayerName);
+  if (!matchedByName || matchedByName.length !== 1) {
+    return {
+      user: undefined,
+      byPlatformId: false,
+    };
+  }
+
+  return {
+    user: matchedByName[0],
+    byPlatformId: false,
+  };
+}
+
 function canImportExistingUserToServer(user: Awaited<ReturnType<typeof listUsersUncached>>[number], serverDiscordId: string) {
   return !user.guildId || user.guildId === serverDiscordId;
 }
@@ -520,7 +549,10 @@ async function buildServerUserLookups(serverId: string, importPlayers: boolean) 
   const assignedUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
   const assignedUserIds = new Set(assignedUsers.map((user) => user.id));
   const allUsers = importPlayers
-    ? (await listUsersUncached()).filter((user) => assignedUserIds.has(user.id) || canImportExistingUserToServer(user, serverDiscordId))
+    ? await listUsersUncached()
+    : assignedUsers;
+  const nameMatchUsers = importPlayers
+    ? allUsers.filter((user) => assignedUserIds.has(user.id) || canImportExistingUserToServer(user, serverDiscordId))
     : assignedUsers;
 
   const usersByPlatformId = new Map(
@@ -528,7 +560,7 @@ async function buildServerUserLookups(serverId: string, importPlayers: boolean) 
       user.platformIds.map((platformId) => [normalizeValue(platformId), user] as const),
     ),
   );
-  const usersByName = buildUserNameMap(allUsers);
+  const usersByName = buildUserNameMap(nameMatchUsers);
 
   return { usersByPlatformId, usersByName, serverDiscordId };
 }
@@ -546,6 +578,7 @@ async function preparePlayerImports(input: {
   const importedAt = new Date().toISOString();
   const sideCounts = new Map<string, { count: number; value: string }>();
   const importedUserIds = new Set<string>();
+  const reassignedUserIds = new Set<string>();
   const entries: PreparedPlayerImport[] = [];
 
   for (const player of input.payload.player_stats) {
@@ -553,9 +586,13 @@ async function preparePlayerImports(input: {
     const strippedName = input.clanTag ? stripClanTag(player.player, input.clanTag) : null;
     const importedPlayerName = resolveImportedPlayerName(player.player, input.clanTag);
     const normalizedPlayerName = normalizeComparableName(importedPlayerName);
-    const matchedByPlatformId = usersByPlatformId.get(normalizedPlayerId);
-    const matchedByName = matchedByPlatformId ? undefined : usersByName.get(normalizedPlayerName)?.[0];
-    let matchedUser = matchedByPlatformId ?? matchedByName;
+    const matched = resolveImportedUserMatch({
+      normalizedPlayerId,
+      normalizedPlayerName,
+      usersByPlatformId,
+      usersByName,
+    });
+    let matchedUser = matched.user;
 
     if (!matchedUser) {
       if (!input.importPlayers || !normalizedPlayerId) {
@@ -597,6 +634,20 @@ async function preparePlayerImports(input: {
       };
       usersByPlatformId.set(normalizedPlayerId, matchedUser);
       usersByName.set(normalizedPlayerName, [matchedUser]);
+    } else if (
+      input.importPlayers &&
+      matched.byPlatformId &&
+      serverDiscordId &&
+      matchedUser.guildId !== serverDiscordId &&
+      !matchedUser.hasDiscordLink &&
+      !reassignedUserIds.has(matchedUser.id)
+    ) {
+      await reassignImportedMember({
+        userId: matchedUser.id,
+        targetServerId: input.serverId,
+      });
+      matchedUser.guildId = serverDiscordId;
+      reassignedUserIds.add(matchedUser.id);
     } else if (input.importPlayers && normalizedPlayerId && !matchedUser.platformIds.some((platformId: string) => normalizeValue(platformId) === normalizedPlayerId)) {
       await savePlayerPlatformId({
         userId: matchedUser.id,

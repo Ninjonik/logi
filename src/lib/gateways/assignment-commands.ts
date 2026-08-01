@@ -7,6 +7,7 @@ import { parsePlatformIdsInput } from "@/lib/platform-ids";
 const upsertAssignmentReference = makeFunctionReference<"mutation">("userAssignments:upsert");
 const importDiscordMembersReference = makeFunctionReference<"mutation">("userAssignments:importDiscordMembers");
 const removeAssignmentReference = makeFunctionReference<"mutation">("userAssignments:remove");
+const reassignImportedMemberReference = makeFunctionReference<"mutation">("userAssignments:reassignImportedMember");
 const updatePlatformIdsReference = makeFunctionReference<"mutation">("players:updatePlatformIds");
 const clearPlatformIdsReference = makeFunctionReference<"mutation">("players:clearPlatformIds");
 const upsertImportedProfileReference = makeFunctionReference<"mutation">("players:upsertImportedProfile");
@@ -44,6 +45,21 @@ export async function deleteServerUserAssignmentCommand(assignmentId: string) {
     secret: getInternalAuthSecret(),
     assignmentId: assignmentId as never,
   });
+}
+
+export async function reassignImportedMemberCommand(input: {
+  userId: string;
+  targetServerId: string;
+}) {
+  return await fetchMutation(reassignImportedMemberReference, {
+    secret: getInternalAuthSecret(),
+    userId: input.userId,
+    targetServerId: input.targetServerId as never,
+  }) as {
+    userId: string;
+    targetServerDiscordId: string;
+    reassigned: boolean;
+  };
 }
 
 export async function importDiscordMembersForServerCommand(input: {
