@@ -230,3 +230,66 @@ export const importDiscordMembers = mutation({
     });
   },
 });
+
+export const reassignImportedMember = mutation({
+  args: {
+    secret: v.string(),
+    userId: v.string(),
+    targetServerId: v.id("guilds"),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const targetServer = await getGuildById(ctx, args.targetServerId);
+    const targetServerDiscordId = targetServer ? getGuildDiscordId(targetServer) : undefined;
+    if (!targetServerDiscordId) {
+      throw new Error("Target server Discord ID not found.");
+    }
+
+    const repository = new ConvexAssignmentCommandRepository(ctx);
+    const userExists = await repository.userExists(args.userId);
+    if (!userExists) {
+      throw new Error("User not found.");
+    }
+
+    const now = systemClock.now();
+    const existingAssignments = await repository.listByUser(args.userId);
+    const affectedServerIds = new Set<string>();
+
+    for (const assignment of existingAssignments) {
+      if (assignment.type !== "member" || assignment.serverId === targetServerDiscordId) {
+        continue;
+      }
+
+      await repository.remove(assignment.id);
+      affectedServerIds.add(assignment.serverId);
+    }
+
+    const targetAssignment = existingAssignments.find((assignment) => assignment.serverId === targetServerDiscordId);
+    await repository.save({
+      assignmentId: targetAssignment?.id,
+      userId: args.userId,
+      serverId: targetServerDiscordId,
+      type: "member",
+      status: "active",
+      membershipCategoryId: undefined,
+      primaryGroupId: undefined,
+      secondaryGroupIds: [],
+      paused: false,
+      pausedNote: undefined,
+      nowIso: now.toISOString(),
+    });
+    affectedServerIds.add(targetServerDiscordId);
+
+    for (const serverDiscordId of affectedServerIds) {
+      await rebuildMembershipState(ctx, serverDiscordId, [args.userId]);
+      await syncOpenRostersForServer(ctx, serverDiscordId);
+    }
+
+    return {
+      userId: args.userId,
+      targetServerDiscordId,
+      reassigned: true,
+    };
+  },
+});

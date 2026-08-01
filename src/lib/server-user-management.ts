@@ -3,6 +3,7 @@ import {
   deleteServerUserAssignmentCommand,
   importDiscordMembersForServerCommand,
   linkImportedDiscordProfileCommand,
+  reassignImportedMemberCommand,
   savePlayerPlatformIdCommand,
   saveServerUserAssignmentCommand,
   upsertImportedPlayerCommand,
@@ -104,6 +105,13 @@ export async function saveImportedClanMember(input: {
     secondaryGroupIds: [],
     paused: false,
   });
+}
+
+export async function reassignImportedMember(input: {
+  userId: string;
+  targetServerId: string;
+}) {
+  return await reassignImportedMemberCommand(input);
 }
 
 export async function linkImportedDiscordProfile(input: {
