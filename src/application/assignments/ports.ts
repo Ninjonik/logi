@@ -59,6 +59,8 @@ export interface AssignmentCommandRepository {
     userId: string;
     name: string;
     avatar: string;
+    serverDiscordId?: string;
+    nickname?: string;
     nowIso: string;
   }): Promise<"created" | "updated">;
 }

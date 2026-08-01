@@ -130,6 +130,7 @@ export async function importDiscordMembersForServer(input: {
     userId: string;
     name: string;
     avatar: string;
+    nickname?: string;
     secondaryGroupIds: string[];
   }>;
 }) {
