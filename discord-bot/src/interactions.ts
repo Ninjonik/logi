@@ -595,7 +595,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     const emojis = await getPlatformEmojis();
 
     if (parsed.step === "start") {
-      await interaction.update(buildPlayedBeforeMessage(language, context));
+      if (await hasConfiguredStatsServers(interaction.guildId)) {
+        await interaction.update(buildPlayedBeforeMessage(language, context));
+        return;
+      }
+
+      await interaction.update(buildPlatformSelectMessageWithEmojis({ language, context, emojis }));
       return;
     }
 
@@ -911,6 +916,18 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       secret: env.internalSecret,
       userId,
     }) as PlatformLinkState;
+  }
+
+  async function hasConfiguredStatsServers(guildId: string | null) {
+    if (!guildId) {
+      return false;
+    }
+
+    const config = await convex.query(references.getConfigByDiscordGuildId, {
+      guildId,
+    }).catch(() => null) as EventInteractionContext["config"] | null;
+
+    return (config?.playerStatsServers?.some((item) => item.token?.trim() && item.url?.trim()) ?? false);
   }
 
   async function searchPlayerStatsServers(guildId: string, query: string): Promise<PlayerSearchResult[]> {
