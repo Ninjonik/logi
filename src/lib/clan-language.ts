@@ -118,6 +118,10 @@ type ClanDiscordMessages = {
     membershipIntro: string;
     linkIntro: string;
     startButton: string;
+    addAnotherButton: string;
+    unlinkButton: string;
+    manageDescription: string;
+    linkedFieldTitle: string;
     playedBeforePrompt: string;
     playedBeforePlaceholder: string;
     playedBeforeYes: string;
@@ -126,6 +130,11 @@ type ClanDiscordMessages = {
     playedBeforeNoDescription: string;
     playerSearchIntro: string;
     playerSearchPlaceholder: string;
+    playerSearchNoMatches: string;
+    playerSearchButton: string;
+    playerSearchModalTitle: string;
+    playerSearchModalLabel: string;
+    playerSearchModalPlaceholder: string;
     platformIntro: string;
     platformPlaceholder: string;
     platformSteam: string;
@@ -139,6 +148,11 @@ type ClanDiscordMessages = {
     linkedAndContinuing: string;
     mockLinkedSuccess: string;
     invalidPlatformId: string;
+    unlinkPrompt: string;
+    unlinkPlaceholder: string;
+    invalidAction: string;
+    invalidModal: string;
+    invalidSearchModal: string;
     guides: {
       steam: { label: string; help: string; stepOne: string; stepTwo: string; stepThree: string };
       epic: { label: string; help: string; stepOne: string; stepTwo: string; stepThree: string };
@@ -368,6 +382,10 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       membershipIntro: "Before we can continue your clan application, you need to link a platform ID here in Discord.",
       linkIntro: "Link your platform ID here in Discord. No website or DM handoff is needed anymore.",
       startButton: "Link your platform ID",
+      addAnotherButton: "Add another platform ID",
+      unlinkButton: "Unlink a platform ID",
+      manageDescription: "Manage your linked platform IDs below.",
+      linkedFieldTitle: "Linked platform IDs",
       playedBeforePrompt: "Have you played on this clan server before?",
       playedBeforePlaceholder: "Choose one option",
       playedBeforeYes: "Yes",
@@ -376,6 +394,11 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       playedBeforeNoDescription: "Choose your platform and enter your platform ID manually.",
       playerSearchIntro: "Pick the player entry that matches you. This is mocked for now until the API-backed search is ready.",
       playerSearchPlaceholder: "Select your player name",
+      playerSearchNoMatches: "No matching players were found. Showing the current options again.",
+      playerSearchButton: "Search player",
+      playerSearchModalTitle: "Search player",
+      playerSearchModalLabel: "Player name or code",
+      playerSearchModalPlaceholder: "Type part of the name or player ID",
       platformIntro: "Choose your platform. I will show the same guide copy as the current website flow, then let you enter your platform ID.",
       platformPlaceholder: "Select your platform",
       platformSteam: "Steam",
@@ -389,6 +412,11 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       linkedAndContinuing: "Your platform ID has been linked. Continuing with your clan application now.",
       mockLinkedSuccess: "Your platform ID has been mocked as linked successfully.",
       invalidPlatformId: "Enter a platform ID without spaces.",
+      unlinkPrompt: "Select the platform ID you want to unlink.",
+      unlinkPlaceholder: "Select a platform ID to unlink",
+      invalidAction: "This platform link action is no longer valid.",
+      invalidModal: "This platform link modal is no longer valid.",
+      invalidSearchModal: "This player search modal is no longer valid.",
       guides: {
         steam: {
           label: "Steam64 ID",
@@ -425,6 +453,10 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       membershipIntro: "NeÅ¾ budeme pokraÄovat s vaÅ¡Ã­ klanovou pÅ™ihlÃ¡Å¡kou, musÃ­te si tady v Discordu propojit platform ID.",
       linkIntro: "Propojte si platform ID pÅ™Ã­mo tady v Discordu. UÅ¾ nenÃ­ potÅ™eba web ani DM odkaz.",
       startButton: "Propojit platform ID",
+      addAnotherButton: "Přidat další platform ID",
+      unlinkButton: "Odpojit platform ID",
+      manageDescription: "Níže můžete spravovat svá propojená platform ID.",
+      linkedFieldTitle: "Propojená platform ID",
       playedBeforePrompt: "HrÃ¡l(a) jste uÅ¾ dÅ™Ã­ve na serveru tohoto klanu?",
       playedBeforePlaceholder: "Vyberte jednu moÅ¾nost",
       playedBeforeYes: "Ano",
@@ -433,6 +465,11 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       playedBeforeNoDescription: "Vyberete platformu a zadÃ¡te platform ID ruÄnÄ›.",
       playerSearchIntro: "Vyberte zÃ¡znam hrÃ¡Äe, kterÃ½ vÃ¡m odpovÃ­dÃ¡. ZatÃ­m je to mock, neÅ¾ bude hotovÃ© API vyhledÃ¡vÃ¡nÃ­.",
       playerSearchPlaceholder: "Vyberte jmÃ©no hrÃ¡Äe",
+      playerSearchNoMatches: "Nebyli nalezeni žádní odpovídající hráči. Ponechávám aktuální možnosti.",
+      playerSearchButton: "Hledat hráče",
+      playerSearchModalTitle: "Hledat hráče",
+      playerSearchModalLabel: "Jméno hráče nebo kód",
+      playerSearchModalPlaceholder: "Napište část jména nebo player ID",
       platformIntro: "Vyberte platformu. UkÃ¡Å¾u stejnÃ½ nÃ¡vod jako v dneÅ¡nÃ­m webovÃ©m flow a pak zadÃ¡te platform ID.",
       platformPlaceholder: "Vyberte platformu",
       platformSteam: "Steam",
@@ -446,6 +483,11 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       linkedAndContinuing: "VaÅ¡e platform ID bylo propojeno. PokraÄuji s klanovou pÅ™ihlÃ¡Å¡kou.",
       mockLinkedSuccess: "VaÅ¡e platform ID bylo ÃºspÄ›Å¡nÄ› mockovanÄ› propojeno.",
       invalidPlatformId: "Zadejte platform ID bez mezer.",
+      unlinkPrompt: "Vyberte platform ID, které chcete odpojit.",
+      unlinkPlaceholder: "Vyberte platform ID k odpojení",
+      invalidAction: "Tato akce propojení platform ID už není platná.",
+      invalidModal: "Tento modal pro propojení platform ID už není platný.",
+      invalidSearchModal: "Tento modal pro hledání hráče už není platný.",
       guides: {
         steam: {
           label: "Steam64 ID",

@@ -39,6 +39,7 @@ import {
   buildPlatformLinkStartMessage,
   buildPlatformSelectMessageWithEmojis,
   buildPlayedBeforeMessage,
+  getPlatformFlowMessages,
   buildUnlinkPlatformMessage,
   parsePlatformLinkApplyModalId,
   parsePlatformLinkInteractionId,
@@ -56,6 +57,7 @@ import {
   rollbackMembershipApplicationSetup,
   syncMembershipRoles,
 } from "./interactions/shared";
+import { detectPlatformFromStatsId, extractPlayerSearchResults } from "./interactions/player-search";
 import { logError, logInfo, logWarn } from "./log";
 import { buildMembershipApplicationThreadEmbed, buildTicketThreadEmbed } from "./message-builders";
 import type { EventInteractionContext, MembershipApplicationThreadRecord, MembershipCategory, TicketCategory, TicketThreadRecord } from "./types";
@@ -583,12 +585,13 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
   async function handlePlatformLinkButtonInteraction(interaction: ButtonInteraction) {
     const parsed = parsePlatformLinkInteractionId(interaction.customId);
     const context = parsed?.context;
+    const language = await getGuildLanguage(interaction.guildId);
+    const flowMessages = getPlatformFlowMessages(language);
     if (!parsed || !context) {
-      await interaction.reply({ content: "This platform link action is no longer valid.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: flowMessages.invalidAction, flags: MessageFlags.Ephemeral });
       return;
     }
 
-    const language = await getGuildLanguage(interaction.guildId);
     const emojis = await getPlatformEmojis();
 
     if (parsed.step === "start") {
@@ -597,7 +600,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     if (parsed.step === "player-search") {
-      await interaction.showModal(buildPlayerSearchModal(context));
+      await interaction.showModal(buildPlayerSearchModal(context, language));
       return;
     }
 
@@ -638,13 +641,14 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
   async function handlePlatformLinkSelectInteraction(interaction: StringSelectMenuInteraction) {
     const parsed = parsePlatformLinkInteractionId(interaction.customId);
     const context = parsed?.context;
+    const language = await getGuildLanguage(interaction.guildId);
+    const flowMessages = getPlatformFlowMessages(language);
     if (!parsed || !context) {
-      await interaction.reply({ content: "This platform link action is no longer valid.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: flowMessages.invalidAction, flags: MessageFlags.Ephemeral });
       return;
     }
 
     const value = interaction.values[0];
-    const language = await getGuildLanguage(interaction.guildId);
     const emojis = await getPlatformEmojis();
 
     if (parsed.step === "played") {
@@ -737,13 +741,14 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
   async function handlePlatformLinkModalSubmit(interaction: ModalSubmitInteraction) {
     const parsed = parsePlatformLinkModalId(interaction.customId);
+    const language = await getGuildLanguage(interaction.guildId);
+    const flowMessages = getPlatformFlowMessages(language);
     if (!parsed?.context) {
-      await interaction.reply({ content: "This platform link modal is no longer valid.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: flowMessages.invalidModal, flags: MessageFlags.Ephemeral });
       return;
     }
 
     const platformId = interaction.fields.getTextInputValue("platformId").trim();
-    const language = await getGuildLanguage(interaction.guildId);
     const messages = getClanDiscordMessages(language);
     if (!platformId || /\s/.test(platformId)) {
       await interaction.reply({ content: messages.platformFlow?.invalidPlatformId ?? "Enter a platform ID without spaces.", flags: MessageFlags.Ephemeral });
@@ -782,13 +787,14 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
   async function handlePlatformLinkSearchModalSubmit(interaction: ModalSubmitInteraction) {
     const context = parsePlatformLinkSearchModalId(interaction.customId);
+    const language = await getGuildLanguage(interaction.guildId);
+    const flowMessages = getPlatformFlowMessages(language);
     if (!context || !interaction.guildId) {
-      await interaction.reply({ content: "This player search modal is no longer valid.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: flowMessages.invalidSearchModal, flags: MessageFlags.Ephemeral });
       return;
     }
 
     const query = interaction.fields.getTextInputValue("query").trim();
-    const language = await getGuildLanguage(interaction.guildId);
     const results = await searchPlayerStatsServers(interaction.guildId, query);
     const emojis = await getPlatformEmojis();
 
@@ -809,13 +815,14 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
   async function handlePlatformLinkApplyModalSubmit(interaction: ModalSubmitInteraction) {
     const parsed = parsePlatformLinkApplyModalId(interaction.customId);
+    const language = await getGuildLanguage(interaction.guildId);
+    const flowMessages = getPlatformFlowMessages(language);
     if (!parsed || !interaction.guildId) {
-      await interaction.reply({ content: "This platform link modal is no longer valid.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: flowMessages.invalidModal, flags: MessageFlags.Ephemeral });
       return;
     }
 
     const platformId = interaction.fields.getTextInputValue("platformId").trim();
-    const language = await getGuildLanguage(interaction.guildId);
     const messages = getClanDiscordMessages(language);
     if (!platformId || /\s/.test(platformId)) {
       await interaction.reply({ content: messages.platformFlow?.invalidPlatformId ?? "Enter a platform ID without spaces.", flags: MessageFlags.Ephemeral });
@@ -839,13 +846,14 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
   async function handlePlatformLinkMockApplyModalSubmit(interaction: ModalSubmitInteraction) {
     const parsed = parsePlatformLinkMockApplyModalId(interaction.customId);
+    const language = await getGuildLanguage(interaction.guildId);
+    const flowMessages = getPlatformFlowMessages(language);
     if (!parsed || !interaction.guildId) {
-      await interaction.reply({ content: "This platform link modal is no longer valid.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: flowMessages.invalidModal, flags: MessageFlags.Ephemeral });
       return;
     }
 
     const context = await loadMembershipCategoryContext(interaction.guildId, parsed.categoryId);
-    const language = await getGuildLanguage(interaction.guildId);
     const messages = getClanDiscordMessages(language);
     if (!context) {
       await interaction.reply({ content: messages.membership.unavailable, flags: MessageFlags.Ephemeral });
@@ -963,53 +971,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     return [...deduped.values()].slice(0, 25);
   }
 
-  function extractPlayerSearchResults(payload: unknown): Array<{ playerId: string; playerName: string }> {
-    const visited = new Set<unknown>();
-    const queue: unknown[] = [payload];
-    const results: Array<{ playerId: string; playerName: string }> = [];
-
-    while (queue.length) {
-      const current = queue.shift();
-      if (!current || typeof current !== "object" || visited.has(current)) {
-        continue;
-      }
-      visited.add(current);
-
-      if (Array.isArray(current)) {
-        for (const item of current) {
-          queue.push(item);
-        }
-        continue;
-      }
-
-      const record = current as Record<string, unknown>;
-      const playerId = record.player_id;
-      const playerName = record.player_name ?? record.name ?? record.player;
-      if (typeof playerId === "string" && typeof playerName === "string") {
-        results.push({ playerId, playerName });
-      }
-
-      for (const value of Object.values(record)) {
-        if (value && typeof value === "object") {
-          queue.push(value);
-        }
-      }
-    }
-
-    return results;
-  }
-
-  function detectPlatformFromStatsId(value: string): "steam" | "epic" | "xbox" | "playstation" | "other" {
-    const trimmed = value.trim();
-    if (/^7656119\d{10}$/.test(trimmed) || /^steam_[0-5]:[01]:\d+$/i.test(trimmed)) {
-      return "steam";
-    }
-    if (/^[0-9a-f]{32}$/i.test(trimmed) || /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(trimmed)) {
-      return "epic";
-    }
-    return "other";
-  }
-
   async function continueMembershipApplicationFlow(
     interaction: ButtonInteraction | StringSelectMenuInteraction,
     prereq: MembershipPrereq,
@@ -1056,16 +1017,17 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     return modal;
   }
 
-  function buildPlayerSearchModal(context: { mode: "membership" | "link"; categoryId?: string }) {
+  function buildPlayerSearchModal(context: { mode: "membership" | "link"; categoryId?: string }, language: "en" | "cs") {
+    const messages = getPlatformFlowMessages(language);
     return new ModalBuilder()
       .setCustomId(buildPlatformLinkSearchModalId(context))
-      .setTitle("Search player")
+      .setTitle(messages.playerSearchModalTitle)
       .addComponents(
         new ActionRowBuilder<TextInputBuilder>().addComponents(
           new TextInputBuilder()
             .setCustomId("query")
-            .setLabel("Player name or code")
-            .setPlaceholder("Type part of the name or player ID")
+            .setLabel(messages.playerSearchModalLabel)
+            .setPlaceholder(messages.playerSearchModalPlaceholder)
             .setStyle(TextInputStyle.Short)
             .setRequired(true)
             .setMaxLength(100),
