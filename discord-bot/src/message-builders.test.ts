@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildEventComponents, buildEventEmbed } from "./message-builders";
-import type { DiscordConfig, EventRecord, Group } from "./types";
+import type { DiscordConfig, EventCategory, EventRecord, Group } from "./types";
 
 const config: DiscordConfig = {
   id: "config-1",
@@ -27,6 +27,14 @@ const groups: Group[] = [
     name: "Infantry",
     color: "#dc2626",
     updatedAt: "2026-07-29T10:00:00.000Z",
+  },
+];
+
+const eventCategories: EventCategory[] = [
+  {
+    id: "competitive",
+    label: "Competitive",
+    color: "#dc2626",
   },
 ];
 
@@ -77,6 +85,7 @@ test("buildEventEmbed omits group fields when signupGroupIds is empty", () => {
   const embed = buildEventEmbed(
     config,
     groups,
+    eventCategories,
     createMatchEvent({
       signupGroupIds: [],
       participants: [

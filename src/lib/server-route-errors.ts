@@ -1,5 +1,7 @@
+import { logNextError } from "@/lib/system-logs";
+
 export function logRouteError(scope: string, error: unknown) {
-  console.error(`[${scope}]`, error);
+  logNextError(scope, "Route action failed", { error });
 }
 
 export function getUserSafeErrorMessage(

@@ -13,6 +13,34 @@ export type EventCategory = {
   emoji?: string;
 };
 
+export type CalendarItemRecurrenceFrequency =
+  | "weekly"
+  | "monthly_date"
+  | "monthly_nth_weekday"
+  | "yearly";
+
+export type CalendarItemRecurrence = {
+  frequency: CalendarItemRecurrenceFrequency;
+  interval: number;
+  until?: Timestamp;
+};
+
+export type CalendarItem = {
+  id: string;
+  guildId: string;
+  title: string;
+  description?: string;
+  color: string;
+  emoji?: string;
+  label?: string;
+  startAt: Timestamp;
+  endAt: Timestamp;
+  allDay: boolean;
+  recurrence?: CalendarItemRecurrence;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
 export type AppUser = {
   _reserveSection?: string;
   id: string;
@@ -59,6 +87,7 @@ export type Guild = {
   avatar: string;
   description?: string;
   eventCategories?: EventCategory[];
+  calendarItems?: CalendarItem[];
   botInside: boolean;
   canAdmin?: boolean;
   adminIds: string[];

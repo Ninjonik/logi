@@ -113,6 +113,40 @@ type ClanDiscordMessages = {
     readyInteraction: string;
     successPage: string;
   };
+  platformFlow?: {
+    title: string;
+    membershipIntro: string;
+    linkIntro: string;
+    startButton: string;
+    playedBeforePrompt: string;
+    playedBeforePlaceholder: string;
+    playedBeforeYes: string;
+    playedBeforeYesDescription: string;
+    playedBeforeNo: string;
+    playedBeforeNoDescription: string;
+    playerSearchIntro: string;
+    playerSearchPlaceholder: string;
+    platformIntro: string;
+    platformPlaceholder: string;
+    platformSteam: string;
+    platformEpic: string;
+    platformXbox: string;
+    platformPlaystation: string;
+    guideLinkLabel: string;
+    submitIdButton: string;
+    continueWithIdButton: string;
+    linkedSuccess: string;
+    linkedAndContinuing: string;
+    mockLinkedSuccess: string;
+    invalidPlatformId: string;
+    guides: {
+      steam: { label: string; help: string; stepOne: string; stepTwo: string; stepThree: string };
+      epic: { label: string; help: string; stepOne: string; stepTwo: string; stepThree: string };
+      xbox: { label: string; help: string; stepOne: string; stepTwo: string; stepThree: string };
+      playstation: { label: string; help: string; stepOne: string; stepTwo: string; stepThree: string };
+    };
+  };
+  platformFlowCsFallback?: unknown;
   ticket: {
     serverOnly: string;
     unavailable: string;
@@ -328,6 +362,120 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       readyDm: "Your platform ID has been linked successfully.",
       readyInteraction: "Your platform ID has been linked successfully.",
       successPage: "Platform ID linked successfully. You can close this page now.",
+    },
+    platformFlow: {
+      title: "Link your platform ID",
+      membershipIntro: "Before we can continue your clan application, you need to link a platform ID here in Discord.",
+      linkIntro: "Link your platform ID here in Discord. No website or DM handoff is needed anymore.",
+      startButton: "Link your platform ID",
+      playedBeforePrompt: "Have you played on this clan server before?",
+      playedBeforePlaceholder: "Choose one option",
+      playedBeforeYes: "Yes",
+      playedBeforeYesDescription: "Pick your name from a mocked search list.",
+      playedBeforeNo: "No",
+      playedBeforeNoDescription: "Choose your platform and enter your platform ID manually.",
+      playerSearchIntro: "Pick the player entry that matches you. This is mocked for now until the API-backed search is ready.",
+      playerSearchPlaceholder: "Select your player name",
+      platformIntro: "Choose your platform. I will show the same guide copy as the current website flow, then let you enter your platform ID.",
+      platformPlaceholder: "Select your platform",
+      platformSteam: "Steam",
+      platformEpic: "Epic Games",
+      platformXbox: "Xbox",
+      platformPlaystation: "PlayStation",
+      guideLinkLabel: "Guide",
+      submitIdButton: "Enter platform ID",
+      continueWithIdButton: "Enter platform ID and continue",
+      linkedSuccess: "Your platform ID has been linked successfully.",
+      linkedAndContinuing: "Your platform ID has been linked. Continuing with your clan application now.",
+      mockLinkedSuccess: "Your platform ID has been mocked as linked successfully.",
+      invalidPlatformId: "Enter a platform ID without spaces.",
+      guides: {
+        steam: {
+          label: "Steam64 ID",
+          help: "You need the long Steam64 number for your account.",
+          stepOne: "Open the guide.",
+          stepTwo: "Find the Steam64 ID shown there.",
+          stepThree: "Copy that long number into the next step.",
+        },
+        epic: {
+          label: "Epic Account ID",
+          help: "You need your Epic Account ID.",
+          stepOne: "Open the guide.",
+          stepTwo: "Open your Epic account details.",
+          stepThree: "Copy the Account ID into the next step.",
+        },
+        xbox: {
+          label: "Xbox ID",
+          help: "Use the same platform guidance you already use today for Xbox.",
+          stepOne: "Open the guide.",
+          stepTwo: "Confirm the correct Xbox profile identifier.",
+          stepThree: "Paste that identifier into the next step.",
+        },
+        playstation: {
+          label: "PlayStation ID",
+          help: "Use the same platform guidance you already use today for PlayStation.",
+          stepOne: "Open the guide.",
+          stepTwo: "Confirm the correct PlayStation profile identifier.",
+          stepThree: "Paste that identifier into the next step.",
+        },
+      },
+    },
+    platformFlowCsFallback: {
+      title: "Propojit platform ID",
+      membershipIntro: "NeÅ¾ budeme pokraÄovat s vaÅ¡Ã­ klanovou pÅ™ihlÃ¡Å¡kou, musÃ­te si tady v Discordu propojit platform ID.",
+      linkIntro: "Propojte si platform ID pÅ™Ã­mo tady v Discordu. UÅ¾ nenÃ­ potÅ™eba web ani DM odkaz.",
+      startButton: "Propojit platform ID",
+      playedBeforePrompt: "HrÃ¡l(a) jste uÅ¾ dÅ™Ã­ve na serveru tohoto klanu?",
+      playedBeforePlaceholder: "Vyberte jednu moÅ¾nost",
+      playedBeforeYes: "Ano",
+      playedBeforeYesDescription: "Vyberete svÃ© jmÃ©no z doÄasnÄ› mockovanÃ©ho seznamu.",
+      playedBeforeNo: "Ne",
+      playedBeforeNoDescription: "Vyberete platformu a zadÃ¡te platform ID ruÄnÄ›.",
+      playerSearchIntro: "Vyberte zÃ¡znam hrÃ¡Äe, kterÃ½ vÃ¡m odpovÃ­dÃ¡. ZatÃ­m je to mock, neÅ¾ bude hotovÃ© API vyhledÃ¡vÃ¡nÃ­.",
+      playerSearchPlaceholder: "Vyberte jmÃ©no hrÃ¡Äe",
+      platformIntro: "Vyberte platformu. UkÃ¡Å¾u stejnÃ½ nÃ¡vod jako v dneÅ¡nÃ­m webovÃ©m flow a pak zadÃ¡te platform ID.",
+      platformPlaceholder: "Vyberte platformu",
+      platformSteam: "Steam",
+      platformEpic: "Epic Games",
+      platformXbox: "Xbox",
+      platformPlaystation: "PlayStation",
+      guideLinkLabel: "NÃ¡vod",
+      submitIdButton: "Zadat platform ID",
+      continueWithIdButton: "Zadat platform ID a pokraÄovat",
+      linkedSuccess: "VaÅ¡e platform ID bylo ÃºspÄ›Å¡nÄ› propojeno.",
+      linkedAndContinuing: "VaÅ¡e platform ID bylo propojeno. PokraÄuji s klanovou pÅ™ihlÃ¡Å¡kou.",
+      mockLinkedSuccess: "VaÅ¡e platform ID bylo ÃºspÄ›Å¡nÄ› mockovanÄ› propojeno.",
+      invalidPlatformId: "Zadejte platform ID bez mezer.",
+      guides: {
+        steam: {
+          label: "Steam64 ID",
+          help: "PotÅ™ebujete dlouhÃ© ÄÃ­selnÃ© Steam64 ID svÃ©ho ÃºÄtu.",
+          stepOne: "OtevÅ™ete nÃ¡vod.",
+          stepTwo: "NajdÄ›te zobrazenÃ© Steam64 ID.",
+          stepThree: "ZkopÃ­rujte toto dlouhÃ© ÄÃ­slo do dalÅ¡Ã­ho kroku.",
+        },
+        epic: {
+          label: "Epic Account ID",
+          help: "PotÅ™ebujete svÃ© Epic Account ID.",
+          stepOne: "OtevÅ™ete nÃ¡vod.",
+          stepTwo: "OtevÅ™ete detaily svÃ©ho Epic ÃºÄtu.",
+          stepThree: "ZkopÃ­rujte Account ID do dalÅ¡Ã­ho kroku.",
+        },
+        xbox: {
+          label: "Xbox ID",
+          help: "PouÅ¾ijte stejnÃ½ postup jako v aktuÃ¡lnÃ­m flow pro Xbox.",
+          stepOne: "OtevÅ™ete nÃ¡vod.",
+          stepTwo: "PotvrÄte sprÃ¡vnÃ½ identifikÃ¡tor Xbox profilu.",
+          stepThree: "VloÅ¾te tento identifikÃ¡tor do dalÅ¡Ã­ho kroku.",
+        },
+        playstation: {
+          label: "PlayStation ID",
+          help: "PouÅ¾ijte stejnÃ½ postup jako v aktuÃ¡lnÃ­m flow pro PlayStation.",
+          stepOne: "OtevÅ™ete nÃ¡vod.",
+          stepTwo: "PotvrÄte sprÃ¡vnÃ½ identifikÃ¡tor PlayStation profilu.",
+          stepThree: "VloÅ¾te tento identifikÃ¡tor do dalÅ¡Ã­ho kroku.",
+        },
+      },
     },
     ticket: {
       serverOnly: "Tickets can only be opened inside a server.",

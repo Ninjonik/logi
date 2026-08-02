@@ -12,6 +12,7 @@ import {
   isDiscordGuildAdmin,
 } from "@/lib/discord";
 import { getSiteUrl } from "@/lib/env";
+import { logNextError, logNextInfo } from "@/lib/system-logs";
 
 const STATE_COOKIE = "discord_oauth_state";
 const REDIRECT_COOKIE = "discord_oauth_redirect";
@@ -45,6 +46,17 @@ export async function GET(request: NextRequest) {
       sub: userId,
       name: discordUser.username,
       avatar: getDiscordAvatarUrl(discordUser),
+      discordGuilds: await Promise.all(
+        discordGuilds.map(async (guild) => ({
+          id: guild.id,
+          name: guild.name,
+          avatar: getDiscordGuildIconUrl(guild),
+          canAdmin: isDiscordGuildAdmin(guild),
+          botInside: isDiscordGuildAdmin(guild)
+            ? await isBotInsideDiscordGuild(guild.id)
+            : false,
+        })),
+      ),
     };
 
     await syncCurrentPlayerFromDiscord(session);
@@ -66,9 +78,14 @@ export async function GET(request: NextRequest) {
     await setSessionToken(sessionToken);
     cleanOauthCookies(cookieStore);
 
+    logNextInfo("discord-auth", "Completed Discord login", {
+      userId,
+      managedGuildCount: managedGuilds.length,
+      requestedGuildId,
+    });
     return NextResponse.redirect(new URL(redirectTo, getSiteUrl()));
   } catch (e) {
-    console.error("Failed to exchange Discord code:", e);
+    logNextError("discord-auth", "Failed to exchange Discord code", { error: e });
     cleanOauthCookies(cookieStore);
     return NextResponse.redirect(new URL("/en/login?error=discord-login", getSiteUrl()));
   }

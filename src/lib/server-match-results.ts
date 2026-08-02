@@ -1,5 +1,6 @@
 import { availableParallelism, cpus } from "node:os";
 
+import { logNextError } from "@/lib/system-logs";
 import { saveServerEvent, saveServerEventResult } from "@/lib/server-events";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { saveServerMatch } from "@/lib/server-matches";
@@ -176,7 +177,7 @@ function toLoggedError(error: unknown) {
 }
 
 function logImportError(scope: string, context: Record<string, unknown>, error: unknown) {
-  console.error(`[match-results] ${scope}`, {
+  logNextError(`match-results:${scope}`, "Match result import failed", {
     ...context,
     error: toLoggedError(error),
   });

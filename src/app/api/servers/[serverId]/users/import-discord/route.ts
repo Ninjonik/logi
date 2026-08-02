@@ -4,6 +4,7 @@ import { handleIfNotLoggedIn } from "@/lib/auth";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { fetchDiscordGuildMembers, getDiscordAvatarUrl, type DiscordGuildMember } from "@/lib/discord";
 import { getServerContext } from "@/lib/server-context";
+import { logNextError, logNextInfo } from "@/lib/system-logs";
 import { importDiscordMembersForServer, getServerUserAssignments, listUsers } from "@/lib/server-user-management";
 
 function canImportUserAsType(input: {
@@ -137,6 +138,13 @@ export async function POST(
       appCacheTags.rosterImage(),
     ]);
 
+    logNextInfo("import-discord-members", "Imported Discord members into clan", {
+      serverId,
+      userId: context.user.discordId,
+      roleId,
+      assignmentType,
+      importedCount: result.importedCount,
+    });
     return NextResponse.json({
       ...result,
       matchedMembers,
@@ -144,7 +152,7 @@ export async function POST(
       skippedIneligible,
     });
   } catch (error) {
-    console.error("Failed to import Discord members", error);
+    logNextError("import-discord-members", "Failed to import Discord members", { serverId, error });
     return NextResponse.json({ error: "Unable to import Discord members." }, { status: 500 });
   }
 }

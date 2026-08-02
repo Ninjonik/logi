@@ -3,28 +3,34 @@ import { v } from "convex/values";
 import {
   assertInternalSecret,
   normalizeConfigDoc,
+  normalizeCalendarItemDoc,
   normalizeDoc,
   normalizeEventDoc,
   normalizeGuildDoc,
 } from "./discord_shared";
+import { getGuildDiscordId } from "./identity";
 
 export const listSyncPayloads = query({
   args: { secret: v.string() },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const [configs, groups, events, topicPresets, syncStates, rosters] = await Promise.all([
+    const [guilds, configs, groups, events, calendarItems, topicPresets, syncStates, rosters] = await Promise.all([
+      ctx.db.query("guilds").collect(),
       ctx.db.query("discordConfigs").collect(),
       ctx.db.query("groups").collect(),
       ctx.db.query("events").collect(),
+      ctx.db.query("calendarItems").collect(),
       ctx.db.query("topicPresets").collect(),
       ctx.db.query("discordEventSyncs").collect(),
       ctx.db.query("rosters").collect(),
     ]);
 
     return configs.map((config) => {
+      const guild = guilds.find((item) => getGuildDiscordId(item) === config.guildId);
       const guildGroups = groups.filter((group) => group.guildId === config.guildId).map(normalizeDoc);
       const guildEvents = events.filter((event) => event.guildId === config.guildId).map(normalizeEventDoc);
+      const guildCalendarItems = calendarItems.filter((item) => item.guildId === config.guildId).map(normalizeCalendarItemDoc);
       const guildTopicPresets = topicPresets.filter((preset) => preset.guildId === config.guildId).map(normalizeDoc);
       const guildSyncStates = syncStates.filter((state) => state.guildId === config.guildId).map(normalizeDoc);
       const guildRosters = rosters
@@ -32,9 +38,23 @@ export const listSyncPayloads = query({
         .map(normalizeDoc);
 
       return {
+        guild: guild ? normalizeGuildDoc(guild) : {
+          id: config.guildId,
+          discordId: config.guildId,
+          name: config.guildId,
+          avatar: "",
+          botInside: false,
+          adminIds: [],
+          memberIds: [],
+          mercenaryIds: [],
+          eventCategories: [],
+          calendarItems: [],
+          updatedAt: config.updatedAt,
+        },
         config: normalizeConfigDoc(config),
         groups: guildGroups,
         events: guildEvents,
+        calendarItems: guildCalendarItems,
         rosters: guildRosters,
         topicPresets: guildTopicPresets,
         syncStates: guildSyncStates,
@@ -48,10 +68,11 @@ export const listGuildCacheSnapshot = query({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const [guilds, configs, groups, squadPresets, topicPresets] = await Promise.all([
+    const [guilds, configs, groups, calendarItems, squadPresets, topicPresets] = await Promise.all([
       ctx.db.query("guilds").collect(),
       ctx.db.query("discordConfigs").collect(),
       ctx.db.query("groups").collect(),
+      ctx.db.query("calendarItems").collect(),
       ctx.db.query("squadPresets").collect(),
       ctx.db.query("topicPresets").collect(),
     ]);
@@ -60,6 +81,7 @@ export const listGuildCacheSnapshot = query({
       guilds: guilds.map(normalizeGuildDoc),
       configs: configs.map(normalizeConfigDoc),
       groups: groups.map(normalizeDoc),
+      calendarItems: calendarItems.map(normalizeCalendarItemDoc),
       squadPresets: squadPresets.map(normalizeDoc),
       topicPresets: topicPresets.map(normalizeDoc),
     };

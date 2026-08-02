@@ -50,6 +50,35 @@ export type MembershipSettings = {
   categories: MembershipCategory[];
 };
 
+export type EventCategory = {
+  id: string;
+  label: string;
+  color: string;
+  emoji?: string;
+};
+
+export type CalendarItemRecurrence = {
+  frequency: "weekly" | "monthly_date" | "monthly_nth_weekday" | "yearly";
+  interval: number;
+  until?: string;
+};
+
+export type CalendarItem = {
+  id: string;
+  guildId: string;
+  title: string;
+  description?: string;
+  color: string;
+  emoji?: string;
+  label?: string;
+  startAt: string;
+  endAt: string;
+  allDay: boolean;
+  recurrence?: CalendarItemRecurrence;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type DiscordConfig = {
   id: string;
   guildId: string;
@@ -82,6 +111,8 @@ export type GuildRecord = {
   name: string;
   avatar: string;
   description?: string;
+  eventCategories: EventCategory[];
+  calendarItems: CalendarItem[];
   botInside: boolean;
   adminIds: string[];
   memberIds: string[];
@@ -272,9 +303,11 @@ export type SyncState = {
 };
 
 export type SyncPayload = {
+  guild: GuildRecord;
   config: DiscordConfig;
   groups: Group[];
   events: EventRecord[];
+  calendarItems: CalendarItem[];
   rosters: Roster[];
   topicPresets: TopicPreset[];
   syncStates: SyncState[];
@@ -284,6 +317,7 @@ export type GuildCacheSnapshot = {
   guilds: GuildRecord[];
   configs: DiscordConfig[];
   groups: Group[];
+  calendarItems: CalendarItem[];
   squadPresets: SquadPreset[];
   topicPresets: TopicPreset[];
 };

@@ -7,7 +7,7 @@ import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-butt
 import { ServerCard } from "@/components/app/server-card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
-import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth";
+import { getCurrentPlayer, getVisibleGuildsForLoggedInUser, isCurrentUserSuperadmin } from "@/lib/auth";
 import { buildDiscordBotInviteUrl } from "@/lib/discord";
 import { getServerContext } from "@/lib/server-context";
 
@@ -48,6 +48,7 @@ export default async function DashboardHomePage({
   const safeLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(safeLocale);
   const user = await getCurrentPlayer();
+  const superadmin = await isCurrentUserSuperadmin();
 
   if (!user) {
     return null;
@@ -55,7 +56,9 @@ export default async function DashboardHomePage({
 
   const visibleGuilds = await getVisibleGuildsForLoggedInUser();
   const mainServer = user.guildId ? visibleGuilds.find((guild) => guild.discordId === user.guildId) : undefined;
-  const managedServers = visibleGuilds.filter((guild) => user.managedGuildIds.includes(guild.discordId));
+  const managedServers = superadmin
+    ? visibleGuilds
+    : visibleGuilds.filter((guild) => user.managedGuildIds.includes(guild.discordId));
   const readyManagedServers = managedServers.filter((guild) => guild.botInside);
   const managedServersMissingBot = managedServers.filter((guild) => !guild.botInside);
   const mercenaryServers = visibleGuilds.filter((guild) => user.mercenaryGuildIds.includes(guild.discordId));

@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
+import { expandCalendarItems } from "../../src/lib/calendar-items";
 import { canAcceptSignups } from "../../src/domain/events/status";
 
 import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
@@ -34,12 +35,52 @@ import {
 export function buildAnnouncementMessage(payload: SyncPayload, event: EventRecord) {
   const roster = payload.rosters.find((item) => item.eventId === event.id);
   return {
-    embed: buildEventEmbed(payload.config, payload.groups, event, roster),
+    embed: buildEventEmbed(payload.config, payload.groups, payload.guild.eventCategories, event, roster),
     components: buildEventComponents(payload.config, payload.groups, event, roster),
   };
 }
 
-export function buildEventEmbed(config: DiscordConfig, groups: Group[], event: EventRecord, roster?: Roster) {
+function normalizeCategoryId(value?: string) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function findEventCategory(categories: SyncPayload["guild"]["eventCategories"], matchType?: string) {
+  const normalizedMatchType = normalizeCategoryId(matchType);
+  if (!normalizedMatchType) {
+    return undefined;
+  }
+
+  return categories.find((category) => normalizeCategoryId(category.id) === normalizedMatchType);
+}
+
+function resolveEventCategoryLabel(categories: SyncPayload["guild"]["eventCategories"], event: EventRecord) {
+  if (event.kind === "training") {
+    return undefined;
+  }
+
+  return findEventCategory(categories, event.matchType)?.label ?? event.matchType?.trim() ?? undefined;
+}
+
+function resolveEventCategoryColor(categories: SyncPayload["guild"]["eventCategories"], event: EventRecord) {
+  return findEventCategory(categories, event.matchType)?.color ?? "#FFB000";
+}
+
+function toDiscordColor(color: string) {
+  const normalized = color.trim();
+  if (/^#[\da-f]{6}$/i.test(normalized)) {
+    return Number.parseInt(normalized.slice(1), 16);
+  }
+
+  return Number.parseInt("FFB000", 16);
+}
+
+export function buildEventEmbed(
+  config: DiscordConfig,
+  groups: Group[],
+  categories: SyncPayload["guild"]["eventCategories"],
+  event: EventRecord,
+  roster?: Roster,
+) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const signupsByGroup = new Map<string, string[]>();
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
@@ -80,12 +121,16 @@ export function buildEventEmbed(config: DiscordConfig, groups: Group[], event: E
   descriptionLines.push(`**⏰ ${messages.embed.registrationEnds}:** <t:${regEndUnix}:R> (<t:${regEndUnix}:f>)`);
   descriptionLines.push(`**📢 ${messages.embed.meeting}:** <t:${meetingUnix}:t>`);
   descriptionLines.push(`**🚀 ${messages.embed.matchStart}:** <t:${gameStartUnix}:F>`);
+  const categoryLabel = resolveEventCategoryLabel(categories, event);
+  if (categoryLabel) {
+    descriptionLines.push(`**🏷️ ${messages.calendar.matchLabel}:** ${categoryLabel}`);
+  }
   descriptionLines.push(`**📌 ${messages.embed.status}:** ${formatEventStatus(event.status, config.defaultLanguage)}`);
 
   const embed = new EmbedBuilder()
     .setTitle(`📅 ${event.name}`)
     .setDescription(descriptionLines.join("\n"))
-    .setColor("#FFB000")
+    .setColor(toDiscordColor(resolveEventCategoryColor(categories, event)))
     .setFooter({ text: messages.embed.managedFooter });
 
   if (event.thumbnailUrl) {
@@ -391,21 +436,19 @@ export function buildMembershipPanelComponents(config: DiscordConfig) {
   return rows;
 }
 
-function normalizeCalendarCategory(value?: string) {
-  return value?.trim().toLowerCase() ?? "";
-}
-
-function resolveCalendarEventLabel(config: DiscordConfig, event: EventRecord) {
+function resolveCalendarEventLabel(
+  config: DiscordConfig,
+  categories: SyncPayload["guild"]["eventCategories"],
+  event: EventRecord,
+) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
   if (event.kind === "training") {
     return messages.calendar.trainingLabel;
   }
 
-  const configuredCategory = config.calendarCategories.find(
-    (category) => normalizeCalendarCategory(category) === normalizeCalendarCategory(event.matchType),
-  );
-
-  return configuredCategory ?? event.matchType?.trim() ?? messages.calendar.matchLabel;
+  return findEventCategory(categories, event.matchType)?.label
+    ?? event.matchType?.trim()
+    ?? messages.calendar.matchLabel;
 }
 
 function formatCalendarDate(timestamp: string, timezone: string, language: ClanLanguage) {
@@ -431,36 +474,73 @@ function configureLocale(language: ClanLanguage) {
   return language === "cs" ? "cs-CZ" : "en-GB";
 }
 
-export function buildCalendarPanelEmbed(config: DiscordConfig, events: EventRecord[]) {
+export function buildCalendarPanelEmbed(
+  config: DiscordConfig,
+  categories: SyncPayload["guild"]["eventCategories"],
+  events: EventRecord[],
+  calendarItems: SyncPayload["calendarItems"] = [],
+) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const now = Date.now();
   const upcomingEvents = [...events]
     .filter((event) => new Date(event.gameEnd).getTime() >= now && event.status !== "concluded")
     .sort((left, right) => new Date(left.meetingStart).getTime() - new Date(right.meetingStart).getTime())
     .slice(0, 20);
+  const manualOccurrences = expandCalendarItems(
+    calendarItems as never,
+    new Date(now - 24 * 60 * 60 * 1000),
+    new Date(now + 366 * 24 * 60 * 60 * 1000),
+  ).filter((item) => new Date(item.endAt).getTime() >= now);
+
+  const upcomingEntries = [
+    ...upcomingEvents.map((event) => ({
+      id: event.id,
+      dateKey: event.gameStart,
+      startAt: event.gameStart,
+      endAt: event.gameEnd,
+      title: event.name,
+      label: resolveCalendarEventLabel(config, categories, event),
+      color: resolveEventCategoryColor(categories, event),
+      allDay: false,
+    })),
+    ...manualOccurrences.map((item) => ({
+      id: item.id,
+      dateKey: item.startAt,
+      startAt: item.startAt,
+      endAt: item.endAt,
+      title: item.title,
+      label: item.label,
+      color: item.color,
+      allDay: item.allDay,
+    })),
+  ]
+    .sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime())
+    .slice(0, 20);
 
   const groupedEvents = new Map<string, string[]>();
-  for (const event of upcomingEvents) {
-    const dateLabel = formatCalendarDate(event.gameStart, config.timezone, config.defaultLanguage);
-    const timeLabel = `${formatCalendarTime(event.gameStart, config.timezone, config.defaultLanguage)} - ${formatCalendarTime(event.gameEnd, config.timezone, config.defaultLanguage)}`;
-    const categoryLabel = resolveCalendarEventLabel(config, event);
-    const line = `• ${event.name}${categoryLabel ? ` - ${categoryLabel}` : ""} (${timeLabel})`;
+  for (const entry of upcomingEntries) {
+    const dateLabel = formatCalendarDate(entry.dateKey, config.timezone, config.defaultLanguage);
+    const timeLabel = entry.allDay
+      ? "All day"
+      : `${formatCalendarTime(entry.startAt, config.timezone, config.defaultLanguage)} - ${formatCalendarTime(entry.endAt, config.timezone, config.defaultLanguage)}`;
+    const line = `• ${entry.title}${entry.label ? ` - ${entry.label}` : ""} (${timeLabel})`;
     const bucket = groupedEvents.get(dateLabel) ?? [];
     bucket.push(line);
     groupedEvents.set(dateLabel, bucket);
   }
+  const panelColor = upcomingEntries[0]?.color ?? "#2563EB";
 
   const embed = new EmbedBuilder()
     .setTitle(`📅 ${messages.calendar.panelTitle}`)
-    .setColor("#2563EB")
+    .setColor(toDiscordColor(panelColor))
     .setFooter({ text: `${messages.embed.managedFooter} • ${config.timezone}` });
 
-  if (config.calendarCategories.length) {
-    embed.setDescription(`${messages.calendar.panelCategories}: ${config.calendarCategories.join(", ")}`);
+  if (categories.length) {
+    embed.setDescription(`${messages.calendar.panelCategories}: ${categories.map((category) => category.label).join(", ")}`);
   }
 
-  if (!upcomingEvents.length) {
-    if (!config.calendarCategories.length) {
+  if (!upcomingEntries.length) {
+    if (!categories.length) {
       embed.setDescription(messages.calendar.panelEmpty);
     }
     return embed;

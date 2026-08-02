@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getLoggedInUser, getVisibleGuildsForLoggedInUser, syncManagedGuildsForCurrentPlayer } from "@/lib/auth";
 import { isBotInsideDiscordGuild } from "@/lib/discord";
+import { logNextError, logNextInfo } from "@/lib/system-logs";
 
 export async function POST() {
   const user = await getLoggedInUser();
@@ -25,9 +26,16 @@ export async function POST() {
       ),
     );
 
+    logNextInfo("discord-refresh", "Refreshed Discord bot status", {
+      userId: user.discordId,
+      managedGuildCount: managedGuilds.length,
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Failed to refresh Discord bot status", error);
+    logNextError("discord-refresh", "Failed to refresh Discord bot status", {
+      userId: user.discordId,
+      error,
+    });
     return NextResponse.json({ error: "Unable to refresh Discord bot status." }, { status: 500 });
   }
 }

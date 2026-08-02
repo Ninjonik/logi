@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/app/app-sidebar";
 import { SiteFooter } from "@/components/app/site-footer";
 import { SiteHeader } from "@/components/app/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth";
+import { getCurrentPlayer, getVisibleGuildsForLoggedInUser, isCurrentUserSuperadmin } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
@@ -25,6 +25,7 @@ export default async function DashboardLayout({
     redirect(`/${safeLocale}/login`);
   }
   const visibleServers = await getVisibleGuildsForLoggedInUser();
+  const isSuperadmin = await isCurrentUserSuperadmin();
 
   return (
     <SidebarProvider
@@ -45,6 +46,7 @@ export default async function DashboardLayout({
         servers={visibleServers}
         activeServerId={undefined}
         canAdmin={false}
+        isSuperadmin={isSuperadmin}
       />
       <SidebarInset className="min-h-dvh bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)] overflow-x-hidden">
         <SiteHeader locale={safeLocale} dictionary={dictionary} servers={visibleServers} user={user} />

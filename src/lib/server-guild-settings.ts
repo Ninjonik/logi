@@ -16,6 +16,22 @@ export async function saveGuildFrontendSettings(input: {
     color: string;
     emoji?: string;
   }>;
+  calendarItems?: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    color: string;
+    emoji?: string;
+    label?: string;
+    startAt: string;
+    endAt: string;
+    allDay: boolean;
+    recurrence?: {
+      frequency: "weekly" | "monthly_date" | "monthly_nth_weekday" | "yearly";
+      interval: number;
+      until?: string;
+    };
+  }>;
 }) {
   return await fetchMutation(updateFrontendSettingsReference, {
     secret: getInternalAuthSecret(),
@@ -24,5 +40,6 @@ export async function saveGuildFrontendSettings(input: {
     avatar: input.avatar,
     description: input.description,
     eventCategories: input.eventCategories,
+    calendarItems: input.calendarItems,
   });
 }

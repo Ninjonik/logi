@@ -4,6 +4,7 @@ export type GuildRuntimeDataLike<TConfig, TGroup, TSquadPreset, TTopicPreset, TG
   groups: TGroup[];
   squadPresets: TSquadPreset[];
   topicPresets: TTopicPreset[];
+  calendarItems?: unknown[];
 };
 
 export type EventSyncContextLike<TEvent, TRoster, TSyncState> = {
@@ -19,8 +20,10 @@ export function buildGuildPayload<TConfig, TGroup, TEvent, TRoster, TTopicPreset
   const filteredContexts = contexts.filter((context): context is EventSyncContextLike<TEvent, TRoster, TSyncState> => Boolean(context));
 
   return {
+    guild: runtime.guild,
     config: runtime.config,
     groups: runtime.groups,
+    calendarItems: runtime.calendarItems ?? [],
     topicPresets: runtime.topicPresets,
     events: filteredContexts.map((context) => context.event),
     rosters: filteredContexts.flatMap((context) => (context.roster ? [context.roster] : [])),

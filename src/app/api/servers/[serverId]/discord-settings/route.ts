@@ -4,6 +4,7 @@ import { handleIfNotLoggedIn } from "@/lib/auth";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getServerContext } from "@/lib/server-context";
 import { saveDiscordConfig } from "@/lib/server-discord-settings";
+import { logNextError, logNextInfo } from "@/lib/system-logs";
 import { discordSettingsSchema } from "@/lib/validation/discord-settings";
 
 export async function POST(request: Request, context: { params: Promise<{ serverId: string }> }) {
@@ -38,9 +39,13 @@ export async function POST(request: Request, context: { params: Promise<{ server
       appCacheTags.discordConfig(serverId),
     ]);
 
+    logNextInfo("discord-settings", "Saved Discord settings", {
+      serverId,
+      userId: serverContext.user.discordId,
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Failed to save Discord settings", error);
+    logNextError("discord-settings", "Failed to save Discord settings", { serverId, error });
     return NextResponse.json({ error: "Unable to save Discord settings." }, { status: 500 });
   }
 }

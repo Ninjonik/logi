@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { initializeDefaultHelperData, resetHelperData } from "@/lib/server-setup";
+import { logNextError, logNextInfo } from "@/lib/system-logs";
 
 const helperDataActionSchema = z.object({
   action: z.enum(["initialize", "reset"]),
@@ -30,9 +31,13 @@ export async function POST(
       appCacheTags.rosterImage(),
     ]);
 
+    logNextInfo("helper-data", "Updated helper data", {
+      serverId,
+      action: body.action,
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Error updating helper data: ", error, "");
+    logNextError("helper-data", "Failed to update helper data", { error });
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Unable to update helper data.",

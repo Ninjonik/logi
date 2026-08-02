@@ -4,6 +4,7 @@ import { handleIfNotLoggedIn } from "@/lib/auth";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { autoLinkPlatformIdsFromEventImports } from "@/lib/server-match-results";
 import { getServerContext } from "@/lib/server-context";
+import { logNextError, logNextInfo } from "@/lib/system-logs";
 
 export async function POST(
   request: Request,
@@ -42,9 +43,15 @@ export async function POST(
       ...result.linkedUserIds.map((userId) => appCacheTags.player(userId)),
     ]);
 
+    logNextInfo("auto-link-platform-ids", "Auto-linked platform IDs from event imports", {
+      serverId,
+      userId: context.user.discordId,
+      clanTag,
+      linkedCount: result.linkedUserIds.length,
+    });
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Failed to auto-link platform IDs", error);
+    logNextError("auto-link-platform-ids", "Failed to auto-link platform IDs", { serverId, error });
     return NextResponse.json({ error: "Unable to auto-link platform IDs." }, { status: 500 });
   }
 }

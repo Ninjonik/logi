@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { handleIfNotLoggedIn } from "@/lib/auth";
 import { fetchDiscordGuildChannels, fetchDiscordGuildEmojis, fetchDiscordGuildRoles } from "@/lib/discord";
 import { getServerContext } from "@/lib/server-context";
+import { logNextError } from "@/lib/system-logs";
 
 export async function GET(
   _request: Request,
@@ -50,7 +51,7 @@ export async function GET(
         })),
     });
   } catch (error) {
-    console.error("Failed to fetch Discord guild metadata", error);
+    logNextError("discord-metadata", "Failed to fetch Discord guild metadata", { serverId, error });
     return NextResponse.json({ error: "Unable to load Discord metadata." }, { status: 500 });
   }
 }
