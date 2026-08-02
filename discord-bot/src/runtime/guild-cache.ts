@@ -2,6 +2,7 @@ import { convex, references } from "../convex";
 import { env } from "../environment";
 import { logError, logInfo } from "../log";
 import type {
+  CalendarItem,
   DiscordConfig,
   Group,
   GuildCacheSnapshot,
@@ -14,6 +15,7 @@ export type GuildRuntimeData = {
   guild: GuildRecord;
   config?: DiscordConfig;
   groups: Group[];
+  calendarItems: CalendarItem[];
   squadPresets: SquadPreset[];
   topicPresets: TopicPreset[];
 };
@@ -79,6 +81,7 @@ export class GuildCache {
         guild,
         config: snapshot.configs.find((config) => config.guildId === guild.discordId),
         groups: snapshot.groups.filter((group) => group.guildId === guild.discordId),
+        calendarItems: snapshot.calendarItems.filter((item) => item.guildId === guild.discordId),
         squadPresets: snapshot.squadPresets.filter((preset) => preset.guildId === guild.discordId),
         topicPresets: snapshot.topicPresets.filter((preset) => preset.guildId === guild.discordId),
       });
@@ -118,6 +121,7 @@ function buildGuildSignature(runtime: GuildRuntimeData) {
     `${runtime.guild.id}:${runtime.guild.updatedAt}`,
     configSignature,
     runtime.groups.map((group) => `${group.id}:${group.updatedAt}`).sort().join(","),
+    runtime.calendarItems.map((item) => `${item.id}:${item.updatedAt}`).sort().join(","),
     runtime.squadPresets.map((preset) => `${preset.id}:${preset.updatedAt}`).sort().join(","),
     runtime.topicPresets.map((preset) => `${preset.id}:${preset.updatedAt}`).sort().join(","),
   ].join("|");

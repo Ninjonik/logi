@@ -1,5 +1,6 @@
 import {
   ActionRowBuilder,
+  type APIMessageComponentEmoji,
   AutocompleteInteraction,
   ButtonInteraction,
   ButtonBuilder,
@@ -12,18 +13,36 @@ import {
   ModalBuilder,
   ModalSubmitInteraction,
   SlashCommandBuilder,
+  StringSelectMenuInteraction,
   TextChannel,
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
-import { buildDiscordMessageUrl } from "../../src/lib/discord";
 
 import { revalidateAppData } from "./cache";
 import { convex, references } from "./convex";
+import { client } from "./discord-client";
 import { env } from "./environment";
 import { handleEventButtonInteraction } from "./interactions/event-buttons";
+import {
+  buildMockPlayerMessage,
+  buildPlatformGuideMessage,
+  buildPlatformLinkApplyModalId,
+  buildPlatformLinkCustomId,
+  buildPlatformLinkManageMessage,
+  buildPlatformLinkModalId,
+  buildPlatformLinkMockApplyModalId,
+  buildPlatformLinkStartMessage,
+  buildPlatformSelectMessageWithEmojis,
+  buildPlayedBeforeMessage,
+  buildUnlinkPlatformMessage,
+  parsePlatformLinkApplyModalId,
+  parsePlatformLinkInteractionId,
+  parsePlatformLinkModalId,
+  parsePlatformLinkMockApplyModalId,
+} from "./interactions/platform-link";
 import {
   cleanupThread,
   formatTemplate,
@@ -32,7 +51,6 @@ import {
   loadTicketCategoryContext,
   resolveSupportMemberIds,
   rollbackMembershipApplicationSetup,
-  startPlatformIdLinkFlow,
   syncMembershipRoles,
 } from "./interactions/shared";
 import { logError, logInfo, logWarn } from "./log";
@@ -52,6 +70,24 @@ type TicketAnswer = {
 };
 
 type MembershipAnswer = TicketAnswer;
+
+type MembershipPrereq = {
+  config: EventInteractionContext["config"];
+  category: MembershipCategory;
+  user: { platformIds?: string[] } | null;
+  assignment: { id: string; membershipCategoryId?: string } | null;
+  hasOpenApplication: boolean;
+};
+
+type PlatformLinkState = {
+  id: string;
+  platformIds: string[];
+  name: string;
+} | null;
+
+type PlatformEmojiMap = Partial<Record<"steam" | "epic" | "xbox" | "playstation", APIMessageComponentEmoji>>;
+
+let platformEmojiCache: PlatformEmojiMap | null = null;
 
 function formatDiscordTimestamp(date: Date) {
   return `<t:${Math.floor(date.getTime() / 1000)}:F>`;
@@ -119,6 +155,17 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
       if (interaction.customId.startsWith("membership:")) {
         await handleMembershipButtonInteraction(interaction);
+        return;
+      }
+
+      if (interaction.customId.startsWith("plink:")) {
+        await handlePlatformLinkButtonInteraction(interaction);
+      }
+    },
+
+    async handleStringSelectMenuInteraction(interaction: StringSelectMenuInteraction) {
+      if (interaction.customId.startsWith("plink:")) {
+        await handlePlatformLinkSelectInteraction(interaction);
       }
     },
 
@@ -127,6 +174,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await handleTicketModalSubmit(interaction);
       } else if (interaction.customId.startsWith("membership-modal:")) {
         await handleMembershipModalSubmit(interaction);
+      } else if (interaction.customId.startsWith("plink-modal:")) {
+        await handlePlatformLinkModalSubmit(interaction);
+      } else if (interaction.customId.startsWith("plink-apply:")) {
+        await handlePlatformLinkApplyModalSubmit(interaction);
+      } else if (interaction.customId.startsWith("plink-mock-apply:")) {
+        await handlePlatformLinkMockApplyModalSubmit(interaction);
       } else if (interaction.customId.startsWith("notice-modal:")) {
         await handleNoticeModalSubmit(interaction);
       }
@@ -445,13 +498,14 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       guildId: interaction.guildId,
     }).catch(() => null) as { defaultLanguage?: "en" | "cs" } | null;
     const language = guildConfig?.defaultLanguage ?? "en";
-    const responseText = await startPlatformIdLinkFlow(interaction, {
-      guildId: interaction.guildId,
-      language,
-      completionMode: "link",
+    const linkState = await loadDiscordPlatformLinkState(interaction.user.id);
+    const emojis = await getPlatformEmojis();
+    await interaction.reply({
+      ...(linkState?.platformIds?.length
+        ? buildPlatformLinkManageMessage({ language, platformIds: linkState.platformIds, emojis })
+        : buildPlatformLinkStartMessage(language, { mode: "link" })),
+      flags: MessageFlags.Ephemeral,
     });
-
-    await interaction.reply({ content: responseText, flags: MessageFlags.Ephemeral });
   }
 
   async function handleTicketModalSubmit(interaction: ModalSubmitInteraction) {
@@ -486,18 +540,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     const categoryId = interaction.customId.replace("membership:", "");
-    const prereq = await convex.query(references.getMembershipApplicationPrereq, {
-      secret: env.internalSecret,
-      guildId: interaction.guildId,
-      categoryId,
-      userId: interaction.user.id,
-    }) as {
-      config: EventInteractionContext["config"];
-      category: MembershipCategory;
-      user: { platformIds?: string[] } | null;
-      assignment: { id: string; membershipCategoryId?: string } | null;
-      hasOpenApplication: boolean;
-    } | null;
+    const prereq = await loadMembershipApplicationPrereq(interaction.guildId, categoryId, interaction.user.id);
     const messages = getClanDiscordMessages(prereq?.config.defaultLanguage);
 
     if (!prereq?.config.membershipSettings?.enabled) {
@@ -516,49 +559,140 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     if (!prereq.user || !prereq.user.platformIds?.length) {
-      const responseText = await startPlatformIdLinkFlow(interaction, {
-        guildId: interaction.guildId,
-        categoryId,
-        language: prereq.config.defaultLanguage,
-        completionMode: "membership",
-        applyMessageUrl:
-          prereq.config.membershipSettings?.submitChannelId && prereq.config.membershipPanelMessageId
-            ? buildDiscordMessageUrl(
-              interaction.guildId,
-              prereq.config.membershipSettings.submitChannelId,
-              prereq.config.membershipPanelMessageId,
-            )
-            : undefined,
+      await interaction.reply({
+        ...buildPlatformLinkStartMessage(prereq.config.defaultLanguage, { mode: "membership", categoryId }),
+        flags: MessageFlags.Ephemeral,
       });
-      await interaction.reply({ content: responseText, flags: MessageFlags.Ephemeral });
       return;
     }
 
-    if (prereq.category.modalQuestions.length) {
-      const modal = new ModalBuilder()
-        .setCustomId(`membership-modal:${categoryId}`)
-        .setTitle((prereq.category.label?.trim() || messages.membership.modalTitle).slice(0, 45));
+    await continueMembershipApplicationFlow(interaction, prereq);
+  }
 
-      for (const question of prereq.category.modalQuestions.slice(0, 5)) {
-        const input = new TextInputBuilder()
-          .setCustomId(question.id)
-          .setLabel(question.label.slice(0, 45))
-          .setStyle(question.style === "paragraph" ? TextInputStyle.Paragraph : TextInputStyle.Short)
-          .setRequired(question.required)
-          .setMaxLength(question.style === "paragraph" ? 1000 : 400);
+  async function handlePlatformLinkButtonInteraction(interaction: ButtonInteraction) {
+    const parsed = parsePlatformLinkInteractionId(interaction.customId);
+    const context = parsed?.context;
+    if (!parsed || !context) {
+      await interaction.reply({ content: "This platform link action is no longer valid.", flags: MessageFlags.Ephemeral });
+      return;
+    }
 
-        if (question.placeholder) {
-          input.setPlaceholder(question.placeholder.slice(0, 100));
-        }
+    const language = await getGuildLanguage(interaction.guildId);
+    const emojis = await getPlatformEmojis();
 
-        modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input));
+    if (parsed.step === "start") {
+      await interaction.update(buildPlayedBeforeMessage(language, context));
+      return;
+    }
+
+    if (parsed.step === "unlink" && context.mode === "link") {
+      const linkState = await loadDiscordPlatformLinkState(interaction.user.id);
+      await interaction.update(buildUnlinkPlatformMessage({
+        language,
+        platformIds: linkState?.platformIds ?? [],
+        emojis,
+      }));
+      return;
+    }
+
+    if (parsed.step === "manual" && parsed.extra) {
+      if (parsed.extra !== "steam" && parsed.extra !== "epic" && parsed.extra !== "xbox" && parsed.extra !== "playstation") {
+        await interaction.reply({ content: getClanDiscordMessages(language).platformFlow?.invalidPlatformId ?? "Invalid platform.", flags: MessageFlags.Ephemeral });
+        return;
       }
 
-      await interaction.showModal(modal);
+      if (context.mode === "membership" && context.categoryId) {
+        const categoryContext = await loadMembershipCategoryContext(interaction.guildId!, context.categoryId);
+        const messages = getClanDiscordMessages(categoryContext?.config.defaultLanguage ?? language);
+        if (!categoryContext?.config.membershipSettings?.enabled) {
+          await interaction.reply({ content: messages.membership.unavailable, flags: MessageFlags.Ephemeral });
+          return;
+        }
+
+        if (categoryContext.category.modalQuestions.length) {
+          await interaction.showModal(buildPlatformAndMembershipModal(context.categoryId, parsed.extra, categoryContext.category, messages.membership.modalTitle));
+          return;
+        }
+      }
+
+      await interaction.showModal(buildPlatformIdOnlyModal(buildPlatformLinkModalId(context, parsed.extra), parsed.extra, language));
+    }
+  }
+
+  async function handlePlatformLinkSelectInteraction(interaction: StringSelectMenuInteraction) {
+    const parsed = parsePlatformLinkInteractionId(interaction.customId);
+    const context = parsed?.context;
+    if (!parsed || !context) {
+      await interaction.reply({ content: "This platform link action is no longer valid.", flags: MessageFlags.Ephemeral });
       return;
     }
 
-    await createDiscordMembershipApplication(interaction, prereq.category, []);
+    const value = interaction.values[0];
+    const language = await getGuildLanguage(interaction.guildId);
+    const emojis = await getPlatformEmojis();
+
+    if (parsed.step === "played") {
+      if (value === "yes") {
+        await interaction.update(buildMockPlayerMessage(language, context));
+        return;
+      }
+
+      await interaction.update(buildPlatformSelectMessageWithEmojis({ language, context, emojis }));
+      return;
+    }
+
+    if (parsed.step === "platform") {
+      if (value !== "steam" && value !== "epic" && value !== "xbox" && value !== "playstation") {
+        await interaction.reply({ content: getClanDiscordMessages(language).platformFlow?.invalidPlatformId ?? "Invalid platform.", flags: MessageFlags.Ephemeral });
+        return;
+      }
+
+      await interaction.update(buildPlatformGuideMessage(language, context, value, emojis));
+      return;
+    }
+
+    if (parsed.step === "unlink-select" && context.mode === "link") {
+      await convex.mutation(references.unlinkDiscordPlatformId, {
+        secret: env.internalSecret,
+        userId: interaction.user.id,
+        platformId: value,
+      });
+      const linkState = await loadDiscordPlatformLinkState(interaction.user.id);
+      await interaction.update(buildPlatformLinkManageMessage({
+        language,
+        platformIds: linkState?.platformIds ?? [],
+        emojis,
+      }));
+      return;
+    }
+
+    if (parsed.step === "player") {
+      if (context.mode === "membership" && context.categoryId) {
+        const prereq = await loadMembershipApplicationPrereq(interaction.guildId!, context.categoryId, interaction.user.id);
+        const messages = getClanDiscordMessages(prereq?.config.defaultLanguage ?? language);
+        if (!prereq?.config.membershipSettings?.enabled) {
+          await interaction.reply({ content: messages.membership.unavailable, flags: MessageFlags.Ephemeral });
+          return;
+        }
+
+        if (prereq.category.modalQuestions.length) {
+          await interaction.showModal(buildMockPlayerMembershipModal(context.categoryId, value, prereq.category, messages.membership.modalTitle));
+          return;
+        }
+
+        await savePlatformIdLink(interaction.user.id, interaction.user.globalName ?? interaction.user.username, interaction.user.displayAvatarURL(), `mock:${value}`);
+        await createDiscordMembershipApplication(interaction, prereq.category, []);
+        return;
+      }
+
+      await savePlatformIdLink(interaction.user.id, interaction.user.globalName ?? interaction.user.username, interaction.user.displayAvatarURL(), `mock:${value}`);
+      const linkState = await loadDiscordPlatformLinkState(interaction.user.id);
+      await interaction.update(buildPlatformLinkManageMessage({
+        language,
+        platformIds: linkState?.platformIds ?? [],
+        emojis,
+      }));
+    }
   }
 
   async function handleMembershipModalSubmit(interaction: ModalSubmitInteraction) {
@@ -583,6 +717,272 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }));
 
     await createDiscordMembershipApplication(interaction, context.category, answers);
+  }
+
+  async function handlePlatformLinkModalSubmit(interaction: ModalSubmitInteraction) {
+    const parsed = parsePlatformLinkModalId(interaction.customId);
+    if (!parsed?.context) {
+      await interaction.reply({ content: "This platform link modal is no longer valid.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const platformId = interaction.fields.getTextInputValue("platformId").trim();
+    const language = await getGuildLanguage(interaction.guildId);
+    const messages = getClanDiscordMessages(language);
+    if (!platformId || /\s/.test(platformId)) {
+      await interaction.reply({ content: messages.platformFlow?.invalidPlatformId ?? "Enter a platform ID without spaces.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    await savePlatformIdLink(
+      interaction.user.id,
+      interaction.user.globalName ?? interaction.user.username,
+      interaction.user.displayAvatarURL(),
+      toStoredPlatformId(parsed.platform, platformId),
+    );
+
+    if (parsed.context.mode === "membership" && parsed.context.categoryId) {
+      const prereq = await loadMembershipApplicationPrereq(interaction.guildId!, parsed.context.categoryId, interaction.user.id);
+      if (!prereq) {
+        await interaction.reply({ content: getClanDiscordMessages("en").membership.unavailable, flags: MessageFlags.Ephemeral });
+        return;
+      }
+
+      await createDiscordMembershipApplication(interaction, prereq.category, []);
+      return;
+    }
+
+    const linkState = await loadDiscordPlatformLinkState(interaction.user.id);
+    const emojis = await getPlatformEmojis();
+    await interaction.reply({
+      ...buildPlatformLinkManageMessage({
+        language,
+        platformIds: linkState?.platformIds ?? [],
+        emojis,
+      }),
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  async function handlePlatformLinkApplyModalSubmit(interaction: ModalSubmitInteraction) {
+    const parsed = parsePlatformLinkApplyModalId(interaction.customId);
+    if (!parsed || !interaction.guildId) {
+      await interaction.reply({ content: "This platform link modal is no longer valid.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const platformId = interaction.fields.getTextInputValue("platformId").trim();
+    const language = await getGuildLanguage(interaction.guildId);
+    const messages = getClanDiscordMessages(language);
+    if (!platformId || /\s/.test(platformId)) {
+      await interaction.reply({ content: messages.platformFlow?.invalidPlatformId ?? "Enter a platform ID without spaces.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const context = await loadMembershipCategoryContext(interaction.guildId, parsed.categoryId);
+    if (!context) {
+      await interaction.reply({ content: messages.membership.unavailable, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    await savePlatformIdLink(
+      interaction.user.id,
+      interaction.user.globalName ?? interaction.user.username,
+      interaction.user.displayAvatarURL(),
+      toStoredPlatformId(parsed.platform, platformId),
+    );
+    await createDiscordMembershipApplication(interaction, context.category, collectMembershipAnswers(interaction, context.category, 4));
+  }
+
+  async function handlePlatformLinkMockApplyModalSubmit(interaction: ModalSubmitInteraction) {
+    const parsed = parsePlatformLinkMockApplyModalId(interaction.customId);
+    if (!parsed || !interaction.guildId) {
+      await interaction.reply({ content: "This platform link modal is no longer valid.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const context = await loadMembershipCategoryContext(interaction.guildId, parsed.categoryId);
+    const language = await getGuildLanguage(interaction.guildId);
+    const messages = getClanDiscordMessages(language);
+    if (!context) {
+      await interaction.reply({ content: messages.membership.unavailable, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    await savePlatformIdLink(interaction.user.id, interaction.user.globalName ?? interaction.user.username, interaction.user.displayAvatarURL(), `mock:${parsed.mockPlayerId}`);
+    await createDiscordMembershipApplication(interaction, context.category, collectMembershipAnswers(interaction, context.category, 5));
+  }
+
+  async function getGuildLanguage(guildId: string | null) {
+    if (!guildId) {
+      return "en" as const;
+    }
+
+    const guildConfig = await convex.query(references.getConfigByDiscordGuildId, {
+      guildId,
+    }).catch(() => null) as { defaultLanguage?: "en" | "cs" } | null;
+
+    return guildConfig?.defaultLanguage ?? "en";
+  }
+
+  async function getPlatformEmojis() {
+    if (platformEmojiCache) {
+      return platformEmojiCache;
+    }
+
+    const emojis = await client.application?.emojis.fetch().catch(() => null);
+    const resolve = (name: string) => {
+      const emoji = emojis?.find((candidate) => candidate.name === name);
+      return emoji ? { id: emoji.id, name: emoji.name ?? undefined } satisfies APIMessageComponentEmoji : undefined;
+    };
+
+    platformEmojiCache = {
+      steam: resolve("steam"),
+      epic: resolve("epicgames"),
+      xbox: resolve("xbox"),
+      playstation: resolve("playstation"),
+    };
+
+    return platformEmojiCache;
+  }
+
+  async function loadMembershipApplicationPrereq(guildId: string, categoryId: string, userId: string) {
+    return await convex.query(references.getMembershipApplicationPrereq, {
+      secret: env.internalSecret,
+      guildId,
+      categoryId,
+      userId,
+    }) as MembershipPrereq | null;
+  }
+
+  async function loadDiscordPlatformLinkState(userId: string) {
+    return await convex.query(references.getDiscordPlatformLinkState, {
+      secret: env.internalSecret,
+      userId,
+    }) as PlatformLinkState;
+  }
+
+  async function continueMembershipApplicationFlow(
+    interaction: ButtonInteraction | StringSelectMenuInteraction,
+    prereq: MembershipPrereq,
+  ) {
+    const messages = getClanDiscordMessages(prereq.config.defaultLanguage);
+    if (prereq.category.modalQuestions.length) {
+      await interaction.showModal(buildMembershipQuestionsModal(
+        `membership-modal:${prereq.category.id}`,
+        prereq.category,
+        messages.membership.modalTitle,
+        5,
+      ));
+      return;
+    }
+
+    await createDiscordMembershipApplication(interaction, prereq.category, []);
+  }
+
+  function buildMembershipQuestionsModal(
+    customId: string,
+    category: MembershipCategory,
+    fallbackTitle: string,
+    maxQuestions: number,
+  ) {
+    const modal = new ModalBuilder()
+      .setCustomId(customId)
+      .setTitle((category.label?.trim() || fallbackTitle).slice(0, 45));
+
+    for (const question of category.modalQuestions.slice(0, maxQuestions)) {
+      const input = new TextInputBuilder()
+        .setCustomId(question.id)
+        .setLabel(question.label.slice(0, 45))
+        .setStyle(question.style === "paragraph" ? TextInputStyle.Paragraph : TextInputStyle.Short)
+        .setRequired(question.required)
+        .setMaxLength(question.style === "paragraph" ? 1000 : 400);
+
+      if (question.placeholder) {
+        input.setPlaceholder(question.placeholder.slice(0, 100));
+      }
+
+      modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input));
+    }
+
+    return modal;
+  }
+
+  function buildPlatformIdOnlyModal(customId: string, platform: "steam" | "epic" | "xbox" | "playstation", language: "en" | "cs") {
+    const messages = getClanDiscordMessages(language).platformFlow ?? getClanDiscordMessages("en").platformFlow!;
+    const label = messages.guides[platform].label;
+
+    return new ModalBuilder()
+      .setCustomId(customId)
+      .setTitle(messages.title.slice(0, 45))
+      .addComponents(
+        new ActionRowBuilder<TextInputBuilder>().addComponents(
+          new TextInputBuilder()
+            .setCustomId("platformId")
+            .setLabel(label.slice(0, 45))
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMaxLength(200),
+        ),
+      );
+  }
+
+  function buildPlatformAndMembershipModal(
+    categoryId: string,
+    platform: "steam" | "epic" | "xbox" | "playstation",
+    category: MembershipCategory,
+    fallbackTitle: string,
+  ) {
+    const modal = buildMembershipQuestionsModal(
+      buildPlatformLinkApplyModalId(categoryId, platform),
+      category,
+      fallbackTitle,
+      4,
+    );
+
+    modal.components.unshift(
+      new ActionRowBuilder<TextInputBuilder>().addComponents(
+        new TextInputBuilder()
+          .setCustomId("platformId")
+          .setLabel("Platform ID")
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setMaxLength(200),
+      ),
+    );
+
+    return modal;
+  }
+
+  function buildMockPlayerMembershipModal(categoryId: string, mockPlayerId: string, category: MembershipCategory, fallbackTitle: string) {
+    return buildMembershipQuestionsModal(
+      buildPlatformLinkMockApplyModalId(categoryId, mockPlayerId),
+      category,
+      fallbackTitle,
+      5,
+    );
+  }
+
+  function collectMembershipAnswers(interaction: ModalSubmitInteraction, category: MembershipCategory, maxQuestions: number) {
+    return category.modalQuestions.slice(0, maxQuestions).map((question) => ({
+      questionId: question.id,
+      label: question.label,
+      value: interaction.fields.getTextInputValue(question.id).trim(),
+    }));
+  }
+
+  async function savePlatformIdLink(userId: string, userName: string, userAvatar: string, platformId: string) {
+    await convex.mutation(references.linkDiscordPlatformId, {
+      secret: env.internalSecret,
+      userId,
+      userName,
+      userAvatar,
+      platformId,
+    });
+  }
+
+  function toStoredPlatformId(platform: "steam" | "epic" | "xbox" | "playstation", platformId: string) {
+    return `${platform}:${platformId.trim()}`;
   }
 
   async function createDiscordTicket(
@@ -752,7 +1152,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
   }
 
   async function createDiscordMembershipApplication(
-    interaction: ButtonInteraction | ModalSubmitInteraction,
+    interaction: ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction,
     category: MembershipCategory,
     answers: MembershipAnswer[],
   ) {

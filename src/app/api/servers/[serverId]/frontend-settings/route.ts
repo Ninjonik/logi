@@ -4,6 +4,7 @@ import { handleIfNotLoggedIn } from "@/lib/auth";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getServerContext } from "@/lib/server-context";
 import { saveGuildFrontendSettings } from "@/lib/server-guild-settings";
+import { logNextError, logNextInfo } from "@/lib/system-logs";
 
 export async function POST(request: Request, context: { params: Promise<{ serverId: string }> }) {
   const { serverId } = await context.params;
@@ -25,6 +26,22 @@ export async function POST(request: Request, context: { params: Promise<{ server
         color?: string;
         emoji?: string;
       }>;
+      calendarItems?: Array<{
+        id?: string;
+        title?: string;
+        description?: string;
+        color?: string;
+        emoji?: string;
+        label?: string;
+        startAt?: string;
+        endAt?: string;
+        allDay?: boolean;
+        recurrence?: {
+          frequency?: "weekly" | "monthly_date" | "monthly_nth_weekday" | "yearly";
+          interval?: number;
+          until?: string;
+        };
+      }>;
     };
 
     if (!body.name?.trim() || !body.avatar?.trim()) {
@@ -44,6 +61,24 @@ export async function POST(request: Request, context: { params: Promise<{ server
           emoji: category.emoji?.trim() || undefined,
         }))
         .filter((category) => category.id && category.label && category.color),
+      calendarItems: (body.calendarItems ?? [])
+        .map((item) => ({
+          id: item.id?.trim() ?? "",
+          title: item.title?.trim() ?? "",
+          description: item.description?.trim() || undefined,
+          color: item.color?.trim() ?? "",
+          emoji: item.emoji?.trim() || undefined,
+          label: item.label?.trim() || undefined,
+          startAt: item.startAt ?? "",
+          endAt: item.endAt ?? "",
+          allDay: Boolean(item.allDay),
+          recurrence: item.recurrence?.frequency ? {
+            frequency: item.recurrence.frequency,
+            interval: Math.max(1, Math.floor(item.recurrence.interval ?? 1)),
+            until: item.recurrence.until || undefined,
+          } : undefined,
+        }))
+        .filter((item) => item.id && item.title && item.color && item.startAt && item.endAt),
     });
 
     revalidateCacheEntries([
@@ -52,9 +87,13 @@ export async function POST(request: Request, context: { params: Promise<{ server
       appCacheTags.rosters(serverId),
     ]);
 
+    logNextInfo("frontend-settings", "Saved clan frontend settings", {
+      serverId,
+      userId: serverContext.user.discordId,
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Failed to save guild frontend settings", error);
+    logNextError("frontend-settings", "Failed to save clan frontend settings", { serverId, error });
     return NextResponse.json({ error: "Unable to save clan frontend settings." }, { status: 500 });
   }
 }

@@ -345,6 +345,126 @@ export const upsertImportedProfile = mutation({
   },
 });
 
+export const linkDiscordPlatformId = mutation({
+  args: {
+    secret: v.string(),
+    userId: v.string(),
+    userName: v.string(),
+    userAvatar: v.string(),
+    platformId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const now = new Date().toISOString();
+    const normalizedPlatformIds = normalizePlatformIds([args.platformId]);
+    if (!normalizedPlatformIds.length) {
+      throw new Error("Platform ID is required.");
+    }
+
+    const existing = await getUserByDiscordId(ctx, args.userId);
+    const allUsers = await ctx.db.query("users").collect();
+    for (const candidate of allUsers) {
+      const candidateDiscordId = getUserDiscordId(candidate);
+      if (existing ? candidate._id === existing._id : candidateDiscordId === args.userId) {
+        continue;
+      }
+
+      const legacyCandidate = candidate as typeof candidate & { steamId?: string; platformId?: string };
+      const candidatePlatformIds = normalizePlatformIds(
+        candidate.platformIds ?? legacyCandidate.platformId ?? legacyCandidate.steamId,
+      );
+
+      if (normalizedPlatformIds.some((platformId) => candidatePlatformIds.includes(platformId))) {
+        throw new Error("This platform ID is already linked to another player.");
+      }
+    }
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        name: args.userName.trim() || existing.name,
+        avatar: args.userAvatar || existing.avatar,
+        platformIds: [...new Set([
+          ...normalizePlatformIds(existing.platformIds),
+          ...normalizedPlatformIds,
+        ])],
+        updatedAt: now,
+      });
+      return { action: "updated" as const, platformId: normalizedPlatformIds[0] };
+    }
+
+    await ctx.db.insert("users", {
+      id: args.userId,
+      discordId: args.userId,
+      name: args.userName.trim(),
+      nicknames: {},
+      avatar: args.userAvatar,
+      platformIds: normalizedPlatformIds,
+      managedGuildIds: [],
+      guildId: undefined,
+      mercenaryGuildIds: [],
+      isStreamer: false,
+      score: 0,
+      scores: {},
+      performance: undefined,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { action: "created" as const, platformId: normalizedPlatformIds[0] };
+  },
+});
+
+export const unlinkDiscordPlatformId = mutation({
+  args: {
+    secret: v.string(),
+    userId: v.string(),
+    platformId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const user = await getUserByDiscordId(ctx, args.userId);
+    if (!user) {
+      throw new Error("Player not found.");
+    }
+
+    const target = normalizePlatformIds([args.platformId])[0];
+    if (!target) {
+      throw new Error("Platform ID is required.");
+    }
+
+    const nextPlatformIds = normalizePlatformIds(user.platformIds).filter((platformId) => platformId !== target);
+    await ctx.db.patch(user._id, {
+      platformIds: nextPlatformIds,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { platformIds: nextPlatformIds };
+  },
+});
+
+export const getDiscordPlatformLinkState = query({
+  args: {
+    secret: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const user = await getUserByDiscordId(ctx, args.userId);
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: getUserStableId(user),
+      platformIds: normalizePlatformIds(user.platformIds),
+      name: user.name,
+    };
+  },
+});
+
 export const linkImportedDiscordProfile = mutation({
   args: {
     secret: v.string(),

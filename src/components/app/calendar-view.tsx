@@ -9,15 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
-import { getEventCategoryPresentation } from "@/lib/event-categories";
+import { buildCalendarDisplayEntries } from "@/lib/calendar-entries";
 import { formatDateTime } from "@/lib/format";
 import { formatHllPresetLabel } from "@/lib/hll-map-presets";
-import type { EventCategory, EventRecord, Group, Roster } from "@/types/domain";
+import type { CalendarItem, EventCategory, EventRecord, Group, Roster } from "@/types/domain";
 
 export function CalendarView({
   locale,
   serverId,
   events,
+  calendarItems = [],
   groups,
   eventCategories = [],
   rosters,
@@ -28,6 +29,7 @@ export function CalendarView({
   locale: Locale;
   serverId: string;
   events: EventRecord[];
+  calendarItems?: CalendarItem[];
   groups: Group[];
   eventCategories?: EventCategory[];
   rosters: Roster[];
@@ -35,8 +37,16 @@ export function CalendarView({
   dictionary: Dictionary;
   signupLanguage: "en" | "cs";
 }) {
-  const highlightedEvents = [...events]
-    .sort((a, b) => new Date(a.meetingStart).getTime() - new Date(b.meetingStart).getTime())
+  const now = new Date();
+  const displayEntries = buildCalendarDisplayEntries({
+    events,
+    eventCategories,
+    calendarItems,
+    rangeStart: new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000),
+    rangeEnd: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
+  });
+  const highlightedEntries = displayEntries
+    .filter((entry) => new Date(entry.endAt).getTime() >= now.getTime())
     .slice(0, 3);
 
   return (
@@ -44,49 +54,61 @@ export function CalendarView({
       <MonthCalendarView
         locale={locale}
         serverId={serverId}
-        events={events}
+        entries={displayEntries}
         groups={groups}
-        eventCategories={eventCategories}
         timezone={timezone}
         dictionary={dictionary}
         signupLanguage={signupLanguage}
       />
       <div className="grid gap-4 xl:grid-cols-3">
-        {highlightedEvents.map((event) => {
-          const roster = rosters.find((item) => item.eventId === event.id);
-          const detailPath = event.kind === "training" ? "trainings" : "matches";
-          const category = getEventCategoryPresentation(event, eventCategories);
-          const tertiaryValue = event.kind === "training"
-            ? (event.meetingChannelId || "Discord")
-            : `${formatHllPresetLabel(event.map) ?? event.map ?? "TBD"} • ${event.side ?? "TBD"}`;
+        {highlightedEntries.map((entry) => {
+          const tertiaryValue = entry.kind === "event"
+            ? (entry.event.kind === "training"
+              ? (entry.event.meetingChannelId || "Discord")
+              : `${formatHllPresetLabel(entry.event.map) ?? entry.event.map ?? "TBD"} • ${entry.event.side ?? "TBD"}`)
+            : (entry.label ?? dictionary.shared.notSet);
+          const roster = entry.kind === "event"
+            ? rosters.find((item) => item.eventId === entry.event.id)
+            : null;
+          const detailPath = entry.kind === "event"
+            ? `/${locale}/dashboard/servers/${serverId}/${entry.event.kind === "training" ? "trainings" : "matches"}/${entry.event.id}`
+            : null;
 
           return (
-            <Card key={event.id} className="rounded-2xl border-border/60" style={{ boxShadow: `inset 4px 0 0 ${category.color}` }}>
+            <Card key={entry.id} className="rounded-2xl border-border/60" style={{ boxShadow: `inset 4px 0 0 ${entry.color}` }}>
               <CardHeader>
-                {category.label ? (
+                {entry.label ? (
                   <Badge
                     variant="outline"
                     className="mb-2 rounded-full"
-                    style={{ borderColor: `${category.color}66`, color: category.color, backgroundColor: `${category.color}14` }}
+                    style={{ borderColor: `${entry.color}66`, color: entry.color, backgroundColor: `${entry.color}14` }}
                   >
-                    <EmojiValue value={category.emoji} />
-                    <span>{category.label}</span>
+                    <EmojiValue value={entry.emoji} />
+                    <span>{entry.label}</span>
                   </Badge>
                 ) : null}
-                <CardTitle className="text-xl">{event.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">{event.description}</p>
+                <CardTitle className="text-xl">{entry.title}</CardTitle>
+                <p className="text-sm text-muted-foreground">{entry.description}</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3">
-                  <InfoTile label={dictionary.calendarCards.registrationEnds} value={formatDateTime(event.registrationEnd, timezone)} />
-                  <InfoTile label={dictionary.calendarCards.meeting} value={formatDateTime(event.meetingStart, timezone)} />
+                  <InfoTile
+                    label={dictionary.calendarCards.meeting}
+                    value={entry.allDay ? dictionary.calendarPage.allDay : formatDateTime(entry.startAt, timezone)}
+                  />
+                  <InfoTile
+                    label={dictionary.calendarCards.gameStart}
+                    value={entry.allDay ? dictionary.calendarPage.allDay : formatDateTime(entry.endAt, timezone)}
+                  />
                   <InfoTile label={dictionary.calendarCards.map} value={tertiaryValue} />
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <Button asChild className="rounded-xl">
-                    <Link href={`/${locale}/dashboard/servers/${serverId}/${detailPath}/${event.id}`}>{dictionary.common.viewDetails}</Link>
-                  </Button>
-                  {event.kind === "match" && roster?.published ? (
+                  {detailPath ? (
+                    <Button asChild className="rounded-xl">
+                      <Link href={detailPath}>{dictionary.common.viewDetails}</Link>
+                    </Button>
+                  ) : null}
+                  {entry.kind === "event" && entry.event.kind === "match" && roster?.published ? (
                     <Button asChild variant="outline" className="rounded-xl">
                       <Link href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}>{dictionary.calendarCards.showRoster}</Link>
                     </Button>

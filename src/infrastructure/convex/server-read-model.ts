@@ -54,6 +54,65 @@ export function normalizeGuildDoc<T extends UnknownDoc>(guild: T & { discordId?:
         emoji: category.emoji,
       }))
       : [],
+    calendarItems: Array.isArray((guild as { calendarItems?: unknown[] }).calendarItems)
+      ? ((guild as {
+        calendarItems?: Array<{
+          id: string;
+          guildId: string;
+          title: string;
+          description?: string;
+          color: string;
+          emoji?: string;
+          label?: string;
+          startAt: string;
+          endAt: string;
+          allDay: boolean;
+          recurrence?: {
+            frequency: "weekly" | "monthly_date" | "monthly_nth_weekday" | "yearly";
+            interval: number;
+            until?: string;
+          };
+        }>;
+      }).calendarItems ?? []).map((item) => ({
+        id: item.id,
+        guildId: item.guildId,
+        title: item.title,
+        description: item.description,
+        color: item.color,
+        emoji: item.emoji,
+        label: item.label,
+        startAt: item.startAt,
+        endAt: item.endAt,
+        allDay: item.allDay,
+        recurrence: item.recurrence,
+      }))
+      : [],
+  };
+}
+
+export function normalizeCalendarItemDoc<
+  T extends UnknownDoc & {
+    guildId: string;
+    title: string;
+    description?: string;
+    color: string;
+    emoji?: string;
+    label?: string;
+    startAt: string;
+    endAt: string;
+    allDay: boolean;
+    recurrence?: {
+      frequency: "weekly" | "monthly_date" | "monthly_nth_weekday" | "yearly";
+      interval: number;
+      until?: string;
+    };
+    createdAt?: string;
+    updatedAt?: string;
+  },
+>(item: T) {
+  return {
+    ...normalizeDoc(item),
+    recurrence: item.recurrence,
   };
 }
 

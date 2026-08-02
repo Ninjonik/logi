@@ -7,10 +7,12 @@ import { cache } from "react";
 
 import { getInternalAuthSecret, getJwtSecret } from "@/lib/env";
 import { parsePlatformIdsInput } from "@/lib/platform-ids";
+import { isSuperadminDiscordId } from "@/lib/superadmin";
 import type { AppUser, Guild } from "@/types/domain";
 
 const getUserByIdReference = makeFunctionReference<"query">("players:getById");
 const getVisibleGuildsReference = makeFunctionReference<"query">("guilds:visibleForUser");
+const getAllGuildsInternalReference = makeFunctionReference<"query">("guilds:listAllInternal");
 const syncDiscordProfileReference = makeFunctionReference<"mutation">("players:syncDiscordProfile");
 const setPrimaryGuildReference = makeFunctionReference<"mutation">("players:setPrimaryGuild");
 const syncManagedGuildsReference = makeFunctionReference<"mutation">("guilds:syncManagedGuilds");
@@ -24,6 +26,13 @@ export type SessionClaims = {
   sub: string;
   name: string;
   avatar: string;
+  discordGuilds?: Array<{
+    id: string;
+    name: string;
+    avatar: string;
+    canAdmin: boolean;
+    botInside: boolean;
+  }>;
 };
 
 function getSessionSecret() {
@@ -36,6 +45,7 @@ export async function createSessionToken(claims: SessionClaims) {
   return await new SignJWT({
     name: claims.name,
     avatar: claims.avatar,
+    discordGuilds: claims.discordGuilds ?? [],
   })
     .setProtectedHeader({
       alg: "HS256",
@@ -63,6 +73,39 @@ export async function verifySessionToken(token: string): Promise<SessionClaims |
       sub: payload.sub,
       name: payload.name,
       avatar: payload.avatar,
+      discordGuilds: Array.isArray(payload.discordGuilds)
+        ? payload.discordGuilds.flatMap((guild) => {
+            if (!guild || typeof guild !== "object") {
+              return [];
+            }
+
+            const candidate = guild as {
+              id?: unknown;
+              name?: unknown;
+              avatar?: unknown;
+              canAdmin?: unknown;
+              botInside?: unknown;
+            };
+
+            if (
+              typeof candidate.id !== "string" ||
+              typeof candidate.name !== "string" ||
+              typeof candidate.avatar !== "string" ||
+              typeof candidate.canAdmin !== "boolean" ||
+              typeof candidate.botInside !== "boolean"
+            ) {
+              return [];
+            }
+
+            return [{
+              id: candidate.id,
+              name: candidate.name,
+              avatar: candidate.avatar,
+              canAdmin: candidate.canAdmin,
+              botInside: candidate.botInside,
+            }];
+          })
+        : [],
     };
   } catch {
     return null;
@@ -114,13 +157,77 @@ export const getLoggedInUser = cache(async function getLoggedInUser(): Promise<A
 
 export const getCurrentPlayer = getLoggedInUser;
 
+export const isCurrentUserSuperadmin = cache(async function isCurrentUserSuperadmin() {
+  const user = await getLoggedInUser();
+  return await isSuperadminDiscordId(user?.discordId);
+});
+
 export const getVisibleGuildsForLoggedInUser = cache(async function getVisibleGuildsForLoggedInUser(): Promise<Guild[]> {
   const user = await getLoggedInUser();
+  const session = await getSession();
   if (!user) {
     return [];
   }
 
   try {
+    const sessionGuilds = (session?.discordGuilds ?? []).map((guild) => ({
+      id: guild.id,
+      discordId: guild.id,
+      name: guild.name,
+      avatar: guild.avatar,
+      description: undefined,
+      eventCategories: [],
+      botInside: guild.botInside,
+      canAdmin: guild.canAdmin,
+      adminIds: guild.canAdmin ? [user.discordId] : [],
+      memberIds: [],
+      members: [],
+      mercenaryIds: [],
+      createdAt: "",
+      updatedAt: "",
+    })) satisfies Guild[];
+
+    if (await isSuperadminDiscordId(user.discordId)) {
+      const [allGuilds, visibleGuilds] = await Promise.all([
+        fetchQuery(getAllGuildsInternalReference, {
+          secret: getInternalAuthSecret(),
+        }) as Promise<Guild[]>,
+        Promise.resolve(sessionGuilds.length > 0
+          ? sessionGuilds
+          : ((await fetchQuery(getVisibleGuildsReference, { userId: user.discordId })) as Guild[])),
+      ]);
+
+      const mergedGuilds = new Map<string, Guild>();
+      for (const guild of [...visibleGuilds, ...allGuilds]) {
+        const key = guild.id || guild.discordId;
+        const existing = mergedGuilds.get(key);
+        mergedGuilds.set(key, {
+          ...existing,
+          ...guild,
+          canAdmin: true,
+        });
+      }
+
+      return [...mergedGuilds.values()].sort((left, right) => left.name.localeCompare(right.name));
+    }
+
+    if (sessionGuilds.length > 0) {
+      const knownGuilds = (await fetchQuery(getVisibleGuildsReference, { userId: user.discordId })) as Guild[];
+      const mergedGuilds = new Map<string, Guild>();
+
+      for (const guild of [...sessionGuilds, ...knownGuilds]) {
+        const key = guild.id || guild.discordId;
+        const existing = mergedGuilds.get(key);
+        mergedGuilds.set(key, {
+          ...existing,
+          ...guild,
+          canAdmin: guild.canAdmin ?? existing?.canAdmin ?? false,
+        });
+      }
+
+      return [...mergedGuilds.values()].sort((left, right) => left.name.localeCompare(right.name));
+    }
+
     return (await fetchQuery(getVisibleGuildsReference, { userId: user.discordId })) as Guild[];
   } catch {
     return [];

@@ -13,6 +13,7 @@ import {
   ListTodo,
   CalendarIcon,
   Map,
+  Bot,
 } from "lucide-react";
 
 import { AppLogo } from "@/components/app/app-logo";
@@ -41,6 +42,7 @@ export function AppSidebar({
   servers,
   activeServerId,
   canAdmin,
+  isSuperadmin,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   locale: Locale;
@@ -49,6 +51,7 @@ export function AppSidebar({
   servers: Guild[];
   activeServerId?: string;
   canAdmin: boolean;
+  isSuperadmin: boolean;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -219,6 +222,20 @@ export function AppSidebar({
             : []),
         ]
       : []),
+    ...(isSuperadmin
+      ? [
+          {
+            label: dictionary.sidebar.bot,
+            items: [
+              {
+                title: dictionary.sidebar.bot,
+                url: `/${locale}/dashboard/bot`,
+                icon: Bot,
+              },
+            ],
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -245,6 +262,8 @@ export function AppSidebar({
             selectWorkspace: dictionary.workspace.selectWorkspace,
             activeWorkspace: dictionary.workspace.activeWorkspace,
             noWorkspaceSelected: dictionary.workspace.noWorkspaceSelected,
+            searchWorkspace: dictionary.workspace.searchWorkspace,
+            noMatchingResults: dictionary.shared.noMatchingResults,
           }}
         />
       </SidebarHeader>

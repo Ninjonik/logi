@@ -6,6 +6,7 @@ import { fetchDiscordGuildMembers, getDiscordAvatarUrl, type DiscordGuildMember 
 import { getPlayerStatsUserIdsForEvents } from "@/lib/server-player-stats";
 import { linkMissingDiscordIdsFromRole } from "@/lib/server-match-results";
 import { getServerContext } from "@/lib/server-context";
+import { logNextError, logNextInfo } from "@/lib/system-logs";
 
 function getDisplayName(member: DiscordGuildMember) {
   return member.nick?.trim() || member.user?.global_name?.trim() || member.user?.username?.trim() || member.user?.id || "Unknown";
@@ -65,9 +66,15 @@ export async function POST(
       ]),
     ]);
 
+    logNextInfo("link-missing-discord-ids", "Linked missing Discord IDs", {
+      serverId,
+      userId: context.user.discordId,
+      roleId,
+      linkedCount: result.linkedUserIds.length,
+    });
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Failed to link missing Discord IDs", error);
+    logNextError("link-missing-discord-ids", "Failed to link missing Discord IDs", { serverId, error });
     return NextResponse.json({ error: "Unable to link missing Discord IDs." }, { status: 500 });
   }
 }

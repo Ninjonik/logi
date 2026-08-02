@@ -39,7 +39,7 @@ export default async function ServerCalendarPage({
         description={dictionary.calendarPage.description}
       />
       <div className="px-4 lg:px-6">
-        <CalendarView locale={locale as "en"} serverId={serverId} events={events} groups={groups} eventCategories={server.eventCategories ?? []} rosters={rosters} timezone={discordConfig?.timezone} dictionary={dictionary} signupLanguage={discordConfig?.defaultLanguage ?? "en"} />
+        <CalendarView locale={locale as "en"} serverId={serverId} events={events} calendarItems={server.calendarItems ?? []} groups={groups} eventCategories={server.eventCategories ?? []} rosters={rosters} timezone={discordConfig?.timezone} dictionary={dictionary} signupLanguage={discordConfig?.defaultLanguage ?? "en"} />
       </div>
     </>
   );

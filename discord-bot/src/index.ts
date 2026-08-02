@@ -107,6 +107,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
+    if (interaction.isStringSelectMenu()) {
+      await interactionHandler.handleStringSelectMenuInteraction(interaction);
+      return;
+    }
+
     if (interaction.isModalSubmit()) {
       await interactionHandler.handleModalSubmit(interaction);
       return;

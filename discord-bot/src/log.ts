@@ -1,54 +1,15 @@
-type LogContext = Record<string, unknown>;
+import { writeSystemLog, type SystemLogContext } from "@/lib/system-logs";
 
-function formatContext(context?: LogContext) {
-  if (!context) return "";
-
-  const entries = Object.entries(context).filter(([, value]) => value !== undefined);
-  if (!entries.length) return "";
-
-  return ` ${entries.map(([key, value]) => `${key}=${formatValue(value)}`).join(" ")}`;
-}
-
-function formatValue(value: unknown): string {
-  if (typeof value === "string") return JSON.stringify(value);
-  if (typeof value === "number" || typeof value === "boolean" || value === null) return String(value);
-  if (Array.isArray(value)) return `[${value.map((item) => formatValue(item)).join(",")}]`;
-  if (value instanceof Error) {
-    const errorWithCause = value as Error & { cause?: unknown };
-    const cause = errorWithCause.cause;
-
-    return JSON.stringify({
-      name: value.name,
-      message: value.message,
-      stack: value.stack,
-      cause: cause instanceof Error
-        ? {
-            name: cause.name,
-            message: cause.message,
-            stack: cause.stack,
-          }
-        : cause,
-    });
-  }
-
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return '"[unserializable]"';
-  }
-}
+type LogContext = SystemLogContext;
 
 function write(level: "INFO" | "WARN" | "ERROR", scope: string, message: string, context?: LogContext) {
-  const line = `[${new Date().toISOString()}] [${level}] [${scope}] ${message}${formatContext(context)}`;
-  if (level === "ERROR") {
-    console.error(line);
-    return;
-  }
-  if (level === "WARN") {
-    console.warn(line);
-    return;
-  }
-  console.log(line);
+  writeSystemLog({
+    level,
+    source: "discord-bot",
+    scope,
+    message,
+    context,
+  });
 }
 
 export function logInfo(scope: string, message: string, context?: LogContext) {

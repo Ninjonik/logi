@@ -4,6 +4,7 @@ import { handleIfNotLoggedIn } from "@/lib/auth";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { confirmRosterAttendanceFromMeetingChannel } from "@/lib/server-discord-settings";
 import { getServerContext } from "@/lib/server-context";
+import { logNextError, logNextInfo } from "@/lib/system-logs";
 
 export async function POST(
   _request: Request,
@@ -31,9 +32,18 @@ export async function POST(
       roster?.eventId ? appCacheTags.rosterImageEvent(roster.eventId) : undefined,
     ]);
 
+    logNextInfo("confirm-meeting-attendance", "Confirmed roster attendance from meeting channel", {
+      serverId,
+      rosterId,
+      userId: serverContext.user.discordId,
+    });
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Failed to confirm meeting attendance", error);
+    logNextError("confirm-meeting-attendance", "Failed to confirm meeting attendance", {
+      serverId,
+      rosterId,
+      error,
+    });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unable to confirm attendance." },
       { status: 500 },

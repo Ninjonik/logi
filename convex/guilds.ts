@@ -227,6 +227,21 @@ export const getByDiscordId = query({
   },
 });
 
+export const listAllInternal = query({
+  args: {
+    secret: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const guilds = await ctx.db.query("guilds").collect();
+    return guilds.map((guild) => ({
+      ...normalizeGuildDoc(guild),
+      canAdmin: true,
+    }));
+  },
+});
+
 export const updateFrontendSettings = mutation({
   args: {
     secret: v.string(),
@@ -240,6 +255,27 @@ export const updateFrontendSettings = mutation({
       color: v.string(),
       emoji: v.optional(v.string()),
     }))),
+    calendarItems: v.optional(v.array(v.object({
+      id: v.string(),
+      title: v.string(),
+      description: v.optional(v.string()),
+      color: v.string(),
+      emoji: v.optional(v.string()),
+      label: v.optional(v.string()),
+      startAt: v.string(),
+      endAt: v.string(),
+      allDay: v.boolean(),
+      recurrence: v.optional(v.object({
+        frequency: v.union(
+          v.literal("weekly"),
+          v.literal("monthly_date"),
+          v.literal("monthly_nth_weekday"),
+          v.literal("yearly"),
+        ),
+        interval: v.number(),
+        until: v.optional(v.string()),
+      })),
+    }))),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -249,6 +285,8 @@ export const updateFrontendSettings = mutation({
     if (!guild) {
       throw new Error("Server not found.");
     }
+
+    const now = new Date().toISOString();
 
     await ctx.db.patch(guild._id, {
       name: args.name.trim(),
@@ -262,8 +300,72 @@ export const updateFrontendSettings = mutation({
           emoji: category.emoji?.trim() || undefined,
         }))
         .filter((category) => category.id && category.label && category.color),
-      updatedAt: new Date().toISOString(),
+      updatedAt: now,
     });
+
+    const existingCalendarItems = await ctx.db
+      .query("calendarItems")
+      .withIndex("guildId", (q) => q.eq("guildId", getGuildDiscordId(guild)))
+      .collect();
+    const normalizedCalendarItems = (args.calendarItems ?? [])
+      .map((item) => ({
+        id: item.id.trim(),
+        title: item.title.trim(),
+        description: item.description?.trim() || undefined,
+        color: item.color.trim(),
+        emoji: item.emoji?.trim() || undefined,
+        label: item.label?.trim() || undefined,
+        startAt: item.startAt,
+        endAt: item.endAt,
+        allDay: item.allDay,
+        recurrence: item.recurrence ? {
+          frequency: item.recurrence.frequency,
+          interval: Math.max(1, Math.floor(item.recurrence.interval)),
+          until: item.recurrence.until,
+        } : undefined,
+      }))
+      .filter((item) => item.id && item.title && item.color);
+    const nextIds = new Set(normalizedCalendarItems.map((item) => item.id));
+
+    for (const existingItem of existingCalendarItems) {
+      if (!nextIds.has(String(existingItem._id))) {
+        await ctx.db.delete(existingItem._id);
+      }
+    }
+
+    const existingById = new Map(existingCalendarItems.map((item) => [String(item._id), item]));
+    for (const item of normalizedCalendarItems) {
+      const existingItem = existingById.get(item.id);
+      if (existingItem) {
+        await ctx.db.patch(existingItem._id, {
+          title: item.title,
+          description: item.description,
+          color: item.color,
+          emoji: item.emoji,
+          label: item.label,
+          startAt: item.startAt,
+          endAt: item.endAt,
+          allDay: item.allDay,
+          recurrence: item.recurrence,
+          updatedAt: now,
+        });
+      } else {
+        await ctx.db.insert("calendarItems", {
+          guildId: getGuildDiscordId(guild),
+          title: item.title,
+          description: item.description,
+          color: item.color,
+          emoji: item.emoji,
+          label: item.label,
+          startAt: item.startAt,
+          endAt: item.endAt,
+          allDay: item.allDay,
+          recurrence: item.recurrence,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
 
     return String(guild._id);
   },

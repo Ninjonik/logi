@@ -214,7 +214,12 @@ export async function syncCalendarPanel(client: Client, payload: SyncPayload) {
   const currentMessage = storedMessageId && storedChannelId === textChannel.id
     ? await textChannel.messages.fetch(storedMessageId).catch(() => null)
     : null;
-  const embed = buildCalendarPanelEmbed(payload.config, payload.events);
+  const embed = buildCalendarPanelEmbed(
+    payload.config,
+    payload.guild.eventCategories,
+    payload.events,
+    payload.calendarItems,
+  );
 
   let calendarMessageId = storedMessageId;
   if (currentMessage) {

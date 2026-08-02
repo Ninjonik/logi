@@ -16,40 +16,38 @@ import {
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import { EventCalendarEventDialog } from "@/components/app/event-calendar-event-dialog";
+import { CalendarEntryDialog } from "@/components/app/calendar-entry-dialog";
 import { EmojiValue } from "@/components/app/emoji-value";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
-import { getEventCategoryPresentation } from "@/lib/event-categories";
+import type { CalendarDisplayEntry } from "@/lib/calendar-entries";
 import { formatDateKey, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { EventCategory, EventRecord, Group } from "@/types/domain";
+import type { Group } from "@/types/domain";
 
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function MonthCalendarView({
   locale,
   serverId,
-  events,
+  entries,
   groups,
-  eventCategories = [],
   timezone,
   dictionary,
   signupLanguage,
 }: {
   locale: Locale;
   serverId: string;
-  events: EventRecord[];
+  entries: CalendarDisplayEntry[];
   groups: Group[];
-  eventCategories?: EventCategory[];
   timezone?: string;
   dictionary: Dictionary;
   signupLanguage: "en" | "cs";
 }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
-    if (events[0]) return startOfMonth(parseISO(events[0].meetingStart));
+    if (entries[0]) return startOfMonth(parseISO(entries[0].startAt));
     return startOfMonth(new Date());
   });
 
@@ -59,14 +57,14 @@ export function MonthCalendarView({
     return eachDayOfInterval({ start, end });
   }, [currentMonth]);
 
-  const eventsByDate = useMemo(() => {
-    const grouped = new Map<string, EventRecord[]>();
-    for (const event of events) {
-      const key = formatDateKey(event.meetingStart, timezone);
-      grouped.set(key, [...(grouped.get(key) ?? []), event]);
+  const entriesByDate = useMemo(() => {
+    const grouped = new Map<string, CalendarDisplayEntry[]>();
+    for (const entry of entries) {
+      const key = formatDateKey(entry.startAt, timezone);
+      grouped.set(key, [...(grouped.get(key) ?? []), entry]);
     }
     return grouped;
-  }, [events, timezone]);
+  }, [entries, timezone]);
 
   return (
     <Card className="overflow-hidden rounded-2xl border-border/60">
@@ -98,7 +96,7 @@ export function MonthCalendarView({
         <div className="grid grid-cols-7">
           {monthDays.map((day) => {
             const key = formatDateKey(day.toISOString(), timezone);
-            const dayEvents = eventsByDate.get(key) ?? [];
+            const dayEntries = entriesByDate.get(key) ?? [];
 
             return (
               <div
@@ -119,51 +117,46 @@ export function MonthCalendarView({
                   >
                     {format(day, "d")}
                   </span>
-                  {dayEvents.length ? (
+                  {dayEntries.length ? (
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                      {dayEvents.length}
+                      {dayEntries.length}
                     </span>
                   ) : null}
                 </div>
                 <div className="space-y-2">
-                  {dayEvents.slice(0, 4).map((event) => {
-                    const category = getEventCategoryPresentation(event, eventCategories);
-
-                    return (
-                      <EventCalendarEventDialog
-                        key={event.id}
-                        locale={locale}
-                        serverId={serverId}
-                        event={event}
-                        groups={groups}
-                        eventCategories={eventCategories}
-                        timezone={timezone}
-                        dictionary={dictionary}
-                        signupLanguage={signupLanguage}
-                        trigger={(
-                          <button
-                            type="button"
-                            className="block w-full rounded-xl border bg-card px-2.5 py-2 text-left transition hover:bg-primary/5"
-                            style={{ borderColor: `${category.color}66`, boxShadow: `inset 3px 0 0 ${category.color}` }}
-                          >
-                            <div className="truncate text-xs font-semibold">
-                              <span className="inline-flex items-center gap-1.5">
-                                <EmojiValue value={category.emoji} />
-                                <span className="truncate">{event.name}</span>
-                              </span>
-                            </div>
-                            <div className="mt-1 truncate text-[11px] text-muted-foreground">
-                              {formatTime(event.meetingStart, timezone)}
-                              {category.label ? ` • ${category.label}` : ""}
-                            </div>
-                          </button>
-                        )}
-                      />
-                    );
-                  })}
-                  {dayEvents.length > 4 ? (
+                  {dayEntries.slice(0, 4).map((entry) => (
+                    <CalendarEntryDialog
+                      key={entry.id}
+                      locale={locale}
+                      serverId={serverId}
+                      entry={entry}
+                      groups={groups}
+                      timezone={timezone}
+                      dictionary={dictionary}
+                      signupLanguage={signupLanguage}
+                      trigger={(
+                        <button
+                          type="button"
+                          className="block w-full rounded-xl border bg-card px-2.5 py-2 text-left transition hover:bg-primary/5"
+                          style={{ borderColor: `${entry.color}66`, boxShadow: `inset 3px 0 0 ${entry.color}` }}
+                        >
+                          <div className="truncate text-xs font-semibold">
+                            <span className="inline-flex items-center gap-1.5">
+                              <EmojiValue value={entry.emoji} />
+                              <span className="truncate">{entry.title}</span>
+                            </span>
+                          </div>
+                          <div className="mt-1 truncate text-[11px] text-muted-foreground">
+                            {entry.allDay ? dictionary.calendarPage.allDay : formatTime(entry.startAt, timezone)}
+                            {entry.label ? ` • ${entry.label}` : ""}
+                          </div>
+                        </button>
+                      )}
+                    />
+                  ))}
+                  {dayEntries.length > 4 ? (
                     <div className="px-1 text-[11px] text-muted-foreground">
-                      +{dayEvents.length - 4} {dictionary.calendarPage.moreEvents}
+                      +{dayEntries.length - 4} {dictionary.calendarPage.moreEvents}
                     </div>
                   ) : null}
                 </div>

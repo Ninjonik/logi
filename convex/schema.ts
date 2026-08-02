@@ -134,6 +134,32 @@ const eventCategory = v.object({
   emoji: v.optional(v.string()),
 });
 
+const calendarItemRecurrence = v.object({
+  frequency: v.union(
+    v.literal("weekly"),
+    v.literal("monthly_date"),
+    v.literal("monthly_nth_weekday"),
+    v.literal("yearly"),
+  ),
+  interval: v.number(),
+  until: v.optional(v.string()),
+});
+
+const calendarItem = v.object({
+  guildId: v.string(),
+  title: v.string(),
+  description: v.optional(v.string()),
+  color: v.string(),
+  emoji: v.optional(v.string()),
+  label: v.optional(v.string()),
+  startAt: v.string(),
+  endAt: v.string(),
+  allDay: v.boolean(),
+  recurrence: v.optional(calendarItemRecurrence),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+});
+
 const ticketSettings = v.object({
   enabled: v.boolean(),
   submitChannelId: v.optional(v.string()),
@@ -350,6 +376,8 @@ export default defineSchema({
     createdAt: v.string(),
     updatedAt: v.string(),
   }).index("guildId", ["guildId"]),
+  calendarItems: defineTable(calendarItem)
+    .index("guildId", ["guildId"]),
   groups: defineTable({
     guildId: v.string(),
     name: v.string(),
