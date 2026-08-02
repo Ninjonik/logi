@@ -34,6 +34,8 @@ import {
   buildPlatformLinkManageMessage,
   buildPlatformLinkModalId,
   buildPlatformLinkMockApplyModalId,
+  buildPlatformLinkSearchModalId,
+  buildPlayerSearchResultsMessage,
   buildPlatformLinkStartMessage,
   buildPlatformSelectMessageWithEmojis,
   buildPlayedBeforeMessage,
@@ -42,6 +44,7 @@ import {
   parsePlatformLinkInteractionId,
   parsePlatformLinkModalId,
   parsePlatformLinkMockApplyModalId,
+  parsePlatformLinkSearchModalId,
 } from "./interactions/platform-link";
 import {
   cleanupThread,
@@ -86,6 +89,12 @@ type PlatformLinkState = {
 } | null;
 
 type PlatformEmojiMap = Partial<Record<"steam" | "epic" | "xbox" | "playstation", APIMessageComponentEmoji>>;
+type PlayerSearchResult = {
+  playerId: string;
+  playerName: string;
+  sourceLabel: string;
+  platform: "steam" | "epic" | "xbox" | "playstation" | "other";
+};
 
 let platformEmojiCache: PlatformEmojiMap | null = null;
 
@@ -176,6 +185,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await handleMembershipModalSubmit(interaction);
       } else if (interaction.customId.startsWith("plink-modal:")) {
         await handlePlatformLinkModalSubmit(interaction);
+      } else if (interaction.customId.startsWith("plink-search:")) {
+        await handlePlatformLinkSearchModalSubmit(interaction);
       } else if (interaction.customId.startsWith("plink-apply:")) {
         await handlePlatformLinkApplyModalSubmit(interaction);
       } else if (interaction.customId.startsWith("plink-mock-apply:")) {
@@ -585,6 +596,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       return;
     }
 
+    if (parsed.step === "player-search") {
+      await interaction.showModal(buildPlayerSearchModal(context));
+      return;
+    }
+
     if (parsed.step === "unlink" && context.mode === "link") {
       const linkState = await loadDiscordPlatformLinkState(interaction.user.id);
       await interaction.update(buildUnlinkPlatformMessage({
@@ -676,16 +692,16 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         }
 
         if (prereq.category.modalQuestions.length) {
-          await interaction.showModal(buildMockPlayerMembershipModal(context.categoryId, value, prereq.category, messages.membership.modalTitle));
+          await interaction.showModal(buildPlayerLinkedMembershipModal(context.categoryId, value, prereq.category, messages.membership.modalTitle));
           return;
         }
 
-        await savePlatformIdLink(interaction.user.id, interaction.user.globalName ?? interaction.user.username, interaction.user.displayAvatarURL(), `mock:${value}`);
+        await savePlatformIdLink(interaction.user.id, interaction.user.globalName ?? interaction.user.username, interaction.user.displayAvatarURL(), value);
         await createDiscordMembershipApplication(interaction, prereq.category, []);
         return;
       }
 
-      await savePlatformIdLink(interaction.user.id, interaction.user.globalName ?? interaction.user.username, interaction.user.displayAvatarURL(), `mock:${value}`);
+      await savePlatformIdLink(interaction.user.id, interaction.user.globalName ?? interaction.user.username, interaction.user.displayAvatarURL(), value);
       const linkState = await loadDiscordPlatformLinkState(interaction.user.id);
       await interaction.update(buildPlatformLinkManageMessage({
         language,
@@ -764,6 +780,33 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     });
   }
 
+  async function handlePlatformLinkSearchModalSubmit(interaction: ModalSubmitInteraction) {
+    const context = parsePlatformLinkSearchModalId(interaction.customId);
+    if (!context || !interaction.guildId) {
+      await interaction.reply({ content: "This player search modal is no longer valid.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const query = interaction.fields.getTextInputValue("query").trim();
+    const language = await getGuildLanguage(interaction.guildId);
+    const results = await searchPlayerStatsServers(interaction.guildId, query);
+    const emojis = await getPlatformEmojis();
+
+    await interaction.reply({
+      ...buildPlayerSearchResultsMessage({
+        language,
+        context,
+        results: results.map((result) => ({
+          playerId: result.playerId,
+          playerName: result.playerName,
+          description: `${result.playerId} • ${result.sourceLabel}`,
+          emoji: result.platform === "other" ? undefined : emojis[result.platform],
+        })),
+      }),
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
   async function handlePlatformLinkApplyModalSubmit(interaction: ModalSubmitInteraction) {
     const parsed = parsePlatformLinkApplyModalId(interaction.customId);
     if (!parsed || !interaction.guildId) {
@@ -809,7 +852,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
       return;
     }
 
-    await savePlatformIdLink(interaction.user.id, interaction.user.globalName ?? interaction.user.username, interaction.user.displayAvatarURL(), `mock:${parsed.mockPlayerId}`);
+    await savePlatformIdLink(interaction.user.id, interaction.user.globalName ?? interaction.user.username, interaction.user.displayAvatarURL(), parsed.mockPlayerId);
     await createDiscordMembershipApplication(interaction, context.category, collectMembershipAnswers(interaction, context.category, 5));
   }
 
@@ -862,6 +905,111 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }) as PlatformLinkState;
   }
 
+  async function searchPlayerStatsServers(guildId: string, query: string): Promise<PlayerSearchResult[]> {
+    const config = await convex.query(references.getConfigByDiscordGuildId, {
+      guildId,
+    }).catch(() => null) as EventInteractionContext["config"] | null;
+    const servers = config?.playerStatsServers?.filter((item) => item.token?.trim() && item.url?.trim()) ?? [];
+    if (!query.trim() || !servers.length) {
+      return [];
+    }
+
+    const settled = await Promise.allSettled(servers.map(async (server) => {
+      const response = await fetch(server.url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: server.token.trim().toLowerCase().startsWith("bearer ") ? server.token.trim() : `Bearer ${server.token.trim()}`,
+        },
+        body: JSON.stringify({
+          player_id: query,
+          page: 1,
+          page_size: 50,
+          flags: [],
+          blacklisted: false,
+          exact_name_match: false,
+          ignore_accent: false,
+          is_watched: false,
+          player_name: query,
+          country: "",
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Stats search failed with ${response.status}`);
+      }
+
+      const body = await response.json();
+      return extractPlayerSearchResults(body).map((item) => ({
+        playerId: item.playerId,
+        playerName: item.playerName,
+        sourceLabel: new URL(server.url).hostname,
+        platform: detectPlatformFromStatsId(item.playerId),
+      }));
+    }));
+
+    const deduped = new Map<string, PlayerSearchResult>();
+    for (const entry of settled) {
+      if (entry.status !== "fulfilled") {
+        continue;
+      }
+
+      for (const result of entry.value) {
+        if (!deduped.has(result.playerId)) {
+          deduped.set(result.playerId, result);
+        }
+      }
+    }
+
+    return [...deduped.values()].slice(0, 25);
+  }
+
+  function extractPlayerSearchResults(payload: unknown): Array<{ playerId: string; playerName: string }> {
+    const visited = new Set<unknown>();
+    const queue: unknown[] = [payload];
+    const results: Array<{ playerId: string; playerName: string }> = [];
+
+    while (queue.length) {
+      const current = queue.shift();
+      if (!current || typeof current !== "object" || visited.has(current)) {
+        continue;
+      }
+      visited.add(current);
+
+      if (Array.isArray(current)) {
+        for (const item of current) {
+          queue.push(item);
+        }
+        continue;
+      }
+
+      const record = current as Record<string, unknown>;
+      const playerId = record.player_id;
+      const playerName = record.player_name ?? record.name ?? record.player;
+      if (typeof playerId === "string" && typeof playerName === "string") {
+        results.push({ playerId, playerName });
+      }
+
+      for (const value of Object.values(record)) {
+        if (value && typeof value === "object") {
+          queue.push(value);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  function detectPlatformFromStatsId(value: string): "steam" | "epic" | "xbox" | "playstation" | "other" {
+    const trimmed = value.trim();
+    if (/^7656119\d{10}$/.test(trimmed) || /^steam_[0-5]:[01]:\d+$/i.test(trimmed)) {
+      return "steam";
+    }
+    if (/^[0-9a-f]{32}$/i.test(trimmed) || /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(trimmed)) {
+      return "epic";
+    }
+    return "other";
+  }
+
   async function continueMembershipApplicationFlow(
     interaction: ButtonInteraction | StringSelectMenuInteraction,
     prereq: MembershipPrereq,
@@ -906,6 +1054,23 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     return modal;
+  }
+
+  function buildPlayerSearchModal(context: { mode: "membership" | "link"; categoryId?: string }) {
+    return new ModalBuilder()
+      .setCustomId(buildPlatformLinkSearchModalId(context))
+      .setTitle("Search player")
+      .addComponents(
+        new ActionRowBuilder<TextInputBuilder>().addComponents(
+          new TextInputBuilder()
+            .setCustomId("query")
+            .setLabel("Player name or code")
+            .setPlaceholder("Type part of the name or player ID")
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMaxLength(100),
+        ),
+      );
   }
 
   function buildPlatformIdOnlyModal(customId: string, platform: "steam" | "epic" | "xbox" | "playstation", language: "en" | "cs") {
@@ -954,9 +1119,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     return modal;
   }
 
-  function buildMockPlayerMembershipModal(categoryId: string, mockPlayerId: string, category: MembershipCategory, fallbackTitle: string) {
+  function buildPlayerLinkedMembershipModal(categoryId: string, playerId: string, category: MembershipCategory, fallbackTitle: string) {
     return buildMembershipQuestionsModal(
-      buildPlatformLinkMockApplyModalId(categoryId, mockPlayerId),
+      buildPlatformLinkMockApplyModalId(categoryId, playerId),
       category,
       fallbackTitle,
       5,

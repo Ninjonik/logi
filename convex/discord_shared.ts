@@ -90,3 +90,8 @@ export const membershipSettingsValidator = v.object({
 });
 
 export const calendarCategoriesValidator = v.array(v.string());
+
+export const playerStatsServerValidator = v.object({
+  token: v.string(),
+  url: v.string(),
+});

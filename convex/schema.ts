@@ -182,6 +182,11 @@ const membershipSettings = v.object({
   categories: v.array(membershipCategory),
 });
 
+const playerStatsServer = v.object({
+  token: v.string(),
+  url: v.string(),
+});
+
 const eventResult = v.object({
   sourceUrl: v.string(),
   mapId: v.string(),
@@ -361,12 +366,13 @@ export default defineSchema({
     calendarMessageChannelId: v.optional(v.string()),
     calendarMessageId: v.optional(v.string()),
     calendarMessageLastConfigUpdatedAt: v.optional(v.string()),
-    forumCategoryId: v.optional(v.string()),
-    meetingChannelId: v.optional(v.string()),
-    clanRoleId: v.optional(v.string()),
-    dashboardAdminRoleId: v.optional(v.string()),
-    ticketSettings: v.optional(ticketSettings),
-    membershipSettings: v.optional(membershipSettings),
+  forumCategoryId: v.optional(v.string()),
+  meetingChannelId: v.optional(v.string()),
+  clanRoleId: v.optional(v.string()),
+  dashboardAdminRoleId: v.optional(v.string()),
+  playerStatsServers: v.optional(v.array(playerStatsServer)),
+  ticketSettings: v.optional(ticketSettings),
+  membershipSettings: v.optional(membershipSettings),
     ticketPanelMessageId: v.optional(v.string()),
     ticketPanelLastConfigUpdatedAt: v.optional(v.string()),
     membershipPanelMessageId: v.optional(v.string()),

@@ -18,6 +18,11 @@ const imageUrlField = z
   .transform((value) => value || undefined)
   .refine((value) => !value || /^https?:\/\//i.test(value), "Image URLs must start with http:// or https://.");
 
+const playerStatsServerSchema = z.object({
+  token: z.string().trim().min(1, "Server stats token is required."),
+  url: z.string().trim().url("Server stats URL must be a valid URL."),
+});
+
 const ticketModalQuestionSchema = z.object({
   id: z.string().trim().min(1).max(40),
   label: z.string().trim().min(1, "Question label is required.").max(45, "Question labels can be up to 45 characters."),
@@ -203,6 +208,7 @@ export const discordSettingsSchema = z.object({
   meetingChannelId: discordIdField,
   clanRoleId: discordIdField,
   dashboardAdminRoleId: discordIdField,
+  playerStatsServers: z.array(playerStatsServerSchema).max(20, "Keep stats server connections to 20 or fewer.").default([]),
   ticketSettings: ticketSettingsSchema.optional(),
   membershipSettings: membershipSettingsSchema.optional(),
 });
