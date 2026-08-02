@@ -34,8 +34,17 @@ const PLATFORM_GUIDES: Record<PlatformKey, string> = {
   playstation: "https://www.playstation.com/en-us/support/account/change-online-id/",
 };
 
-function getPlatformFlowMessages(language: ClanLanguage) {
-  return getClanDiscordMessages(language).platformFlow ?? getClanDiscordMessages("en").platformFlow!;
+export function getPlatformFlowMessages(language: ClanLanguage) {
+  const messages = getClanDiscordMessages(language);
+  if (messages.platformFlow) {
+    return messages.platformFlow;
+  }
+
+  if (language === "cs") {
+    return (getClanDiscordMessages("en").platformFlowCsFallback ?? getClanDiscordMessages("en").platformFlow)! as NonNullable<ReturnType<typeof getClanDiscordMessages>["platformFlow"]>;
+  }
+
+  return getClanDiscordMessages("en").platformFlow!;
 }
 
 export const MOCK_PLATFORM_PLAYERS = [
@@ -175,13 +184,13 @@ export function buildPlatformLinkManageMessage(input: {
     .setTitle(messages.title)
     .setDescription(
       input.platformIds.length
-        ? "Manage your linked platform IDs below."
+        ? messages.manageDescription
         : messages.linkIntro,
     );
 
   if (input.platformIds.length) {
     embed.addFields({
-      name: "Linked platform IDs",
+      name: messages.linkedFieldTitle,
       value: input.platformIds.map((platformId, index) => {
         const formatted = formatStoredPlatformId(platformId);
         const label = formatted.platform === "other" ? "platform" : formatted.platform;
@@ -192,12 +201,12 @@ export function buildPlatformLinkManageMessage(input: {
 
   const addButton = new ButtonBuilder()
     .setCustomId(buildPlatformLinkCustomId("start", { mode: "link" }))
-    .setLabel(input.platformIds.length ? "Add another platform ID" : messages.startButton)
+    .setLabel(input.platformIds.length ? messages.addAnotherButton : messages.startButton)
     .setStyle(ButtonStyle.Primary);
 
   const removeButton = new ButtonBuilder()
     .setCustomId(buildPlatformLinkCustomId("unlink", { mode: "link" }))
-    .setLabel("Unlink a platform ID")
+    .setLabel(messages.unlinkButton)
     .setStyle(ButtonStyle.Secondary)
     .setDisabled(!input.platformIds.length);
 
@@ -235,21 +244,15 @@ export function buildPlayedBeforeMessage(language: ClanLanguage, context: Platfo
 }
 
 export function buildMockPlayerMessage(language: ClanLanguage, context: PlatformLinkContext) {
-  const messages = getPlatformFlowMessages(language);
-  const embed = new EmbedBuilder()
-    .setColor(0x5865f2)
-    .setTitle(messages.title)
-    .setDescription(messages.playerSearchIntro);
-
-  const button = new ButtonBuilder()
-    .setCustomId(buildPlatformLinkCustomId("player-search", context))
-    .setLabel("Search player")
-    .setStyle(ButtonStyle.Primary);
-
-  return {
-    embeds: [embed],
-    components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button)],
-  };
+  return buildPlayerSearchResultsMessage({
+    language,
+    context,
+    results: MOCK_PLATFORM_PLAYERS.map((player) => ({
+      playerId: player.id,
+      playerName: player.label,
+      description: player.description,
+    })),
+  });
 }
 
 export function buildPlayerSearchResultsMessage(input: {
@@ -258,30 +261,24 @@ export function buildPlayerSearchResultsMessage(input: {
   results: Array<{ playerId: string; playerName: string; description: string; emoji?: APIMessageComponentEmoji }>;
 }) {
   const messages = getPlatformFlowMessages(input.language);
+  const results = input.results.length
+    ? input.results
+    : MOCK_PLATFORM_PLAYERS.map((player) => ({
+      playerId: player.id,
+      playerName: player.label,
+      description: player.description,
+      emoji: undefined,
+    }));
   const embed = new EmbedBuilder()
     .setColor(0x5865f2)
     .setTitle(messages.title)
-    .setDescription(input.results.length ? "Select your player from the results below." : "No matching players were found. Try a different name or code.");
-
-  if (!input.results.length) {
-    return {
-      embeds: [embed],
-      components: [
-        new ActionRowBuilder<ButtonBuilder>().addComponents(
-          new ButtonBuilder()
-            .setCustomId(buildPlatformLinkCustomId("player-search", input.context))
-            .setLabel("Search again")
-            .setStyle(ButtonStyle.Primary),
-        ),
-      ],
-    };
-  }
+    .setDescription(input.results.length ? messages.playerSearchIntro : `${messages.playerSearchIntro}\n\n${messages.playerSearchNoMatches}`);
 
   const menu = new StringSelectMenuBuilder()
     .setCustomId(buildPlatformLinkCustomId("player", input.context))
     .setPlaceholder(messages.playerSearchPlaceholder)
     .addOptions(
-      input.results.slice(0, 25).map((player) => {
+      results.slice(0, 25).map((player) => {
         const option = new StringSelectMenuOptionBuilder()
           .setLabel(player.playerName.slice(0, 100))
           .setDescription(player.description.slice(0, 100))
@@ -293,9 +290,17 @@ export function buildPlayerSearchResultsMessage(input: {
       }),
     );
 
+  const button = new ButtonBuilder()
+    .setCustomId(buildPlatformLinkCustomId("player-search", input.context))
+    .setLabel(messages.playerSearchButton)
+    .setStyle(ButtonStyle.Primary);
+
   return {
     embeds: [embed],
-    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)],
+    components: [
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu),
+      new ActionRowBuilder<ButtonBuilder>().addComponents(button),
+    ],
   };
 }
 
@@ -348,11 +353,11 @@ export function buildUnlinkPlatformMessage(input: {
   const embed = new EmbedBuilder()
     .setColor(0x5865f2)
     .setTitle(messages.title)
-    .setDescription("Select the platform ID you want to unlink.");
+    .setDescription(messages.unlinkPrompt);
 
   const menu = new StringSelectMenuBuilder()
     .setCustomId(buildPlatformLinkCustomId("unlink-select", { mode: "link" }))
-    .setPlaceholder("Select a platform ID to unlink")
+    .setPlaceholder(messages.unlinkPlaceholder)
     .addOptions(
       input.platformIds.slice(0, 25).map((platformId) => {
         const formatted = formatStoredPlatformId(platformId);
