@@ -55,6 +55,14 @@ function formatStoredPlatformId(platformId: string) {
   };
 }
 
+function formatEmojiForText(emoji: APIMessageComponentEmoji | undefined) {
+  if (!emoji?.id || !emoji.name) {
+    return "";
+  }
+
+  return `<:${emoji.name}:${emoji.id}> `;
+}
+
 function decodeContext(mode: string, categoryId: string | undefined): PlatformLinkContext | null {
   if (mode !== "membership" && mode !== "link") {
     return null;
@@ -185,8 +193,17 @@ export function buildPlatformLinkManageMessage(input: {
       name: messages.linkedFieldTitle,
       value: input.platformIds.map((platformId, index) => {
         const formatted = formatStoredPlatformId(platformId);
-        const label = formatted.platform === "other" ? "platform" : formatted.platform;
-        return `${index + 1}. \`${formatted.rawId}\` (${label})`;
+        const label = formatted.platform === "steam"
+          ? messages.platformSteam
+          : formatted.platform === "epic"
+            ? messages.platformEpic
+            : formatted.platform === "xbox"
+              ? messages.platformXbox
+              : formatted.platform === "playstation"
+                ? messages.platformPlaystation
+                : "Platform";
+        const emoji = formatted.platform === "other" ? "" : formatEmojiForText(input.emojis?.[formatted.platform]);
+        return `${index + 1}. ${emoji}\`${formatted.rawId}\` (${label})`;
       }).join("\n"),
     });
   }
@@ -236,11 +253,35 @@ export function buildPlayedBeforeMessage(language: ClanLanguage, context: Platfo
 }
 
 export function buildMockPlayerMessage(language: ClanLanguage, context: PlatformLinkContext) {
-  return buildPlayerSearchResultsMessage({
-    language,
-    context,
-    results: [],
-  });
+  const messages = getPlatformFlowMessages(language);
+  const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle(messages.title)
+    .setDescription(messages.playerSearchIntro);
+
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId(buildPlatformLinkCustomId("player", context))
+    .setPlaceholder(messages.playerSearchPlaceholder)
+    .setDisabled(true)
+    .addOptions(
+      new StringSelectMenuOptionBuilder()
+        .setLabel(messages.playerSearchEmptyOption)
+        .setDescription(messages.playerSearchEmptyDescription)
+        .setValue("empty"),
+    );
+
+  const button = new ButtonBuilder()
+    .setCustomId(buildPlatformLinkCustomId("player-search", context))
+    .setLabel(messages.playerSearchButton)
+    .setStyle(ButtonStyle.Primary);
+
+  return {
+    embeds: [embed],
+    components: [
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu),
+      new ActionRowBuilder<ButtonBuilder>().addComponents(button),
+    ],
+  };
 }
 
 export function buildPlayerSearchResultsMessage(input: {
