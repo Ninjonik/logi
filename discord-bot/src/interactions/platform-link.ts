@@ -25,6 +25,7 @@ const FLOW_PREFIX = "plink";
 const MODAL_PREFIX = "plink-modal";
 const APPLY_MODAL_PREFIX = "plink-apply";
 const MOCK_APPLY_MODAL_PREFIX = "plink-mock-apply";
+const SEARCH_MODAL_PREFIX = "plink-search";
 
 const PLATFORM_GUIDES: Record<PlatformKey, string> = {
   steam: "https://help.steampowered.com/en/faqs/view/2816-BE67-5B69-0FEC",
@@ -53,12 +54,7 @@ function formatStoredPlatformId(platformId: string) {
   };
 }
 
-function encodeContext(context: PlatformLinkContext) {
-  return `${context.mode}:${context.categoryId ?? "_"}`;
-}
-
-function decodeContext(value: string): PlatformLinkContext | null {
-  const [mode, categoryId] = value.split(":");
+function decodeContext(mode: string, categoryId: string | undefined): PlatformLinkContext | null {
   if (mode !== "membership" && mode !== "link") {
     return null;
   }
@@ -70,11 +66,11 @@ function decodeContext(value: string): PlatformLinkContext | null {
 }
 
 export function buildPlatformLinkCustomId(step: string, context: PlatformLinkContext, extra?: string) {
-  return [FLOW_PREFIX, step, encodeContext(context), extra].filter(Boolean).join(":");
+  return [FLOW_PREFIX, step, context.mode, context.categoryId ?? "_", extra].filter(Boolean).join(":");
 }
 
 export function buildPlatformLinkModalId(context: PlatformLinkContext, platform: PlatformKey) {
-  return `${MODAL_PREFIX}:${encodeContext(context)}:${platform}`;
+  return `${MODAL_PREFIX}:${context.mode}:${context.categoryId ?? "_"}:${platform}`;
 }
 
 export function buildPlatformLinkApplyModalId(categoryId: string, platform: PlatformKey) {
@@ -86,21 +82,21 @@ export function buildPlatformLinkMockApplyModalId(categoryId: string, mockPlayer
 }
 
 export function parsePlatformLinkInteractionId(customId: string) {
-  const [prefix, step, rawContext, extra] = customId.split(":");
-  if (prefix !== FLOW_PREFIX || !step || !rawContext) {
+  const [prefix, step, mode, categoryId, ...rest] = customId.split(":");
+  if (prefix !== FLOW_PREFIX || !step || !mode) {
     return null;
   }
 
   return {
     step,
-    context: decodeContext(rawContext),
-    extra,
+    context: decodeContext(mode, categoryId),
+    extra: rest.length ? rest.join(":") : undefined,
   };
 }
 
 export function parsePlatformLinkModalId(customId: string) {
-  const [prefix, rawContext, platform] = customId.split(":");
-  if (prefix !== MODAL_PREFIX || !rawContext || !platform) {
+  const [prefix, mode, categoryId, platform] = customId.split(":");
+  if (prefix !== MODAL_PREFIX || !mode || !platform) {
     return null;
   }
 
@@ -109,9 +105,22 @@ export function parsePlatformLinkModalId(customId: string) {
   }
 
   return {
-    context: decodeContext(rawContext),
+    context: decodeContext(mode, categoryId),
     platform,
   } satisfies { context: PlatformLinkContext | null; platform: PlatformKey };
+}
+
+export function buildPlatformLinkSearchModalId(context: PlatformLinkContext) {
+  return `${SEARCH_MODAL_PREFIX}:${context.mode}:${context.categoryId ?? "_"}`;
+}
+
+export function parsePlatformLinkSearchModalId(customId: string) {
+  const [prefix, mode, categoryId] = customId.split(":");
+  if (prefix !== SEARCH_MODAL_PREFIX || !mode) {
+    return null;
+  }
+
+  return decodeContext(mode, categoryId);
 }
 
 export function parsePlatformLinkApplyModalId(customId: string) {
@@ -232,16 +241,56 @@ export function buildMockPlayerMessage(language: ClanLanguage, context: Platform
     .setTitle(messages.title)
     .setDescription(messages.playerSearchIntro);
 
+  const button = new ButtonBuilder()
+    .setCustomId(buildPlatformLinkCustomId("player-search", context))
+    .setLabel("Search player")
+    .setStyle(ButtonStyle.Primary);
+
+  return {
+    embeds: [embed],
+    components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button)],
+  };
+}
+
+export function buildPlayerSearchResultsMessage(input: {
+  language: ClanLanguage;
+  context: PlatformLinkContext;
+  results: Array<{ playerId: string; playerName: string; description: string; emoji?: APIMessageComponentEmoji }>;
+}) {
+  const messages = getPlatformFlowMessages(input.language);
+  const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle(messages.title)
+    .setDescription(input.results.length ? "Select your player from the results below." : "No matching players were found. Try a different name or code.");
+
+  if (!input.results.length) {
+    return {
+      embeds: [embed],
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId(buildPlatformLinkCustomId("player-search", input.context))
+            .setLabel("Search again")
+            .setStyle(ButtonStyle.Primary),
+        ),
+      ],
+    };
+  }
+
   const menu = new StringSelectMenuBuilder()
-    .setCustomId(buildPlatformLinkCustomId("player", context))
+    .setCustomId(buildPlatformLinkCustomId("player", input.context))
     .setPlaceholder(messages.playerSearchPlaceholder)
     .addOptions(
-      MOCK_PLATFORM_PLAYERS.map((player) =>
-        new StringSelectMenuOptionBuilder()
-          .setLabel(player.label)
-          .setDescription(player.description)
-          .setValue(player.id),
-      ),
+      input.results.slice(0, 25).map((player) => {
+        const option = new StringSelectMenuOptionBuilder()
+          .setLabel(player.playerName.slice(0, 100))
+          .setDescription(player.description.slice(0, 100))
+          .setValue(player.playerId.slice(0, 100));
+        if (player.emoji) {
+          option.setEmoji(player.emoji);
+        }
+        return option;
+      }),
     );
 
   return {

@@ -6,6 +6,7 @@ import {
   calendarCategoriesValidator,
   membershipSettingsValidator,
   normalizeConfigDoc,
+  playerStatsServerValidator,
   ticketSettingsValidator,
 } from "./discord_shared";
 
@@ -54,6 +55,7 @@ export const upsertConfig = mutation({
     meetingChannelId: v.optional(v.string()),
     clanRoleId: v.optional(v.string()),
     dashboardAdminRoleId: v.optional(v.string()),
+    playerStatsServers: v.optional(v.array(playerStatsServerValidator)),
     ticketSettings: v.optional(ticketSettingsValidator),
     membershipSettings: v.optional(membershipSettingsValidator),
   },
@@ -77,6 +79,12 @@ export const upsertConfig = mutation({
       meetingChannelId: args.meetingChannelId?.trim() || undefined,
       clanRoleId: args.clanRoleId?.trim() || undefined,
       dashboardAdminRoleId: args.dashboardAdminRoleId?.trim() || undefined,
+      playerStatsServers: (args.playerStatsServers ?? [])
+        .map((item) => ({
+          token: item.token.trim(),
+          url: item.url.trim(),
+        }))
+        .filter((item) => item.token && item.url),
       ticketSettings: args.ticketSettings,
       membershipSettings: args.membershipSettings,
       updatedAt: now,

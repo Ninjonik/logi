@@ -50,6 +50,11 @@ export type MembershipSettings = {
   categories: MembershipCategory[];
 };
 
+export type PlayerStatsServer = {
+  token: string;
+  url: string;
+};
+
 export type EventCategory = {
   id: string;
   label: string;
@@ -94,6 +99,7 @@ export type DiscordConfig = {
   meetingChannelId?: string;
   clanRoleId?: string;
   dashboardAdminRoleId?: string;
+  playerStatsServers?: PlayerStatsServer[];
   ticketSettings?: TicketSettings;
   membershipSettings?: MembershipSettings;
   ticketPanelMessageId?: string;

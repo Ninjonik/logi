@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -86,6 +87,7 @@ export function DiscordServerSettingsForm({
   const [meetingChannelId, setMeetingChannelId] = useState<string | undefined>(config?.meetingChannelId);
   const [clanRoleId, setClanRoleId] = useState<string | undefined>(config?.clanRoleId);
   const [dashboardAdminRoleId, setDashboardAdminRoleId] = useState<string | undefined>(config?.dashboardAdminRoleId);
+  const [playerStatsServers, setPlayerStatsServers] = useState<Array<{ token: string; url: string }>>(config?.playerStatsServers ?? []);
 
   useEffect(() => {
     fetch(`/api/servers/${serverId}/discord-metadata`)
@@ -118,6 +120,7 @@ export function DiscordServerSettingsForm({
         meetingChannelId,
         clanRoleId,
         dashboardAdminRoleId,
+        playerStatsServers,
         ticketSettings: remappedDefaults.ticketSettings,
         membershipSettings: remappedDefaults.membershipSettings,
       }),
@@ -189,6 +192,52 @@ export function DiscordServerSettingsForm({
         <div className="space-y-2">
           <Label>{dictionary.serverSettings.dashboardAdminRoleId}</Label>
           <DiscordEntitySelect value={dashboardAdminRoleId} onChange={setDashboardAdminRoleId} options={roles} placeholder={dictionary.serverSettings.dashboardAdminRoleId} />
+        </div>
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <Label>{dictionary.serverSettings.playerStatsServersTitle}</Label>
+            <p className="text-sm text-muted-foreground">{dictionary.serverSettings.playerStatsServersDescription}</p>
+          </div>
+          <div className="space-y-4">
+            {playerStatsServers.map((server, index) => (
+              <div key={`${index}-${server.url}`} className="rounded-2xl border border-border/60 p-4 space-y-3">
+                <div className="space-y-2">
+                  <Label>{dictionary.serverSettings.playerStatsServerToken}</Label>
+                  <Input
+                    value={server.token}
+                    onChange={(event) => setPlayerStatsServers((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, token: event.target.value } : item))}
+                    placeholder={dictionary.serverSettings.playerStatsServerTokenPlaceholder}
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{dictionary.serverSettings.playerStatsServerUrl}</Label>
+                  <Input
+                    value={server.url}
+                    onChange={(event) => setPlayerStatsServers((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item))}
+                    placeholder={dictionary.serverSettings.playerStatsServerUrlPlaceholder}
+                    className="rounded-xl"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => setPlayerStatsServers((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                >
+                  {dictionary.serverSettings.removePlayerStatsServer}
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => setPlayerStatsServers((current) => [...current, { token: "", url: "" }])}
+            >
+              {dictionary.serverSettings.addPlayerStatsServer}
+            </Button>
+          </div>
         </div>
 
         <Button className="rounded-xl" onClick={handleSave} disabled={isPending}>

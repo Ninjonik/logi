@@ -9,7 +9,7 @@ export const contentType = "image/png";
 
 // ---- Layout constants (kept in one place so the JSX and the height/width
 // math below are always talking about the same numbers) ----------------
-const CANVAS_WIDTH = 2400;
+const CANVAS_WIDTH = 1920;
 const OUTER_PADDING = 30;
 const SIDEBAR_WIDTH = 336;
 const OUTER_GAP = 21;
