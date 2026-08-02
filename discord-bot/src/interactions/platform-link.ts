@@ -47,14 +47,6 @@ export function getPlatformFlowMessages(language: ClanLanguage) {
   return getClanDiscordMessages("en").platformFlow!;
 }
 
-export const MOCK_PLATFORM_PLAYERS = [
-  { id: "ace-miller", label: "Ace Miller", description: "Mock player from recent server history" },
-  { id: "bravo-fox", label: "Bravo Fox", description: "Mock player from recent server history" },
-  { id: "charlie-nova", label: "Charlie Nova", description: "Mock player from recent server history" },
-  { id: "delta-reed", label: "Delta Reed", description: "Mock player from recent server history" },
-  { id: "echo-stone", label: "Echo Stone", description: "Mock player from recent server history" },
-] as const;
-
 function formatStoredPlatformId(platformId: string) {
   const platform = detectPlatformFromId(platformId);
   return {
@@ -247,11 +239,7 @@ export function buildMockPlayerMessage(language: ClanLanguage, context: Platform
   return buildPlayerSearchResultsMessage({
     language,
     context,
-    results: MOCK_PLATFORM_PLAYERS.map((player) => ({
-      playerId: player.id,
-      playerName: player.label,
-      description: player.description,
-    })),
+    results: [],
   });
 }
 
@@ -261,46 +249,52 @@ export function buildPlayerSearchResultsMessage(input: {
   results: Array<{ playerId: string; playerName: string; description: string; emoji?: APIMessageComponentEmoji }>;
 }) {
   const messages = getPlatformFlowMessages(input.language);
-  const results = input.results.length
-    ? input.results
-    : MOCK_PLATFORM_PLAYERS.map((player) => ({
-      playerId: player.id,
-      playerName: player.label,
-      description: player.description,
-      emoji: undefined,
-    }));
   const embed = new EmbedBuilder()
     .setColor(0x5865f2)
     .setTitle(messages.title)
-    .setDescription(input.results.length ? messages.playerSearchIntro : `${messages.playerSearchIntro}\n\n${messages.playerSearchNoMatches}`);
-
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId(buildPlatformLinkCustomId("player", input.context))
-    .setPlaceholder(messages.playerSearchPlaceholder)
-    .addOptions(
-      results.slice(0, 25).map((player) => {
-        const option = new StringSelectMenuOptionBuilder()
-          .setLabel(player.playerName.slice(0, 100))
-          .setDescription(player.description.slice(0, 100))
-          .setValue(player.playerId.slice(0, 100));
-        if (player.emoji) {
-          option.setEmoji(player.emoji);
-        }
-        return option;
-      }),
-    );
+    .setDescription(input.results.length ? messages.playerSearchIntro : messages.playerSearchNoMatches);
 
   const button = new ButtonBuilder()
     .setCustomId(buildPlatformLinkCustomId("player-search", input.context))
     .setLabel(messages.playerSearchButton)
     .setStyle(ButtonStyle.Primary);
 
+  const components: Array<ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<ButtonBuilder>> = [];
+  if (input.results.length) {
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId(buildPlatformLinkCustomId("player", input.context))
+      .setPlaceholder(messages.playerSearchPlaceholder)
+      .addOptions(
+        input.results.slice(0, 25).map((player) => {
+          const option = new StringSelectMenuOptionBuilder()
+            .setLabel(player.playerName.slice(0, 100))
+            .setDescription(player.description.slice(0, 100))
+            .setValue(player.playerId.slice(0, 100));
+          if (player.emoji) {
+            option.setEmoji(player.emoji);
+          }
+          return option;
+        }),
+      );
+    components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu));
+  } else {
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId(buildPlatformLinkCustomId("player", input.context))
+      .setPlaceholder(messages.playerSearchPlaceholder)
+      .setDisabled(true)
+      .addOptions(
+        new StringSelectMenuOptionBuilder()
+          .setLabel(messages.playerSearchEmptyOption)
+          .setDescription(messages.playerSearchEmptyDescription)
+          .setValue("empty"),
+      );
+    components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu));
+  }
+  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button));
+
   return {
     embeds: [embed],
-    components: [
-      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu),
-      new ActionRowBuilder<ButtonBuilder>().addComponents(button),
-    ],
+    components,
   };
 }
 
