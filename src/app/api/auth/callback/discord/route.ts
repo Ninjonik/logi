@@ -47,10 +47,10 @@ export async function GET(request: NextRequest) {
       name: discordUser.username,
       avatar: getDiscordAvatarUrl(discordUser),
       discordGuilds: await Promise.all(
-        discordGuilds.map(async (guild) => ({
+        discordGuilds
+          .filter(isDiscordGuildAdmin)
+          .map(async (guild) => ({
           id: guild.id,
-          name: guild.name,
-          avatar: getDiscordGuildIconUrl(guild),
           canAdmin: isDiscordGuildAdmin(guild),
           botInside: isDiscordGuildAdmin(guild)
             ? await isBotInsideDiscordGuild(guild.id)
