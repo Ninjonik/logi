@@ -1,5 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 
 import { getGuildByDiscordId, getUserByDiscordId, getUserDiscordId, getUserByIdentifier, getUserStableId } from "./identity";
 
@@ -57,6 +59,119 @@ function buildPerformanceSummary(matches: Array<{
       support: totals.support / divisor,
     },
   };
+}
+
+function mergeUniqueStrings(primary: string[] | undefined, secondary: string[] | undefined) {
+  return [...new Set([...(primary ?? []), ...(secondary ?? [])])];
+}
+
+function mergeScoreRecords(primary: Record<string, number> | undefined, secondary: Record<string, number> | undefined) {
+  return {
+    ...(secondary ?? {}),
+    ...(primary ?? {}),
+  };
+}
+
+function rewriteUserIdList(values: string[] | undefined, primaryUserId: string, secondaryUserId: string) {
+  const rewritten = (values ?? []).map((value) => value === secondaryUserId ? primaryUserId : value);
+  return [...new Set(rewritten)];
+}
+
+function rewriteOptionalUserId(value: string | undefined, primaryUserId: string, secondaryUserId: string) {
+  return value === secondaryUserId ? primaryUserId : value;
+}
+
+function dedupeByUserId<T extends { userId: string }>(values: T[] | undefined, primaryUserId: string, secondaryUserId: string) {
+  const result: T[] = [];
+  const seen = new Set<string>();
+
+  const primaryValues = (values ?? []).filter((value) => value.userId === primaryUserId);
+  const secondaryValues = (values ?? []).filter((value) => value.userId !== primaryUserId);
+
+  for (const value of [...primaryValues, ...secondaryValues]) {
+    const rewrittenUserId = value.userId === secondaryUserId ? primaryUserId : value.userId;
+    if (seen.has(rewrittenUserId)) {
+      continue;
+    }
+    seen.add(rewrittenUserId);
+    result.push({
+      ...value,
+      userId: rewrittenUserId,
+    });
+  }
+
+  return result;
+}
+
+function rewriteRosterSquads(
+  squads: Array<{
+    name: string;
+    group: string;
+    order: number;
+    color: string;
+    icon?: string;
+    players: Array<{
+      id?: string;
+      customName?: string;
+      ack: boolean;
+      confirmed?: boolean;
+      note?: string;
+      roleName?: string;
+      roleIcon?: string;
+    }>;
+  }>,
+  primaryUserId: string,
+  secondaryUserId: string,
+) {
+  return squads.map((squad) => {
+    const players = squad.players.map((player) => ({
+      ...player,
+      id: player.id === secondaryUserId ? primaryUserId : player.id,
+    }));
+
+    const dedupedPlayers: typeof players = [];
+    const seen = new Set<string>();
+    for (const player of players) {
+      const key = player.id ? `user:${player.id}` : `custom:${player.customName ?? ""}:${player.roleName ?? ""}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      dedupedPlayers.push(player);
+    }
+
+    return {
+      ...squad,
+      players: dedupedPlayers,
+    };
+  });
+}
+
+async function rebuildUserPerformance(ctx: MutationCtx, userId: string) {
+  const relatedStats = await ctx.db
+    .query("playerStats")
+    .withIndex("userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  const matches = relatedStats.flatMap((doc) => Object.values(doc.matches));
+  const performance = buildPerformanceSummary(matches);
+  const user = await ctx.db
+    .query("users")
+    .withIndex("id", (q) => q.eq("id", userId))
+    .unique()
+    ?? await ctx.db
+      .query("users")
+      .withIndex("discordId", (q) => q.eq("discordId", userId))
+      .unique();
+
+  if (!user) {
+    return;
+  }
+
+  await ctx.db.patch(user._id, {
+    performance,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 function toPlayer(user: {
@@ -548,5 +663,245 @@ export const linkImportedDiscordProfile = mutation({
     });
 
     return { userId: getUserStableId(importedUser), merged: false };
+  },
+});
+
+export const mergeUsers = mutation({
+  args: {
+    secret: v.string(),
+    primaryUserId: v.string(),
+    secondaryUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    if (args.primaryUserId === args.secondaryUserId) {
+      throw new Error("Pick two different users.");
+    }
+
+    const now = new Date().toISOString();
+    const primaryUser = await getUserByIdentifier(ctx, args.primaryUserId);
+    const secondaryUser = await getUserByIdentifier(ctx, args.secondaryUserId);
+
+    if (!primaryUser || !secondaryUser) {
+      throw new Error("User not found.");
+    }
+
+    const primaryStableId = getUserStableId(primaryUser);
+    const secondaryStableId = getUserStableId(secondaryUser);
+
+    const mergedPlatformIds = mergeUniqueStrings(
+      normalizePlatformIds(primaryUser.platformIds),
+      normalizePlatformIds(secondaryUser.platformIds),
+    );
+
+    const mergedNicknames = {
+      ...(secondaryUser.nicknames ?? {}),
+      ...(primaryUser.nicknames ?? {}),
+    };
+
+    const mergedManagedGuildIds = mergeUniqueStrings(primaryUser.managedGuildIds, secondaryUser.managedGuildIds);
+    const mergedMercenaryGuildIds = mergeUniqueStrings(primaryUser.mercenaryGuildIds, secondaryUser.mercenaryGuildIds)
+      .filter((guildId) => guildId !== (primaryUser.guildId ?? secondaryUser.guildId));
+    const mergedScores = mergeScoreRecords(primaryUser.scores, secondaryUser.scores);
+
+    await ctx.db.patch(primaryUser._id, {
+      discordId: primaryUser.discordId ?? secondaryUser.discordId,
+      id: primaryUser.id ?? secondaryUser.id,
+      name: primaryUser.name || secondaryUser.name,
+      avatar: primaryUser.avatar || secondaryUser.avatar,
+      nicknames: mergedNicknames,
+      platformIds: mergedPlatformIds,
+      managedGuildIds: mergedManagedGuildIds,
+      guildId: primaryUser.guildId ?? secondaryUser.guildId,
+      mercenaryGuildIds: mergedMercenaryGuildIds,
+      isStreamer: primaryUser.isStreamer || secondaryUser.isStreamer,
+      score: primaryUser.score ?? secondaryUser.score ?? 0,
+      scores: mergedScores,
+      updatedAt: now,
+    });
+
+    const secondaryAssignments = await ctx.db
+      .query("userAssignments")
+      .withIndex("userId", (q) => q.eq("userId", secondaryStableId))
+      .collect();
+    const primaryAssignments = await ctx.db
+      .query("userAssignments")
+      .withIndex("userId", (q) => q.eq("userId", primaryStableId))
+      .collect();
+    const primaryAssignmentByServerId = new Map(primaryAssignments.map((assignment) => [assignment.serverId, assignment]));
+    const affectedServerIds = new Set<string>();
+
+    for (const assignment of secondaryAssignments) {
+      affectedServerIds.add(assignment.serverId);
+      const existingPrimaryAssignment = primaryAssignmentByServerId.get(assignment.serverId);
+      if (existingPrimaryAssignment) {
+        await ctx.db.patch(existingPrimaryAssignment._id, {
+          type: existingPrimaryAssignment.type ?? assignment.type,
+          status: existingPrimaryAssignment.status ?? assignment.status,
+          membershipCategoryId: existingPrimaryAssignment.membershipCategoryId ?? assignment.membershipCategoryId,
+          primaryGroupId: existingPrimaryAssignment.primaryGroupId ?? assignment.primaryGroupId,
+          secondaryGroupIds: [...new Set([
+            ...(existingPrimaryAssignment.secondaryGroupIds ?? []).map(String),
+            ...(assignment.secondaryGroupIds ?? []).map(String),
+          ])] as Id<"groups">[],
+          paused: existingPrimaryAssignment.paused,
+          pausedNote: existingPrimaryAssignment.pausedNote ?? assignment.pausedNote,
+          updatedAt: now,
+        });
+        await ctx.db.delete(assignment._id);
+      } else {
+        await ctx.db.patch(assignment._id, {
+          userId: primaryStableId,
+          updatedAt: now,
+        });
+      }
+    }
+
+    const secondaryStats = await ctx.db
+      .query("playerStats")
+      .withIndex("userId", (q) => q.eq("userId", secondaryStableId))
+      .collect();
+    const primaryStatsById = new Map(
+      (await ctx.db.query("playerStats").withIndex("userId", (q) => q.eq("userId", primaryStableId)).collect())
+        .map((stat) => [stat.id, stat]),
+    );
+
+    for (const stat of secondaryStats) {
+      const rewrittenMatches = Object.fromEntries(
+        Object.entries(stat.matches).map(([eventId, match]) => [
+          eventId,
+          {
+            ...match,
+            userId: primaryStableId,
+          },
+        ]),
+      );
+      const existingPrimaryStat = primaryStatsById.get(stat.id);
+
+      if (existingPrimaryStat) {
+        await ctx.db.patch(existingPrimaryStat._id, {
+          latestName: existingPrimaryStat.latestName ?? stat.latestName,
+          matches: {
+            ...rewrittenMatches,
+            ...existingPrimaryStat.matches,
+          },
+          updatedAt: now,
+        });
+        await ctx.db.delete(stat._id);
+      } else {
+        await ctx.db.patch(stat._id, {
+          userId: primaryStableId,
+          matches: rewrittenMatches,
+          updatedAt: now,
+        });
+      }
+    }
+
+    const events = await ctx.db.query("events").collect();
+    const touchedEventIds = new Set<string>();
+    for (const event of events) {
+      const nextParticipants = dedupeByUserId(event.participants, primaryStableId, secondaryStableId);
+      const nextSignUps = dedupeByUserId(event.signUps, primaryStableId, secondaryStableId);
+      const nextAbsenceNotices = dedupeByUserId(event.absenceNotices, primaryStableId, secondaryStableId);
+      const nextAttendanceReminderLog = dedupeByUserId(event.attendanceReminderLog, primaryStableId, secondaryStableId);
+
+      const changed =
+        JSON.stringify(nextParticipants) !== JSON.stringify(event.participants ?? []) ||
+        JSON.stringify(nextSignUps) !== JSON.stringify(event.signUps ?? []) ||
+        JSON.stringify(nextAbsenceNotices) !== JSON.stringify(event.absenceNotices ?? []) ||
+        JSON.stringify(nextAttendanceReminderLog) !== JSON.stringify(event.attendanceReminderLog ?? []);
+
+      if (changed) {
+        await ctx.db.patch(event._id, {
+          participants: nextParticipants,
+          signUps: nextSignUps,
+          absenceNotices: nextAbsenceNotices,
+          attendanceReminderLog: nextAttendanceReminderLog,
+          updatedAt: now,
+        });
+        touchedEventIds.add(String(event._id));
+      }
+    }
+
+    const rosters = await ctx.db.query("rosters").collect();
+    const touchedRosterIds = new Set<string>();
+    for (const roster of rosters) {
+      const nextSquads = rewriteRosterSquads(roster.squads, primaryStableId, secondaryStableId);
+      const nextReservePlayerIds = rewriteUserIdList(roster.reservePlayerIds, primaryStableId, secondaryStableId);
+      const nextNotAttendingPlayerIds = rewriteUserIdList(roster.notAttendingPlayerIds, primaryStableId, secondaryStableId);
+      const nextReserveAttendances = dedupeByUserId(roster.reserveAttendances, primaryStableId, secondaryStableId);
+      const nextStreamerId = rewriteOptionalUserId(roster.streamerId, primaryStableId, secondaryStableId);
+
+      const changed =
+        JSON.stringify(nextSquads) !== JSON.stringify(roster.squads) ||
+        JSON.stringify(nextReservePlayerIds) !== JSON.stringify(roster.reservePlayerIds) ||
+        JSON.stringify(nextNotAttendingPlayerIds) !== JSON.stringify(roster.notAttendingPlayerIds) ||
+        JSON.stringify(nextReserveAttendances) !== JSON.stringify(roster.reserveAttendances ?? []) ||
+        nextStreamerId !== roster.streamerId;
+
+      if (changed) {
+        await ctx.db.patch(roster._id, {
+          squads: nextSquads,
+          reservePlayerIds: nextReservePlayerIds,
+          notAttendingPlayerIds: nextNotAttendingPlayerIds,
+          reserveAttendances: nextReserveAttendances,
+          streamerId: nextStreamerId,
+          updatedAt: now,
+        });
+        touchedRosterIds.add(String(roster._id));
+      }
+    }
+
+    for (const stratmap of await ctx.db.query("stratmaps").collect()) {
+      if (stratmap.createdBy === secondaryStableId) {
+        await ctx.db.patch(stratmap._id, {
+          createdBy: primaryStableId,
+          updatedAt: now,
+        });
+      }
+    }
+
+    for (const thread of await ctx.db.query("ticketThreads").collect()) {
+      const creatorId = rewriteOptionalUserId(thread.creatorId, primaryStableId, secondaryStableId) ?? thread.creatorId;
+      const closedByUserId = rewriteOptionalUserId(thread.closedByUserId, primaryStableId, secondaryStableId);
+      if (creatorId !== thread.creatorId || closedByUserId !== thread.closedByUserId) {
+        await ctx.db.patch(thread._id, {
+          creatorId,
+          closedByUserId,
+          updatedAt: now,
+        });
+      }
+    }
+
+    for (const thread of await ctx.db.query("membershipApplicationThreads").collect()) {
+      const creatorId = rewriteOptionalUserId(thread.creatorId, primaryStableId, secondaryStableId) ?? thread.creatorId;
+      const closedByUserId = rewriteOptionalUserId(thread.closedByUserId, primaryStableId, secondaryStableId);
+      if (creatorId !== thread.creatorId || closedByUserId !== thread.closedByUserId) {
+        await ctx.db.patch(thread._id, {
+          creatorId,
+          closedByUserId,
+          updatedAt: now,
+        });
+      }
+    }
+
+    for (const token of await ctx.db.query("platformIdLinkTokens").withIndex("userId", (q) => q.eq("userId", secondaryStableId)).collect()) {
+      await ctx.db.patch(token._id, {
+        userId: primaryStableId,
+        updatedAt: now,
+      });
+    }
+
+    await rebuildUserPerformance(ctx as never, primaryStableId);
+    await ctx.db.delete(secondaryUser._id);
+
+    return {
+      primaryUserId: primaryStableId,
+      secondaryUserId: secondaryStableId,
+      affectedServerIds: [...affectedServerIds],
+      touchedEventIds: [...touchedEventIds],
+      touchedRosterIds: [...touchedRosterIds],
+    };
   },
 });

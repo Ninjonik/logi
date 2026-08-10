@@ -3,6 +3,7 @@ import {
   deleteServerUserAssignmentCommand,
   importDiscordMembersForServerCommand,
   linkImportedDiscordProfileCommand,
+  mergeUsersCommand,
   reassignImportedMemberCommand,
   savePlayerPlatformIdCommand,
   saveServerUserAssignmentCommand,
@@ -141,4 +142,11 @@ export async function importDiscordMembersForServer(input: {
     createdAssignments: number;
     updatedAssignments: number;
   };
+}
+
+export async function mergeUsers(input: {
+  primaryUserId: string;
+  secondaryUserId: string;
+}) {
+  return await mergeUsersCommand(input);
 }

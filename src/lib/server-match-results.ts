@@ -1,6 +1,6 @@
 import { availableParallelism, cpus } from "node:os";
 
-import { logNextError } from "@/lib/system-logs";
+import { logNextError, logNextInfo } from "@/lib/system-logs";
 import { saveServerEvent, saveServerEventResult } from "@/lib/server-events";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { saveServerMatch } from "@/lib/server-matches";
@@ -15,6 +15,7 @@ import {
   upsertImportedPlayer,
 } from "@/lib/server-user-management";
 import { savePlayerMatchStats } from "@/lib/server-player-stats";
+import type { AppUser } from "@/types/domain";
 
 type ExternalTeam = string;
 
@@ -157,6 +158,15 @@ type FetchedScoreboardResult =
       link: string;
       error: string;
     };
+
+type ImportUserLookupContext = {
+  usersByPlatformId: Map<string, AppUser>;
+  usersByName: Map<string, AppUser[]>;
+  usersByNickname: Map<string, AppUser[]>;
+  serverDiscordId: string;
+};
+
+type PlayerMatchReason = "platformId" | "name" | "nickname" | "created-imported";
 
 function toErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
@@ -424,7 +434,7 @@ function buildUniqueUserMap(users: Awaited<ReturnType<typeof getUsersByIds>>) {
   );
 }
 
-function buildUserNameMap(users: Awaited<ReturnType<typeof listUsersUncached>>) {
+function buildUserNameMap(users: AppUser[]) {
   const byName = new Map<string, typeof users>();
 
   for (const user of users) {
@@ -441,7 +451,7 @@ function buildUserNameMap(users: Awaited<ReturnType<typeof listUsersUncached>>) 
   return byName;
 }
 
-function buildUserNicknameMap(users: Awaited<ReturnType<typeof listUsersUncached>>, serverDiscordId: string) {
+function buildUserNicknameMap(users: AppUser[], serverDiscordId: string) {
   const byNickname = new Map<string, typeof users>();
 
   for (const user of users) {
@@ -461,41 +471,45 @@ function buildUserNicknameMap(users: Awaited<ReturnType<typeof listUsersUncached
 function resolveImportedUserMatch(input: {
   normalizedPlayerId: string;
   normalizedPlayerName: string;
-  usersByPlatformId: Map<string, Awaited<ReturnType<typeof listUsersUncached>>[number]>;
-  usersByName: Map<string, Awaited<ReturnType<typeof listUsersUncached>>>;
-  usersByNickname: Map<string, Awaited<ReturnType<typeof listUsersUncached>>>;
+  usersByPlatformId: Map<string, AppUser>;
+  usersByName: Map<string, AppUser[]>;
+  usersByNickname: Map<string, AppUser[]>;
 }) {
   const matchedByPlatformId = input.usersByPlatformId.get(input.normalizedPlayerId);
   if (matchedByPlatformId) {
     return {
       user: matchedByPlatformId,
       byPlatformId: true,
+      reason: "platformId" as PlayerMatchReason,
     };
   }
 
   const matchedByName = input.usersByName.get(input.normalizedPlayerName);
-  if (matchedByName && matchedByName.length === 1) {
+  if (matchedByName && matchedByName.length > 0) {
     return {
       user: matchedByName[0],
       byPlatformId: false,
+      reason: "name" as PlayerMatchReason,
     };
   }
 
   const matchedByNickname = input.usersByNickname.get(input.normalizedPlayerName);
-  if (!matchedByNickname || matchedByNickname.length !== 1) {
+  if (!matchedByNickname || matchedByNickname.length === 0) {
     return {
       user: undefined,
       byPlatformId: false,
+      reason: undefined,
     };
   }
 
   return {
     user: matchedByNickname[0],
     byPlatformId: false,
+    reason: "nickname" as PlayerMatchReason,
   };
 }
 
-function canImportExistingUserToServer(user: Awaited<ReturnType<typeof listUsersUncached>>[number], serverDiscordId: string) {
+function canImportExistingUserToServer(user: AppUser, serverDiscordId: string) {
   return !user.guildId || user.guildId === serverDiscordId;
 }
 
@@ -569,7 +583,7 @@ function buildEventResult(eventSide: string | undefined, sourceUrl: string, mapI
   };
 }
 
-async function buildServerUserLookups(serverId: string, importPlayers: boolean) {
+async function buildServerUserLookups(serverId: string, importPlayers: boolean): Promise<ImportUserLookupContext> {
   const server = await getGuildMetadata(serverId);
   const serverDiscordId = server?.discordId ?? "";
   const assignments = await getServerUserAssignments(serverId);
@@ -593,6 +607,33 @@ async function buildServerUserLookups(serverId: string, importPlayers: boolean) 
   return { usersByPlatformId, usersByName, usersByNickname, serverDiscordId };
 }
 
+function addUserToLookupMaps(context: ImportUserLookupContext, user: AppUser) {
+  for (const platformId of user.platformIds) {
+    const normalizedPlatformId = normalizeValue(platformId);
+    if (normalizedPlatformId) {
+      context.usersByPlatformId.set(normalizedPlatformId, user);
+    }
+  }
+
+  const normalizedName = normalizeComparableName(user.name);
+  if (normalizedName) {
+    const users = context.usersByName.get(normalizedName) ?? [];
+    if (!users.some((candidate) => candidate.id === user.id)) {
+      users.push(user);
+      context.usersByName.set(normalizedName, users);
+    }
+  }
+
+  const normalizedNickname = normalizeComparableName(user.nicknames?.[context.serverDiscordId]);
+  if (normalizedNickname) {
+    const users = context.usersByNickname.get(normalizedNickname) ?? [];
+    if (!users.some((candidate) => candidate.id === user.id)) {
+      users.push(user);
+      context.usersByNickname.set(normalizedNickname, users);
+    }
+  }
+}
+
 async function preparePlayerImports(input: {
   serverId: string;
   payload: ScoreboardResponse["result"];
@@ -601,13 +642,21 @@ async function preparePlayerImports(input: {
   eventIdForLogs: string;
   importPlayers?: boolean;
   clanTag?: string;
+  lookupContext?: ImportUserLookupContext;
 }) {
-  const { usersByPlatformId, usersByName, usersByNickname, serverDiscordId } = await buildServerUserLookups(input.serverId, Boolean(input.importPlayers));
+  const lookupContext = input.lookupContext ?? await buildServerUserLookups(input.serverId, Boolean(input.importPlayers));
+  const { usersByPlatformId, usersByName, usersByNickname, serverDiscordId } = lookupContext;
   const importedAt = new Date().toISOString();
   const sideCounts = new Map<string, { count: number; value: string }>();
   const importedUserIds = new Set<string>();
   const reassignedUserIds = new Set<string>();
   const entries: PreparedPlayerImport[] = [];
+  const matchReasonCounts = {
+    platformId: 0,
+    name: 0,
+    nickname: 0,
+    createdImported: 0,
+  };
 
   for (const player of input.payload.player_stats) {
     const normalizedPlayerId = normalizeValue(player.player_id);
@@ -622,6 +671,7 @@ async function preparePlayerImports(input: {
       usersByNickname,
     });
     let matchedUser = matched.user;
+    let matchReason = matched.reason;
 
     if (!matchedUser) {
       if (!input.importPlayers || !normalizedPlayerId) {
@@ -662,8 +712,19 @@ async function preparePlayerImports(input: {
         createdAt: importedAt,
         updatedAt: importedAt,
       };
-      usersByPlatformId.set(normalizedPlayerId, matchedUser);
-      usersByName.set(normalizedPlayerName, [matchedUser]);
+      addUserToLookupMaps(lookupContext, matchedUser);
+      matchReason = "created-imported";
+      logNextInfo("match-results:player-match", "Created imported player during event import", {
+        serverId: input.serverId,
+        eventId: input.eventIdForLogs,
+        sourceUrl: input.sourceUrl,
+        mapId: input.mapId,
+        rawPlayerName: player.player,
+        importedPlayerName,
+        normalizedPlayerName,
+        playerId: normalizedPlayerId,
+        matchedUserId: matchedUser.id,
+      });
     } else if (
       input.importPlayers &&
       matched.byPlatformId &&
@@ -684,11 +745,46 @@ async function preparePlayerImports(input: {
         platformIds: [...matchedUser.platformIds, normalizedPlayerId],
       });
       matchedUser.platformIds = [...matchedUser.platformIds, normalizedPlayerId];
-      usersByPlatformId.set(normalizedPlayerId, matchedUser);
+      addUserToLookupMaps(lookupContext, matchedUser);
     }
 
     if (!matchedUser) {
       continue;
+    }
+
+    if (matchReason === "platformId") {
+      matchReasonCounts.platformId += 1;
+    } else if (matchReason === "name") {
+      matchReasonCounts.name += 1;
+      logNextInfo("match-results:player-match", "Matched imported player by normalized name", {
+        serverId: input.serverId,
+        eventId: input.eventIdForLogs,
+        sourceUrl: input.sourceUrl,
+        mapId: input.mapId,
+        rawPlayerName: player.player,
+        importedPlayerName,
+        normalizedPlayerName,
+        playerId: normalizedPlayerId,
+        matchedUserId: matchedUser.id,
+        matchedUserName: matchedUser.name,
+      });
+    } else if (matchReason === "nickname") {
+      matchReasonCounts.nickname += 1;
+      logNextInfo("match-results:player-match", "Matched imported player by guild nickname", {
+        serverId: input.serverId,
+        eventId: input.eventIdForLogs,
+        sourceUrl: input.sourceUrl,
+        mapId: input.mapId,
+        rawPlayerName: player.player,
+        importedPlayerName,
+        normalizedPlayerName,
+        playerId: normalizedPlayerId,
+        matchedUserId: matchedUser.id,
+        matchedUserName: matchedUser.name,
+        matchedNickname: matchedUser.nicknames?.[serverDiscordId],
+      });
+    } else if (matchReason === "created-imported") {
+      matchReasonCounts.createdImported += 1;
     }
 
     if (!isUnknownTeam(player.team.side)) {
@@ -735,6 +831,7 @@ async function preparePlayerImports(input: {
     entries,
     inferredEventSide,
     importedUserIds: [...importedUserIds],
+    matchReasonCounts,
   };
 }
 
@@ -919,6 +1016,7 @@ export async function importServerEventsFromLinks(input: {
     links,
     onProgress: input.onProgress,
   });
+  const lookupContext = await buildServerUserLookups(input.serverId, Boolean(input.importPlayers));
 
   for (const fetchedResult of fetchedResults) {
     const link = fetchedResult.link;
@@ -946,6 +1044,7 @@ export async function importServerEventsFromLinks(input: {
         eventIdForLogs: `import:${mapId}`,
         importPlayers: input.importPlayers,
         clanTag: input.clanTag,
+        lookupContext,
       });
       const inferredEventSide = preparedImport.inferredEventSide;
 
@@ -1003,6 +1102,18 @@ export async function importServerEventsFromLinks(input: {
       importedEvents += 1;
       importedPlayers += preparedImport.entries.length;
       preparedImport.importedUserIds.forEach((userId) => importedUserIds.add(userId));
+      logNextInfo("match-results:event-import", "Imported match event from external scoreboard", {
+        serverId: input.serverId,
+        eventId,
+        sourceUrl,
+        mapId,
+        importedPlayers: preparedImport.entries.length,
+        inferredEventSide,
+        matchedByPlatformId: preparedImport.matchReasonCounts.platformId,
+        matchedByName: preparedImport.matchReasonCounts.name,
+        matchedByNickname: preparedImport.matchReasonCounts.nickname,
+        createdImportedPlayers: preparedImport.matchReasonCounts.createdImported,
+      });
       linkReports.push({
         link,
         eventId,
