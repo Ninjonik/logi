@@ -144,7 +144,7 @@ export async function importDiscordMembersForServer(input: {
   };
 }
 
-export async function mergeUsers(input: {
+export async function mergeManagedUsers(input: {
   primaryUserId: string;
   secondaryUserId: string;
 }) {

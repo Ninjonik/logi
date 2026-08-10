@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { handleIfNotLoggedIn } from "@/lib/auth";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getServerContext } from "@/lib/server-context";
-import { mergeUsers } from "@/lib/server-user-management";
+import { mergeManagedUsers } from "@/lib/server-user-management";
 import { logNextError, logNextInfo } from "@/lib/system-logs";
 
 export async function POST(
@@ -31,7 +31,7 @@ export async function POST(
       return NextResponse.json({ error: "Pick both users." }, { status: 400 });
     }
 
-    const result = await mergeUsers({
+    const result = await mergeManagedUsers({
       primaryUserId,
       secondaryUserId,
     });
