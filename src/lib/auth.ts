@@ -28,8 +28,6 @@ export type SessionClaims = {
   avatar: string;
   discordGuilds?: Array<{
     id: string;
-    name: string;
-    avatar: string;
     canAdmin: boolean;
     botInside: boolean;
   }>;
@@ -81,16 +79,12 @@ export async function verifySessionToken(token: string): Promise<SessionClaims |
 
             const candidate = guild as {
               id?: unknown;
-              name?: unknown;
-              avatar?: unknown;
               canAdmin?: unknown;
               botInside?: unknown;
             };
 
             if (
               typeof candidate.id !== "string" ||
-              typeof candidate.name !== "string" ||
-              typeof candidate.avatar !== "string" ||
               typeof candidate.canAdmin !== "boolean" ||
               typeof candidate.botInside !== "boolean"
             ) {
@@ -99,8 +93,6 @@ export async function verifySessionToken(token: string): Promise<SessionClaims |
 
             return [{
               id: candidate.id,
-              name: candidate.name,
-              avatar: candidate.avatar,
               canAdmin: candidate.canAdmin,
               botInside: candidate.botInside,
             }];
@@ -173,8 +165,8 @@ export const getVisibleGuildsForLoggedInUser = cache(async function getVisibleGu
     const sessionGuilds = (session?.discordGuilds ?? []).map((guild) => ({
       id: guild.id,
       discordId: guild.id,
-      name: guild.name,
-      avatar: guild.avatar,
+      name: "",
+      avatar: "",
       description: undefined,
       eventCategories: [],
       botInside: guild.botInside,
