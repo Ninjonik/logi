@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { PlatformIdList } from "@/components/app/platform-id-display";
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table";
 import { TablePageLayout } from "@/components/app/table-page-layout";
+import { MergeUsersButton } from "@/components/app/merge-users-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -59,6 +60,12 @@ export default async function ServerUsersPage({
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
   const assignmentUserMap = new Map(assignmentUsers.map((user) => [user.discordId, user]));
+  const mergeUserOptions = assignmentUsers
+    .map((user) => ({
+      id: user.id,
+      name: `${user.name} (${user.discordId})${user.platformIds.length ? ` • ${user.platformIds.join(", ")}` : ""}`,
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name));
 
   const paginated = getPaginatedRows({
     rows: assignments,
@@ -85,6 +92,7 @@ export default async function ServerUsersPage({
           description={dictionary.userManagement.description}
           actions={canAdmin ? (
             <div className="flex flex-wrap gap-2">
+              <MergeUsersButton serverId={serverId} dictionary={dictionary} users={mergeUserOptions} />
               <Button asChild className="rounded-xl">
                 <a href={`/${locale}/dashboard/servers/${serverId}/users/create`}>{dictionary.userManagement.addPlayer}</a>
               </Button>

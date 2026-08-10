@@ -12,6 +12,7 @@ const updatePlatformIdsReference = makeFunctionReference<"mutation">("players:up
 const clearPlatformIdsReference = makeFunctionReference<"mutation">("players:clearPlatformIds");
 const upsertImportedProfileReference = makeFunctionReference<"mutation">("players:upsertImportedProfile");
 const linkImportedDiscordProfileReference = makeFunctionReference<"mutation">("players:linkImportedDiscordProfile");
+const mergeUsersReference = makeFunctionReference<"mutation">("players:mergeUsers");
 
 export async function saveServerUserAssignmentCommand(input: {
   assignmentId?: string;
@@ -141,5 +142,22 @@ export async function linkImportedDiscordProfileCommand(input: {
   }) as {
     userId: string;
     merged: boolean;
+  };
+}
+
+export async function mergeUsersCommand(input: {
+  primaryUserId: string;
+  secondaryUserId: string;
+}) {
+  return await fetchMutation(mergeUsersReference, {
+    secret: getInternalAuthSecret(),
+    primaryUserId: input.primaryUserId,
+    secondaryUserId: input.secondaryUserId,
+  }) as {
+    primaryUserId: string;
+    secondaryUserId: string;
+    affectedServerIds: string[];
+    touchedEventIds: string[];
+    touchedRosterIds: string[];
   };
 }
