@@ -23,8 +23,8 @@ export type MembershipCategory = {
   label?: string;
   description?: string;
   supportRoleIds: string[];
-  recruitRoleId?: string;
-  finalRoleId?: string;
+  recruitRoleIds: string[];
+  finalRoleIds: string[];
   modalQuestions: TicketModalQuestion[];
   assignmentType: "member" | "mercenary";
 };
@@ -90,6 +90,7 @@ export type DiscordConfig = {
   timezone: string;
   defaultLanguage: ClanLanguage;
   announcementsChannelId?: string;
+  errorsChannelId?: string;
   calendarChannelId?: string;
   calendarCategories: string[];
   calendarMessageChannelId?: string;

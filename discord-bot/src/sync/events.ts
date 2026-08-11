@@ -2,6 +2,7 @@ import { ChannelType, type Client, type TextChannel } from "discord.js";
 
 import { convex, references } from "../convex";
 import { env } from "../environment";
+import { reportClanDiscordError } from "../error-reporting";
 import { syncForumChannel } from "../forum";
 import { logError, logInfo, logWarn } from "../log";
 import { buildAnnouncementMessage } from "../message-builders";
@@ -85,6 +86,19 @@ export async function syncPayloadEvents(client: Client, queuedEventIds: Set<stri
         eventId: event.id,
         guildId: payload.config.guildId,
         error,
+      });
+      await reportClanDiscordError({
+        client,
+        guildId: payload.config.guildId,
+        error,
+        action: `Sync event "${event.name}"`,
+        location: "Event sync",
+        scope: "event-sync",
+        target: event.name,
+        details: {
+          eventId: event.id,
+          status: event.status,
+        },
       });
     }
   }

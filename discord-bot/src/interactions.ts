@@ -25,6 +25,7 @@ import { revalidateAppData } from "./cache";
 import { convex, references } from "./convex";
 import { client } from "./discord-client";
 import { env } from "./environment";
+import { reportClanDiscordError } from "./error-reporting";
 import { handleEventButtonInteraction } from "./interactions/event-buttons";
 import {
   buildMockPlayerMessage,
@@ -947,13 +948,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
           authorization: server.token.trim().toLowerCase().startsWith("bearer ") ? server.token.trim() : `Bearer ${server.token.trim()}`,
         },
         body: JSON.stringify({
-          player_id: query,
           page: 1,
           page_size: 50,
           flags: [],
           blacklisted: false,
           exact_name_match: false,
-          ignore_accent: false,
+          ignore_accent: true,
           is_watched: false,
           player_name: query,
           country: "",
@@ -1173,6 +1173,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         categoryId: category.id,
         error,
       });
+      await reportClanDiscordError({
+        client,
+        guildId: interaction.guildId!,
+        error,
+        action: "Create a ticket thread",
+        location: "Ticket system",
+        scope: "interaction",
+        target: category.label?.trim() || category.id,
+        details: {
+          user: interaction.user.tag,
+          categoryId: category.id,
+        },
+      });
       await interaction.editReply({
         content: messages.ticket.createThreadFailed,
       }).catch(() => null);
@@ -1192,6 +1205,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
           threadId: thread.id,
           memberId,
           error,
+        });
+        void reportClanDiscordError({
+          client,
+          guildId: interaction.guildId!,
+          error,
+          action: "Add a participant to a ticket thread",
+          location: "Ticket system",
+          scope: "interaction",
+          target: thread.name,
+          details: {
+            threadId: thread.id,
+            memberId,
+          },
         });
         return null;
       });
@@ -1256,6 +1282,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         userId: interaction.user.id,
         error,
       });
+      await reportClanDiscordError({
+        client,
+        guildId: interaction.guildId!,
+        error,
+        action: "Send the first ticket message",
+        location: "Ticket system",
+        scope: "interaction",
+        target: thread.name,
+        details: {
+          threadId: thread.id,
+          user: interaction.user.tag,
+        },
+      });
       return null;
     });
     if (!starter) {
@@ -1285,6 +1324,18 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         guildId: interaction.guildId,
         threadId: thread.id,
         error,
+      });
+      void reportClanDiscordError({
+        client,
+        guildId: interaction.guildId!,
+        error,
+        action: "Rename a ticket thread",
+        location: "Ticket system",
+        scope: "interaction",
+        target: thread.name,
+        details: {
+          threadId: thread.id,
+        },
       });
       return null;
     });
@@ -1395,6 +1446,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         categoryId: category.id,
         error,
       });
+      await reportClanDiscordError({
+        client,
+        guildId: interaction.guildId!,
+        error,
+        action: "Create a membership application thread",
+        location: "Membership applications",
+        scope: "interaction",
+        target: category.label?.trim() || category.id,
+        details: {
+          user: interaction.user.tag,
+          categoryId: category.id,
+        },
+      });
       await rollbackMembershipApplicationSetup({
         guild: interaction.guild!,
         userId: interaction.user.id,
@@ -1422,6 +1486,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
           threadId: thread.id,
           memberId,
           error,
+        });
+        void reportClanDiscordError({
+          client,
+          guildId: interaction.guildId!,
+          error,
+          action: "Add a participant to a membership application thread",
+          location: "Membership applications",
+          scope: "interaction",
+          target: thread.name,
+          details: {
+            threadId: thread.id,
+            memberId,
+          },
         });
         return null;
       });
@@ -1499,6 +1576,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         userId: interaction.user.id,
         error,
       });
+      await reportClanDiscordError({
+        client,
+        guildId: interaction.guildId!,
+        error,
+        action: "Send the first membership application message",
+        location: "Membership applications",
+        scope: "interaction",
+        target: thread.name,
+        details: {
+          threadId: thread.id,
+          user: interaction.user.tag,
+        },
+      });
       return null;
     });
     if (!starter) {
@@ -1528,6 +1618,18 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         guildId: interaction.guildId,
         threadId: thread.id,
         error,
+      });
+      void reportClanDiscordError({
+        client,
+        guildId: interaction.guildId!,
+        error,
+        action: "Rename a membership application thread",
+        location: "Membership applications",
+        scope: "interaction",
+        target: thread.name,
+        details: {
+          threadId: thread.id,
+        },
       });
       return null;
     });
@@ -1789,4 +1891,3 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     });
   }
 }
-

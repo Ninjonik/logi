@@ -54,8 +54,8 @@ test("resolveMembershipRoleIds maps statuses to configured roles", () => {
       categories: [{
         id: "infantry",
         supportRoleIds: [],
-        recruitRoleId: "recruit",
-        finalRoleId: "member",
+        recruitRoleIds: ["recruit", "recruit-2"],
+        finalRoleIds: ["member", "member-2"],
         modalQuestions: [],
         assignmentType: "member" as const,
       }],
@@ -63,8 +63,8 @@ test("resolveMembershipRoleIds maps statuses to configured roles", () => {
   };
 
   assert.deepEqual(resolveMembershipRoleIds(config, "member", "pending", "infantry"), []);
-  assert.deepEqual(resolveMembershipRoleIds(config, "member", "recruit", "infantry"), ["clan", "recruit"]);
-  assert.deepEqual(resolveMembershipRoleIds(config, "member", "active", "infantry"), ["clan", "member"]);
+  assert.deepEqual(resolveMembershipRoleIds(config, "member", "recruit", "infantry"), ["clan", "recruit", "recruit-2"]);
+  assert.deepEqual(resolveMembershipRoleIds(config, "member", "active", "infantry"), ["clan", "member", "member-2"]);
 });
 
 test("resolveMembershipRoleIds tolerates missing category roles", () => {

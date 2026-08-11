@@ -14,6 +14,7 @@ import { buildDiscordMessageUrl } from "../../../src/lib/discord";
 import { revalidateAppData } from "../cache";
 import { convex, references } from "../convex";
 import { env } from "../environment";
+import { reportClanDiscordError } from "../error-reporting";
 import { logWarn } from "../log";
 import type { EventInteractionContext } from "../types";
 import { resolveMembershipRoleIds } from "./rules";
@@ -157,6 +158,17 @@ async function sendPlatformIdDmWithCopy(
       userId: interaction.user.id,
       error,
     });
+    if (interaction.guildId) {
+      void reportClanDiscordError({
+        client: interaction.client,
+        guildId: interaction.guildId,
+        error,
+        action: "Send a platform link DM",
+        location: "Membership and account linking",
+        scope: "interaction",
+        target: `<@${interaction.user.id}>`,
+      });
+    }
     return null;
   }
 }
@@ -193,6 +205,16 @@ export async function syncMembershipRoles(
           roleId,
           error,
         });
+        void reportClanDiscordError({
+          client: guild.client,
+          guildId: guild.id,
+          error,
+          action: "Add a membership role to a user",
+          location: "Member roles",
+          scope: "interaction",
+          target: `<@${userId}>`,
+          details: { roleId },
+        });
         return null;
       });
     }
@@ -207,6 +229,16 @@ export async function syncMembershipRoles(
           roleId,
           error,
         });
+        void reportClanDiscordError({
+          client: guild.client,
+          guildId: guild.id,
+          error,
+          action: "Remove a membership role from a user",
+          location: "Member roles",
+          scope: "interaction",
+          target: `<@${userId}>`,
+          details: { roleId },
+        });
         return null;
       });
     }
@@ -219,6 +251,19 @@ export async function cleanupThread(thread: ThreadChannel, reason: string) {
       threadId: thread.id,
       reason,
       error,
+    });
+    void reportClanDiscordError({
+      client: thread.client,
+      guildId: thread.guildId,
+      error,
+      action: "Delete a thread during cleanup",
+      location: "Thread cleanup",
+      scope: "interaction",
+      target: thread.name,
+      details: {
+        threadId: thread.id,
+        reason,
+      },
     });
     await thread.setLocked(true, reason).catch(() => null);
     await thread.setArchived(true, reason).catch(() => null);

@@ -14,6 +14,7 @@ import {
 } from "../../src/application/discord-sync/scheduled-event-content";
 import { deriveScheduledEventLifecycle } from "../../src/domain/discord-sync/rules";
 
+import { reportClanDiscordError } from "./error-reporting";
 import { logWarn } from "./log";
 import type { ClanLanguage, EventRecord } from "./types";
 
@@ -76,6 +77,19 @@ export async function syncScheduledDiscordEvent(input: {
         channelId: eventChannel.id,
         error,
       });
+      void reportClanDiscordError({
+        client: guild.client,
+        guildId: guild.id,
+        error,
+        action: `Create the scheduled event for "${event.name}"`,
+        location: "Scheduled events",
+        scope: "scheduled-events",
+        target: event.name,
+        details: {
+          eventId: event.id,
+          channelId: eventChannel.id,
+        },
+      });
       return null;
     });
     if (!scheduledEvent) {
@@ -100,6 +114,19 @@ export async function syncScheduledDiscordEvent(input: {
         eventId: event.id,
         scheduledEventId: scheduledEventId ?? scheduledEvent?.id,
         error,
+      });
+      void reportClanDiscordError({
+        client: guild.client,
+        guildId: guild.id,
+        error,
+        action: `Update the scheduled event for "${event.name}"`,
+        location: "Scheduled events",
+        scope: "scheduled-events",
+        target: event.name,
+        details: {
+          eventId: event.id,
+          scheduledEventId: scheduledEventId ?? scheduledEvent?.id,
+        },
       });
       return scheduledEvent;
     });
@@ -133,6 +160,20 @@ export async function syncScheduledDiscordEvent(input: {
           desiredLifecycle,
           error,
         });
+        void reportClanDiscordError({
+          client: guild.client,
+          guildId: guild.id,
+          error,
+          action: `Change scheduled event status for "${event.name}"`,
+          location: "Scheduled events",
+          scope: "scheduled-events",
+          target: event.name,
+          details: {
+            eventId: event.id,
+            scheduledEventId: scheduledEvent?.id,
+            desiredLifecycle,
+          },
+        });
         return scheduledEvent;
       });
     }
@@ -161,7 +202,21 @@ export async function cancelScheduledDiscordEvent(guild: Guild, scheduledEventId
     scheduledEvent.status !== GuildScheduledEventStatus.Completed &&
     scheduledEvent.status !== GuildScheduledEventStatus.Canceled
   ) {
-    await scheduledEvent.edit({ status: GuildScheduledEventStatus.Canceled }).catch(() => null);
+    await scheduledEvent.edit({ status: GuildScheduledEventStatus.Canceled }).catch((error) => {
+      void reportClanDiscordError({
+        client: guild.client,
+        guildId: guild.id,
+        error,
+        action: "Cancel a scheduled event",
+        location: "Scheduled events",
+        scope: "scheduled-events",
+        target: scheduledEvent.name,
+        details: {
+          scheduledEventId,
+        },
+      });
+      return null;
+    });
   }
 
   return true;

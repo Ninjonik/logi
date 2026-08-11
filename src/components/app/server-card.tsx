@@ -47,7 +47,7 @@ export function ServerCard({
         <div className="rounded-xl border border-border/60 p-3">
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
             <ShieldCheck className="size-3.5" />
-            {dictionary.common.adminOnly}
+            {dictionary.common.admins}
           </div>
           <div className="mt-2 text-lg font-semibold">{guild.adminIds.length}</div>
         </div>

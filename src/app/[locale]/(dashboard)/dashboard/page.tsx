@@ -21,7 +21,7 @@ function requiresBotRoleHierarchySetup(
   const hasGroupRoleSync = context.groups.some((group) => Boolean(group.discordRoleId));
   const hasMembershipRoleSync =
     Boolean(context.discordConfig?.clanRoleId) ||
-    Boolean(context.discordConfig?.membershipSettings?.categories.some((category) => category.recruitRoleId || category.finalRoleId));
+    Boolean(context.discordConfig?.membershipSettings?.categories.some((category) => category.recruitRoleIds.length > 0 || category.finalRoleIds.length > 0));
 
   return hasGroupRoleSync || hasMembershipRoleSync;
 }

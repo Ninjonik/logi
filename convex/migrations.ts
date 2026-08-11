@@ -124,3 +124,70 @@ export const migrateEventResults = mutation({
     };
   },
 });
+
+export const migrateMembershipCategoryRoleArrays = mutation({
+  args: {
+    secret: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const configs = await ctx.db.query("discordConfigs").collect();
+    let updated = 0;
+
+    for (const config of configs) {
+      if (!config.membershipSettings) {
+        continue;
+      }
+
+      let changed = false;
+      const categories = config.membershipSettings.categories.map((category) => {
+        const legacyCategory = category as typeof category & {
+          recruitRoleId?: string;
+          finalRoleId?: string;
+        };
+
+        const recruitRoleIds = Array.isArray(category.recruitRoleIds)
+          ? category.recruitRoleIds
+          : legacyCategory.recruitRoleId
+            ? [legacyCategory.recruitRoleId]
+            : [];
+        const finalRoleIds = Array.isArray(category.finalRoleIds)
+          ? category.finalRoleIds
+          : legacyCategory.finalRoleId
+            ? [legacyCategory.finalRoleId]
+            : [];
+
+        if (!Array.isArray(category.recruitRoleIds) || !Array.isArray(category.finalRoleIds) || legacyCategory.recruitRoleId || legacyCategory.finalRoleId) {
+          changed = true;
+        }
+
+        const { recruitRoleId: _legacyRecruitRoleId, finalRoleId: _legacyFinalRoleId, ...rest } = legacyCategory;
+
+        return {
+          ...rest,
+          recruitRoleIds,
+          finalRoleIds,
+        };
+      });
+
+      if (!changed) {
+        continue;
+      }
+
+      await ctx.db.patch(config._id, {
+        membershipSettings: {
+          ...config.membershipSettings,
+          categories,
+        },
+        updatedAt: new Date().toISOString(),
+      });
+      updated += 1;
+    }
+
+    return {
+      scanned: configs.length,
+      updated,
+    };
+  },
+});

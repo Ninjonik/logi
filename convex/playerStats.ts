@@ -71,6 +71,41 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
   };
 }
 
+function isUnknownPlayerName(value: string | undefined) {
+  const normalized = value?.trim().toLowerCase();
+  return !normalized || normalized === "unknown";
+}
+
+function shouldPreferMatch(
+  candidate: {
+    playerName: string;
+    importedAt: string;
+    endedAt?: string;
+  },
+  existing: {
+    playerName: string;
+    importedAt: string;
+    endedAt?: string;
+  },
+) {
+  const candidateUnknown = isUnknownPlayerName(candidate.playerName);
+  const existingUnknown = isUnknownPlayerName(existing.playerName);
+
+  if (candidateUnknown !== existingUnknown) {
+    return !candidateUnknown;
+  }
+
+  const candidateEndedAt = new Date(candidate.endedAt ?? candidate.importedAt).getTime();
+  const existingEndedAt = new Date(existing.endedAt ?? existing.importedAt).getTime();
+  if (candidateEndedAt !== existingEndedAt) {
+    return candidateEndedAt > existingEndedAt;
+  }
+
+  const candidateImportedAt = new Date(candidate.importedAt).getTime();
+  const existingImportedAt = new Date(existing.importedAt).getTime();
+  return candidateImportedAt > existingImportedAt;
+}
+
 export const upsertMatches = mutation({
   args: {
     secret: v.string(),
@@ -184,5 +219,121 @@ export const listUserIdsForEvents = query({
     }
 
     return [...userIds];
+  },
+});
+
+export const dedupeMatchesForEvents = mutation({
+  args: {
+    secret: v.string(),
+    eventIds: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const targetEventIds = new Set(args.eventIds);
+    if (targetEventIds.size === 0) {
+      return {
+        affectedUserIds: [] as string[],
+        duplicateMatchesRemoved: 0,
+        docsDeleted: 0,
+        docsPatched: 0,
+      };
+    }
+
+    const docs = await ctx.db.query("playerStats").collect();
+    const winners = new Map<string, { docId: string; match: typeof docs[number]["matches"][string] }>();
+    const affectedUserIds = new Set<string>();
+
+    for (const doc of docs) {
+      if (!doc.userId) {
+        continue;
+      }
+
+      for (const [eventId, match] of Object.entries(doc.matches)) {
+        if (!targetEventIds.has(eventId)) {
+          continue;
+        }
+
+        const key = `${doc.userId}::${eventId}`;
+        const existing = winners.get(key);
+        if (!existing || shouldPreferMatch(match, existing.match)) {
+          winners.set(key, { docId: String(doc._id), match });
+        }
+      }
+    }
+
+    let duplicateMatchesRemoved = 0;
+    let docsDeleted = 0;
+    let docsPatched = 0;
+
+    for (const doc of docs) {
+      if (!doc.userId) {
+        continue;
+      }
+
+      let changed = false;
+      const nextMatches = { ...doc.matches };
+
+      for (const eventId of Object.keys(doc.matches)) {
+        if (!targetEventIds.has(eventId)) {
+          continue;
+        }
+
+        const winner = winners.get(`${doc.userId}::${eventId}`);
+        if (!winner || winner.docId === String(doc._id)) {
+          continue;
+        }
+
+        delete nextMatches[eventId];
+        duplicateMatchesRemoved += 1;
+        changed = true;
+        affectedUserIds.add(doc.userId);
+      }
+
+      if (!changed) {
+        continue;
+      }
+
+      if (Object.keys(nextMatches).length === 0) {
+        await ctx.db.delete(doc._id);
+        docsDeleted += 1;
+      } else {
+        await ctx.db.patch(doc._id, {
+          matches: nextMatches,
+          updatedAt: new Date().toISOString(),
+        });
+        docsPatched += 1;
+      }
+    }
+
+    for (const userId of affectedUserIds) {
+      const relatedStats = await ctx.db
+        .query("playerStats")
+        .withIndex("userId", (q) => q.eq("userId", userId))
+        .collect();
+
+      const matches = relatedStats.flatMap((doc) => Object.values(doc.matches));
+      const performance = buildPerformanceSummary(matches);
+      const user = await ctx.db
+        .query("users")
+        .withIndex("id", (q) => q.eq("id", userId))
+        .unique();
+
+      if (!user) {
+        continue;
+      }
+
+      await ctx.db.patch(user._id, {
+        performance,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    return {
+      affectedUserIds: [...affectedUserIds],
+      duplicateMatchesRemoved,
+      docsDeleted,
+      docsPatched,
+    };
   },
 });

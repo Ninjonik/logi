@@ -10,13 +10,13 @@ import { EmojiPickerInput } from "@/components/app/emoji-picker-input";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
 import { AvatarPicker } from "@/components/app/avatar-picker";
 import { ConfigNotice } from "@/components/app/config-notice";
+import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { DiscordConfig, MembershipCategory, MembershipSettings, TicketModalQuestion } from "@/types/domain";
 
@@ -49,8 +49,8 @@ function buildDefaultCategory(): MembershipCategory {
     label: "",
     description: "",
     supportRoleIds: [],
-    recruitRoleId: "",
-    finalRoleId: "",
+    recruitRoleIds: [],
+    finalRoleIds: [],
     modalQuestions: [],
     assignmentType: "member",
   };
@@ -75,8 +75,8 @@ function buildDefaultSettings(dictionary: Dictionary, config?: DiscordConfig | n
         emoji: category.emoji ?? "",
         label: category.label ?? "",
         description: category.description ?? "",
-        recruitRoleId: category.recruitRoleId ?? "",
-        finalRoleId: category.finalRoleId ?? "",
+        recruitRoleIds: [...category.recruitRoleIds],
+        finalRoleIds: [...category.finalRoleIds],
         supportRoleIds: [...category.supportRoleIds],
         modalQuestions: category.modalQuestions.map((question) => ({
           ...question,
@@ -155,9 +155,9 @@ export function MembershipSettingsForm({
   if (!settings.applicationParentChannelId) missingMembershipParts.push(dictionary.membershipSettings.parentChannel);
   if (!settings.categories.length) missingMembershipParts.push(dictionary.membershipSettings.categoriesTitle);
   const memberCategoriesMissingRecruitRole = settings.categories.filter(
-    (category) => category.assignmentType === "member" && !category.recruitRoleId,
+    (category) => category.assignmentType === "member" && category.recruitRoleIds.length === 0,
   ).length;
-  const categoriesMissingFinalRole = settings.categories.filter((category) => !category.finalRoleId).length;
+  const categoriesMissingFinalRole = settings.categories.filter((category) => category.finalRoleIds.length === 0).length;
 
   function patchSettings(patch: Partial<MembershipSettings>) {
     setSettings((current) => ({ ...current, ...patch }));
@@ -195,8 +195,8 @@ export function MembershipSettingsForm({
         emoji: category.emoji?.trim() || undefined,
         label: category.label?.trim() || undefined,
         description: category.description?.trim() || undefined,
-        recruitRoleId: category.recruitRoleId?.trim() || undefined,
-        finalRoleId: category.finalRoleId?.trim() || undefined,
+        recruitRoleIds: category.recruitRoleIds.map((roleId) => roleId.trim()).filter(Boolean),
+        finalRoleIds: category.finalRoleIds.map((roleId) => roleId.trim()).filter(Boolean),
         modalQuestions: category.modalQuestions.map((question) => ({
           ...question,
           placeholder: question.placeholder?.trim() || undefined,
@@ -404,7 +404,7 @@ export function MembershipSettingsForm({
         </div>
         <div className="space-y-2">
           <Label>{dictionary.membershipSettings.panelDescription}</Label>
-          <Textarea value={settings.panelDescription} onChange={(event) => patchSettings({ panelDescription: event.target.value })} maxLength={4096} className="min-h-32 rounded-xl" />
+          <DiscordMarkdownTextarea value={settings.panelDescription} onChange={(value) => patchSettings({ panelDescription: value })} maxLength={4096} className="min-h-32 rounded-xl" rows={8} />
         </div>
         <div className="space-y-2">
           <Label>{dictionary.membershipSettings.image}</Label>
@@ -474,25 +474,25 @@ export function MembershipSettingsForm({
                 </div>
                 <div className="space-y-2">
                   <Label>{dictionary.ticketSettings.categoryDescription}</Label>
-                  <Input value={category.description} onChange={(event) => patchCategory(category.id, { description: event.target.value })} className="rounded-xl" />
+                  <DiscordMarkdownTextarea value={category.description} onChange={(value) => patchCategory(category.id, { description: value })} className="min-h-20 rounded-xl" maxLength={240} rows={4} />
                 </div>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{dictionary.membershipSettings.recruitRole}</Label>
-                  <DiscordEntitySelect
-                    value={category.recruitRoleId}
-                    onChange={(value) => patchCategory(category.id, { recruitRoleId: value ?? "" })}
+                  <DiscordMultiEntitySelect
+                    value={category.recruitRoleIds}
+                    onChange={(value) => patchCategory(category.id, { recruitRoleIds: value })}
                     options={roles}
                     placeholder={dictionary.membershipSettings.recruitRolePlaceholder}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>{dictionary.membershipSettings.finalRole}</Label>
-                  <DiscordEntitySelect
-                    value={category.finalRoleId}
-                    onChange={(value) => patchCategory(category.id, { finalRoleId: value ?? "" })}
+                  <DiscordMultiEntitySelect
+                    value={category.finalRoleIds}
+                    onChange={(value) => patchCategory(category.id, { finalRoleIds: value })}
                     options={roles}
                     placeholder={dictionary.membershipSettings.finalRolePlaceholder}
                   />

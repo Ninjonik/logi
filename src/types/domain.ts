@@ -127,8 +127,8 @@ export type MembershipCategory = {
   label?: string;
   description?: string;
   supportRoleIds: string[];
-  recruitRoleId?: string;
-  finalRoleId?: string;
+  recruitRoleIds: string[];
+  finalRoleIds: string[];
   modalQuestions: TicketModalQuestion[];
   assignmentType: "member" | "mercenary";
 };
@@ -174,6 +174,7 @@ export type DiscordConfig = {
   timezone: string;
   defaultLanguage: "en" | "cs";
   announcementsChannelId?: string;
+  errorsChannelId?: string;
   calendarChannelId?: string;
   calendarCategories: MatchTypeCategory[];
   calendarMessageChannelId?: string;

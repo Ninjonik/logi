@@ -2,6 +2,7 @@ import { ChannelType, EmbedBuilder, ForumChannel } from "discord.js";
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 
+import { reportClanDiscordError } from "./error-reporting";
 import { buildForumInfoEmbed, buildForumThreadName } from "./message-builders";
 import { env } from "./environment";
 import { logWarn } from "./log";
@@ -39,6 +40,19 @@ export async function syncForumChannel(input: {
         forumChannelId: forumChannelId ?? existingForumChannel.id,
         error,
       });
+      void reportClanDiscordError({
+        client: guild.client,
+        guildId: guild.id,
+        error,
+        action: `Update the forum channel for "${event.name}"`,
+        location: "Forum channels",
+        scope: "forum",
+        target: forumChannel?.name ?? forumChannelId ?? event.name,
+        details: {
+          eventId: event.id,
+          forumCategoryId,
+        },
+      });
       return null;
     });
   } else {
@@ -51,6 +65,19 @@ export async function syncForumChannel(input: {
         guildId: guild.id,
         forumCategoryId,
         error,
+      });
+      void reportClanDiscordError({
+        client: guild.client,
+        guildId: guild.id,
+        error,
+        action: `Create a forum channel for "${event.name}"`,
+        location: "Forum channels",
+        scope: "forum",
+        target: event.name,
+        details: {
+          eventId: event.id,
+          forumCategoryId,
+        },
       });
       return null;
     })) as ForumChannel | null;
@@ -95,6 +122,20 @@ export async function syncForumChannel(input: {
           threadId: infoPost.id,
           error,
         });
+        void reportClanDiscordError({
+          client: guild.client,
+          guildId: guild.id,
+          error,
+          action: `Update the forum info post for "${event.name}"`,
+          location: "Forum channels",
+          scope: "forum",
+          target: infoPost.name,
+          details: {
+            eventId: event.id,
+            forumChannelId: forumChannel.id,
+            threadId: infoPost.id,
+          },
+        });
         return null;
       });
       infoMessageId = starter.id;
@@ -108,6 +149,19 @@ export async function syncForumChannel(input: {
         guildId: guild.id,
         forumChannelId: forumChannel.id,
         error,
+      });
+      void reportClanDiscordError({
+        client: guild.client,
+        guildId: guild.id,
+        error,
+        action: `Create the forum info post for "${event.name}"`,
+        location: "Forum channels",
+        scope: "forum",
+        target: forumChannel.name,
+        details: {
+          eventId: event.id,
+          forumChannelId: forumChannel.id,
+        },
       });
       return null;
     });

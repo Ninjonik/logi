@@ -3,6 +3,7 @@ import { ChannelType, type Client, type TextChannel } from "discord.js";
 import { revalidateAppData } from "../cache";
 import { convex, references } from "../convex";
 import { env } from "../environment";
+import { reportClanDiscordError } from "../error-reporting";
 import { logInfo, logWarn } from "../log";
 import {
   buildCalendarPanelEmbed,
@@ -57,9 +58,38 @@ export async function syncTicketPanel(client: Client, payload: SyncPayload) {
       guildId: payload.config.guildId,
       messageId: currentMessage.id,
     });
-    await currentMessage.edit({ embeds: [embed], components });
+    await currentMessage.edit({ embeds: [embed], components }).catch(async (error) => {
+      await reportClanDiscordError({
+        client,
+        guildId: payload.config.guildId,
+        error,
+        action: "Update the ticket panel message",
+        location: "Ticket panel",
+        scope: "ticket-panel",
+        target: textChannel.name,
+        details: {
+          channelId: textChannel.id,
+          messageId: currentMessage.id,
+        },
+      });
+      throw error;
+    });
   } else {
-    const created = await textChannel.send({ embeds: [embed], components });
+    const created = await textChannel.send({ embeds: [embed], components }).catch(async (error) => {
+      await reportClanDiscordError({
+        client,
+        guildId: payload.config.guildId,
+        error,
+        action: "Create the ticket panel message",
+        location: "Ticket panel",
+        scope: "ticket-panel",
+        target: textChannel.name,
+        details: {
+          channelId: textChannel.id,
+        },
+      });
+      throw error;
+    });
     logInfo("ticket-panel", "Created ticket panel message", {
       guildId: payload.config.guildId,
       channelId: textChannel.id,
@@ -129,9 +159,38 @@ export async function syncMembershipPanel(client: Client, payload: SyncPayload) 
       guildId: payload.config.guildId,
       messageId: currentMessage.id,
     });
-    await currentMessage.edit({ embeds: [embed], components });
+    await currentMessage.edit({ embeds: [embed], components }).catch(async (error) => {
+      await reportClanDiscordError({
+        client,
+        guildId: payload.config.guildId,
+        error,
+        action: "Update the membership panel message",
+        location: "Membership panel",
+        scope: "membership-panel",
+        target: textChannel.name,
+        details: {
+          channelId: textChannel.id,
+          messageId: currentMessage.id,
+        },
+      });
+      throw error;
+    });
   } else {
-    const created = await textChannel.send({ embeds: [embed], components });
+    const created = await textChannel.send({ embeds: [embed], components }).catch(async (error) => {
+      await reportClanDiscordError({
+        client,
+        guildId: payload.config.guildId,
+        error,
+        action: "Create the membership panel message",
+        location: "Membership panel",
+        scope: "membership-panel",
+        target: textChannel.name,
+        details: {
+          channelId: textChannel.id,
+        },
+      });
+      throw error;
+    });
     logInfo("membership-panel", "Created membership panel message", {
       guildId: payload.config.guildId,
       channelId: textChannel.id,
@@ -173,7 +232,22 @@ export async function syncCalendarPanel(client: Client, payload: SyncPayload) {
     if (storedChannelId && storedMessageId) {
       const previousChannel = await guild.channels.fetch(storedChannelId).catch(() => null);
       if (previousChannel?.isTextBased() && previousChannel.type === ChannelType.GuildText) {
-        await (previousChannel as TextChannel).messages.fetch(storedMessageId).then((message) => message.delete()).catch(() => null);
+        await (previousChannel as TextChannel).messages.fetch(storedMessageId).then((message) => message.delete()).catch((error) => {
+          void reportClanDiscordError({
+            client,
+            guildId: payload.config.guildId,
+            error,
+            action: "Delete the old calendar panel message",
+            location: "Calendar panel",
+            scope: "calendar-panel",
+            target: previousChannel.name,
+            details: {
+              channelId: previousChannel.id,
+              messageId: storedMessageId,
+            },
+          });
+          return null;
+        });
       }
       await convex.mutation(references.updateCalendarPanelState, {
         secret: env.internalSecret,
@@ -207,7 +281,22 @@ export async function syncCalendarPanel(client: Client, payload: SyncPayload) {
   if (storedChannelId && storedChannelId !== textChannel.id && storedMessageId) {
     const previousChannel = await guild.channels.fetch(storedChannelId).catch(() => null);
     if (previousChannel?.isTextBased() && previousChannel.type === ChannelType.GuildText) {
-      await (previousChannel as TextChannel).messages.fetch(storedMessageId).then((message) => message.delete()).catch(() => null);
+      await (previousChannel as TextChannel).messages.fetch(storedMessageId).then((message) => message.delete()).catch((error) => {
+        void reportClanDiscordError({
+          client,
+          guildId: payload.config.guildId,
+          error,
+          action: "Delete the previous calendar panel message",
+          location: "Calendar panel",
+          scope: "calendar-panel",
+          target: previousChannel.name,
+          details: {
+            channelId: previousChannel.id,
+            messageId: storedMessageId,
+          },
+        });
+        return null;
+      });
     }
   }
 
@@ -223,13 +312,42 @@ export async function syncCalendarPanel(client: Client, payload: SyncPayload) {
 
   let calendarMessageId = storedMessageId;
   if (currentMessage) {
-    await currentMessage.edit({ embeds: [embed], components: [] });
+    await currentMessage.edit({ embeds: [embed], components: [] }).catch(async (error) => {
+      await reportClanDiscordError({
+        client,
+        guildId: payload.config.guildId,
+        error,
+        action: "Update the calendar panel message",
+        location: "Calendar panel",
+        scope: "calendar-panel",
+        target: textChannel.name,
+        details: {
+          channelId: textChannel.id,
+          messageId: currentMessage.id,
+        },
+      });
+      throw error;
+    });
     logInfo("calendar-panel", "Updated existing calendar panel message", {
       guildId: payload.config.guildId,
       messageId: currentMessage.id,
     });
   } else {
-    const created = await textChannel.send({ embeds: [embed] });
+    const created = await textChannel.send({ embeds: [embed] }).catch(async (error) => {
+      await reportClanDiscordError({
+        client,
+        guildId: payload.config.guildId,
+        error,
+        action: "Create the calendar panel message",
+        location: "Calendar panel",
+        scope: "calendar-panel",
+        target: textChannel.name,
+        details: {
+          channelId: textChannel.id,
+        },
+      });
+      throw error;
+    });
     calendarMessageId = created.id;
     logInfo("calendar-panel", "Created calendar panel message", {
       guildId: payload.config.guildId,
