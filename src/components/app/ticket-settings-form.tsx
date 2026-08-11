@@ -10,13 +10,13 @@ import { EmojiPickerInput } from "@/components/app/emoji-picker-input";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
 import { AvatarPicker } from "@/components/app/avatar-picker";
 import { ConfigNotice } from "@/components/app/config-notice";
+import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { DiscordConfig, TicketCategory, TicketModalQuestion, TicketSettings } from "@/types/domain";
 
@@ -280,9 +280,9 @@ export function TicketSettingsForm({
 
         <div className="space-y-2">
           <Label>{dictionary.ticketSettings.panelDescription}</Label>
-          <Textarea
+          <DiscordMarkdownTextarea
             value={ticketSettings.panelDescription}
-            onChange={(event) => patchTicketSettings({ panelDescription: event.target.value })}
+            onChange={(value) => patchTicketSettings({ panelDescription: value })}
             maxLength={4096}
             rows={4}
             placeholder={dictionary.ticketSettings.panelDescriptionPlaceholder}
@@ -363,9 +363,9 @@ export function TicketSettingsForm({
 
               <div className="space-y-2">
                 <Label>{dictionary.ticketSettings.categoryDescription}</Label>
-                <Textarea
+                <DiscordMarkdownTextarea
                   value={category.description ?? ""}
-                  onChange={(event) => patchTicketCategory(category.id, { description: event.target.value })}
+                  onChange={(value) => patchTicketCategory(category.id, { description: value })}
                   placeholder={dictionary.ticketSettings.categoryDescriptionPlaceholder}
                   maxLength={240}
                   rows={3}

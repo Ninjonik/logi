@@ -174,6 +174,53 @@ async function rebuildUserPerformance(ctx: MutationCtx, userId: string) {
   });
 }
 
+async function mergePlayerStatsIntoUser(ctx: MutationCtx, input: {
+  sourceUserId: string;
+  targetUserId: string;
+  now: string;
+}) {
+  const sourceStats = await ctx.db
+    .query("playerStats")
+    .withIndex("userId", (q) => q.eq("userId", input.sourceUserId))
+    .collect();
+  const targetStatsById = new Map(
+    (await ctx.db.query("playerStats").withIndex("userId", (q) => q.eq("userId", input.targetUserId)).collect())
+      .map((stat) => [stat.id, stat]),
+  );
+
+  for (const stat of sourceStats) {
+    const rewrittenMatches = Object.fromEntries(
+      Object.entries(stat.matches).map(([eventId, match]) => [
+        eventId,
+        {
+          ...match,
+          userId: input.targetUserId,
+        },
+      ]),
+    );
+    const existingTargetStat = targetStatsById.get(stat.id);
+
+    if (existingTargetStat) {
+      await ctx.db.patch(existingTargetStat._id, {
+        latestName: existingTargetStat.latestName ?? stat.latestName,
+        matches: {
+          ...rewrittenMatches,
+          ...existingTargetStat.matches,
+        },
+        updatedAt: input.now,
+      });
+      await ctx.db.delete(stat._id);
+      continue;
+    }
+
+    await ctx.db.patch(stat._id, {
+      userId: input.targetUserId,
+      matches: rewrittenMatches,
+      updatedAt: input.now,
+    });
+  }
+}
+
 function toPlayer(user: {
   _id: unknown;
   discordId?: string;
@@ -615,28 +662,11 @@ export const linkImportedDiscordProfile = mutation({
         updatedAt: now,
       });
 
-      const importedStats = await ctx.db
-        .query("playerStats")
-        .withIndex("userId", (q) => q.eq("userId", getUserStableId(importedUser)))
-        .collect();
-
-      for (const stat of importedStats) {
-        const matches = Object.fromEntries(
-          Object.entries(stat.matches).map(([eventId, match]) => [
-            eventId,
-            {
-              ...match,
-              userId: getUserStableId(existingDiscordUser),
-            },
-          ]),
-        );
-
-        await ctx.db.patch(stat._id, {
-          userId: getUserStableId(existingDiscordUser),
-          matches,
-          updatedAt: now,
-        });
-      }
+      await mergePlayerStatsIntoUser(ctx as never, {
+        sourceUserId: getUserStableId(importedUser),
+        targetUserId: getUserStableId(existingDiscordUser),
+        now,
+      });
 
       const relatedStats = await ctx.db
         .query("playerStats")
@@ -762,40 +792,12 @@ export const mergeUsers = mutation({
       .query("playerStats")
       .withIndex("userId", (q) => q.eq("userId", secondaryStableId))
       .collect();
-    const primaryStatsById = new Map(
-      (await ctx.db.query("playerStats").withIndex("userId", (q) => q.eq("userId", primaryStableId)).collect())
-        .map((stat) => [stat.id, stat]),
-    );
-
-    for (const stat of secondaryStats) {
-      const rewrittenMatches = Object.fromEntries(
-        Object.entries(stat.matches).map(([eventId, match]) => [
-          eventId,
-          {
-            ...match,
-            userId: primaryStableId,
-          },
-        ]),
-      );
-      const existingPrimaryStat = primaryStatsById.get(stat.id);
-
-      if (existingPrimaryStat) {
-        await ctx.db.patch(existingPrimaryStat._id, {
-          latestName: existingPrimaryStat.latestName ?? stat.latestName,
-          matches: {
-            ...rewrittenMatches,
-            ...existingPrimaryStat.matches,
-          },
-          updatedAt: now,
-        });
-        await ctx.db.delete(stat._id);
-      } else {
-        await ctx.db.patch(stat._id, {
-          userId: primaryStableId,
-          matches: rewrittenMatches,
-          updatedAt: now,
-        });
-      }
+    if (secondaryStats.length > 0) {
+      await mergePlayerStatsIntoUser(ctx as never, {
+        sourceUserId: secondaryStableId,
+        targetUserId: primaryStableId,
+        now,
+      });
     }
 
     const events = await ctx.db.query("events").collect();

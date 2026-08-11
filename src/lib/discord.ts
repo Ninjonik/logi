@@ -432,11 +432,15 @@ function getMembershipRoleIds(
   if (config.clanRoleId) {
     roleIds.add(config.clanRoleId);
   }
-  if (status === "recruit" && category?.recruitRoleId) {
-    roleIds.add(category.recruitRoleId);
+  if (status === "recruit") {
+    for (const roleId of category?.recruitRoleIds ?? []) {
+      roleIds.add(roleId);
+    }
   }
-  if (status === "active" && category?.finalRoleId) {
-    roleIds.add(category.finalRoleId);
+  if (status === "active") {
+    for (const roleId of category?.finalRoleIds ?? []) {
+      roleIds.add(roleId);
+    }
   }
 
   return [...roleIds];

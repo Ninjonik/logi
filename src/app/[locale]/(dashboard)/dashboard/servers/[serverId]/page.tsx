@@ -15,6 +15,7 @@ import { getEventCategoryPresentation } from "@/lib/event-categories";
 import { formatDateKey, formatTime } from "@/lib/format";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
+import { getLoggedInUser } from "@/lib/auth"
 
 export async function generateMetadata({
   params,
@@ -80,6 +81,8 @@ export default async function ServerOverviewPage({
     discordConfig,
   } = context;
 
+  const user = await getLoggedInUser();
+
   const publishedRosters = rosters.filter((roster) => roster.published);
   const greeting = getGreeting(dictionary, discordConfig?.timezone);
   const weekDays = getWeekDays(discordConfig?.timezone);
@@ -95,7 +98,7 @@ export default async function ServerOverviewPage({
   return (
     <>
       <PageHeader
-        title={`${greeting}, ${server.name}`}
+        title={`${greeting}, ${user?.name}`}
         description={server.description || dictionary.dashboard.description}
       />
       <div className="space-y-6 px-4 lg:px-6">
@@ -106,7 +109,7 @@ export default async function ServerOverviewPage({
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div>
-                <div className="text-sm uppercase tracking-[0.22em] text-muted-foreground">{greeting}</div>
+                <div className="text-sm uppercase tracking-[0.22em] text-muted-foreground">{greeting}, {user?.name}</div>
                 <div className="mt-2 text-3xl font-semibold tracking-tight">{server.name}</div>
                 <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
                   {nextEvent

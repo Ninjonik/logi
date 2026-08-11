@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { AvatarPicker } from "@/components/app/avatar-picker";
 import { ConfigNotice } from "@/components/app/config-notice";
 import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
+import { DiscordMarkdownText, DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
 import { EmojiValue } from "@/components/app/emoji-value";
 import { HllMapSelector } from "@/components/app/hll-map-selector";
@@ -23,7 +24,6 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { supportedTimezones } from "@/lib/discord-timezones";
 import { getEventCategoryLabel } from "@/lib/event-categories";
@@ -739,7 +739,20 @@ export function EventFormPanel({
             </div>
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.description}  />
-              {canEdit ? <Textarea {...form.register("description")} className="min-h-24 rounded-xl" /> : <ReadOnlyValue value={form.watch("description")} emptyLabel={dictionary.shared.notSet} className="min-h-24 whitespace-pre-wrap" />}
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <DiscordMarkdownTextarea
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      className="min-h-24 rounded-xl"
+                      rows={6}
+                    />
+                  )}
+                />
+              ) : <DiscordMarkdownText markdown={form.watch("description")} emptyLabel={dictionary.shared.notSet} className="min-h-24 rounded-xl" />}
             </div>
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.matchType}  />
@@ -858,7 +871,20 @@ export function EventFormPanel({
             ) : null}
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.notes}  />
-              {canEdit ? <Textarea {...form.register("notes")} className="min-h-28 rounded-xl" /> : <ReadOnlyValue value={form.watch("notes")} emptyLabel={dictionary.shared.notSet} className="min-h-28 whitespace-pre-wrap" />}
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <DiscordMarkdownTextarea
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      className="min-h-28 rounded-xl"
+                      rows={8}
+                    />
+                  )}
+                />
+              ) : <DiscordMarkdownText markdown={form.watch("notes")} emptyLabel={dictionary.shared.notSet} className="min-h-28 rounded-xl" />}
             </div>
             {eventKind === "match" ? (
             <div className="md:col-span-2">

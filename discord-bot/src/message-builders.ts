@@ -8,6 +8,7 @@ import {
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 import { expandCalendarItems } from "../../src/lib/calendar-items";
+import { formatDiscordMarkdown } from "../../src/lib/discord-markdown";
 import { canAcceptSignups } from "../../src/domain/events/status";
 
 import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
@@ -112,7 +113,7 @@ export function buildEventEmbed(
     descriptionLines.push(`**🔑 ${messages.embed.password}:** \`${event.serverPassword}\``);
   }
   if (event.description || event.notes) {
-    descriptionLines.push(`**📝 ${messages.embed.description}:** ${event.notes || event.description}`);
+    descriptionLines.push(`**📝 ${messages.embed.description}:** ${formatDiscordMarkdown(event.notes || event.description)}`);
   }
   if (descriptionLines.length > 0) {
     descriptionLines.push("----------------------------------------");
@@ -129,7 +130,7 @@ export function buildEventEmbed(
 
   const embed = new EmbedBuilder()
     .setTitle(`📅 ${event.name}`)
-    .setDescription(descriptionLines.join("\n"))
+    .setDescription(formatDiscordMarkdown(descriptionLines.join("\n")))
     .setColor(toDiscordColor(resolveEventCategoryColor(categories, event)))
     .setFooter({ text: messages.embed.managedFooter });
 
@@ -234,7 +235,7 @@ export function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord, s
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const embed = new EmbedBuilder()
     .setTitle(event.name)
-    .setDescription(event.notes || event.description || messages.forum.matchInformation)
+    .setDescription(formatDiscordMarkdown(event.notes || event.description || messages.forum.matchInformation))
     .setFooter({ text: `${messages.forum.managedFooter} ${config.timezone}` });
 
   if (event.thumbnailUrl) {
@@ -298,7 +299,7 @@ export function buildTicketPanelEmbed(config: DiscordConfig) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const embed = new EmbedBuilder()
     .setTitle(ticketSettings.panelTitle.slice(0, 256))
-    .setDescription(ticketSettings.panelDescription.slice(0, 4096))
+    .setDescription(formatDiscordMarkdown(ticketSettings.panelDescription, 4096))
     .setColor("#3B82F6")
     .setFooter({ text: messages.panels.ticketManagedFooter });
 
@@ -310,7 +311,7 @@ export function buildTicketPanelEmbed(config: DiscordConfig) {
     .map((category) => {
       const heading = [category.emoji?.trim(), category.label?.trim() || category.id].filter(Boolean).join(" ");
       const description = category.description?.trim();
-      return description ? `${heading}: ${description}` : heading;
+      return description ? `${heading}: ${formatDiscordMarkdown(description)}` : heading;
     })
     .join("\n")
     .slice(0, 1024);
@@ -374,7 +375,7 @@ export function buildMembershipPanelEmbed(config: DiscordConfig) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const embed = new EmbedBuilder()
     .setTitle(membershipSettings.panelTitle.slice(0, 256))
-    .setDescription(membershipSettings.panelDescription.slice(0, 4096))
+    .setDescription(formatDiscordMarkdown(membershipSettings.panelDescription, 4096))
     .setColor("#16A34A")
     .setFooter({ text: messages.panels.membershipManagedFooter });
 
@@ -386,7 +387,7 @@ export function buildMembershipPanelEmbed(config: DiscordConfig) {
     .map((category) => {
       const heading = [category.emoji?.trim(), category.label?.trim() || category.id].filter(Boolean).join(" ");
       const description = category.description?.trim();
-      return description ? `${heading}: ${description}` : heading;
+      return description ? `${heading}: ${formatDiscordMarkdown(description)}` : heading;
     })
     .join("\n")
     .slice(0, 1024);

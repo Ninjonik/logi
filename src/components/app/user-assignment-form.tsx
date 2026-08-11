@@ -139,8 +139,8 @@ export function UserAssignmentForm({
     : undefined;
   const status = form.watch("status");
   const needsMembershipRoles = assignmentType === "member" && status !== "pending";
-  const missingRecruitRole = status === "recruit" && !membershipCategory?.recruitRoleId;
-  const missingFinalRole = status === "active" && !membershipCategory?.finalRoleId;
+  const missingRecruitRole = status === "recruit" && !membershipCategory?.recruitRoleIds.length;
+  const missingFinalRole = status === "active" && !membershipCategory?.finalRoleIds.length;
 
   const notices: ReactNode[] = [
     (

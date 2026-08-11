@@ -9,6 +9,7 @@ import type { EventRecord, PlayerMatchStats } from "@/types/domain";
 const listPlayerStatsForUserReference = makeFunctionReference<"query">("playerStats:listForUser");
 const upsertPlayerMatchesReference = makeFunctionReference<"mutation">("playerStats:upsertMatches");
 const listUserIdsForEventsReference = makeFunctionReference<"query">("playerStats:listUserIdsForEvents");
+const dedupeMatchesForEventsReference = makeFunctionReference<"mutation">("playerStats:dedupeMatchesForEvents");
 
 type PlayerStatsDoc = {
   id: string;
@@ -66,6 +67,27 @@ export async function getPlayerStatsUserIdsForEvents(eventIds: string[]) {
   })) as string[];
 }
 
+export async function dedupePlayerStatsForEvents(eventIds: string[]) {
+  if (eventIds.length === 0) {
+    return {
+      affectedUserIds: [] as string[],
+      duplicateMatchesRemoved: 0,
+      docsDeleted: 0,
+      docsPatched: 0,
+    };
+  }
+
+  return await fetchMutation(dedupeMatchesForEventsReference, {
+    secret: getInternalAuthSecret(),
+    eventIds,
+  }) as {
+    affectedUserIds: string[];
+    duplicateMatchesRemoved: number;
+    docsDeleted: number;
+    docsPatched: number;
+  };
+}
+
 export async function getPlayerStatsDocsCached(userId: string) {
   "use cache";
 
@@ -91,12 +113,66 @@ export async function getPlayerStatsSummaryCached(userId: string, events: EventR
 }
 
 export function flattenPlayerMatches(docs: PlayerStatsDoc[]): PlayerMatchStats[] {
-  return docs.flatMap((doc) =>
-    Object.entries(doc.matches).map(([eventId, match]) => ({
-      eventId,
-      ...match,
-    })),
-  );
+  const matchesByKey = new Map<string, PlayerMatchStats>();
+
+  for (const doc of docs) {
+    for (const [eventId, match] of Object.entries(doc.matches)) {
+      const candidate: PlayerMatchStats = {
+        eventId,
+        ...match,
+      };
+      const dedupeKey = buildMatchDedupeKey(candidate);
+      const existing = matchesByKey.get(dedupeKey);
+
+      if (!existing || shouldPreferPlayerMatch(candidate, existing)) {
+        matchesByKey.set(dedupeKey, candidate);
+      }
+    }
+  }
+
+  return [...matchesByKey.values()];
+}
+
+function shouldPreferPlayerMatch(candidate: PlayerMatchStats, existing: PlayerMatchStats) {
+  const candidateUnknown = isUnknownPlayerName(candidate.playerName);
+  const existingUnknown = isUnknownPlayerName(existing.playerName);
+
+  if (candidateUnknown !== existingUnknown) {
+    return !candidateUnknown;
+  }
+
+  const candidateEndedAt = new Date(candidate.endedAt ?? candidate.importedAt).getTime();
+  const existingEndedAt = new Date(existing.endedAt ?? existing.importedAt).getTime();
+  if (candidateEndedAt !== existingEndedAt) {
+    return candidateEndedAt > existingEndedAt;
+  }
+
+  const candidateImportedAt = new Date(candidate.importedAt).getTime();
+  const existingImportedAt = new Date(existing.importedAt).getTime();
+  return candidateImportedAt > existingImportedAt;
+}
+
+function isUnknownPlayerName(value: string | undefined) {
+  const normalized = value?.trim().toLowerCase();
+  return !normalized || normalized === "unknown";
+}
+
+function buildMatchDedupeKey(match: Pick<PlayerMatchStats, "sourceUrl" | "mapId" | "endedAt" | "kills" | "deaths" | "offense" | "defense" | "support">) {
+  const sourceUrl = match.sourceUrl.trim();
+  if (sourceUrl) {
+    return `source:${sourceUrl}`;
+  }
+
+  return [
+    "fallback",
+    match.mapId,
+    match.endedAt ?? "",
+    match.kills,
+    match.deaths,
+    match.offense,
+    match.defense,
+    match.support,
+  ].join("|");
 }
 
 export function sortPlayerMatches(matches: PlayerMatchStats[], eventById?: Map<string, EventRecord>) {

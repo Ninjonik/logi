@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { PageHeader } from "@/components/app/page-header";
 import { DiscordServerSettingsForm } from "@/components/app/discord-server-settings-form";
+import { DedupePlayerStatsButton } from "@/components/app/dedupe-player-stats-button";
 import { HelperDataActions } from "@/components/app/helper-data-actions";
 import { ImportDiscordMembersButton } from "@/components/app/import-discord-members-button";
 import { ImportEventsButton } from "@/components/app/import-events-button";
@@ -73,6 +74,7 @@ export default async function ServerSettingsPage({
                   dictionary={dictionary}
                   defaultRoleId={context.discordConfig?.clanRoleId}
                 />
+                <DedupePlayerStatsButton serverId={serverId} dictionary={dictionary} />
               </div>
             </CardContent>
           </Card>

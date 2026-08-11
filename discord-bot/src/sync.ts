@@ -1,5 +1,6 @@
 import type { Client } from "discord.js";
 
+import { reportClanDiscordError } from "./error-reporting";
 import { logError, logInfo } from "./log";
 import { processAttendanceReminders } from "./sync/attendance-reminders";
 import { syncPayloadEvents } from "./sync/events";
@@ -22,11 +23,11 @@ export async function syncGuildPayload(
   });
 
   if (mode === "full") {
-    await runGuildSyncStep("member access sync", payload, () => syncGuildMemberAccess(client, payload));
-    await runGuildSyncStep("ticket panel sync", payload, () => syncTicketPanel(client, payload));
-    await runGuildSyncStep("membership panel sync", payload, () => syncMembershipPanel(client, payload));
-    await runGuildSyncStep("calendar panel sync", payload, () => syncCalendarPanel(client, payload));
-    await runGuildSyncStep("attendance reminder sync", payload, () =>
+    await runGuildSyncStep(client, "member access sync", payload, () => syncGuildMemberAccess(client, payload));
+    await runGuildSyncStep(client, "ticket panel sync", payload, () => syncTicketPanel(client, payload));
+    await runGuildSyncStep(client, "membership panel sync", payload, () => syncMembershipPanel(client, payload));
+    await runGuildSyncStep(client, "calendar panel sync", payload, () => syncCalendarPanel(client, payload));
+    await runGuildSyncStep(client, "attendance reminder sync", payload, () =>
       processAttendanceReminders(client, queuedEventIds, payload),
     );
   }
@@ -34,13 +35,21 @@ export async function syncGuildPayload(
   await syncPayloadEvents(client, queuedEventIds, payload);
 }
 
-async function runGuildSyncStep(step: string, payload: SyncPayload, execute: () => Promise<void>) {
+async function runGuildSyncStep(client: Client, step: string, payload: SyncPayload, execute: () => Promise<void>) {
   try {
     await execute();
   } catch (error) {
     logError("guild-sync", `Discord bot ${step} failed`, {
       guildId: payload.config.guildId,
       error,
+    });
+    await reportClanDiscordError({
+      client,
+      guildId: payload.config.guildId,
+      error,
+      action: step,
+      location: "Guild sync",
+      scope: "guild-sync",
     });
   }
 }
