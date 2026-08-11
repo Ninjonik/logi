@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import type { LucideIcon } from "lucide-react";
+import { Bomb, ShieldAlert, Swords, Target, TrendingDown, TrendingUp } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -14,13 +16,14 @@ import {
   ZAxis,
 } from "recharts";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { formatDateTime, formatTime } from "@/lib/format";
-import type { MatchRecord, MatchStatBreakdown, MatchTeamSide } from "@/types/domain";
+import type { MatchRecord, MatchTeamSide } from "@/types/domain";
 
 const TYPE_LABELS: Array<{ key: string; label: string }> = [
   { key: "infantry", label: "Infantry" },
@@ -34,6 +37,49 @@ const TYPE_LABELS: Array<{ key: string; label: string }> = [
   { key: "satchel", label: "Satchel" },
   { key: "mine", label: "Mine" },
 ];
+
+type MatchPlayer = MatchRecord["raw"]["player_stats"][number];
+
+type TeamSeries = {
+  key: string;
+  side: MatchTeamSide;
+  label: string;
+  color: string;
+};
+
+type EncounterRow = {
+  opponent: string;
+  kills: number;
+  deaths: number;
+  plusMinus: number;
+};
+
+type RecordRow = {
+  label: string;
+  value: number;
+};
+
+type RivalryRow = {
+  left: string;
+  right: string;
+  leftKills: number;
+  rightKills: number;
+  total: number;
+};
+
+type AwardRow = {
+  label: string;
+  player: string;
+  detail: string;
+  icon: LucideIcon;
+};
+
+type BadgeTone = "default" | "secondary" | "destructive" | "outline";
+
+type PlayerBadge = {
+  label: string;
+  tone: BadgeTone;
+};
 
 function formatDuration(start: string, end: string) {
   const startMs = new Date(start).getTime();
@@ -87,19 +133,10 @@ function getChartStyles() {
     tooltipBackground: "var(--popover)",
     tooltipBorder: "var(--border)",
     tooltipText: "var(--popover-foreground)",
-    treemapFill: "var(--chart-2)",
-    treemapStroke: "var(--border)",
   };
 }
 
-type TeamSeries = {
-  key: string;
-  side: MatchTeamSide;
-  label: string;
-  color: string;
-};
-
-function buildTeamSeries(players: MatchRecord["raw"]["player_stats"], dictionary: Dictionary) {
+function buildTeamSeries(players: MatchPlayer[], dictionary: Dictionary) {
   const seen = new Set<string>();
   const series: TeamSeries[] = [];
 
@@ -140,7 +177,7 @@ function renderTooltipContent({
   label,
 }: {
   active?: boolean;
-  payload?: ReadonlyArray<{ name?: string; value?: number | string; color?: string; payload?: Record<string, unknown> }>;
+  payload?: ReadonlyArray<{ name?: string; value?: number | string; color?: string }>;
   label?: string | number;
 }) {
   if (!active || !payload?.length) {
@@ -163,10 +200,7 @@ function renderTooltipContent({
         {payload.map((entry, index) => (
           <div key={`${entry.name}-${index}`} className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2">
-              <span
-                className="size-2 rounded-full"
-                style={{ backgroundColor: entry.color ?? chartStyles.axis }}
-              />
+              <span className="size-2 rounded-full" style={{ backgroundColor: entry.color ?? chartStyles.axis }} />
               <span>{entry.name}</span>
             </span>
             <span className="font-medium">{String(entry.value ?? "-")}</span>
@@ -177,11 +211,7 @@ function renderTooltipContent({
   );
 }
 
-function buildBreakdownTotals(
-  players: MatchRecord["raw"]["player_stats"],
-  teamSeries: TeamSeries[],
-  key: "kills_by_type" | "deaths_by_type",
-) {
+function buildBreakdownTotals(players: MatchPlayer[], teamSeries: TeamSeries[], key: "kills_by_type" | "deaths_by_type") {
   const base = new Map<string, { label: string; total: number } & Record<string, number | string>>(
     TYPE_LABELS.map(({ key: typeKey, label }) => [typeKey, { label, total: 0 }]),
   );
@@ -193,22 +223,20 @@ function buildBreakdownTotals(
 
     for (const { key: typeKey } of TYPE_LABELS) {
       const value = player[key]?.[typeKey] ?? 0;
-      const existing = base.get(typeKey);
-      if (existing) {
-        existing[target] = Number(existing[target] ?? 0) + value;
-        existing.total += value;
+      const current = base.get(typeKey);
+      if (!current) {
+        continue;
       }
+
+      current[target] = Number(current[target] ?? 0) + value;
+      current.total += value;
     }
   }
 
   return [...base.values()].filter((item) => item.total > 0);
 }
 
-function buildWeaponTotals(
-  players: MatchRecord["raw"]["player_stats"],
-  teamSeries: TeamSeries[],
-  key: "weapons" | "death_by_weapons",
-) {
+function buildWeaponTotals(players: MatchPlayer[], teamSeries: TeamSeries[], key: "weapons" | "death_by_weapons") {
   const totals = new Map<string, { weapon: string; total: number } & Record<string, number | string>>();
   const teamKeys = new Set(teamSeries.map((team) => team.key));
 
@@ -227,6 +255,142 @@ function buildWeaponTotals(
   return [...totals.values()].sort((left, right) => right.total - left.total).slice(0, 12);
 }
 
+function sortRecord(record: Record<string, number>) {
+  return Object.entries(record)
+    .map(([label, value]) => ({ label, value }))
+    .filter((entry) => entry.value > 0)
+    .sort((left, right) => right.value - left.value || left.label.localeCompare(right.label));
+}
+
+function buildEncounterRows(player: MatchPlayer) {
+  const rows = new Map<string, EncounterRow>();
+
+  for (const [opponent, kills] of Object.entries(player.most_killed)) {
+    const current = rows.get(opponent) ?? { opponent, kills: 0, deaths: 0, plusMinus: 0 };
+    current.kills += kills;
+    current.plusMinus = current.kills - current.deaths;
+    rows.set(opponent, current);
+  }
+
+  for (const [opponent, deaths] of Object.entries(player.death_by)) {
+    const current = rows.get(opponent) ?? { opponent, kills: 0, deaths: 0, plusMinus: 0 };
+    current.deaths += deaths;
+    current.plusMinus = current.kills - current.deaths;
+    rows.set(opponent, current);
+  }
+
+  return [...rows.values()]
+    .sort((left, right) =>
+      (right.kills + right.deaths) - (left.kills + left.deaths) ||
+      right.plusMinus - left.plusMinus ||
+      left.opponent.localeCompare(right.opponent))
+    .slice(0, 8);
+}
+
+function hasMatchingWeapon(record: Record<string, number>, pattern: RegExp) {
+  return Object.entries(record).some(([weapon, value]) => value > 0 && pattern.test(weapon));
+}
+
+function buildPlayerBadges(player: MatchPlayer) {
+  const badges: PlayerBadge[] = [];
+
+  if (hasMatchingWeapon(player.weapons, /knife|spade|trench/i)) {
+    badges.push({ label: "Blade", tone: "default" });
+  }
+  if (hasMatchingWeapon(player.weapons, /mine/i)) {
+    badges.push({ label: "Miner", tone: "default" });
+  }
+  if ((player.kills_by_type?.artillery ?? 0) >= 3) {
+    badges.push({ label: "Artillery", tone: "secondary" });
+  }
+  if (player.kills_streak >= 8) {
+    badges.push({ label: "Streak", tone: "default" });
+  }
+  if (player.teamkills >= 3) {
+    badges.push({ label: "Friendly Fire", tone: "destructive" });
+  }
+  if ((Object.values(player.death_by).sort((left, right) => right - left)[0] ?? 0) >= 5) {
+    badges.push({ label: "Nemesis", tone: "outline" });
+  }
+  if (player.kills >= 25 && player.deaths <= 10) {
+    badges.push({ label: "Carry", tone: "default" });
+  }
+
+  return badges.slice(0, 4);
+}
+
+function buildRivalries(players: MatchPlayer[]) {
+  const directed = new Map<string, number>();
+
+  for (const player of players) {
+    for (const [opponent, kills] of Object.entries(player.most_killed)) {
+      directed.set(`${player.player}:::${opponent}`, kills);
+    }
+  }
+
+  const pairKeys = new Set<string>();
+  for (const key of directed.keys()) {
+    const [left, right] = key.split(":::");
+    pairKeys.add([left, right].sort((a, b) => a.localeCompare(b)).join(":::"));
+  }
+
+  return [...pairKeys]
+    .map((pairKey) => {
+      const [left, right] = pairKey.split(":::");
+      const leftKills = directed.get(`${left}:::${right}`) ?? 0;
+      const rightKills = directed.get(`${right}:::${left}`) ?? 0;
+      return {
+        left,
+        right,
+        leftKills,
+        rightKills,
+        total: leftKills + rightKills,
+      };
+    })
+    .filter((entry) => entry.total > 0)
+    .sort((left, right) => right.total - left.total || Math.abs(right.leftKills - right.rightKills) - Math.abs(left.leftKills - left.rightKills))
+    .slice(0, 8);
+}
+
+function buildAwards(players: MatchPlayer[]) {
+  if (players.length === 0) {
+    return [] as AwardRow[];
+  }
+
+  const topKills = [...players].sort((left, right) => right.kills - left.kills)[0]!;
+  const topDefense = [...players].sort((left, right) => right.defense - left.defense)[0]!;
+  const topSupport = [...players].sort((left, right) => right.support - left.support)[0]!;
+  const bestKd = [...players].filter((player) => player.kills >= 8).sort((left, right) => right.kill_death_ratio - left.kill_death_ratio)[0];
+  const roughDay = [...players].sort((left, right) => right.deaths - left.deaths)[0]!;
+  const streak = [...players].sort((left, right) => right.kills_streak - left.kills_streak)[0]!;
+
+  return [
+    { label: "Top Fragger", player: topKills.player, detail: `${topKills.kills} kills`, icon: Swords },
+    { label: "Anchor", player: topDefense.player, detail: `${topDefense.defense} defense`, icon: ShieldAlert },
+    { label: "Support Spine", player: topSupport.player, detail: `${topSupport.support} support`, icon: Target },
+    ...(bestKd ? [{ label: "Cleanest K/D", player: bestKd.player, detail: `${bestKd.kill_death_ratio.toFixed(2)} K/D`, icon: TrendingUp }] : []),
+    { label: "Under Fire", player: roughDay.player, detail: `${roughDay.deaths} deaths`, icon: TrendingDown },
+    { label: "Hot Streak", player: streak.player, detail: `${streak.kills_streak} streak`, icon: Bomb },
+  ];
+}
+
+function renderRecordList(rows: RecordRow[], emptyLabel: string) {
+  if (rows.length === 0) {
+    return <div className="text-sm text-muted-foreground">{emptyLabel}</div>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {rows.map((row) => (
+        <div key={row.label} className="flex items-center justify-between gap-3 text-sm">
+          <span>{row.label}</span>
+          <Badge variant="secondary" className="rounded-full px-3">{row.value}</Badge>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function MatchDetails({
   match,
   dictionary,
@@ -242,14 +406,13 @@ export function MatchDetails({
     [match.raw.player_stats],
   );
   const teamSeries = useMemo(() => buildTeamSeries(players, dictionary), [dictionary, players]);
-  const teamSeriesByKey = useMemo(
-    () => new Map(teamSeries.map((team) => [team.key, team])),
-    [teamSeries],
-  );
+  const teamSeriesByKey = useMemo(() => new Map(teamSeries.map((team) => [team.key, team])), [teamSeries]);
   const killTypeData = useMemo(() => buildBreakdownTotals(players, teamSeries, "kills_by_type"), [players, teamSeries]);
   const deathTypeData = useMemo(() => buildBreakdownTotals(players, teamSeries, "deaths_by_type"), [players, teamSeries]);
   const weaponData = useMemo(() => buildWeaponTotals(players, teamSeries, "weapons"), [players, teamSeries]);
   const deathWeaponData = useMemo(() => buildWeaponTotals(players, teamSeries, "death_by_weapons"), [players, teamSeries]);
+  const rivalryData = useMemo(() => buildRivalries(players), [players]);
+  const awards = useMemo(() => buildAwards(players), [players]);
   const scatterData = useMemo(
     () => players.map((player) => ({
       name: player.player,
@@ -263,10 +426,7 @@ export function MatchDetails({
   );
   const killTypeSummaryData = useMemo(
     () => killTypeData
-      .map((entry) => ({
-        label: entry.label,
-        total: entry.total,
-      }))
+      .map((entry) => ({ label: entry.label, total: entry.total }))
       .sort((left, right) => right.total - left.total),
     [killTypeData],
   );
@@ -352,6 +512,57 @@ export function MatchDetails({
               </CardContent>
             </Card>
           </div>
+
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Card className="rounded-2xl border-border/60">
+              <CardHeader>
+                <CardTitle>{dictionary.event.standoutAwards}</CardTitle>
+                <CardDescription>{dictionary.event.rawStats}</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3">
+                {awards.map((award) => {
+                  const Icon = award.icon;
+                  return (
+                    <div key={`${award.label}-${award.player}`} className="flex items-center justify-between gap-3 rounded-xl border border-border/60 px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                          <Icon className="size-4" />
+                        </div>
+                        <div>
+                          <div className="font-medium">{award.label}</div>
+                          <div className="text-sm text-muted-foreground">{award.player}</div>
+                        </div>
+                      </div>
+                      <div className="text-sm font-medium">{award.detail}</div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl border-border/60">
+              <CardHeader>
+                <CardTitle>{dictionary.event.topRivalries}</CardTitle>
+                <CardDescription>{dictionary.event.encountersDescription}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {rivalryData.length ? rivalryData.map((rivalry) => (
+                  <div key={`${rivalry.left}-${rivalry.right}`} className="rounded-xl border border-border/60 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="font-medium">{rivalry.left} vs {rivalry.right}</div>
+                      <Badge variant="secondary" className="rounded-full px-3">{rivalry.total} duels</Badge>
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      {rivalry.leftKills} - {rivalry.rightKills}
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-sm text-muted-foreground">{dictionary.event.noDerivedData}</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
           <Card className="rounded-2xl border-border/60">
             <CardHeader>
               <CardTitle>{dictionary.event.rawSource}</CardTitle>
@@ -379,7 +590,7 @@ export function MatchDetails({
           </Card>
         </TabsContent>
 
-        <TabsContent value="players">
+        <TabsContent value="players" className="space-y-6">
           <Card className="rounded-2xl border-border/60">
             <CardHeader>
               <CardTitle>{dictionary.event.playersTab}</CardTitle>
@@ -393,6 +604,7 @@ export function MatchDetails({
                       <TableHead>#</TableHead>
                       <TableHead>Team</TableHead>
                       <TableHead>Player</TableHead>
+                      <TableHead>{dictionary.event.badges}</TableHead>
                       <TableHead>Lvl</TableHead>
                       <TableHead>Kills</TableHead>
                       <TableHead>K/D</TableHead>
@@ -406,12 +618,22 @@ export function MatchDetails({
                   <TableBody>
                     {players.map((player, index) => {
                       const teamStyle = teamSeriesByKey.get(normalizeTeamValue(player.team.side));
+                      const badges = buildPlayerBadges(player);
 
                       return (
                         <TableRow key={`${player.player_id}-${index}`}>
                           <TableCell>{index + 1}</TableCell>
                           <TableCell style={{ color: teamStyle?.color ?? getTeamColor(player.team.side) }}>{teamStyle?.label ?? getTeamLabel(player.team.side, dictionary)}</TableCell>
                           <TableCell className="font-medium">{player.player}</TableCell>
+                          <TableCell>
+                            <div className="flex min-w-40 flex-wrap gap-1">
+                              {badges.length ? badges.map((badge) => (
+                                <Badge key={`${player.player}-${badge.label}`} variant={badge.tone} className="rounded-full px-2.5">
+                                  {badge.label}
+                                </Badge>
+                              )) : <span className="text-xs text-muted-foreground">{dictionary.event.noDerivedData}</span>}
+                            </div>
+                          </TableCell>
                           <TableCell>{player.level}</TableCell>
                           <TableCell>{player.kills}</TableCell>
                           <TableCell>{player.kill_death_ratio.toFixed(2)}</TableCell>
@@ -426,6 +648,76 @@ export function MatchDetails({
                   </TableBody>
                 </Table>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-border/60">
+            <CardHeader>
+              <CardTitle>{dictionary.event.playerBreakdowns}</CardTitle>
+              <CardDescription>{dictionary.event.encountersDescription}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="multiple" className="w-full">
+                {players.map((player, index) => {
+                  const encounters = buildEncounterRows(player);
+                  const killWeapons = sortRecord(player.weapons).slice(0, 8);
+                  const deathWeapons = sortRecord(player.death_by_weapons).slice(0, 8);
+                  const teamStyle = teamSeriesByKey.get(normalizeTeamValue(player.team.side));
+
+                  return (
+                    <AccordionItem key={`${player.player_id}-${index}-detail`} value={`${player.player_id}-${index}`}>
+                      <AccordionTrigger>
+                        <div className="flex flex-1 items-center justify-between gap-4 pr-4 text-left">
+                          <div>
+                            <div className="font-medium">{player.player}</div>
+                            <div className="text-sm text-muted-foreground" style={{ color: teamStyle?.color ?? undefined }}>
+                              {teamStyle?.label ?? getTeamLabel(player.team.side, dictionary)}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>{player.kills} K</span>
+                            <span>{player.deaths} D</span>
+                            <span>{player.kill_death_ratio.toFixed(2)} K/D</span>
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid gap-4 xl:grid-cols-3">
+                          <div className="rounded-xl border border-border/60 p-4">
+                            <div className="mb-3 font-medium">{dictionary.event.encounters}</div>
+                            {encounters.length ? (
+                              <div className="space-y-2">
+                                {encounters.map((encounter) => (
+                                  <div key={`${player.player}-${encounter.opponent}`} className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
+                                    <div className="font-medium">{encounter.opponent}</div>
+                                    <div className="mt-1 flex items-center justify-between gap-3 text-muted-foreground">
+                                      <span>{dictionary.event.killed}: {encounter.kills}</span>
+                                      <span>{dictionary.event.diedTo}: {encounter.deaths}</span>
+                                      <span className={encounter.plusMinus >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                                        {dictionary.event.plusMinus}: {encounter.plusMinus > 0 ? `+${encounter.plusMinus}` : encounter.plusMinus}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : <div className="text-sm text-muted-foreground">{dictionary.event.noDerivedData}</div>}
+                          </div>
+
+                          <div className="rounded-xl border border-border/60 p-4">
+                            <div className="mb-3 font-medium">{dictionary.event.killsByWeaponForPlayer}</div>
+                            {renderRecordList(killWeapons, dictionary.event.noDerivedData)}
+                          </div>
+
+                          <div className="rounded-xl border border-border/60 p-4">
+                            <div className="mb-3 font-medium">{dictionary.event.deathsByWeaponForPlayer}</div>
+                            {renderRecordList(deathWeapons, dictionary.event.noDerivedData)}
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
             </CardContent>
           </Card>
         </TabsContent>
@@ -478,6 +770,7 @@ export function MatchDetails({
                     </div>
                   </AccordionContent>
                 </AccordionItem>
+
                 <AccordionItem value="death-weapons">
                   <AccordionTrigger>{dictionary.event.deathsByWeapon}</AccordionTrigger>
                   <AccordionContent>

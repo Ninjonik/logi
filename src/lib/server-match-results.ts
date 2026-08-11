@@ -3,7 +3,7 @@ import { availableParallelism, cpus } from "node:os";
 import { logNextError, logNextInfo } from "@/lib/system-logs";
 import { saveServerEvent, saveServerEventResult } from "@/lib/server-events";
 import { getGuildMetadata } from "@/lib/server-metadata";
-import { saveServerMatch } from "@/lib/server-matches";
+import { findServerMatchByIdentity, saveServerMatch } from "@/lib/server-matches";
 import {
   getServerUserAssignments,
   getUsersByIds,
@@ -1000,6 +1000,7 @@ export async function importServerEventsFromLinks(input: {
   let importedPlayers = 0;
   let eventResultsSaved = 0;
   let matchesSaved = 0;
+  let mergedEvents = 0;
   let processed = 0;
 
   input.onProgress?.({
@@ -1035,6 +1036,11 @@ export async function importServerEventsFromLinks(input: {
 
       const { mapId, sourceUrl, payload } = fetchedResult.fetched;
       const sanitizedPayload = sanitizeScoreboardResult(payload.result);
+      const existingMatch = await findServerMatchByIdentity({
+        guildId: input.serverId,
+        sourceUrl,
+        matchId: String(sanitizedPayload.id),
+      });
 
       const preparedImport = await preparePlayerImports({
         serverId: input.serverId,
@@ -1047,8 +1053,7 @@ export async function importServerEventsFromLinks(input: {
         lookupContext,
       });
       const inferredEventSide = preparedImport.inferredEventSide;
-
-      const createdEventId = await saveServerEvent({
+      const targetEventId = existingMatch?.eventId ?? await saveServerEvent({
         serverId: input.serverId,
         kind: "match",
         createForumChannel: true,
@@ -1058,18 +1063,18 @@ export async function importServerEventsFromLinks(input: {
           inferredEventSide,
         }),
       });
-      eventId = createdEventId;
+      eventId = targetEventId;
 
       await savePlayerMatchStats({
         entries: preparedImport.entries.map((entry) => ({
           ...entry,
-          eventId: createdEventId,
+          eventId: targetEventId,
         })),
       });
       diagnostics.playerStatsSaved = { ok: true };
 
       await saveServerMatch({
-        eventId: createdEventId,
+        eventId: targetEventId,
         sourceUrl,
         raw: sanitizedPayload,
       });
@@ -1087,7 +1092,7 @@ export async function importServerEventsFromLinks(input: {
           };
       if (eventResult) {
         await saveServerEventResult({
-          eventId: createdEventId,
+          eventId: targetEventId,
           eventResult,
         });
         diagnostics.eventResultSaved = { ok: true };
@@ -1100,6 +1105,7 @@ export async function importServerEventsFromLinks(input: {
       }
 
       importedEvents += 1;
+      mergedEvents += existingMatch ? 1 : 0;
       importedPlayers += preparedImport.entries.length;
       preparedImport.importedUserIds.forEach((userId) => importedUserIds.add(userId));
       logNextInfo("match-results:event-import", "Imported match event from external scoreboard", {
@@ -1107,6 +1113,7 @@ export async function importServerEventsFromLinks(input: {
         eventId,
         sourceUrl,
         mapId,
+        reusedExistingEvent: Boolean(existingMatch),
         importedPlayers: preparedImport.entries.length,
         inferredEventSide,
         matchedByPlatformId: preparedImport.matchReasonCounts.platformId,
@@ -1169,6 +1176,7 @@ export async function importServerEventsFromLinks(input: {
 
   return {
     importedEvents,
+    mergedEvents,
     importedPlayers,
     matchesSaved,
     eventResultsSaved,
