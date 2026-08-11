@@ -106,6 +106,33 @@ function shouldPreferMatch(
   return candidateImportedAt > existingImportedAt;
 }
 
+function buildMatchDedupeKey(match: {
+  sourceUrl: string;
+  mapId: string;
+  endedAt?: string;
+  kills: number;
+  deaths: number;
+  offense: number;
+  defense: number;
+  support: number;
+}) {
+  const sourceUrl = match.sourceUrl.trim();
+  if (sourceUrl) {
+    return `source:${sourceUrl}`;
+  }
+
+  return [
+    "fallback",
+    match.mapId,
+    match.endedAt ?? "",
+    match.kills,
+    match.deaths,
+    match.offense,
+    match.defense,
+    match.support,
+  ].join("|");
+}
+
 export const upsertMatches = mutation({
   args: {
     secret: v.string(),
@@ -254,7 +281,7 @@ export const dedupeMatchesForEvents = mutation({
           continue;
         }
 
-        const key = `${doc.userId}::${eventId}`;
+        const key = `${doc.userId}::${buildMatchDedupeKey(match)}`;
         const existing = winners.get(key);
         if (!existing || shouldPreferMatch(match, existing.match)) {
           winners.set(key, { docId: String(doc._id), match });
@@ -279,7 +306,7 @@ export const dedupeMatchesForEvents = mutation({
           continue;
         }
 
-        const winner = winners.get(`${doc.userId}::${eventId}`);
+        const winner = winners.get(`${doc.userId}::${buildMatchDedupeKey(doc.matches[eventId]!)}`);
         if (!winner || winner.docId === String(doc._id)) {
           continue;
         }
