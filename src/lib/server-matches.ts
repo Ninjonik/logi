@@ -7,6 +7,7 @@ import type { MatchRecord } from "@/types/domain";
 
 const upsertMatchForEventReference = makeFunctionReference<"mutation">("matchStats:upsertForEvent");
 const getMatchByEventIdReference = makeFunctionReference<"query">("matchStats:getByEventId");
+const findMatchByIdentityReference = makeFunctionReference<"query">("matchStats:findByIdentity");
 
 export async function saveServerMatch(input: {
   eventId: string;
@@ -27,5 +28,17 @@ export async function getServerMatchByEventId(eventId: string) {
   tagCacheEntries([appCacheTags.match(eventId)]);
   return await fetchQuery(getMatchByEventIdReference, {
     eventId: eventId as never,
+  }) as MatchRecord | null;
+}
+
+export async function findServerMatchByIdentity(input: {
+  guildId: string;
+  sourceUrl: string;
+  matchId?: string;
+}) {
+  return await fetchQuery(findMatchByIdentityReference, {
+    guildId: input.guildId,
+    sourceUrl: input.sourceUrl,
+    matchId: input.matchId,
   }) as MatchRecord | null;
 }

@@ -175,3 +175,29 @@ export const getByEventId = query({
     return matchStats ? normalizeDoc(matchStats) : null;
   },
 });
+
+export const findByIdentity = query({
+  args: {
+    guildId: v.string(),
+    sourceUrl: v.string(),
+    matchId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const normalizedSourceUrl = args.sourceUrl.trim();
+    const normalizedMatchId = args.matchId?.trim();
+    const docs = await ctx.db
+      .query("matchStats")
+      .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+      .collect();
+
+    const matchStats = docs.find((doc) => {
+      if (normalizedSourceUrl && doc.sourceUrl.trim() === normalizedSourceUrl) {
+        return true;
+      }
+
+      return Boolean(normalizedMatchId) && doc.matchId.trim() === normalizedMatchId;
+    });
+
+    return matchStats ? normalizeDoc(matchStats) : null;
+  },
+});
