@@ -66,6 +66,10 @@ function resolveEventCategoryColor(categories: SyncPayload["guild"]["eventCatego
   return findEventCategory(categories, event.matchType)?.color ?? "#FFB000";
 }
 
+function resolveEventCategoryEmoji(categories: SyncPayload["guild"]["eventCategories"], event: EventRecord) {
+  return findEventCategory(categories, event.matchType)?.emoji?.trim() || undefined;
+}
+
 function toDiscordColor(color: string) {
   const normalized = color.trim();
   if (/^#[\da-f]{6}$/i.test(normalized)) {
@@ -475,6 +479,45 @@ function configureLocale(language: ClanLanguage) {
   return language === "cs" ? "cs-CZ" : "en-GB";
 }
 
+function getCalendarAllDayLabel(language: ClanLanguage) {
+  return language === "cs" ? "Celý den" : "All day";
+}
+
+function getColorChipEmoji(color?: string) {
+  const normalized = color?.trim() ?? "";
+  const hex = /^#[\da-f]{6}$/i.test(normalized) ? normalized.slice(1) : "FFB000";
+  const red = Number.parseInt(hex.slice(0, 2), 16);
+  const green = Number.parseInt(hex.slice(2, 4), 16);
+  const blue = Number.parseInt(hex.slice(4, 6), 16);
+  const palette = [
+    { emoji: "🟥", red: 235, green: 69, blue: 90 },
+    { emoji: "🟧", red: 249, green: 146, blue: 43 },
+    { emoji: "🟨", red: 250, green: 208, blue: 72 },
+    { emoji: "🟩", red: 64, green: 181, blue: 104 },
+    { emoji: "🟦", red: 52, green: 152, blue: 219 },
+    { emoji: "🟪", red: 155, green: 89, blue: 182 },
+    { emoji: "🟫", red: 141, green: 110, blue: 99 },
+    { emoji: "⬛", red: 47, green: 54, blue: 64 },
+    { emoji: "⬜", red: 236, green: 240, blue: 241 },
+  ];
+
+  let closest = palette[0]!;
+  let closestDistance = Number.POSITIVE_INFINITY;
+  for (const candidate of palette) {
+    const distance = ((red - candidate.red) ** 2) + ((green - candidate.green) ** 2) + ((blue - candidate.blue) ** 2);
+    if (distance < closestDistance) {
+      closest = candidate;
+      closestDistance = distance;
+    }
+  }
+
+  return closest.emoji;
+}
+
+function escapeDiscordLinkLabel(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/\]/g, "\\]");
+}
+
 export function buildCalendarPanelEmbed(
   config: DiscordConfig,
   categories: SyncPayload["guild"]["eventCategories"],
@@ -502,6 +545,8 @@ export function buildCalendarPanelEmbed(
       title: event.name,
       label: resolveCalendarEventLabel(config, categories, event),
       color: resolveEventCategoryColor(categories, event),
+      emoji: resolveEventCategoryEmoji(categories, event),
+      url: generateCalendarUrl(event, config.defaultLanguage),
       allDay: false,
     })),
     ...manualOccurrences.map((item) => ({
@@ -512,33 +557,20 @@ export function buildCalendarPanelEmbed(
       title: item.title,
       label: item.label,
       color: item.color,
+      emoji: item.emoji,
+      url: undefined,
       allDay: item.allDay,
     })),
   ]
     .sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime())
     .slice(0, 20);
 
-  const groupedEvents = new Map<string, string[]>();
-  for (const entry of upcomingEntries) {
-    const dateLabel = formatCalendarDate(entry.dateKey, config.timezone, config.defaultLanguage);
-    const timeLabel = entry.allDay
-      ? "All day"
-      : `${formatCalendarTime(entry.startAt, config.timezone, config.defaultLanguage)} - ${formatCalendarTime(entry.endAt, config.timezone, config.defaultLanguage)}`;
-    const line = `• ${entry.title}${entry.label ? ` - ${entry.label}` : ""} (${timeLabel})`;
-    const bucket = groupedEvents.get(dateLabel) ?? [];
-    bucket.push(line);
-    groupedEvents.set(dateLabel, bucket);
-  }
+  const allDayLabel = getCalendarAllDayLabel(config.defaultLanguage);
   const panelColor = upcomingEntries[0]?.color ?? "#2563EB";
-
   const embed = new EmbedBuilder()
     .setTitle(`📅 ${messages.calendar.panelTitle}`)
     .setColor(toDiscordColor(panelColor))
     .setFooter({ text: `${messages.embed.managedFooter} • ${config.timezone}` });
-
-  if (categories.length) {
-    embed.setDescription(`${messages.calendar.panelCategories}: ${categories.map((category) => category.label).join(", ")}`);
-  }
 
   if (!upcomingEntries.length) {
     if (!categories.length) {
@@ -547,13 +579,49 @@ export function buildCalendarPanelEmbed(
     return embed;
   }
 
-  for (const [dateLabel, lines] of groupedEvents) {
-    embed.addFields({
-      name: dateLabel,
-      value: lines.join("\n").slice(0, 1024),
-      inline: false,
-    });
+  const legendEntries = new Map<string, string>();
+  const descriptionLines: string[] = [];
+
+  for (const entry of upcomingEntries) {
+    if (!entry.label) {
+      continue;
+    }
+
+    const chip = getColorChipEmoji(entry.color);
+    const legendParts = [chip, entry.emoji?.trim(), entry.label.trim()].filter(Boolean);
+    legendEntries.set(`${entry.label.trim().toLowerCase()}:${entry.color}:${entry.emoji?.trim() ?? ""}`, legendParts.join(" "));
   }
+
+  if (legendEntries.size) {
+    descriptionLines.push(`**${messages.calendar.panelCategories}**`);
+    descriptionLines.push(...legendEntries.values());
+    descriptionLines.push("");
+  }
+
+  let currentDateLabel = "";
+  for (const entry of upcomingEntries) {
+    const dateLabel = formatCalendarDate(entry.dateKey, config.timezone, config.defaultLanguage);
+    if (dateLabel !== currentDateLabel) {
+      if (descriptionLines.length && descriptionLines[descriptionLines.length - 1] !== "") {
+        descriptionLines.push("");
+      }
+      descriptionLines.push(`**${dateLabel}**`);
+      currentDateLabel = dateLabel;
+    }
+
+    const timeLabel = entry.allDay
+      ? allDayLabel
+      : `${formatCalendarTime(entry.startAt, config.timezone, config.defaultLanguage)} - ${formatCalendarTime(entry.endAt, config.timezone, config.defaultLanguage)}`;
+    const chip = getColorChipEmoji(entry.color);
+    const title = formatDiscordMarkdown(entry.title).replace(/\n+/g, " ").trim();
+    const linkedTitle = entry.url
+      ? `[${escapeDiscordLinkLabel(title)}](${entry.url})`
+      : title;
+    const rowParts = [chip, linkedTitle, `\`${timeLabel}\``];
+    descriptionLines.push(rowParts.join(" "));
+  }
+
+  embed.setDescription(descriptionLines.join("\n").slice(0, 4096));
 
   return embed;
 }
