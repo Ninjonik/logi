@@ -5,6 +5,7 @@ import { getInternalAuthSecret } from "@/lib/env";
 
 const upsertEventReference = makeFunctionReference<"mutation">("events:upsert");
 const concludeEventReference = makeFunctionReference<"mutation">("events:conclude");
+const completeTrainingReference = makeFunctionReference<"mutation">("events:completeTraining");
 const setEventResultReference = makeFunctionReference<"mutation">("events:setResult");
 const toggleSignupReference = makeFunctionReference<"mutation">("events:toggleSignUp");
 
@@ -73,6 +74,20 @@ export async function concludeServerEventCommand(input: {
   return await fetchMutation(concludeEventReference, {
     secret: getInternalAuthSecret(),
     eventId: input.eventId as never,
+  });
+}
+
+export async function completeServerTrainingCommand(input: {
+  eventId: string;
+  participants: Array<{
+    userId: string;
+    completed: "passed" | "failed";
+  }>;
+}) {
+  return await fetchMutation(completeTrainingReference, {
+    secret: getInternalAuthSecret(),
+    eventId: input.eventId as never,
+    participants: input.participants,
   });
 }
 

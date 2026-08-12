@@ -14,6 +14,7 @@ function createDeps() {
     revalidated: [] as string[][],
     savedEvents: [] as Array<Record<string, unknown>>,
     concluded: [] as Array<{ eventId: string }>,
+    completedTrainings: [] as Array<{ eventId: string; participants: Array<{ userId: string; completed: "passed" | "failed" }> }>,
     importedEventLinks: [] as Array<{ serverId: string; linksInput: string; importPlayers?: boolean; clanTag?: string }>,
     importedMatchResults: [] as Array<{ serverId: string; eventId: string; eventSide?: string; matchLink: string }>,
     requestedMetadata: [] as string[],
@@ -30,6 +31,9 @@ function createDeps() {
       },
       concludeServerEvent: async (input: { eventId: string }) => {
         calls.concluded.push(input);
+      },
+      completeServerTraining: async (input: { eventId: string; participants: Array<{ userId: string; completed: "passed" | "failed" }> }) => {
+        calls.completedTrainings.push(input);
       },
       importServerEventsFromLinks: async (input: { serverId: string; linksInput: string; importPlayers?: boolean; clanTag?: string }) => {
         calls.importedEventLinks.push(input);
@@ -50,6 +54,10 @@ function createDeps() {
         calls.requestedMetadata.push(eventId);
         return { side: "allies" };
       },
+      finalizeTrainingCompletion: async ({ participants }: { participants: Array<{ userId: string; completed: "passed" | "failed" }> }) => ({
+        rewardedUserIds: participants.filter((participant) => participant.completed === "passed").map((participant) => participant.userId),
+        dmSentUserIds: participants.map((participant) => participant.userId),
+      }),
       revalidateCacheEntries: (tags: Array<string | null | undefined | false>) => {
         calls.revalidated.push(tags.filter((tag): tag is string => Boolean(tag)));
       },
@@ -186,6 +194,46 @@ test("server event POST concludes an event", async () => {
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { ok: true });
   assert.deepEqual(calls.concluded, [{ eventId: "event-1" }]);
+});
+
+test("server event POST completes a training and revalidates related caches", async () => {
+  const { deps, calls } = createDeps();
+  const handler = createServerEventPostHandler(deps);
+
+  const response = await handler(
+    {
+      json: async () => ({
+        action: "completeTraining",
+        participants: [
+          { userId: "user-1", completed: "passed" },
+          { userId: "user-2", completed: "failed" },
+        ],
+      }),
+    },
+    { params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }) },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { ok: true, rewardedUsers: 1, dmSentUsers: 2 });
+  assert.deepEqual(calls.completedTrainings, [{
+    eventId: "event-1",
+    participants: [
+      { userId: "user-1", completed: "passed" },
+      { userId: "user-2", completed: "failed" },
+    ],
+  }]);
+  assert.deepEqual(calls.revalidated[0], [
+    "server-context:guild-1",
+    "events:guild-1",
+    "event:event-1",
+    "roster-image:event-1",
+    "player:user-1",
+    "player-stats:user-1",
+    "users",
+    "player:user-2",
+    "player-stats:user-2",
+    "users",
+  ]);
 });
 
 test("server event POST submits match results and revalidates related caches", async () => {

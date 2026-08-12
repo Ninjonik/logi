@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Paperclip, Plus, Save, Trash2, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ import { Controller, useFieldArray, useForm } from "react-hook-form";
 import type { FieldErrors } from "react-hook-form";
 import { toast } from "sonner";
 
+import { ExpandableItemCard } from "@/components/app/expandable-item-card";
 import { HllMapSelector } from "@/components/app/hll-map-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +75,7 @@ export function TopicPresetForm({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [collapsedTopicIds, setCollapsedTopicIds] = useState<string[]>([]);
 
   const form = useForm<TopicPresetInput>({
     resolver: zodResolver(topicPresetSchema),
@@ -91,6 +93,12 @@ export function TopicPresetForm({
     control: form.control,
     name: "topics",
   });
+
+  function setTopicCollapsed(topicId: string, collapsed: boolean) {
+    setCollapsedTopicIds((current: string[]) =>
+      collapsed ? (current.includes(topicId) ? current : [...current, topicId]) : current.filter((id: string) => id !== topicId),
+    );
+  }
 
   async function submit(values: TopicPresetInput) {
     const response = await fetch(
@@ -207,75 +215,87 @@ export function TopicPresetForm({
               ) : null}
             </div>
 
-            {topics.fields.map((topic, topicIndex) => (
-              <div key={topic.id} className="space-y-3 rounded-xl border border-border/60 bg-muted/10 p-3">
-                <div className="flex items-start gap-2">
-                  <div className="flex-1">
-                    <Input
-                      {...form.register(`topics.${topicIndex}.title`)}
-                      className="h-10 rounded-lg border-border/60 bg-background"
-                      placeholder={dictionary.presets.newTopic}
-                      disabled={!canEdit}
-                    />
-                    {form.formState.errors.topics?.[topicIndex]?.title ? (
-                      <p className="mt-2 text-sm text-destructive">{form.formState.errors.topics[topicIndex]?.title?.message}</p>
-                    ) : null}
-                  </div>
-                  {canEdit ? (
-                    <Button type="button" variant="ghost" size="icon" className="mt-0.5 rounded-lg" onClick={() => topics.remove(topicIndex)} disabled={topics.fields.length <= 1}>
+            {topics.fields.map((topic, topicIndex) => {
+              const title = form.watch(`topics.${topicIndex}.title`) || dictionary.presets.newTopic;
+              const isOpen = !collapsedTopicIds.includes(topic.id);
+
+              return (
+                <ExpandableItemCard
+                  key={topic.id}
+                  open={isOpen}
+                  onOpenChange={(open) => setTopicCollapsed(topic.id, !open)}
+                  title={title}
+                  subtitle={`ID: ${topic.id}`}
+                  className="bg-muted/10"
+                  actions={canEdit ? (
+                    <Button type="button" variant="ghost" size="icon" className="rounded-lg" onClick={() => topics.remove(topicIndex)} disabled={topics.fields.length <= 1}>
                       <Trash2 className="size-4" />
                     </Button>
-                  ) : null}
-                </div>
-                <Textarea
-                  {...form.register(`topics.${topicIndex}.body`)}
-                  className="min-h-24 rounded-lg border-border/60 bg-background"
-                  placeholder={dictionary.presets.topicEditorDescription}
-                  disabled={!canEdit}
-                />
-                <Controller
-                  control={form.control}
-                  name={`topics.${topicIndex}.attachments`}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={field.value.join("\n")}
-                        onChange={(event) => field.onChange(event.target.value.split("\n").map((line) => line.trim()).filter(Boolean))}
-                        className="min-h-20 rounded-lg border-border/60 bg-background text-sm"
-                        placeholder={dictionary.presets.attachmentPlaceholder}
+                  ) : undefined}
+                >
+                  <div className="space-y-3">
+                    <div className="flex-1">
+                      <Input
+                        {...form.register(`topics.${topicIndex}.title`)}
+                        className="h-10 rounded-lg border-border/60 bg-background"
+                        placeholder={dictionary.presets.newTopic}
                         disabled={!canEdit}
                       />
-                      {form.formState.errors.topics?.[topicIndex]?.attachments ? (
-                        <p className="text-sm text-destructive">{form.formState.errors.topics[topicIndex]?.attachments?.message}</p>
+                      {form.formState.errors.topics?.[topicIndex]?.title ? (
+                        <p className="mt-2 text-sm text-destructive">{form.formState.errors.topics[topicIndex]?.title?.message}</p>
                       ) : null}
-                      <div className="flex flex-wrap items-center gap-2">
-                        {canEdit ? (
-                          <label className="inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border/60 bg-background px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
-                            <Upload className="size-4" />
-                            {dictionary.common.upload}
-                            <input
-                              type="file"
-                              multiple
-                              className="sr-only"
-                              onChange={(event) => {
-                                void handleUpload(topicIndex, event.target.files);
-                                event.target.value = "";
-                              }}
-                            />
-                          </label>
-                        ) : null}
-                        {field.value.length ? (
-                          <span className="inline-flex h-8 items-center gap-1 rounded-lg border border-border/60 bg-background px-2.5 text-xs text-muted-foreground">
-                            <Paperclip className="size-3" />
-                            {field.value.length} {dictionary.presets.attachmentCountSuffix}
-                          </span>
-                        ) : null}
-                      </div>
                     </div>
-                  )}
-                />
-              </div>
-            ))}
+                    <Textarea
+                      {...form.register(`topics.${topicIndex}.body`)}
+                      className="min-h-24 rounded-lg border-border/60 bg-background"
+                      placeholder={dictionary.presets.topicEditorDescription}
+                      disabled={!canEdit}
+                    />
+                    <Controller
+                      control={form.control}
+                      name={`topics.${topicIndex}.attachments`}
+                      render={({ field }) => (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={field.value.join("\n")}
+                            onChange={(event) => field.onChange(event.target.value.split("\n").map((line) => line.trim()).filter(Boolean))}
+                            className="min-h-20 rounded-lg border-border/60 bg-background text-sm"
+                            placeholder={dictionary.presets.attachmentPlaceholder}
+                            disabled={!canEdit}
+                          />
+                          {form.formState.errors.topics?.[topicIndex]?.attachments ? (
+                            <p className="text-sm text-destructive">{form.formState.errors.topics[topicIndex]?.attachments?.message}</p>
+                          ) : null}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {canEdit ? (
+                              <label className="inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border/60 bg-background px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
+                                <Upload className="size-4" />
+                                {dictionary.common.upload}
+                                <input
+                                  type="file"
+                                  multiple
+                                  className="sr-only"
+                                  onChange={(event) => {
+                                    void handleUpload(topicIndex, event.target.files);
+                                    event.target.value = "";
+                                  }}
+                                />
+                              </label>
+                            ) : null}
+                            {field.value.length ? (
+                              <span className="inline-flex h-8 items-center gap-1 rounded-lg border border-border/60 bg-background px-2.5 text-xs text-muted-foreground">
+                                <Paperclip className="size-3" />
+                                {field.value.length} {dictionary.presets.attachmentCountSuffix}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      )}
+                    />
+                  </div>
+                </ExpandableItemCard>
+              );
+            })}
           </div>
 
           {form.formState.errors.topics?.root ? <p className="text-sm text-destructive">{form.formState.errors.topics.root.message}</p> : null}

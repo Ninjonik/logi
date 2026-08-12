@@ -1,4 +1,5 @@
 export {
+  completeServerTrainingCommand as completeServerTraining,
   concludeServerEventCommand as concludeServerEvent,
   saveServerEventCommand as saveServerEvent,
   saveServerEventResultCommand as saveServerEventResult,

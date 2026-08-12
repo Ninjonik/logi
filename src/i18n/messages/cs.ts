@@ -710,6 +710,13 @@ export const csMessages = {
     performanceScatter: "Zabití vs smrti",
     rawStats: "Raw statistiky",
     concludedSuccess: "Akce ukončena",
+    trainingCompletionTitle: "Ukončit training",
+    trainingCompletionDescription: "Před ukončením trainingu nastavte u každého zúčastněného, jestli prošel nebo neprošel.",
+    trainingCompletionEmpty: "Na tento training momentálně není přihlášený žádný účastník s attendance.",
+    trainingCompletionSuccess: "Training byl ukončen. Odměněno: {rewarded}. DM odesláno: {dmed}.",
+    trainingPassed: "Prošel",
+    trainingFailed: "Neprošel",
+    trainingCompleteAction: "Uložit a ukončit",
     saveHelp: "Název a čtyři časová pole jsou povinné. Všechno ostatní je volitelné.",
     saveError: "Akci se nepodařilo uložit.",
     notices: {

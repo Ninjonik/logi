@@ -125,7 +125,7 @@ export function buildEventEmbed(
 
   descriptionLines.push(`**⏰ ${messages.embed.registrationEnds}:** <t:${regEndUnix}:R> (<t:${regEndUnix}:f>)`);
   descriptionLines.push(`**📢 ${messages.embed.meeting}:** <t:${meetingUnix}:t>`);
-  descriptionLines.push(`**🚀 ${messages.embed.matchStart}:** <t:${gameStartUnix}:F>`);
+  descriptionLines.push(`**🚀 ${event.kind === "training" ? messages.embed.trainingStart : messages.embed.matchStart}:** <t:${gameStartUnix}:F>`);
   const categoryLabel = resolveEventCategoryLabel(categories, event);
   if (categoryLabel) {
     descriptionLines.push(`**🏷️ ${messages.calendar.matchLabel}:** ${categoryLabel}`);
@@ -518,6 +518,10 @@ function escapeDiscordLinkLabel(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/\]/g, "\\]");
 }
 
+function toDiscordTimestamp(timestamp: string, style: "t" | "f" | "F" | "R") {
+  return `<t:${Math.floor(new Date(timestamp).getTime() / 1000)}:${style}>`;
+}
+
 export function buildCalendarPanelEmbed(
   config: DiscordConfig,
   categories: SyncPayload["guild"]["eventCategories"],
@@ -611,13 +615,13 @@ export function buildCalendarPanelEmbed(
 
     const timeLabel = entry.allDay
       ? allDayLabel
-      : `${formatCalendarTime(entry.startAt, config.timezone, config.defaultLanguage)} - ${formatCalendarTime(entry.endAt, config.timezone, config.defaultLanguage)}`;
+      : `${toDiscordTimestamp(entry.startAt, "t")} - ${toDiscordTimestamp(entry.endAt, "t")}`;
     const chip = getColorChipEmoji(entry.color);
     const title = formatDiscordMarkdown(entry.title).replace(/\n+/g, " ").trim();
     const linkedTitle = entry.url
       ? `[${escapeDiscordLinkLabel(title)}](${entry.url})`
       : title;
-    const rowParts = [chip, linkedTitle, `\`${timeLabel}\``];
+    const rowParts = [chip, linkedTitle, timeLabel];
     descriptionLines.push(rowParts.join(" "));
   }
 

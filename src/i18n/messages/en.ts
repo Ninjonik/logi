@@ -714,6 +714,13 @@ export const enMessages = {
     performanceScatter: "Kills vs deaths",
     rawStats: "Raw stats",
     concludedSuccess: "Event concluded",
+    trainingCompletionTitle: "Complete training",
+    trainingCompletionDescription: "Set a pass or fail result for each attending participant before concluding the training.",
+    trainingCompletionEmpty: "No attending participants are currently signed up for this training.",
+    trainingCompletionSuccess: "Training completed. Rewarded: {rewarded}. DMs sent: {dmed}.",
+    trainingPassed: "Passed",
+    trainingFailed: "Failed",
+    trainingCompleteAction: "Save and conclude",
     saveHelp: "Name and the four timeline fields are required. Everything else is optional.",
     saveError: "Unable to save event.",
     notices: {

@@ -8,7 +8,7 @@ export function normalizeEventRecord<
   T extends EventLike,
 >(event: T, now: Date = new Date()) {
   const nowIso = now.toISOString();
-  const status = event.status ?? deriveEventStatus(event, now);
+  const status = deriveEventStatus(event, now);
   const timestamps = normalizeEventTimestamps(event, nowIso);
   const participants = normalizeParticipants(event.participants, event.signUps, timestamps.updatedAt);
   const matchStatsId = event.matchStatsId;

@@ -62,6 +62,19 @@ function createMatchEvent(patch: Partial<EventRecord> = {}): EventRecord {
   };
 }
 
+function createTrainingEvent(patch: Partial<EventRecord> = {}): EventRecord {
+  return {
+    ...createMatchEvent({
+      kind: "training",
+      name: "Test Training",
+      signupGroupIds: [],
+      participants: [],
+      signUps: [],
+    }),
+    ...patch,
+  };
+}
+
 test("buildEventComponents omits group buttons when signupGroupIds is empty", () => {
   const rows = buildEventComponents(
     config,
@@ -101,6 +114,18 @@ test("buildEventEmbed omits group fields when signupGroupIds is empty", () => {
   const fields = embed.toJSON().fields ?? [];
   assert.equal(fields.length, 1);
   assert.match(fields[0]?.name ?? "", /Neúčastní se|Not attending/i);
+});
+
+test("buildEventEmbed uses training-specific start wording for trainings", () => {
+  const embed = buildEventEmbed(
+    config,
+    groups,
+    eventCategories,
+    createTrainingEvent(),
+  );
+
+  assert.match(embed.toJSON().description ?? "", /Začátek trainingu|Training Start/);
+  assert.doesNotMatch(embed.toJSON().description ?? "", /Start zápasu|Match Start/);
 });
 
 test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched color chips", () => {
@@ -149,5 +174,5 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
   assert.match(json.description ?? "", /\*\*sobota 22\. srpna 2026\*\*/i);
   assert.match(json.description ?? "", /\*\*neděle 23\. srpna 2026\*\*/i);
   assert.match(json.description ?? "", /🟥 \[Registrace do aktivního výběru\]\(https:\/\/calendar\.google\.com\/calendar\/render\?action=TEMPLATE/);
-  assert.match(json.description ?? "", /🟩 VLK vs 57TH - Friendly `19:00 - 21:30`/);
+  assert.match(json.description ?? "", /🟩 VLK vs 57TH - Friendly <t:\d+:t> - <t:\d+:t>/);
 });

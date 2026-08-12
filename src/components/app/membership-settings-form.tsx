@@ -11,6 +11,7 @@ import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-
 import { AvatarPicker } from "@/components/app/avatar-picker";
 import { ConfigNotice } from "@/components/app/config-notice";
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
+import { ExpandableItemCard } from "@/components/app/expandable-item-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -133,6 +134,7 @@ export function MembershipSettingsForm({
   const [isPending, startTransition] = useTransition();
   const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
   const [settings, setSettings] = useState<MembershipSettings>(buildDefaultSettings(dictionary, config));
+  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetch(`/api/servers/${serverId}/discord-metadata`)
@@ -178,6 +180,12 @@ export function MembershipSettingsForm({
         modalQuestions: category.modalQuestions.map((question) => question.id === questionId ? { ...question, ...patch } : question),
       }),
     }));
+  }
+
+  function setCategoryCollapsed(categoryId: string, collapsed: boolean) {
+    setCollapsedCategoryIds((current) =>
+      collapsed ? (current.includes(categoryId) ? current : [...current, categoryId]) : current.filter((id) => id !== categoryId),
+    );
   }
 
   async function handleSave() {
@@ -433,16 +441,18 @@ export function MembershipSettingsForm({
           </p>
 
           {settings.categories.length ? settings.categories.map((category) => (
-            <div key={category.id} className="space-y-4 rounded-2xl border border-border/60 p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <h4 className="font-medium">{category.label?.trim() || category.id}</h4>
-                  <p className="text-xs text-muted-foreground">ID: {category.id}</p>
-                </div>
+            <ExpandableItemCard
+              key={category.id}
+              open={!collapsedCategoryIds.includes(category.id)}
+              onOpenChange={(open) => setCategoryCollapsed(category.id, !open)}
+              title={category.label?.trim() || category.id}
+              subtitle={`ID: ${category.id}`}
+              actions={(
                 <Button type="button" variant="ghost" size="icon" className="rounded-xl" onClick={() => patchSettings({ categories: settings.categories.filter((item) => item.id !== category.id) })}>
                   <Trash2 className="size-4" />
                 </Button>
-              </div>
+              )}
+            >
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="space-y-2">
@@ -571,7 +581,7 @@ export function MembershipSettingsForm({
                   </div>
                 )}
               </div>
-            </div>
+            </ExpandableItemCard>
           )) : (
             <div className="rounded-2xl border border-dashed border-border/60 p-4 text-sm text-muted-foreground">
               {dictionary.membershipSettings.noCategories}

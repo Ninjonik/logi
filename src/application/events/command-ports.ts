@@ -33,6 +33,11 @@ export interface EventScorePort {
   applyScoreToEventSignups(eventId: string): Promise<void>;
 }
 
+export type TrainingCompletionInput = {
+  userId: string;
+  completed: "passed" | "failed";
+};
+
 export type EventUpsertCommand = Omit<EventUpsertInput, "guildId"> & {
   guildId: string;
   eventId?: string;
