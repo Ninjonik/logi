@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip as UiTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { formatDateTime, formatTime } from "@/lib/format";
 import type { MatchRecord, MatchTeamSide } from "@/types/domain";
@@ -79,6 +80,7 @@ type BadgeTone = "default" | "secondary" | "destructive" | "outline";
 type PlayerBadge = {
   label: string;
   tone: BadgeTone;
+  description: string;
 };
 
 function formatDuration(start: string, end: string) {
@@ -295,25 +297,25 @@ function buildPlayerBadges(player: MatchPlayer) {
   const badges: PlayerBadge[] = [];
 
   if (hasMatchingWeapon(player.weapons, /knife|spade|trench/i)) {
-    badges.push({ label: "Blade", tone: "default" });
+    badges.push({ label: "Blade", tone: "default", description: "Killed someone with a melee weapon." });
   }
   if (hasMatchingWeapon(player.weapons, /mine/i)) {
-    badges.push({ label: "Miner", tone: "default" });
+    badges.push({ label: "Miner", tone: "default", description: "Killed someone with a mine." });
   }
   if ((player.kills_by_type?.artillery ?? 0) >= 3) {
-    badges.push({ label: "Artillery", tone: "secondary" });
+    badges.push({ label: "Artillery", tone: "secondary", description: "Got at least 3 artillery kills." });
   }
   if (player.kills_streak >= 8) {
-    badges.push({ label: "Streak", tone: "default" });
+    badges.push({ label: "Streak", tone: "default", description: "Reached a kill streak of 8 or more." });
   }
   if (player.teamkills >= 3) {
-    badges.push({ label: "Friendly Fire", tone: "destructive" });
+    badges.push({ label: "Friendly Fire", tone: "destructive", description: "Teamkilled at least 3 times." });
   }
   if ((Object.values(player.death_by).sort((left, right) => right - left)[0] ?? 0) >= 5) {
-    badges.push({ label: "Nemesis", tone: "outline" });
+    badges.push({ label: "Nemesis", tone: "outline", description: "Was killed at least 5 times by the same opponent." });
   }
   if (player.kills >= 25 && player.deaths <= 10) {
-    badges.push({ label: "Carry", tone: "default" });
+    badges.push({ label: "Carry", tone: "default", description: "Finished with 25+ kills and 10 or fewer deaths." });
   }
 
   return badges.slice(0, 4);
@@ -374,9 +376,9 @@ function buildAwards(players: MatchPlayer[]) {
   ];
 }
 
-function renderRecordList(rows: RecordRow[], emptyLabel: string) {
+function renderRecordList(rows: RecordRow[]) {
   if (rows.length === 0) {
-    return <div className="text-sm text-muted-foreground">{emptyLabel}</div>;
+    return null;
   }
 
   return (
@@ -479,7 +481,6 @@ export function MatchDetails({
             <Card className="rounded-2xl border-border/60">
               <CardHeader>
                 <CardTitle>{dictionary.event.performanceScatter}</CardTitle>
-                <CardDescription>{dictionary.event.rawStats}</CardDescription>
               </CardHeader>
               <CardContent className="h-[340px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -497,7 +498,6 @@ export function MatchDetails({
             <Card className="rounded-2xl border-border/60">
               <CardHeader>
                 <CardTitle>{dictionary.event.killsByTypeTab}</CardTitle>
-                <CardDescription>{dictionary.event.rawStats}</CardDescription>
               </CardHeader>
               <CardContent className="h-[340px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -517,7 +517,6 @@ export function MatchDetails({
             <Card className="rounded-2xl border-border/60">
               <CardHeader>
                 <CardTitle>{dictionary.event.standoutAwards}</CardTitle>
-                <CardDescription>{dictionary.event.rawStats}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3">
                 {awards.map((award) => {
@@ -543,10 +542,9 @@ export function MatchDetails({
             <Card className="rounded-2xl border-border/60">
               <CardHeader>
                 <CardTitle>{dictionary.event.topRivalries}</CardTitle>
-                <CardDescription>{dictionary.event.encountersDescription}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {rivalryData.length ? rivalryData.map((rivalry) => (
+                {rivalryData.map((rivalry) => (
                   <div key={`${rivalry.left}-${rivalry.right}`} className="rounded-xl border border-border/60 px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="font-medium">{rivalry.left} vs {rivalry.right}</div>
@@ -556,9 +554,7 @@ export function MatchDetails({
                       {rivalry.leftKills} - {rivalry.rightKills}
                     </div>
                   </div>
-                )) : (
-                  <div className="text-sm text-muted-foreground">{dictionary.event.noDerivedData}</div>
-                )}
+                ))}
               </CardContent>
             </Card>
           </div>
@@ -627,11 +623,16 @@ export function MatchDetails({
                           <TableCell className="font-medium">{player.player}</TableCell>
                           <TableCell>
                             <div className="flex min-w-40 flex-wrap gap-1">
-                              {badges.length ? badges.map((badge) => (
-                                <Badge key={`${player.player}-${badge.label}`} variant={badge.tone} className="rounded-full px-2.5">
-                                  {badge.label}
-                                </Badge>
-                              )) : <span className="text-xs text-muted-foreground">{dictionary.event.noDerivedData}</span>}
+                              {badges.map((badge) => (
+                                <UiTooltip key={`${player.player}-${badge.label}`}>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant={badge.tone} className="rounded-full px-2.5">
+                                      {badge.label}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={6}>{badge.description}</TooltipContent>
+                                </UiTooltip>
+                              ))}
                             </div>
                           </TableCell>
                           <TableCell>{player.level}</TableCell>
@@ -654,7 +655,6 @@ export function MatchDetails({
           <Card className="rounded-2xl border-border/60">
             <CardHeader>
               <CardTitle>{dictionary.event.playerBreakdowns}</CardTitle>
-              <CardDescription>{dictionary.event.encountersDescription}</CardDescription>
             </CardHeader>
             <CardContent>
               <Accordion type="multiple" className="w-full">
@@ -700,17 +700,17 @@ export function MatchDetails({
                                   </div>
                                 ))}
                               </div>
-                            ) : <div className="text-sm text-muted-foreground">{dictionary.event.noDerivedData}</div>}
+                            ) : null}
                           </div>
 
                           <div className="rounded-xl border border-border/60 p-4">
                             <div className="mb-3 font-medium">{dictionary.event.killsByWeaponForPlayer}</div>
-                            {renderRecordList(killWeapons, dictionary.event.noDerivedData)}
+                            {renderRecordList(killWeapons)}
                           </div>
 
                           <div className="rounded-xl border border-border/60 p-4">
                             <div className="mb-3 font-medium">{dictionary.event.deathsByWeaponForPlayer}</div>
-                            {renderRecordList(deathWeapons, dictionary.event.noDerivedData)}
+                            {renderRecordList(deathWeapons)}
                           </div>
                         </div>
                       </AccordionContent>

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildEventComponents, buildEventEmbed } from "./message-builders";
-import type { DiscordConfig, EventCategory, EventRecord, Group } from "./types";
+import { buildCalendarPanelEmbed, buildEventComponents, buildEventEmbed } from "./message-builders";
+import type { CalendarItem, DiscordConfig, EventCategory, EventRecord, Group } from "./types";
 
 const config: DiscordConfig = {
   id: "config-1",
@@ -101,4 +101,53 @@ test("buildEventEmbed omits group fields when signupGroupIds is empty", () => {
   const fields = embed.toJSON().fields ?? [];
   assert.equal(fields.length, 1);
   assert.match(fields[0]?.name ?? "", /Neúčastní se|Not attending/i);
+});
+
+test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched color chips", () => {
+  const embed = buildCalendarPanelEmbed(
+    config,
+    [
+      {
+        id: "competitive",
+        label: "Kompetitivní zápas",
+        color: "#dc2626",
+        emoji: "🏆",
+      },
+    ],
+    [
+      createMatchEvent({
+        id: "event-red",
+        name: "Registrace do aktivního výběru",
+        matchType: "competitive",
+        meetingStart: "2026-08-22T21:59:00.000Z",
+        gameStart: "2026-08-22T21:59:00.000Z",
+        gameEnd: "2026-08-22T22:04:00.000Z",
+      }),
+    ],
+    [
+      {
+        id: "calendar-green",
+        guildId: "guild-1",
+        title: "VLK vs 57TH - Friendly",
+        color: "#22c55e",
+        emoji: "🤝",
+        label: "Přátelský zápas",
+        startAt: "2026-08-23T17:00:00.000Z",
+        endAt: "2026-08-23T19:30:00.000Z",
+        allDay: false,
+        createdAt: "2026-07-29T10:00:00.000Z",
+        updatedAt: "2026-07-29T10:00:00.000Z",
+      } satisfies CalendarItem,
+    ],
+  );
+
+  const json = embed.toJSON();
+  assert.equal(json.title, "📅 Kalendář");
+  assert.match(json.description ?? "", /\*\*Kategorie\*\*/);
+  assert.match(json.description ?? "", /🟥 🏆 Kompetitivní zápas/);
+  assert.match(json.description ?? "", /🟩 🤝 Přátelský zápas/);
+  assert.match(json.description ?? "", /\*\*sobota 22\. srpna 2026\*\*/i);
+  assert.match(json.description ?? "", /\*\*neděle 23\. srpna 2026\*\*/i);
+  assert.match(json.description ?? "", /🟥 \[Registrace do aktivního výběru\]\(https:\/\/calendar\.google\.com\/calendar\/render\?action=TEMPLATE/);
+  assert.match(json.description ?? "", /🟩 VLK vs 57TH - Friendly `19:00 - 21:30`/);
 });
