@@ -46,12 +46,13 @@ function normalizeCategoryId(value?: string) {
 }
 
 function findEventCategory(categories: SyncPayload["guild"]["eventCategories"], matchType?: string) {
+  const resolvedCategories = Array.isArray(categories) ? categories : [];
   const normalizedMatchType = normalizeCategoryId(matchType);
   if (!normalizedMatchType) {
     return undefined;
   }
 
-  return categories.find((category) => normalizeCategoryId(category.id) === normalizedMatchType);
+  return resolvedCategories.find((category) => normalizeCategoryId(category.id) === normalizedMatchType);
 }
 
 function resolveEventCategoryLabel(categories: SyncPayload["guild"]["eventCategories"], event: EventRecord) {
@@ -528,14 +529,17 @@ export function buildCalendarPanelEmbed(
   events: EventRecord[],
   calendarItems: SyncPayload["calendarItems"] = [],
 ) {
+  const resolvedCategories = Array.isArray(categories) ? categories : [];
+  const resolvedEvents = Array.isArray(events) ? events : [];
+  const resolvedCalendarItems = Array.isArray(calendarItems) ? calendarItems : [];
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const now = Date.now();
-  const upcomingEvents = [...events]
+  const upcomingEvents = [...resolvedEvents]
     .filter((event) => new Date(event.gameEnd).getTime() >= now && event.status !== "concluded")
     .sort((left, right) => new Date(left.meetingStart).getTime() - new Date(right.meetingStart).getTime())
     .slice(0, 20);
   const manualOccurrences = expandCalendarItems(
-    calendarItems as never,
+    resolvedCalendarItems as never,
     new Date(now - 24 * 60 * 60 * 1000),
     new Date(now + 366 * 24 * 60 * 60 * 1000),
   ).filter((item) => new Date(item.endAt).getTime() >= now);
@@ -547,9 +551,9 @@ export function buildCalendarPanelEmbed(
       startAt: event.gameStart,
       endAt: event.gameEnd,
       title: event.name,
-      label: resolveCalendarEventLabel(config, categories, event),
-      color: resolveEventCategoryColor(categories, event),
-      emoji: resolveEventCategoryEmoji(categories, event),
+      label: resolveCalendarEventLabel(config, resolvedCategories, event),
+      color: resolveEventCategoryColor(resolvedCategories, event),
+      emoji: resolveEventCategoryEmoji(resolvedCategories, event),
       url: generateCalendarUrl(event, config.defaultLanguage),
       allDay: false,
     })),
@@ -577,7 +581,7 @@ export function buildCalendarPanelEmbed(
     .setFooter({ text: `${messages.embed.managedFooter} • ${config.timezone}` });
 
   if (!upcomingEntries.length) {
-    if (!categories.length) {
+    if (!resolvedCategories.length) {
       embed.setDescription(messages.calendar.panelEmpty);
     }
     return embed;

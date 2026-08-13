@@ -176,3 +176,24 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
   assert.match(json.description ?? "", /🟥 \[Registrace do aktivního výběru\]\(https:\/\/calendar\.google\.com\/calendar\/render\?action=TEMPLATE/);
   assert.match(json.description ?? "", /🟩 VLK vs 57TH - Friendly <t:\d+:t> - <t:\d+:t>/);
 });
+
+test("buildCalendarPanelEmbed tolerates missing event categories", () => {
+  const embed = buildCalendarPanelEmbed(
+    config,
+    undefined as unknown as EventCategory[],
+    [
+      createMatchEvent({
+        id: "event-no-categories",
+        name: "Fallback Match",
+        meetingStart: "2026-08-22T21:59:00.000Z",
+        gameStart: "2026-08-22T21:59:00.000Z",
+        gameEnd: "2026-08-22T22:04:00.000Z",
+      }),
+    ],
+    [],
+  );
+
+  const json = embed.toJSON();
+  assert.equal(json.title, "📅 Kalendář");
+  assert.match(json.description ?? "", /Fallback Match/);
+});
