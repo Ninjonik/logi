@@ -22,6 +22,29 @@ export type SignupLanguageLabels = {
   markedNotAttending: string;
 };
 
+export function formatSignupUpdatedMessage(template: string, actionLabel: string) {
+  return template.replace("{type}", actionLabel);
+}
+
+export function getSignupDisplayLabel(
+  appliedSignupLabel: string,
+  labels: Pick<SignupLanguageLabels, "attend" | "generalSignup" | "decline">,
+) {
+  if (appliedSignupLabel === TRAINING_ATTEND) {
+    return labels.attend;
+  }
+
+  if (appliedSignupLabel === SIGNUP_GENERAL) {
+    return labels.generalSignup;
+  }
+
+  if (appliedSignupLabel === SIGNUP_NOT_ATTENDING) {
+    return labels.decline;
+  }
+
+  return appliedSignupLabel;
+}
+
 export type EventSignupAction =
   | { id: typeof TRAINING_ATTEND; label: string; kind: "attend" }
   | { id: typeof SIGNUP_GENERAL; label: string; kind: "general" }

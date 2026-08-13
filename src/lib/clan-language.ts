@@ -19,6 +19,7 @@ type ClanDiscordMessages = {
     unableToResolveMembership: string;
     missingRequiredRole: string;
     signupUpdated: string;
+    signupUpdatedWithType: string;
     markedNotAttending: string;
     attendanceNotOpen: string;
     rosterNotPublished: string;
@@ -292,6 +293,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       unableToResolveMembership: "Unable to resolve your server membership.",
       missingRequiredRole: "You do not have the required Discord role for this signup.",
       signupUpdated: "Signup updated.",
+      signupUpdatedWithType: "Signup updated - {type}.",
       markedNotAttending: "Marked as not attending.",
       attendanceNotOpen: "Attendance acknowledgement is not open right now.",
       rosterNotPublished: "Roster is not published for this event yet.",
@@ -659,6 +661,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       unableToResolveMembership: "Nepodařilo se ověřit vaše členství na serveru.",
       missingRequiredRole: "Pro toto přihlášení nemáte požadovanou Discord roli.",
       signupUpdated: "Přihlášení bylo upraveno.",
+      signupUpdatedWithType: "Přihlášení bylo upraveno - {type}.",
       markedNotAttending: "Označeno jako neúčast.",
       attendanceNotOpen: "Potvrzování účasti teď není otevřené.",
       rosterNotPublished: "Soupiska pro tuto akci ještě není publikovaná.",

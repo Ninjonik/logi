@@ -11,8 +11,19 @@ export class ReconcileEventStatusesUseCase {
     private readonly clock: Clock,
   ) {}
 
-  async execute(): Promise<string[]> {
-    const records = await this.events.listAll();
+  async execute(input?: { cursor?: string | null; limit?: number }): Promise<{
+    changedEventIds: string[];
+    continueCursor: string | null;
+    isDone: boolean;
+  }> {
+    const page = input?.limit
+      ? await this.events.listPage(input.cursor ?? null, input.limit)
+      : {
+          records: await this.events.listAll(),
+          continueCursor: null,
+          isDone: true,
+        };
+    const records = page.records;
     const now = this.clock.now();
     const nowIso = now.toISOString();
     const changedEventIds: string[] = [];
@@ -55,6 +66,10 @@ export class ReconcileEventStatusesUseCase {
       changedEventIds.push(event.id);
     }
 
-    return changedEventIds;
+    return {
+      changedEventIds,
+      continueCursor: page.continueCursor,
+      isDone: page.isDone,
+    };
   }
 }

@@ -169,11 +169,17 @@ export const toggleSignUp = mutation({
 export const reconcileStatuses = mutation({
   args: {
     secret: v.string(),
+    cursor: v.optional(v.string()),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     return await handleReconcileStatuses({
       secret: args.secret,
       expectedSecret: INTERNAL_AUTH_SECRET,
+      args: {
+        cursor: args.cursor ?? null,
+        limit: args.limit ?? 25,
+      },
       createUseCase: () => new ReconcileEventStatusesUseCase(
         new ConvexEventCommandRepository(ctx),
         new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),

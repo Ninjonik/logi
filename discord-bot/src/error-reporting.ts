@@ -11,7 +11,7 @@ import { convex, references } from "./convex";
 import { logWarn } from "./log";
 
 type ClanErrorReportInput = {
-  client: Client;
+  client?: Client;
   guildId: string;
   error: unknown;
   action: string;
@@ -55,6 +55,10 @@ function truncate(value: string, max = 1024) {
 }
 
 export async function reportClanDiscordError(input: ClanErrorReportInput) {
+  if (!input.client) {
+    return;
+  }
+
   const config = await convex.query(references.getConfigByDiscordGuildId, {
     guildId: input.guildId,
   }) as { errorsChannelId?: string } | null;

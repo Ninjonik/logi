@@ -112,6 +112,62 @@ export class GuildCache {
   }
 }
 
+export function hasConfiguredClanDiscordTarget(runtime: Pick<GuildRuntimeData, "config" | "groups">) {
+  const config = runtime.config;
+  if (!config) {
+    return false;
+  }
+
+  const topLevelIds = [
+    config.announcementsChannelId,
+    config.errorsChannelId,
+    config.calendarChannelId,
+    config.calendarMessageChannelId,
+    config.forumCategoryId,
+    config.meetingChannelId,
+    config.clanRoleId,
+    config.dashboardAdminRoleId,
+    config.ticketPanelMessageId,
+    config.membershipPanelMessageId,
+  ];
+
+  if (topLevelIds.some(Boolean)) {
+    return true;
+  }
+
+  if (runtime.groups.some((group) => Boolean(group.discordRoleId))) {
+    return true;
+  }
+
+  const ticketSettings = config.ticketSettings;
+  if (ticketSettings) {
+    if (
+      ticketSettings.submitChannelId ||
+      ticketSettings.ticketParentChannelId ||
+      ticketSettings.categories.some((category) => category.supportRoleIds.length > 0)
+    ) {
+      return true;
+    }
+  }
+
+  const membershipSettings = config.membershipSettings;
+  if (membershipSettings) {
+    if (
+      membershipSettings.submitChannelId ||
+      membershipSettings.applicationParentChannelId ||
+      membershipSettings.categories.some((category) =>
+        category.supportRoleIds.length > 0 ||
+        category.recruitRoleIds.length > 0 ||
+        category.finalRoleIds.length > 0
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function buildGuildSignature(runtime: GuildRuntimeData) {
   const configSignature = runtime.config
     ? `${runtime.config.id}:${runtime.config.updatedAt}`

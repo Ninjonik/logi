@@ -49,10 +49,11 @@ export async function handleToggleSignup(input: {
 export async function handleReconcileStatuses(input: {
   secret: string;
   expectedSecret: string;
-  createUseCase: () => ExecuteUseCase<void, unknown>;
+  args: { cursor: string | null; limit: number };
+  createUseCase: () => ExecuteUseCase<{ cursor: string | null; limit: number }, unknown>;
 }) {
   assertInternalSecret(input.secret, input.expectedSecret);
-  return await input.createUseCase().execute(undefined);
+  return await input.createUseCase().execute(input.args);
 }
 
 export async function handleConcludeEvent(input: {
@@ -131,7 +132,7 @@ export function handleFindNoticeTarget(input: {
 }) {
   return findEligibleNoticeTargets({
     events: input.events.map((event) => {
-      const normalized = normalizeEventRecord(event);
+      const normalized = normalizeEventRecord(event, input.now);
       return {
         id: String(event._id),
         name: event.name,

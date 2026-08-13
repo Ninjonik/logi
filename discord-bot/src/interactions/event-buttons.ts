@@ -1,7 +1,8 @@
 import { type ButtonInteraction, type GuildMember } from "discord.js";
 
+import { SIGNUP_NOT_ATTENDING } from "../../../src/domain/events/types";
 import { getClanDiscordMessages } from "../../../src/lib/clan-language";
-import { resolveEventSignupSelection } from "../../../src/lib/event-signup";
+import { formatSignupUpdatedMessage, getSignupDisplayLabel, resolveEventSignupSelection } from "../../../src/lib/event-signup";
 import { revalidateAppData } from "../cache";
 import { convex, references } from "../convex";
 import { env } from "../environment";
@@ -76,12 +77,12 @@ export async function handleEventButtonInteraction(
     return;
   }
 
-  await convex.mutation(references.toggleSignUp, {
+  const result = await convex.mutation(references.toggleSignUp, {
     secret: env.internalSecret,
     eventId: eventId as never,
     userId: interaction.user.id,
     group: resolved.group,
-  });
+  }) as { appliedSignupLabel: string };
   await revalidateAppData({
     type: "event-changed",
     serverId: context.event.guildId,
@@ -97,7 +98,12 @@ export async function handleEventButtonInteraction(
   });
 
   await interaction.reply({
-    content: resolved.successMessage,
+    content: result.appliedSignupLabel === SIGNUP_NOT_ATTENDING
+      ? messages.interaction.markedNotAttending
+      : formatSignupUpdatedMessage(
+          messages.interaction.signupUpdatedWithType,
+          getSignupDisplayLabel(result.appliedSignupLabel, messages.buttons),
+        ),
     ephemeral: true,
   });
 }
