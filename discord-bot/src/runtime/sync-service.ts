@@ -12,7 +12,7 @@ import { syncGuildPayload } from "../sync";
 import { syncCalendarPanel } from "../sync/panels";
 import type { EventSyncContext, EventSyncIndex, SyncPayload } from "../types";
 
-import { GuildCache, type GuildRuntimeData } from "./guild-cache";
+import { GuildCache, hasConfiguredClanDiscordTarget, type GuildRuntimeData } from "./guild-cache";
 
 type EventIndexRecord = EventSyncIndex["events"][number];
 type RosterIndexRecord = EventSyncIndex["rosters"][number];
@@ -37,7 +37,10 @@ export class DiscordSyncService {
     logInfo("sync-service", "Starting sync service");
     await this.guildCache.start((guildIds) => {
       for (const guildId of guildIds) {
-        this.queueGuildSync(guildId);
+        const runtime = this.guildCache.get(guildId);
+        if (runtime && hasConfiguredClanDiscordTarget(runtime)) {
+          this.queueGuildSync(guildId);
+        }
       }
       this.scheduleFlush(250);
     });
@@ -165,7 +168,10 @@ export class DiscordSyncService {
         if (this.fullResyncRequested) {
           this.fullResyncRequested = false;
           for (const guildId of this.guildCache.getAllGuildIds()) {
-            this.queuedGuildIds.add(guildId);
+            const runtime = this.guildCache.get(guildId);
+            if (runtime && hasConfiguredClanDiscordTarget(runtime)) {
+              this.queuedGuildIds.add(guildId);
+            }
           }
           logInfo("sync-service", "Expanded full resync into guild queue", {
             queuedGuilds: this.queuedGuildIds.size,
@@ -257,6 +263,10 @@ export class DiscordSyncService {
       logWarn("sync-service", "Skipping guild sync because config is missing", { guildId });
       return;
     }
+    if (!hasConfiguredClanDiscordTarget(runtime)) {
+      logInfo("sync-service", "Skipping guild sync because clan Discord settings are empty", { guildId });
+      return;
+    }
 
     const eventIds = [...this.eventIndexById.values()]
       .filter((event) => event.guildId === guildId)
@@ -287,6 +297,13 @@ export class DiscordSyncService {
       });
       return;
     }
+    if (!hasConfiguredClanDiscordTarget(runtime)) {
+      logInfo("sync-service", "Skipping event sync because clan Discord settings are empty", {
+        eventId,
+        guildId: context.event.guildId,
+      });
+      return;
+    }
 
     const payload = buildGuildPayload(runtime, [context]);
     logInfo("sync-service", "Syncing single event payload", {
@@ -308,7 +325,7 @@ export class DiscordSyncService {
 
   private async syncGuildCalendar(guildId: string) {
     const runtime = this.guildCache.get(guildId);
-    if (!runtime?.config) {
+    if (!runtime?.config || !hasConfiguredClanDiscordTarget(runtime)) {
       return;
     }
 

@@ -76,6 +76,7 @@ test("normalizeDoc, normalizeGuildDoc, and normalizeUserDoc normalize identifier
     name: "Guild",
     id: "guild-1",
     eventCategories: [],
+    calendarItems: [],
   });
 
   const user = normalizeUserDoc({

@@ -42,6 +42,7 @@ import type { AppUser, EventRecord, Group, Roster } from "@/types/domain";
 import { formatDateTime } from "@/lib/format";
 import { formatHllPresetLabel } from "@/lib/hll-map-presets";
 import {
+  autoFillRosterAssignments,
   compareRosterCandidates,
   getSignupGroupByUserId,
   getUserSignupLabel,
@@ -101,6 +102,9 @@ export function RosterBoard({
   const [notAttendingPickerOpen, setNotAttendingPickerOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [autoFillDialogOpen, setAutoFillDialogOpen] = useState(false);
+  const [autoFillScoreWeight, setAutoFillScoreWeight] = useState(50);
+  const [autoFillKdWeight, setAutoFillKdWeight] = useState(50);
   const deferredReserveSearch = useDeferredValue(reserveSearch);
   const deferredNotAttendingSearch = useDeferredValue(notAttendingSearch);
   const isLayoutMode = mode === "layout";
@@ -716,56 +720,13 @@ export function RosterBoard({
     setIsDirty(true);
     setBoard((current) => {
       if (!current) return current;
-      const next = structuredClone(current);
-      const availableUserIds = [...(next.reservePlayerIds || [])];
-      const assignedFromAutoFill = new Set<string>();
-
-      for (const squad of next.squads) {
-        for (const player of squad.players) {
-          if (player.id || getCustomPlayerName(player)) {
-            continue;
-          }
-
-          let bestCandidateIndex = -1;
-
-          for (let index = 0; index < availableUserIds.length; index += 1) {
-            const userId = availableUserIds[index];
-            if (assignedFromAutoFill.has(userId)) {
-              continue;
-            }
-
-            if (bestCandidateIndex < 0) {
-              bestCandidateIndex = index;
-              continue;
-            }
-
-            const isBetterCandidate = compareRosterCandidates(userId, availableUserIds[bestCandidateIndex], rankingContext, {
-              squadGroup: squad.group,
-              roleName: player.roleName,
-              roleIcon: player.roleIcon,
-            }) < 0;
-            if (isBetterCandidate) {
-              bestCandidateIndex = index;
-            }
-          }
-
-          if (bestCandidateIndex < 0) {
-            continue;
-          }
-
-          const [userId] = availableUserIds.splice(bestCandidateIndex, 1);
-          assignedFromAutoFill.add(userId);
-          player.id = userId;
-          player.customName = undefined;
-          player.ack = false;
-          player.confirmed = false;
-        }
-      }
-
-      next.reservePlayerIds = availableUserIds;
-      return next;
+      return autoFillRosterAssignments(current, rankingContext, {
+        score: autoFillScoreWeight / 100,
+        kd: autoFillKdWeight / 100,
+      });
     });
 
+    setAutoFillDialogOpen(false);
     toast.success(dictionary.roster.autoFilled);
   }
 
@@ -963,7 +924,7 @@ export function RosterBoard({
               <Button
                 variant="outline"
                 className={actionControlClass}
-                onClick={autoFillRoster}
+                onClick={() => setAutoFillDialogOpen(true)}
                 disabled={isPending || isConfirmingMeetingChannel}
               >
                 <WandSparkles className="size-4" />
@@ -1185,6 +1146,57 @@ export function RosterBoard({
             <Button className="rounded-xl" onClick={() => handleSave(true)} disabled={isPending || isConfirmingMeetingChannel}>
               {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               {dictionary.roster.publishRoster}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={autoFillDialogOpen} onOpenChange={setAutoFillDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dictionary.roster.autoFill}</DialogTitle>
+            <DialogDescription>{dictionary.roster.autoFillDescription}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm font-medium">
+                <span>{dictionary.roster.autoFillScoreWeight}</span>
+                <span>{autoFillScoreWeight}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={autoFillScoreWeight}
+                onChange={(event) => setAutoFillScoreWeight(Number(event.target.value))}
+                className="w-full accent-primary"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm font-medium">
+                <span>{dictionary.roster.autoFillKdWeight}</span>
+                <span>{autoFillKdWeight}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={autoFillKdWeight}
+                onChange={(event) => setAutoFillKdWeight(Number(event.target.value))}
+                className="w-full accent-primary"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" className="rounded-xl">
+                {dictionary.common.cancel}
+              </Button>
+            </DialogClose>
+            <Button className="rounded-xl" onClick={autoFillRoster} disabled={isPending || isConfirmingMeetingChannel}>
+              <WandSparkles className="size-4" />
+              {dictionary.roster.autoFillConfirm}
             </Button>
           </DialogFooter>
         </DialogContent>

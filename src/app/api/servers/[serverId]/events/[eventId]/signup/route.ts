@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { SIGNUP_NOT_ATTENDING } from "@/domain/events/types";
 import { handleIfNotLoggedIn } from "@/lib/auth";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getClanDiscordMessages } from "@/lib/clan-language";
-import { resolveEventSignupSelection } from "@/lib/event-signup";
+import { formatSignupUpdatedMessage, getSignupDisplayLabel, resolveEventSignupSelection } from "@/lib/event-signup";
 import { getServerContext } from "@/lib/server-context";
 import { toggleServerEventSignup } from "@/lib/server-events";
 
@@ -44,7 +45,7 @@ export async function POST(
     return NextResponse.json({ error: resolved.error }, { status: 400 });
   }
 
-  await toggleServerEventSignup({
+  const result = await toggleServerEventSignup({
     eventId,
     userId: user.discordId,
     group: resolved.group,
@@ -58,5 +59,15 @@ export async function POST(
     appCacheTags.rosterImageEvent(eventId),
   ]);
 
-  return NextResponse.json({ ok: true, message: resolved.successMessage });
+  const appliedSignupLabel = (result as { appliedSignupLabel: string }).appliedSignupLabel;
+
+  return NextResponse.json({
+    ok: true,
+    message: appliedSignupLabel === SIGNUP_NOT_ATTENDING
+      ? messages.interaction.markedNotAttending
+      : formatSignupUpdatedMessage(
+          messages.interaction.signupUpdatedWithType,
+          getSignupDisplayLabel(appliedSignupLabel, messages.buttons),
+        ),
+  });
 }

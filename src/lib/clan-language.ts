@@ -19,6 +19,7 @@ type ClanDiscordMessages = {
     unableToResolveMembership: string;
     missingRequiredRole: string;
     signupUpdated: string;
+    signupUpdatedWithType: string;
     markedNotAttending: string;
     attendanceNotOpen: string;
     rosterNotPublished: string;
@@ -42,6 +43,7 @@ type ClanDiscordMessages = {
     registrationEnds: string;
     meeting: string;
     matchStart: string;
+    trainingStart: string;
     status: string;
     managedFooter: string;
     nobodyYet: string;
@@ -112,6 +114,12 @@ type ClanDiscordMessages = {
     readyDm: string;
     readyInteraction: string;
     successPage: string;
+  };
+  training: {
+    resultPassed: string;
+    resultFailed: string;
+    rewardGranted: string;
+    dmResult: string;
   };
   platformFlow?: {
     title: string;
@@ -285,6 +293,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       unableToResolveMembership: "Unable to resolve your server membership.",
       missingRequiredRole: "You do not have the required Discord role for this signup.",
       signupUpdated: "Signup updated.",
+      signupUpdatedWithType: "Signup updated - {type}.",
       markedNotAttending: "Marked as not attending.",
       attendanceNotOpen: "Attendance acknowledgement is not open right now.",
       rosterNotPublished: "Roster is not published for this event yet.",
@@ -308,6 +317,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       registrationEnds: "Registration Ends",
       meeting: "Headcount / Meeting",
       matchStart: "Match Start",
+      trainingStart: "Training Start",
       status: "Status",
       managedFooter: "Managed via Logi • Times adapt to your device",
       nobodyYet: "*Nobody yet*",
@@ -378,6 +388,12 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       readyDm: "Your platform ID has been linked successfully.",
       readyInteraction: "Your platform ID has been linked successfully.",
       successPage: "Platform ID linked successfully. You can close this page now.",
+    },
+    training: {
+      resultPassed: "passed",
+      resultFailed: "did not pass",
+      rewardGranted: "Reward roles have been granted in Discord.",
+      dmResult: "Hi {name}, your training result for **{event}** is: {result}.{reward}",
     },
     platformFlow: {
       title: "Link your platform ID",
@@ -645,6 +661,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       unableToResolveMembership: "Nepodařilo se ověřit vaše členství na serveru.",
       missingRequiredRole: "Pro toto přihlášení nemáte požadovanou Discord roli.",
       signupUpdated: "Přihlášení bylo upraveno.",
+      signupUpdatedWithType: "Přihlášení bylo upraveno - {type}.",
       markedNotAttending: "Označeno jako neúčast.",
       attendanceNotOpen: "Potvrzování účasti teď není otevřené.",
       rosterNotPublished: "Soupiska pro tuto akci ještě není publikovaná.",
@@ -668,6 +685,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       registrationEnds: "Konec registrace",
       meeting: "Sraz / Headcount",
       matchStart: "Start zápasu",
+      trainingStart: "Začátek trainingu",
       status: "Stav",
       managedFooter: "Spravováno přes Logi • Časy se přizpůsobí vašemu zařízení",
       nobodyYet: "*Zatím nikdo*",
@@ -738,6 +756,12 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       readyDm: "Vaše platform ID bylo úspěšně propojeno.",
       readyInteraction: "Vaše platform ID bylo úspěšně propojeno.",
       successPage: "Platform ID bylo úspěšně propojeno. Tuto stránku teď můžete zavřít.",
+    },
+    training: {
+      resultPassed: "prošel",
+      resultFailed: "neprošel",
+      rewardGranted: "Odměnové role vám byly přiděleny na Discordu.",
+      dmResult: "Ahoj {name}, výsledek tvého trainingu **{event}** je: {result}.{reward}",
     },
     ticket: {
       serverOnly: "Tickety lze otevřít pouze uvnitř serveru.",

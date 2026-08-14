@@ -29,13 +29,14 @@ test("ToggleSignupUseCase persists signups and triggers roster sync", async () =
     new FakeClock(new Date("2026-01-01T09:00:00.000Z")),
   );
 
-  const signUps = await useCase.execute({
+  const result = await useCase.execute({
     eventId: "event-1",
     userId: "user-1",
     group: "INF",
   });
 
-  assert.equal(signUps.length, 1);
+  assert.equal(result.signUps.length, 1);
+  assert.equal(result.appliedSignupLabel, "INF");
   assert.equal(syncPort.calls.length, 1);
   assert.deepEqual(syncPort.calls[0], { eventId: "event-1", userId: "user-1" });
   assert.equal(events.events.get("event-1")?.participants?.[0]?.status, "attending");
@@ -77,13 +78,14 @@ test("ToggleSignupUseCase supports training signups during starting before regis
     new FakeClock(new Date("2026-01-01T11:30:00.000Z")),
   );
 
-  const signUps = await useCase.execute({
+  const result = await useCase.execute({
     eventId: "event-1",
     userId: "user-1",
     group: "INF",
   });
 
-  assert.deepEqual(signUps, [{ userId: "user-1", group: "INF" }]);
+  assert.deepEqual(result.signUps, [{ userId: "user-1", group: "INF" }]);
+  assert.equal(result.appliedSignupLabel, "INF");
   assert.equal(syncPort.calls.length, 1);
 });
 
@@ -129,6 +131,8 @@ test("ToggleSignupUseCase resolves general match signup from the primary group a
     group: SIGNUP_GENERAL,
   });
 
-  assert.deepEqual(groupedSignup[0], { userId: "user-1", group: "INF" });
-  assert.deepEqual(reserveSignup[1], { userId: "user-2", group: "ATTENDING" });
+  assert.deepEqual(groupedSignup.signUps[0], { userId: "user-1", group: "INF" });
+  assert.equal(groupedSignup.appliedSignupLabel, "INF");
+  assert.deepEqual(reserveSignup.signUps[1], { userId: "user-2", group: "ATTENDING" });
+  assert.equal(reserveSignup.appliedSignupLabel, SIGNUP_GENERAL);
 });

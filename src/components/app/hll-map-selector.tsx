@@ -276,8 +276,7 @@ export function HllMapSelector({
             options={(selectedMap?.strongpoints ?? []).map((point) => ({
               value: point.id,
               label: point.label,
-              detail: pointShowGrid ? point.grid : undefined,
-              searchText: `${point.label} ${point.grid} ${point.id}`,
+              searchText: `${point.label} ${point.id}`,
             }))}
           />
         </div>

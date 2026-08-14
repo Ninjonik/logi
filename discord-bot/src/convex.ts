@@ -10,7 +10,32 @@ if (typeof globalThis.WebSocket === "undefined") {
   globalThis.WebSocket = WebSocket as typeof globalThis.WebSocket;
 }
 
-export const convex = new ConvexReactClient(env.convexUrl);
+let convexClient: ConvexReactClient | null = null;
+
+function getConvexClient() {
+  if (!convexClient) {
+    convexClient = new ConvexReactClient(env.convexUrl);
+  }
+
+  return convexClient;
+}
+
+export const convex = new Proxy({} as ConvexReactClient, {
+  get(_target, property, receiver) {
+    const value = Reflect.get(getConvexClient() as object, property, receiver);
+    return typeof value === "function" ? value.bind(getConvexClient()) : value;
+  },
+});
+
+export async function closeConvexClient() {
+  if (!convexClient) {
+    return;
+  }
+
+  const client = convexClient;
+  convexClient = null;
+  await client.close();
+}
 
 export const references = {
   acknowledgeAttendance: makeFunctionReference<"mutation">("rosters:acknowledgeAttendance"),

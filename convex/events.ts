@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case";
+import { CompleteTrainingUseCase } from "../src/application/events/complete-training.use-case";
 import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case";
 import { ReconcileEventStatusesUseCase } from "../src/application/events/reconcile-event-statuses.use-case";
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case";
@@ -168,11 +169,17 @@ export const toggleSignUp = mutation({
 export const reconcileStatuses = mutation({
   args: {
     secret: v.string(),
+    cursor: v.optional(v.string()),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     return await handleReconcileStatuses({
       secret: args.secret,
       expectedSecret: INTERNAL_AUTH_SECRET,
+      args: {
+        cursor: args.cursor ?? null,
+        limit: args.limit ?? 25,
+      },
       createUseCase: () => new ReconcileEventStatusesUseCase(
         new ConvexEventCommandRepository(ctx),
         new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),
@@ -197,6 +204,30 @@ export const conclude = mutation({
         new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),
         systemClock,
       ),
+    });
+  },
+});
+
+export const completeTraining = mutation({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+    participants: v.array(v.object({
+      userId: v.string(),
+      completed: v.union(v.literal("passed"), v.literal("failed")),
+    })),
+  },
+  handler: async (ctx, args) => {
+    if (args.secret !== INTERNAL_AUTH_SECRET) {
+      throw new Error("Unauthorized.");
+    }
+
+    return await new CompleteTrainingUseCase(
+      new ConvexEventCommandRepository(ctx),
+      new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),
+      systemClock,
+    ).execute(String(args.eventId), {
+      participants: args.participants,
     });
   },
 });

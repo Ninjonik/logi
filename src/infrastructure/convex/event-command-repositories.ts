@@ -19,6 +19,23 @@ export class ConvexEventCommandRepository implements EventCommandRepository {
     return events.map((event) => ({ id: String(event._id), ...event })) as EventCommandRecord[];
   }
 
+  async listPage(cursor: string | null, limit: number): Promise<{
+    records: EventCommandRecord[];
+    continueCursor: string | null;
+    isDone: boolean;
+  }> {
+    const result = await this.ctx.db.query("events").paginate({
+      cursor: cursor ?? null,
+      numItems: limit,
+    });
+
+    return {
+      records: result.page.map((event) => ({ id: String(event._id), ...event })) as EventCommandRecord[],
+      continueCursor: result.continueCursor,
+      isDone: result.isDone,
+    };
+  }
+
   async create(input: Record<string, unknown>): Promise<string> {
     const eventId = await this.ctx.db.insert("events", input as any);
     return String(eventId);

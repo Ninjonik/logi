@@ -46,12 +46,13 @@ function normalizeCategoryId(value?: string) {
 }
 
 function findEventCategory(categories: SyncPayload["guild"]["eventCategories"], matchType?: string) {
+  const resolvedCategories = Array.isArray(categories) ? categories : [];
   const normalizedMatchType = normalizeCategoryId(matchType);
   if (!normalizedMatchType) {
     return undefined;
   }
 
-  return categories.find((category) => normalizeCategoryId(category.id) === normalizedMatchType);
+  return resolvedCategories.find((category) => normalizeCategoryId(category.id) === normalizedMatchType);
 }
 
 function resolveEventCategoryLabel(categories: SyncPayload["guild"]["eventCategories"], event: EventRecord) {
@@ -125,7 +126,7 @@ export function buildEventEmbed(
 
   descriptionLines.push(`**⏰ ${messages.embed.registrationEnds}:** <t:${regEndUnix}:R> (<t:${regEndUnix}:f>)`);
   descriptionLines.push(`**📢 ${messages.embed.meeting}:** <t:${meetingUnix}:t>`);
-  descriptionLines.push(`**🚀 ${messages.embed.matchStart}:** <t:${gameStartUnix}:F>`);
+  descriptionLines.push(`**🚀 ${event.kind === "training" ? messages.embed.trainingStart : messages.embed.matchStart}:** <t:${gameStartUnix}:F>`);
   const categoryLabel = resolveEventCategoryLabel(categories, event);
   if (categoryLabel) {
     descriptionLines.push(`**🏷️ ${messages.calendar.matchLabel}:** ${categoryLabel}`);
@@ -518,20 +519,27 @@ function escapeDiscordLinkLabel(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/\]/g, "\\]");
 }
 
+function toDiscordTimestamp(timestamp: string, style: "t" | "f" | "F" | "R") {
+  return `<t:${Math.floor(new Date(timestamp).getTime() / 1000)}:${style}>`;
+}
+
 export function buildCalendarPanelEmbed(
   config: DiscordConfig,
   categories: SyncPayload["guild"]["eventCategories"],
   events: EventRecord[],
   calendarItems: SyncPayload["calendarItems"] = [],
 ) {
+  const resolvedCategories = Array.isArray(categories) ? categories : [];
+  const resolvedEvents = Array.isArray(events) ? events : [];
+  const resolvedCalendarItems = Array.isArray(calendarItems) ? calendarItems : [];
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const now = Date.now();
-  const upcomingEvents = [...events]
+  const upcomingEvents = [...resolvedEvents]
     .filter((event) => new Date(event.gameEnd).getTime() >= now && event.status !== "concluded")
     .sort((left, right) => new Date(left.meetingStart).getTime() - new Date(right.meetingStart).getTime())
     .slice(0, 20);
   const manualOccurrences = expandCalendarItems(
-    calendarItems as never,
+    resolvedCalendarItems as never,
     new Date(now - 24 * 60 * 60 * 1000),
     new Date(now + 366 * 24 * 60 * 60 * 1000),
   ).filter((item) => new Date(item.endAt).getTime() >= now);
@@ -543,9 +551,9 @@ export function buildCalendarPanelEmbed(
       startAt: event.gameStart,
       endAt: event.gameEnd,
       title: event.name,
-      label: resolveCalendarEventLabel(config, categories, event),
-      color: resolveEventCategoryColor(categories, event),
-      emoji: resolveEventCategoryEmoji(categories, event),
+      label: resolveCalendarEventLabel(config, resolvedCategories, event),
+      color: resolveEventCategoryColor(resolvedCategories, event),
+      emoji: resolveEventCategoryEmoji(resolvedCategories, event),
       url: generateCalendarUrl(event, config.defaultLanguage),
       allDay: false,
     })),
@@ -573,7 +581,7 @@ export function buildCalendarPanelEmbed(
     .setFooter({ text: `${messages.embed.managedFooter} • ${config.timezone}` });
 
   if (!upcomingEntries.length) {
-    if (!categories.length) {
+    if (!resolvedCategories.length) {
       embed.setDescription(messages.calendar.panelEmpty);
     }
     return embed;
@@ -611,13 +619,13 @@ export function buildCalendarPanelEmbed(
 
     const timeLabel = entry.allDay
       ? allDayLabel
-      : `${formatCalendarTime(entry.startAt, config.timezone, config.defaultLanguage)} - ${formatCalendarTime(entry.endAt, config.timezone, config.defaultLanguage)}`;
+      : `${toDiscordTimestamp(entry.startAt, "t")} - ${toDiscordTimestamp(entry.endAt, "t")}`;
     const chip = getColorChipEmoji(entry.color);
     const title = formatDiscordMarkdown(entry.title).replace(/\n+/g, " ").trim();
     const linkedTitle = entry.url
       ? `[${escapeDiscordLinkLabel(title)}](${entry.url})`
       : title;
-    const rowParts = [chip, linkedTitle, `\`${timeLabel}\``];
+    const rowParts = [chip, linkedTitle, timeLabel];
     descriptionLines.push(rowParts.join(" "));
   }
 

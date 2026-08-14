@@ -411,6 +411,42 @@ export async function syncDiscordRolesForAssignment(input: {
   };
 }
 
+export async function syncDiscordMemberRoleIds(input: {
+  discordGuildId: string;
+  userId: string;
+  addRoleIds?: string[];
+  removeRoleIds?: string[];
+}) {
+  if (!getDiscordBotToken()) {
+    return { addedRoleIds: [], removedRoleIds: [] };
+  }
+
+  const roleIdsToAdd = [...new Set(input.addRoleIds ?? [])];
+  const roleIdsToRemove = [...new Set(input.removeRoleIds ?? [])];
+
+  if (roleIdsToAdd.length === 0 && roleIdsToRemove.length === 0) {
+    return { addedRoleIds: [], removedRoleIds: [] };
+  }
+
+  await Promise.all([
+    ...roleIdsToAdd.map((roleId) =>
+      fetchDiscordBot(`/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`, {
+        method: "PUT",
+      }),
+    ),
+    ...roleIdsToRemove.map((roleId) =>
+      fetchDiscordBot(`/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`, {
+        method: "DELETE",
+      }),
+    ),
+  ]);
+
+  return {
+    addedRoleIds: roleIdsToAdd,
+    removedRoleIds: roleIdsToRemove,
+  };
+}
+
 function getMembershipRoleIds(
   config: Awaited<ReturnType<typeof getDiscordConfigByGuild>>,
   type: "member" | "mercenary",

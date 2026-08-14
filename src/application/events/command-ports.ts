@@ -11,6 +11,11 @@ export type EventCommandRecord = EventLike & {
 export interface EventCommandRepository {
   getById(eventId: string): Promise<EventCommandRecord | null>;
   listAll(): Promise<EventCommandRecord[]>;
+  listPage(cursor: string | null, limit: number): Promise<{
+    records: EventCommandRecord[];
+    continueCursor: string | null;
+    isDone: boolean;
+  }>;
   create(input: ReturnType<typeof import("@/domain/events/upsert-policy").buildCreateEventRecord>): Promise<string>;
   update(eventId: string, patch: Record<string, unknown>): Promise<void>;
   updateStatus(eventId: string, patch: {
@@ -32,6 +37,11 @@ export interface EventCommandRepository {
 export interface EventScorePort {
   applyScoreToEventSignups(eventId: string): Promise<void>;
 }
+
+export type TrainingCompletionInput = {
+  userId: string;
+  completed: "passed" | "failed";
+};
 
 export type EventUpsertCommand = Omit<EventUpsertInput, "guildId"> & {
   guildId: string;

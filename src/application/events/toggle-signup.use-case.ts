@@ -1,7 +1,7 @@
 import type { Clock } from "@/application/ports/clock";
 import { normalizeEventRecord } from "@/domain/events/normalization";
 import { toggleSignup } from "@/domain/events/signup-policy";
-import { SIGNUP_GENERAL } from "@/domain/events/types";
+import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING } from "@/domain/events/types";
 
 import type { EventWorkflowRepository, EventWorkflowSyncPort } from "./ports";
 
@@ -53,6 +53,9 @@ export class ToggleSignupUseCase {
     });
     await this.rosterSync.syncRosterMembershipForUser(input.eventId, input.userId);
 
-    return next.signUps;
+    return {
+      signUps: next.signUps,
+      appliedSignupLabel: input.group === SIGNUP_NOT_ATTENDING ? SIGNUP_NOT_ATTENDING : (nextGroup ?? SIGNUP_GENERAL),
+    };
   }
 }

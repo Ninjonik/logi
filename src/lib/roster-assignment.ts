@@ -12,6 +12,11 @@ type SlotContext = {
   roleIcon?: string;
 };
 
+type RosterSlot = SlotContext & {
+  squadIndex: number;
+  playerIndex: number;
+};
+
 type CandidateRankingContext = {
   usersById: Map<string, AppUser>;
   assignmentsByUserId: Map<string, ServerUserAssignment>;
@@ -184,6 +189,74 @@ function getKd(user: AppUser) {
   return user.performance?.averages.killDeathRatio ?? -1;
 }
 
+function getScore(user: AppUser, serverDiscordId: string) {
+  return getUserScoreForGuild(user, serverDiscordId);
+}
+
+function getStatBounds(
+  userIds: string[],
+  usersById: Map<string, AppUser>,
+  getValue: (user: AppUser) => number,
+) {
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+
+  for (const userId of userIds) {
+    const user = usersById.get(userId);
+    if (!user) {
+      continue;
+    }
+
+    const value = getValue(user);
+    if (value < min) {
+      min = value;
+    }
+    if (value > max) {
+      max = value;
+    }
+  }
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    return { min: 0, max: 0 };
+  }
+
+  return { min, max };
+}
+
+function normalizeStat(value: number, bounds: { min: number; max: number }) {
+  if (bounds.max === bounds.min) {
+    return 0;
+  }
+
+  return (value - bounds.min) / (bounds.max - bounds.min);
+}
+
+function getPrimaryGroupRank(userId: string, squadGroup: string | undefined, assignmentsByUserId: Map<string, ServerUserAssignment>, groupsById: Map<string, Group>) {
+  if (!squadGroup) {
+    return 1;
+  }
+
+  const assignment = assignmentsByUserId.get(userId);
+  if (!assignment?.primaryGroupId) {
+    return 1;
+  }
+
+  return groupsById.get(assignment.primaryGroupId)?.name === squadGroup ? 0 : 1;
+}
+
+function getSecondaryGroupRank(userId: string, squadGroup: string | undefined, assignmentsByUserId: Map<string, ServerUserAssignment>, groupsById: Map<string, Group>) {
+  if (!squadGroup) {
+    return 1;
+  }
+
+  const assignment = assignmentsByUserId.get(userId);
+  if (!assignment) {
+    return 1;
+  }
+
+  return assignment.secondaryGroupIds.some((groupId) => groupsById.get(groupId)?.name === squadGroup) ? 0 : 1;
+}
+
 export function compareRosterCandidates(
   leftUserId: string,
   rightUserId: string,
@@ -240,6 +313,151 @@ export function compareRosterCandidates(
   }
 
   return leftUser.name.localeCompare(rightUser.name);
+}
+
+export type AutoFillWeights = {
+  score: number;
+  kd: number;
+};
+
+function compareAutoFillPlayerPriority(
+  leftUserId: string,
+  rightUserId: string,
+  context: CandidateRankingContext,
+  weights: AutoFillWeights,
+  userIds: string[],
+) {
+  const leftUser = context.usersById.get(leftUserId);
+  const rightUser = context.usersById.get(rightUserId);
+
+  if (!leftUser || !rightUser) {
+    return leftUser ? -1 : rightUser ? 1 : 0;
+  }
+
+  const scoreBounds = getStatBounds(userIds, context.usersById, (user) => getScore(user, context.serverDiscordId));
+  const kdBounds = getStatBounds(userIds, context.usersById, getKd);
+
+  const leftWeightedValue =
+    normalizeStat(getScore(leftUser, context.serverDiscordId), scoreBounds) * weights.score +
+    normalizeStat(getKd(leftUser), kdBounds) * weights.kd;
+  const rightWeightedValue =
+    normalizeStat(getScore(rightUser, context.serverDiscordId), scoreBounds) * weights.score +
+    normalizeStat(getKd(rightUser), kdBounds) * weights.kd;
+
+  if (leftWeightedValue !== rightWeightedValue) {
+    return rightWeightedValue - leftWeightedValue;
+  }
+
+  const leftScore = getScore(leftUser, context.serverDiscordId);
+  const rightScore = getScore(rightUser, context.serverDiscordId);
+  if (weights.score > 0 && leftScore !== rightScore) {
+    return rightScore - leftScore;
+  }
+
+  const leftKd = getKd(leftUser);
+  const rightKd = getKd(rightUser);
+  if (weights.kd > 0 && leftKd !== rightKd) {
+    return rightKd - leftKd;
+  }
+
+  return compareRosterCandidates(leftUserId, rightUserId, context);
+}
+
+function compareSlotsForUser(
+  userId: string,
+  leftSlot: RosterSlot,
+  rightSlot: RosterSlot,
+  context: CandidateRankingContext,
+) {
+  const leftSignupRank = getSignupMatchRank(userId, leftSlot, context.signupGroupByUserId);
+  const rightSignupRank = getSignupMatchRank(userId, rightSlot, context.signupGroupByUserId);
+  if (leftSignupRank !== rightSignupRank) {
+    return leftSignupRank - rightSignupRank;
+  }
+
+  const leftPrimaryRank = getPrimaryGroupRank(userId, leftSlot.squadGroup, context.assignmentsByUserId, context.groupsById);
+  const rightPrimaryRank = getPrimaryGroupRank(userId, rightSlot.squadGroup, context.assignmentsByUserId, context.groupsById);
+  if (leftPrimaryRank !== rightPrimaryRank) {
+    return leftPrimaryRank - rightPrimaryRank;
+  }
+
+  const leftSecondaryRank = getSecondaryGroupRank(userId, leftSlot.squadGroup, context.assignmentsByUserId, context.groupsById);
+  const rightSecondaryRank = getSecondaryGroupRank(userId, rightSlot.squadGroup, context.assignmentsByUserId, context.groupsById);
+  if (leftSecondaryRank !== rightSecondaryRank) {
+    return leftSecondaryRank - rightSecondaryRank;
+  }
+
+  if (leftSlot.squadIndex !== rightSlot.squadIndex) {
+    return leftSlot.squadIndex - rightSlot.squadIndex;
+  }
+
+  return leftSlot.playerIndex - rightSlot.playerIndex;
+}
+
+export function autoFillRosterAssignments(
+  board: Roster,
+  context: CandidateRankingContext,
+  weights: AutoFillWeights,
+) {
+  const next = structuredClone(board);
+  const availableUserIds = Array.from(new Set(next.reservePlayerIds || []));
+  const emptySlots: RosterSlot[] = [];
+
+  next.squads.forEach((squad, squadIndex) => {
+    squad.players.forEach((player, playerIndex) => {
+      if (player.id || getCustomNameFromSlot(player.customName)) {
+        return;
+      }
+
+      emptySlots.push({
+        squadIndex,
+        playerIndex,
+        squadGroup: squad.group,
+        roleName: player.roleName,
+        roleIcon: player.roleIcon,
+      });
+    });
+  });
+
+  const sortedUsers = availableUserIds
+    .slice()
+    .sort((leftUserId, rightUserId) => compareAutoFillPlayerPriority(leftUserId, rightUserId, context, weights, availableUserIds));
+
+  const unassignedUserIds: string[] = [];
+
+  for (const userId of sortedUsers) {
+    if (emptySlots.length === 0) {
+      unassignedUserIds.push(userId);
+      continue;
+    }
+
+    let bestSlotIndex = 0;
+
+    for (let index = 1; index < emptySlots.length; index += 1) {
+      if (compareSlotsForUser(userId, emptySlots[index], emptySlots[bestSlotIndex], context) < 0) {
+        bestSlotIndex = index;
+      }
+    }
+
+    const [slot] = emptySlots.splice(bestSlotIndex, 1);
+    const player = next.squads[slot.squadIndex]?.players[slot.playerIndex];
+    if (!player) {
+      unassignedUserIds.push(userId);
+      continue;
+    }
+
+    player.id = userId;
+    player.customName = undefined;
+    player.ack = false;
+    player.confirmed = false;
+  }
+
+  next.reservePlayerIds = unassignedUserIds;
+  return next;
+}
+
+function getCustomNameFromSlot(customName?: string) {
+  return customName?.trim() || undefined;
 }
 
 export function getAssignedElsewhereUserIds(

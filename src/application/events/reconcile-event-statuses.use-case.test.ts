@@ -10,6 +10,17 @@ class Repo implements EventCommandRepository {
   constructor(public readonly events: Map<string, EventCommandRecord>) {}
   async getById(eventId: string) { return this.events.get(eventId) ?? null; }
   async listAll() { return [...this.events.values()]; }
+  async listPage(cursor: string | null, limit: number) {
+    const records = [...this.events.values()];
+    const start = cursor ? Number(cursor) : 0;
+    const page = records.slice(start, start + limit);
+    const nextIndex = start + page.length;
+    return {
+      records: page,
+      continueCursor: nextIndex < records.length ? String(nextIndex) : null,
+      isDone: nextIndex >= records.length,
+    };
+  }
   async create(): Promise<string> { throw new Error("unused"); }
   async update(eventId: string, patch: Record<string, unknown>) {
     const existing = this.events.get(eventId);
@@ -42,7 +53,8 @@ test("ReconcileEventStatusesUseCase updates stale event status and scores conclu
 
   const changed = await useCase.execute();
 
-  assert.deepEqual(changed, ["event-1"]);
+  assert.deepEqual(changed.changedEventIds, ["event-1"]);
+  assert.equal(changed.isDone, true);
   assert.equal(repo.events.get("event-1")?.status, "concluded");
   assert.deepEqual(scores.calls, ["event-1"]);
 });

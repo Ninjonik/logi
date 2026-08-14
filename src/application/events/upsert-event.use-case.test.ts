@@ -17,6 +17,18 @@ class InMemoryEventCommandRepository implements EventCommandRepository {
     return [...this.events.values()];
   }
 
+  async listPage(cursor: string | null, limit: number) {
+    const records = [...this.events.values()];
+    const start = cursor ? Number(cursor) : 0;
+    const page = records.slice(start, start + limit);
+    const nextIndex = start + page.length;
+    return {
+      records: page,
+      continueCursor: nextIndex < records.length ? String(nextIndex) : null,
+      isDone: nextIndex >= records.length,
+    };
+  }
+
   async create(input: any): Promise<string> {
     const id = `event-${this.events.size + 1}`;
     this.events.set(id, { id, ...input });

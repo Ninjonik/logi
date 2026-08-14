@@ -11,6 +11,7 @@ import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-
 import { AvatarPicker } from "@/components/app/avatar-picker";
 import { ConfigNotice } from "@/components/app/config-notice";
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
+import { ExpandableItemCard } from "@/components/app/expandable-item-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -118,6 +119,7 @@ export function TicketSettingsForm({
   const [isPending, startTransition] = useTransition();
   const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
   const [ticketSettings, setTicketSettings] = useState<TicketSettings>(buildDefaultTicketSettings(dictionary, config));
+  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetch(`/api/servers/${serverId}/discord-metadata`)
@@ -170,6 +172,12 @@ export function TicketSettingsForm({
           }
       )),
     }));
+  }
+
+  function setCategoryCollapsed(categoryId: string, collapsed: boolean) {
+    setCollapsedCategoryIds((current) =>
+      collapsed ? (current.includes(categoryId) ? current : [...current, categoryId]) : current.filter((id) => id !== categoryId),
+    );
   }
 
   async function handleSave() {
@@ -322,22 +330,28 @@ export function TicketSettingsForm({
             </Button>
           </div>
 
-          {ticketSettings.categories.length ? ticketSettings.categories.map((category, categoryIndex) => (
-            <div key={category.id} className="space-y-4 rounded-2xl border border-border/60 p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h5 className="font-medium">{dictionary.ticketSettings.categoryLabel} {categoryIndex + 1}</h5>
-                  <p className="text-sm text-muted-foreground">ID: {category.id}</p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => patchTicketSettings({ categories: ticketSettings.categories.filter((item) => item.id !== category.id) })}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
+          {ticketSettings.categories.length ? ticketSettings.categories.map((category, categoryIndex) => {
+            const isOpen = !collapsedCategoryIds.includes(category.id);
+            const title = category.label?.trim() || `${dictionary.ticketSettings.categoryLabel} ${categoryIndex + 1}`;
+
+            return (
+              <ExpandableItemCard
+                key={category.id}
+                open={isOpen}
+                onOpenChange={(open) => setCategoryCollapsed(category.id, !open)}
+                title={title}
+                subtitle={`ID: ${category.id}`}
+                actions={(
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => patchTicketSettings({ categories: ticketSettings.categories.filter((item) => item.id !== category.id) })}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                )}
+              >
 
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <div className="space-y-2">
@@ -468,8 +482,9 @@ export function TicketSettingsForm({
                   <p className="text-sm text-muted-foreground">{dictionary.ticketSettings.noQuestions}</p>
                 )}
               </div>
-            </div>
-          )) : (
+              </ExpandableItemCard>
+            );
+          }) : (
             <div className="rounded-xl border border-dashed border-border/60 p-4 text-sm text-muted-foreground">
               {dictionary.ticketSettings.noCategories}
             </div>

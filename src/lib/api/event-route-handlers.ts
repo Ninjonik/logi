@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import type { ZodType } from "zod";
 
 type JsonRequest = {
@@ -9,6 +10,13 @@ type EventRouteDeps<TEventInput> = {
   eventSchema: ZodType<TEventInput>;
   saveServerEvent: (input: any) => Promise<string>;
   concludeServerEvent: (input: { eventId: string }) => Promise<void>;
+  completeServerTraining: (input: {
+    eventId: string;
+    participants: Array<{
+      userId: string;
+      completed: "passed" | "failed";
+    }>;
+  }) => Promise<void>;
   importServerEventsFromLinks: (input: {
     serverId: string;
     linksInput: string;
@@ -29,7 +37,22 @@ type EventRouteDeps<TEventInput> = {
     importedUserIds: string[];
     [key: string]: unknown;
   }>;
-  getEventMetadata: (eventId: string) => Promise<{ side?: string } | null>;
+  getEventMetadata: (eventId: string) => Promise<{
+    side?: string;
+    rewardRoleIds?: string[];
+    name?: string;
+  } | null>;
+  finalizeTrainingCompletion?: (input: {
+    serverId: string;
+    eventId: string;
+    participants: Array<{
+      userId: string;
+      completed: "passed" | "failed";
+    }>;
+  }) => Promise<{
+    rewardedUserIds?: string[];
+    dmSentUserIds?: string[];
+  } | void>;
   revalidateCacheEntries: (tags: Array<string | null | undefined | false>) => void;
   appCacheTags: {
     serverContext(serverId: string): string;
@@ -50,6 +73,14 @@ type EventRouteDeps<TEventInput> = {
 
 type EventCreateParams = { serverId: string };
 type EventActionParams = { serverId: string; eventId: string };
+
+const trainingCompletionSchema = z.object({
+  action: z.literal("completeTraining"),
+  participants: z.array(z.object({
+    userId: z.string().trim().min(1),
+    completed: z.union([z.literal("passed"), z.literal("failed")]),
+  })).min(1),
+});
 
 function buildImportedUserTags(
   importedUserIds: string[],
@@ -246,6 +277,34 @@ export function createServerEventPostHandler<TEventInput>(deps: EventRouteDeps<T
           deps.appCacheTags.rosterImageEvent(eventId),
         ]);
         return NextResponse.json({ ok: true });
+      }
+
+      if (body?.action === "completeTraining") {
+        const parsed = trainingCompletionSchema.parse(body);
+        await deps.completeServerTraining({
+          eventId,
+          participants: parsed.participants,
+        });
+
+        const sideEffects = await deps.finalizeTrainingCompletion?.({
+          serverId,
+          eventId,
+          participants: parsed.participants,
+        });
+
+        deps.revalidateCacheEntries([
+          deps.appCacheTags.serverContext(serverId),
+          deps.appCacheTags.events(serverId),
+          deps.appCacheTags.event(eventId),
+          deps.appCacheTags.rosterImageEvent(eventId),
+          ...buildImportedUserTags(parsed.participants.map((participant) => participant.userId), deps.appCacheTags),
+        ]);
+
+        return NextResponse.json({
+          ok: true,
+          rewardedUsers: sideEffects?.rewardedUserIds?.length ?? 0,
+          dmSentUsers: sideEffects?.dmSentUserIds?.length ?? 0,
+        });
       }
 
       if (body?.action === "submitMatchResults") {

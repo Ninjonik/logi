@@ -177,33 +177,46 @@ export function writeSystemLog(input: {
 }) {
   const context = sanitizeContext(input.context);
   const timestamp = new Date().toISOString();
-  const db = ensureDatabase();
-
-  db.prepare(`
-    INSERT INTO system_logs (
-      timestamp,
-      level,
-      source,
-      scope,
-      message,
-      context_json,
-      server_id,
-      user_id,
-      request_path
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    timestamp,
-    input.level,
-    input.source,
-    input.scope,
-    input.message,
-    context ? safeSerialize(context) : null,
-    typeof context?.serverId === "string" ? context.serverId : null,
-    typeof context?.userId === "string" ? context.userId : null,
-    typeof context?.requestPath === "string" ? context.requestPath : null,
-  );
 
   const line = getLine(input.level, input.source, input.scope, input.message, context);
+  try {
+    const db = ensureDatabase();
+
+    db.prepare(`
+      INSERT INTO system_logs (
+        timestamp,
+        level,
+        source,
+        scope,
+        message,
+        context_json,
+        server_id,
+        user_id,
+        request_path
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      timestamp,
+      input.level,
+      input.source,
+      input.scope,
+      input.message,
+      context ? safeSerialize(context) : null,
+      typeof context?.serverId === "string" ? context.serverId : null,
+      typeof context?.userId === "string" ? context.userId : null,
+      typeof context?.requestPath === "string" ? context.requestPath : null,
+    );
+  } catch (error) {
+    const isSqliteLock =
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: unknown }).code === "ERR_SQLITE_ERROR";
+
+    if (!isSqliteLock) {
+      throw error;
+    }
+  }
+
   if (input.level === "ERROR") {
     console.error(line);
     return;
