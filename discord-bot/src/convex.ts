@@ -57,6 +57,8 @@ export const references = {
   getTicketCategoryContext: makeFunctionReference<"query">("discordMembership:getTicketCategoryContext"),
   getTicketThreadContext: makeFunctionReference<"query">("discordMembership:getTicketThreadContext"),
   getDiscordPlatformLinkState: makeFunctionReference<"query">("players:getDiscordPlatformLinkState"),
+  searchClanPlayers: makeFunctionReference<"query">("players:searchClanPlayers"),
+  getClanPlayerProfile: makeFunctionReference<"query">("players:getClanPlayerProfile"),
   linkDiscordPlatformId: makeFunctionReference<"mutation">("players:linkDiscordPlatformId"),
   unlinkDiscordPlatformId: makeFunctionReference<"mutation">("players:unlinkDiscordPlatformId"),
   listEventSyncIndex: makeFunctionReference<"query">("discordSync:listEventSyncIndex"),

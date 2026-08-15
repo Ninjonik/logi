@@ -20,6 +20,7 @@ import {
 } from "discord.js";
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
+import { detectPlatformFromId, getPlatformProfileUrl, stripPlatformPrefix } from "../../src/lib/platform-ids";
 
 import { revalidateAppData } from "./cache";
 import { convex, references } from "./convex";
@@ -99,10 +100,175 @@ type PlayerSearchResult = {
   platform: "steam" | "epic" | "xbox" | "playstation" | "other";
 };
 
+type ClanPlayerAutocompleteResult = {
+  id: string;
+  name: string;
+  avatar: string;
+  discordId: string;
+  platformIds: string[];
+  assignmentType?: "member" | "mercenary";
+  assignmentStatus?: "pending" | "recruit" | "active";
+  matchesPlayed: number;
+  averageKills: number;
+  averageKd: number;
+  score: number;
+};
+
+type ClanPlayerProfile = {
+  id: string;
+  name: string;
+  avatar: string;
+  discordId: string;
+  linkedDiscordId?: string;
+  hasDiscordLink: boolean;
+  platformIds: string[];
+  guildId?: string;
+  assignment: {
+    type: "member" | "mercenary";
+    status: "pending" | "recruit" | "active";
+    membershipCategoryId?: string;
+    paused: boolean;
+    pausedNote?: string;
+  };
+  score: number;
+  performance: {
+    matchesPlayed: number;
+    averages: {
+      kills: number;
+      killDeathRatio: number;
+      deaths: number;
+      offense: number;
+      defense: number;
+      support: number;
+    };
+  };
+  recentMatches: Array<{
+    mapName?: string;
+    mapId: string;
+    team: string;
+    endedAt?: string;
+    importedAt: string;
+    kills: number;
+    deaths: number;
+    killDeathRatio: number;
+    offense: number;
+    defense: number;
+    support: number;
+    sourceUrl: string;
+  }>;
+  updatedAt: string;
+  createdAt: string;
+};
+
 let platformEmojiCache: PlatformEmojiMap | null = null;
 
 function formatDiscordTimestamp(date: Date) {
   return `<t:${Math.floor(date.getTime() / 1000)}:F>`;
+}
+
+function formatNumber(value: number, digits = 1) {
+  return Number.isFinite(value) ? value.toFixed(digits) : "0.0";
+}
+
+function formatShortDateTimestamp(value?: string) {
+  if (!value) {
+    return "Unknown";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown";
+  }
+
+  return `<t:${Math.floor(date.getTime() / 1000)}:d>`;
+}
+
+function getAssignmentBadge(input: { type?: "member" | "mercenary"; status?: "pending" | "recruit" | "active" }) {
+  const typeLabel = input.type === "mercenary" ? "Mercenary" : "Member";
+  const statusLabel = input.status === "pending" ? "Pending" : input.status === "recruit" ? "Recruit" : "Active";
+  return `${typeLabel} • ${statusLabel}`;
+}
+
+function buildClanPlayerOptionLabel(player: ClanPlayerAutocompleteResult) {
+  return `${player.name} • ${getAssignmentBadge({
+    type: player.assignmentType,
+    status: player.assignmentStatus,
+  })}`.slice(0, 100);
+}
+
+function buildClanPlayerOptionValue(player: ClanPlayerAutocompleteResult) {
+  return player.id;
+}
+
+function buildClanPlayerOptionDescription(player: ClanPlayerAutocompleteResult) {
+  const parts = [
+    player.matchesPlayed ? `${player.matchesPlayed} matches` : "No imported matches",
+    `KD ${formatNumber(player.averageKd)}`,
+  ];
+  return parts.join(" • ").slice(0, 100);
+}
+
+function buildPlatformFieldValue(platformIds: string[]) {
+  const lines = platformIds.map((platformId) => {
+    const platform = detectPlatformFromId(platformId);
+    const label = platform === "steam"
+      ? "Steam"
+      : platform === "epic"
+        ? "Epic"
+        : platform === "xbox"
+          ? "Xbox"
+          : platform === "playstation"
+            ? "PlayStation"
+            : "Platform";
+    const rawId = stripPlatformPrefix(platformId);
+    const profileUrl = getPlatformProfileUrl(platformId);
+    return profileUrl ? `[${label}: ${rawId}](${profileUrl})` : `${label}: \`${rawId}\``;
+  });
+
+  return lines.join("\n").slice(0, 1024);
+}
+
+function buildRecentMatchesValue(profile: ClanPlayerProfile) {
+  if (!profile.recentMatches.length) {
+    return "No imported match history.";
+  }
+
+  return profile.recentMatches.map((match) => {
+    const mapLabel = match.mapName?.trim() || match.mapId;
+    return `${formatShortDateTimestamp(match.endedAt ?? match.importedAt)} ${mapLabel} • ${match.kills}/${match.deaths} • KD ${formatNumber(match.killDeathRatio)}`;
+  }).join("\n").slice(0, 1024);
+}
+
+function buildClanPlayerProfileEmbed(profile: ClanPlayerProfile) {
+  const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle(profile.name)
+    .setThumbnail(profile.avatar)
+    .addFields(
+      { name: "Status", value: getAssignmentBadge(profile.assignment), inline: true },
+      { name: "Clan score", value: String(profile.score ?? 0), inline: true },
+      { name: "Matches", value: String(profile.performance.matchesPlayed ?? 0), inline: true },
+      { name: "Average kills", value: formatNumber(profile.performance.averages.kills), inline: true },
+      { name: "Average deaths", value: formatNumber(profile.performance.averages.deaths), inline: true },
+      { name: "Average KD", value: formatNumber(profile.performance.averages.killDeathRatio), inline: true },
+      { name: "Average offense", value: formatNumber(profile.performance.averages.offense), inline: true },
+      { name: "Average defense", value: formatNumber(profile.performance.averages.defense), inline: true },
+      { name: "Average support", value: formatNumber(profile.performance.averages.support), inline: true },
+      { name: "Discord", value: profile.hasDiscordLink ? `<@${profile.linkedDiscordId ?? profile.discordId}>` : `\`${profile.discordId}\`` },
+      { name: "Platforms", value: profile.platformIds.length ? buildPlatformFieldValue(profile.platformIds) : "No linked platforms." },
+      { name: "Recent matches", value: buildRecentMatchesValue(profile) },
+    )
+    .setFooter({ text: `Player ID: ${profile.id}` })
+    .setTimestamp(new Date(profile.updatedAt));
+
+  if (profile.assignment.paused) {
+    embed.addFields({
+      name: "Assignment state",
+      value: profile.assignment.pausedNote?.trim() ? `Paused: ${profile.assignment.pausedNote}` : "Paused",
+    });
+  }
+
+  return embed;
 }
 
 function buildTicketCloseEmbed(input: {
@@ -202,6 +368,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     async handleAutocompleteInteraction(interaction: AutocompleteInteraction) {
       if (interaction.commandName === "notice") {
         await handleNoticeAutocomplete(interaction);
+      } else if (interaction.commandName === "player") {
+        await handlePlayerAutocomplete(interaction);
       }
     },
 
@@ -214,6 +382,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await handleLinkCommand(interaction);
       } else if (interaction.commandName === "notice") {
         await handleNoticeCommand(interaction);
+      } else if (interaction.commandName === "player") {
+        await handlePlayerCommand(interaction);
       }
     },
 
@@ -277,6 +447,17 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
           .setName("link")
           .setDescription(messages.commands.linkDescription)
           .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.linkDescription })
+          .setDMPermission(false),
+        new SlashCommandBuilder()
+          .setName("player")
+          .setDescription("Search clan players and view their stats")
+          .addStringOption((option) =>
+            option
+              .setName("player")
+              .setDescription("Pick a player from this clan")
+              .setRequired(true)
+              .setAutocomplete(true),
+          )
           .setDMPermission(false),
       ];
 
@@ -377,6 +558,54 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     await openNoticeModal(interaction, matches[0].id, messages.commands.noticeModalTitle, messages.commands.noticeReasonLabel);
+  }
+
+  async function handlePlayerAutocomplete(interaction: AutocompleteInteraction) {
+    if (!interaction.guildId) {
+      await interaction.respond([]);
+      return;
+    }
+
+    const query = interaction.options.getFocused(true);
+    if (query.name !== "player") {
+      await interaction.respond([]);
+      return;
+    }
+
+    const matches = await convex.query(references.searchClanPlayers, {
+      guildId: interaction.guildId,
+      query: String(query.value ?? ""),
+      limit: 5,
+    }).catch(() => []) as ClanPlayerAutocompleteResult[];
+
+    await interaction.respond(matches.map((player) => ({
+      name: buildClanPlayerOptionLabel(player),
+      value: buildClanPlayerOptionValue(player),
+    })));
+  }
+
+  async function handlePlayerCommand(interaction: ChatInputCommandInteraction) {
+    if (!interaction.guildId) {
+      await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    await interaction.deferReply();
+
+    const playerId = interaction.options.getString("player", true).trim();
+    const profile = await convex.query(references.getClanPlayerProfile, {
+      guildId: interaction.guildId,
+      userId: playerId,
+    }).catch(() => null) as ClanPlayerProfile | null;
+
+    if (!profile) {
+      await interaction.editReply({ content: "Player not found in this clan." });
+      return;
+    }
+
+    await interaction.editReply({
+      embeds: [buildClanPlayerProfileEmbed(profile)],
+    });
   }
 
   async function handleNoticeAutocomplete(interaction: AutocompleteInteraction) {
