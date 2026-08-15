@@ -72,6 +72,61 @@ function mergeScoreRecords(primary: Record<string, number> | undefined, secondar
   };
 }
 
+function normalizeSearchText(value: string | undefined) {
+  return value
+    ?.normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim() ?? "";
+}
+
+function getBestPlayerSearchScore(input: {
+  query: string;
+  name: string;
+  discordId?: string;
+  platformIds?: string[];
+}) {
+  const query = normalizeSearchText(input.query);
+  if (!query) {
+    return 1;
+  }
+
+  const candidates = [
+    input.name,
+    input.discordId,
+    ...(input.platformIds ?? []),
+  ].filter((value): value is string => Boolean(value?.trim()));
+
+  let bestScore = 0;
+  for (const rawCandidate of candidates) {
+    const candidate = normalizeSearchText(rawCandidate);
+    if (!candidate) {
+      continue;
+    }
+
+    if (candidate === query) {
+      bestScore = Math.max(bestScore, 1000);
+      continue;
+    }
+    if (candidate.startsWith(query)) {
+      bestScore = Math.max(bestScore, 800 - Math.min(candidate.length - query.length, 200));
+      continue;
+    }
+    const index = candidate.indexOf(query);
+    if (index >= 0) {
+      bestScore = Math.max(bestScore, 600 - Math.min(index, 200));
+      continue;
+    }
+
+    const queryTokens = query.split(/\s+/).filter(Boolean);
+    if (queryTokens.length && queryTokens.every((token) => candidate.includes(token))) {
+      bestScore = Math.max(bestScore, 400 - Math.min(candidate.length, 200));
+    }
+  }
+
+  return bestScore;
+}
+
 function rewriteUserIdList(values: string[] | undefined, primaryUserId: string, secondaryUserId: string) {
   const rewritten = (values ?? []).map((value) => value === secondaryUserId ? primaryUserId : value);
   return [...new Set(rewritten)];
@@ -271,6 +326,158 @@ export const getById = query({
     const user = await getUserByIdentifier(ctx, args.userId);
 
     return user ? toPlayer(user) : null;
+  },
+});
+
+export const searchClanPlayers = query({
+  args: {
+    guildId: v.string(),
+    query: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.max(1, Math.min(args.limit ?? 5, 25));
+    const assignments = await ctx.db
+      .query("userAssignments")
+      .withIndex("serverId", (q) => q.eq("serverId", args.guildId))
+      .collect();
+
+    const seenUserIds = new Set<string>();
+    const candidates: Array<ReturnType<typeof toPlayer> & {
+      assignmentType?: "member" | "mercenary";
+      assignmentStatus?: "pending" | "recruit" | "active";
+      searchScore: number;
+    }> = [];
+
+    for (const assignment of assignments) {
+      if (seenUserIds.has(assignment.userId)) {
+        continue;
+      }
+      seenUserIds.add(assignment.userId);
+
+      const user = await getUserByIdentifier(ctx, assignment.userId);
+      if (!user) {
+        continue;
+      }
+
+      const player = toPlayer(user);
+      const searchScore = getBestPlayerSearchScore({
+        query: args.query,
+        name: player.name,
+        discordId: player.discordId,
+        platformIds: player.platformIds,
+      });
+
+      if (args.query.trim() && searchScore <= 0) {
+        continue;
+      }
+
+      candidates.push({
+        ...player,
+        assignmentType: assignment.type,
+        assignmentStatus: assignment.status,
+        searchScore,
+      });
+    }
+
+    candidates.sort((left, right) => (
+      right.searchScore - left.searchScore
+      || left.name.localeCompare(right.name, undefined, { sensitivity: "base" })
+      || left.discordId.localeCompare(right.discordId, undefined, { sensitivity: "base" })
+    ));
+
+    return candidates.slice(0, limit).map((player) => ({
+      id: player.id,
+      name: player.name,
+      avatar: player.avatar,
+      discordId: player.discordId,
+      platformIds: player.platformIds,
+      assignmentType: player.assignmentType,
+      assignmentStatus: player.assignmentStatus,
+      matchesPlayed: player.performance?.matchesPlayed ?? 0,
+      averageKills: player.performance?.averages.kills ?? 0,
+      averageKd: player.performance?.averages.killDeathRatio ?? 0,
+      score: player.scores[args.guildId] ?? player.score ?? 0,
+    }));
+  },
+});
+
+export const getClanPlayerProfile = query({
+  args: {
+    guildId: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const assignment = await ctx.db
+      .query("userAssignments")
+      .withIndex("serverId_userId", (q) => q.eq("serverId", args.guildId).eq("userId", args.userId))
+      .unique();
+    if (!assignment) {
+      return null;
+    }
+
+    const user = await getUserByIdentifier(ctx, args.userId);
+    if (!user) {
+      return null;
+    }
+
+    const player = toPlayer(user);
+    const statsDocs = await ctx.db
+      .query("playerStats")
+      .withIndex("userId", (q) => q.eq("userId", player.id))
+      .collect();
+    const allMatches = statsDocs.flatMap((doc) => Object.values(doc.matches));
+    const sortedMatches = allMatches.sort((left, right) =>
+      new Date(right.endedAt ?? right.importedAt).getTime() - new Date(left.endedAt ?? left.importedAt).getTime(),
+    );
+    const recentMatches = sortedMatches.slice(0, 5);
+    const score = player.scores[args.guildId] ?? player.score ?? 0;
+
+    return {
+      id: player.id,
+      name: player.name,
+      avatar: player.avatar,
+      discordId: player.discordId,
+      linkedDiscordId: player.linkedDiscordId,
+      hasDiscordLink: player.hasDiscordLink,
+      platformIds: player.platformIds,
+      guildId: player.guildId,
+      assignment: {
+        type: assignment.type,
+        status: assignment.status,
+        membershipCategoryId: assignment.membershipCategoryId,
+        paused: assignment.paused,
+        pausedNote: assignment.pausedNote,
+      },
+      score,
+      performance: player.performance ?? {
+        matchesPlayed: 0,
+        averages: {
+          kills: 0,
+          killDeathRatio: 0,
+          deaths: 0,
+          offense: 0,
+          defense: 0,
+          support: 0,
+        },
+      },
+      recentMatches: recentMatches.map((match) => ({
+        mapName: match.mapName,
+        mapId: match.mapId,
+        team: match.team,
+        endedAt: match.endedAt,
+        importedAt: match.importedAt,
+        kills: match.kills,
+        deaths: match.deaths,
+        killDeathRatio: match.killDeathRatio,
+        offense: match.offense,
+        defense: match.defense,
+        support: match.support,
+        sourceUrl: match.sourceUrl,
+      })),
+      updatedAt: player.updatedAt,
+      createdAt: player.createdAt,
+    };
   },
 });
 
