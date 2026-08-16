@@ -56,6 +56,7 @@ export class ToggleSignupUseCase {
     return {
       signUps: next.signUps,
       appliedSignupLabel: input.group === SIGNUP_NOT_ATTENDING ? SIGNUP_NOT_ATTENDING : (nextGroup ?? SIGNUP_GENERAL),
+      removed: next.removed,
     };
   }
 }

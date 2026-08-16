@@ -42,5 +42,6 @@ export function toggleSignup(input: {
   return {
     participants,
     signUps: participantsToSignUps(participants),
+    removed: shouldRemoveSignup,
   };
 }

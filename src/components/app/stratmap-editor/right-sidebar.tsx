@@ -2,13 +2,15 @@
 
 import type { ChangeEvent } from "react";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { HllStratmapCatalogItem, StratmapArrowStyle, StratmapElement } from "@/lib/stratmaps";
 
-import { SelectionInspector } from "./selection-inspector";
+import { AttachmentGallery } from "./selection-inspector";
 import { StratmapToolbar } from "./toolbar";
 import { ToolPropertiesPanel } from "./tool-properties-panel";
 import type { Tool } from "./types";
+import { SelectionInspector } from "./selection-inspector";
 
 export function StratmapRightSidebar({
   dictionary,
@@ -85,9 +87,47 @@ export function StratmapRightSidebar({
   onSelectedElementChange: (updater: (element: StratmapElement) => StratmapElement) => void;
   onUpload: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
+  const selectedIconAttachments =
+    selectedElement?.kind === "icon" ? selectedElement.attachments?.filter((attachment) => attachment.url) ?? [] : [];
+
   return (
-    <div className="space-y-2 overflow-y-auto pl-1">
+    <div className="min-w-0 space-y-2 overflow-x-hidden overflow-y-auto pl-1">
       <StratmapToolbar {...{ dictionary, tool, canUndo, canRedo, onUndo, onRedo, onZoomIn, onZoomOut, onResetZoom, onToolChange }} />
+      {selectedIconAttachments.length ? (
+        <Card className="min-w-0 overflow-hidden rounded-xl border-border/60">
+          <CardHeader className="px-3 py-3">
+            <CardTitle className="text-base">{dictionary.stratmaps.images}</CardTitle>
+          </CardHeader>
+          <CardContent className="px-3 pb-3">
+            <AttachmentGallery
+              dictionary={dictionary}
+              attachments={selectedIconAttachments}
+              canAdmin={canAdmin}
+              isUploading={isUploadingIconAttachments}
+              onUpload={onUpload}
+              onDescriptionChange={(index, value) =>
+                onSelectedElementChange((element) =>
+                  element.kind === "icon"
+                    ? {
+                        ...element,
+                        attachments: (element.attachments ?? []).map((entry, entryIndex) =>
+                          entryIndex === index ? { ...entry, description: value } : entry,
+                        ),
+                      }
+                    : element,
+                )
+              }
+              onRemove={(index) =>
+                onSelectedElementChange((element) =>
+                  element.kind === "icon"
+                    ? { ...element, attachments: (element.attachments ?? []).filter((_, attachmentIndex) => attachmentIndex !== index) }
+                    : element,
+                )
+              }
+            />
+          </CardContent>
+        </Card>
+      ) : null}
       <ToolPropertiesPanel {...{ dictionary, tool, strokeColor, fillColor, strokeWidth, lineStyle, lineStartStyle, lineEndStyle, showLineDistance, textValue, textSize, iconId, catalogGroups, onStrokeColorChange, onFillColorChange, onStrokeWidthChange, onLineStyleChange, onLineStartStyleChange, onLineEndStyleChange, onShowLineDistanceChange, onTextValueChange, onTextSizeChange, onIconChange }} />
       <SelectionInspector {...{ dictionary, canAdmin, strokeColor, selectedElement, isUploadingIconAttachments, onElementChange: onSelectedElementChange, onUpload }} />
     </div>

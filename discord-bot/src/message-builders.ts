@@ -163,7 +163,7 @@ export function buildEventEmbed(
     const generalAttending = signupsByGroup.get("ATTENDING") ?? [];
     if (generalAttending.length > 0) {
       embed.addFields({
-        name: `âœ… ${messages.embed.attending} (${generalAttending.length})`,
+        name: `✅ ${messages.embed.attending} (${generalAttending.length})`,
         value: generalAttending.join(", "),
         inline: false,
       });

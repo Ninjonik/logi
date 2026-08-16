@@ -69,13 +69,13 @@ export function StratmapCreateForm({
         <CardTitle>{dictionary.stratmaps.createTitle}</CardTitle>
         <CardDescription>{dictionary.stratmaps.createDescription}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 overflow-x-hidden">
         <div className="space-y-2">
           <Label>{dictionary.stratmaps.titleLabel}</Label>
-          <Input value={title} onChange={(event) => setTitle(event.target.value)} className="rounded-xl" />
+          <Input value={title} onChange={(event) => setTitle(event.target.value)} className="min-w-0 overflow-hidden rounded-xl" />
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2 md:col-span-2">
+          <div className="min-w-0 space-y-2 md:col-span-2">
             <Label>{dictionary.stratmaps.mapAndPoint}</Label>
             <HllMapSelector
               mapId={baseMapId}
@@ -99,9 +99,9 @@ export function StratmapCreateForm({
               }}
             />
           </div>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <Label>{dictionary.stratmaps.side}</Label>
-            <Input value={side} onChange={(event) => setSide(event.target.value)} className="rounded-xl" placeholder={dictionary.event.optionalLabel} />
+            <Input value={side} onChange={(event) => setSide(event.target.value)} className="min-w-0 overflow-hidden rounded-xl" placeholder={dictionary.event.optionalLabel} />
           </div>
         </div>
         <Button className="rounded-xl" onClick={handleSubmit} disabled={isPending}>
