@@ -6,9 +6,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { SidebarConfigProvider } from "@/contexts/sidebar-context";
 import { inter } from "@/lib/fonts";
 import { TopLoaderProvider } from "@/components/providers/top-loader-provider";
+import { getSiteUrl } from "@/lib/env";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://logi.local"),
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: "Logi | Hell Let Loose event organizer",
     template: "%s | Logi",

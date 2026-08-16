@@ -110,6 +110,7 @@ export type StratmapTextElement = StratmapElementBase & {
   fontSize: number;
   width: number;
   align?: "left" | "center" | "right";
+  backgroundColor?: string;
 };
 
 export type StratmapLineElement = StratmapElementBase & {
@@ -258,7 +259,12 @@ export function parseStratmapState(stateJson?: string | null, fallbackMapId?: st
                     }))
                   : [],
               }
-            : element
+            : element.kind === "text"
+              ? {
+                  ...element,
+                  backgroundColor: element.backgroundColor ?? "transparent",
+                }
+              : element
         )),
       })),
     };

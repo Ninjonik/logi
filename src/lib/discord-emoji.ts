@@ -17,3 +17,12 @@ export function parseDiscordCustomEmoji(value?: string | null) {
 export function isDiscordCustomEmoji(value?: string | null) {
   return Boolean(parseDiscordCustomEmoji(value));
 }
+
+export function formatDiscordEmojiForText(value?: string | null) {
+  const customEmoji = parseDiscordCustomEmoji(value);
+  if (customEmoji) {
+    return customEmoji.imageUrl;
+  }
+
+  return value?.trim() || null;
+}

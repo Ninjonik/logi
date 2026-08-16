@@ -8,6 +8,7 @@ import { buildArrowDecoration, buildLinePath, formatDistanceLabel, getElementDra
 
 export function RenderedElement({
   element,
+  mode,
   selected,
   hovered,
   dragging,
@@ -17,6 +18,7 @@ export function RenderedElement({
   onPointerLeave,
 }: {
   element: StratmapElement;
+  mode: "view" | "edit";
   selected: boolean;
   hovered: boolean;
   dragging: boolean;
@@ -35,7 +37,7 @@ export function RenderedElement({
       onPointerDown={(event) => onPointerDown(element.id, event)}
       onPointerEnter={() => onPointerEnter(element.id)}
       onPointerLeave={onPointerLeave}
-      style={{ cursor: "move", userSelect: "none", WebkitUserSelect: "none" }}
+      style={{ cursor: mode === "view" ? "pointer" : "move", userSelect: "none", WebkitUserSelect: "none" }}
       transform={transform}
     >
       {element.kind === "icon" && icon ? <IconElement element={element} iconPath={icon.iconPath} selected={selected} hovered={hovered} /> : null}
@@ -73,8 +75,6 @@ function getElementTransform(element: StratmapElement, scale: number) {
 function IconElement({ element, iconPath, selected, hovered }: { element: Extract<StratmapElement, { kind: "icon" }>; iconPath: string; selected: boolean; hovered: boolean }) {
   return (
     <>
-      <circle cx={element.x} cy={element.y} r={Math.max(20, element.size * 0.6)} fill="transparent" />
-      {selected || hovered ? <circle cx={element.x} cy={element.y} r={element.size * 0.72} fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.5)" strokeWidth={2} /> : null}
       <defs>
         <mask id={`stratmap-icon-mask-${element.id}`} maskUnits="userSpaceOnUse" x={element.x - element.size / 2} y={element.y - element.size / 2} width={element.size} height={element.size}>
           <image href={iconPath} x={element.x - element.size / 2} y={element.y - element.size / 2} width={element.size} height={element.size} preserveAspectRatio="xMidYMid meet" />
@@ -87,17 +87,33 @@ function IconElement({ element, iconPath, selected, hovered }: { element: Extrac
         height={element.size}
         fill={element.color ?? "#dc2626"}
         mask={`url(#stratmap-icon-mask-${element.id})`}
-        opacity={0.96}
+        opacity={1}
       />
     </>
   );
 }
 
 function TextElement({ element }: { element: Extract<StratmapElement, { kind: "text" }> }) {
+  const lines = element.text.split(/\r?\n/);
+  const lineHeight = Math.round(element.fontSize * 1.25);
+  const paddingX = 10;
+  const paddingY = 8;
+  const boxHeight = Math.max(element.fontSize * 1.3, lines.length * lineHeight + paddingY * 2 - (lineHeight - element.fontSize));
+  const boxWidth = element.width + paddingX * 2;
+  const textAnchor = element.align === "center" ? "middle" : element.align === "right" ? "end" : "start";
+  const textX = element.align === "center" ? element.x + element.width / 2 : element.align === "right" ? element.x + element.width : element.x;
+  const boxX = element.x - paddingX;
+  const boxY = element.y - element.fontSize - paddingY;
   return (
     <>
-      <rect x={element.x - 8} y={element.y - element.fontSize} width={element.width} height={element.fontSize * 1.3} fill="transparent" />
-      <text x={element.x} y={element.y} fill={element.color ?? "#ffffff"} fontSize={element.fontSize} fontWeight={700}>{element.text}</text>
+      <rect x={boxX} y={boxY} width={boxWidth} height={boxHeight} rx={8} fill={element.backgroundColor ?? "transparent"} pointerEvents="none" />
+      <text x={textX} y={element.y} textAnchor={textAnchor} fill={element.color ?? "#ffffff"} fontSize={element.fontSize} fontWeight={700} xmlSpace="preserve">
+        {lines.map((line, index) => (
+          <tspan key={`${index}-${line}`} x={textX} dy={index === 0 ? 0 : lineHeight}>
+            {line}
+          </tspan>
+        ))}
+      </text>
     </>
   );
 }

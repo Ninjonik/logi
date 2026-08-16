@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
+
 import { StratmapBoard } from "@/components/app/stratmap-editor/board";
 import { StratmapLeftSidebar } from "@/components/app/stratmap-editor/left-sidebar";
 import { StratmapRightSidebar } from "@/components/app/stratmap-editor/right-sidebar";
 import { useStratmapEditor } from "@/components/app/stratmap-editor/use-stratmap-editor";
-import type { StratmapEditorProps } from "@/components/app/stratmap-editor/types";
+import type { StratmapEditorMode, StratmapEditorProps } from "@/components/app/stratmap-editor/types";
 
 export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProps) {
-  const editor = useStratmapEditor(props);
+  const [mode, setMode] = useState<StratmapEditorMode>(props.initialCanAdmin ? "edit" : "view");
+  const editor = useStratmapEditor(props, mode);
 
   return (
     <div ref={editor.rootRef} tabIndex={-1} onPointerDownCapture={() => editor.rootRef.current?.focus()} className="grid h-full gap-2 overflow-hidden xl:grid-cols-[260px_minmax(0,1fr)_300px]">
@@ -33,7 +36,10 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         onSelectSlide={editor.setSelectedSlideId}
         onAddSlide={editor.addSlide}
         onDuplicateSlide={editor.duplicateSlide}
+        onRenameSlide={editor.renameSlide}
+        onMoveSlide={(slideId, direction) => editor.moveSlide(slideId, direction)}
         onDeleteSlide={editor.deleteSlide}
+        onModeChange={setMode}
         onOverlayChange={editor.handleOverlayChange}
         onToggleStrongpoint={editor.toggleStrongpoint}
       />
@@ -41,14 +47,15 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         svgRef={editor.svgRef}
         viewport={editor.viewport}
         tool={editor.tool}
+        mode={mode}
         selectedMap={editor.selectedMap}
         activeSlide={editor.activeSlide}
         overlayStrongpointIds={editor.overlayStrongpointIds}
         selectedElementIds={editor.selectedElementIds}
         hoveredElementId={editor.hoveredElementId}
         dragState={editor.dragState}
-        strokeColor={editor.strokeColor}
-        fillColor={editor.fillColor}
+        strokeColor={"#39ff14"}
+        fillColor={"rgba(57,255,20,0.2)"}
         strokeWidth={editor.strokeWidth}
         onWheel={editor.handleBoardWheel}
         onContextMenu={editor.handleBoardContextMenu}
@@ -64,10 +71,10 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         dictionary={props.dictionary}
         canAdmin={editor.canAdmin}
         tool={editor.tool}
+        mode={mode}
+        onModeChange={setMode}
         canUndo={editor.canUndo}
         canRedo={editor.canRedo}
-        strokeColor={editor.strokeColor}
-        fillColor={editor.fillColor}
         strokeWidth={editor.strokeWidth}
         lineStyle={editor.lineStyle}
         lineStartStyle={editor.lineStartStyle}
@@ -79,14 +86,13 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         catalogGroups={editor.catalogGroups}
         selectedElement={editor.selectedElement}
         isUploadingIconAttachments={editor.isUploadingIconAttachments}
-        onStrokeColorChange={editor.setStrokeColor}
+        canEdit={editor.canEdit}
         onUndo={editor.undo}
         onRedo={editor.redo}
         onZoomIn={editor.zoomIn}
         onZoomOut={editor.zoomOut}
         onResetZoom={editor.resetZoom}
         onToolChange={editor.setTool}
-        onFillColorChange={editor.setFillColor}
         onStrokeWidthChange={editor.setStrokeWidth}
         onLineStyleChange={editor.setLineStyle}
         onLineStartStyleChange={editor.setLineStartStyle}

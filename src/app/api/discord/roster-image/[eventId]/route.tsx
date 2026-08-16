@@ -1,9 +1,10 @@
 import { ImageResponse } from "next/og";
 import { NextResponse } from "next/server";
 
-import { getInternalAuthSecret } from "@/lib/env";
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env";
 import { getClanDiscordMessages, getIntlLocaleForClanLanguage } from "@/lib/clan-language";
-import { getRosterImageContext, getRosterImageContextCached } from "@/lib/roster-image";
+import { parseDiscordCustomEmoji } from "@/lib/discord-emoji";
+import { getRosterImageContext, getRosterImageContextCached, resolveSiteAssetUrl } from "@/lib/roster-image";
 
 export const contentType = "image/png";
 
@@ -92,13 +93,14 @@ function getRoleSections(players: Player[]) {
   return sections;
 }
 
-function resolveAssetUrl(request: Request, path?: string) {
+function resolveAssetUrl(path?: string) {
   if (!path) return undefined;
-  try {
-    return new URL(path, request.url).toString();
-  } catch {
-    return undefined;
+  const customEmoji = parseDiscordCustomEmoji(path);
+  if (customEmoji) {
+    return customEmoji.imageUrl;
   }
+
+  return resolveSiteAssetUrl(path);
 }
 
 // True only for meaningful values — filters out null/undefined, empty
@@ -418,7 +420,7 @@ export async function GET(
                         <div style={{ width: "4px", height: "14px", borderRadius: "999px", background: squad.color }} />
                         {squad.icon ? (
                           <img
-                            src={resolveAssetUrl(request, squad.icon)}
+                            src={resolveAssetUrl(squad.icon)}
                             alt=""
                             width="16"
                             height="16"
@@ -448,7 +450,7 @@ export async function GET(
                             <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: squad.color }}>
                               {section.roleIcon ? (
                                 <img
-                                  src={resolveAssetUrl(request, section.roleIcon)}
+                                  src={resolveAssetUrl(section.roleIcon)}
                                   alt=""
                                   width="16"
                                   height="16"
@@ -479,7 +481,7 @@ export async function GET(
                                   >
                                     {user ? (
                                       <img
-                                        src={resolveAssetUrl(request, user.avatar)}
+                                        src={resolveAssetUrl(user.avatar)}
                                         alt=""
                                         width="20"
                                         height="20"
@@ -632,7 +634,7 @@ export async function GET(
             {reserveUsers.slice(0, 20).map((user) => (
               <div key={user!.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#cbd5e1", minWidth: 0 }}>
                 <img
-                  src={resolveAssetUrl(request, user!.avatar)}
+                  src={resolveAssetUrl(user!.avatar)}
                   alt=""
                   width="22"
                   height="22"

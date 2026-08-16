@@ -14,6 +14,7 @@ export function StratmapBoard({
   svgRef,
   viewport,
   tool,
+  mode,
   selectedMap,
   activeSlide,
   overlayStrongpointIds,
@@ -36,6 +37,7 @@ export function StratmapBoard({
   svgRef: React.RefObject<SVGSVGElement | null>;
   viewport: Viewport;
   tool: Tool;
+  mode: "view" | "edit";
   selectedMap: HllStratmapMap | undefined;
   activeSlide: StratmapSlide | undefined;
   overlayStrongpointIds: Set<string>;
@@ -59,8 +61,8 @@ export function StratmapBoard({
     <Card className="flex min-h-0 flex-col rounded-xl border-border/60">
       <CardContent className="flex min-h-0 flex-1 flex-col space-y-2 px-3 py-3">
         <div className="flex min-h-0 flex-1 rounded-xl border border-border/60 bg-black/95 p-2">
-          <svg ref={svgRef} viewBox={`${viewport.x} ${viewport.y} ${viewport.size} ${viewport.size}`} className={`size-full select-none rounded-lg bg-black ${tool === "select" ? "cursor-default" : "cursor-crosshair"}`} style={{ userSelect: "none", WebkitUserSelect: "none", touchAction: "none" }} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerLeave} onContextMenu={onContextMenu}>
-      <BoardLayers selectedMap={selectedMap} activeSlide={activeSlide} overlayStrongpointIds={overlayStrongpointIds} selectedElementIds={selectedElementIds} hoveredElementId={hoveredElementId} dragState={dragState} strokeColor={strokeColor} fillColor={fillColor} strokeWidth={strokeWidth} onStartMove={onStartMove} onHoverElement={onHoverElement} onClearHover={onClearHover} />
+          <svg ref={svgRef} viewBox={`${viewport.x} ${viewport.y} ${viewport.size} ${viewport.size}`} className={`size-full select-none rounded-lg bg-black ${mode === "view" ? "cursor-default" : tool === "select" ? "cursor-default" : "cursor-crosshair"}`} style={{ userSelect: "none", WebkitUserSelect: "none", touchAction: "none" }} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerLeave} onContextMenu={onContextMenu}>
+      <BoardLayers mode={mode} selectedMap={selectedMap} activeSlide={activeSlide} overlayStrongpointIds={overlayStrongpointIds} selectedElementIds={selectedElementIds} hoveredElementId={hoveredElementId} dragState={dragState} strokeColor={strokeColor} fillColor={fillColor} strokeWidth={strokeWidth} onStartMove={onStartMove} onHoverElement={onHoverElement} onClearHover={onClearHover} />
           </svg>
         </div>
       </CardContent>
@@ -68,8 +70,8 @@ export function StratmapBoard({
   );
 }
 
-function BoardLayers(props: { selectedMap: HllStratmapMap | undefined; activeSlide: StratmapSlide | undefined; overlayStrongpointIds: Set<string>; selectedElementIds: string[]; hoveredElementId: string | null; dragState: DragState | null; strokeColor: string; fillColor: string; strokeWidth: number; onStartMove: (elementId: string, event: ReactPointerEvent<SVGGElement>) => void; onHoverElement: (elementId: string) => void; onClearHover: (elementId: string) => void; }) {
-  const { selectedMap, activeSlide, overlayStrongpointIds, selectedElementIds, hoveredElementId, dragState, strokeColor, fillColor, strokeWidth, onStartMove, onHoverElement, onClearHover } = props;
+function BoardLayers(props: { mode: "view" | "edit"; selectedMap: HllStratmapMap | undefined; activeSlide: StratmapSlide | undefined; overlayStrongpointIds: Set<string>; selectedElementIds: string[]; hoveredElementId: string | null; dragState: DragState | null; strokeColor: string; fillColor: string; strokeWidth: number; onStartMove: (elementId: string, event: ReactPointerEvent<SVGGElement>) => void; onHoverElement: (elementId: string) => void; onClearHover: (elementId: string) => void; }) {
+  const { mode, selectedMap, activeSlide, overlayStrongpointIds, selectedElementIds, hoveredElementId, dragState, strokeColor, fillColor, strokeWidth, onStartMove, onHoverElement, onClearHover } = props;
   return (
     <>
       {selectedMap ? <image href={selectedMap.imagePath} x={0} y={0} width={1920} height={1920} preserveAspectRatio="none" /> : null}
@@ -92,7 +94,7 @@ function BoardLayers(props: { selectedMap: HllStratmapMap | undefined; activeSli
       {activeSlide?.overlays.showOffensiveGarrisons ? getOverlayItems(selectedMap?.defaultElements.offensiveGarrisons, activeSlide.overlays.overlayTeam).map((item, index) => <image key={`og-${index}`} href="/stratmap/assets/garry-plain-invalid.png" x={item.x - 22} y={item.y - 22} width={44} height={44} />) : null}
       {activeSlide?.overlays.showArtillery ? getOverlayItems(selectedMap?.defaultElements.artillery, activeSlide.overlays.overlayTeam).map((item, index) => <image key={`arty-${index}`} href="/stratmap/assets/arty.png" x={item.x - 18} y={item.y - 18} width={36} height={36} transform={`rotate(${item.angle}, ${item.x}, ${item.y})`} />) : null}
       {activeSlide?.overlays.showRepairStations ? getOverlayItems(selectedMap?.defaultElements.repairStations, activeSlide.overlays.overlayTeam).map((item, index) => <image key={`repair-${index}`} href="/stratmap/assets/repair-station.png" x={item.x - 18} y={item.y - 18} width={36} height={36} />) : null}
-      {activeSlide?.elements.map((element) => <RenderedElement key={element.id} element={element as StratmapElement} selected={selectedElementIds.includes(element.id)} hovered={hoveredElementId === element.id} dragging={dragState?.mode === "move" && dragState.elementIds.includes(element.id)} showSpawnRanges={activeSlide.overlays.showSpawnRanges} onPointerDown={onStartMove} onPointerEnter={onHoverElement} onPointerLeave={() => onClearHover(element.id)} />)}
+      {activeSlide?.elements.map((element) => <RenderedElement key={element.id} mode={mode} element={element as StratmapElement} selected={selectedElementIds.includes(element.id)} hovered={hoveredElementId === element.id} dragging={dragState?.mode === "move" && dragState.elementIds.includes(element.id)} showSpawnRanges={activeSlide.overlays.showSpawnRanges} onPointerDown={onStartMove} onPointerEnter={onHoverElement} onPointerLeave={() => onClearHover(element.id)} />)}
       {dragState?.mode === "freehand" ? <path d={buildLinePath(dragState.points)} fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" /> : null}
       {dragState?.mode === "line" ? <line x1={dragState.start.x} y1={dragState.start.y} x2={dragState.current.x} y2={dragState.current.y} stroke={strokeColor} strokeWidth={strokeWidth} /> : null}
       {dragState?.mode === "polygon" ? <PolygonPreview points={dragState.points} current={dragState.current} strokeColor={strokeColor} strokeWidth={strokeWidth} fillColor={fillColor} /> : null}

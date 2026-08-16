@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { compareRosterCandidates, getAssignedElsewhereUserIds, getUserSignupLabel } from "@/lib/roster-assignment";
+import { parseDiscordCustomEmoji } from "@/lib/discord-emoji";
 import { getUserScoreForGuild } from "@/lib/user-scores";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -295,7 +296,7 @@ export function SquadCard({
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                    {player.roleIcon ? <Image src={player.roleIcon} alt="" width={12} height={12} className="size-3 object-contain invert dark:invert-0" /> : null}
+                    {player.roleIcon ? <RoleIcon value={player.roleIcon} /> : null}
                     <span>{player.roleName ?? dictionary.roster.role}</span>
                   </div>
                 )}
@@ -416,7 +417,7 @@ export function SquadCard({
                           </PopoverContent>
                         </Popover>
                       ) : null}
-                      {isAssignmentMode && slotUser ? (
+                      {canAdmin && slotUser ? (
                         <Popover open={attendanceMenuOpen === playerIndex} onOpenChange={(open) => setAttendanceMenuOpen(open ? playerIndex : null)}>
                           <PopoverTrigger asChild>
                             <Button
@@ -633,6 +634,15 @@ export function SquadCard({
   );
 }
 
+function RoleIcon({ value }: { value: string }) {
+  const customEmoji = parseDiscordCustomEmoji(value);
+  if (customEmoji) {
+    return <Image src={customEmoji.imageUrl} alt={customEmoji.name} width={12} height={12} className="size-3 object-contain" unoptimized />;
+  }
+
+  return <Image src={value} alt="" width={12} height={12} className="size-3 object-contain invert dark:invert-0" />;
+}
+
 function RoleIconSelect({
   value,
   onChange,
@@ -640,24 +650,40 @@ function RoleIconSelect({
   value?: string;
   onChange: (value: string) => void;
 }) {
-  const selectedValue = value && roleIconOptions.includes(value as (typeof roleIconOptions)[number])
+  const customEmoji = value ? parseDiscordCustomEmoji(value) : null;
+  const selectedValue = value && (roleIconOptions.includes(value as (typeof roleIconOptions)[number]) || customEmoji)
     ? value
     : roleIconOptions[0];
+  const customEmojiValue = value ?? "";
 
   return (
     <Select value={selectedValue} onValueChange={onChange}>
       <SelectTrigger className="h-7 min-h-7 w-16 rounded-lg px-1.5 py-0 [&_svg]:size-3 [&_svg]:shrink-0">
         <SelectValue>
-          <Image src={selectedValue} alt="" width={20} height={14} className="h-3.5 w-5 object-contain invert dark:invert-0" />
+          <RoleIconPreview value={selectedValue} />
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
+        {customEmoji ? (
+          <SelectItem value={customEmojiValue}>
+            <RoleIconPreview value={customEmojiValue} />
+          </SelectItem>
+        ) : null}
         {roleIconOptions.map((iconPath) => (
           <SelectItem key={iconPath} value={iconPath}>
-            <Image src={iconPath} alt="" width={20} height={14} className="h-3.5 w-5 object-contain invert dark:invert-0" />
+            <RoleIconPreview value={iconPath} />
           </SelectItem>
         ))}
       </SelectContent>
     </Select>
   );
+}
+
+function RoleIconPreview({ value }: { value: string }) {
+  const customEmoji = parseDiscordCustomEmoji(value);
+  if (customEmoji) {
+    return <Image src={customEmoji.imageUrl} alt={customEmoji.name} width={20} height={14} className="h-3.5 w-5 object-contain" unoptimized />;
+  }
+
+  return <Image src={value} alt="" width={20} height={14} className="h-3.5 w-5 object-contain invert dark:invert-0" />;
 }

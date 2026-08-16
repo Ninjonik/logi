@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { DiscordMarkdownText, DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Topic } from "@/types/domain";
 
@@ -85,10 +86,13 @@ export function TopicEditor({
                     <Trash2 className="size-4" />
                   </Button>
                 </div>
-                <Textarea
+                <DiscordMarkdownTextarea
                   value={topic.body ?? ""}
-                  onChange={(event) => updateTopic(topic.id!, "body", event.target.value)}
-                  className="min-h-24 rounded-xl"
+                  onChange={(value) => updateTopic(topic.id!, "body", value)}
+                  className="rounded-xl"
+                  rows={6}
+                  hideToolbar={!isEditing}
+                  preview="live"
                 />
                 <Textarea
                   value={topic.attachments.join("\n")}
@@ -106,7 +110,7 @@ export function TopicEditor({
             ) : (
               <>
                 <div className="font-medium">{topic.title}</div>
-                <p className="mt-2 text-sm text-muted-foreground">{topic.body}</p>
+                <DiscordMarkdownText markdown={topic.body} className="mt-2 text-sm text-muted-foreground" />
                 {topic.attachments.length ? (
                   <div className="mt-3 text-xs text-muted-foreground">{topic.attachments.length} {dictionary.presets.attachmentCountSuffix}</div>
                 ) : null}
