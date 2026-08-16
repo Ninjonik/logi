@@ -227,6 +227,48 @@ export const getByDiscordId = query({
   },
 });
 
+export const resyncDashboardAdmins = mutation({
+  args: {
+    userId: v.string(),
+    serverId: v.id("guilds"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUserByDiscordId(ctx, args.userId);
+    const guild = await ctx.db.get(args.serverId);
+    if (!user || !guild) {
+      throw new Error("Server not found.");
+    }
+
+    const guildDiscordId = getGuildDiscordId(guild);
+    const discordAccess = await ctx.db
+      .query("discordMemberAccess")
+      .withIndex("guildId_userId", (q) => q.eq("guildId", guildDiscordId).eq("userId", args.userId))
+      .unique();
+
+    if (!discordAccess?.hasDashboardAccess && !guild.adminIds.includes(args.userId)) {
+      throw new Error("Unauthorized.");
+    }
+
+    const accessRows = await ctx.db
+      .query("discordMemberAccess")
+      .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+      .collect();
+
+    const dashboardAdminIds = accessRows
+      .filter((access) => access.hasDashboardAccess)
+      .map((access) => access.userId);
+
+    await ctx.db.patch(guild._id, {
+      adminIds: dashboardAdminIds,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return {
+      adminCount: dashboardAdminIds.length,
+    };
+  },
+});
+
 export const listAllInternal = query({
   args: {
     secret: v.string(),

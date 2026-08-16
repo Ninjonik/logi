@@ -15,6 +15,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { supportedClanLanguages, type ClanLanguage } from "@/lib/clan-language";
 import { supportedTimezones } from "@/lib/discord-timezones";
 import type { DiscordConfig } from "@/types/domain";
+import { ResyncDashboardAdminsButton } from "@/components/app/resync-dashboard-admins-button";
 
 type DiscordMetadata = {
   roles: DiscordSelectOption[];
@@ -69,10 +70,12 @@ function remapLocalizedDefaults(config: DiscordConfig | null, nextLanguage: Clan
 
 export function DiscordServerSettingsForm({
   serverId,
+  userId,
   dictionary,
   config,
 }: {
   serverId: string;
+  userId: string;
   dictionary: Dictionary;
   config: DiscordConfig | null;
 }) {
@@ -198,6 +201,10 @@ export function DiscordServerSettingsForm({
         <div className="space-y-2">
           <Label>{dictionary.serverSettings.dashboardAdminRoleId}</Label>
           <DiscordEntitySelect value={dashboardAdminRoleId} onChange={setDashboardAdminRoleId} options={roles} placeholder={dictionary.serverSettings.dashboardAdminRoleId} />
+          <p className="text-sm text-muted-foreground">
+            Super admins can resync dashboard admin access from the current dashboard-role membership.
+          </p>
+          <ResyncDashboardAdminsButton serverId={serverId} userId={userId} />
         </div>
         <div className="space-y-4">
           <div className="space-y-1">
