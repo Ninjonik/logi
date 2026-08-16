@@ -77,6 +77,7 @@ async function buildServerContext(
       calendarItems: calendarItems.map(normalizeCalendarItemDoc),
     },
     canAdmin,
+    hasDashboardAccess: Boolean(discordAccess?.hasDashboardAccess),
     memberRoleIds: discordAccess?.roleIds ?? [],
     events: events.map(normalizeEventDoc),
     topicPresets: topicPresets.map(normalizeDoc),

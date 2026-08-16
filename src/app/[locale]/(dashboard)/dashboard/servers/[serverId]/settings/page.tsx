@@ -50,6 +50,7 @@ export default async function ServerSettingsPage({
         {canAdmin ? (
           <DiscordServerSettingsForm
             serverId={serverId}
+            userId={context.user.discordId}
             dictionary={dictionary}
             config={context.discordConfig}
           />

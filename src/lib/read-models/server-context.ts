@@ -14,6 +14,7 @@ export type ServerContextReadModel = {
   user: AppUser;
   server: Guild;
   canAdmin: boolean;
+  hasDashboardAccess: boolean;
   memberRoleIds: string[];
   events: EventRecord[];
   topicPresets: TopicPreset[];
