@@ -37,6 +37,7 @@ test("ToggleSignupUseCase persists signups and triggers roster sync", async () =
 
   assert.equal(result.signUps.length, 1);
   assert.equal(result.appliedSignupLabel, "INF");
+  assert.equal(result.removed, false);
   assert.equal(syncPort.calls.length, 1);
   assert.deepEqual(syncPort.calls[0], { eventId: "event-1", userId: "user-1" });
   assert.equal(events.events.get("event-1")?.participants?.[0]?.status, "attending");
@@ -86,6 +87,7 @@ test("ToggleSignupUseCase supports training signups during starting before regis
 
   assert.deepEqual(result.signUps, [{ userId: "user-1", group: "INF" }]);
   assert.equal(result.appliedSignupLabel, "INF");
+  assert.equal(result.removed, false);
   assert.equal(syncPort.calls.length, 1);
 });
 
@@ -133,6 +135,46 @@ test("ToggleSignupUseCase resolves general match signup from the primary group a
 
   assert.deepEqual(groupedSignup.signUps[0], { userId: "user-1", group: "INF" });
   assert.equal(groupedSignup.appliedSignupLabel, "INF");
+  assert.equal(groupedSignup.removed, false);
   assert.deepEqual(reserveSignup.signUps[1], { userId: "user-2", group: "ATTENDING" });
   assert.equal(reserveSignup.appliedSignupLabel, SIGNUP_GENERAL);
+  assert.equal(reserveSignup.removed, false);
+});
+
+test("ToggleSignupUseCase marks repeated signup clicks as removed", async () => {
+  const syncPort = new NoopEventWorkflowSyncPort();
+  const events = new InMemoryEventWorkflowRepository(new Map([
+    ["event-1", {
+      id: "event-1",
+      guildId: "guild-1",
+      kind: "match" as const,
+      registrationEnd: "2026-01-01T12:00:00.000Z",
+      meetingStart: "2026-01-01T13:00:00.000Z",
+      gameEnd: "2026-01-01T15:00:00.000Z",
+      status: "registration" as const,
+      participants: [],
+      signUps: [],
+      absenceNotices: [],
+    }],
+  ]));
+  const useCase = new ToggleSignupUseCase(
+    events,
+    syncPort,
+    new FakeClock(new Date("2026-01-01T09:00:00.000Z")),
+  );
+
+  await useCase.execute({
+    eventId: "event-1",
+    userId: "user-1",
+    group: "INF",
+  });
+
+  const result = await useCase.execute({
+    eventId: "event-1",
+    userId: "user-1",
+    group: "INF",
+  });
+
+  assert.equal(result.removed, true);
+  assert.deepEqual(result.signUps, []);
 });

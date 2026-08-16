@@ -20,6 +20,8 @@ export type SignupLanguageLabels = {
   missingRequiredRole: string;
   signupUpdated: string;
   markedNotAttending: string;
+  signupUpdatedWithType: string;
+  signupRemovedWithType: string;
 };
 
 export function formatSignupUpdatedMessage(template: string, actionLabel: string) {
@@ -43,6 +45,44 @@ export function getSignupDisplayLabel(
   }
 
   return appliedSignupLabel;
+}
+
+export function getSignupActionEmoji(
+  actionId: string,
+  actions: EventSignupAction[],
+) {
+  const action = actions.find((entry) => entry.id === actionId);
+  if (!action) {
+    return undefined;
+  }
+
+  if (action.kind === "attend" || action.kind === "general") {
+    return "✅";
+  }
+
+  if (action.kind === "decline") {
+    return "❌";
+  }
+
+  return action.emoji;
+}
+
+export function formatSignupResultMessage(input: {
+  removed: boolean;
+  appliedSignupLabel: string;
+  labels: Pick<SignupLanguageLabels, "signupUpdatedWithType" | "signupRemovedWithType" | "markedNotAttending" | "attend" | "generalSignup" | "decline">;
+  emoji?: string;
+}) {
+  if (input.appliedSignupLabel === SIGNUP_NOT_ATTENDING && !input.removed) {
+    return input.labels.markedNotAttending;
+  }
+
+  const label = getSignupDisplayLabel(input.appliedSignupLabel, input.labels);
+  const decoratedLabel = [input.emoji?.trim(), label].filter(Boolean).join(" ");
+  return formatSignupUpdatedMessage(
+    input.removed ? input.labels.signupRemovedWithType : input.labels.signupUpdatedWithType,
+    decoratedLabel,
+  );
 }
 
 export type EventSignupAction =

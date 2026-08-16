@@ -67,7 +67,7 @@ function SearchableSelect({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" className="h-auto min-h-9 w-full justify-between rounded-lg px-3 py-2 text-sm" disabled={disabled}>
+        <Button variant="outline" role="combobox" className="h-auto min-h-9 w-full min-w-0 justify-between overflow-hidden rounded-lg px-3 py-2 text-sm" disabled={disabled}>
           <span className="flex min-w-0 flex-col items-start text-left">
             <span className={cn("truncate font-medium", !selected && "text-muted-foreground")}>
               {selected?.label ?? noneLabel ?? placeholder}
@@ -185,7 +185,7 @@ export function HllMapSelector({
   }, [includePoint]);
 
   return (
-    <div className={`grid gap-3 ${includeVariants ? "md:grid-cols-4" : "md:grid-cols-2"}`}>
+    <div className={`min-w-0 overflow-x-hidden grid gap-3 ${includeVariants ? "md:grid-cols-4" : "md:grid-cols-2"}`}>
       <div className="min-w-0 space-y-1.5">
         <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.map}</div>
         <SearchableSelect

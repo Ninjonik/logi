@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { SIGNUP_NOT_ATTENDING } from "@/domain/events/types";
 import { handleIfNotLoggedIn } from "@/lib/auth";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getClanDiscordMessages } from "@/lib/clan-language";
-import { formatSignupUpdatedMessage, getSignupDisplayLabel, resolveEventSignupSelection } from "@/lib/event-signup";
+import { buildEventSignupActions, formatSignupResultMessage, resolveEventSignupSelection } from "@/lib/event-signup";
 import { getServerContext } from "@/lib/server-context";
 import { toggleServerEventSignup } from "@/lib/server-events";
 
@@ -59,15 +58,18 @@ export async function POST(
     appCacheTags.rosterImageEvent(eventId),
   ]);
 
-  const appliedSignupLabel = (result as { appliedSignupLabel: string }).appliedSignupLabel;
+  const { appliedSignupLabel, removed } = result as { appliedSignupLabel: string; removed: boolean };
+  const actions = buildEventSignupActions(event, context.groups, messages.buttons);
+  const selectedAction = actions.find((action) => action.id === String(body.actionId ?? ""));
+  const emoji = selectedAction?.kind === "group" ? selectedAction.emoji : undefined;
 
   return NextResponse.json({
     ok: true,
-    message: appliedSignupLabel === SIGNUP_NOT_ATTENDING
-      ? messages.interaction.markedNotAttending
-      : formatSignupUpdatedMessage(
-          messages.interaction.signupUpdatedWithType,
-          getSignupDisplayLabel(appliedSignupLabel, messages.buttons),
-        ),
+    message: formatSignupResultMessage({
+      removed,
+      appliedSignupLabel,
+      labels: { ...messages.interaction, ...messages.buttons },
+      emoji,
+    }),
   });
 }
