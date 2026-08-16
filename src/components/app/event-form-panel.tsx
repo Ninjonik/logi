@@ -708,7 +708,24 @@ export function EventFormPanel({
             {eventKind === "match" ? (
             <div>
               <FieldLabel label={dictionary.event.fields.side}  />
-              {canEdit ? <Input {...form.register("side")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("side")} emptyLabel={dictionary.shared.notSet} />}
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="side"
+                  render={({ field }) => (
+                    <Select value={field.value || "__none"} onValueChange={(value) => field.onChange(value === "__none" ? "" : value)}>
+                      <SelectTrigger className="w-full rounded-xl">
+                        <SelectValue placeholder={dictionary.shared.notSet} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none">{dictionary.shared.notSet}</SelectItem>
+                        <SelectItem value="Allies">Allies</SelectItem>
+                        <SelectItem value="Axis">Axis</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              ) : <ReadOnlyValue value={form.watch("side")} emptyLabel={dictionary.shared.notSet} />}
             </div>
             ) : null}
             <div className="md:col-span-2">

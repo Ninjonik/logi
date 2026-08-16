@@ -34,6 +34,9 @@ export function StratmapLeftSidebar({
   onSelectSlide,
   onAddSlide,
   onDuplicateSlide,
+  onRenameSlide,
+  onMoveSlide,
+  onModeChange,
   onDeleteSlide,
   onOverlayChange,
   onToggleStrongpoint,
@@ -59,6 +62,9 @@ export function StratmapLeftSidebar({
   onSelectSlide: (slideId: string) => void;
   onAddSlide: () => void;
   onDuplicateSlide: () => void;
+  onRenameSlide: (slideId: string, name: string) => void;
+  onMoveSlide: (slideId: string, direction: -1 | 1) => void;
+  onModeChange: (mode: "view" | "edit") => void;
   onDeleteSlide: () => void;
   onOverlayChange: (next: Partial<StratmapOverlaySettings>) => void;
   onToggleStrongpoint: (pointId: string) => void;
@@ -83,8 +89,8 @@ export function StratmapLeftSidebar({
           onSaveMeta,
         }}
       />
-      <SlidesCard {...{ dictionary, canAdmin, slides, selectedSlideId, onSelectSlide, onAddSlide, onDuplicateSlide, onDeleteSlide }} />
-      <OverlaysCard {...{ dictionary, canAdmin, selectedMap, activeOverlays, onOverlayChange, onToggleStrongpoint }} />
+      <SlidesCard {...{ dictionary, canAdmin, slides, selectedSlideId, onSelectSlide, onAddSlide, onDuplicateSlide, onRenameSlide, onMoveSlide, onDeleteSlide }} />
+      <OverlaysCard {...{ dictionary, selectedMap, activeOverlays, onOverlayChange, onToggleStrongpoint }} />
     </div>
   );
 }
@@ -170,9 +176,11 @@ function SlidesCard(props: {
   onSelectSlide: (slideId: string) => void;
   onAddSlide: () => void;
   onDuplicateSlide: () => void;
+  onRenameSlide: (slideId: string, name: string) => void;
+  onMoveSlide: (slideId: string, direction: -1 | 1) => void;
   onDeleteSlide: () => void;
 }) {
-  const { dictionary, canAdmin, slides, selectedSlideId, onSelectSlide, onAddSlide, onDuplicateSlide, onDeleteSlide } = props;
+  const { dictionary, canAdmin, slides, selectedSlideId, onSelectSlide, onAddSlide, onDuplicateSlide, onRenameSlide, onMoveSlide, onDeleteSlide } = props;
   return (
     <Card className="min-w-0 overflow-hidden rounded-xl border-border/60">
       <CardHeader className="flex flex-row items-center justify-between px-3 py-3">
@@ -192,15 +200,42 @@ function SlidesCard(props: {
         ) : null}
       </CardHeader>
       <CardContent className="space-y-2 overflow-x-hidden px-3 pb-3">
-        {slides.map((slide) => (
-          <button
+        {slides.map((slide, index) => (
+          <div
             key={slide.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             className={`w-full rounded-lg border px-2.5 py-1.5 text-left text-xs ${selectedSlideId === slide.id ? "border-primary bg-primary/10" : "border-border/60"}`}
             onClick={() => onSelectSlide(slide.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelectSlide(slide.id);
+              }
+            }}
           >
-            {slide.name}
-          </button>
+            {canAdmin ? (
+              <div className="flex items-center gap-2">
+              <Input
+                value={slide.name}
+                onChange={(event) => onRenameSlide(slide.id, event.target.value)}
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+                className="h-7 border-0 bg-transparent px-0 text-xs shadow-none focus-visible:ring-0"
+              />
+                <div className="ml-auto flex gap-1">
+                  <Button type="button" variant="ghost" size="icon" className="size-6 rounded-md" disabled={index === 0} onClick={(event) => { event.stopPropagation(); onMoveSlide(slide.id, -1); }}>
+                    ↑
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon" className="size-6 rounded-md" disabled={index === slides.length - 1} onClick={(event) => { event.stopPropagation(); onMoveSlide(slide.id, 1); }}>
+                    ↓
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              slide.name
+            )}
+          </div>
         ))}
       </CardContent>
     </Card>
@@ -209,13 +244,12 @@ function SlidesCard(props: {
 
 function OverlaysCard(props: {
   dictionary: Dictionary;
-  canAdmin: boolean;
   selectedMap: HllStratmapMap | undefined;
   activeOverlays: StratmapOverlaySettings;
   onOverlayChange: (next: Partial<StratmapOverlaySettings>) => void;
   onToggleStrongpoint: (pointId: string) => void;
 }) {
-  const { dictionary, canAdmin, selectedMap, activeOverlays, onToggleStrongpoint } = props;
+  const { dictionary, selectedMap, activeOverlays, onToggleStrongpoint } = props;
   return (
     <Card className="min-w-0 overflow-hidden rounded-xl border-border/60">
       <CardHeader className="px-3 py-3">
@@ -230,7 +264,7 @@ function OverlaysCard(props: {
                 <button
                   key={point.id}
                   type="button"
-                  disabled={!canAdmin}
+                  disabled={false}
                   className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs ${visible ? "bg-primary/10 text-primary" : "bg-muted/20"}`}
                   onClick={() => onToggleStrongpoint(point.id)}
                 >

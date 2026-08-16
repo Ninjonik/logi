@@ -9,10 +9,12 @@ import type { FieldErrors } from "react-hook-form";
 import { toast } from "sonner";
 
 import { ExpandableItemCard } from "@/components/app/expandable-item-card";
+import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
 import { HllMapSelector } from "@/components/app/hll-map-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { uploadFileToConvex } from "@/lib/client-uploads";
@@ -193,7 +195,26 @@ export function TopicPresetForm({
             </div>
             <div>
               <FieldLabel label={dictionary.presets.fields.side} />
-              <Input {...form.register("side")} className="rounded-xl" disabled={!canEdit} />
+              {canEdit ? (
+                <Controller
+                  control={form.control}
+                  name="side"
+                  render={({ field }) => (
+                    <Select value={field.value || "__none"} onValueChange={(value) => field.onChange(value === "__none" ? "" : value)}>
+                      <SelectTrigger className="w-full rounded-xl">
+                        <SelectValue placeholder={dictionary.shared.notSet} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none">{dictionary.shared.notSet}</SelectItem>
+                        <SelectItem value="Allies">Allies</SelectItem>
+                        <SelectItem value="Axis">Axis</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              ) : (
+                <Input value={form.watch("side") ?? ""} className="rounded-xl" disabled />
+              )}
             </div>
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.presets.fields.notes} />
@@ -245,11 +266,15 @@ export function TopicPresetForm({
                         <p className="mt-2 text-sm text-destructive">{form.formState.errors.topics[topicIndex]?.title?.message}</p>
                       ) : null}
                     </div>
-                    <Textarea
-                      {...form.register(`topics.${topicIndex}.body`)}
-                      className="min-h-24 rounded-lg border-border/60 bg-background"
+                    <DiscordMarkdownTextarea
+                      value={form.watch(`topics.${topicIndex}.body`) ?? ""}
+                      onChange={(value) => form.setValue(`topics.${topicIndex}.body`, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
+                      className="rounded-lg border-border/60 bg-background"
                       placeholder={dictionary.presets.topicEditorDescription}
                       disabled={!canEdit}
+                      rows={6}
+                      hideToolbar={!canEdit}
+                      preview={canEdit ? "live" : "preview"}
                     />
                     <Controller
                       control={form.control}

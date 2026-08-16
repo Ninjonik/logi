@@ -1,5 +1,6 @@
 "use client";
 
+import { parseDiscordCustomEmoji } from "@/lib/discord-emoji";
 import type { Group } from "@/types/domain";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
 
@@ -20,6 +21,19 @@ function GroupIcon({
 }) {
   if (!group && !fallbackLabel) {
     return null;
+  }
+
+  const customEmoji = group?.discordEmoji ? parseDiscordCustomEmoji(group.discordEmoji) : null;
+
+  if (customEmoji) {
+    return (
+      <img
+        src={customEmoji.imageUrl}
+        alt={customEmoji.name}
+        title={group.name}
+        className="inline-block size-4 rounded-sm object-contain align-middle"
+      />
+    );
   }
 
   if (group?.discordEmoji?.trim()) {

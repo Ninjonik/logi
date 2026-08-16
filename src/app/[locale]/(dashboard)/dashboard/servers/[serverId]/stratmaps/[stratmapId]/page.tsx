@@ -32,7 +32,7 @@ export default async function StratmapDetailPage({
       }}
     >
       <PageHeader title={stratmap.title} description={stratmap.description ?? dictionary.stratmaps.detailDescription} />
-      <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 lg:px-6">
+      <div className="min-h-0 flex-1 overflow-hidden lg:px-6 pt-4">
         <div className="h-full overflow-hidden">
         <StratmapEditor
           locale={locale}

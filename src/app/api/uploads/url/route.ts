@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getSiteUrl } from "@/lib/env";
 import { getConvexFileUrl } from "@/lib/server-uploads";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      url: `${request.nextUrl.origin}/api/uploads/file/${encodeURIComponent(storageId)}/${encodeURIComponent(sanitizeFilename(filename))}`,
+      url: `${getSiteUrl()}/api/uploads/file/${encodeURIComponent(storageId)}/${encodeURIComponent(sanitizeFilename(filename))}`,
     });
   } catch (error) {
     logRouteError("uploads.url", error);

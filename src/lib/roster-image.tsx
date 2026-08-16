@@ -93,6 +93,16 @@ function buildRosterImageCacheKey(eventId: string, rosterUpdatedAt?: string) {
   return Buffer.from(versionSource).toString("base64url");
 }
 
+export function resolveSiteAssetUrl(path?: string) {
+  if (!path) return undefined;
+
+  try {
+    return new URL(path, getSiteUrl()).toString();
+  } catch {
+    return undefined;
+  }
+}
+
 export function buildRosterImageUrl(eventId: string, rosterUpdatedAt?: string) {
   const url = new URL(`/api/discord/roster-image/${eventId}`, getSiteUrl());
   url.searchParams.set("secret", getInternalAuthSecret());

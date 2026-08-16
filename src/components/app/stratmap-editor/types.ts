@@ -44,6 +44,8 @@ export type StratmapEditorProps = {
   dictionary: Dictionary;
 };
 
+export type StratmapEditorMode = "view" | "edit";
+
 export type ElementUpdate = (element: StratmapElement) => StratmapElement;
 export type StateUpdate = (current: StratmapState) => StratmapState;
 
