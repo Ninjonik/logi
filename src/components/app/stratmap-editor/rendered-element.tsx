@@ -73,16 +73,34 @@ function getElementTransform(element: StratmapElement, scale: number) {
 }
 
 function IconElement({ element, iconPath, selected, hovered }: { element: Extract<StratmapElement, { kind: "icon" }>; iconPath: string; selected: boolean; hovered: boolean }) {
+  const iconX = element.x - element.size / 2;
+  const iconY = element.y - element.size / 2;
+
   return (
     <>
       <defs>
-        <mask id={`stratmap-icon-mask-${element.id}`} maskUnits="userSpaceOnUse" x={element.x - element.size / 2} y={element.y - element.size / 2} width={element.size} height={element.size}>
-          <image href={iconPath} x={element.x - element.size / 2} y={element.y - element.size / 2} width={element.size} height={element.size} preserveAspectRatio="xMidYMid meet" />
+        <mask
+          id={`stratmap-icon-mask-${element.id}`}
+          maskUnits="userSpaceOnUse"
+          x={iconX}
+          y={iconY}
+          width={element.size}
+          height={element.size}
+          style={{ maskType: "alpha" }}
+        >
+          <image
+            href={iconPath}
+            x={iconX}
+            y={iconY}
+            width={element.size}
+            height={element.size}
+            preserveAspectRatio="xMidYMid meet"
+          />
         </mask>
       </defs>
       <rect
-        x={element.x - element.size / 2}
-        y={element.y - element.size / 2}
+        x={iconX}
+        y={iconY}
         width={element.size}
         height={element.size}
         fill={element.color ?? "#dc2626"}
