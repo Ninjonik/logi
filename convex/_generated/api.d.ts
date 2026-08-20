@@ -22,6 +22,7 @@ import type * as migrations from "../migrations.js";
 import type * as platformIdLinks from "../platformIdLinks.js";
 import type * as playerStats from "../playerStats.js";
 import type * as players from "../players.js";
+import type * as publicStats from "../publicStats.js";
 import type * as rosterSync from "../rosterSync.js";
 import type * as rosters from "../rosters.js";
 import type * as serverContext from "../serverContext.js";
@@ -56,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   platformIdLinks: typeof platformIdLinks;
   playerStats: typeof playerStats;
   players: typeof players;
+  publicStats: typeof publicStats;
   rosterSync: typeof rosterSync;
   rosters: typeof rosters;
   serverContext: typeof serverContext;
