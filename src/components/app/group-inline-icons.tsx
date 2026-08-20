@@ -30,7 +30,7 @@ function GroupIcon({
       <img
         src={customEmoji.imageUrl}
         alt={customEmoji.name}
-        title={group.name}
+        title={group?.name ?? fallbackLabel ?? customEmoji.name}
         className="inline-block size-4 rounded-sm object-contain align-middle"
       />
     );
