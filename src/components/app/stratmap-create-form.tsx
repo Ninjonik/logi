@@ -101,7 +101,15 @@ export function StratmapCreateForm({
           </div>
           <div className="min-w-0 space-y-2">
             <Label>{dictionary.stratmaps.side}</Label>
-            <Input value={side} onChange={(event) => setSide(event.target.value)} className="min-w-0 overflow-hidden rounded-xl" placeholder={dictionary.event.optionalLabel} />
+            <div className="text-xs font-medium uppercase tracking-[0.2em] text-transparent select-none">
+              {dictionary.event.optionalLabel}
+            </div>
+            <Input
+              value={side}
+              onChange={(event) => setSide(event.target.value)}
+              className="min-w-0 overflow-hidden rounded-xl"
+              placeholder={dictionary.event.optionalLabel}
+            />
           </div>
         </div>
         <Button className="rounded-xl" onClick={handleSubmit} disabled={isPending}>
