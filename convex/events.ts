@@ -14,6 +14,7 @@ import { systemClock } from "../src/domain/shared/clock";
 import { ConvexEventCommandRepository, ConvexEventScoreRepository, DelegatingEventScorePort } from "../src/infrastructure/convex/event-command-repositories";
 import { ConvexEventWorkflowRepository, ConvexEventWorkflowSyncPort } from "../src/infrastructure/convex/event-workflow-repositories";
 import {
+  handleApplyEventScore,
   handleAppendAttendanceReminderLog,
   handleConcludeEvent,
   handleFindNoticeTarget,
@@ -184,6 +185,25 @@ export const reconcileStatuses = mutation({
         new ConvexEventCommandRepository(ctx),
         new DelegatingEventScorePort((eventId) => applyScoreToEventSignups(ctx, eventId as Id<"events">).then(() => undefined)),
         systemClock,
+      ),
+    });
+  },
+});
+
+export const applyEventScore = mutation({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    if (args.secret !== INTERNAL_AUTH_SECRET) {
+      throw new Error("Unauthorized.");
+    }
+
+    return await handleApplyEventScore({
+      eventId: String(args.eventId),
+      createUseCase: () => new ApplyEventScoreUseCase(
+        new ConvexEventScoreRepository(ctx, DEFAULT_ROSTER_SCORE_SETTINGS),
       ),
     });
   },

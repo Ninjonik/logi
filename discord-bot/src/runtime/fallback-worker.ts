@@ -11,6 +11,7 @@ const EVENT_INDEX_POLL_INTERVAL_MS = 2_000;
 const RECONCILE_INTERVAL_MS = 300_000;
 const FULL_RESYNC_EVERY_TICKS = 5;
 const RECONCILE_BATCH_SIZE = 25;
+const SCORE_BATCH_SIZE = 1;
 
 if (!parentPort) {
   throw new Error("Fallback worker must be started from a worker thread.");
@@ -21,6 +22,16 @@ const workerPort = parentPort;
 let tickCount = 0;
 let previousEventSignatures = new Map<string, string>();
 let eventIndexLoaded = false;
+let reconcileCursor: string | null = null;
+const pendingScoreEventIds: string[] = [];
+
+function enqueueScoreEventIds(eventIds: string[]) {
+  for (const eventId of eventIds) {
+    if (!pendingScoreEventIds.includes(eventId)) {
+      pendingScoreEventIds.push(eventId);
+    }
+  }
+}
 
 process.on("unhandledRejection", (error) => {
   workerPort.postMessage({
@@ -38,24 +49,29 @@ process.on("uncaughtExceptionMonitor", (error) => {
 
 async function runTick() {
   try {
-    const changedEventIds: string[] = [];
-    let cursor: string | null = null;
-    let isDone = false;
+    const result = (await convex.mutation(references.reconcileStatuses, {
+      secret: env.internalSecret,
+      cursor: reconcileCursor ?? undefined,
+      limit: RECONCILE_BATCH_SIZE,
+    })) as { changedEventIds: string[]; scoreEventIds: string[]; continueCursor: string | null; isDone: boolean };
 
-    while (!isDone) {
-      const result = (await convex.mutation(references.reconcileStatuses, {
+    reconcileCursor = result.isDone ? null : result.continueCursor;
+    enqueueScoreEventIds(result.scoreEventIds);
+
+    for (let index = 0; index < SCORE_BATCH_SIZE && pendingScoreEventIds.length > 0; index += 1) {
+      const eventId = pendingScoreEventIds.shift();
+      if (!eventId) {
+        break;
+      }
+
+      await convex.mutation(references.applyEventScore, {
         secret: env.internalSecret,
-        cursor: cursor ?? undefined,
-        limit: RECONCILE_BATCH_SIZE,
-      })) as { changedEventIds: string[]; continueCursor: string | null; isDone: boolean };
-
-      changedEventIds.push(...result.changedEventIds);
-      cursor = result.continueCursor;
-      isDone = result.isDone;
+        eventId,
+      });
     }
 
-    if (changedEventIds.length > 0) {
-      workerPort.postMessage({ type: "eventsChanged", eventIds: changedEventIds });
+    if (result.changedEventIds.length > 0) {
+      workerPort.postMessage({ type: "eventsChanged", eventIds: result.changedEventIds });
     }
 
     tickCount += 1;

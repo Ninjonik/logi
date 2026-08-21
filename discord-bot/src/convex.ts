@@ -39,6 +39,7 @@ export async function closeConvexClient() {
 
 export const references = {
   acknowledgeAttendance: makeFunctionReference<"mutation">("rosters:acknowledgeAttendance"),
+  applyEventScore: makeFunctionReference<"mutation">("events:applyEventScore"),
   appendAttendanceReminderLog: makeFunctionReference<"mutation">("events:appendAttendanceReminderLog"),
   closeTicketThread: makeFunctionReference<"mutation">("discordMembership:closeTicketThread"),
   closeMembershipApplicationThread: makeFunctionReference<"mutation">("discordMembership:closeMembershipApplicationThread"),
