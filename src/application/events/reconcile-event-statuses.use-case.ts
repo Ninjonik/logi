@@ -13,6 +13,7 @@ export class ReconcileEventStatusesUseCase {
 
   async execute(input?: { cursor?: string | null; limit?: number }): Promise<{
     changedEventIds: string[];
+    scoreEventIds: string[];
     continueCursor: string | null;
     isDone: boolean;
   }> {
@@ -27,6 +28,7 @@ export class ReconcileEventStatusesUseCase {
     const now = this.clock.now();
     const nowIso = now.toISOString();
     const changedEventIds: string[] = [];
+    const scoreEventIds: string[] = [];
 
     for (const event of records) {
       const normalizedEvent = normalizeEventRecord(event, now);
@@ -59,8 +61,8 @@ export class ReconcileEventStatusesUseCase {
         updatedAt: nowIso,
       });
 
-      if (nextStatus === "concluded") {
-        await this.scores.applyScoreToEventSignups(event.id);
+      if (nextStatus === "concluded" && !event.scoreResolution) {
+        scoreEventIds.push(event.id);
       }
 
       changedEventIds.push(event.id);
@@ -68,6 +70,7 @@ export class ReconcileEventStatusesUseCase {
 
     return {
       changedEventIds,
+      scoreEventIds,
       continueCursor: page.continueCursor,
       isDone: page.isDone,
     };

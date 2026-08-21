@@ -54,7 +54,8 @@ test("ReconcileEventStatusesUseCase updates stale event status and scores conclu
   const changed = await useCase.execute();
 
   assert.deepEqual(changed.changedEventIds, ["event-1"]);
+  assert.deepEqual(changed.scoreEventIds, ["event-1"]);
   assert.equal(changed.isDone, true);
   assert.equal(repo.events.get("event-1")?.status, "concluded");
-  assert.deepEqual(scores.calls, ["event-1"]);
+  assert.deepEqual(scores.calls, []);
 });
