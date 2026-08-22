@@ -1,16 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { StratmapBoard } from "@/components/app/stratmap-editor/board";
 import { StratmapLeftSidebar } from "@/components/app/stratmap-editor/left-sidebar";
 import { StratmapRightSidebar } from "@/components/app/stratmap-editor/right-sidebar";
 import { useStratmapEditor } from "@/components/app/stratmap-editor/use-stratmap-editor";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { StratmapEditorMode, StratmapEditorProps } from "@/components/app/stratmap-editor/types";
 
 export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProps) {
   const [mode, setMode] = useState<StratmapEditorMode>(props.initialCanAdmin ? "edit" : "view");
   const editor = useStratmapEditor(props, mode);
+  const slideBackgroundInputRef = useRef<HTMLInputElement | null>(null);
 
   return (
     <div ref={editor.rootRef} tabIndex={-1} onPointerDownCapture={() => editor.rootRef.current?.focus()} className="grid h-full gap-2 overflow-hidden xl:grid-cols-[260px_minmax(0,1fr)_300px]">
@@ -54,8 +59,8 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         selectedElementIds={editor.selectedElementIds}
         hoveredElementId={editor.hoveredElementId}
         dragState={editor.dragState}
-        strokeColor={"#39ff14"}
-        fillColor={"rgba(57,255,20,0.2)"}
+        strokeColor={editor.strokeColor}
+        fillColor={editor.fillColor}
         strokeWidth={editor.strokeWidth}
         onWheel={editor.handleBoardWheel}
         onContextMenu={editor.handleBoardContextMenu}
@@ -104,6 +109,42 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         onSelectedElementChange={editor.handleSelectedElementChange}
         onUpload={(event) => void editor.handleSelectedIconAttachmentUpload(event)}
       />
+      <Dialog open={editor.isCreateSlideModalOpen} onOpenChange={(open) => { if (!open) editor.closeCreateSlideModal(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{props.dictionary.stratmaps.createSlideTitle ?? "Create slide"}</DialogTitle>
+            <DialogDescription>{props.dictionary.stratmaps.createSlideDescription ?? "Add a slide name and optionally upload a custom background image."}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="slide-name">{props.dictionary.stratmaps.slideNameLabel ?? "Slide name"}</Label>
+              <Input id="slide-name" value={editor.newSlideName} onChange={(event) => editor.setNewSlideName(event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>{props.dictionary.stratmaps.customBackgroundLabel ?? "Custom background image"}</Label>
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" onClick={() => slideBackgroundInputRef.current?.click()} disabled={editor.isUploadingSlideBackground}>
+                  {props.dictionary.common.upload}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {editor.pendingSlideBackground?.kind === "image"
+                    ? `${editor.pendingSlideBackground.imageFilename} (${editor.pendingSlideBackground.imageWidth}x${editor.pendingSlideBackground.imageHeight})`
+                    : (props.dictionary.stratmaps.customBackgroundHint ?? "Leave empty to use the map background for this slide.")}
+                </span>
+              </div>
+              <input ref={slideBackgroundInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => void editor.handleSlideBackgroundUpload(event)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={editor.closeCreateSlideModal} disabled={editor.isUploadingSlideBackground}>
+              {props.dictionary.common.cancel}
+            </Button>
+            <Button onClick={editor.confirmCreateSlide} disabled={editor.isUploadingSlideBackground}>
+              {props.dictionary.stratmaps.createSlideAction ?? "Create slide"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
