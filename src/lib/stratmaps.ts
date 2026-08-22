@@ -145,6 +145,14 @@ export type StratmapPing = {
   createdAt: string;
 };
 
+export type StratmapSlideBackground = {
+  kind: "map" | "image";
+  imageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageFilename?: string;
+};
+
 export type StratmapElement =
   | StratmapIconElement
   | StratmapTextElement
@@ -156,6 +164,7 @@ export type StratmapElement =
 export type StratmapSlide = {
   id: string;
   name: string;
+  background?: StratmapSlideBackground;
   overlays: StratmapOverlaySettings;
   elements: StratmapElement[];
   pings: StratmapPing[];
@@ -201,6 +210,7 @@ export function buildDefaultStratmapState(baseMapId: string): StratmapState {
       {
         id: crypto.randomUUID(),
         name: "Slide 1",
+        background: createMapBackground(),
         overlays: {
           showGrid: true,
           showAllStrongpoints: true,
@@ -237,6 +247,7 @@ export function parseStratmapState(stateJson?: string | null, fallbackMapId?: st
       ...parsed,
       slides: parsed.slides.map((slide) => ({
         ...slide,
+        background: normalizeSlideBackground(slide.background),
         overlays: {
           showGrid: slide.overlays?.showGrid ?? true,
           showAllStrongpoints: slide.overlays?.showAllStrongpoints ?? true,
@@ -275,4 +286,22 @@ export function parseStratmapState(stateJson?: string | null, fallbackMapId?: st
 
 export function stringifyStratmapState(state: StratmapState) {
   return JSON.stringify(state);
+}
+
+function createMapBackground(): StratmapSlideBackground {
+  return { kind: "map" };
+}
+
+function normalizeSlideBackground(background?: StratmapSlideBackground): StratmapSlideBackground {
+  if (background?.kind === "image" && background.imageUrl && background.imageWidth && background.imageHeight) {
+    return {
+      kind: "image",
+      imageUrl: background.imageUrl,
+      imageWidth: background.imageWidth,
+      imageHeight: background.imageHeight,
+      imageFilename: background.imageFilename,
+    };
+  }
+
+  return createMapBackground();
 }

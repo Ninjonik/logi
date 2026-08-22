@@ -3,53 +3,82 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 
 import {
+  type StratmapArrowStyle,
   type StratmapElement,
   type StratmapIconElement,
   type StratmapOverlaySettings,
   type StratmapSlide,
+  type StratmapSlideBackground,
   type StratmapState,
-  type StratmapArrowStyle,
   getHllStratmapMapById,
 } from "@/lib/stratmaps";
 import type { StratmapRecord } from "@/types/domain";
 
-import { MAP_SIZE, MAX_VIEWPORT_SIZE, MIN_VIEWPORT_SIZE, PIXELS_PER_100_METERS, type OverlayTeam, type Point, type Viewport } from "./types";
+import { MAP_SIZE, MIN_VIEWPORT_SIZE, PIXELS_PER_100_METERS, type OverlayTeam, type Point, type Viewport } from "./types";
 
 export function getActiveSlide(state: StratmapState, selectedSlideId: string) {
   return state.slides.find((slide) => slide.id === selectedSlideId) ?? state.slides[0];
 }
 
-export function clampViewport(viewport: Viewport): Viewport {
-  const size = Math.max(MIN_VIEWPORT_SIZE, Math.min(MAX_VIEWPORT_SIZE, viewport.size));
+export function getCanvasSize(background?: StratmapSlideBackground) {
+  if (background?.kind === "image" && background.imageWidth && background.imageHeight) {
+    return { width: background.imageWidth, height: background.imageHeight };
+  }
+
+  return { width: MAP_SIZE, height: MAP_SIZE };
+}
+
+export function createViewport(background?: StratmapSlideBackground): Viewport {
+  const canvas = getCanvasSize(background);
+  return { x: 0, y: 0, width: canvas.width, height: canvas.height };
+}
+
+export function clampViewport(viewport: Viewport, background?: StratmapSlideBackground): Viewport {
+  const canvas = getCanvasSize(background);
+  const aspectRatio = canvas.width / canvas.height;
+  const minWidth = Math.min(canvas.width, Math.max(MIN_VIEWPORT_SIZE * aspectRatio, MIN_VIEWPORT_SIZE));
+  const width = Math.max(minWidth, Math.min(canvas.width, viewport.width));
+  const height = width / aspectRatio;
+
   return {
-    size,
-    x: Math.max(0, Math.min(MAP_SIZE - size, viewport.x)),
-    y: Math.max(0, Math.min(MAP_SIZE - size, viewport.y)),
+    width,
+    height,
+    x: Math.max(0, Math.min(canvas.width - width, viewport.x)),
+    y: Math.max(0, Math.min(canvas.height - height, viewport.y)),
   };
 }
 
-export function getSvgViewportMetrics(svgElement: SVGSVGElement) {
+export function getSvgViewportMetrics(svgElement: SVGSVGElement, viewport: Viewport) {
   const bounds = svgElement.getBoundingClientRect();
-  const size = Math.min(bounds.width, bounds.height);
-  const offsetX = (bounds.width - size) / 2;
-  const offsetY = (bounds.height - size) / 2;
-  return { bounds, size, offsetX, offsetY };
+  const viewportAspectRatio = viewport.width / viewport.height;
+  const boundsAspectRatio = bounds.width / bounds.height;
+
+  if (boundsAspectRatio > viewportAspectRatio) {
+    const height = bounds.height;
+    const width = height * viewportAspectRatio;
+    return { bounds, width, height, offsetX: (bounds.width - width) / 2, offsetY: 0 };
+  }
+
+  const width = bounds.width;
+  const height = width / viewportAspectRatio;
+  return { bounds, width, height, offsetX: 0, offsetY: (bounds.height - height) / 2 };
 }
 
 export function getPointerPoint(event: ReactPointerEvent<SVGSVGElement>, svgElement: SVGSVGElement, viewport: Viewport): Point {
-  const { bounds, size, offsetX, offsetY } = getSvgViewportMetrics(svgElement);
-  const relativeX = (event.clientX - bounds.left - offsetX) / size;
-  const relativeY = (event.clientY - bounds.top - offsetY) / size;
+  const { bounds, width, height, offsetX, offsetY } = getSvgViewportMetrics(svgElement, viewport);
+  const relativeX = (event.clientX - bounds.left - offsetX) / width;
+  const relativeY = (event.clientY - bounds.top - offsetY) / height;
   return {
-    x: viewport.x + Math.max(0, Math.min(1, relativeX)) * viewport.size,
-    y: viewport.y + Math.max(0, Math.min(1, relativeY)) * viewport.size,
+    x: viewport.x + Math.max(0, Math.min(1, relativeX)) * viewport.width,
+    y: viewport.y + Math.max(0, Math.min(1, relativeY)) * viewport.height,
   };
 }
 
-export function clampPoint(point: Point): Point {
+export function clampPoint(point: Point, background?: StratmapSlideBackground): Point {
+  const canvas = getCanvasSize(background);
   return {
-    x: Math.max(0, Math.min(MAP_SIZE, point.x)),
-    y: Math.max(0, Math.min(MAP_SIZE, point.y)),
+    x: Math.max(0, Math.min(canvas.width, point.x)),
+    y: Math.max(0, Math.min(canvas.height, point.y)),
   };
 }
 
@@ -108,14 +137,9 @@ export function formatDistanceLabel(points: Point[]) {
 }
 
 export function getPathLabelPoint(points: Point[]) {
-  if (points.length === 1) {
-    return points[0]!;
-  }
-
+  if (points.length === 1) return points[0]!;
   const totalLength = getPathDistance(points);
-  if (!totalLength) {
-    return points[0]!;
-  }
+  if (!totalLength) return points[0]!;
 
   let traveled = 0;
   for (let index = 1; index < points.length; index += 1) {
@@ -137,14 +161,9 @@ export function getPathLabelPoint(points: Point[]) {
 }
 
 export function getPathLabelAngle(points: Point[]) {
-  if (points.length < 2) {
-    return 0;
-  }
-
+  if (points.length < 2) return 0;
   const totalLength = getPathDistance(points);
-  if (!totalLength) {
-    return 0;
-  }
+  if (!totalLength) return 0;
 
   let traveled = 0;
   for (let index = 1; index < points.length; index += 1) {
@@ -163,42 +182,26 @@ export function getPathLabelAngle(points: Point[]) {
 }
 
 export function getSpawnRangeRadius(iconId: string) {
-  if (iconId === "garry" || iconId === "airhead" || iconId === "halftrack" || iconId === "forward") {
-    return PIXELS_PER_100_METERS;
-  }
-  if (iconId === "outpost-normal" || iconId === "outpost-recon") {
-    return PIXELS_PER_100_METERS / 2;
-  }
+  if (iconId === "garry" || iconId === "airhead" || iconId === "halftrack" || iconId === "forward") return PIXELS_PER_100_METERS;
+  if (iconId === "outpost-normal" || iconId === "outpost-recon") return PIXELS_PER_100_METERS / 2;
   return null;
 }
 
 export function getArrowDecorationVector(points: Point[], edge: "start" | "end") {
-  if (points.length < 2) {
-    return null;
-  }
-
+  if (points.length < 2) return null;
   const anchor = edge === "start" ? points[0]! : points[points.length - 1]!;
   const neighbor = edge === "start" ? points[1]! : points[points.length - 2]!;
-  const dx = edge === "start" ? anchor.x - neighbor.x : anchor.x - neighbor.x;
-  const dy = edge === "start" ? anchor.y - neighbor.y : anchor.y - neighbor.y;
+  const dx = anchor.x - neighbor.x;
+  const dy = anchor.y - neighbor.y;
   const length = Math.hypot(dx, dy);
-
-  if (!length) {
-    return null;
-  }
-
+  if (!length) return null;
   return { anchor, dx: dx / length, dy: dy / length };
 }
 
 export function buildArrowDecoration(style: StratmapArrowStyle | undefined, points: Point[], edge: "start" | "end", strokeWidth: number) {
-  if (!style || style === "none") {
-    return null;
-  }
-
+  if (!style || style === "none") return null;
   const vector = getArrowDecorationVector(points, edge);
-  if (!vector) {
-    return null;
-  }
+  if (!vector) return null;
 
   const { anchor, dx, dy } = vector;
   const nx = -dy;
@@ -217,26 +220,24 @@ export function isAreaDrag(active: { start: Point; current: Point }, threshold =
 }
 
 export function getElementBounds(element: StratmapElement) {
-  if (element.kind === "icon") {
-    return { x: element.x - element.size / 2, y: element.y - element.size / 2, width: element.size, height: element.size };
-  }
-  if (element.kind === "text") {
-    return { x: element.x, y: element.y - element.fontSize, width: element.width, height: element.fontSize * 1.3 };
-  }
+  if (element.kind === "icon") return { x: element.x - element.size / 2, y: element.y - element.size / 2, width: element.size, height: element.size };
+  if (element.kind === "text") return { x: element.x, y: element.y - element.fontSize, width: element.width, height: element.fontSize * 1.3 };
   if (element.kind === "line" || element.kind === "freehand" || element.kind === "polygon") {
     const xs = element.points.map((point) => point.x);
     const ys = element.points.map((point) => point.y);
     const padding = Math.max(12, (element.strokeWidth ?? 6) * 1.5);
-    return { x: Math.min(...xs) - padding, y: Math.min(...ys) - padding, width: Math.max(...xs) - Math.min(...xs) + padding * 2, height: Math.max(...ys) - Math.min(...ys) + padding * 2 };
+    return {
+      x: Math.min(...xs) - padding,
+      y: Math.min(...ys) - padding,
+      width: Math.max(...xs) - Math.min(...xs) + padding * 2,
+      height: Math.max(...ys) - Math.min(...ys) + padding * 2,
+    };
   }
   return { x: element.x, y: element.y, width: element.width, height: element.height };
 }
 
 export function getBoundsCenter(bounds: { x: number; y: number; width: number; height: number }) {
-  return {
-    x: bounds.x + bounds.width / 2,
-    y: bounds.y + bounds.height / 2,
-  };
+  return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
 }
 
 export function rotatePoint(point: Point, center: Point, angleDeg: number): Point {
@@ -245,11 +246,7 @@ export function rotatePoint(point: Point, center: Point, angleDeg: number): Poin
   const dy = point.y - center.y;
   const cos = Math.cos(angleRad);
   const sin = Math.sin(angleRad);
-
-  return {
-    x: center.x + dx * cos - dy * sin,
-    y: center.y + dx * sin + dy * cos,
-  };
+  return { x: center.x + dx * cos - dy * sin, y: center.y + dx * sin + dy * cos };
 }
 
 export function getAngleFromPoint(point: Point, center: Point) {
