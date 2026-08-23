@@ -385,6 +385,7 @@ export function EventFormPanel({
       name: event.name ?? "",
       description: event.description ?? "",
       thumbnailUrl: event.thumbnailUrl ?? "",
+      imageUrl: event.imageUrl ?? "",
       meetingChannelId: event.meetingChannelId ?? "",
       requiredRoleIds: event.requiredRoleIds,
       rewardRoleIds: event.rewardRoleIds,
@@ -543,6 +544,7 @@ export function EventFormPanel({
       signupGroupIds: values.kind === "match" ? values.signupGroupIds : [],
       useGeneralSignup: values.kind === "match" ? values.useGeneralSignup : false,
       thumbnailUrl: values.thumbnailUrl || undefined,
+      imageUrl: values.imageUrl || undefined,
     };
 
     const response = await fetch(
@@ -754,6 +756,29 @@ export function EventFormPanel({
                 <ReadOnlyValue value={form.watch("thumbnailUrl")} emptyLabel={dictionary.shared.notSet} />
               )}
             </div>
+            {eventKind === "match" ? (
+              <div className="md:col-span-2">
+                {canEdit ? (
+                  <Controller
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                      <AvatarPicker
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        fallback={eventName.slice(0, 2).toUpperCase() || "EV"}
+                        label={dictionary.event.fields.image}
+                        buttonLabel={dictionary.common.upload}
+                        disabled={!canEdit || isPending}
+                        className="rounded-2xl border border-border/60 p-4"
+                      />
+                    )}
+                  />
+                ) : (
+                  <ReadOnlyValue value={form.watch("imageUrl")} emptyLabel={dictionary.shared.notSet} />
+                )}
+              </div>
+            ) : null}
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.description}  />
               {canEdit ? (

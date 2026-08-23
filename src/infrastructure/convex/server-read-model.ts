@@ -124,6 +124,7 @@ export function normalizeEventDoc<T extends {
   kind?: "match" | "training";
   matchType?: string;
   thumbnailUrl?: string;
+  imageUrl?: string;
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];

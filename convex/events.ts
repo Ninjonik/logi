@@ -69,6 +69,7 @@ export const upsert = mutation({
     name: v.string(),
     description: v.optional(v.string()),
     thumbnailUrl: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
     meetingChannelId: v.optional(v.string()),
     requiredRoleIds: v.optional(v.array(v.string())),
     rewardRoleIds: v.optional(v.array(v.string())),

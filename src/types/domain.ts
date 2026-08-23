@@ -234,6 +234,7 @@ export type EventRecord = {
   name: string;
   description?: string;
   thumbnailUrl?: string;
+  imageUrl?: string;
   meetingChannelId?: string;
   requiredRoleIds: string[];
   rewardRoleIds: string[];

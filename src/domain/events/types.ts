@@ -71,6 +71,7 @@ export type EventLike = {
   createdAt?: string;
   updatedAt?: string;
   thumbnailUrl?: string;
+  imageUrl?: string;
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];

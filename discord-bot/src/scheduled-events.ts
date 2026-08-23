@@ -1,5 +1,6 @@
 import {
   ChannelType,
+  DiscordAPIError,
   Guild,
   GuildBasedChannel,
   GuildChannel,
@@ -23,6 +24,30 @@ export { deriveScheduledEventLifecycle };
 
 export function getStoredScheduledEventStatus(status: ScheduledLifecycle) {
   return status;
+}
+
+function getDiscordErrorDetails(error: unknown) {
+  if (error instanceof DiscordAPIError) {
+    return {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      method: "method" in error ? (error as { method?: unknown }).method : undefined,
+      url: "url" in error ? (error as { url?: unknown }).url : undefined,
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+    };
+  }
+
+  return {
+    message: typeof error === "string" ? error : "Unknown Discord error.",
+  };
 }
 
 export async function syncScheduledDiscordEvent(input: {
@@ -71,11 +96,15 @@ export async function syncScheduledDiscordEvent(input: {
       entityType: GuildScheduledEventEntityType.Voice,
       channel: eventChannel.id,
     }).catch((error) => {
+      const discordError = getDiscordErrorDetails(error);
       logWarn("scheduled-events", "Failed to create scheduled Discord event", {
         guildId: guild.id,
         eventId: event.id,
         channelId: eventChannel.id,
-        error,
+        operation: "create",
+        scheduledEventName: event.name,
+        desiredLifecycle,
+        ...discordError,
       });
       void reportClanDiscordError({
         client: guild.client,
@@ -109,11 +138,16 @@ export async function syncScheduledDiscordEvent(input: {
       scheduledEndTime,
       channel: eventChannel.id,
     }).catch((error) => {
+      const discordError = getDiscordErrorDetails(error);
       logWarn("scheduled-events", "Failed to edit scheduled Discord event", {
         guildId: guild.id,
         eventId: event.id,
         scheduledEventId: scheduledEventId ?? scheduledEvent?.id,
-        error,
+        channelId: eventChannel.id,
+        operation: "edit-metadata",
+        scheduledEventName: event.name,
+        desiredLifecycle,
+        ...discordError,
       });
       void reportClanDiscordError({
         client: guild.client,
@@ -152,13 +186,19 @@ export async function syncScheduledDiscordEvent(input: {
           : GuildScheduledEventStatus.Canceled;
 
     if (scheduledEvent.status !== nextDiscordStatus) {
+      const currentStatus = scheduledEvent.status;
       scheduledEvent = await scheduledEvent.edit({ status: nextDiscordStatus }).catch((error) => {
+        const discordError = getDiscordErrorDetails(error);
         logWarn("scheduled-events", "Failed to advance scheduled Discord event status", {
           guildId: guild.id,
           eventId: event.id,
           scheduledEventId: scheduledEvent?.id,
           desiredLifecycle,
-          error,
+          operation: "edit-status",
+          scheduledEventName: event.name,
+          fromStatus: currentStatus,
+          toStatus: nextDiscordStatus,
+          ...discordError,
         });
         void reportClanDiscordError({
           client: guild.client,

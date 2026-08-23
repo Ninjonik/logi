@@ -135,7 +135,10 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
 
   if (payload.config.announcementsChannelId && !(event.status === "concluded" && !announcementMessageId)) {
     const channel = await guild.channels.fetch(payload.config.announcementsChannelId).catch(() => null);
-    if (channel?.isTextBased() && channel.type === ChannelType.GuildText) {
+    if (
+      channel?.isTextBased() &&
+      (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement)
+    ) {
       const textChannel = channel as TextChannel;
       const { embed, components } = buildAnnouncementMessage(payload, event);
       const existingMessage = announcementMessageId
