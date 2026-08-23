@@ -148,6 +148,10 @@ export function buildEventEmbed(
     return embed;
   }
 
+  if (event.kind === "match" && event.imageUrl) {
+    embed.setImage(event.imageUrl);
+  }
+
   if (event.kind === "match") {
     const configuredGroupIds = event.signupGroupIds ? new Set(event.signupGroupIds) : null;
     const visibleGroups = configuredGroupIds ? groups.filter((group) => configuredGroupIds.has(group.id)) : groups;
@@ -245,6 +249,10 @@ export function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord, s
 
   if (event.thumbnailUrl) {
     embed.setThumbnail(event.thumbnailUrl);
+  }
+
+  if (event.kind === "match" && event.imageUrl) {
+    embed.setImage(event.imageUrl);
   }
 
   if (event.kind === "match") {

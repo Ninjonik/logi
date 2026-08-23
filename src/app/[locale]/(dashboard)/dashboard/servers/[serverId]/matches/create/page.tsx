@@ -28,6 +28,7 @@ export default async function CreateMatchPage({
     name: "",
     description: "",
     thumbnailUrl: "",
+    imageUrl: "",
     meetingChannelId: "",
     requiredRoleIds: [],
     rewardRoleIds: [],

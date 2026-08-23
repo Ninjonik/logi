@@ -7,6 +7,7 @@ export const eventSchema = z
     name: z.string().trim().min(1, "Event name is required."),
     description: z.string().trim().optional(),
     thumbnailUrl: z.string().trim().url("Thumbnail must be a valid URL.").optional().or(z.literal("")),
+    imageUrl: z.string().trim().url("Image must be a valid URL.").optional().or(z.literal("")),
     meetingChannelId: z.string().trim().optional(),
     requiredRoleIds: z.array(z.string().trim()).default([]),
     rewardRoleIds: z.array(z.string().trim()).default([]),

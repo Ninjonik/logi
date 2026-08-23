@@ -18,6 +18,7 @@ export function normalizeEventRecord<
     kind: event.kind ?? "match",
     matchType: event.matchType?.trim() || undefined,
     thumbnailUrl: event.thumbnailUrl,
+    imageUrl: event.imageUrl,
     meetingChannelId: event.meetingChannelId,
     requiredRoleIds: normalizeOptionalArray(event.requiredRoleIds),
     rewardRoleIds: normalizeOptionalArray(event.rewardRoleIds),

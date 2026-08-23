@@ -11,6 +11,7 @@ export type EventUpsertInput = {
   name: string;
   description?: string;
   thumbnailUrl?: string;
+  imageUrl?: string;
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
@@ -46,6 +47,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
     name: input.name.trim(),
     description: trimOptional(input.description),
     thumbnailUrl: trimOptional(input.thumbnailUrl),
+    imageUrl: trimOptional(input.imageUrl),
     meetingChannelId: trimOptional(input.meetingChannelId),
     requiredRoleIds: normalizeOptionalArray(input.requiredRoleIds).map((roleId) => roleId.trim()).filter(Boolean),
     rewardRoleIds: normalizeOptionalArray(input.rewardRoleIds).map((roleId) => roleId.trim()).filter(Boolean),

@@ -766,6 +766,7 @@ export const enMessages = {
       matchType: "Event category",
       description: "Description",
       thumbnail: "Thumbnail",
+      image: "Embed image",
       meetingChannelId: "Meeting VC / location",
       server: "Server",
       serverPassword: "Server password",

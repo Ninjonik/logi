@@ -17,6 +17,7 @@ export async function saveServerEventCommand(input: {
   name: string;
   description?: string;
   thumbnailUrl?: string;
+  imageUrl?: string;
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
@@ -46,6 +47,7 @@ export async function saveServerEventCommand(input: {
     name: input.name,
     description: input.description,
     thumbnailUrl: input.thumbnailUrl,
+    imageUrl: input.imageUrl,
     meetingChannelId: input.meetingChannelId,
     requiredRoleIds: input.requiredRoleIds,
     rewardRoleIds: input.rewardRoleIds,
