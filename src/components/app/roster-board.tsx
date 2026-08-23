@@ -102,6 +102,7 @@ export function RosterBoard({
   const [notAttendingPickerOpen, setNotAttendingPickerOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [publishedUpdateDialogOpen, setPublishedUpdateDialogOpen] = useState(false);
   const [autoFillDialogOpen, setAutoFillDialogOpen] = useState(false);
   const [autoFillScoreWeight, setAutoFillScoreWeight] = useState(50);
   const [autoFillKdWeight, setAutoFillKdWeight] = useState(50);
@@ -730,8 +731,9 @@ export function RosterBoard({
     toast.success(dictionary.roster.autoFilled);
   }
 
-  const handleSave = async (published: boolean = false) => {
+  const executeSave = async (published: boolean = false, options?: { postAnnouncement?: boolean }) => {
     if (!board || !event) return;
+    const previousRoster = roster;
 
     startTransition(async () => {
       try {
@@ -799,12 +801,48 @@ export function RosterBoard({
           }),
         }).catch(() => null);
 
-        toast.success(published ? dictionary.roster.published : dictionary.roster.saved);
+        if (previousRoster?.published && published) {
+          await fetch(`/api/servers/${serverId}/rosters/${nextRosterId}/update-notifications`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              previousRoster,
+              nextRoster: {
+                ...board,
+                id: nextRosterId,
+                reservePlayerIds: cleanReservePlayerIds,
+                notAttendingPlayerIds: cleanNotAttendingPlayerIds,
+                squads: saveSquads,
+                published: true,
+              },
+              postAnnouncement: options?.postAnnouncement ?? false,
+            }),
+          }).catch(() => null);
+        }
+
+        toast.success(
+          previousRoster?.published && published
+            ? options?.postAnnouncement
+              ? dictionary.roster.updatePosted
+              : dictionary.roster.updateSavedWithoutPost
+            : published
+              ? dictionary.roster.published
+              : dictionary.roster.saved,
+        );
       } catch (error) {
         console.error("Failed to save roster:", error);
         toast.error(dictionary.common.error);
       }
     });
+  };
+
+  const handleSave = async (published: boolean = false) => {
+    if (board?.published && published && isDirty) {
+      setPublishedUpdateDialogOpen(true);
+      return;
+    }
+
+    await executeSave(published);
   };
 
   const canConfirmFromMeetingChannel = Boolean(meetingChannelId && board?.id && event?.id);
@@ -1146,6 +1184,47 @@ export function RosterBoard({
             <Button className="rounded-xl" onClick={() => handleSave(true)} disabled={isPending || isConfirmingMeetingChannel}>
               {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               {dictionary.roster.publishRoster}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={publishedUpdateDialogOpen} onOpenChange={setPublishedUpdateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dictionary.roster.updatePublishedPromptTitle}</DialogTitle>
+            <DialogDescription>{dictionary.roster.updatePublishedPromptDescription}</DialogDescription>
+          </DialogHeader>
+          <div className="rounded-2xl border border-border/70 bg-muted/30 p-4 text-sm text-muted-foreground">
+            {dictionary.roster.updatePublishedPromptHint}
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" className="rounded-xl">
+                {dictionary.roster.updatePublishedPromptCancel}
+              </Button>
+            </DialogClose>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => {
+                setPublishedUpdateDialogOpen(false);
+                void executeSave(true, { postAnnouncement: false });
+              }}
+              disabled={isPending || isConfirmingMeetingChannel}
+            >
+              <Save className="size-4" />
+              {dictionary.roster.updatePublishedPromptSkip}
+            </Button>
+            <Button
+              className="rounded-xl"
+              onClick={() => {
+                setPublishedUpdateDialogOpen(false);
+                void executeSave(true, { postAnnouncement: true });
+              }}
+              disabled={isPending || isConfirmingMeetingChannel}
+            >
+              <Send className="size-4" />
+              {dictionary.roster.updatePublishedPromptAnnounce}
             </Button>
           </DialogFooter>
         </DialogContent>
