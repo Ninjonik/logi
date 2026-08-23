@@ -122,6 +122,18 @@ type ClanDiscordMessages = {
     rewardGranted: string;
     dmResult: string;
   };
+  rosterUpdate: {
+    announcementTitle: string;
+    addedLabel: string;
+    removedLabel: string;
+    movedLabel: string;
+    roleChangedLabel: string;
+    dmIntro: string;
+    dmAdded: string;
+    dmRemoved: string;
+    dmMoved: string;
+    dmRoleChanged: string;
+  };
   platformFlow?: {
     title: string;
     membershipIntro: string;
@@ -396,6 +408,18 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       resultFailed: "did not pass",
       rewardGranted: "Reward roles have been granted in Discord.",
       dmResult: "Hi {name}, your training result for **{event}** is: {result}.{reward}",
+    },
+    rosterUpdate: {
+      announcementTitle: "Roster update",
+      addedLabel: "Starting XI additions",
+      removedLabel: "Dropped from the lineup",
+      movedLabel: "Squad switches",
+      roleChangedLabel: "Role changes",
+      dmIntro: "Hi {name}, the published roster for **{event}** has been updated.",
+      dmAdded: "✅ You are in the lineup now.",
+      dmRemoved: "❌ You are no longer in the lineup.",
+      dmMoved: "🔁 Your squad assignment changed.",
+      dmRoleChanged: "🎯 Your role changed.",
     },
     platformFlow: {
       title: "Link your platform ID",
@@ -765,6 +789,18 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       resultFailed: "neprošel",
       rewardGranted: "Odměnové role vám byly přiděleny na Discordu.",
       dmResult: "Ahoj {name}, výsledek tvého trainingu **{event}** je: {result}.{reward}",
+    },
+    rosterUpdate: {
+      announcementTitle: "Aktualizace soupisky",
+      addedLabel: "Nově v sestavě",
+      removedLabel: "Vyřazeni ze sestavy",
+      movedLabel: "Přesuny mezi squadami",
+      roleChangedLabel: "Změny rolí",
+      dmIntro: "Ahoj {name}, publikovaná soupiska pro **{event}** byla upravena.",
+      dmAdded: "✅ Teď jsi v sestavě.",
+      dmRemoved: "❌ Už nejsi v sestavě.",
+      dmMoved: "🔁 Změnilo se tvoje zařazení do squadu.",
+      dmRoleChanged: "🎯 Změnila se tvoje role.",
     },
     ticket: {
       serverOnly: "Tickety lze otevřít pouze uvnitř serveru.",
