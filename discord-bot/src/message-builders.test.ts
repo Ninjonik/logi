@@ -231,7 +231,7 @@ test("buildEventEmbed uses plain display names instead of Discord mentions", () 
   assert.doesNotMatch(combinedValues, /<@/);
 });
 
-test("buildEventEmbed lays out match signup names in up to four left-to-right columns", () => {
+test("buildEventEmbed lays out match signup names in up to three left-to-right columns", () => {
   const embed = buildEventEmbed(
     config,
     groups,
@@ -263,10 +263,8 @@ test("buildEventEmbed lays out match signup names in up to four left-to-right co
   assert.equal(fields[0]?.inline, true);
   assert.equal(fields[1]?.inline, true);
   assert.equal(fields[2]?.inline, true);
-  assert.equal(fields[3]?.inline, true);
   assert.match(fields[0]?.name ?? "", /Command \(7\)/);
-  assert.equal(fields[0]?.value, "Alpha\nEcho");
-  assert.equal(fields[1]?.value, "Bravo\nFoxtrot");
-  assert.equal(fields[2]?.value, "Charlie\nGolf");
-  assert.equal(fields[3]?.value, "Delta");
+  assert.equal(fields[0]?.value, "Alpha\nDelta\nGolf");
+  assert.equal(fields[1]?.value, "Bravo\nEcho");
+  assert.equal(fields[2]?.value, "Charlie\nFoxtrot");
 });
