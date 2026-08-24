@@ -98,7 +98,7 @@ function buildInlineSignupFields(name: string, members: string[], emptyLabel: st
     return [{ name, value: emptyLabel, inline: true }];
   }
 
-  const columnCount = Math.min(3, members.length);
+  const columnCount = Math.min(4, members.length);
   const columns = Array.from({ length: columnCount }, () => [] as string[]);
   for (let index = 0; index < members.length; index += 1) {
     columns[index % columnCount]!.push(members[index]!);
@@ -114,12 +114,12 @@ function buildInlineSignupFields(name: string, members: string[], emptyLabel: st
 }
 
 function buildInlineFieldPadding(fieldCount: number): APIEmbedField[] {
-  const remainder = fieldCount % 3;
+  const remainder = fieldCount % 4;
   if (remainder === 0) {
     return [];
   }
 
-  return Array.from({ length: 3 - remainder }, () => ({
+  return Array.from({ length: 4 - remainder }, () => ({
     name: "\u200B",
     value: "\u200B",
     inline: true,
