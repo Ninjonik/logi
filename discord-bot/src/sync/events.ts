@@ -1,4 +1,4 @@
-import { ChannelType, type Client, type TextChannel } from "discord.js";
+import { ChannelType, type Client, type Guild, type TextChannel } from "discord.js";
 
 import { convex, references } from "../convex";
 import { env } from "../environment";
@@ -17,6 +17,36 @@ import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules";
 
 function shouldShowPublishedRosterImage(event: EventRecord, rosterUpdatedAt?: string) {
   return Boolean(rosterUpdatedAt && (event.status === "closed" || event.status === "starting"));
+}
+
+async function resolveAnnouncementDisplayNames(payload: SyncPayload, event: EventRecord, guild: Guild) {
+  const userIds = new Set<string>();
+
+  for (const signUp of event.signUps) {
+    userIds.add(signUp.userId);
+  }
+
+  for (const participant of event.participants) {
+    userIds.add(participant.userId);
+  }
+
+  if (userIds.size === 0) {
+    return payload.userDisplayNames;
+  }
+
+  const resolvedDisplayNames = { ...payload.userDisplayNames };
+  const members = await guild.members.fetch({ user: [...userIds] }).catch(() => null);
+
+  if (members) {
+    for (const [userId, member] of members) {
+      const displayName = member.displayName?.trim();
+      if (displayName) {
+        resolvedDisplayNames[userId] = displayName;
+      }
+    }
+  }
+
+  return resolvedDisplayNames;
 }
 
 export async function syncPayloadEvents(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
@@ -140,7 +170,8 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
       (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement)
     ) {
       const textChannel = channel as TextChannel;
-      const { embed, components } = buildAnnouncementMessage(payload, event);
+      const userDisplayNames = await resolveAnnouncementDisplayNames(payload, event, guild);
+      const { embed, components } = buildAnnouncementMessage(payload, event, userDisplayNames);
       const existingMessage = announcementMessageId
         ? await textChannel.messages.fetch(announcementMessageId).catch(() => null)
         : null;
