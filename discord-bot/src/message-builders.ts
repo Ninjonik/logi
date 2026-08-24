@@ -36,9 +36,18 @@ import {
 export function buildAnnouncementMessage(payload: SyncPayload, event: EventRecord) {
   const roster = payload.rosters.find((item) => item.eventId === event.id);
   return {
-    embed: buildEventEmbed(payload.config, payload.groups, payload.guild.eventCategories, event, roster),
+    embed: buildEventEmbed(payload.config, payload.groups, payload.guild.eventCategories, event, roster, payload.userDisplayNames),
     components: buildEventComponents(payload.config, payload.groups, event, roster),
   };
+}
+
+function escapeDisplayName(value: string) {
+  return value.replace(/([\\`*_{}[\]()#+\-.!|>~])/g, "\\$1");
+}
+
+function resolveAnnouncementDisplayName(userId: string, userDisplayNames: Record<string, string>) {
+  const displayName = userDisplayNames[userId]?.trim();
+  return escapeDisplayName(displayName && displayName.length > 0 ? displayName : userId);
 }
 
 function normalizeCategoryId(value?: string) {
@@ -86,6 +95,7 @@ export function buildEventEmbed(
   categories: SyncPayload["guild"]["eventCategories"],
   event: EventRecord,
   roster?: Roster,
+  userDisplayNames: Record<string, string> = {},
 ) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const signupsByGroup = new Map<string, string[]>();
@@ -101,7 +111,7 @@ export function buildEventEmbed(
     const rawGroup = signUp.group ?? "ATTENDING";
     const key = rawGroup === SIGNUP_NOT_ATTENDING ? SIGNUP_NOT_ATTENDING : (groupNameById.get(rawGroup) ?? rawGroup);
     const list = signupsByGroup.get(key) ?? [];
-    list.push(`<@${signUp.userId}>`);
+    list.push(resolveAnnouncementDisplayName(signUp.userId, userDisplayNames));
     signupsByGroup.set(key, list);
   }
 
@@ -185,10 +195,10 @@ export function buildEventEmbed(
 
   const attending = event.participants
     .filter((participant) => participant.status === "attending")
-    .map((participant) => `<@${participant.userId}>`);
+    .map((participant) => resolveAnnouncementDisplayName(participant.userId, userDisplayNames));
   const nonAttending = event.participants
     .filter((participant) => participant.status === "not_attending")
-    .map((participant) => `<@${participant.userId}>`);
+    .map((participant) => resolveAnnouncementDisplayName(participant.userId, userDisplayNames));
 
   embed.addFields(
     {

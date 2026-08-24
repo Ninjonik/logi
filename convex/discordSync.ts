@@ -7,6 +7,7 @@ import {
   normalizeDoc,
   normalizeEventDoc,
   normalizeGuildDoc,
+  normalizeUserDoc,
 } from "./discord_shared";
 import { getGuildDiscordId } from "./identity";
 
@@ -15,7 +16,7 @@ export const listSyncPayloads = query({
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
 
-    const [guilds, configs, groups, events, calendarItems, topicPresets, syncStates, rosters] = await Promise.all([
+    const [guilds, configs, groups, events, calendarItems, topicPresets, syncStates, rosters, users] = await Promise.all([
       ctx.db.query("guilds").collect(),
       ctx.db.query("discordConfigs").collect(),
       ctx.db.query("groups").collect(),
@@ -24,7 +25,10 @@ export const listSyncPayloads = query({
       ctx.db.query("topicPresets").collect(),
       ctx.db.query("discordEventSyncs").collect(),
       ctx.db.query("rosters").collect(),
+      ctx.db.query("users").collect(),
     ]);
+
+    const normalizedUsers = users.map(normalizeUserDoc);
 
     return configs.map((config) => {
       const guild = guilds.find((item) => getGuildDiscordId(item) === config.guildId);
@@ -36,6 +40,29 @@ export const listSyncPayloads = query({
       const guildRosters = rosters
         .filter((roster) => guildEvents.some((event) => String(roster.eventId) === event.id))
         .map(normalizeDoc);
+      const userIds = new Set<string>();
+
+      for (const event of guildEvents) {
+        for (const signUp of event.signUps ?? []) {
+          userIds.add(signUp.userId);
+        }
+        for (const participant of event.participants ?? []) {
+          userIds.add(participant.userId);
+        }
+      }
+
+      const userDisplayNames = Object.fromEntries(
+        normalizedUsers
+          .filter((user) => userIds.has(user.id) || userIds.has(user.discordId))
+          .flatMap((user) => {
+            const nickname = user.nicknames?.[config.guildId]?.trim();
+            const displayName = nickname || user.name?.trim() || user.discordId || user.id;
+            return [
+              [user.id, displayName],
+              [user.discordId, displayName],
+            ] as const;
+          }),
+      );
 
       return {
         guild: guild ? normalizeGuildDoc(guild) : {
@@ -53,6 +80,7 @@ export const listSyncPayloads = query({
         },
         config: normalizeConfigDoc(config),
         groups: guildGroups,
+        userDisplayNames,
         events: guildEvents,
         calendarItems: guildCalendarItems,
         rosters: guildRosters,
