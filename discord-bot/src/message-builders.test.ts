@@ -144,9 +144,9 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
         id: "event-red",
         name: "Registrace do aktivního výběru",
         matchType: "competitive",
-        meetingStart: "2026-08-22T21:59:00.000Z",
-        gameStart: "2026-08-22T21:59:00.000Z",
-        gameEnd: "2026-08-22T22:04:00.000Z",
+        meetingStart: "2026-08-25T21:59:00.000Z",
+        gameStart: "2026-08-25T21:59:00.000Z",
+        gameEnd: "2026-08-25T22:04:00.000Z",
       }),
     ],
     [
@@ -157,8 +157,8 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
         color: "#22c55e",
         emoji: "🤝",
         label: "Přátelský zápas",
-        startAt: "2026-08-23T17:00:00.000Z",
-        endAt: "2026-08-23T19:30:00.000Z",
+        startAt: "2026-08-26T17:00:00.000Z",
+        endAt: "2026-08-26T19:30:00.000Z",
         allDay: false,
         createdAt: "2026-07-29T10:00:00.000Z",
         updatedAt: "2026-07-29T10:00:00.000Z",
@@ -171,8 +171,8 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
   assert.match(json.description ?? "", /\*\*Kategorie\*\*/);
   assert.match(json.description ?? "", /🟥 🏆 Kompetitivní zápas/);
   assert.match(json.description ?? "", /🟩 🤝 Přátelský zápas/);
-  assert.match(json.description ?? "", /\*\*sobota 22\. srpna 2026\*\*/i);
-  assert.match(json.description ?? "", /\*\*neděle 23\. srpna 2026\*\*/i);
+  assert.match(json.description ?? "", /\*\*úterý 25\. srpna 2026\*\*/i);
+  assert.match(json.description ?? "", /\*\*středa 26\. srpna 2026\*\*/i);
   assert.match(json.description ?? "", /🟥 \[Registrace do aktivního výběru\]\(https:\/\/calendar\.google\.com\/calendar\/render\?action=TEMPLATE/);
   assert.match(json.description ?? "", /🟩 VLK vs 57TH - Friendly <t:\d+:t> - <t:\d+:t>/);
 });
@@ -185,9 +185,9 @@ test("buildCalendarPanelEmbed tolerates missing event categories", () => {
       createMatchEvent({
         id: "event-no-categories",
         name: "Fallback Match",
-        meetingStart: "2026-08-22T21:59:00.000Z",
-        gameStart: "2026-08-22T21:59:00.000Z",
-        gameEnd: "2026-08-22T22:04:00.000Z",
+        meetingStart: "2026-08-25T21:59:00.000Z",
+        gameStart: "2026-08-25T21:59:00.000Z",
+        gameEnd: "2026-08-25T22:04:00.000Z",
       }),
     ],
     [],
@@ -196,4 +196,37 @@ test("buildCalendarPanelEmbed tolerates missing event categories", () => {
   const json = embed.toJSON();
   assert.equal(json.title, "📅 Kalendář");
   assert.match(json.description ?? "", /Fallback Match/);
+});
+
+test("buildEventEmbed uses plain display names instead of Discord mentions", () => {
+  const embed = buildEventEmbed(
+    config,
+    groups,
+    eventCategories,
+    createMatchEvent({
+      participants: [
+        {
+          userId: "user-1",
+          status: "attending",
+          updatedAt: "2026-07-29T10:00:00.000Z",
+        },
+        {
+          userId: "user-2",
+          status: "not_attending",
+          updatedAt: "2026-07-29T10:00:00.000Z",
+        },
+      ],
+    }),
+    undefined,
+    {
+      "user-1": "Alpha Nick",
+      "user-2": "Bravo Nick",
+    },
+  );
+
+  const fields = embed.toJSON().fields ?? [];
+  const combinedValues = fields.map((field) => field.value ?? "").join(" | ");
+  assert.match(combinedValues, /Alpha Nick/);
+  assert.match(combinedValues, /Bravo Nick/);
+  assert.doesNotMatch(combinedValues, /<@/);
 });

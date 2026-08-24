@@ -314,6 +314,7 @@ export type SyncPayload = {
   guild: GuildRecord;
   config: DiscordConfig;
   groups: Group[];
+  userDisplayNames: Record<string, string>;
   events: EventRecord[];
   calendarItems: CalendarItem[];
   rosters: Roster[];
