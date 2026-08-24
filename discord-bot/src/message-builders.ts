@@ -93,6 +93,39 @@ function toDiscordColor(color: string) {
   return Number.parseInt("FFB000", 16);
 }
 
+function buildInlineSignupFields(name: string, members: string[], emptyLabel: string): APIEmbedField[] {
+  if (!members.length) {
+    return [{ name, value: emptyLabel, inline: true }];
+  }
+
+  const columnCount = Math.min(3, members.length);
+  const columns = Array.from({ length: columnCount }, () => [] as string[]);
+  for (let index = 0; index < members.length; index += 1) {
+    columns[index % columnCount]!.push(members[index]!);
+  }
+
+  const fields: APIEmbedField[] = columns.map((columnMembers, index) => ({
+    name: index === 0 ? name : "\u200B",
+    value: columnMembers.join("\n"),
+    inline: true,
+  }));
+
+  return fields;
+}
+
+function buildInlineFieldPadding(fieldCount: number): APIEmbedField[] {
+  const remainder = fieldCount % 3;
+  if (remainder === 0) {
+    return [];
+  }
+
+  return Array.from({ length: 3 - remainder }, () => ({
+    name: "\u200B",
+    value: "\u200B",
+    inline: true,
+  }));
+}
+
 export function buildEventEmbed(
   config: DiscordConfig,
   groups: Group[],
@@ -169,29 +202,44 @@ export function buildEventEmbed(
   if (event.kind === "match") {
     const configuredGroupIds = event.signupGroupIds ? new Set(event.signupGroupIds) : null;
     const visibleGroups = configuredGroupIds ? groups.filter((group) => configuredGroupIds.has(group.id)) : groups;
+    const signupSections: APIEmbedField[][] = [];
+
     for (const group of visibleGroups) {
       const members = signupsByGroup.get(group.name) ?? [];
-      embed.addFields({
-        name: `${group.discordEmoji ?? "👥"} ${group.name} (${members.length})`,
-        value: members.length ? members.join(", ") : messages.embed.nobodyYet,
-        inline: false,
-      });
+      signupSections.push(
+        buildInlineSignupFields(
+          `${group.discordEmoji ?? "👥"} ${group.name} (${members.length})`,
+          members,
+          messages.embed.nobodyYet,
+        ),
+      );
     }
 
     const generalAttending = signupsByGroup.get("ATTENDING") ?? [];
     if (generalAttending.length > 0) {
-      embed.addFields({
-        name: `✅ ${messages.embed.attending} (${generalAttending.length})`,
-        value: generalAttending.join(", "),
-        inline: false,
-      });
+      signupSections.push(
+        buildInlineSignupFields(
+          `✅ ${messages.embed.attending} (${generalAttending.length})`,
+          generalAttending,
+          messages.embed.nobodyYet,
+        ),
+      );
     }
 
     const nonAttending = signupsByGroup.get(SIGNUP_NOT_ATTENDING) ?? [];
-    embed.addFields({
-      name: `❌ ${messages.embed.notAttending} (${nonAttending.length})`,
-      value: nonAttending.length ? nonAttending.join(", ") : messages.embed.nobodyYet,
-      inline: false,
+    signupSections.push(
+      buildInlineSignupFields(
+        `❌ ${messages.embed.notAttending} (${nonAttending.length})`,
+        nonAttending,
+        messages.embed.nobodyYet,
+      ),
+    );
+
+    signupSections.forEach((sectionFields, index) => {
+      embed.addFields(...sectionFields);
+      if (index < signupSections.length - 1) {
+        embed.addFields(...buildInlineFieldPadding(sectionFields.length));
+      }
     });
 
     return embed;
