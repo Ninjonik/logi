@@ -33,10 +33,14 @@ import {
   pickButtonStyle,
 } from "./utils";
 
-export function buildAnnouncementMessage(payload: SyncPayload, event: EventRecord) {
+export function buildAnnouncementMessage(
+  payload: SyncPayload,
+  event: EventRecord,
+  userDisplayNames: Record<string, string> = payload.userDisplayNames,
+) {
   const roster = payload.rosters.find((item) => item.eventId === event.id);
   return {
-    embed: buildEventEmbed(payload.config, payload.groups, payload.guild.eventCategories, event, roster, payload.userDisplayNames),
+    embed: buildEventEmbed(payload.config, payload.groups, payload.guild.eventCategories, event, roster, userDisplayNames),
     components: buildEventComponents(payload.config, payload.groups, event, roster),
   };
 }
