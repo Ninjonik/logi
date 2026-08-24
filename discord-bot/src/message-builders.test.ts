@@ -230,3 +230,41 @@ test("buildEventEmbed uses plain display names instead of Discord mentions", () 
   assert.match(combinedValues, /Bravo Nick/);
   assert.doesNotMatch(combinedValues, /<@/);
 });
+
+test("buildEventEmbed lays out match signup names in up to three left-to-right columns", () => {
+  const embed = buildEventEmbed(
+    config,
+    groups,
+    eventCategories,
+    createMatchEvent({
+      participants: [
+        { userId: "user-1", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
+        { userId: "user-2", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
+        { userId: "user-3", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
+        { userId: "user-4", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
+        { userId: "user-5", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
+        { userId: "user-6", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
+        { userId: "user-7", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
+      ],
+    }),
+    undefined,
+    {
+      "user-1": "Alpha",
+      "user-2": "Bravo",
+      "user-3": "Charlie",
+      "user-4": "Delta",
+      "user-5": "Echo",
+      "user-6": "Foxtrot",
+      "user-7": "Golf",
+    },
+  );
+
+  const fields = embed.toJSON().fields ?? [];
+  assert.equal(fields[0]?.inline, true);
+  assert.equal(fields[1]?.inline, true);
+  assert.equal(fields[2]?.inline, true);
+  assert.match(fields[0]?.name ?? "", /Command \(7\)/);
+  assert.equal(fields[0]?.value, "Alpha\nDelta\nGolf");
+  assert.equal(fields[1]?.value, "Bravo\nEcho");
+  assert.equal(fields[2]?.value, "Charlie\nFoxtrot");
+});
