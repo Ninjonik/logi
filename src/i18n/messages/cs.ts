@@ -378,7 +378,7 @@ export const csMessages = {
     removeMerc: "Odebrat žoldáka",
     memberLabel: "Člen",
     reserveMemberLabel: "Rezervní člen",
-    mercLabel: "Žoldáků",
+    mercLabel: "Žoldák",
     eligibleMembers: "Způsobilí pro kmenové členství",
     eligibleMercs: "Způsobilí pro žoldáctví",
     blocked: "Nezpůsobilý",
