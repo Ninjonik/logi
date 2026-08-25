@@ -23,9 +23,9 @@ export function SiteHeader({
 }) {
   return (
     <header className="sticky top-0 z-30 flex h-(--header-height) shrink-0 items-center border-b bg-background/90 backdrop-blur">
-      <div className="flex w-full items-center gap-3 px-4 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <div className="flex w-full items-center gap-1.5 px-3 sm:gap-2 sm:px-4 lg:gap-3 lg:px-6">
+        <SidebarTrigger className="-ml-1 size-7" />
+        <Separator orientation="vertical" className="h-3 sm:h-4" />
         <div className="min-w-0 flex-1">
           <AppBreadcrumbs locale={locale} dictionary={dictionary} servers={servers} />
         </div>

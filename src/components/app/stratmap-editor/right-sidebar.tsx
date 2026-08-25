@@ -4,55 +4,16 @@ import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { ChevronDown, Eye, ImageIcon, PencilLine, SlidersHorizontal, SquareMousePointer } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { HllStratmapCatalogItem, StratmapArrowStyle, StratmapElement } from "@/lib/stratmaps";
 
-import { AttachmentGallery } from "./selection-inspector";
+import { EditorIconButton, EditorPanel } from "./editor-controls";
+import { AttachmentGallery, SelectionInspector } from "./selection-inspector";
 import { StratmapToolbar } from "./toolbar";
 import { ToolPropertiesPanel } from "./tool-properties-panel";
 import type { Tool } from "./types";
-import { SelectionInspector } from "./selection-inspector";
 
-export function StratmapRightSidebar({
-  dictionary,
-  canAdmin,
-  canEdit,
-  mode,
-  onModeChange,
-  tool,
-  canUndo,
-  canRedo,
-  strokeWidth,
-  lineStyle,
-  lineStartStyle,
-  lineEndStyle,
-  showLineDistance,
-  textValue,
-  textSize,
-  iconId,
-  catalogGroups,
-  selectedElement,
-  isUploadingIconAttachments,
-  onUndo,
-  onRedo,
-  onZoomIn,
-  onZoomOut,
-  onResetZoom,
-  onToolChange,
-  onStrokeWidthChange,
-  onLineStyleChange,
-  onLineStartStyleChange,
-  onLineEndStyleChange,
-  onShowLineDistanceChange,
-  onTextValueChange,
-  onTextSizeChange,
-  onIconChange,
-  onSelectedElementChange,
-  onUpload,
-}: {
+type RightSidebarProps = {
   dictionary: Dictionary;
   canAdmin: boolean;
   canEdit: boolean;
@@ -88,113 +49,58 @@ export function StratmapRightSidebar({
   onIconChange: (value: string) => void;
   onSelectedElementChange: (updater: (element: StratmapElement) => StratmapElement) => void;
   onUpload: (event: ChangeEvent<HTMLInputElement>) => void;
-}) {
-  const selectedIconAttachments =
-    selectedElement?.kind === "icon" ? selectedElement.attachments?.filter((attachment) => attachment.url) ?? [] : [];
+};
+
+export function StratmapRightSidebar(props: RightSidebarProps) {
+  const { dictionary, canAdmin, canEdit, mode, onModeChange, tool, selectedElement, isUploadingIconAttachments, onSelectedElementChange, onUpload } = props;
   const [imagesOpen, setImagesOpen] = useState(true);
   const [propertiesOpen, setPropertiesOpen] = useState(true);
-  const [selectedIconOpen, setSelectedIconOpen] = useState(true);
+  const [selectionOpen, setSelectionOpen] = useState(true);
+  const attachments = selectedElement?.kind === "icon" ? selectedElement.attachments?.filter((attachment) => attachment.url) ?? [] : [];
 
   return (
-    <div className="min-w-0 space-y-2 overflow-x-hidden overflow-y-auto pl-1">
+    <aside className="min-w-0 space-y-1 overflow-x-hidden overflow-y-auto pl-0.5 [scrollbar-width:thin]">
       {canAdmin ? (
-        <div className="flex items-center gap-2 pb-1">
-          <Button
-            type="button"
-            variant={mode === "view" ? "default" : "outline"}
-            size="icon"
-            className="size-8 rounded-lg"
-            onClick={() => onModeChange("view")}
-            title="View mode"
-          >
-            <Eye className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            variant={mode === "edit" ? "default" : "outline"}
-            size="icon"
-            className="size-8 rounded-lg"
-            onClick={() => onModeChange("edit")}
-            title="Edit mode"
-          >
-            <PencilLine className="size-4" />
-          </Button>
+        <div className="flex h-7 items-center gap-0.5 rounded-[4px] border border-border/70 bg-card/55 p-0.5">
+          <EditorIconButton icon={Eye} label="View mode" active={mode === "view"} className="h-6 flex-1" onClick={() => onModeChange("view")} />
+          <EditorIconButton icon={PencilLine} label="Edit mode" active={mode === "edit"} className="h-6 flex-1" onClick={() => onModeChange("edit")} />
         </div>
       ) : null}
-      {mode === "edit" ? <StratmapToolbar {...{ dictionary, tool, canUndo, canRedo, onUndo, onRedo, onZoomIn, onZoomOut, onResetZoom, onToolChange }} /> : null}
+
+      {mode === "edit" ? <StratmapToolbar {...props} /> : null}
+
       {mode === "edit" && tool !== "select" ? (
-        <Collapsible open={propertiesOpen} onOpenChange={setPropertiesOpen}>
-          <Card className="min-w-0 overflow-hidden rounded-xl border-border/60">
-            <CardHeader className="px-3 py-3">
-              <CollapsibleTrigger asChild>
-                <button type="button" className="flex w-full items-center justify-between text-left">
-                  <div className="flex items-center gap-2">
-                    <SlidersHorizontal className="size-4 text-muted-foreground" />
-                    <CardTitle className="text-base">{dictionary.stratmaps.toolProperties}</CardTitle>
-                  </div>
-                  <ChevronDown className={`size-4 text-muted-foreground transition-transform ${propertiesOpen ? "rotate-180" : ""}`} />
-                </button>
-              </CollapsibleTrigger>
-            </CardHeader>
-            <CollapsibleContent>
-              <CardContent className="px-3 pb-3">
-                <ToolPropertiesPanel {...{ dictionary, tool, strokeWidth, lineStyle, lineStartStyle, lineEndStyle, showLineDistance, textValue, textSize, iconId, catalogGroups, onStrokeWidthChange, onLineStyleChange, onLineStartStyleChange, onLineEndStyleChange, onShowLineDistanceChange, onTextValueChange, onTextSizeChange, onIconChange }} />
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+        <EditorPanel title={dictionary.stratmaps.toolProperties} icon={SlidersHorizontal} action={<CollapseButton open={propertiesOpen} onClick={() => setPropertiesOpen((value) => !value)} />}>
+          {propertiesOpen ? <ToolPropertiesPanel {...props} /> : null}
+        </EditorPanel>
       ) : null}
+
       {selectedElement ? (
-        <Collapsible open={selectedIconOpen} onOpenChange={setSelectedIconOpen}>
-          <Card className="min-w-0 overflow-hidden rounded-xl border-border/60">
-            <CardHeader className="px-3 py-3">
-              <CollapsibleTrigger asChild>
-                <button type="button" className="flex w-full items-center justify-between text-left">
-                  <div className="flex items-center gap-2">
-                    <SquareMousePointer className="size-4 text-muted-foreground" />
-                    <CardTitle className="text-base">{selectedElement.kind === "icon" ? dictionary.stratmaps.selectedIcon : dictionary.stratmaps.selectedElement}</CardTitle>
-                  </div>
-                  <ChevronDown className={`size-4 text-muted-foreground transition-transform ${selectedIconOpen ? "rotate-180" : ""}`} />
-                </button>
-              </CollapsibleTrigger>
-            </CardHeader>
-            <CollapsibleContent>
-              <SelectionInspector {...{ dictionary, canAdmin, canEdit, mode, selectedElement, isUploadingIconAttachments, onElementChange: onSelectedElementChange, onUpload }} />
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+        <EditorPanel title={selectedElement.kind === "icon" ? dictionary.stratmaps.selectedIcon : dictionary.stratmaps.selectedElement} icon={SquareMousePointer} action={<CollapseButton open={selectionOpen} onClick={() => setSelectionOpen((value) => !value)} />}>
+          {selectionOpen ? <SelectionInspector dictionary={dictionary} canAdmin={canAdmin} canEdit={canEdit} mode={mode} selectedElement={selectedElement} isUploadingIconAttachments={isUploadingIconAttachments} onElementChange={onSelectedElementChange} onUpload={onUpload} /> : null}
+        </EditorPanel>
       ) : null}
-      {selectedIconAttachments.length ? (
-        <Collapsible open={imagesOpen} onOpenChange={setImagesOpen}>
-          <Card className="min-w-0 overflow-hidden rounded-xl border-border/60">
-            <CardHeader className="px-3 py-3">
-              <CollapsibleTrigger asChild>
-                <button type="button" className="flex w-full items-center justify-between text-left">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="size-4 text-muted-foreground" />
-                    <CardTitle className="text-base">{dictionary.stratmaps.images}</CardTitle>
-                  </div>
-                  <ChevronDown className={`size-4 text-muted-foreground transition-transform ${imagesOpen ? "rotate-180" : ""}`} />
-                </button>
-              </CollapsibleTrigger>
-            </CardHeader>
-            <CollapsibleContent>
-              <CardContent className="px-3 pb-3">
-                <AttachmentGallery
-                  dictionary={dictionary}
-                  attachments={selectedIconAttachments}
-                  canAdmin={canAdmin}
-                  mode={mode}
-                  isUploading={isUploadingIconAttachments}
-                  onUpload={onUpload}
-                  onDescriptionChange={mode === "edit" ? (index, value) => onSelectedElementChange((element) => element.kind === "icon" ? { ...element, attachments: (element.attachments ?? []).map((entry, entryIndex) => entryIndex === index ? { ...entry, description: value } : entry) } : element) : () => undefined}
-                  onRemove={mode === "edit" ? (index) => onSelectedElementChange((element) => element.kind === "icon" ? { ...element, attachments: (element.attachments ?? []).filter((_, attachmentIndex) => attachmentIndex !== index) } : element) : () => undefined}
-                />
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+
+      {attachments.length ? (
+        <EditorPanel title={dictionary.stratmaps.images} icon={ImageIcon} action={<CollapseButton open={imagesOpen} onClick={() => setImagesOpen((value) => !value)} />}>
+          {imagesOpen ? (
+            <AttachmentGallery
+              dictionary={dictionary}
+              attachments={attachments}
+              canAdmin={canAdmin}
+              mode={mode}
+              isUploading={isUploadingIconAttachments}
+              onUpload={onUpload}
+              onDescriptionChange={mode === "edit" ? (index, value) => onSelectedElementChange((element) => element.kind === "icon" ? { ...element, attachments: (element.attachments ?? []).map((entry, entryIndex) => entryIndex === index ? { ...entry, description: value } : entry) } : element) : () => undefined}
+              onRemove={mode === "edit" ? (index) => onSelectedElementChange((element) => element.kind === "icon" ? { ...element, attachments: (element.attachments ?? []).filter((_, attachmentIndex) => attachmentIndex !== index) } : element) : () => undefined}
+            />
+          ) : null}
+        </EditorPanel>
       ) : null}
-    </div>
+    </aside>
   );
+}
+
+function CollapseButton({ open, onClick }: { open: boolean; onClick: () => void }) {
+  return <EditorIconButton icon={ChevronDown} label={open ? "Collapse section" : "Expand section"} className={`size-5 border-0 bg-transparent transition-transform ${open ? "rotate-180" : ""}`} onClick={onClick} />;
 }

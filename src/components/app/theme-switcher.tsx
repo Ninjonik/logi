@@ -40,9 +40,9 @@ export function ThemeSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="rounded-full px-3">
-          <ActiveIcon className="mr-2 size-4" />
-          {activeOption.label}
+        <Button variant="outline" className="size-7 rounded-full px-0 sm:h-9 sm:w-auto sm:px-3">
+          <ActiveIcon className="size-3.5 sm:mr-2 sm:size-4" />
+          <span className="hidden sm:inline">{activeOption.label}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">

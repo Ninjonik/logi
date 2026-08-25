@@ -2,7 +2,6 @@
 
 import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent, MouseEvent as ReactMouseEvent } from "react";
 
-import { Card, CardContent } from "@/components/ui/card";
 import type { HllStratmapMap, StratmapElement, StratmapSlide } from "@/lib/stratmaps";
 
 import { LivePingLayer } from "./live-ping-layer";
@@ -33,6 +32,7 @@ export function StratmapBoard({
   onStartMove,
   onHoverElement,
   onClearHover,
+  overlayControls,
 }: {
   svgRef: React.RefObject<SVGSVGElement | null>;
   viewport: Viewport;
@@ -56,15 +56,17 @@ export function StratmapBoard({
   onStartMove: (elementId: string, event: ReactPointerEvent<SVGGElement>) => void;
   onHoverElement: (elementId: string) => void;
   onClearHover: (elementId: string) => void;
+  overlayControls?: React.ReactNode;
 }) {
   return (
-    <Card className="flex min-h-0 flex-col rounded-xl border-border/60">
-      <CardContent className="flex min-h-0 flex-1 flex-col space-y-2 px-3 py-3">
-        <div className="flex min-h-0 flex-1 rounded-xl border border-border/60 bg-black/95 p-2">
+    <div className="flex min-h-0 flex-col overflow-hidden rounded-[5px] border border-border/70 bg-card/40">
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {overlayControls ? <div className="pointer-events-none absolute top-3 left-3 right-3 z-10 flex items-start justify-between">{overlayControls}</div> : null}
+        <div className="flex min-h-0 flex-1 rounded-xl border border-border/60 bg-black/95">
           <svg
             ref={svgRef}
             viewBox={`${viewport.x} ${viewport.y} ${viewport.width} ${viewport.height}`}
-            className={`size-full select-none rounded-lg bg-black ${mode === "view" ? "cursor-default" : tool === "select" ? "cursor-default" : "cursor-crosshair"}`}
+            className={`size-full select-none rounded-xl bg-black ${mode === "view" ? "cursor-default" : tool === "select" ? "cursor-default" : "cursor-crosshair"}`}
             style={{ userSelect: "none", WebkitUserSelect: "none", touchAction: "none" }}
             onWheel={onWheel}
             onPointerDown={onPointerDown}
@@ -76,8 +78,8 @@ export function StratmapBoard({
             <BoardLayers mode={mode} selectedMap={selectedMap} activeSlide={activeSlide} overlayStrongpointIds={overlayStrongpointIds} selectedElementIds={selectedElementIds} hoveredElementId={hoveredElementId} dragState={dragState} strokeColor={strokeColor} fillColor={fillColor} strokeWidth={strokeWidth} onStartMove={onStartMove} onHoverElement={onHoverElement} onClearHover={onClearHover} />
           </svg>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
