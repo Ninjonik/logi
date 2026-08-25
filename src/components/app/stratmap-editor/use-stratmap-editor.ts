@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import type { ChangeEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
+import type { ChangeEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, SetStateAction, WheelEvent as ReactWheelEvent } from "react";
 import { makeFunctionReference } from "convex/server";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
@@ -25,13 +25,13 @@ import {
 } from "@/lib/stratmaps";
 
 import { MAP_SIZE, PING_DURATION_MS, type DragState, type Point, type StratmapEditorMode, type StratmapEditorProps, type Tool, type Viewport } from "./types";
-import { buildShapeBounds, clampPoint, clampViewport, createDefaultOverlays, createViewport, filterLivePings, getActiveSlide, getAngleFromPoint, getBoundsCenter, getCanvasSize, getElementBounds, getElementsInBounds, getOverlayStrongpoints, getPointDistance, getPointerPoint, getStratmapMetaSignature, getSvgViewportMetrics, isAreaDrag, rotatePoint, updateSlide } from "./utils";
+import { decideRemoteState } from "./state-sync";
+import { buildShapeBounds, clampPoint, clampViewport, createDefaultOverlays, createViewport, filterLivePings, getActiveSlide, getAngleFromPoint, getBoundsCenter, getCanvasSize, getElementBounds, getElementsInBounds, getOverlayStrongpoints, getPointDistance, getPointerPoint, getStratmapMetaSignature, getSvgViewportMetrics, isAreaDrag, rotatePoint, updateSlide, zoomViewport } from "./utils";
 
 const getStratmapByIdReference = makeFunctionReference<"query">("stratmaps:getById");
 const updateStratmapStateReference = makeFunctionReference<"mutation">("stratmaps:updateState");
 const updateStratmapMetaReference = makeFunctionReference<"mutation">("stratmaps:updateMeta");
-const pingStratmapReference = makeFunctionReference<"mutation">("stratmaps:ping");
-const AUTOSAVE_INTERVAL_MS = 60_000;
+const AUTOSAVE_DEBOUNCE_MS = 400;
 
 export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initialStratmap, dictionary }: Omit<StratmapEditorProps, "locale">, editorMode: StratmapEditorMode) {
   const initialState = useMemo(() => parseStratmapState(initialStratmap.state, initialStratmap.baseMapId), [initialStratmap.baseMapId, initialStratmap.state]);
@@ -40,7 +40,6 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
   const liveData = useQuery(getStratmapByIdReference, { userId, stratmapId: stratmapId as never }) as { canAdmin: boolean; serverId: string; stratmap: typeof initialStratmap } | null | undefined;
   const updateStateMutation = useMutation(updateStratmapStateReference);
   const updateMeta = useMutation(updateStratmapMetaReference);
-  const pingMutation = useMutation(pingStratmapReference);
   const [isPending, startTransition] = useTransition();
   const [tool, setTool] = useState<Tool>("select");
   const [strokeColor, setStrokeColor] = useState("#39ff14");
@@ -63,17 +62,20 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
   const [baseMapId, setBaseMapId] = useState(initialStratmap.baseMapId);
   const [side, setSide] = useState(initialStratmap.side ?? "");
   const [strongpointId, setStrongpointId] = useState(initialStratmap.strongpointId ?? "");
-  const [state, setState] = useState(initialState);
+  const [state, setReactState] = useState(initialState);
   const [isUploadingIconAttachments, setIsUploadingIconAttachments] = useState(false);
   const [isCreateSlideModalOpen, setIsCreateSlideModalOpen] = useState(false);
   const [newSlideName, setNewSlideName] = useState("");
   const [pendingSlideBackground, setPendingSlideBackground] = useState<StratmapSlide["background"] | null>(null);
   const [isUploadingSlideBackground, setIsUploadingSlideBackground] = useState(false);
   const [viewport, setViewport] = useState<Viewport>(() => createViewport(initialState.slides[0]?.background));
-  const stateRef = useRef(state);
-  const lastSavedStateJsonRef = useRef<string>(initialStratmap.state);
+  const stateRef = useRef(initialState);
+  const acknowledgedStateJsonRef = useRef(stringifyStratmapState(initialState));
+  const observedRemoteStateJsonRef = useRef(stringifyStratmapState(initialState));
+  const submittedStateJsonsRef = useRef(new Set<string>());
   const saveInFlightRef = useRef(false);
-  const lastRemoteUpdatedAtRef = useRef(initialStratmap.updatedAt);
+  const saveQueuedRef = useRef(false);
+  const saveTimerRef = useRef<number | null>(null);
   const lastRemoteMetaSignatureRef = useRef(getStratmapMetaSignature(initialStratmap));
   const undoStackRef = useRef<typeof state[]>([]);
   const redoStackRef = useRef<typeof state[]>([]);
@@ -92,9 +94,11 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
   const selectedElement = useMemo(() => activeSlide?.elements.find((element) => element.id === selectedElementId) ?? null, [activeSlide, selectedElementId]);
   const canvas = useMemo(() => getCanvasSize(activeSlide?.background), [activeSlide?.background]);
 
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+  function setState(update: SetStateAction<typeof initialState>) {
+    const nextState = typeof update === "function" ? update(stateRef.current) : update;
+    stateRef.current = nextState;
+    setReactState(nextState);
+  }
 
   useEffect(() => {
     setMode(editorMode);
@@ -138,56 +142,83 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
       setSide(liveData.stratmap.side ?? "");
       setStrongpointId(liveData.stratmap.strongpointId ?? "");
     }
-    if (lastRemoteUpdatedAtRef.current !== liveData.stratmap.updatedAt) {
-      lastRemoteUpdatedAtRef.current = liveData.stratmap.updatedAt;
-      const nextState = parseStratmapState(liveData.stratmap.state, liveData.stratmap.baseMapId);
-      if (stringifyStratmapState(nextState) === stringifyStratmapState(stateRef.current)) return;
-      setState(nextState);
-      undoStackRef.current = [];
-      redoStackRef.current = [];
-      historyCaptureActiveRef.current = false;
-      setHistoryState({ canUndo: false, canRedo: false });
-      setSelectedSlideId((current) => getActiveSlide(nextState, current)?.id ?? nextState.slides[0]?.id ?? "");
-      setSelectedElementIds((current) => current.filter((id) => nextState.slides.some((slide) => slide.elements.some((element) => element.id === id))));
-      setViewport(createViewport(getActiveSlide(nextState, selectedSlideId)?.background));
+    const nextState = parseStratmapState(liveData.stratmap.state, liveData.stratmap.baseMapId);
+    const remoteJson = stringifyStratmapState(nextState);
+    if (observedRemoteStateJsonRef.current === remoteJson) return;
+    observedRemoteStateJsonRef.current = remoteJson;
+
+    const decision = decideRemoteState({
+      remoteJson,
+      currentJson: stringifyStratmapState(stateRef.current),
+      acknowledgedJson: acknowledgedStateJsonRef.current,
+      submittedJsons: submittedStateJsonsRef.current,
+    });
+
+    if (decision === "acknowledge" || decision === "own-echo") {
+      acknowledgedStateJsonRef.current = remoteJson;
+      for (const submittedJson of submittedStateJsonsRef.current) {
+        submittedStateJsonsRef.current.delete(submittedJson);
+        if (submittedJson === remoteJson) break;
+      }
+      return;
     }
-  }, [liveData, selectedSlideId]);
+    if (decision === "preserve-local") return;
+
+    acknowledgedStateJsonRef.current = remoteJson;
+    setState(nextState);
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    historyCaptureActiveRef.current = false;
+    setHistoryState({ canUndo: false, canRedo: false });
+    setSelectedSlideId((current) => getActiveSlide(nextState, current)?.id ?? nextState.slides[0]?.id ?? "");
+    setSelectedElementIds((current) => current.filter((id) => nextState.slides.some((slide) => slide.elements.some((element) => element.id === id))));
+  }, [liveData]);
 
   useEffect(() => {
     if (!canEdit) return;
     if (!selectedSlideId && state.slides[0]) setSelectedSlideId(state.slides[0].id);
-    const stateJson = stringifyStratmapState(state);
-    if (stateJson !== stratmap.state) lastSavedStateJsonRef.current = stratmap.state;
-  }, [canEdit, selectedSlideId, state, stratmap.state]);
+  }, [canEdit, selectedSlideId, state.slides]);
 
   useEffect(() => {
     if (!canEdit) return;
-
-    const saveCurrentState = async () => {
-      const stateJson = stringifyStratmapState(stateRef.current);
-      if (stateJson === stratmap.state) {
-        lastSavedStateJsonRef.current = stateJson;
-        return;
-      }
-      if (saveInFlightRef.current || stateJson === lastSavedStateJsonRef.current) return;
-
-      saveInFlightRef.current = true;
-      lastSavedStateJsonRef.current = stateJson;
-      try {
-        await updateStateMutation({ userId, stratmapId: stratmapId as never, state: stateJson });
-      } catch (error) {
-        console.error(error);
-        lastSavedStateJsonRef.current = "";
-        toast.error(dictionary.stratmaps.saveStateError);
-      } finally {
-        saveInFlightRef.current = false;
-      }
+    if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => void requestSave(), AUTOSAVE_DEBOUNCE_MS);
+    return () => {
+      if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current);
     };
+  }, [canEdit, state]);
 
-    void saveCurrentState();
-    const interval = window.setInterval(() => void saveCurrentState(), AUTOSAVE_INTERVAL_MS);
-    return () => window.clearInterval(interval);
-  }, [canEdit, dictionary.stratmaps.saveStateError, stratmap.state, stratmapId, updateStateMutation, userId]);
+  async function requestSave() {
+    if (!canEdit) return;
+    if (saveInFlightRef.current) {
+      saveQueuedRef.current = true;
+      return;
+    }
+
+    const stateJson = stringifyStratmapState(stateRef.current);
+    if (stateJson === acknowledgedStateJsonRef.current) return;
+
+    saveInFlightRef.current = true;
+    saveQueuedRef.current = false;
+    submittedStateJsonsRef.current.add(stateJson);
+    let succeeded = false;
+    try {
+      await updateStateMutation({ userId, stratmapId: stratmapId as never, state: stateJson });
+      acknowledgedStateJsonRef.current = stateJson;
+      succeeded = true;
+    } catch (error) {
+      console.error(error);
+      submittedStateJsonsRef.current.delete(stateJson);
+      toast.error(dictionary.stratmaps.saveStateError);
+    } finally {
+      saveInFlightRef.current = false;
+      const hasNewerState = stringifyStratmapState(stateRef.current) !== stateJson;
+      if (succeeded && (saveQueuedRef.current || hasNewerState)) {
+        saveQueuedRef.current = false;
+        window.setTimeout(() => void requestSave(), 0);
+      }
+    }
+  }
 
   useEffect(() => {
     if (!activeSlide?.pings.length) return;
@@ -207,7 +238,7 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
 
   function beginHistoryCapture() {
     if (!historyCaptureActiveRef.current) {
-      captureHistorySnapshot(state);
+      captureHistorySnapshot(stateRef.current);
       historyCaptureActiveRef.current = true;
     }
   }
@@ -225,7 +256,7 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
   }
 
   function applyStateChange(updater: (current: typeof state) => typeof state) {
-    captureHistorySnapshot(state);
+    captureHistorySnapshot(stateRef.current);
     setState((current) => updater(current));
   }
 
@@ -240,7 +271,7 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
   function undo() {
     const previous = undoStackRef.current.pop();
     if (!previous) return;
-    redoStackRef.current.push(structuredClone(state));
+    redoStackRef.current.push(structuredClone(stateRef.current));
     setHistoryState({ canUndo: undoStackRef.current.length > 0, canRedo: true });
     setState(previous);
     setSelectedSlideId((current) => getActiveSlide(previous, current)?.id ?? previous.slides[0]?.id ?? "");
@@ -249,7 +280,7 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
   function redo() {
     const next = redoStackRef.current.pop();
     if (!next) return;
-    undoStackRef.current.push(structuredClone(state));
+    undoStackRef.current.push(structuredClone(stateRef.current));
     setHistoryState({ canUndo: true, canRedo: redoStackRef.current.length > 0 });
     setState(next);
     setSelectedSlideId((current) => getActiveSlide(next, current)?.id ?? next.slides[0]?.id ?? "");
@@ -269,17 +300,10 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
     });
   }
 
-  function zoomTo(nextWidth: number, anchor?: Point) {
+  function zoomBy(factor: number, anchorForViewport?: (current: Viewport) => Point) {
     setViewport((current) => {
-      const centerX = anchor ? anchor.x : current.x + current.width / 2;
-      const centerY = anchor ? anchor.y : current.y + current.height / 2;
-      const scale = nextWidth / current.width;
-      return clampViewport({
-        x: centerX - (centerX - current.x) * scale,
-        y: centerY - (centerY - current.y) * scale,
-        width: nextWidth,
-        height: current.height * scale,
-      }, activeSlide?.background);
+      const anchor = anchorForViewport?.(current) ?? { x: current.x + current.width / 2, y: current.y + current.height / 2 };
+      return zoomViewport(current, factor, anchor, activeSlide?.background);
     });
   }
 
@@ -445,8 +469,8 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
   function handleBoardWheel(event: ReactWheelEvent<SVGSVGElement>) {
     if (!svgRef.current) return;
     event.preventDefault();
-    const anchor = clampPoint(getPointerPoint(event as unknown as ReactPointerEvent<SVGSVGElement>, svgRef.current, viewport), activeSlide?.background);
-    zoomTo(viewport.width * (event.deltaY > 0 ? 1.12 : 0.88), anchor);
+    const svgElement = svgRef.current;
+    zoomBy(event.deltaY > 0 ? 1.12 : 0.88, (current) => clampPoint(getPointerPoint(event as unknown as ReactPointerEvent<SVGSVGElement>, svgElement, current), activeSlide?.background));
   }
 
   function handlePointerDown(event: ReactPointerEvent<SVGSVGElement>) {
@@ -495,9 +519,9 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
       return;
     }
     if (tool === "ping") {
-      const nextState = updateSlide(state, selectedSlideId, (slide) => ({ ...slide, pings: [...slide.pings, { id: crypto.randomUUID(), x: point.x, y: point.y, color: strokeColor, createdAt: new Date().toISOString() }] }));
+      const nextState = updateSlide(stateRef.current, selectedSlideId, (slide) => ({ ...slide, pings: [...slide.pings, { id: crypto.randomUUID(), x: point.x, y: point.y, color: strokeColor, createdAt: new Date().toISOString() }] }));
       setState(nextState);
-      void pingMutation({ userId, stratmapId: stratmapId as never, state: stringifyStratmapState(nextState) }).catch(console.error);
+      void requestSave();
       return;
     }
     if (tool === "freehand") {
@@ -726,7 +750,7 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
   return {
     rootRef, svgRef, canAdmin, canEdit, mode, setMode, isPending, tool, strokeColor, fillColor, strokeWidth, lineStyle, lineStartStyle, lineEndStyle, showLineDistance, iconId, textValue, textSize, selectedElementIds, hoveredElementId, selectedSlideId, dragState, viewport, title, description, baseMapId, side, strongpointId, state, isUploadingIconAttachments, activeSlide, maps, selectedMap, catalogGroups, overlayStrongpointIds, selectedElement, canUndo: historyState.canUndo, canRedo: historyState.canRedo, isCreateSlideModalOpen, newSlideName, pendingSlideBackground, isUploadingSlideBackground,
     setTool, setStrokeColor, setFillColor, setStrokeWidth, setLineStyle, setLineStartStyle, setLineEndStyle, setShowLineDistance, setIconId, setTextValue, setTextSize, setTitle, setDescription, setSide, setStrongpointId, setSelectedSlideId, setHoveredElementId, setNewSlideName,
-    saveMeta, addSlide, closeCreateSlideModal, confirmCreateSlide, duplicateSlide, renameSlide, moveSlide, deleteSlide, handleOverlayChange, toggleStrongpoint, undo, redo, zoomIn: () => zoomTo(viewport.width * 0.85), zoomOut: () => zoomTo(viewport.width * 1.15), resetZoom: () => setViewport(createViewport(activeSlide?.background)), handleBoardWheel, handleBoardContextMenu, handlePointerDown, handlePointerMove, handlePointerUp, startMove, removeSelectedElements, handleSelectedElementChange, handleSelectedIconAttachmentUpload, handleSlideBackgroundUpload, handleBaseMapChange,
+    saveMeta, addSlide, closeCreateSlideModal, confirmCreateSlide, duplicateSlide, renameSlide, moveSlide, deleteSlide, handleOverlayChange, toggleStrongpoint, undo, redo, zoomIn: () => zoomBy(0.85), zoomOut: () => zoomBy(1.15), resetZoom: () => setViewport(createViewport(activeSlide?.background)), handleBoardWheel, handleBoardContextMenu, handlePointerDown, handlePointerMove, handlePointerUp, startMove, removeSelectedElements, handleSelectedElementChange, handleSelectedIconAttachmentUpload, handleSlideBackgroundUpload, handleBaseMapChange,
   };
 }
 

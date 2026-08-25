@@ -48,6 +48,16 @@ export function clampViewport(viewport: Viewport, background?: StratmapSlideBack
   };
 }
 
+export function zoomViewport(viewport: Viewport, factor: number, anchor: Point, background?: StratmapSlideBackground): Viewport {
+  const nextWidth = viewport.width * factor;
+  return clampViewport({
+    x: anchor.x - (anchor.x - viewport.x) * factor,
+    y: anchor.y - (anchor.y - viewport.y) * factor,
+    width: nextWidth,
+    height: viewport.height * factor,
+  }, background);
+}
+
 export function getSvgViewportMetrics(svgElement: SVGSVGElement, viewport: Viewport) {
   const bounds = svgElement.getBoundingClientRect();
   const viewportAspectRatio = viewport.width / viewport.height;
