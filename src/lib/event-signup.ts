@@ -1,5 +1,6 @@
 import { canAcceptSignups } from "@/domain/events/status";
-import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "@/domain/events/types";
+import { assertSignupMembershipAllowed } from "@/domain/events/signup-policy";
+import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING, TRAINING_ATTEND, type SignupMembershipStatus } from "@/domain/events/types";
 import type { EventRecord } from "@/types/domain";
 
 type SignupGroupLike = {
@@ -18,6 +19,7 @@ export type SignupLanguageLabels = {
   invalidSignupButton: string;
   unableToResolveMembership: string;
   missingRequiredRole: string;
+  membershipStatusNotAllowed: string;
   signupUpdated: string;
   markedNotAttending: string;
   signupUpdatedWithType: string;
@@ -126,14 +128,24 @@ export function buildEventSignupActions(
 }
 
 export function resolveEventSignupSelection(input: {
-  event: Pick<EventRecord, "kind" | "signupGroupIds" | "useGeneralSignup" | "requiredRoleIds" | "registrationEnd" | "status">;
+  event: Pick<EventRecord, "kind" | "signupGroupIds" | "allowedSignupStatuses" | "useGeneralSignup" | "requiredRoleIds" | "registrationEnd" | "status">;
   groups: SignupGroupLike[];
   memberRoleIds?: string[] | null;
+  membershipStatus?: SignupMembershipStatus | null;
   actionId: string;
-  labels: Pick<SignupLanguageLabels, "registrationClosed" | "invalidSignupButton" | "unableToResolveMembership" | "missingRequiredRole" | "signupUpdated" | "markedNotAttending">;
+  labels: Pick<SignupLanguageLabels, "registrationClosed" | "invalidSignupButton" | "unableToResolveMembership" | "missingRequiredRole" | "membershipStatusNotAllowed" | "signupUpdated" | "markedNotAttending">;
 }) {
   if (!canAcceptSignups(input.event, new Date())) {
     return { ok: false as const, error: input.labels.registrationClosed };
+  }
+
+  try {
+    assertSignupMembershipAllowed({
+      event: input.event,
+      membershipStatus: input.membershipStatus,
+    });
+  } catch {
+    return { ok: false as const, error: input.labels.membershipStatusNotAllowed };
   }
 
   if (!input.memberRoleIds) {

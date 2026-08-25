@@ -9,20 +9,23 @@ import { ToggleSignupUseCase } from "./toggle-signup.use-case";
 
 test("ToggleSignupUseCase persists signups and triggers roster sync", async () => {
   const syncPort = new NoopEventWorkflowSyncPort();
-  const events = new InMemoryEventWorkflowRepository(new Map([
-    ["event-1", {
-      id: "event-1",
-      guildId: "guild-1",
-      kind: "match" as const,
-      registrationEnd: "2026-01-01T12:00:00.000Z",
-      meetingStart: "2026-01-01T13:00:00.000Z",
-      gameEnd: "2026-01-01T15:00:00.000Z",
-      status: "registration" as const,
-      participants: [],
-      signUps: [],
-      absenceNotices: [],
-    }],
-  ]));
+  const events = new InMemoryEventWorkflowRepository(
+    new Map([
+      ["event-1", {
+        id: "event-1",
+        guildId: "guild-1",
+        kind: "match" as const,
+        registrationEnd: "2026-01-01T12:00:00.000Z",
+        meetingStart: "2026-01-01T13:00:00.000Z",
+        gameEnd: "2026-01-01T15:00:00.000Z",
+        status: "registration" as const,
+        participants: [],
+        signUps: [],
+        absenceNotices: [],
+      }],
+    ]),
+    new Map([["guild-1:user-1", { type: "member", status: "active" }]]),
+  );
   const useCase = new ToggleSignupUseCase(
     events,
     syncPort,
@@ -111,8 +114,8 @@ test("ToggleSignupUseCase resolves general match signup from the primary group a
       }],
     ]),
     new Map([
-      ["guild-1:user-1", { primaryGroupId: "group-1" }],
-      ["guild-1:user-2", {}],
+      ["guild-1:user-1", { primaryGroupId: "group-1", type: "member", status: "active" }],
+      ["guild-1:user-2", { type: "member", status: "active" }],
     ]),
     new Map([["group-1", "INF"]]),
   );
@@ -141,22 +144,94 @@ test("ToggleSignupUseCase resolves general match signup from the primary group a
   assert.equal(reserveSignup.removed, false);
 });
 
+test("ToggleSignupUseCase requires a clan membership status for match signups by default", async () => {
+  const useCase = new ToggleSignupUseCase(
+    new InMemoryEventWorkflowRepository(new Map([
+      ["event-1", {
+        id: "event-1",
+        guildId: "guild-1",
+        kind: "match" as const,
+        registrationEnd: "2026-01-01T12:00:00.000Z",
+        meetingStart: "2026-01-01T13:00:00.000Z",
+        gameEnd: "2026-01-01T15:00:00.000Z",
+        status: "registration" as const,
+        participants: [],
+        signUps: [],
+        absenceNotices: [],
+      }],
+    ])),
+    new NoopEventWorkflowSyncPort(),
+    new FakeClock(new Date("2026-01-01T09:00:00.000Z")),
+  );
+
+  await assert.rejects(() => useCase.execute({
+    eventId: "event-1",
+    userId: "user-1",
+    group: "INF",
+  }), /membership status is not allowed/i);
+});
+
+test("ToggleSignupUseCase enforces allowed match signup statuses", async () => {
+  const useCase = new ToggleSignupUseCase(
+    new InMemoryEventWorkflowRepository(
+      new Map([
+        ["event-1", {
+          id: "event-1",
+          guildId: "guild-1",
+          kind: "match" as const,
+          allowedSignupStatuses: ["reserve_member"],
+          registrationEnd: "2026-01-01T12:00:00.000Z",
+          meetingStart: "2026-01-01T13:00:00.000Z",
+          gameEnd: "2026-01-01T15:00:00.000Z",
+          status: "registration" as const,
+          participants: [],
+          signUps: [],
+          absenceNotices: [],
+        }],
+      ]),
+      new Map([
+        ["guild-1:user-1", { type: "member", status: "active" }],
+        ["guild-1:user-2", { type: "reserve_member", status: "active" }],
+      ]),
+    ),
+    new NoopEventWorkflowSyncPort(),
+    new FakeClock(new Date("2026-01-01T09:00:00.000Z")),
+  );
+
+  await assert.rejects(() => useCase.execute({
+    eventId: "event-1",
+    userId: "user-1",
+    group: "INF",
+  }), /membership status is not allowed/i);
+
+  const result = await useCase.execute({
+    eventId: "event-1",
+    userId: "user-2",
+    group: "INF",
+  });
+
+  assert.deepEqual(result.signUps, [{ userId: "user-2", group: "INF" }]);
+});
+
 test("ToggleSignupUseCase marks repeated signup clicks as removed", async () => {
   const syncPort = new NoopEventWorkflowSyncPort();
-  const events = new InMemoryEventWorkflowRepository(new Map([
-    ["event-1", {
-      id: "event-1",
-      guildId: "guild-1",
-      kind: "match" as const,
-      registrationEnd: "2026-01-01T12:00:00.000Z",
-      meetingStart: "2026-01-01T13:00:00.000Z",
-      gameEnd: "2026-01-01T15:00:00.000Z",
-      status: "registration" as const,
-      participants: [],
-      signUps: [],
-      absenceNotices: [],
-    }],
-  ]));
+  const events = new InMemoryEventWorkflowRepository(
+    new Map([
+      ["event-1", {
+        id: "event-1",
+        guildId: "guild-1",
+        kind: "match" as const,
+        registrationEnd: "2026-01-01T12:00:00.000Z",
+        meetingStart: "2026-01-01T13:00:00.000Z",
+        gameEnd: "2026-01-01T15:00:00.000Z",
+        status: "registration" as const,
+        participants: [],
+        signUps: [],
+        absenceNotices: [],
+      }],
+    ]),
+    new Map([["guild-1:user-1", { type: "member", status: "active" }]]),
+  );
   const useCase = new ToggleSignupUseCase(
     events,
     syncPort,

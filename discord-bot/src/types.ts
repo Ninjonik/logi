@@ -236,6 +236,7 @@ export type EventRecord = {
   requiredRoleIds: string[];
   rewardRoleIds: string[];
   signupGroupIds?: string[];
+  allowedSignupStatuses?: Array<"recruit" | "member" | "reserve_member" | "mercenary">;
   useGeneralSignup?: boolean;
   server?: string;
   serverPassword?: string;
@@ -354,6 +355,8 @@ export type EventInteractionContext = {
   assignments?: Array<{
     userId: string;
     primaryGroupId?: string;
+    type?: "member" | "reserve_member" | "mercenary";
+    status?: "pending" | "recruit" | "active";
   }>;
   roster: Roster | null;
 };

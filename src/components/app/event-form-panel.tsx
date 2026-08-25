@@ -158,6 +158,22 @@ function resolveTrainingEndTime(values: EventInput, timezone: string) {
   return new Date(meetingStartMs + 90 * 60 * 1000).toISOString();
 }
 
+function getAllowedSignupStatusLabel(
+  status: "recruit" | "member" | "reserve_member" | "mercenary",
+  dictionary: Dictionary,
+) {
+  switch (status) {
+    case "recruit":
+      return dictionary.userManagement.recruitLabel;
+    case "reserve_member":
+      return dictionary.userManagement.reserveMemberLabel;
+    case "mercenary":
+      return dictionary.userManagement.mercLabel;
+    default:
+      return dictionary.userManagement.memberLabel;
+  }
+}
+
 function TopicPresetSelect({
   value,
   onChange,
@@ -404,6 +420,7 @@ export function EventFormPanel({
       topicPresetId: event.topicPresetId ?? "",
       stratmapIds: event.stratmapIds ?? [],
       signupGroupIds: event.signupGroupIds ?? groups.map((group) => group.id),
+      allowedSignupStatuses: event.allowedSignupStatuses ?? [],
       useGeneralSignup: event.useGeneralSignup ?? false,
     },
   });
@@ -542,6 +559,9 @@ export function EventFormPanel({
       topicPresetId: values.topicPresetId || undefined,
       stratmapIds: values.stratmapIds,
       signupGroupIds: values.kind === "match" ? values.signupGroupIds : [],
+      allowedSignupStatuses: values.kind === "match" && (values.allowedSignupStatuses ?? []).length > 0
+        ? values.allowedSignupStatuses
+        : undefined,
       useGeneralSignup: values.kind === "match" ? values.useGeneralSignup : false,
       thumbnailUrl: values.thumbnailUrl || undefined,
       imageUrl: values.imageUrl || undefined,
@@ -950,7 +970,56 @@ export function EventFormPanel({
             </div>
             ) : null}
             {eventKind === "match" ? (
-            <div className="md:col-span-2">
+              <>
+                <div className="md:col-span-2">
+                  <FieldLabel label={dictionary.event.fields.allowedSignupStatuses} />
+                  {canEdit ? (
+                    <Controller
+                      control={form.control}
+                      name="allowedSignupStatuses"
+                      render={({ field }) => {
+                        const selectedStatuses = new Set(field.value ?? []);
+                        const statusOptions = [
+                          "recruit",
+                          "member",
+                          "reserve_member",
+                          "mercenary",
+                        ] as const;
+
+                        return (
+                          <div className="space-y-3 rounded-xl border border-border/60 p-4">
+                            <p className="text-sm text-muted-foreground">{dictionary.event.allowedSignupStatusesDescription}</p>
+                            <div className="grid gap-2 md:grid-cols-2">
+                              {statusOptions.map((status) => (
+                                <label key={status} className="flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2">
+                                  <Checkbox
+                                    checked={selectedStatuses.has(status)}
+                                    onCheckedChange={(checked) => {
+                                      const nextValues = checked
+                                        ? [...selectedStatuses, status]
+                                        : [...selectedStatuses].filter((value) => value !== status);
+                                      field.onChange(nextValues);
+                                    }}
+                                  />
+                                  <span className="text-sm">{getAllowedSignupStatusLabel(status, dictionary)}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }}
+                    />
+                  ) : (
+                    <ReadOnlyList
+                      values={(form.watch("allowedSignupStatuses") ?? []).length
+                        ? (form.watch("allowedSignupStatuses") ?? []).map((status) =>
+                            getAllowedSignupStatusLabel(status, dictionary))
+                        : [dictionary.event.allowedSignupStatusesAll]}
+                      emptyLabel={dictionary.event.allowedSignupStatusesAll}
+                    />
+                  )}
+                </div>
+                <div className="md:col-span-2">
               {canEdit ? (
                 <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
                   <div>
@@ -966,7 +1035,8 @@ export function EventFormPanel({
               ) : (
                 <ReadOnlyValue value={form.watch("useGeneralSignup") ? dictionary.tables.enabled : dictionary.tables.disabled} emptyLabel={dictionary.shared.notSet} />
               )}
-            </div>
+                </div>
+              </>
             ) : null}
             {eventKind === "match" ? (
             <div className="md:col-span-2">

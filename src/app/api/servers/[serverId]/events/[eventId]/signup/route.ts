@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getResolvedMemberStatus } from "@/domain/assignments/policy";
 import { handleIfNotLoggedIn } from "@/lib/auth";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { getClanDiscordMessages } from "@/lib/clan-language";
@@ -25,16 +26,25 @@ export async function POST(
 
   const body = (await request.json()) as { actionId?: unknown };
   const messages = getClanDiscordMessages(context.discordConfig?.defaultLanguage ?? "en");
+  const assignment = context.assignments.find((item) => item.userId === user.discordId);
+  const resolvedMembershipStatus = assignment
+    ? getResolvedMemberStatus(assignment.type, assignment.status)
+    : null;
+  const membershipStatus = resolvedMembershipStatus && resolvedMembershipStatus !== "pending"
+    ? resolvedMembershipStatus
+    : null;
   const resolved = resolveEventSignupSelection({
     event,
     groups: context.groups,
     memberRoleIds: context.memberRoleIds,
+    membershipStatus,
     actionId: String(body.actionId ?? ""),
     labels: {
       registrationClosed: messages.interaction.registrationClosed,
       invalidSignupButton: messages.interaction.invalidSignupButton,
       unableToResolveMembership: messages.interaction.unableToResolveMembership,
       missingRequiredRole: messages.interaction.missingRequiredRole,
+      membershipStatusNotAllowed: messages.interaction.membershipStatusNotAllowed,
       signupUpdated: messages.interaction.signupUpdated,
       markedNotAttending: messages.interaction.markedNotAttending,
     },

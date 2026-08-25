@@ -22,6 +22,7 @@ export async function saveServerEventCommand(input: {
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
   signupGroupIds?: string[];
+  allowedSignupStatuses?: Array<"recruit" | "member" | "reserve_member" | "mercenary">;
   useGeneralSignup?: boolean;
   server?: string;
   serverPassword?: string;
@@ -52,6 +53,7 @@ export async function saveServerEventCommand(input: {
     requiredRoleIds: input.requiredRoleIds,
     rewardRoleIds: input.rewardRoleIds,
     signupGroupIds: input.signupGroupIds,
+    allowedSignupStatuses: input.allowedSignupStatuses,
     useGeneralSignup: input.useGeneralSignup,
     server: input.server,
     serverPassword: input.serverPassword,

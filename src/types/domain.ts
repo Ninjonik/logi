@@ -5,6 +5,7 @@ export type EventStatus = "registration" | "closed" | "starting" | "concluded";
 export type EventOutcome = "victory" | "defeat" | "draw";
 export type EventKind = "match" | "training";
 export type MatchTypeCategory = string;
+export type SignupMembershipStatus = "recruit" | "member" | "reserve_member" | "mercenary";
 
 export type EventCategory = {
   id: string;
@@ -254,6 +255,7 @@ export type EventRecord = {
   topicPresetId?: string;
   stratmapIds: string[];
   signupGroupIds?: string[];
+  allowedSignupStatuses?: SignupMembershipStatus[];
   useGeneralSignup?: boolean;
   status: EventStatus;
   statusUpdatedAt: Timestamp;

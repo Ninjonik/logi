@@ -3,7 +3,11 @@ import type { EventWorkflowRecord, EventWorkflowRepository, EventWorkflowSyncPor
 export class InMemoryEventWorkflowRepository implements EventWorkflowRepository {
   constructor(
     public readonly events: Map<string, EventWorkflowRecord>,
-    private readonly assignments = new Map<string, { primaryGroupId?: string }>(),
+    private readonly assignments = new Map<string, {
+      primaryGroupId?: string;
+      type?: "member" | "reserve_member" | "mercenary";
+      status?: "pending" | "recruit" | "active";
+    }>(),
     private readonly groupNames = new Map<string, string>(),
   ) {}
 

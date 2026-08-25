@@ -1,4 +1,5 @@
 import type { Clock } from "@/application/ports/clock";
+import { getResolvedMemberStatus } from "@/domain/assignments/policy";
 import { normalizeEventRecord } from "@/domain/events/normalization";
 import { toggleSignup } from "@/domain/events/signup-policy";
 import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING } from "@/domain/events/types";
@@ -25,9 +26,15 @@ export class ToggleSignupUseCase {
     const now = this.clock.now();
     const normalizedEvent = normalizeEventRecord(event, now);
     let nextGroup = input.group;
+    const assignment = await this.events.getAssignmentForUser(normalizedEvent.guildId, input.userId);
+    const resolvedMembershipStatus = assignment?.type && assignment.status
+      ? getResolvedMemberStatus(assignment.type, assignment.status)
+      : null;
+    const membershipStatus = resolvedMembershipStatus && resolvedMembershipStatus !== "pending"
+      ? resolvedMembershipStatus
+      : null;
 
     if (normalizedEvent.kind === "match" && input.group === SIGNUP_GENERAL) {
-      const assignment = await this.events.getAssignmentForUser(normalizedEvent.guildId, input.userId);
       const primaryGroupId = assignment?.primaryGroupId;
       const allowedGroupIds = new Set(normalizedEvent.signupGroupIds ?? []);
 
@@ -44,6 +51,7 @@ export class ToggleSignupUseCase {
       userId: input.userId,
       group: nextGroup,
       now,
+      membershipStatus,
     });
 
     await this.events.saveSignupState(input.eventId, {

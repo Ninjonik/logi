@@ -3,6 +3,7 @@ export type EventKind = "match" | "training";
 export type MatchTypeCategory = string;
 export type ParticipantStatus = "attending" | "not_attending";
 export type ParticipantCompletionStatus = "passed" | "failed";
+export type SignupMembershipStatus = "recruit" | "member" | "reserve_member" | "mercenary";
 
 export const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING";
 export const SIGNUP_ATTENDING = "ATTENDING";
@@ -77,5 +78,6 @@ export type EventLike = {
   rewardRoleIds?: string[];
   stratmapIds?: string[];
   signupGroupIds?: string[];
+  allowedSignupStatuses?: SignupMembershipStatus[];
   useGeneralSignup?: boolean;
 };

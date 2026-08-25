@@ -26,6 +26,7 @@ export const eventSchema = z
     topicPresetId: z.string().trim().optional(),
     stratmapIds: z.array(z.string().trim()).default([]),
     signupGroupIds: z.array(z.string().trim()).default([]),
+    allowedSignupStatuses: z.array(z.enum(["recruit", "member", "reserve_member", "mercenary"])).default([]),
     useGeneralSignup: z.boolean().default(false),
   })
   .superRefine((value, ctx) => {

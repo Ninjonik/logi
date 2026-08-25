@@ -24,6 +24,7 @@ export function normalizeEventRecord<
     rewardRoleIds: normalizeOptionalArray(event.rewardRoleIds),
     stratmapIds: normalizeOptionalArray(event.stratmapIds),
     signupGroupIds: event.kind === "training" ? [] : normalizeOptionalArray(event.signupGroupIds),
+    allowedSignupStatuses: event.kind === "training" ? undefined : normalizeOptionalArray(event.allowedSignupStatuses),
     useGeneralSignup: event.kind === "match" ? Boolean(event.useGeneralSignup) : false,
     createForumChannel: resolveCreateForumChannel(event),
     status,

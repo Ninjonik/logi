@@ -413,6 +413,12 @@ export default defineSchema({
     requiredRoleIds: v.optional(v.array(v.string())),
     rewardRoleIds: v.optional(v.array(v.string())),
     signupGroupIds: v.optional(v.array(v.string())),
+    allowedSignupStatuses: v.optional(v.array(v.union(
+      v.literal("recruit"),
+      v.literal("member"),
+      v.literal("reserve_member"),
+      v.literal("mercenary"),
+    ))),
     useGeneralSignup: v.optional(v.boolean()),
     server: v.optional(v.string()),
     serverPassword: v.optional(v.string()),

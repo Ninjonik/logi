@@ -1,5 +1,6 @@
 import { type ButtonInteraction, type GuildMember } from "discord.js";
 
+import { getResolvedMemberStatus } from "../../../src/domain/assignments/policy";
 import { getClanDiscordMessages } from "../../../src/lib/clan-language";
 import { buildEventSignupActions, formatSignupResultMessage, getSignupActionEmoji, resolveEventSignupSelection } from "../../../src/lib/event-signup";
 import { revalidateAppData } from "../cache";
@@ -68,16 +69,25 @@ export async function handleEventButtonInteraction(
 
     const member = interaction.member as GuildMember | null;
     const messages = getClanDiscordMessages(context.config.defaultLanguage);
+    const assignment = context.assignments?.find((item) => item.userId === interaction.user.id);
+    const resolvedMembershipStatus = assignment?.type && assignment.status
+      ? getResolvedMemberStatus(assignment.type, assignment.status)
+      : null;
+    const membershipStatus = resolvedMembershipStatus && resolvedMembershipStatus !== "pending"
+      ? resolvedMembershipStatus
+      : null;
     const resolved = resolveEventSignupSelection({
       event: context.event,
       groups: context.groups,
       memberRoleIds: member ? [...member.roles.cache.keys()] : null,
+      membershipStatus,
       actionId: groupId,
       labels: {
         registrationClosed: messages.interaction.registrationClosed,
         invalidSignupButton: messages.interaction.invalidSignupButton,
         unableToResolveMembership: messages.interaction.unableToResolveMembership,
         missingRequiredRole: messages.interaction.missingRequiredRole,
+        membershipStatusNotAllowed: messages.interaction.membershipStatusNotAllowed,
         signupUpdated: messages.interaction.signupUpdated,
         markedNotAttending: messages.interaction.markedNotAttending,
       },
