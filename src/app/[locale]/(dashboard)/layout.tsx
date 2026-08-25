@@ -29,15 +29,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider
-      className="min-h-dvh"
-      style={
-        {
-          "--sidebar-width": "18rem",
-          "--sidebar-width-icon": "3.25rem",
-          "--header-height": "calc(var(--spacing) * 14)",
-          "--footer-height": "calc(var(--spacing) * 16)",
-        } as React.CSSProperties
-      }
+      className="min-h-dvh [--footer-height:2.5rem] [--header-height:2.5rem] [--sidebar-width-icon:3rem] [--sidebar-width:14.5rem] md:[--header-height:2.75rem] xl:[--header-height:3rem] xl:[--sidebar-width:15rem] 2xl:[--footer-height:4rem] 2xl:[--header-height:3.5rem] 2xl:[--sidebar-width-icon:3.25rem] 2xl:[--sidebar-width:18rem]"
     >
       <AppSidebar
         locale={safeLocale}
@@ -50,7 +42,7 @@ export default async function DashboardLayout({
       />
       <SidebarInset className="min-h-dvh bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)] overflow-x-hidden">
         <SiteHeader locale={safeLocale} dictionary={dictionary} servers={visibleServers} user={user} />
-        <div className="flex flex-1 flex-col gap-6 py-6">{children}</div>
+        <div className="flex flex-1 flex-col gap-3 py-3 sm:gap-4 sm:py-4 2xl:gap-6 2xl:py-6">{children}</div>
         <SiteFooter dictionary={dictionary} />
       </SidebarInset>
     </SidebarProvider>

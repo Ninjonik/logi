@@ -46,7 +46,7 @@ export function LocaleSwitcher({
   return (
     <div
       className={cn(
-        "inline-flex items-center rounded-full border bg-background p-1",
+        "inline-flex items-center rounded-full border bg-background p-0.5 2xl:p-1",
         compact && "gap-1",
       )}
     >
@@ -62,7 +62,7 @@ export function LocaleSwitcher({
             aria-pressed={isActive}
             aria-label={item === "en" ? "Switch to English" : "Přepnout do češtiny"}
             className={cn(
-              "inline-flex h-8 min-w-10 items-center justify-center rounded-full px-2 text-xs font-semibold transition-colors",
+              "inline-flex h-7 min-w-9 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold transition-colors 2xl:h-8 2xl:min-w-10 2xl:px-2 2xl:text-xs",
               isActive
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",

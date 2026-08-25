@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   Check,
   Circle,
@@ -106,6 +106,8 @@ export function RosterBoard({
   const [autoFillDialogOpen, setAutoFillDialogOpen] = useState(false);
   const [autoFillScoreWeight, setAutoFillScoreWeight] = useState(50);
   const [autoFillKdWeight, setAutoFillKdWeight] = useState(50);
+  const dragPointerYRef = useRef<number | null>(null);
+  const autoScrollFrameRef = useRef<number | null>(null);
   const deferredReserveSearch = useDeferredValue(reserveSearch);
   const deferredNotAttendingSearch = useDeferredValue(notAttendingSearch);
   const isLayoutMode = mode === "layout";
@@ -120,6 +122,64 @@ export function RosterBoard({
   useEffect(() => {
     setMode(defaultMode);
   }, [defaultMode]);
+
+  useEffect(() => {
+    if (!dragState || !isAssignmentMode) {
+      dragPointerYRef.current = null;
+      if (autoScrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(autoScrollFrameRef.current);
+        autoScrollFrameRef.current = null;
+      }
+      return;
+    }
+
+    const edgeThreshold = 96;
+    const maxScrollStep = 22;
+
+    const step = () => {
+      const pointerY = dragPointerYRef.current;
+      if (pointerY !== null) {
+        const viewportHeight = window.innerHeight;
+        let delta = 0;
+
+        if (pointerY < edgeThreshold) {
+          delta = -Math.ceil(((edgeThreshold - pointerY) / edgeThreshold) * maxScrollStep);
+        } else if (pointerY > viewportHeight - edgeThreshold) {
+          delta = Math.ceil(((pointerY - (viewportHeight - edgeThreshold)) / edgeThreshold) * maxScrollStep);
+        }
+
+        if (delta !== 0) {
+          window.scrollBy({ top: delta, behavior: "auto" });
+        }
+      }
+
+      autoScrollFrameRef.current = window.requestAnimationFrame(step);
+    };
+
+    const handleWindowDragOver = (event: DragEvent) => {
+      dragPointerYRef.current = event.clientY;
+    };
+
+    const stopAutoScroll = () => {
+      dragPointerYRef.current = null;
+    };
+
+    window.addEventListener("dragover", handleWindowDragOver);
+    window.addEventListener("drop", stopAutoScroll);
+    window.addEventListener("dragend", stopAutoScroll);
+    autoScrollFrameRef.current = window.requestAnimationFrame(step);
+
+    return () => {
+      window.removeEventListener("dragover", handleWindowDragOver);
+      window.removeEventListener("drop", stopAutoScroll);
+      window.removeEventListener("dragend", stopAutoScroll);
+      dragPointerYRef.current = null;
+      if (autoScrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(autoScrollFrameRef.current);
+        autoScrollFrameRef.current = null;
+      }
+    };
+  }, [dragState, isAssignmentMode]);
 
   const [isPending, startTransition] = useTransition();
   const [isConfirmingMeetingChannel, setIsConfirmingMeetingChannel] = useState(false);

@@ -4,15 +4,11 @@ import { useState, type ReactNode } from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { StratmapArrowStyle, StratmapElement, StratmapElementAttachment } from "@/lib/stratmaps";
+import { cn } from "@/lib/utils";
+
+import { EditorButton, EditorField, EditorIconButton, EditorInput, EditorSelect, EditorTextarea, EditorToggle } from "./editor-controls";
 
 const QUICK_COLORS = ["#39ff14", "#2b6ef3", "#ef4444", "#f59e0b", "#ffffff"];
 
@@ -36,23 +32,23 @@ export function SelectionInspector({
   onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   if (!selectedElement) return null;
-  if (selectedElement.kind === "icon") return <IconInspector {...{ dictionary, canAdmin, canEdit, mode, selectedElement, isUploadingIconAttachments, onElementChange, onUpload }} />;
-  if (selectedElement.kind === "text") return <TextInspector {...{ dictionary, canAdmin, selectedElement, onElementChange }} />;
-  if (selectedElement.kind === "line") return <LineInspector {...{ dictionary, canAdmin, selectedElement, onElementChange }} />;
+  if (selectedElement.kind === "icon") return <IconInspector dictionary={dictionary} canAdmin={canAdmin} canEdit={canEdit} mode={mode} selectedElement={selectedElement} isUploadingIconAttachments={isUploadingIconAttachments} onElementChange={onElementChange} onUpload={onUpload} />;
+  if (selectedElement.kind === "text") return <TextInspector dictionary={dictionary} canAdmin={canAdmin} selectedElement={selectedElement} onElementChange={onElementChange} />;
+  if (selectedElement.kind === "line") return <LineInspector dictionary={dictionary} canAdmin={canAdmin} selectedElement={selectedElement} onElementChange={onElementChange} />;
   if (selectedElement.kind === "rectangle" || selectedElement.kind === "ellipse" || selectedElement.kind === "polygon" || selectedElement.kind === "freehand") {
-    return <ShapeInspector {...{ dictionary, canAdmin, selectedElement, onElementChange }} />;
+    return <ShapeInspector dictionary={dictionary} canAdmin={canAdmin} selectedElement={selectedElement} onElementChange={onElementChange} />;
   }
   return null;
 }
 
 function ColorSwatches({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1">
       {QUICK_COLORS.map((color) => (
         <button
           key={color}
           type="button"
-          className={`h-7 w-7 rounded-full border-2 ${value === color ? "border-primary" : "border-border/60"}`}
+          className={cn("size-5 rounded-[2px] border border-border/70", value === color && "ring-1 ring-primary ring-offset-1 ring-offset-background")}
           style={{ backgroundColor: color }}
           onClick={() => onChange(color)}
         />
@@ -63,12 +59,7 @@ function ColorSwatches({ value, onChange }: { value: string; onChange: (value: s
 
 function SectionCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Card className="min-w-0 overflow-hidden rounded-xl border-border/60">
-      <CardHeader className="px-3 py-3">
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 overflow-x-hidden px-3 pb-3">{children}</CardContent>
-    </Card>
+    <div className="min-w-0 space-y-1.5 overflow-x-hidden" data-editor-section={title}>{children}</div>
   );
 }
 
@@ -92,21 +83,44 @@ function IconInspector({
   onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   if (mode === "view") return null;
+
   return (
     <SectionCard title={dictionary.stratmaps.selectedIcon}>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Color</Label>
+      <EditorField label="Color">
         <ColorSwatches value={selectedElement.color ?? "#39ff14"} onChange={(value) => onElementChange((element) => element.kind === "icon" ? { ...element, color: value } : element)} />
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">{dictionary.stratmaps.size}</Label>
-        <Input type="number" min={16} max={160} value={selectedElement.size} onChange={(event) => onElementChange((element) => element.kind === "icon" ? { ...element, size: Number(event.target.value) || 30 } : element)} disabled={!canAdmin && !canEdit} className="h-9 min-w-0 overflow-hidden rounded-lg text-sm" />
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">{dictionary.stratmaps.notes}</Label>
-        <Textarea value={selectedElement.note ?? ""} onChange={(event) => onElementChange((element) => element.kind === "icon" ? { ...element, note: event.target.value } : element)} disabled={!canAdmin} className="min-h-20 rounded-lg px-3 py-2 text-sm" placeholder={dictionary.stratmaps.notePlaceholder} />
-      </div>
-      <AttachmentGallery dictionary={dictionary} attachments={selectedElement.attachments ?? []} canAdmin={canAdmin} mode="edit" isUploading={isUploadingIconAttachments} onUpload={onUpload} onDescriptionChange={() => undefined} onRemove={() => undefined} />
+      </EditorField>
+      <EditorField label={dictionary.stratmaps.size}>
+        <EditorInput type="number" min={16} max={160} value={selectedElement.size} onChange={(event) => onElementChange((element) => element.kind === "icon" ? { ...element, size: Number(event.target.value) || 30 } : element)} disabled={!canAdmin && !canEdit} />
+      </EditorField>
+      <EditorField label={dictionary.stratmaps.notes}>
+        <EditorTextarea value={selectedElement.note ?? ""} onChange={(event) => onElementChange((element) => element.kind === "icon" ? { ...element, note: event.target.value } : element)} disabled={!canAdmin} placeholder={dictionary.stratmaps.notePlaceholder} />
+      </EditorField>
+      <AttachmentGallery
+        dictionary={dictionary}
+        attachments={selectedElement.attachments ?? []}
+        canAdmin={canAdmin}
+        mode="edit"
+        isUploading={isUploadingIconAttachments}
+        onUpload={onUpload}
+        onDescriptionChange={(index, value) =>
+          onElementChange((element) =>
+            element.kind === "icon"
+              ? {
+                  ...element,
+                  attachments: (element.attachments ?? []).map((entry, entryIndex) => entryIndex === index ? { ...entry, description: value } : entry),
+                }
+              : element,
+          )}
+        onRemove={(index) =>
+          onElementChange((element) =>
+            element.kind === "icon"
+              ? {
+                  ...element,
+                  attachments: (element.attachments ?? []).filter((_, attachmentIndex) => attachmentIndex !== index),
+                }
+              : element,
+          )}
+      />
     </SectionCard>
   );
 }
@@ -127,13 +141,16 @@ function ShapeInspector({
 
   return (
     <SectionCard title={dictionary.stratmaps.selectedElement}>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Color</Label>
+      <EditorField label="Color">
         <ColorSwatches value={stroke} onChange={(value) => onElementChange((element) => element.id === selectedElement.id ? { ...element, strokeColor: value, fillColor: element.fillColor?.startsWith("rgba") ? `${value}33` : element.fillColor } : element)} />
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1.5"><Label className="text-xs">{dictionary.stratmaps.strokeWidth}</Label><Input type="number" min={1} max={24} value={selectedElement.strokeWidth ?? 6} onChange={(event) => onElementChange((element) => element.id === selectedElement.id ? { ...element, strokeWidth: Number(event.target.value) || 1 } : element)} disabled={!canAdmin} className="h-9 rounded-lg text-sm" /></div>
-        <div className="space-y-1.5"><Label className="text-xs">{dictionary.stratmaps.fill}</Label><Input type="color" value={fill.slice(0, 7)} onChange={(event) => onElementChange((element) => element.id === selectedElement.id ? { ...element, fillColor: `${event.target.value}33` } : element)} disabled={!canAdmin} className="h-9 rounded-lg p-1" /></div>
+      </EditorField>
+      <div className="grid grid-cols-2 gap-1">
+        <EditorField label={dictionary.stratmaps.strokeWidth}>
+          <EditorInput type="number" min={1} max={24} value={selectedElement.strokeWidth ?? 6} onChange={(event) => onElementChange((element) => element.id === selectedElement.id ? { ...element, strokeWidth: Number(event.target.value) || 1 } : element)} disabled={!canAdmin} />
+        </EditorField>
+        <EditorField label={dictionary.stratmaps.fill}>
+          <EditorInput type="color" value={fill.slice(0, 7)} onChange={(event) => onElementChange((element) => element.id === selectedElement.id ? { ...element, fillColor: `${event.target.value}33` } : element)} disabled={!canAdmin} className="p-0.5" />
+        </EditorField>
       </div>
     </SectionCard>
   );
@@ -152,47 +169,35 @@ function TextInspector({
 }) {
   return (
     <SectionCard title={dictionary.stratmaps.selectedElement}>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Color</Label>
+      <EditorField label="Color">
         <ColorSwatches value={selectedElement.color ?? "#39ff14"} onChange={(value) => onElementChange((element) => element.kind === "text" ? { ...element, color: value } : element)} />
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Background</Label>
-        <Input
+      </EditorField>
+      <EditorField label="Background">
+        <EditorInput
           type="color"
           value={selectedElement.backgroundColor && selectedElement.backgroundColor !== "transparent" ? selectedElement.backgroundColor.slice(0, 7) : "#000000"}
           onChange={(event) => onElementChange((element) => element.kind === "text" ? { ...element, backgroundColor: `${event.target.value}cc` } : element)}
           disabled={!canAdmin}
-          className="h-9 rounded-lg p-1"
+          className="p-0.5"
         />
-        <Button
-          type="button"
-          variant="outline"
-          className="h-8 rounded-lg px-3 text-xs"
-          onClick={() => onElementChange((element) => element.kind === "text" ? { ...element, backgroundColor: "transparent" } : element)}
-          disabled={!canAdmin}
-        >
+        <EditorButton type="button" className="mt-1 h-6" onClick={() => onElementChange((element) => element.kind === "text" ? { ...element, backgroundColor: "transparent" } : element)} disabled={!canAdmin}>
           Transparent
-        </Button>
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">{dictionary.stratmaps.text}</Label>
-        <Textarea value={selectedElement.text} onChange={(event) => onElementChange((element) => element.kind === "text" ? { ...element, text: event.target.value } : element)} disabled={!canAdmin} className="min-h-20 rounded-lg px-3 py-2 text-sm" />
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">{dictionary.stratmaps.fontSize}</Label>
-        <Input type="number" min={16} max={96} value={selectedElement.fontSize} onChange={(event) => onElementChange((element) => element.kind === "text" ? { ...element, fontSize: Number(event.target.value) || 16 } : element)} disabled={!canAdmin} className="h-9 min-w-0 overflow-hidden rounded-lg text-sm" />
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Alignment</Label>
-        <Select value={selectedElement.align ?? "left"} onValueChange={(value) => onElementChange((element) => element.kind === "text" ? { ...element, align: value as "left" | "center" | "right" } : element)} disabled={!canAdmin}>
-          <SelectTrigger className="h-9 rounded-lg text-sm"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="left">Left</SelectItem>
-            <SelectItem value="center">Center</SelectItem>
-            <SelectItem value="right">Right</SelectItem>
-          </SelectContent>
-        </Select>
+        </EditorButton>
+      </EditorField>
+      <EditorField label={dictionary.stratmaps.text}>
+        <EditorTextarea value={selectedElement.text} onChange={(event) => onElementChange((element) => element.kind === "text" ? { ...element, text: event.target.value } : element)} disabled={!canAdmin} />
+      </EditorField>
+      <div className="grid grid-cols-2 gap-1">
+        <EditorField label={dictionary.stratmaps.fontSize}>
+          <EditorInput type="number" min={16} max={96} value={selectedElement.fontSize} onChange={(event) => onElementChange((element) => element.kind === "text" ? { ...element, fontSize: Number(event.target.value) || 16 } : element)} disabled={!canAdmin} />
+        </EditorField>
+        <EditorField label="Alignment">
+          <EditorSelect value={selectedElement.align ?? "left"} onChange={(event) => onElementChange((element) => element.kind === "text" ? { ...element, align: event.target.value as "left" | "center" | "right" } : element)} disabled={!canAdmin}>
+            <option value="left">Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+          </EditorSelect>
+        </EditorField>
       </div>
     </SectionCard>
   );
@@ -211,22 +216,21 @@ function LineInspector({
 }) {
   return (
     <SectionCard title={dictionary.stratmaps.selectedElement}>
-      <div className="space-y-1.5">
-        <Label className="text-xs">{dictionary.stratmaps.color}</Label>
+      <EditorField label={dictionary.stratmaps.color}>
         <ColorSwatches value={selectedElement.strokeColor ?? "#39ff14"} onChange={(value) => onElementChange((element) => element.kind === "line" ? { ...element, strokeColor: value } : element)} />
+      </EditorField>
+      <EditorField label={dictionary.stratmaps.strokeWidth}>
+        <EditorInput type="number" min={1} max={24} value={selectedElement.strokeWidth ?? 6} onChange={(event) => onElementChange((element) => element.kind === "line" ? { ...element, strokeWidth: Number(event.target.value) || 1 } : element)} disabled={!canAdmin} />
+      </EditorField>
+      <div className="grid grid-cols-2 gap-1">
+        <EditorField label={dictionary.stratmaps.lineStart}>
+          <ArrowStyleSelect value={selectedElement.startStyle ?? "none"} onChange={(value) => onElementChange((element) => element.kind === "line" ? { ...element, startStyle: value } : element)} dictionary={dictionary} disabled={!canAdmin} />
+        </EditorField>
+        <EditorField label={dictionary.stratmaps.lineEnd}>
+          <ArrowStyleSelect value={selectedElement.endStyle ?? "arrow"} onChange={(value) => onElementChange((element) => element.kind === "line" ? { ...element, endStyle: value } : element)} dictionary={dictionary} disabled={!canAdmin} />
+        </EditorField>
       </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">{dictionary.stratmaps.strokeWidth}</Label>
-        <Input type="number" min={1} max={24} value={selectedElement.strokeWidth ?? 6} onChange={(event) => onElementChange((element) => element.kind === "line" ? { ...element, strokeWidth: Number(event.target.value) || 1 } : element)} disabled={!canAdmin} className="h-9 min-w-0 overflow-hidden rounded-lg text-sm" />
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1.5"><Label className="text-xs">{dictionary.stratmaps.lineStart}</Label><ArrowStyleSelect value={selectedElement.startStyle ?? "none"} onChange={(value) => onElementChange((element) => element.kind === "line" ? { ...element, startStyle: value } : element)} dictionary={dictionary} disabled={!canAdmin} /></div>
-        <div className="space-y-1.5"><Label className="text-xs">{dictionary.stratmaps.lineEnd}</Label><ArrowStyleSelect value={selectedElement.endStyle ?? "arrow"} onChange={(value) => onElementChange((element) => element.kind === "line" ? { ...element, endStyle: value } : element)} dictionary={dictionary} disabled={!canAdmin} /></div>
-      </div>
-      <div className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2">
-        <Label className="text-xs">{dictionary.stratmaps.showDistance}</Label>
-        <Switch checked={selectedElement.showDistance ?? false} onCheckedChange={(checked) => onElementChange((element) => element.kind === "line" ? { ...element, showDistance: checked } : element)} disabled={!canAdmin} />
-      </div>
+      <EditorToggle label={dictionary.stratmaps.showDistance} checked={selectedElement.showDistance ?? false} onCheckedChange={(checked) => onElementChange((element) => element.kind === "line" ? { ...element, showDistance: checked } : element)} disabled={!canAdmin} />
     </SectionCard>
   );
 }
@@ -254,18 +258,18 @@ export function AttachmentGallery({
   const activeAttachment = attachments[lightboxIndex];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1.5">
       {canAdmin && mode === "edit" ? (
-        <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border/60 bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
-          <ImagePlus className="size-4" />
+        <label className="inline-flex h-6 cursor-pointer items-center justify-center gap-1 rounded-[3px] border border-border/70 bg-background/70 px-2 text-[10px] font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+          <ImagePlus className="size-3" />
           {isUploading ? dictionary.stratmaps.uploading : dictionary.stratmaps.attachImages}
           <input type="file" multiple accept="image/*" className="sr-only" onChange={onUpload} />
         </label>
       ) : null}
-      {!attachments.length ? <div className="text-xs text-muted-foreground">{dictionary.stratmaps.noImages}</div> : null}
+      {!attachments.length ? <div className="text-[10px] text-muted-foreground">{dictionary.stratmaps.noImages}</div> : null}
       {attachments.length ? (
         <PhotoProvider loop maskOpacity={0.92} onIndexChange={(index) => setLightboxIndex(index)} overlayRender={() => activeAttachment?.description ? <div className="pointer-events-none absolute right-4 bottom-4 left-4 flex justify-center"><div className="max-w-3xl rounded-xl border border-white/15 bg-black/70 px-4 py-3 text-sm text-white shadow-2xl backdrop-blur">{activeAttachment.description}</div></div> : null}>
-          <div className={mode === "view" ? "grid grid-cols-2 gap-2" : "space-y-3"}>
+          <div className={mode === "view" ? "grid grid-cols-2 gap-1" : "space-y-1.5"}>
             {attachments.map((attachment, index) => (
               <AttachmentCard key={`${attachment.url}-${index}`} attachment={attachment} index={index} dictionary={dictionary} canAdmin={canAdmin} mode={mode} onDescriptionChange={(value) => onDescriptionChange(index, value)} onRemove={() => onRemove(index)} />
             ))}
@@ -294,26 +298,27 @@ function AttachmentCard({
   onRemove: () => void;
 }) {
   const previewable = isPreviewableImage(attachment);
+
   return (
-    <div className={`min-w-0 overflow-hidden rounded-xl border border-border/60 ${mode === "view" ? "p-2" : "p-3"}`}>
-      <div className="flex items-start justify-between gap-3">
+    <div className={`min-w-0 overflow-hidden rounded-[3px] border border-border/60 ${mode === "view" ? "p-1" : "p-1.5"}`}>
+      <div className="flex items-start justify-between gap-1">
         <div className="min-w-0 flex-1">
           {previewable ? (
             <PhotoView src={attachment.url}>
-              <button type="button" className="block overflow-hidden rounded-lg border border-border/60 text-left" title={attachment.description || undefined}>
-                <img src={attachment.url} alt={attachment.description || attachment.filename || `Image ${index + 1}`} className={mode === "view" ? "h-28 w-full object-cover" : "h-32 w-full object-cover"} />
+              <button type="button" className="block overflow-hidden rounded-[2px] border border-border/60 text-left" title={attachment.description || undefined}>
+                <img src={attachment.url} alt={attachment.description || attachment.filename || `Image ${index + 1}`} className="h-20 w-full object-cover" />
               </button>
             </PhotoView>
           ) : (
-            <a href={attachment.url} target="_blank" rel="noreferrer" className="block rounded-lg border border-border/60 px-3 py-2 text-xs text-primary underline-offset-2 hover:underline">
+            <a href={attachment.url} target="_blank" rel="noreferrer" className="block rounded-md border border-border/60 px-2 py-1.5 text-[11px] text-primary underline-offset-2 hover:underline">
               {attachment.filename || `File ${index + 1}`}
             </a>
           )}
-          {mode === "edit" ? <div className="mt-2 text-xs text-muted-foreground">{attachment.filename || `${dictionary.stratmaps.images} ${index + 1}`}</div> : null}
+          {mode === "edit" ? <div className="mt-1.5 text-[10px] text-muted-foreground">{attachment.filename || `${dictionary.stratmaps.images} ${index + 1}`}</div> : null}
         </div>
-        {canAdmin && mode === "edit" ? <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0 rounded-lg" onClick={onRemove}><Trash2 className="size-4" /></Button> : null}
+        {canAdmin && mode === "edit" ? <EditorIconButton icon={Trash2} label="Remove image" className="size-5 border-0 bg-transparent" onClick={onRemove} /> : null}
       </div>
-      {mode === "edit" ? <div className="mt-3 space-y-1.5"><Label className="text-xs">{dictionary.stratmaps.imageDescription}</Label><Input value={attachment.description ?? ""} onChange={(event) => onDescriptionChange(event.target.value)} disabled={!canAdmin} placeholder={dictionary.stratmaps.imageDescriptionPlaceholder} className="h-9 rounded-lg px-3 text-sm" /></div> : null}
+      {mode === "edit" ? <EditorField label={dictionary.stratmaps.imageDescription} className="mt-1"><EditorInput value={attachment.description ?? ""} onChange={(event) => onDescriptionChange(event.target.value)} disabled={!canAdmin} placeholder={dictionary.stratmaps.imageDescriptionPlaceholder} /></EditorField> : null}
     </div>
   );
 }
@@ -325,14 +330,11 @@ function isPreviewableImage(attachment: StratmapElementAttachment) {
 
 function ArrowStyleSelect({ value, onChange, dictionary, disabled }: { value: StratmapArrowStyle; onChange: (value: StratmapArrowStyle) => void; dictionary: Dictionary; disabled?: boolean }) {
   return (
-    <Select value={value} onValueChange={(next) => onChange(next as StratmapArrowStyle)} disabled={disabled}>
-      <SelectTrigger className="h-9 min-w-0 overflow-hidden rounded-lg text-sm"><SelectValue /></SelectTrigger>
-      <SelectContent>
-        <SelectItem value="none">{dictionary.stratmaps.none}</SelectItem>
-        <SelectItem value="arrow">{dictionary.stratmaps.arrow}</SelectItem>
-        <SelectItem value="circle">{dictionary.stratmaps.circleMarker}</SelectItem>
-        <SelectItem value="square">{dictionary.stratmaps.squareMarker}</SelectItem>
-      </SelectContent>
-    </Select>
+    <EditorSelect value={value} onChange={(event) => onChange(event.target.value as StratmapArrowStyle)} disabled={disabled}>
+      <option value="none">{dictionary.stratmaps.none}</option>
+      <option value="arrow">{dictionary.stratmaps.arrow}</option>
+      <option value="circle">{dictionary.stratmaps.circleMarker}</option>
+      <option value="square">{dictionary.stratmaps.squareMarker}</option>
+    </EditorSelect>
   );
 }

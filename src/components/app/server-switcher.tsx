@@ -99,20 +99,20 @@ export function ServerSwitcher({
       }}
     >
       <PopoverTrigger asChild>
-        <Button variant="outline" className="h-12 w-full justify-between rounded-xl">
-          <div className="flex min-w-0 items-center gap-3">
-            <Avatar className="size-8 rounded-lg">
+        <Button variant="outline" className="h-10 w-full justify-between rounded-lg px-2 2xl:h-12 2xl:rounded-xl 2xl:px-4">
+          <div className="flex min-w-0 items-center gap-2 2xl:gap-3">
+            <Avatar className="size-7 rounded-md 2xl:size-8 2xl:rounded-lg">
               <AvatarImage src={activeServer?.avatar} alt={activeServer?.name} />
               <AvatarFallback>{activeServer?.name?.slice(0, 2) ?? "WS"}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 text-left">
-              <div className="truncate text-sm font-semibold">{activeServer?.name ?? labels.selectWorkspace}</div>
-              <div className="truncate text-xs text-muted-foreground">
+              <div className="truncate text-xs font-semibold 2xl:text-sm">{activeServer?.name ?? labels.selectWorkspace}</div>
+              <div className="truncate text-[10px] text-muted-foreground 2xl:text-xs">
                 {activeServer ? labels.activeWorkspace : labels.noWorkspaceSelected}
               </div>
             </div>
           </div>
-          <ChevronsUpDown className="size-4 text-muted-foreground" />
+          <ChevronsUpDown className="size-3.5 text-muted-foreground 2xl:size-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[22rem] p-0" align="start">

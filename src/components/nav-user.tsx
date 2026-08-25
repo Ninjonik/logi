@@ -56,18 +56,18 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
+              className="h-10 cursor-pointer gap-2 p-1.5 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground 2xl:h-12 2xl:p-2"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg">
+              <div className="flex size-7 items-center justify-center rounded-md 2xl:size-8 2xl:rounded-lg">
                 <UserAvatar avatarLink={user.avatar} />
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 text-left text-[13px] leading-tight 2xl:text-sm">
                 <span className="truncate font-medium">{user.name}</span>
-                <span className="text-muted-foreground truncate text-xs">
+                <span className="text-muted-foreground truncate text-[10px] 2xl:text-xs">
                   {user.email}
                 </span>
               </div>
-              <EllipsisVertical className="ml-auto size-4" />
+              <EllipsisVertical className="ml-auto size-3.5 2xl:size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent

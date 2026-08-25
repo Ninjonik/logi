@@ -3,7 +3,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 export function SiteFooter({ dictionary }: { dictionary: Dictionary }) {
   return (
     <footer className="h-(--footer-height) border-t bg-background">
-      <div className="flex h-full items-center justify-between px-4 text-xs text-muted-foreground lg:px-6">
+      <div className="flex h-full items-center justify-between px-4 text-[11px] text-muted-foreground lg:px-6 2xl:text-xs">
         <div>
           &copy; {dictionary.app.name} {new Date().getFullYear()}
         </div>
