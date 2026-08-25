@@ -56,7 +56,7 @@ export const membershipCategoryValidator = v.object({
   recruitRoleIds: v.array(v.string()),
   finalRoleIds: v.array(v.string()),
   modalQuestions: v.array(ticketModalQuestionValidator),
-  assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
+  assignmentType: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
 });
 
 export const ticketSettingsValidator = v.object({

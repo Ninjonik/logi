@@ -157,7 +157,7 @@ export function MembershipSettingsForm({
   if (!settings.applicationParentChannelId) missingMembershipParts.push(dictionary.membershipSettings.parentChannel);
   if (!settings.categories.length) missingMembershipParts.push(dictionary.membershipSettings.categoriesTitle);
   const memberCategoriesMissingRecruitRole = settings.categories.filter(
-    (category) => category.assignmentType === "member" && category.recruitRoleIds.length === 0,
+    (category) => (category.assignmentType === "member" || category.assignmentType === "reserve_member") && category.recruitRoleIds.length === 0,
   ).length;
   const categoriesMissingFinalRole = settings.categories.filter((category) => category.finalRoleIds.length === 0).length;
 
@@ -461,10 +461,11 @@ export function MembershipSettingsForm({
                 </div>
                 <div className="space-y-2">
                   <Label>{dictionary.membershipSettings.applicationResult}</Label>
-                  <Select value={category.assignmentType} onValueChange={(value) => patchCategory(category.id, { assignmentType: value as "member" | "mercenary" })}>
+                  <Select value={category.assignmentType} onValueChange={(value) => patchCategory(category.id, { assignmentType: value as "member" | "reserve_member" | "mercenary" })}>
                     <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="member">{dictionary.userManagement.memberLabel}</SelectItem>
+                      <SelectItem value="reserve_member">{dictionary.userManagement.reserveMemberLabel}</SelectItem>
                       <SelectItem value="mercenary">{dictionary.userManagement.mercLabel}</SelectItem>
                     </SelectContent>
                   </Select>

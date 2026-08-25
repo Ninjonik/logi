@@ -5,6 +5,7 @@ const users = defineTable({
   discordId: v.optional(v.string()),
   id: v.optional(v.string()),
   name: v.string(),
+  note: v.optional(v.string()),
   nicknames: v.optional(v.record(v.string(), v.string())),
   platformIds: v.optional(v.array(v.string())),
   avatar: v.string(),
@@ -40,6 +41,7 @@ const guildMember = v.object({
     v.literal("pending"),
     v.literal("recruit"),
     v.literal("member"),
+    v.literal("reserve_member"),
     v.literal("mercenary"),
   )),
   joinedAt: v.optional(v.string()),
@@ -124,7 +126,7 @@ const membershipCategory = v.object({
   recruitRoleIds: v.array(v.string()),
   finalRoleIds: v.array(v.string()),
   modalQuestions: v.array(ticketModalQuestion),
-  assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
+  assignmentType: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
 });
 
 const eventCategory = v.object({
@@ -322,7 +324,7 @@ const rosterSquad = v.object({
 const userAssignments = defineTable({
   userId: v.string(),
   serverId: v.string(),
-  type: v.union(v.literal("member"), v.literal("mercenary")),
+  type: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
   status: v.union(v.literal("pending"), v.literal("recruit"), v.literal("active")),
   membershipCategoryId: v.optional(v.string()),
   primaryGroupId: v.optional(v.id("groups")),
@@ -560,7 +562,7 @@ export default defineSchema({
     creatorId: v.string(),
     categoryId: v.string(),
     categoryLabel: v.string(),
-    assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
+    assignmentType: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
     applicationNumber: v.number(),
     assignmentId: v.optional(v.id("userAssignments")),
     transcriptMessageId: v.optional(v.string()),
@@ -579,6 +581,7 @@ export default defineSchema({
       v.literal("pending"),
       v.literal("recruit"),
       v.literal("member"),
+      v.literal("reserve_member"),
       v.literal("mercenary"),
     )),
     createdAt: v.string(),

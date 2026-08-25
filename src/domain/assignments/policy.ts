@@ -1,13 +1,15 @@
-export type AssignmentType = "member" | "mercenary";
+export type AssignmentType = "member" | "reserve_member" | "mercenary";
 export type AssignmentStatus = "pending" | "recruit" | "active";
 
 export function getResolvedMemberStatus(
   type: AssignmentType,
   status: AssignmentStatus,
-): "pending" | "recruit" | "member" | "mercenary" {
+): "pending" | "recruit" | "member" | "reserve_member" | "mercenary" {
   if (status === "pending") return "pending";
   if (status === "recruit") return "recruit";
-  return type === "mercenary" ? "mercenary" : "member";
+  if (type === "mercenary") return "mercenary";
+  if (type === "reserve_member") return "reserve_member";
+  return "member";
 }
 
 export function validateAssignmentGroupIds(input: {

@@ -49,6 +49,7 @@ export type AppUser = {
   hasDiscordLink: boolean;
   platformIds: string[];
   name: string;
+  note?: string;
   nicknames: Record<string, string>;
   avatar: string;
   managedGuildIds: string[];
@@ -76,7 +77,7 @@ export type GuildMember = {
   id: string;
   primaryGroup?: string;
   secondaryGroups: string[];
-  status?: "pending" | "recruit" | "member" | "mercenary";
+  status?: "pending" | "recruit" | "member" | "reserve_member" | "mercenary";
   joinedAt?: Timestamp;
 };
 
@@ -130,7 +131,7 @@ export type MembershipCategory = {
   recruitRoleIds: string[];
   finalRoleIds: string[];
   modalQuestions: TicketModalQuestion[];
-  assignmentType: "member" | "mercenary";
+  assignmentType: "member" | "reserve_member" | "mercenary";
 };
 
 export type TicketSettings = {
@@ -198,7 +199,7 @@ export type DiscordConfig = {
 };
 
 export type MembershipStatus = "pending" | "recruit" | "active";
-export type MembershipCloseOutcome = "denied" | "pending" | "recruit" | "member" | "mercenary";
+export type MembershipCloseOutcome = "denied" | "pending" | "recruit" | "member" | "reserve_member" | "mercenary";
 
 export type DiscordMemberAccess = {
   id: string;

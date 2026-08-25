@@ -5,6 +5,7 @@ import Image from "next/image";
 import {
   ArrowDown,
   ArrowUp,
+  CalendarClock,
   CheckCircle2,
   ChevronsUpDown,
   Circle,
@@ -33,6 +34,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { compareRosterCandidates, getAssignedElsewhereUserIds, getUserSignupLabel } from "@/lib/roster-assignment";
 import { parseDiscordCustomEmoji } from "@/lib/discord-emoji";
 import { getUserScoreForGuild } from "@/lib/user-scores";
@@ -258,6 +260,7 @@ export function SquadCard({
           const placeholderName = getCustomPlayerName(player);
           const assignment = slotUser ? assignmentsByUserId.get(slotUser.discordId) : undefined;
           const attendanceStatus = getAttendanceStatus(player);
+          const isReserveMember = assignment?.type === "reserve_member" && assignment.status === "active";
           const noticeReason = slotUser ? noticeReasonByUserId.get(slotUser.discordId) : undefined;
           const signupRoleLabel = slotUser ? getUserSignupLabel(slotUser.discordId, signupGroupByUserId) : null;
           const assignedElsewhereUserIds = getAssignedElsewhereUserIds(board, { squadIndex, playerIndex });
@@ -328,19 +331,42 @@ export function SquadCard({
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <div className="truncate text-xs font-medium leading-none">
-                            {slotUser ? slotUser.name : placeholderName}
+                          {slotUser?.note ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="truncate text-xs font-medium leading-none">
+                                  {slotUser.name}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-64 whitespace-pre-wrap text-xs">
+                                {slotUser.note}
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <div className="truncate text-xs font-medium leading-none">
+                              {slotUser ? slotUser.name : placeholderName}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1">
+                            {isReserveMember ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <CalendarClock className="size-3.5 text-amber-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>{dictionary.userManagement.reserveMemberLabel}</TooltipContent>
+                              </Tooltip>
+                            ) : null}
+                            {noticeReason ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Clock3 className="size-3.5 text-red-500" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-64 whitespace-pre-wrap text-xs">
+                                  {noticeReason}
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : null}
                           </div>
-                          {noticeReason ? (
-                            <HoverCard>
-                              <HoverCardTrigger asChild>
-                                <Clock3 className="size-3.5 text-red-500" />
-                              </HoverCardTrigger>
-                              <HoverCardContent className="text-xs">
-                                {noticeReason}
-                              </HoverCardContent>
-                            </HoverCard>
-                          ) : null}
                         </div>
                         {slotUser ? (
                           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">

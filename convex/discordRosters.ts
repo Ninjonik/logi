@@ -29,7 +29,7 @@ export const getRosterImageContext = query({
       config: config ? normalizeConfigDoc(config) : { guildId: event.guildId, timezone: "UTC", defaultLanguage: "en" as const },
       groups: groups.map(normalizeDoc),
       assignments: assignments.map(normalizeDoc),
-      users: users.map(normalizeUserDoc),
+      users: users.map((user) => normalizeUserDoc(user, { guildId: event.guildId })),
     };
   },
 });

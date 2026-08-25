@@ -53,7 +53,7 @@ export default async function ServerUserDetailPage({
   const { server, groups = [], assignments } = context;
 
   const assignment = await getServerUserAssignment(assignmentId);
-  const users = assignment ? await getUsersByIds([assignment.userId]) : [];
+  const users = assignment ? await getUsersByIds([assignment.userId], server.discordId) : [];
   const user = users[0];
   const eligibleUsers = await getEligibleUsersForServer(server, assignments);
 

@@ -43,7 +43,7 @@ const ticketCategorySchema = z.object({
 const membershipCategorySchema = ticketCategorySchema.extend({
   recruitRoleIds: z.array(z.string().trim().regex(/^\d+$/, "Role IDs must contain only digits.")).max(25),
   finalRoleIds: z.array(z.string().trim().regex(/^\d+$/, "Role IDs must contain only digits.")).max(25),
-  assignmentType: z.enum(["member", "mercenary"]),
+  assignmentType: z.enum(["member", "reserve_member", "mercenary"]),
 });
 
 const ticketSettingsSchema = z.object({

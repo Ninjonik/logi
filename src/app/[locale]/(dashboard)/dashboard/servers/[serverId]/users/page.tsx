@@ -17,14 +17,16 @@ import { getUserScoreForGuild } from "@/lib/user-scores";
 
 function getAssignmentStatusLabel(
   assignment: {
-    type: "member" | "mercenary";
+    type: "member" | "reserve_member" | "mercenary";
     status: "pending" | "recruit" | "active";
   },
   dictionary: ReturnType<typeof getDictionary>,
 ) {
   if (assignment.status === "pending") return dictionary.userManagement.pendingLabel;
   if (assignment.status === "recruit") return dictionary.userManagement.recruitLabel;
-  return assignment.type === "mercenary" ? dictionary.userManagement.mercLabel : dictionary.userManagement.memberLabel;
+  if (assignment.type === "mercenary") return dictionary.userManagement.mercLabel;
+  if (assignment.type === "reserve_member") return dictionary.userManagement.reserveMemberLabel;
+  return dictionary.userManagement.memberLabel;
 }
 
 export async function generateMetadata({
@@ -58,7 +60,7 @@ export default async function ServerUsersPage({
   const { groups, canAdmin } = context;
   const assignments = await getServerUserAssignments(serverId);
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
-  const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId));
+  const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId), context.server.discordId);
   const assignmentUserMap = new Map(assignmentUsers.map((user) => [user.discordId, user]));
   const mergeUserOptions = assignmentUsers
     .map((user) => ({
@@ -140,7 +142,11 @@ export default async function ServerUsersPage({
           {
             key: "type",
             title: dictionary.userManagement.tableType,
-            render: (assignment) => assignment.type === "member" ? dictionary.userManagement.memberLabel : dictionary.userManagement.mercLabel,
+            render: (assignment) => assignment.type === "member"
+              ? dictionary.userManagement.memberLabel
+              : assignment.type === "reserve_member"
+                ? dictionary.userManagement.reserveMemberLabel
+                : dictionary.userManagement.mercLabel,
           },
           {
             key: "group",

@@ -6,6 +6,7 @@ import { normalizeUserDoc } from "../src/infrastructure/convex/server-read-model
 export const getUsersByIds = query({
   args: {
     userIds: v.array(v.string()),
+    guildId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const uniqueIds = [...new Set(args.userIds)];
@@ -13,13 +14,15 @@ export const getUsersByIds = query({
 
     return users
       .filter((user): user is NonNullable<typeof user> => Boolean(user))
-      .map((user) => normalizeUserDoc(user));
+      .map((user) => normalizeUserDoc(user, { guildId: args.guildId }));
   },
 });
 
 export const listUsers = query({
-  args: {},
-  handler: async (ctx) => {
-    return (await ctx.db.query("users").collect()).map((user) => normalizeUserDoc(user));
+  args: {
+    guildId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    return (await ctx.db.query("users").collect()).map((user) => normalizeUserDoc(user, { guildId: args.guildId }));
   },
 });

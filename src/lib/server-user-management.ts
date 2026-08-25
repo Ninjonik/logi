@@ -5,6 +5,7 @@ import {
   linkImportedDiscordProfileCommand,
   mergeUsersCommand,
   reassignImportedMemberCommand,
+  savePlayerNoteCommand,
   savePlayerPlatformIdCommand,
   saveServerUserAssignmentCommand,
   upsertImportedPlayerCommand,
@@ -26,16 +27,16 @@ export async function getServerUserAssignment(assignmentId: string) {
   return await getServerUserAssignmentReadModel(assignmentId);
 }
 
-export async function getUsersByIds(userIds: string[]) {
-  return await getUsersReadModelByIds(userIds);
+export async function getUsersByIds(userIds: string[], guildId?: string) {
+  return await getUsersReadModelByIds(userIds, guildId);
 }
 
-export async function listUsers() {
-  return await listUsersReadModel();
+export async function listUsers(guildId?: string) {
+  return await listUsersReadModel(guildId);
 }
 
-export async function listUsersUncached() {
-  return await listUsersReadModelUncached();
+export async function listUsersUncached(guildId?: string) {
+  return await listUsersReadModelUncached(guildId);
 }
 
 export async function getAssignmentUser(assignment: ServerUserAssignment) {
@@ -44,12 +45,12 @@ export async function getAssignmentUser(assignment: ServerUserAssignment) {
 }
 
 export async function getEligibleUsersForServer(server: Guild, assignments: ServerUserAssignment[]) {
-  const currentUsers = await listUsers();
+  const currentUsers = await listUsers(server.discordId);
 
   return currentUsers.map((user) => {
     const existingHere = assignments.find((assignment) => assignment.userId === user.discordId);
     const canJoinAsMember = (!user.guildId || user.guildId === server.discordId) && existingHere?.type !== "mercenary";
-    const canJoinAsMercenary = existingHere?.type !== "member";
+    const canJoinAsMercenary = existingHere?.type !== "member" && existingHere?.type !== "reserve_member";
 
     return {
       user,
@@ -64,13 +65,14 @@ export async function saveServerUserAssignment(input: {
   assignmentId?: string;
   userId: string;
   serverId: string;
-  type: "member" | "mercenary";
+  type: "member" | "reserve_member" | "mercenary";
   status: "pending" | "recruit" | "active";
   membershipCategoryId?: string;
   primaryGroupId?: string;
   secondaryGroupIds: string[];
   paused: boolean;
   pausedNote?: string;
+  note?: string;
 }) {
   return await saveServerUserAssignmentCommand(input);
 }
@@ -84,6 +86,13 @@ export async function savePlayerPlatformId(input: {
   platformIds?: string | string[];
 }) {
   return await savePlayerPlatformIdCommand(input);
+}
+
+export async function savePlayerNote(input: {
+  userId: string;
+  note?: string;
+}) {
+  return await savePlayerNoteCommand(input);
 }
 
 export async function upsertImportedPlayer(input: {
@@ -126,7 +135,7 @@ export async function linkImportedDiscordProfile(input: {
 
 export async function importDiscordMembersForServer(input: {
   serverId: string;
-  assignmentType: "member" | "mercenary";
+  assignmentType: "member" | "reserve_member" | "mercenary";
   members: Array<{
     userId: string;
     name: string;

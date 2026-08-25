@@ -10,6 +10,7 @@ const removeAssignmentReference = makeFunctionReference<"mutation">("userAssignm
 const reassignImportedMemberReference = makeFunctionReference<"mutation">("userAssignments:reassignImportedMember");
 const updatePlatformIdsReference = makeFunctionReference<"mutation">("players:updatePlatformIds");
 const clearPlatformIdsReference = makeFunctionReference<"mutation">("players:clearPlatformIds");
+const updatePlayerNoteReference = makeFunctionReference<"mutation">("players:updateNote");
 const upsertImportedProfileReference = makeFunctionReference<"mutation">("players:upsertImportedProfile");
 const linkImportedDiscordProfileReference = makeFunctionReference<"mutation">("players:linkImportedDiscordProfile");
 const mergeUsersReference = makeFunctionReference<"mutation">("players:mergeUsers");
@@ -18,13 +19,14 @@ export async function saveServerUserAssignmentCommand(input: {
   assignmentId?: string;
   userId: string;
   serverId: string;
-  type: "member" | "mercenary";
+  type: "member" | "reserve_member" | "mercenary";
   status: "pending" | "recruit" | "active";
   membershipCategoryId?: string;
   primaryGroupId?: string;
   secondaryGroupIds: string[];
   paused: boolean;
   pausedNote?: string;
+  note?: string;
 }) {
   return await fetchMutation(upsertAssignmentReference, {
     secret: getInternalAuthSecret(),
@@ -38,6 +40,17 @@ export async function saveServerUserAssignmentCommand(input: {
     secondaryGroupIds: input.secondaryGroupIds as never,
     paused: input.paused,
     pausedNote: input.pausedNote,
+  });
+}
+
+export async function savePlayerNoteCommand(input: {
+  userId: string;
+  note?: string;
+}) {
+  return await fetchMutation(updatePlayerNoteReference, {
+    secret: getInternalAuthSecret(),
+    userId: input.userId,
+    note: input.note,
   });
 }
 
@@ -65,7 +78,7 @@ export async function reassignImportedMemberCommand(input: {
 
 export async function importDiscordMembersForServerCommand(input: {
   serverId: string;
-  assignmentType: "member" | "mercenary";
+  assignmentType: "member" | "reserve_member" | "mercenary";
   members: Array<{
     userId: string;
     name: string;

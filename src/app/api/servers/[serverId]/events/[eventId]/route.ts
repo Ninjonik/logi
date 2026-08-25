@@ -36,16 +36,17 @@ export const POST = createServerEventPostHandler({
   importEventMatchResults,
   getEventMetadata,
   finalizeTrainingCompletion: async ({ serverId, eventId, participants }) => {
-    const [event, guild, users, discordConfig] = await Promise.all([
+    const [event, guild, discordConfig] = await Promise.all([
       getEventMetadata(eventId),
       getGuildMetadata(serverId),
-      getUsersByIds(participants.map((participant) => participant.userId)),
       getDiscordConfigByGuild(serverId),
     ]);
 
     if (!event || !guild) {
       return;
     }
+
+    const users = await getUsersByIds(participants.map((participant) => participant.userId), guild.discordId);
 
     const messages = getClanDiscordMessages(discordConfig?.defaultLanguage);
     const rewardRoleIds = event.rewardRoleIds ?? [];

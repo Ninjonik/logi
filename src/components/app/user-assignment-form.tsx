@@ -51,17 +51,20 @@ function getValidationMessage(message: string | undefined, dictionary: Dictionar
   if (message === "Pick a player first.") return dictionary.userManagement.pickPlayerFirst;
   if (message === "Add a pause note when membership is paused.") return dictionary.userManagement.pauseNoteRequired;
   if (message === "Mercenaries cannot use the recruit status.") return dictionary.userManagement.mercenaryRecruitStatusError;
+  if (message === "Reserve members cannot use the recruit status.") return dictionary.userManagement.reserveMemberRecruitStatusError;
   return message;
 }
 
 function getMembershipStatusLabel(
-  type: "member" | "mercenary",
+  type: "member" | "reserve_member" | "mercenary",
   status: "pending" | "recruit" | "active",
   dictionary: Dictionary,
 ) {
   if (status === "pending") return dictionary.userManagement.pendingLabel ?? "Pending";
   if (status === "recruit") return dictionary.userManagement.recruitLabel ?? "Recruit";
-  return type === "mercenary" ? dictionary.userManagement.mercLabel : dictionary.userManagement.memberLabel;
+  if (type === "mercenary") return dictionary.userManagement.mercLabel;
+  if (type === "reserve_member") return dictionary.userManagement.reserveMemberLabel;
+  return dictionary.userManagement.memberLabel;
 }
 
 export function UserAssignmentForm({
@@ -104,6 +107,7 @@ export function UserAssignmentForm({
       primaryGroupId: assignment?.primaryGroupId ?? "",
       secondaryGroupIds: assignment?.secondaryGroupIds ?? [],
       platformIds: formatPlatformIds(initialSelectedUser?.platformIds),
+      note: initialSelectedUser?.note ?? "",
       paused: assignment?.paused ?? false,
       pausedNote: assignment?.pausedNote ?? "",
     };
@@ -131,6 +135,7 @@ export function UserAssignmentForm({
 
   const selected = eligibleUsers.find((item) => item.user.discordId === selectedUserId);
   const memberDisabled = selected ? !selected.canJoinAsMember : false;
+  const reserveDisabled = selected ? !selected.canJoinAsMember : false;
   const mercDisabled = selected ? !selected.canJoinAsMercenary : false;
   const showPlayerPicker = createMode;
   const canEditFields = canManage && (createMode || isEditing);
@@ -138,7 +143,7 @@ export function UserAssignmentForm({
     ? config?.membershipSettings?.categories.find((item) => item.id === assignment.membershipCategoryId)
     : undefined;
   const status = form.watch("status");
-  const needsMembershipRoles = assignmentType === "member" && status !== "pending";
+  const needsMembershipRoles = (assignmentType === "member" || assignmentType === "reserve_member") && status !== "pending";
   const missingRecruitRole = status === "recruit" && !membershipCategory?.recruitRoleIds.length;
   const missingFinalRole = status === "active" && !membershipCategory?.finalRoleIds.length;
 
@@ -315,6 +320,9 @@ export function UserAssignmentForm({
                       <Badge variant={canJoinAsMember ? "default" : "secondary"} className="rounded-full px-2.5">
                         {dictionary.userManagement.memberLabel}
                       </Badge>
+                      <Badge variant={canJoinAsMember ? "default" : "secondary"} className="rounded-full px-2.5">
+                        {dictionary.userManagement.reserveMemberLabel}
+                      </Badge>
                       <Badge variant={canJoinAsMercenary ? "default" : "secondary"} className="rounded-full px-2.5">
                         {dictionary.userManagement.mercLabel}
                       </Badge>
@@ -345,6 +353,9 @@ export function UserAssignmentForm({
                 <Badge variant={selected.canJoinAsMember ? "default" : "secondary"} className="rounded-full px-2.5">
                   {dictionary.userManagement.memberLabel}
                 </Badge>
+                <Badge variant={selected.canJoinAsMember ? "default" : "secondary"} className="rounded-full px-2.5">
+                  {dictionary.userManagement.reserveMemberLabel}
+                </Badge>
                 <Badge variant={selected.canJoinAsMercenary ? "default" : "secondary"} className="rounded-full px-2.5">
                   {dictionary.userManagement.mercLabel}
                 </Badge>
@@ -369,6 +380,9 @@ export function UserAssignmentForm({
                           <SelectItem value="member" disabled={memberDisabled}>
                             {dictionary.userManagement.memberLabel}
                           </SelectItem>
+                          <SelectItem value="reserve_member" disabled={reserveDisabled}>
+                            {dictionary.userManagement.reserveMemberLabel}
+                          </SelectItem>
                           <SelectItem value="mercenary" disabled={mercDisabled}>
                             {dictionary.userManagement.mercLabel}
                           </SelectItem>
@@ -376,7 +390,11 @@ export function UserAssignmentForm({
                       </Select>
                     ) : (
                       <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
-                        {field.value === "member" ? dictionary.userManagement.memberLabel : dictionary.userManagement.mercLabel}
+                        {field.value === "member"
+                          ? dictionary.userManagement.memberLabel
+                          : field.value === "reserve_member"
+                            ? dictionary.userManagement.reserveMemberLabel
+                            : dictionary.userManagement.mercLabel}
                       </div>
                     )
                   )}
@@ -402,7 +420,11 @@ export function UserAssignmentForm({
                             <SelectItem value="recruit">{dictionary.userManagement.recruitLabel ?? "Recruit"}</SelectItem>
                           ) : null}
                           <SelectItem value="active">
-                            {assignmentType === "mercenary" ? dictionary.userManagement.mercLabel : dictionary.userManagement.memberLabel}
+                            {assignmentType === "mercenary"
+                              ? dictionary.userManagement.mercLabel
+                              : assignmentType === "reserve_member"
+                                ? dictionary.userManagement.reserveMemberLabel
+                                : dictionary.userManagement.memberLabel}
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -476,6 +498,16 @@ export function UserAssignmentForm({
                 {form.formState.errors.platformIds ? (
                   <p className="text-sm text-destructive">{getValidationMessage(form.formState.errors.platformIds.message, dictionary)}</p>
                 ) : null}
+              </div>
+              <div className="space-y-2 md:col-span-3">
+                <Label>{dictionary.userManagement.playerNote}</Label>
+                {canEditFields ? (
+                  <Textarea {...form.register("note")} className="min-h-24 rounded-xl" />
+                ) : (
+                  <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
+                    {form.getValues("note") || dictionary.shared.notSet}
+                  </div>
+                )}
               </div>
               <div className="space-y-3 md:col-span-6">
                 <Label>{dictionary.userManagement.secondaryGroups}</Label>

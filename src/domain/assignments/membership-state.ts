@@ -20,11 +20,11 @@ export function buildServerMembershipState(input: {
     primaryGroup?: string;
     secondaryGroups: string[];
     joinedAt: string;
-    status: "pending" | "recruit" | "member" | "mercenary";
+    status: "pending" | "recruit" | "member" | "reserve_member" | "mercenary";
   }>;
   mercenaryIds: string[];
 } {
-  const activeMemberAssignments = input.assignments.filter((item) => item.type === "member" && item.status !== "pending");
+  const activeMemberAssignments = input.assignments.filter((item) => (item.type === "member" || item.type === "reserve_member") && item.status !== "pending");
   const activeMercAssignments = input.assignments.filter((item) => item.type === "mercenary" && item.status === "active");
 
   return {
@@ -48,7 +48,7 @@ export function buildUserMembershipState(input: {
   guildId?: string;
   mercenaryGuildIds: string[];
 } {
-  const primaryAssignment = input.assignments.find((item) => item.type === "member" && item.status !== "pending");
+  const primaryAssignment = input.assignments.find((item) => (item.type === "member" || item.type === "reserve_member") && item.status !== "pending");
   const mercenaryGuildIds = input.assignments
     .filter((item) => item.type === "mercenary" && item.status === "active")
     .map((item) => item.serverId);
