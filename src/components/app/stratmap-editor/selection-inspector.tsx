@@ -2,8 +2,9 @@
 
 import { useState, type ReactNode } from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
-import { PhotoProvider, PhotoView } from "react-photo-view";
+import { PhotoSlider } from "react-photo-view";
 
+import { DiscordMarkdownText, DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { StratmapArrowStyle, StratmapElement, StratmapElementAttachment } from "@/lib/stratmaps";
 import { cn } from "@/lib/utils";
@@ -18,21 +19,17 @@ export function SelectionInspector({
   canEdit,
   mode,
   selectedElement,
-  isUploadingIconAttachments,
   onElementChange,
-  onUpload,
 }: {
   dictionary: Dictionary;
   canAdmin: boolean;
   canEdit: boolean;
   mode: "view" | "edit";
   selectedElement: StratmapElement | null;
-  isUploadingIconAttachments: boolean;
   onElementChange: (updater: (element: StratmapElement) => StratmapElement) => void;
-  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   if (!selectedElement) return null;
-  if (selectedElement.kind === "icon") return <IconInspector dictionary={dictionary} canAdmin={canAdmin} canEdit={canEdit} mode={mode} selectedElement={selectedElement} isUploadingIconAttachments={isUploadingIconAttachments} onElementChange={onElementChange} onUpload={onUpload} />;
+  if (selectedElement.kind === "icon") return <IconInspector dictionary={dictionary} canAdmin={canAdmin} canEdit={canEdit} mode={mode} selectedElement={selectedElement} onElementChange={onElementChange} />;
   if (selectedElement.kind === "text") return <TextInspector dictionary={dictionary} canAdmin={canAdmin} selectedElement={selectedElement} onElementChange={onElementChange} />;
   if (selectedElement.kind === "line") return <LineInspector dictionary={dictionary} canAdmin={canAdmin} selectedElement={selectedElement} onElementChange={onElementChange} />;
   if (selectedElement.kind === "rectangle" || selectedElement.kind === "ellipse" || selectedElement.kind === "polygon" || selectedElement.kind === "freehand") {
@@ -69,18 +66,14 @@ function IconInspector({
   canEdit,
   mode,
   selectedElement,
-  isUploadingIconAttachments,
   onElementChange,
-  onUpload,
 }: {
   dictionary: Dictionary;
   canAdmin: boolean;
   canEdit: boolean;
   mode: "view" | "edit";
   selectedElement: Extract<StratmapElement, { kind: "icon" }>;
-  isUploadingIconAttachments: boolean;
   onElementChange: (updater: (element: StratmapElement) => StratmapElement) => void;
-  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   if (mode === "view") return null;
 
@@ -90,37 +83,11 @@ function IconInspector({
         <ColorSwatches value={selectedElement.color ?? "#39ff14"} onChange={(value) => onElementChange((element) => element.kind === "icon" ? { ...element, color: value } : element)} />
       </EditorField>
       <EditorField label={dictionary.stratmaps.size}>
-        <EditorInput type="number" min={16} max={160} value={selectedElement.size} onChange={(event) => onElementChange((element) => element.kind === "icon" ? { ...element, size: Number(event.target.value) || 30 } : element)} disabled={!canAdmin && !canEdit} />
+        <EditorInput type="number" min={16} max={160} value={selectedElement.size} onChange={(event) => onElementChange((element) => element.kind === "icon" ? { ...element, size: Number(event.target.value) || 50 } : element)} disabled={!canAdmin && !canEdit} />
       </EditorField>
       <EditorField label={dictionary.stratmaps.notes}>
         <EditorTextarea value={selectedElement.note ?? ""} onChange={(event) => onElementChange((element) => element.kind === "icon" ? { ...element, note: event.target.value } : element)} disabled={!canAdmin} placeholder={dictionary.stratmaps.notePlaceholder} />
       </EditorField>
-      <AttachmentGallery
-        dictionary={dictionary}
-        attachments={selectedElement.attachments ?? []}
-        canAdmin={canAdmin}
-        mode="edit"
-        isUploading={isUploadingIconAttachments}
-        onUpload={onUpload}
-        onDescriptionChange={(index, value) =>
-          onElementChange((element) =>
-            element.kind === "icon"
-              ? {
-                  ...element,
-                  attachments: (element.attachments ?? []).map((entry, entryIndex) => entryIndex === index ? { ...entry, description: value } : entry),
-                }
-              : element,
-          )}
-        onRemove={(index) =>
-          onElementChange((element) =>
-            element.kind === "icon"
-              ? {
-                  ...element,
-                  attachments: (element.attachments ?? []).filter((_, attachmentIndex) => attachmentIndex !== index),
-                }
-              : element,
-          )}
-      />
     </SectionCard>
   );
 }
@@ -238,24 +205,38 @@ function LineInspector({
 export function AttachmentGallery({
   dictionary,
   attachments,
+  mainAttachmentUrl,
+  fallbackNote,
   canAdmin,
   mode,
   isUploading,
   onUpload,
+  onMainAttachmentChange,
   onDescriptionChange,
   onRemove,
 }: {
   dictionary: Dictionary;
   attachments: StratmapElementAttachment[];
+  mainAttachmentUrl?: string;
+  fallbackNote?: string;
   canAdmin: boolean;
   mode: "view" | "edit";
   isUploading: boolean;
   onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onMainAttachmentChange: (url: string) => void;
   onDescriptionChange: (index: number, value: string) => void;
   onRemove: (index: number) => void;
 }) {
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-  const activeAttachment = attachments[lightboxIndex];
+  const previewAttachments = attachments.filter(isPreviewableImage);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const [viewerVisible, setViewerVisible] = useState(false);
+
+  const openAttachment = (attachment: StratmapElementAttachment) => {
+    const nextIndex = previewAttachments.indexOf(attachment);
+    if (nextIndex < 0) return;
+    setViewerIndex(nextIndex);
+    setViewerVisible(true);
+  };
 
   return (
     <div className="space-y-1.5">
@@ -268,13 +249,36 @@ export function AttachmentGallery({
       ) : null}
       {!attachments.length ? <div className="text-[10px] text-muted-foreground">{dictionary.stratmaps.noImages}</div> : null}
       {attachments.length ? (
-        <PhotoProvider loop maskOpacity={0.92} onIndexChange={(index) => setLightboxIndex(index)} overlayRender={() => activeAttachment?.description ? <div className="pointer-events-none absolute right-4 bottom-4 left-4 flex justify-center"><div className="max-w-3xl rounded-xl border border-white/15 bg-black/70 px-4 py-3 text-sm text-white shadow-2xl backdrop-blur">{activeAttachment.description}</div></div> : null}>
-          <div className={mode === "view" ? "grid grid-cols-2 gap-1" : "space-y-1.5"}>
+        <>
+          <div className="flex flex-col gap-1.5">
             {attachments.map((attachment, index) => (
-              <AttachmentCard key={`${attachment.url}-${index}`} attachment={attachment} index={index} dictionary={dictionary} canAdmin={canAdmin} mode={mode} onDescriptionChange={(value) => onDescriptionChange(index, value)} onRemove={() => onRemove(index)} />
+              <AttachmentCard
+                key={`${attachment.url}-${index}`}
+                attachment={attachment}
+                index={index}
+                dictionary={dictionary}
+                canAdmin={canAdmin}
+                mode={mode}
+                isMain={(mainAttachmentUrl ?? attachments[0]?.url) === attachment.url}
+                fallbackNote={fallbackNote}
+                onOpen={() => openAttachment(attachment)}
+                onMainAttachmentChange={() => onMainAttachmentChange(attachment.url)}
+                onDescriptionChange={(value) => onDescriptionChange(index, value)}
+                onRemove={() => onRemove(index)}
+              />
             ))}
           </div>
-        </PhotoProvider>
+          <PhotoSlider
+            images={previewAttachments.map((attachment, index) => ({ key: `${attachment.url}-${index}`, src: attachment.url }))}
+            index={viewerIndex}
+            visible={viewerVisible}
+            onIndexChange={setViewerIndex}
+            onClose={() => setViewerVisible(false)}
+            loop
+            maskOpacity={0.92}
+            overlayRender={({ index }) => <LightboxCaption text={getAttachmentCaption(previewAttachments[index], fallbackNote)} />}
+          />
+        </>
       ) : null}
     </div>
   );
@@ -286,6 +290,10 @@ function AttachmentCard({
   dictionary,
   canAdmin,
   mode,
+  isMain,
+  fallbackNote,
+  onOpen,
+  onMainAttachmentChange,
   onDescriptionChange,
   onRemove,
 }: {
@@ -294,31 +302,87 @@ function AttachmentCard({
   dictionary: Dictionary;
   canAdmin: boolean;
   mode: "view" | "edit";
+  isMain: boolean;
+  fallbackNote?: string;
+  onOpen: () => void;
+  onMainAttachmentChange: () => void;
   onDescriptionChange: (value: string) => void;
   onRemove: () => void;
 }) {
   const previewable = isPreviewableImage(attachment);
+  const caption = getAttachmentCaption(attachment, fallbackNote);
 
   return (
-    <div className={`min-w-0 overflow-hidden rounded-[3px] border border-border/60 ${mode === "view" ? "p-1" : "p-1.5"}`}>
+    <div className={cn("min-w-0 overflow-hidden rounded-[3px] border p-1.5", isMain ? "border-primary/70 bg-primary/5" : "border-border/60")}>
       <div className="flex items-start justify-between gap-1">
         <div className="min-w-0 flex-1">
           {previewable ? (
-            <PhotoView src={attachment.url}>
-              <button type="button" className="block overflow-hidden rounded-[2px] border border-border/60 text-left" title={attachment.description || undefined}>
-                <img src={attachment.url} alt={attachment.description || attachment.filename || `Image ${index + 1}`} className="h-20 w-full object-cover" />
+            <div className="relative overflow-hidden rounded-[2px] border border-border/60">
+              <button type="button" onClick={onOpen} className="block w-full text-left" title={caption || undefined}>
+                <img src={attachment.url} alt={caption || attachment.filename || `Image ${index + 1}`} className="h-28 w-full object-cover" />
               </button>
-            </PhotoView>
+              {caption ? <ThumbnailCaption text={caption} /> : null}
+            </div>
           ) : (
             <a href={attachment.url} target="_blank" rel="noreferrer" className="block rounded-md border border-border/60 px-2 py-1.5 text-[11px] text-primary underline-offset-2 hover:underline">
               {attachment.filename || `File ${index + 1}`}
             </a>
           )}
-          {mode === "edit" ? <div className="mt-1.5 text-[10px] text-muted-foreground">{attachment.filename || `${dictionary.stratmaps.images} ${index + 1}`}</div> : null}
+          <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+            <div className="truncate text-[9px] text-muted-foreground">{attachment.filename || `${dictionary.stratmaps.images} ${index + 1}`}</div>
+            {canAdmin && mode === "edit" ? (
+              <label className="flex shrink-0 cursor-pointer items-center gap-1 text-[9px] font-medium text-foreground/80">
+                <input type="radio" name="stratmap-main-image" checked={isMain} onChange={onMainAttachmentChange} className="size-3 accent-primary" />
+                {dictionary.stratmaps.mainImage}
+              </label>
+            ) : null}
+          </div>
         </div>
         {canAdmin && mode === "edit" ? <EditorIconButton icon={Trash2} label="Remove image" className="size-5 border-0 bg-transparent" onClick={onRemove} /> : null}
       </div>
-      {mode === "edit" ? <EditorField label={dictionary.stratmaps.imageDescription} className="mt-1"><EditorInput value={attachment.description ?? ""} onChange={(event) => onDescriptionChange(event.target.value)} disabled={!canAdmin} placeholder={dictionary.stratmaps.imageDescriptionPlaceholder} /></EditorField> : null}
+      {mode === "edit" ? (
+        <EditorField label={dictionary.stratmaps.imageDescription} className="mt-1">
+          <DiscordMarkdownTextarea
+            value={attachment.description ?? ""}
+            onChange={onDescriptionChange}
+            disabled={!canAdmin}
+            placeholder={dictionary.stratmaps.imageDescriptionPlaceholder}
+            height={116}
+            preview="edit"
+            compactToolbar
+            className="rounded-[3px] shadow-none focus-within:ring-1 [&>.w-md-editor>.w-md-editor-toolbar]:min-h-7 [&>.w-md-editor>.w-md-editor-toolbar]:px-1 [&>.w-md-editor>.w-md-editor-toolbar]:py-0.5 [&>.w-md-editor>.w-md-editor-toolbar_button]:h-6 [&>.w-md-editor>.w-md-editor-toolbar_button]:px-1"
+          />
+        </EditorField>
+      ) : null}
+    </div>
+  );
+}
+
+function getAttachmentCaption(attachment: StratmapElementAttachment | undefined, fallbackNote?: string) {
+  return attachment?.description?.trim() || fallbackNote?.trim() || "";
+}
+
+function ThumbnailCaption({ text }: { text: string }) {
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 max-h-24 overflow-hidden bg-gradient-to-t from-black/95 via-black/75 to-transparent px-2 pt-5 pb-1.5 text-center text-white">
+      <DiscordMarkdownText
+        markdown={text}
+        className="text-[10px] leading-snug text-white [&_a]:!text-white [&_blockquote]:border-white/40 [&_blockquote]:text-white/80 [&_li]:ml-3 [&_ol]:pl-3 [&_p]:m-0 [&_ul]:pl-3"
+      />
+    </div>
+  );
+}
+
+export function LightboxCaption({ text }: { text: string }) {
+  if (!text) return null;
+  return (
+    <div className="pointer-events-none absolute inset-x-4 bottom-5 z-50 flex justify-center">
+      <div className="pointer-events-auto max-h-[35vh] max-w-3xl overflow-y-auto rounded-md border border-white/15 bg-black/80 px-4 py-2 text-center text-white shadow-2xl backdrop-blur-sm">
+        <DiscordMarkdownText
+          markdown={text}
+          className="text-sm leading-relaxed text-white [&_a]:!text-white [&_blockquote]:border-white/40 [&_blockquote]:text-white/80"
+        />
+      </div>
     </div>
   );
 }

@@ -102,6 +102,7 @@ export type StratmapIconElement = StratmapElementBase & {
   size: number;
   note?: string;
   attachments?: StratmapElementAttachment[];
+  mainAttachmentUrl?: string;
 };
 
 export type StratmapTextElement = StratmapElementBase & {
@@ -269,6 +270,7 @@ export function parseStratmapState(stateJson?: string | null, fallbackMapId?: st
                       description: attachment.description ?? "",
                     }))
                   : [],
+                mainAttachmentUrl: typeof element.mainAttachmentUrl === "string" ? element.mainAttachmentUrl : undefined,
               }
             : element.kind === "text"
               ? {

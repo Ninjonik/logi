@@ -981,6 +981,7 @@ export const csMessages = {
     images: "Obrázky",
     imageDescription: "Popis obrázku",
     imageDescriptionPlaceholder: "Přidejte kontext k tomuto obrázku.",
+    mainImage: "Hlavní obrázek",
     attachImages: "Přiložit obrázky",
     uploading: "Nahrávání...",
     noImages: "Zatím nejsou přiložené žádné obrázky.",
