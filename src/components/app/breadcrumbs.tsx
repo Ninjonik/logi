@@ -103,7 +103,7 @@ export function AppBreadcrumbs({
 
   return (
     <Breadcrumb>
-      <BreadcrumbList className="gap-1 text-[11px] sm:gap-1.5 sm:text-xs lg:gap-2.5 lg:text-sm [&_[data-slot=breadcrumb-separator]>svg]:size-3 lg:[&_[data-slot=breadcrumb-separator]>svg]:size-3.5">
+      <BreadcrumbList className="gap-1 text-[11px] md:gap-1.5 md:text-xs 2xl:gap-2.5 2xl:text-sm [&_[data-slot=breadcrumb-separator]>svg]:size-3 2xl:[&_[data-slot=breadcrumb-separator]>svg]:size-3.5">
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
             <Link href={`/${locale}/dashboard`}>{dictionary.sidebar.home}</Link>

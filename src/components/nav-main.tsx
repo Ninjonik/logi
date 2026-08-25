@@ -51,7 +51,7 @@ function renderNavItems(items: NavItem[], pathname: string, depth = 0) {
           {item.items?.length ? (
             <>
               <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title} className="cursor-pointer" isActive={pathname === item.url}>
+                <SidebarMenuButton tooltip={item.title} className="h-7 cursor-pointer px-1.5 text-[13px] 2xl:h-8 2xl:px-2 2xl:text-sm" isActive={pathname === item.url}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
                   <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -64,7 +64,7 @@ function renderNavItems(items: NavItem[], pathname: string, depth = 0) {
               </CollapsibleContent>
             </>
           ) : (
-            <SidebarMenuButton asChild tooltip={item.title} className="cursor-pointer" isActive={pathname === item.url}>
+            <SidebarMenuButton asChild tooltip={item.title} className="h-7 cursor-pointer px-1.5 text-[13px] 2xl:h-8 2xl:px-2 2xl:text-sm" isActive={pathname === item.url}>
               <Link href={item.url} prefetch={!isHeavyServerRoute(item.url)}>
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
@@ -77,19 +77,19 @@ function renderNavItems(items: NavItem[], pathname: string, depth = 0) {
           {item.items?.length ? (
             <>
               <CollapsibleTrigger asChild>
-                <SidebarMenuSubButton className="cursor-pointer" isActive={pathname === item.url}>
+                <SidebarMenuSubButton className="h-6 cursor-pointer px-1.5 text-xs 2xl:h-7 2xl:px-2 2xl:text-sm" isActive={pathname === item.url}>
                   <span>{item.title}</span>
                   <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                 </SidebarMenuSubButton>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <SidebarMenuSub className="mx-2 mt-1">
+                <SidebarMenuSub className="mx-1 mt-0.5 2xl:mx-2 2xl:mt-1">
                   {renderNavItems(item.items, pathname, depth + 1)}
                 </SidebarMenuSub>
               </CollapsibleContent>
             </>
           ) : (
-            <SidebarMenuSubButton asChild className="cursor-pointer" isActive={pathname === item.url}>
+            <SidebarMenuSubButton asChild className="h-6 cursor-pointer px-1.5 text-xs 2xl:h-7 2xl:px-2 2xl:text-sm" isActive={pathname === item.url}>
               <Link href={item.url} prefetch={!isHeavyServerRoute(item.url)}>
                 <span>{item.title}</span>
               </Link>
@@ -111,9 +111,9 @@ export function NavMain({
   const pathname = usePathname()
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
-      <SidebarMenu>{renderNavItems(items, pathname)}</SidebarMenu>
+    <SidebarGroup className="p-1.5 2xl:p-2">
+      <SidebarGroupLabel className="h-6 px-1.5 text-[10px] 2xl:h-8 2xl:px-2 2xl:text-xs">{label}</SidebarGroupLabel>
+      <SidebarMenu className="gap-0.5 2xl:gap-1">{renderNavItems(items, pathname)}</SidebarMenu>
     </SidebarGroup>
   )
 }

@@ -24,9 +24,9 @@ export default async function StratmapDetailPage({
   }
 
   return (
-    <div className="grid h-[calc(100dvh-var(--header-height)-var(--footer-height)-2rem)] max-h-[calc(100dvh-var(--header-height)-var(--footer-height)-2rem)] min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden sm:h-[calc(100dvh-var(--header-height)-var(--footer-height)-2.5rem)] sm:max-h-[calc(100dvh-var(--header-height)-var(--footer-height)-2.5rem)] lg:h-[calc(100dvh-var(--header-height)-var(--footer-height)-3rem)] lg:max-h-[calc(100dvh-var(--header-height)-var(--footer-height)-3rem)]">
+    <div className="grid h-[calc(100dvh-var(--header-height)-var(--footer-height)-1.5rem)] max-h-[calc(100dvh-var(--header-height)-var(--footer-height)-1.5rem)] min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden sm:h-[calc(100dvh-var(--header-height)-var(--footer-height)-2rem)] sm:max-h-[calc(100dvh-var(--header-height)-var(--footer-height)-2rem)] 2xl:h-[calc(100dvh-var(--header-height)-var(--footer-height)-3rem)] 2xl:max-h-[calc(100dvh-var(--header-height)-var(--footer-height)-3rem)]">
       <PageHeader title={stratmap.title} description={stratmap.description ?? dictionary.stratmaps.detailDescription} />
-      <div className="min-h-0 flex-1 overflow-hidden px-4 pt-2 sm:pt-3 lg:px-6 lg:pt-4">
+      <div className="min-h-0 flex-1 overflow-hidden px-4 pt-2 lg:px-6 2xl:pt-4">
         <div className="h-full overflow-hidden">
           <StratmapEditor
             locale={locale}

@@ -240,15 +240,15 @@ export function AppSidebar({
 
   return (
     <Sidebar {...props}>
-      <SidebarHeader className="gap-4 border-b border-sidebar-border/70 px-3 py-4">
+      <SidebarHeader className="gap-2 border-b border-sidebar-border/70 px-2 py-2 2xl:gap-4 2xl:px-3 2xl:py-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild isActive={pathname === `/${locale}/dashboard`}>
+            <SidebarMenuButton size="lg" asChild isActive={pathname === `/${locale}/dashboard`} className="h-10 gap-2 p-1.5 text-[13px] 2xl:h-12 2xl:p-2 2xl:text-sm">
               <Link href={homeUrl}>
                 <AppLogo />
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-left text-[13px] leading-tight 2xl:text-sm">
                   <span className="truncate font-semibold">{dictionary.app.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">{dictionary.app.tagline}</span>
+                  <span className="truncate text-[10px] text-muted-foreground 2xl:text-xs">{dictionary.app.tagline}</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -272,7 +272,7 @@ export function AppSidebar({
           <NavMain key={group.label} label={group.label} items={group.items} />
         ))}
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border/70">
+      <SidebarFooter className="border-t border-sidebar-border/70 p-1.5 2xl:p-2">
         <NavUser
           user={{
             name: user.name,
