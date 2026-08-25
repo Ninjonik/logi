@@ -46,6 +46,7 @@ export default async function CreateMatchPage({
     createForumChannel: true,
     stratmapIds: [],
     signupGroupIds: groups.map((group) => group.id),
+    allowedSignupStatuses: undefined,
     useGeneralSignup: false,
     status: "registration" as const,
     statusUpdatedAt: draftSchedule.statusUpdatedAt,

@@ -5,6 +5,7 @@ export type EventWorkflowRecord = {
   guildId: string;
   kind?: "match" | "training";
   signupGroupIds?: string[];
+  allowedSignupStatuses?: Array<"recruit" | "member" | "reserve_member" | "mercenary">;
   useGeneralSignup?: boolean;
   registrationEnd: string;
   meetingStart: string;
@@ -22,6 +23,8 @@ export interface EventWorkflowRepository {
   getById(eventId: string): Promise<EventWorkflowRecord | null>;
   getAssignmentForUser(serverId: string, userId: string): Promise<{
     primaryGroupId?: string;
+    type?: "member" | "reserve_member" | "mercenary";
+    status?: "pending" | "recruit" | "active";
   } | null>;
   getGroupNameById(groupId: string): Promise<string | null>;
   saveSignupState(eventId: string, input: {

@@ -20,6 +20,7 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
       guildId: event.guildId,
       kind: event.kind,
       signupGroupIds: event.signupGroupIds,
+      allowedSignupStatuses: event.allowedSignupStatuses,
       useGeneralSignup: event.useGeneralSignup,
       registrationEnd: event.registrationEnd,
       meetingStart: event.meetingStart,
@@ -43,6 +44,8 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
     return assignment
       ? {
           primaryGroupId: assignment.primaryGroupId ? String(assignment.primaryGroupId) : undefined,
+          type: assignment.type,
+          status: assignment.status,
         }
       : null;
   }

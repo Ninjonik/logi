@@ -15,6 +15,7 @@ test("toggleSignup adds an attending participant", () => {
     userId: "user-1",
     group: "INF",
     now: new Date("2026-01-01T09:00:00.000Z"),
+    membershipStatus: "member",
   });
 
   assert.equal(result.participants.length, 1);
@@ -34,6 +35,7 @@ test("toggleSignup removes an unchanged signup on second click", () => {
     userId: "user-1",
     group: "INF",
     now,
+    membershipStatus: "member",
   });
 
   const second = toggleSignup({
@@ -46,6 +48,7 @@ test("toggleSignup removes an unchanged signup on second click", () => {
     userId: "user-1",
     group: "INF",
     now,
+    membershipStatus: "member",
   });
 
   assert.equal(second.participants.length, 0);
@@ -62,6 +65,7 @@ test("toggleSignup rejects closed signups", () => {
     userId: "user-1",
     group: "INF",
     now: new Date("2026-01-01T10:30:00.000Z"),
+    membershipStatus: "member",
   }), /Signups are closed/);
 });
 
@@ -98,6 +102,7 @@ test("toggleSignup switches an attending player to a different group and preserv
     userId: "user-1",
     group: "INF",
     now: new Date("2026-01-01T09:00:00.000Z"),
+    membershipStatus: "member",
   });
 
   assert.deepEqual(result.participants, [{
@@ -120,6 +125,7 @@ test("toggleSignup records not attending signups and removes them on second clic
     userId: "user-1",
     group: SIGNUP_NOT_ATTENDING,
     now: new Date("2026-01-01T09:00:00.000Z"),
+    membershipStatus: "member",
   });
 
   assert.deepEqual(first.participants, [{
@@ -140,7 +146,24 @@ test("toggleSignup records not attending signups and removes them on second clic
     userId: "user-1",
     group: SIGNUP_NOT_ATTENDING,
     now: new Date("2026-01-01T09:05:00.000Z"),
+    membershipStatus: "member",
   });
 
   assert.deepEqual(second.participants, []);
+});
+
+test("toggleSignup rejects match signups for disallowed membership statuses", () => {
+  assert.throws(() => toggleSignup({
+    participants: [],
+    event: {
+      kind: "match",
+      allowedSignupStatuses: ["reserve_member"],
+      registrationEnd: "2026-01-01T10:00:00.000Z",
+      status: "registration",
+    },
+    userId: "user-1",
+    group: "INF",
+    now: new Date("2026-01-01T09:00:00.000Z"),
+    membershipStatus: "member",
+  }), /membership status is not allowed/i);
 });

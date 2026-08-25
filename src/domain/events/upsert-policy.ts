@@ -2,7 +2,7 @@ import { normalizeOptionalArray } from "@/domain/shared/collections";
 
 import { normalizeParticipants } from "./participants";
 import { deriveEventStatus } from "./status";
-import type { EventKind, EventLike, EventStatus } from "./types";
+import type { EventKind, EventLike, EventStatus, SignupMembershipStatus } from "./types";
 
 export type EventUpsertInput = {
   guildId: string;
@@ -30,6 +30,7 @@ export type EventUpsertInput = {
   topicPresetId?: string;
   stratmapIds?: string[];
   signupGroupIds?: string[];
+  allowedSignupStatuses?: SignupMembershipStatus[];
   useGeneralSignup?: boolean;
 };
 
@@ -66,6 +67,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
     topicPresetId: input.topicPresetId,
     stratmapIds: normalizeOptionalArray(input.stratmapIds).map((id) => id.trim()).filter(Boolean),
     signupGroupIds: kind === "training" ? [] : normalizeOptionalArray(input.signupGroupIds).map((id) => id.trim()).filter(Boolean),
+    allowedSignupStatuses: kind === "training" ? undefined : normalizeOptionalArray(input.allowedSignupStatuses).filter((status): status is SignupMembershipStatus => Boolean(status)),
     useGeneralSignup: kind === "match" ? Boolean(input.useGeneralSignup) : false,
   };
 }

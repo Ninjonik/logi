@@ -190,6 +190,8 @@ export const getEventSignupContext = query({
       assignments: assignments.map((assignment) => ({
         userId: assignment.userId,
         primaryGroupId: assignment.primaryGroupId ? String(assignment.primaryGroupId) : undefined,
+        type: assignment.type,
+        status: assignment.status,
       })),
       roster: roster ? normalizeDoc(roster) : null,
     };

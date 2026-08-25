@@ -41,6 +41,7 @@ export default async function CreateTrainingPage({
     createForumChannel: false,
     stratmapIds: [],
     signupGroupIds: [],
+    allowedSignupStatuses: undefined,
     useGeneralSignup: false,
     status: "registration" as const,
     statusUpdatedAt: draftSchedule.statusUpdatedAt,

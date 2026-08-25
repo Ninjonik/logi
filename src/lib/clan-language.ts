@@ -18,6 +18,7 @@ type ClanDiscordMessages = {
     invalidSignupButton: string;
     unableToResolveMembership: string;
     missingRequiredRole: string;
+    membershipStatusNotAllowed: string;
     signupUpdated: string;
     signupUpdatedWithType: string;
     signupRemovedWithType: string;
@@ -305,6 +306,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       invalidSignupButton: "That signup button is no longer valid.",
       unableToResolveMembership: "Unable to resolve your server membership.",
       missingRequiredRole: "You do not have the required Discord role for this signup.",
+      membershipStatusNotAllowed: "Your membership status is not allowed to sign up for this match.",
       signupUpdated: "Signup updated.",
       signupUpdatedWithType: "Signup updated - {type}.",
       signupRemovedWithType: "Removed signup from {type}.",
@@ -686,6 +688,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       invalidSignupButton: "Toto tlačítko přihlášení už není platné.",
       unableToResolveMembership: "Nepodařilo se ověřit vaše členství na serveru.",
       missingRequiredRole: "Pro toto přihlášení nemáte požadovanou Discord roli.",
+      membershipStatusNotAllowed: "Váš status členství se na tento zápas nemůže přihlásit.",
       signupUpdated: "Přihlášení bylo upraveno.",
       signupUpdatedWithType: "Přihlášení bylo upraveno - {type}.",
       signupRemovedWithType: "Odhlášeno z {type}.",
