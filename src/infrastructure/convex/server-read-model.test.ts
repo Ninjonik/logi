@@ -82,6 +82,7 @@ test("normalizeDoc, normalizeGuildDoc, and normalizeUserDoc normalize identifier
   const user = normalizeUserDoc({
     _id: "user-1",
     id: "legacy-user",
+    name: "Legacy User",
     platformId: " steam-1 , steam-2 ",
     platformIds: ["steam-2", " steam-3 "],
     score: 5,

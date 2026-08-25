@@ -280,6 +280,7 @@ function toPlayer(user: {
   _id: unknown;
   discordId?: string;
   id?: string;
+  note?: string;
   nicknames?: Record<string, string>;
   platformIds?: string[];
   name: string;
@@ -311,6 +312,7 @@ function toPlayer(user: {
     discordId: getUserDiscordId(user),
     linkedDiscordId: user.discordId,
     hasDiscordLink: Boolean(user.discordId),
+    note: user.note?.trim() || undefined,
     nicknames: user.nicknames ?? {},
     platformIds: normalizePlatformIds(user.platformIds ?? legacyUser.platformId ?? legacyUser.steamId),
     avatar: user.avatar || "https://cdn.discordapp.com/embed/avatars/0.png",
@@ -344,7 +346,7 @@ export const searchClanPlayers = query({
 
     const seenUserIds = new Set<string>();
     const candidates: Array<ReturnType<typeof toPlayer> & {
-      assignmentType?: "member" | "mercenary";
+      assignmentType?: "member" | "reserve_member" | "mercenary";
       assignmentStatus?: "pending" | "recruit" | "active";
       searchScore: number;
     }> = [];
@@ -558,6 +560,28 @@ export const updatePlatformIds = mutation({
 
     await ctx.db.patch(user._id, {
       platformIds: normalizedPlatformIds,
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});
+
+export const updateNote = mutation({
+  args: {
+    secret: v.string(),
+    userId: v.string(),
+    note: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const user = await getUserByIdentifier(ctx, args.userId);
+    if (!user) {
+      throw new Error("Player not found.");
+    }
+
+    const nextNote = args.note?.trim();
+    await ctx.db.patch(user._id, {
+      note: nextNote && nextNote.length > 0 ? nextNote : undefined,
       updatedAt: new Date().toISOString(),
     });
   },

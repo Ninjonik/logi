@@ -4,7 +4,7 @@ import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { syncDiscordRolesForAssignment } from "@/lib/discord";
 import { getServerContext } from "@/lib/server-context";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
-import { savePlayerPlatformId, saveServerUserAssignment } from "@/lib/server-user-management";
+import { savePlayerNote, savePlayerPlatformId, saveServerUserAssignment } from "@/lib/server-user-management";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
 
 function getAssignmentErrorCode(error: unknown) {
@@ -41,6 +41,10 @@ export async function POST(
     await savePlayerPlatformId({
       userId: body.userId,
       platformIds: body.platformIds,
+    });
+    await savePlayerNote({
+      userId: body.userId,
+      note: body.note,
     });
     await syncRolesSafely({
       serverId,

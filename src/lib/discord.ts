@@ -335,10 +335,10 @@ export async function syncDiscordRolesForAssignment(input: {
   beforeSecondaryGroupIds?: string[];
   afterPrimaryGroupId?: string;
   afterSecondaryGroupIds?: string[];
-  beforeAssignmentType?: "member" | "mercenary";
+  beforeAssignmentType?: "member" | "reserve_member" | "mercenary";
   beforeMembershipStatus?: "pending" | "recruit" | "active";
   beforeMembershipCategoryId?: string;
-  afterAssignmentType?: "member" | "mercenary";
+  afterAssignmentType?: "member" | "reserve_member" | "mercenary";
   afterMembershipStatus?: "pending" | "recruit" | "active";
   afterMembershipCategoryId?: string;
 }) {
@@ -449,7 +449,7 @@ export async function syncDiscordMemberRoleIds(input: {
 
 function getMembershipRoleIds(
   config: Awaited<ReturnType<typeof getDiscordConfigByGuild>>,
-  type: "member" | "mercenary",
+  type: "member" | "reserve_member" | "mercenary",
   status: "pending" | "recruit" | "active",
   membershipCategoryId?: string,
 ) {

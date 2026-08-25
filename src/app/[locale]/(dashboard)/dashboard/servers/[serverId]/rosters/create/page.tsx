@@ -25,7 +25,7 @@ export default async function CreateRosterPage({
       ]),
     ]),
   );
-  const reserveUsers = await getUsersByIds(rosterUserIds);
+  const reserveUsers = await getUsersByIds(rosterUserIds, context.server.discordId);
 
   return (
     <>

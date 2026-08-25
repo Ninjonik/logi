@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, Check, Clock3, GripVertical, MessageCircleOff, UserPlus } from "lucide-react";
+import { Ban, CalendarClock, Check, Clock3, GripVertical, MessageCircleOff, UserPlus } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -313,6 +313,7 @@ function GroupedUserList({
           <div className="flex flex-wrap gap-2">
             {sections[sectionName].map((user) => {
               const assignment = assignmentsByUserId.get(user.discordId);
+              const isReserveMember = assignment?.type === "reserve_member" && assignment.status === "active";
               const noticeReason = noticeReasonByUserId.get(user.discordId);
               const notAttendingIndicator = notAttendingIndicatorByUserId.get(user.discordId);
 
@@ -339,13 +340,34 @@ function GroupedUserList({
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1">
-                        <div className="truncate text-xs font-medium leading-none">{user.name}</div>
+                        {user.note ? (
+                          <HoverCard>
+                            <HoverCardTrigger asChild>
+                              <div className="truncate text-xs font-medium leading-none">{user.name}</div>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="max-w-64 whitespace-pre-wrap text-xs">
+                              {user.note}
+                            </HoverCardContent>
+                          </HoverCard>
+                        ) : (
+                          <div className="truncate text-xs font-medium leading-none">{user.name}</div>
+                        )}
+                        {isReserveMember ? (
+                          <HoverCard>
+                            <HoverCardTrigger asChild>
+                              <CalendarClock className="size-3.5 text-amber-500" />
+                            </HoverCardTrigger>
+                            <HoverCardContent className="text-xs">
+                              {dictionary.userManagement.reserveMemberLabel}
+                            </HoverCardContent>
+                          </HoverCard>
+                        ) : null}
                         {noticeReason ? (
                           <HoverCard>
                             <HoverCardTrigger asChild>
                               <Clock3 className="size-3.5 text-red-500" />
                             </HoverCardTrigger>
-                            <HoverCardContent className="text-xs">
+                            <HoverCardContent className="max-w-64 whitespace-pre-wrap text-xs">
                               {noticeReason}
                             </HoverCardContent>
                           </HoverCard>

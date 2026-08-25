@@ -50,6 +50,7 @@ export default async function RosterDetailPage({
         ...(roster?.squads.flatMap((squad) => squad.players.map((player) => player.id).filter(Boolean) as string[]) ?? []),
       ]),
     ),
+    context.server.discordId,
   );
   const user = await getLoggedInUser();
   if (!user) return null;

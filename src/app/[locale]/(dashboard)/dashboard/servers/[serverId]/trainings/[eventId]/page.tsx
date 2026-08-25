@@ -21,7 +21,7 @@ export default async function TrainingDetailPage({
   const event = events.find((item) => item.id === eventId && item.kind === "training");
   if (!event) return null;
   const attendingParticipants = event.participants.filter((participant) => participant.status === "attending");
-  const users = await getUsersByIds(attendingParticipants.map((participant) => participant.userId));
+  const users = await getUsersByIds(attendingParticipants.map((participant) => participant.userId), context.server.discordId);
   const userByDiscordId = new Map(users.map((user) => [user.discordId, user]));
   const attendees = attendingParticipants.map((participant) => ({
     userId: participant.userId,

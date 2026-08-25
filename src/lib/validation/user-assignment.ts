@@ -3,11 +3,12 @@ import { z } from "zod";
 export const userAssignmentSchema = z
   .object({
     userId: z.string().min(1, "Pick a player first."),
-    type: z.enum(["member", "mercenary"]),
+    type: z.enum(["member", "reserve_member", "mercenary"]),
     status: z.enum(["pending", "recruit", "active"]),
     primaryGroupId: z.string().trim().optional(),
     secondaryGroupIds: z.array(z.string()),
     platformIds: z.string().trim().optional(),
+    note: z.string().trim().optional(),
     paused: z.boolean(),
     pausedNote: z.string().trim().optional(),
   })
@@ -28,11 +29,13 @@ export const userAssignmentSchema = z
       });
     }
 
-    if (value.type === "mercenary" && value.status === "recruit") {
+    if ((value.type === "mercenary" || value.type === "reserve_member") && value.status === "recruit") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["status"],
-        message: "Mercenaries cannot use the recruit status.",
+        message: value.type === "mercenary"
+          ? "Mercenaries cannot use the recruit status."
+          : "Reserve members cannot use the recruit status.",
       });
     }
 

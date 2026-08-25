@@ -28,9 +28,8 @@ export const listSyncPayloads = query({
       ctx.db.query("users").collect(),
     ]);
 
-    const normalizedUsers = users.map(normalizeUserDoc);
-
     return configs.map((config) => {
+      const normalizedUsers = users.map((user) => normalizeUserDoc(user, { guildId: config.guildId }));
       const guild = guilds.find((item) => getGuildDiscordId(item) === config.guildId);
       const guildGroups = groups.filter((group) => group.guildId === config.guildId).map(normalizeDoc);
       const guildEvents = events.filter((event) => event.guildId === config.guildId).map(normalizeEventDoc);

@@ -13,7 +13,7 @@ import { getGuildById, getGuildDiscordId } from "./identity";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
-type AssignmentType = "member" | "mercenary";
+type AssignmentType = "member" | "reserve_member" | "mercenary";
 type AssignmentStatus = "pending" | "recruit" | "active";
 
 function assertInternalSecret(secret: string) {
@@ -103,7 +103,7 @@ export const upsert = mutation({
     serverId: v.id("guilds"),
     assignmentId: v.optional(v.id("userAssignments")),
     userId: v.string(),
-    type: v.union(v.literal("member"), v.literal("mercenary")),
+    type: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
     status: v.union(v.literal("pending"), v.literal("recruit"), v.literal("active")),
     membershipCategoryId: v.optional(v.string()),
     primaryGroupId: v.optional(v.id("groups")),
@@ -145,7 +145,7 @@ export const upsertByServerDiscordId = mutation({
     serverDiscordId: v.string(),
     assignmentId: v.optional(v.id("userAssignments")),
     userId: v.string(),
-    type: v.union(v.literal("member"), v.literal("mercenary")),
+    type: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
     status: v.union(v.literal("pending"), v.literal("recruit"), v.literal("active")),
     membershipCategoryId: v.optional(v.string()),
     primaryGroupId: v.optional(v.id("groups")),
@@ -196,7 +196,7 @@ export const importDiscordMembers = mutation({
   args: {
     secret: v.string(),
     serverId: v.id("guilds"),
-    assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
+    assignmentType: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
     members: v.array(v.object({
       userId: v.string(),
       name: v.string(),
@@ -259,7 +259,7 @@ export const reassignImportedMember = mutation({
     const affectedServerIds = new Set<string>();
 
     for (const assignment of existingAssignments) {
-      if (assignment.type !== "member" || assignment.serverId === targetServerDiscordId) {
+      if ((assignment.type !== "member" && assignment.type !== "reserve_member") || assignment.serverId === targetServerDiscordId) {
         continue;
       }
 

@@ -112,7 +112,7 @@ export async function POST(
     ...body.previousRoster.squads.flatMap((squad) => squad.players.map((player) => player.id).filter(Boolean) as string[]),
     ...body.nextRoster.squads.flatMap((squad) => squad.players.map((player) => player.id).filter(Boolean) as string[]),
   ])];
-  const users = await getUsersByIds(changedUserIds);
+  const users = await getUsersByIds(changedUserIds, guild.discordId);
   const summary = summarizeRosterUpdates(body.previousRoster, body.nextRoster, users);
 
   if (!summary.hasChanges) {

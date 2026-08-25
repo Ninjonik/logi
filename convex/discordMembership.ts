@@ -103,7 +103,7 @@ export const createMembershipApplicationThread = mutation({
     parentChannelId: v.string(),
     creatorId: v.string(),
     categoryId: v.string(),
-    assignmentType: v.union(v.literal("member"), v.literal("mercenary")),
+    assignmentType: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
     assignmentId: v.optional(v.id("userAssignments")),
     transcriptMessageId: v.optional(v.string()),
     answers: v.array(v.object({ questionId: v.string(), label: v.string(), value: v.string() })),
@@ -205,7 +205,7 @@ export const closeMembershipApplicationThread = mutation({
     threadId: v.string(),
     closedByUserId: v.string(),
     closeReason: v.optional(v.string()),
-    closeOutcome: v.union(v.literal("denied"), v.literal("pending"), v.literal("recruit"), v.literal("member"), v.literal("mercenary")),
+    closeOutcome: v.union(v.literal("denied"), v.literal("pending"), v.literal("recruit"), v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);

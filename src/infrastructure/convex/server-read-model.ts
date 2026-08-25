@@ -15,20 +15,27 @@ export function normalizeUserDoc<
     _id: unknown;
     discordId?: string;
     id?: string;
+    name: string;
+    note?: string;
     nicknames?: Record<string, string>;
     platformIds?: string[];
+    platformId?: string;
+    steamId?: string;
     score?: number;
     scores?: Record<string, number>;
   },
->(user: T) {
+>(user: T, options?: { guildId?: string }) {
   const legacyUser = user as T & { steamId?: string; platformId?: string };
+  const guildDisplayName = options?.guildId ? user.nicknames?.[options.guildId]?.trim() : undefined;
 
   return {
     ...user,
     id: getUserStableId(user),
     discordId: getUserDiscordId(user),
+    name: guildDisplayName || user.name,
     linkedDiscordId: user.discordId,
     hasDiscordLink: Boolean(user.discordId),
+    note: user.note?.trim() || undefined,
     nicknames: user.nicknames ?? {},
     platformIds: [...new Set(
       (user.platformIds ?? [legacyUser.platformId ?? legacyUser.steamId].filter(Boolean))

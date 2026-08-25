@@ -44,7 +44,7 @@ export interface AssignmentCommandRepository {
       primaryGroup?: string;
       secondaryGroups: string[];
       joinedAt: string;
-      status: "pending" | "recruit" | "member" | "mercenary";
+      status: "pending" | "recruit" | "member" | "reserve_member" | "mercenary";
     }>;
     mercenaryIds: string[];
     updatedAt: string;

@@ -4,7 +4,7 @@ import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { syncDiscordRolesForAssignment } from "@/lib/discord";
 import { getMembershipApplicationByAssignment } from "@/lib/server-discord-settings";
 import { getServerContext } from "@/lib/server-context";
-import { deleteServerUserAssignment, savePlayerPlatformId, saveServerUserAssignment } from "@/lib/server-user-management";
+import { deleteServerUserAssignment, savePlayerNote, savePlayerPlatformId, saveServerUserAssignment } from "@/lib/server-user-management";
 import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
 import { getServerUserAssignment } from "@/lib/server-user-management";
 import { userAssignmentSchema } from "@/lib/validation/user-assignment";
@@ -49,6 +49,10 @@ export async function PATCH(
     await savePlayerPlatformId({
       userId: body.userId,
       platformIds: body.platformIds,
+    });
+    await savePlayerNote({
+      userId: body.userId,
+      note: body.note,
     });
     await syncRolesSafely({
       serverId,

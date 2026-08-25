@@ -13,7 +13,7 @@ export class ImportDiscordMembersUseCase {
 
   async execute(input: {
     serverDiscordId: string;
-    assignmentType: "member" | "mercenary";
+    assignmentType: "member" | "reserve_member" | "mercenary";
     members: Array<{
       userId: string;
       name: string;

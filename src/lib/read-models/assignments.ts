@@ -10,7 +10,7 @@ export type ServerUserAssignmentReadModel = {
   id: string;
   userId: string;
   serverId: string;
-  type: "member" | "mercenary";
+  type: "member" | "reserve_member" | "mercenary";
   status: "pending" | "recruit" | "active";
   membershipCategoryId?: string;
   primaryGroupId?: string;
