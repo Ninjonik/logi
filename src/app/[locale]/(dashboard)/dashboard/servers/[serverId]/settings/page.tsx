@@ -7,6 +7,7 @@ import { HelperDataActions } from "@/components/app/helper-data-actions";
 import { ImportDiscordMembersButton } from "@/components/app/import-discord-members-button";
 import { ImportEventsButton } from "@/components/app/import-events-button";
 import { LinkMissingDiscordIdsButton } from "@/components/app/link-missing-discord-ids-button";
+import { MigrateMembershipStatusButton } from "@/components/app/migrate-membership-status-button";
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form";
 import { AutoLinkPlatformIdsButton } from "@/components/app/auto-link-platform-ids-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +72,11 @@ export default async function ServerSettingsPage({
                 />
                 <AutoLinkPlatformIdsButton serverId={serverId} dictionary={dictionary} />
                 <LinkMissingDiscordIdsButton
+                  serverId={serverId}
+                  dictionary={dictionary}
+                  defaultRoleId={context.discordConfig?.clanRoleId}
+                />
+                <MigrateMembershipStatusButton
                   serverId={serverId}
                   dictionary={dictionary}
                   defaultRoleId={context.discordConfig?.clanRoleId}
