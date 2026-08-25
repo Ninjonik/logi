@@ -32,6 +32,7 @@ export function StratmapBoard({
   onStartMove,
   onHoverElement,
   onClearHover,
+  onOpenIconAttachments,
   overlayControls,
 }: {
   svgRef: React.RefObject<SVGSVGElement | null>;
@@ -56,6 +57,7 @@ export function StratmapBoard({
   onStartMove: (elementId: string, event: ReactPointerEvent<SVGGElement>) => void;
   onHoverElement: (elementId: string) => void;
   onClearHover: (elementId: string) => void;
+  onOpenIconAttachments: (element: Extract<StratmapElement, { kind: "icon" }>) => void;
   overlayControls?: React.ReactNode;
 }) {
   return (
@@ -75,7 +77,7 @@ export function StratmapBoard({
             onPointerLeave={onPointerLeave}
             onContextMenu={onContextMenu}
           >
-            <BoardLayers mode={mode} selectedMap={selectedMap} activeSlide={activeSlide} overlayStrongpointIds={overlayStrongpointIds} selectedElementIds={selectedElementIds} hoveredElementId={hoveredElementId} dragState={dragState} strokeColor={strokeColor} fillColor={fillColor} strokeWidth={strokeWidth} onStartMove={onStartMove} onHoverElement={onHoverElement} onClearHover={onClearHover} />
+            <BoardLayers mode={mode} selectedMap={selectedMap} activeSlide={activeSlide} overlayStrongpointIds={overlayStrongpointIds} selectedElementIds={selectedElementIds} hoveredElementId={hoveredElementId} dragState={dragState} strokeColor={strokeColor} fillColor={fillColor} strokeWidth={strokeWidth} onStartMove={onStartMove} onHoverElement={onHoverElement} onClearHover={onClearHover} onOpenIconAttachments={onOpenIconAttachments} />
           </svg>
         </div>
       </div>
@@ -83,8 +85,8 @@ export function StratmapBoard({
   );
 }
 
-function BoardLayers(props: { mode: "view" | "edit"; selectedMap: HllStratmapMap | undefined; activeSlide: StratmapSlide | undefined; overlayStrongpointIds: Set<string>; selectedElementIds: string[]; hoveredElementId: string | null; dragState: DragState | null; strokeColor: string; fillColor: string; strokeWidth: number; onStartMove: (elementId: string, event: ReactPointerEvent<SVGGElement>) => void; onHoverElement: (elementId: string) => void; onClearHover: (elementId: string) => void; }) {
-  const { mode, selectedMap, activeSlide, overlayStrongpointIds, selectedElementIds, hoveredElementId, dragState, strokeColor, fillColor, strokeWidth, onStartMove, onHoverElement, onClearHover } = props;
+function BoardLayers(props: { mode: "view" | "edit"; selectedMap: HllStratmapMap | undefined; activeSlide: StratmapSlide | undefined; overlayStrongpointIds: Set<string>; selectedElementIds: string[]; hoveredElementId: string | null; dragState: DragState | null; strokeColor: string; fillColor: string; strokeWidth: number; onStartMove: (elementId: string, event: ReactPointerEvent<SVGGElement>) => void; onHoverElement: (elementId: string) => void; onClearHover: (elementId: string) => void; onOpenIconAttachments: (element: Extract<StratmapElement, { kind: "icon" }>) => void; }) {
+  const { mode, selectedMap, activeSlide, overlayStrongpointIds, selectedElementIds, hoveredElementId, dragState, strokeColor, fillColor, strokeWidth, onStartMove, onHoverElement, onClearHover, onOpenIconAttachments } = props;
   const canvas = getCanvasSize(activeSlide?.background);
   const usesCustomImage = activeSlide?.background?.kind === "image" && activeSlide.background.imageUrl;
 
@@ -106,7 +108,7 @@ function BoardLayers(props: { mode: "view" | "edit"; selectedMap: HllStratmapMap
       {!usesCustomImage && activeSlide?.overlays.showOffensiveGarrisons ? getOverlayItems(selectedMap?.defaultElements.offensiveGarrisons, activeSlide.overlays.overlayTeam).map((item, index) => <image key={`og-${index}`} href="/stratmap/assets/garry-plain-invalid.png" x={item.x - 22} y={item.y - 22} width={44} height={44} />) : null}
       {!usesCustomImage && activeSlide?.overlays.showArtillery ? getOverlayItems(selectedMap?.defaultElements.artillery, activeSlide.overlays.overlayTeam).map((item, index) => <image key={`arty-${index}`} href="/stratmap/assets/arty.png" x={item.x - 18} y={item.y - 18} width={36} height={36} transform={`rotate(${item.angle}, ${item.x}, ${item.y})`} />) : null}
       {!usesCustomImage && activeSlide?.overlays.showRepairStations ? getOverlayItems(selectedMap?.defaultElements.repairStations, activeSlide.overlays.overlayTeam).map((item, index) => <image key={`repair-${index}`} href="/stratmap/assets/repair-station.png" x={item.x - 18} y={item.y - 18} width={36} height={36} />) : null}
-      {activeSlide?.elements.map((element) => <RenderedElement key={element.id} mode={mode} element={element as StratmapElement} selected={selectedElementIds.includes(element.id)} hovered={hoveredElementId === element.id} dragging={dragState?.mode === "move" && dragState.elementIds.includes(element.id)} showSpawnRanges={activeSlide.overlays.showSpawnRanges} onPointerDown={onStartMove} onPointerEnter={onHoverElement} onPointerLeave={() => onClearHover(element.id)} />)}
+      {activeSlide?.elements.map((element) => <RenderedElement key={element.id} mode={mode} element={element as StratmapElement} selected={selectedElementIds.includes(element.id)} hovered={hoveredElementId === element.id} dragging={dragState?.mode === "move" && dragState.elementIds.includes(element.id)} showSpawnRanges={activeSlide.overlays.showSpawnRanges} onPointerDown={onStartMove} onPointerEnter={onHoverElement} onPointerLeave={() => onClearHover(element.id)} onOpenIconAttachments={onOpenIconAttachments} />)}
       {dragState?.mode === "freehand" ? <path d={buildLinePath(dragState.points)} fill="none" stroke={strokeColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" /> : null}
       {dragState?.mode === "line" ? <line x1={dragState.start.x} y1={dragState.start.y} x2={dragState.current.x} y2={dragState.current.y} stroke={strokeColor} strokeWidth={strokeWidth} /> : null}
       {dragState?.mode === "polygon" ? <PolygonPreview points={dragState.points} current={dragState.current} strokeColor={strokeColor} strokeWidth={strokeWidth} fillColor={fillColor} /> : null}

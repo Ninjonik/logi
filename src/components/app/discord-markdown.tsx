@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { MDEditorProps } from "@uiw/react-md-editor";
+import { commands as markdownCommands, type MDEditorProps } from "@uiw/react-md-editor";
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -12,6 +12,18 @@ import { formatDiscordMarkdown } from "@/lib/discord-markdown";
 import { cn } from "@/lib/utils";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+
+const compactMarkdownCommands: NonNullable<MDEditorProps["commands"]> = [
+  markdownCommands.bold,
+  markdownCommands.italic,
+  markdownCommands.unorderedListCommand,
+  markdownCommands.orderedListCommand,
+  markdownCommands.link,
+];
+
+const compactMarkdownExtraCommands: NonNullable<MDEditorProps["extraCommands"]> = [
+  markdownCommands.fullscreen,
+];
 
 const discordMarkdownClassName = cn(
   "discord-markdown text-sm leading-6 break-words",
@@ -59,6 +71,7 @@ type EditorProps = {
   className?: string;
   height?: number;
   hideToolbar?: boolean;
+  compactToolbar?: boolean;
   preview?: "live" | "edit" | "preview";
 };
 
@@ -72,6 +85,7 @@ export function DiscordMarkdownTextarea({
   className,
   height,
   hideToolbar = false,
+  compactToolbar = false,
   preview = "live",
 }: EditorProps) {
   const { theme } = useTheme();
@@ -94,6 +108,8 @@ export function DiscordMarkdownTextarea({
         onChange={(next) => onChange?.(typeof next === "string" ? next : "")}
         preview={preview}
         hideToolbar={hideToolbar}
+        commands={compactToolbar ? compactMarkdownCommands : undefined}
+        extraCommands={compactToolbar ? compactMarkdownExtraCommands : undefined}
         visibleDragbar={false}
         height={editorHeight}
         enableScroll

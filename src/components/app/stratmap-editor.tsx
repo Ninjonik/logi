@@ -5,6 +5,7 @@ import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "
 
 import { StratmapBoard } from "@/components/app/stratmap-editor/board";
 import { EditorIconButton } from "@/components/app/stratmap-editor/editor-controls";
+import { IconAttachmentViewer, type IconAttachmentViewerRequest } from "@/components/app/stratmap-editor/icon-attachment-viewer";
 import { StratmapLeftSidebar } from "@/components/app/stratmap-editor/left-sidebar";
 import { StratmapRightSidebar } from "@/components/app/stratmap-editor/right-sidebar";
 import { useStratmapEditor } from "@/components/app/stratmap-editor/use-stratmap-editor";
@@ -18,6 +19,7 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
   const [mode, setMode] = useState<StratmapEditorMode>(props.initialCanAdmin ? "edit" : "view");
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [attachmentViewerRequest, setAttachmentViewerRequest] = useState<IconAttachmentViewerRequest | null>(null);
   const editor = useStratmapEditor(props, mode);
   const slideBackgroundInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -84,6 +86,12 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
         onStartMove={editor.startMove}
         onHoverElement={editor.setHoveredElementId}
         onClearHover={(elementId) => editor.setHoveredElementId((current) => current === elementId ? null : current)}
+        onOpenIconAttachments={(element) => setAttachmentViewerRequest((current) => ({
+          requestId: (current?.requestId ?? 0) + 1,
+          attachments: element.attachments?.filter((attachment) => attachment.url) ?? [],
+          mainAttachmentUrl: element.mainAttachmentUrl,
+          fallbackNote: element.note,
+        }))}
         overlayControls={
           <>
             <EditorIconButton
@@ -140,6 +148,7 @@ export function StratmapEditor({ locale: _locale, ...props }: StratmapEditorProp
           onUpload={(event) => void editor.handleSelectedIconAttachmentUpload(event)}
         />
       ) : null}
+      <IconAttachmentViewer request={attachmentViewerRequest} />
       <Dialog open={editor.isCreateSlideModalOpen} onOpenChange={(open) => { if (!open) editor.closeCreateSlideModal(); }}>
         <DialogContent>
           <DialogHeader>

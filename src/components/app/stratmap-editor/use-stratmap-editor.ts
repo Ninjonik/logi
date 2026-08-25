@@ -511,7 +511,7 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
     if (tool === "icon") {
       const catalogItem = getHllStratmapCatalog().find((item) => item.id === iconId);
       if (!catalogItem) return;
-      applyStateChange((current) => updateSlide(current, selectedSlideId, (slide) => ({ ...slide, elements: [...slide.elements, { id: crypto.randomUUID(), kind: "icon", x: point.x, y: point.y, size: 30, iconId: catalogItem.id, color: strokeColor, note: "", attachments: [] }] })));
+      applyStateChange((current) => updateSlide(current, selectedSlideId, (slide) => ({ ...slide, elements: [...slide.elements, { id: crypto.randomUUID(), kind: "icon", x: point.x, y: point.y, size: 50, iconId: catalogItem.id, color: strokeColor, note: "", attachments: [] }] })));
       return;
     }
     if (tool === "text") {
@@ -736,7 +736,11 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
         });
         uploaded.push({ url: result.url, filename: file.name, contentType: file.type || undefined, description: "" });
       }
-      setElementUpdater(selectedElementId, (element) => element.kind === "icon" ? { ...element, attachments: [...(element.attachments ?? []), ...uploaded] } : element);
+      setElementUpdater(selectedElementId, (element) => element.kind === "icon" ? {
+        ...element,
+        attachments: [...(element.attachments ?? []), ...uploaded],
+        mainAttachmentUrl: element.mainAttachmentUrl ?? element.attachments?.[0]?.url ?? uploaded[0]?.url,
+      } : element);
       toast.success(dictionary.stratmaps.imagesAttached);
     } catch (error) {
       console.error(error);

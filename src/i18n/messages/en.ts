@@ -982,6 +982,7 @@ export const enMessages = {
     images: "Images",
     imageDescription: "Image description",
     imageDescriptionPlaceholder: "Add context for this image.",
+    mainImage: "Main image",
     attachImages: "Attach images",
     uploading: "Uploading...",
     noImages: "No images attached yet.",

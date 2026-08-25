@@ -16,6 +16,7 @@ export function RenderedElement({
   onPointerDown,
   onPointerEnter,
   onPointerLeave,
+  onOpenIconAttachments,
 }: {
   element: StratmapElement;
   mode: "view" | "edit";
@@ -26,6 +27,7 @@ export function RenderedElement({
   onPointerDown: (elementId: string, event: ReactPointerEvent<SVGGElement>) => void;
   onPointerEnter: (elementId: string) => void;
   onPointerLeave: () => void;
+  onOpenIconAttachments: (element: Extract<StratmapElement, { kind: "icon" }>) => void;
 }) {
   const dashArray = element.strokeStyle === "dashed" ? "24 16" : element.strokeStyle === "dotted" ? "6 12" : undefined;
   const icon = element.kind === "icon" ? getHllStratmapCatalog().find((item) => item.id === element.iconId) : null;
@@ -34,7 +36,14 @@ export function RenderedElement({
 
   return (
     <g
-      onPointerDown={(event) => onPointerDown(element.id, event)}
+      onPointerDown={(event) => {
+        if (mode === "view" && element.kind === "icon" && element.attachments?.length) {
+          onPointerDown(element.id, event);
+          onOpenIconAttachments(element);
+          return;
+        }
+        onPointerDown(element.id, event);
+      }}
       onPointerEnter={() => onPointerEnter(element.id)}
       onPointerLeave={onPointerLeave}
       style={{ cursor: mode === "view" ? "pointer" : "move", userSelect: "none", WebkitUserSelect: "none" }}

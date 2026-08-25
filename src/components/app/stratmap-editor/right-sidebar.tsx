@@ -56,7 +56,8 @@ export function StratmapRightSidebar(props: RightSidebarProps) {
   const [imagesOpen, setImagesOpen] = useState(true);
   const [propertiesOpen, setPropertiesOpen] = useState(true);
   const [selectionOpen, setSelectionOpen] = useState(true);
-  const attachments = selectedElement?.kind === "icon" ? selectedElement.attachments?.filter((attachment) => attachment.url) ?? [] : [];
+  const selectedIcon = selectedElement?.kind === "icon" ? selectedElement : null;
+  const attachments = selectedIcon?.attachments?.filter((attachment) => attachment.url) ?? [];
 
   return (
     <aside className="min-w-0 space-y-1 overflow-x-hidden overflow-y-auto pl-0.5 [scrollbar-width:thin]">
@@ -75,24 +76,36 @@ export function StratmapRightSidebar(props: RightSidebarProps) {
         </EditorPanel>
       ) : null}
 
-      {selectedElement ? (
+      {selectedElement && !(mode === "view" && selectedElement.kind === "icon") ? (
         <EditorPanel title={selectedElement.kind === "icon" ? dictionary.stratmaps.selectedIcon : dictionary.stratmaps.selectedElement} icon={SquareMousePointer} action={<CollapseButton open={selectionOpen} onClick={() => setSelectionOpen((value) => !value)} />}>
-          {selectionOpen ? <SelectionInspector dictionary={dictionary} canAdmin={canAdmin} canEdit={canEdit} mode={mode} selectedElement={selectedElement} isUploadingIconAttachments={isUploadingIconAttachments} onElementChange={onSelectedElementChange} onUpload={onUpload} /> : null}
+          {selectionOpen ? <SelectionInspector dictionary={dictionary} canAdmin={canAdmin} canEdit={canEdit} mode={mode} selectedElement={selectedElement} onElementChange={onSelectedElementChange} /> : null}
         </EditorPanel>
       ) : null}
 
-      {attachments.length ? (
+      {selectedIcon ? (
         <EditorPanel title={dictionary.stratmaps.images} icon={ImageIcon} action={<CollapseButton open={imagesOpen} onClick={() => setImagesOpen((value) => !value)} />}>
           {imagesOpen ? (
             <AttachmentGallery
               dictionary={dictionary}
               attachments={attachments}
+              mainAttachmentUrl={selectedIcon.mainAttachmentUrl}
+              fallbackNote={selectedIcon.note}
               canAdmin={canAdmin}
               mode={mode}
               isUploading={isUploadingIconAttachments}
               onUpload={onUpload}
+              onMainAttachmentChange={(url) => onSelectedElementChange((element) => element.kind === "icon" ? { ...element, mainAttachmentUrl: url } : element)}
               onDescriptionChange={mode === "edit" ? (index, value) => onSelectedElementChange((element) => element.kind === "icon" ? { ...element, attachments: (element.attachments ?? []).map((entry, entryIndex) => entryIndex === index ? { ...entry, description: value } : entry) } : element) : () => undefined}
-              onRemove={mode === "edit" ? (index) => onSelectedElementChange((element) => element.kind === "icon" ? { ...element, attachments: (element.attachments ?? []).filter((_, attachmentIndex) => attachmentIndex !== index) } : element) : () => undefined}
+              onRemove={mode === "edit" ? (index) => onSelectedElementChange((element) => {
+                if (element.kind !== "icon") return element;
+                const removedUrl = element.attachments?.[index]?.url;
+                const attachmentsAfterRemoval = (element.attachments ?? []).filter((_, attachmentIndex) => attachmentIndex !== index);
+                return {
+                  ...element,
+                  attachments: attachmentsAfterRemoval,
+                  mainAttachmentUrl: element.mainAttachmentUrl === removedUrl ? attachmentsAfterRemoval[0]?.url : element.mainAttachmentUrl,
+                };
+              }) : () => undefined}
             />
           ) : null}
         </EditorPanel>
