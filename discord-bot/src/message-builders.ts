@@ -105,13 +105,24 @@ function buildInlineSignupFields(name: string, members: string[], emptyLabel: st
     columns[index % columnCount]!.push(members[index]!);
   }
 
-  const fields: APIEmbedField[] = columns.map((columnMembers, index) => ({
+  return columns.map((columnMembers, index) => ({
     name: index === 0 ? name : "\u200B",
     value: columnMembers.join("\n"),
     inline: true,
   }));
+}
 
-  return fields;
+function buildInlineFieldPadding(fieldCount: number): APIEmbedField[] {
+  const remainder = fieldCount % 3;
+  if (remainder === 0) {
+    return [];
+  }
+
+  return Array.from({ length: 3 - remainder }, () => ({
+    name: "\u200B",
+    value: "\u200B",
+    inline: true,
+  }));
 }
 
 export function buildEventEmbed(
@@ -224,8 +235,11 @@ export function buildEventEmbed(
       ),
     );
 
-    signupSections.forEach((sectionFields) => {
+    signupSections.forEach((sectionFields, index) => {
       embed.addFields(...sectionFields);
+      if (index < signupSections.length - 1) {
+        embed.addFields(...buildInlineFieldPadding(sectionFields.length));
+      }
     });
 
     return embed;
