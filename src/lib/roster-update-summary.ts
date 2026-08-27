@@ -16,6 +16,7 @@ export type RosterUpdateSummary = {
   removedLines: string[];
   movedLines: string[];
   roleChangedLines: string[];
+  roleChanges: Record<string, { previous: string; next: string }>;
 };
 
 function getUserLabel(userId: string, usersById: Map<string, AppUser>) {
@@ -53,6 +54,7 @@ export function summarizeRosterUpdates(before: Roster, after: Roster, users: App
   const removedLines: string[] = [];
   const movedLines: string[] = [];
   const roleChangedLines: string[] = [];
+  const roleChanges: Record<string, { previous: string; next: string }> = {};
 
   for (const [userId, nextAssignment] of afterAssignments) {
     const previousAssignment = beforeAssignments.get(userId);
@@ -71,6 +73,7 @@ export function summarizeRosterUpdates(before: Roster, after: Roster, users: App
 
     if ((previousAssignment.roleName ?? "") !== (nextAssignment.roleName ?? "")) {
       roleChangedUserIds.push(userId);
+      roleChanges[userId] = { previous: previousAssignment.roleName ?? "Unassigned", next: nextAssignment.roleName ?? "Unassigned" };
       roleChangedLines.push(
         `🎯 ${userLabel}: ${(previousAssignment.roleName ?? "Open role")} -> ${(nextAssignment.roleName ?? "Open role")}`,
       );
@@ -95,5 +98,6 @@ export function summarizeRosterUpdates(before: Roster, after: Roster, users: App
     removedLines,
     movedLines,
     roleChangedLines,
+    roleChanges,
   };
 }

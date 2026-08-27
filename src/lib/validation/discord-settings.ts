@@ -202,6 +202,7 @@ export const discordSettingsSchema = z.object({
   timezone: z.enum(supportedTimezones),
   defaultLanguage: z.enum(supportedClanLanguages),
   announcementsChannelId: discordIdField,
+  eventInfoChannelId: discordIdField,
   errorsChannelId: discordIdField,
   calendarChannelId: discordIdField,
   calendarCategories: z.array(z.string().trim().min(1).max(80)).max(20).default([]),

@@ -37,10 +37,11 @@ export function buildAnnouncementMessage(
   payload: SyncPayload,
   event: EventRecord,
   userDisplayNames: Record<string, string> = payload.userDisplayNames,
+  options?: { showPublishedRosterImage?: boolean },
 ) {
   const roster = payload.rosters.find((item) => item.eventId === event.id);
   return {
-    embed: buildEventEmbed(payload.config, payload.groups, payload.guild.eventCategories, event, roster, userDisplayNames),
+    embed: buildEventEmbed(payload.config, payload.groups, payload.guild.eventCategories, event, roster, userDisplayNames, options),
     components: buildEventComponents(payload.config, payload.groups, event, roster),
   };
 }
@@ -133,6 +134,7 @@ export function buildEventEmbed(
   event: EventRecord,
   roster?: Roster,
   userDisplayNames: Record<string, string> = {},
+  options?: { showPublishedRosterImage?: boolean },
 ) {
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const signupsByGroup = new Map<string, string[]>();
@@ -190,7 +192,7 @@ export function buildEventEmbed(
     embed.setThumbnail(event.thumbnailUrl);
   }
 
-  if (event.kind === "match" && shouldShowPublishedRosterImage(event, roster)) {
+  if (event.kind === "match" && roster?.published && (options?.showPublishedRosterImage || shouldShowPublishedRosterImage(event, roster))) {
     embed.setImage(buildRosterImageUrl(event.id, roster?.updatedAt));
     return embed;
   }

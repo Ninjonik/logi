@@ -302,6 +302,23 @@ export const upsertNotice = mutation({
   },
 });
 
+export const setDiscordEventRoles = mutation({
+  args: {
+    secret: v.string(),
+    eventId: v.id("events"),
+    attendeeRoleId: v.optional(v.string()),
+    reserveRoleId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (args.secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized.");
+    await ctx.db.patch(args.eventId, {
+      attendeeRoleId: args.attendeeRoleId,
+      reserveRoleId: args.reserveRoleId,
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});
+
 export const setResult = mutation({
   args: {
     secret: v.string(),

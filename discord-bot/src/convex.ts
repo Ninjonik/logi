@@ -66,6 +66,7 @@ export const references = {
   listGuildCacheSnapshot: makeFunctionReference<"query">("discordSync:listGuildCacheSnapshot"),
   listSyncPayloads: makeFunctionReference<"query">("discordSync:listSyncPayloads"),
   reconcileStatuses: makeFunctionReference<"mutation">("events:reconcileStatuses"),
+  setDiscordEventRoles: makeFunctionReference<"mutation">("events:setDiscordEventRoles"),
   syncMemberAccess: makeFunctionReference<"mutation">("discordSync:syncMemberAccess"),
   toggleSignUp: makeFunctionReference<"mutation">("events:toggleSignUp"),
   upsertNotice: makeFunctionReference<"mutation">("events:upsertNotice"),

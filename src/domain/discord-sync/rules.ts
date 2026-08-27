@@ -15,6 +15,7 @@ export function shouldSyncEvent(input: {
   state?: SyncStateLike;
   desiredScheduledEventStatus?: SyncScheduledStatus;
   meetingChannelConfigured: boolean;
+  eventInfoChannelConfigured?: boolean;
   queued: boolean;
 }) {
   const {
@@ -24,6 +25,7 @@ export function shouldSyncEvent(input: {
     state,
     desiredScheduledEventStatus,
     meetingChannelConfigured,
+    eventInfoChannelConfigured,
     queued,
   } = input;
 
@@ -32,6 +34,7 @@ export function shouldSyncEvent(input: {
     state.lastEventUpdatedAt !== event.updatedAt ||
     state.lastRosterUpdatedAt !== rosterUpdatedAt ||
     state.lastConfigUpdatedAt !== configUpdatedAt ||
+    (eventInfoChannelConfigured && (!state.eventInfoMessageId || state.eventInfoMessageRenderVersion !== "2")) ||
     state.scheduledEventStatus !== desiredScheduledEventStatus ||
     (
       meetingChannelConfigured

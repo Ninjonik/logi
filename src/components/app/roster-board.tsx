@@ -103,6 +103,8 @@ export function RosterBoard({
   const [isDirty, setIsDirty] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [publishedUpdateDialogOpen, setPublishedUpdateDialogOpen] = useState(false);
+  const [notifyRosterChanges, setNotifyRosterChanges] = useState(true);
+  const [postRosterChanges, setPostRosterChanges] = useState(false);
   const [autoFillDialogOpen, setAutoFillDialogOpen] = useState(false);
   const [autoFillScoreWeight, setAutoFillScoreWeight] = useState(50);
   const [autoFillKdWeight, setAutoFillKdWeight] = useState(50);
@@ -791,7 +793,7 @@ export function RosterBoard({
     toast.success(dictionary.roster.autoFilled);
   }
 
-  const executeSave = async (published: boolean = false, options?: { postAnnouncement?: boolean }) => {
+  const executeSave = async (published: boolean = false, options?: { postAnnouncement?: boolean; notifyPlayers?: boolean }) => {
     if (!board || !event) return;
     const previousRoster = roster;
 
@@ -876,6 +878,7 @@ export function RosterBoard({
                 published: true,
               },
               postAnnouncement: options?.postAnnouncement ?? false,
+              notifyPlayers: options?.notifyPlayers ?? true,
             }),
           }).catch(() => null);
         }
@@ -1254,38 +1257,34 @@ export function RosterBoard({
             <DialogTitle>{dictionary.roster.updatePublishedPromptTitle}</DialogTitle>
             <DialogDescription>{dictionary.roster.updatePublishedPromptDescription}</DialogDescription>
           </DialogHeader>
-          <div className="rounded-2xl border border-border/70 bg-muted/30 p-4 text-sm text-muted-foreground">
-            {dictionary.roster.updatePublishedPromptHint}
-          </div>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={notifyRosterChanges} onChange={(event) => setNotifyRosterChanges(event.target.checked)} /> {dictionary.roster.notifyRosterChanges}</label>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={postRosterChanges} onChange={(event) => setPostRosterChanges(event.target.checked)} /> {dictionary.roster.postRosterChanges}</label>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline" className="rounded-xl">
-                {dictionary.roster.updatePublishedPromptCancel}
+            <div className={"justify-center items-center flex flex-row w-full gap-2"}>
+              <Button
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => {
+                  setPublishedUpdateDialogOpen(false);
+                  void executeSave(true, { postAnnouncement: postRosterChanges, notifyPlayers: notifyRosterChanges });
+                }}
+                disabled={isPending || isConfirmingMeetingChannel}
+              >
+                <Save className="size-4" />
+                {dictionary.roster.updatePublishedPromptSkip}
               </Button>
-            </DialogClose>
-            <Button
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => {
-                setPublishedUpdateDialogOpen(false);
-                void executeSave(true, { postAnnouncement: false });
-              }}
-              disabled={isPending || isConfirmingMeetingChannel}
-            >
-              <Save className="size-4" />
-              {dictionary.roster.updatePublishedPromptSkip}
-            </Button>
-            <Button
-              className="rounded-xl"
-              onClick={() => {
-                setPublishedUpdateDialogOpen(false);
-                void executeSave(true, { postAnnouncement: true });
-              }}
-              disabled={isPending || isConfirmingMeetingChannel}
-            >
-              <Send className="size-4" />
-              {dictionary.roster.updatePublishedPromptAnnounce}
-            </Button>
+              <Button
+                className="rounded-xl"
+                onClick={() => {
+                  setPublishedUpdateDialogOpen(false);
+                  void executeSave(true, { postAnnouncement: true, notifyPlayers: notifyRosterChanges });
+                }}
+                disabled={isPending || isConfirmingMeetingChannel}
+              >
+                <Send className="size-4" />
+                {dictionary.roster.updatePublishedPromptAnnounce}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
