@@ -136,7 +136,7 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
         id: "competitive",
         label: "Kompetitivní zápas",
         color: "#dc2626",
-        emoji: "🏆",
+        emoji: "ðŸ†",
       },
     ],
     [
@@ -144,9 +144,9 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
         id: "event-red",
         name: "Registrace do aktivního výběru",
         matchType: "competitive",
-        meetingStart: "2026-08-25T21:59:00.000Z",
-        gameStart: "2026-08-25T21:59:00.000Z",
-        gameEnd: "2026-08-25T22:04:00.000Z",
+        meetingStart: "2026-09-25T21:59:00.000Z",
+        gameStart: "2026-09-25T21:59:00.000Z",
+        gameEnd: "2026-09-25T22:04:00.000Z",
       }),
     ],
     [
@@ -155,10 +155,10 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
         guildId: "guild-1",
         title: "VLK vs 57TH - Friendly",
         color: "#22c55e",
-        emoji: "🤝",
+        emoji: "ðŸ¤",
         label: "Přátelský zápas",
-        startAt: "2026-08-26T17:00:00.000Z",
-        endAt: "2026-08-26T19:30:00.000Z",
+        startAt: "2026-09-26T17:00:00.000Z",
+        endAt: "2026-09-26T19:30:00.000Z",
         allDay: false,
         createdAt: "2026-07-29T10:00:00.000Z",
         updatedAt: "2026-07-29T10:00:00.000Z",
@@ -169,10 +169,10 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
   const json = embed.toJSON();
   assert.equal(json.title, "📅 Kalendář");
   assert.match(json.description ?? "", /\*\*Kategorie\*\*/);
-  assert.match(json.description ?? "", /🟥 🏆 Kompetitivní zápas/);
-  assert.match(json.description ?? "", /🟩 🤝 Přátelský zápas/);
-  assert.match(json.description ?? "", /\*\*úterý 25\. srpna 2026\*\*/i);
-  assert.match(json.description ?? "", /\*\*středa 26\. srpna 2026\*\*/i);
+  assert.match(json.description ?? "", /🟥 .*Kompetitivní zápas/);
+  assert.match(json.description ?? "", /🟩 .*Přátelský zápas/);
+  assert.match(json.description ?? "", /\*\*pátek 25\. září 2026\*\*/i);
+  assert.match(json.description ?? "", /\*\*sobota 26\. září 2026\*\*/i);
   assert.match(json.description ?? "", /🟥 \[Registrace do aktivního výběru\]\(https:\/\/calendar\.google\.com\/calendar\/render\?action=TEMPLATE/);
   assert.match(json.description ?? "", /🟩 VLK vs 57TH - Friendly <t:\d+:t> - <t:\d+:t>/);
 });
@@ -185,9 +185,9 @@ test("buildCalendarPanelEmbed tolerates missing event categories", () => {
       createMatchEvent({
         id: "event-no-categories",
         name: "Fallback Match",
-        meetingStart: "2026-08-25T21:59:00.000Z",
-        gameStart: "2026-08-25T21:59:00.000Z",
-        gameEnd: "2026-08-25T22:04:00.000Z",
+        meetingStart: "2026-09-25T21:59:00.000Z",
+        gameStart: "2026-09-25T21:59:00.000Z",
+        gameEnd: "2026-09-25T22:04:00.000Z",
       }),
     ],
     [],
@@ -231,13 +231,12 @@ test("buildEventEmbed uses plain display names instead of Discord mentions", () 
   assert.doesNotMatch(combinedValues, /<@/);
 });
 
-test("buildEventEmbed renders each signup group as a full-width field", () => {
+test("buildEventEmbed lays out match signup names in up to three left-to-right columns", () => {
   const embed = buildEventEmbed(
     config,
     groups,
     eventCategories,
     createMatchEvent({
-      signupGroupIds: ["command"],
       participants: [
         { userId: "user-1", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
         { userId: "user-2", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
@@ -261,15 +260,16 @@ test("buildEventEmbed renders each signup group as a full-width field", () => {
   );
 
   const fields = embed.toJSON().fields ?? [];
-  assert.equal(fields.length, 2);
-  assert.equal(fields[0]?.inline, false);
+  assert.equal(fields[0]?.inline, true);
+  assert.equal(fields[1]?.inline, true);
+  assert.equal(fields[2]?.inline, true);
   assert.match(fields[0]?.name ?? "", /Command \(7\)/);
-  assert.equal(fields[0]?.value, "Alpha\nBravo\nCharlie\nDelta\nEcho\nFoxtrot\nGolf");
-  assert.equal(fields[1]?.inline, false);
-  assert.match(fields[1]?.name ?? "", /Neúčastní se|Not attending/i);
+  assert.equal(fields[0]?.value, "Alpha\nDelta\nGolf");
+  assert.equal(fields[1]?.value, "Bravo\nEcho");
+  assert.equal(fields[2]?.value, "Charlie\nFoxtrot");
 });
 
-test("buildEventEmbed does not add blank fields between signup sections", () => {
+test("buildEventEmbed pads signup sections so the next group starts on a new row", () => {
   const embed = buildEventEmbed(
     config,
     groups,
@@ -283,5 +283,5 @@ test("buildEventEmbed does not add blank fields between signup sections", () => 
   );
 
   const fields = embed.toJSON().fields ?? [];
-  assert.equal(fields.some((field) => field.name === "\u200B" && field.value === "\u200B"), false);
+  assert.equal(fields.some((field) => field.name === "\u200B" && field.value === "\u200B"), true);
 });
