@@ -1,6 +1,7 @@
 "use client";
 
 import { parseDiscordCustomEmoji } from "@/lib/discord-emoji";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Group } from "@/types/domain";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
 
@@ -70,22 +71,32 @@ export function GroupInlineIcons({
     .map((groupId) => groupsById.get(groupId))
     .filter((group): group is Group => Boolean(group));
   const signupGroup = findGroupByName(groupsById, signupGroupName);
+  const hasDistinctSignupGroup = Boolean(signupGroupName) && signupGroup?.id !== primaryGroup?.id && signupGroupName !== primaryGroup?.name;
 
-  if (!primaryGroup && secondaryGroups.length === 0 && !signupGroupName) {
+  if (!primaryGroup && !signupGroupName) {
     return null;
   }
 
   return (
-    <div className="inline-flex items-center gap-1">
-      <GroupIcon group={primaryGroup} />
-      {secondaryGroups.map((group) => (
-        <GroupIcon key={group.id} group={group} />
-      ))}
-      {signupGroupName ? (
-        <span className="ml-0.5 inline-flex items-center">
-          <GroupIcon group={signupGroup} fallbackLabel={signupGroupName} />
-        </span>
+    <div className="inline-flex shrink-0 items-center gap-1" aria-label="Player roles">
+      {hasDistinctSignupGroup ? <GroupIcon group={signupGroup} fallbackLabel={signupGroupName} /> : null}
+      {primaryGroup ? (
+        secondaryGroups.length ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex cursor-help items-center">
+                <GroupIcon group={primaryGroup} />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span className="flex items-center gap-1">
+                {secondaryGroups.map((group) => <GroupIcon key={group.id} group={group} />)}
+              </span>
+            </TooltipContent>
+          </Tooltip>
+        ) : <GroupIcon group={primaryGroup} />
       ) : null}
+      {!primaryGroup && signupGroupName ? <GroupIcon group={signupGroup} fallbackLabel={signupGroupName} /> : null}
     </div>
   );
 }

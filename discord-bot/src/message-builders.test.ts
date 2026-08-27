@@ -268,3 +268,20 @@ test("buildEventEmbed lays out match signup names in up to three left-to-right c
   assert.equal(fields[1]?.value, "Bravo\nEcho");
   assert.equal(fields[2]?.value, "Charlie\nFoxtrot");
 });
+
+test("buildEventEmbed does not add blank fields between signup sections", () => {
+  const embed = buildEventEmbed(
+    config,
+    groups,
+    eventCategories,
+    createMatchEvent({
+      participants: [
+        { userId: "user-1", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
+        { userId: "user-2", status: "attending", group: "inf", updatedAt: "2026-07-29T10:00:00.000Z" },
+      ],
+    }),
+  );
+
+  const fields = embed.toJSON().fields ?? [];
+  assert.equal(fields.some((field) => field.name === "\u200B" && field.value === "\u200B"), false);
+});

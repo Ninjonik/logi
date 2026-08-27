@@ -114,19 +114,6 @@ function buildInlineSignupFields(name: string, members: string[], emptyLabel: st
   return fields;
 }
 
-function buildInlineFieldPadding(fieldCount: number): APIEmbedField[] {
-  const remainder = fieldCount % 3;
-  if (remainder === 0) {
-    return [];
-  }
-
-  return Array.from({ length: 3 - remainder }, () => ({
-    name: "\u200B",
-    value: "\u200B",
-    inline: true,
-  }));
-}
-
 export function buildEventEmbed(
   config: DiscordConfig,
   groups: Group[],
@@ -237,11 +224,8 @@ export function buildEventEmbed(
       ),
     );
 
-    signupSections.forEach((sectionFields, index) => {
+    signupSections.forEach((sectionFields) => {
       embed.addFields(...sectionFields);
-      if (index < signupSections.length - 1) {
-        embed.addFields(...buildInlineFieldPadding(sectionFields.length));
-      }
     });
 
     return embed;
