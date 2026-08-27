@@ -112,6 +112,9 @@ export async function syncPayloadEvents(client: Client, queuedEventIds: Set<stri
       desiredScheduledEventStatus,
       meetingChannelConfigured: Boolean(payload.config.meetingChannelId),
       eventInfoChannelConfigured: event.kind === "match" && Boolean(payload.config.announcementsChannelId && payload.config.eventInfoChannelId),
+      eventInfoMessageRequired: Boolean(
+        roster?.published && (event.status === "closed" || event.status === "starting"),
+      ),
       queued,
     });
 
@@ -188,12 +191,21 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
   });
 
   const splitChannels = event.kind === "match" && Boolean(payload.config.announcementsChannelId && payload.config.eventInfoChannelId);
+  const shouldShowEventInfo = Boolean(roster?.published && (event.status === "closed" || event.status === "starting"));
   const registrationChannel = payload.config.announcementsChannelId ? await guild.channels.fetch(payload.config.announcementsChannelId).catch(() => null) : null;
   const infoChannel = splitChannels && payload.config.eventInfoChannelId ? await guild.channels.fetch(payload.config.eventInfoChannelId).catch(() => null) : null;
   if (splitChannels && registrationChannel?.isTextBased() && infoChannel?.isTextBased() && registrationChannel.type !== ChannelType.GuildVoice && infoChannel.type !== ChannelType.GuildVoice) {
     const registrationText = registrationChannel as TextChannel;
     const infoText = infoChannel as TextChannel;
-    eventInfoMessageId = await syncEventMessage(infoText, eventInfoMessageId, payload, event, roster, guild, false);
+    if (shouldShowEventInfo) {
+      eventInfoMessageId = await syncEventMessage(infoText, eventInfoMessageId, payload, event, roster, guild, false);
+    } else {
+      const eventInfoMessage = eventInfoMessageId
+        ? await infoText.messages.fetch(eventInfoMessageId).catch(() => null)
+        : null;
+      await eventInfoMessage?.delete().catch(() => null);
+      eventInfoMessageId = undefined;
+    }
     if (event.status === "registration") {
       announcementMessageId = await syncEventMessage(registrationText, announcementMessageId, payload, event, roster, guild);
     } else {
@@ -387,7 +399,7 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
     announcementChannelId: displayChannelId,
     announcementMessageId,
     eventInfoMessageId,
-    eventInfoMessageRenderVersion: "2",
+    eventInfoMessageRenderVersion: "3",
     scheduledEventId,
     scheduledEventStatus,
     forumChannelId,
