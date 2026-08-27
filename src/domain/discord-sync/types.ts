@@ -19,4 +19,6 @@ export type SyncStateLike = {
   lastEventUpdatedAt?: string;
   lastRosterUpdatedAt?: string;
   lastConfigUpdatedAt?: string;
+  eventInfoMessageId?: string;
+  eventInfoMessageRenderVersion?: string;
 };

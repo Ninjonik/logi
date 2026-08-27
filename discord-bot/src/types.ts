@@ -90,6 +90,7 @@ export type DiscordConfig = {
   timezone: string;
   defaultLanguage: ClanLanguage;
   announcementsChannelId?: string;
+  eventInfoChannelId?: string;
   errorsChannelId?: string;
   calendarChannelId?: string;
   calendarCategories: string[];
@@ -238,6 +239,8 @@ export type EventRecord = {
   signupGroupIds?: string[];
   allowedSignupStatuses?: Array<"recruit" | "member" | "reserve_member" | "mercenary">;
   useGeneralSignup?: boolean;
+  attendeeRoleId?: string;
+  reserveRoleId?: string;
   server?: string;
   serverPassword?: string;
   side?: string;
@@ -278,6 +281,7 @@ export type Roster = {
   id: string;
   eventId: string;
   published: boolean;
+  reservePlayerIds: string[];
   updatedAt: string;
   squads: Array<{
     name: string;
@@ -299,6 +303,8 @@ export type SyncState = {
   guildId: string;
   announcementChannelId?: string;
   announcementMessageId?: string;
+  eventInfoMessageId?: string;
+  eventInfoMessageRenderVersion?: string;
   scheduledEventId?: string;
   scheduledEventStatus?: "scheduled" | "active" | "completed" | "canceled";
   forumChannelId?: string;

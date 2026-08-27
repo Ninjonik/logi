@@ -24,6 +24,7 @@ export async function saveDiscordConfig(input: {
   timezone: string;
   defaultLanguage: "en" | "cs";
   announcementsChannelId?: string;
+  eventInfoChannelId?: string;
   errorsChannelId?: string;
   calendarChannelId?: string;
   calendarCategories?: string[];
@@ -41,6 +42,7 @@ export async function saveDiscordConfig(input: {
     timezone: input.timezone,
     defaultLanguage: input.defaultLanguage,
     announcementsChannelId: input.announcementsChannelId,
+    eventInfoChannelId: input.eventInfoChannelId,
     errorsChannelId: input.errorsChannelId,
     calendarChannelId: input.calendarChannelId,
     calendarCategories: input.calendarCategories,

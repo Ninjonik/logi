@@ -4,6 +4,7 @@ import { convex, references } from "../convex";
 import { env } from "../environment";
 import { reportClanDiscordError } from "../error-reporting";
 import { syncForumChannel } from "../forum";
+import { syncEventRoles } from "../event-roles";
 import { logError, logInfo, logWarn } from "../log";
 import { buildAnnouncementMessage } from "../message-builders";
 import {
@@ -12,7 +13,7 @@ import {
   getStoredScheduledEventStatus,
   syncScheduledDiscordEvent,
 } from "../scheduled-events";
-import type { EventRecord, SyncPayload, SyncState } from "../types";
+import type { EventRecord, Roster, SyncPayload, SyncState } from "../types";
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules";
 
 function shouldShowPublishedRosterImage(event: EventRecord, rosterUpdatedAt?: string) {
@@ -49,6 +50,24 @@ async function resolveAnnouncementDisplayNames(payload: SyncPayload, event: Even
   return resolvedDisplayNames;
 }
 
+async function syncEventMessage(channel: TextChannel, messageId: string | undefined, payload: SyncPayload, event: EventRecord, roster: Roster | undefined, guild: Guild, includeSignup = true) {
+  const existing = messageId ? await channel.messages.fetch(messageId).catch(() => null) : null;
+  if (event.status === "concluded") {
+    await existing?.delete().catch(() => null);
+    return undefined;
+  }
+  const displayEvent = !includeSignup && !roster?.published ? { ...event, participants: [], signUps: [] } : event;
+  const displayPayload = displayEvent === event ? payload : { ...payload, events: payload.events.map((item) => item.id === event.id ? displayEvent : item) };
+  const names = await resolveAnnouncementDisplayNames(displayPayload, displayEvent, guild);
+  const { embed, components } = buildAnnouncementMessage(displayPayload, displayEvent, names, { showPublishedRosterImage: !includeSignup });
+  const messageComponents = includeSignup ? components : [];
+  if (existing) {
+    if (shouldShowPublishedRosterImage(event, roster?.updatedAt) && existing.embeds.length) await existing.delete().catch(() => null);
+    else { await existing.edit({ embeds: [embed], components: messageComponents }); return existing.id; }
+  }
+  return (await channel.send({ embeds: [embed], components: messageComponents })).id;
+}
+
 export async function syncPayloadEvents(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
   for (const event of payload.events) {
     const state = payload.syncStates.find((item) => item.eventId === event.id);
@@ -69,6 +88,8 @@ export async function syncPayloadEvents(client: Client, queuedEventIds: Set<stri
         guildId: payload.config.guildId,
         announcementChannelId: payload.config.announcementsChannelId,
         announcementMessageId: undefined,
+        eventInfoMessageId: undefined,
+        eventInfoMessageRenderVersion: undefined,
         scheduledEventId: undefined,
         scheduledEventStatus: desiredScheduledEventStatus,
         forumChannelId: undefined,
@@ -90,6 +111,7 @@ export async function syncPayloadEvents(client: Client, queuedEventIds: Set<stri
       state,
       desiredScheduledEventStatus,
       meetingChannelConfigured: Boolean(payload.config.meetingChannelId),
+      eventInfoChannelConfigured: event.kind === "match" && Boolean(payload.config.announcementsChannelId && payload.config.eventInfoChannelId),
       queued,
     });
 
@@ -145,7 +167,9 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
   }
 
   const roster = payload.rosters.find((item) => item.eventId === event.id);
+  const eventRoles = await syncEventRoles(guild, event, roster ?? null);
   let announcementMessageId = state?.announcementMessageId;
+  let eventInfoMessageId = state?.eventInfoMessageId;
   let scheduledEventId = state?.scheduledEventId;
   let scheduledEventStatus = state?.scheduledEventStatus;
   let forumChannelId = state?.forumChannelId;
@@ -163,8 +187,25 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
     createForumChannel: event.createForumChannel,
   });
 
-  if (payload.config.announcementsChannelId && !(event.status === "concluded" && !announcementMessageId)) {
-    const channel = await guild.channels.fetch(payload.config.announcementsChannelId).catch(() => null);
+  const splitChannels = event.kind === "match" && Boolean(payload.config.announcementsChannelId && payload.config.eventInfoChannelId);
+  const registrationChannel = payload.config.announcementsChannelId ? await guild.channels.fetch(payload.config.announcementsChannelId).catch(() => null) : null;
+  const infoChannel = splitChannels && payload.config.eventInfoChannelId ? await guild.channels.fetch(payload.config.eventInfoChannelId).catch(() => null) : null;
+  if (splitChannels && registrationChannel?.isTextBased() && infoChannel?.isTextBased() && registrationChannel.type !== ChannelType.GuildVoice && infoChannel.type !== ChannelType.GuildVoice) {
+    const registrationText = registrationChannel as TextChannel;
+    const infoText = infoChannel as TextChannel;
+    eventInfoMessageId = await syncEventMessage(infoText, eventInfoMessageId, payload, event, roster, guild, false);
+    if (event.status === "registration") {
+      announcementMessageId = await syncEventMessage(registrationText, announcementMessageId, payload, event, roster, guild);
+    } else {
+      const registrationMessage = announcementMessageId ? await registrationText.messages.fetch(announcementMessageId).catch(() => null) : null;
+      await registrationMessage?.delete().catch(() => null);
+      announcementMessageId = undefined;
+    }
+  }
+  const shouldUseEventInfoChannel = false;
+  const displayChannelId = splitChannels ? undefined : payload.config.announcementsChannelId;
+  if (displayChannelId && !(event.status === "concluded" && !announcementMessageId)) {
+    const channel = await guild.channels.fetch(displayChannelId).catch(() => null);
     if (
       channel?.isTextBased() &&
       (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement)
@@ -172,9 +213,13 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
       const textChannel = channel as TextChannel;
       const userDisplayNames = await resolveAnnouncementDisplayNames(payload, event, guild);
       const { embed, components } = buildAnnouncementMessage(payload, event, userDisplayNames);
-      const existingMessage = announcementMessageId
+      const previousChannel = state?.announcementChannelId && state.announcementChannelId !== textChannel.id
+        ? await guild.channels.fetch(state.announcementChannelId).catch(() => null)
+        : null;
+      const existingMessage = announcementMessageId && state?.announcementChannelId === textChannel.id
         ? await textChannel.messages.fetch(announcementMessageId).catch(() => null)
         : null;
+      if (previousChannel?.isTextBased() && announcementMessageId) await previousChannel.messages.fetch(announcementMessageId).then((message) => message.delete()).catch(() => null);
       const shouldRecreateAnnouncementForRosterImage =
         Boolean(existingMessage) &&
         shouldShowPublishedRosterImage(event, roster?.updatedAt) &&
@@ -299,6 +344,8 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
         guild,
         existingTopicMessageIds: topicMessageIds,
         topicPreset,
+        attendeeRoleId: eventRoles.attendeeRoleId,
+        reserveRoleId: eventRoles.reserveRoleId,
       });
 
       forumChannelId = forumSyncResult.forumChannelId;
@@ -337,8 +384,10 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
     secret: env.internalSecret,
     eventId: event.id as never,
     guildId: payload.config.guildId,
-    announcementChannelId: payload.config.announcementsChannelId,
+    announcementChannelId: displayChannelId,
     announcementMessageId,
+    eventInfoMessageId,
+    eventInfoMessageRenderVersion: "2",
     scheduledEventId,
     scheduledEventStatus,
     forumChannelId,

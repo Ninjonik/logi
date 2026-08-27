@@ -1,15 +1,10 @@
 import { parentPort } from "node:worker_threads";
 
-import {
-  buildEventSignatureMap,
-  getChangedEventIds,
-} from "../../../src/application/discord-sync/payload-builder";
 import { convex, references } from "../convex";
 import { env } from "../environment";
 
-const EVENT_INDEX_POLL_INTERVAL_MS = 2_000;
-const RECONCILE_INTERVAL_MS = 300_000;
-const FULL_RESYNC_EVERY_TICKS = 5;
+// This is the only recurring poll: it advances time-based event states.
+const RECONCILE_INTERVAL_MS = 60_000;
 const RECONCILE_BATCH_SIZE = 25;
 
 if (!parentPort) {
@@ -18,9 +13,6 @@ if (!parentPort) {
 
 const workerPort = parentPort;
 
-let tickCount = 0;
-let previousEventSignatures = new Map<string, string>();
-let eventIndexLoaded = false;
 let isRunningTick = false;
 
 process.on("unhandledRejection", (error) => {
@@ -76,10 +68,6 @@ async function runTick() {
       workerPort.postMessage({ type: "eventsChanged", eventIds: changedEventIds });
     }
 
-    tickCount += 1;
-    if (tickCount % FULL_RESYNC_EVERY_TICKS === 0) {
-      workerPort.postMessage({ type: "fullResync" });
-    }
   } catch (error) {
     workerPort.postMessage({
       type: "error",
@@ -89,41 +77,6 @@ async function runTick() {
     isRunningTick = false;
   }
 }
-
-async function pollEventIndex() {
-  try {
-    const index = (await convex.query(references.listEventSyncIndex, {
-      secret: env.internalSecret,
-    })) as {
-      events: Array<{ id: string; updatedAt: string }>;
-      rosters: Array<{ eventId: string; updatedAt: string }>;
-    };
-    const { signatures } = buildEventSignatureMap(index);
-
-    if (!eventIndexLoaded) {
-      previousEventSignatures = signatures;
-      eventIndexLoaded = true;
-      return;
-    }
-
-    const changedEventIds = getChangedEventIds(signatures, previousEventSignatures, false);
-    previousEventSignatures = signatures;
-
-    if (changedEventIds.length > 0) {
-      workerPort.postMessage({ type: "eventsChanged", eventIds: changedEventIds });
-    }
-  } catch (error) {
-    workerPort.postMessage({
-      type: "error",
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-}
-
-void pollEventIndex();
-setInterval(() => {
-  void pollEventIndex();
-}, EVENT_INDEX_POLL_INTERVAL_MS);
 
 void runTick();
 setInterval(() => {

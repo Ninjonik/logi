@@ -1,18 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchQuery } from "convex/nextjs";
+import { makeFunctionReference } from "convex/server";
 
 import { getClanDiscordMessages } from "@/lib/clan-language";
 import { sendDiscordBotDm } from "@/lib/discord";
 import { getDiscordBotToken } from "@/lib/env";
+import { getInternalAuthSecret } from "@/lib/env";
 import { summarizeRosterUpdates } from "@/lib/roster-update-summary";
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings";
 import { getEventMetadata, getGuildMetadata } from "@/lib/server-metadata";
 import { getUsersByIds } from "@/lib/server-user-management";
 import type { Roster } from "@/types/domain";
 
+const getEventSyncContextReference = makeFunctionReference<"query">("discordSync:getEventSyncContext");
+
 type UpdateNotificationBody = {
   previousRoster: Roster;
   nextRoster: Roster;
   postAnnouncement?: boolean;
+  notifyPlayers?: boolean;
 };
 
 async function postDiscordChannelMessage(channelId: string, content: string) {
@@ -40,10 +46,10 @@ function formatAnnouncementMessage(input: {
   eventName: string;
   messages: ReturnType<typeof getClanDiscordMessages>;
   summary: ReturnType<typeof summarizeRosterUpdates>;
+  rosterUrl?: string;
 }) {
   const lines = [
-    `⚽ **${input.messages.rosterUpdate.announcementTitle}**`,
-    `🏟️ **${input.eventName}**`,
+    `📋 **${input.messages.rosterUpdate.announcementTitle}**`,
   ];
 
   if (input.summary.addedLines.length) {
@@ -56,7 +62,7 @@ function formatAnnouncementMessage(input: {
     lines.push("", `🔁 **${input.messages.rosterUpdate.movedLabel}**`, ...input.summary.movedLines);
   }
   if (input.summary.roleChangedLines.length) {
-    lines.push("", `🎯 **${input.messages.rosterUpdate.roleChangedLabel}**`, ...input.summary.roleChangedLines);
+    lines.push("", `🔄 **${input.messages.rosterUpdate.roleChangedLabel}**`, ...input.summary.roleChangedLines);
   }
 
   return lines.join("\n").slice(0, 1900);
@@ -68,6 +74,7 @@ function formatDmMessage(input: {
   messages: ReturnType<typeof getClanDiscordMessages>;
   userId: string;
   summary: ReturnType<typeof summarizeRosterUpdates>;
+  rosterUrl?: string;
 }) {
   const lines = [
     input.messages.rosterUpdate.dmIntro
@@ -85,8 +92,11 @@ function formatDmMessage(input: {
     lines.push(input.messages.rosterUpdate.dmMoved);
   }
   if (input.summary.roleChangedUserIds.includes(input.userId)) {
-    lines.push(input.messages.rosterUpdate.dmRoleChanged);
+    const change = input.summary.roleChanges[input.userId];
+    lines.push(`${input.messages.rosterUpdate.dmRoleChanged}: ${change?.previous ?? "Unassigned"} → ${change?.next ?? "Unassigned"}`);
   }
+
+  if (input.rosterUrl) lines.push("", input.rosterUrl);
 
   return lines.join("\n");
 }
@@ -120,6 +130,10 @@ export async function POST(
   }
 
   const messages = getClanDiscordMessages(discordConfig?.defaultLanguage);
+  const syncContext = await fetchQuery(getEventSyncContextReference, { secret: getInternalAuthSecret(), eventId: event.id as never }) as { syncState: { eventInfoMessageId?: string; announcementMessageId?: string } | null } | null;
+  const rosterMessageId = syncContext?.syncState?.eventInfoMessageId ?? syncContext?.syncState?.announcementMessageId;
+  const rosterChannelId = syncContext?.syncState?.eventInfoMessageId ? discordConfig?.eventInfoChannelId : discordConfig?.announcementsChannelId;
+  const rosterUrl = rosterChannelId && rosterMessageId ? `https://discord.com/channels/${guild.discordId}/${rosterChannelId}/${rosterMessageId}` : undefined;
   const changedRecipients = [...new Set([
     ...summary.addedUserIds,
     ...summary.removedUserIds,
@@ -129,7 +143,7 @@ export async function POST(
   const usersById = new Map(users.map((user) => [user.discordId, user]));
   const dmSentUserIds: string[] = [];
 
-  await Promise.all(changedRecipients.map(async (userId) => {
+  if (body.notifyPlayers !== false) await Promise.all(changedRecipients.map(async (userId) => {
     const user = usersById.get(userId);
 
     try {
@@ -139,6 +153,7 @@ export async function POST(
         messages,
         userId,
         summary,
+        rosterUrl,
       }));
       dmSentUserIds.push(userId);
     } catch {
@@ -146,9 +161,10 @@ export async function POST(
     }
   }));
 
-  if (body.postAnnouncement && discordConfig?.announcementsChannelId) {
+  const rosterUpdateChannelId = discordConfig?.eventInfoChannelId ?? discordConfig?.announcementsChannelId;
+  if (body.postAnnouncement && rosterUpdateChannelId) {
     await postDiscordChannelMessage(
-      discordConfig.announcementsChannelId,
+      rosterUpdateChannelId,
       formatAnnouncementMessage({
         eventName: event.name,
         messages,
@@ -161,6 +177,6 @@ export async function POST(
     ok: true,
     hasChanges: true,
     dmSentUserIds,
-    postedAnnouncement: Boolean(body.postAnnouncement && discordConfig?.announcementsChannelId),
+    postedAnnouncement: Boolean(body.postAnnouncement && rosterUpdateChannelId),
   });
 }

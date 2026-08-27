@@ -176,6 +176,7 @@ export type DiscordConfig = {
   timezone: string;
   defaultLanguage: "en" | "cs";
   announcementsChannelId?: string;
+  eventInfoChannelId?: string;
   errorsChannelId?: string;
   calendarChannelId?: string;
   calendarCategories: MatchTypeCategory[];
@@ -257,6 +258,8 @@ export type EventRecord = {
   signupGroupIds?: string[];
   allowedSignupStatuses?: SignupMembershipStatus[];
   useGeneralSignup?: boolean;
+  attendeeRoleId?: string;
+  reserveRoleId?: string;
   status: EventStatus;
   statusUpdatedAt: Timestamp;
   concludedAt?: Timestamp;

@@ -16,8 +16,10 @@ export async function syncForumChannel(input: {
   guild: import("discord.js").Guild;
   existingTopicMessageIds?: string[];
   topicPreset?: TopicPreset;
+  attendeeRoleId?: string;
+  reserveRoleId?: string;
 }) {
-  const { config, event, forumCategoryId, forumChannelId, guild, existingTopicMessageIds, topicPreset } = input;
+  const { config, event, forumCategoryId, forumChannelId, guild, existingTopicMessageIds, topicPreset, attendeeRoleId, reserveRoleId } = input;
   const messages = getClanDiscordMessages(config.defaultLanguage);
   const existingForumChannel = forumChannelId
     ? await guild.channels.fetch(forumChannelId).catch(() => null)
@@ -60,6 +62,7 @@ export async function syncForumChannel(input: {
       name: buildForumThreadName(config, event),
       type: ChannelType.GuildForum,
       parent: forumCategoryId,
+      permissionOverwrites: [attendeeRoleId, reserveRoleId].filter((id): id is string => Boolean(id)).map((id) => ({ id, allow: ["ViewChannel", "SendMessages", "SendMessagesInThreads"] })),
     }).catch((error) => {
       logWarn("forum", "Failed to create forum channel", {
         guildId: guild.id,
@@ -99,6 +102,16 @@ export async function syncForumChannel(input: {
       stateChanged,
       topicMessageIds,
     };
+  }
+
+  for (const roleId of [attendeeRoleId, reserveRoleId].filter((id): id is string => Boolean(id))) {
+    await forumChannel.permissionOverwrites.edit(roleId, {
+      ViewChannel: true,
+      SendMessages: true,
+      SendMessagesInThreads: true,
+    }).catch((error) => {
+      void reportClanDiscordError({ client: guild.client, guildId: guild.id, error, action: `Grant forum access for "${event.name}"`, location: "Forum channels", scope: "forum", target: forumChannel!.name, details: { eventId: event.id, forumChannelId: forumChannel!.id, roleId } });
+    });
   }
 
   const activePosts = await forumChannel.threads.fetchActive().catch(() => null);

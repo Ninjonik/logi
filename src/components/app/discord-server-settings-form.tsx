@@ -85,6 +85,7 @@ export function DiscordServerSettingsForm({
   const [timezone, setTimezone] = useState(config?.timezone ?? "UTC");
   const [defaultLanguage, setDefaultLanguage] = useState<ClanLanguage>(config?.defaultLanguage ?? "en");
   const [announcementsChannelId, setAnnouncementsChannelId] = useState<string | undefined>(config?.announcementsChannelId);
+  const [eventInfoChannelId, setEventInfoChannelId] = useState<string | undefined>(config?.eventInfoChannelId);
   const [errorsChannelId, setErrorsChannelId] = useState<string | undefined>(config?.errorsChannelId);
   const [calendarChannelId, setCalendarChannelId] = useState<string | undefined>(config?.calendarChannelId);
   const [forumCategoryId, setForumCategoryId] = useState<string | undefined>(config?.forumCategoryId);
@@ -119,6 +120,7 @@ export function DiscordServerSettingsForm({
         timezone,
         defaultLanguage,
         announcementsChannelId,
+        eventInfoChannelId,
         errorsChannelId,
         calendarChannelId,
         forumCategoryId,
@@ -177,6 +179,10 @@ export function DiscordServerSettingsForm({
         <div className="space-y-2">
           <Label>{dictionary.serverSettings.announcementsChannelId}</Label>
           <DiscordEntitySelect value={announcementsChannelId} onChange={setAnnouncementsChannelId} options={announcementChannels} placeholder={dictionary.serverSettings.announcementsChannelId} />
+        </div>
+        <div className="space-y-2">
+          <Label>{dictionary.serverSettings.eventInfoChannelId}</Label>
+          <DiscordEntitySelect value={eventInfoChannelId} onChange={setEventInfoChannelId} options={announcementChannels} placeholder={dictionary.serverSettings.eventInfoChannelId} />
         </div>
         <div className="space-y-2">
           <Label>{dictionary.serverSettings.errorsChannelId}</Label>
