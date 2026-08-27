@@ -76,7 +76,7 @@ export const getRosterDetail = query({
       },
       users: users
         .filter((item): item is NonNullable<typeof item> => Boolean(item))
-        .map((item) => normalizeUserDoc(item)),
+        .map((item) => normalizeUserDoc(item, { guildId: serverDiscordId })),
       groups: groups.map(normalizeDoc),
       assignments: assignments.map((assignment) => normalizeAssignmentDoc(assignment, groupNameById)),
       discordConfig: discordConfig ? normalizeDoc(discordConfig) : null,

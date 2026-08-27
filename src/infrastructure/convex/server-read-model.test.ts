@@ -91,6 +91,15 @@ test("normalizeDoc, normalizeGuildDoc, and normalizeUserDoc normalize identifier
   assert.equal(user.discordId, "legacy-user");
   assert.deepEqual(user.platformIds, ["steam-2", "steam-3"]);
   assert.deepEqual(user.scores, {});
+
+  const userWithGuildNickname = normalizeUserDoc({
+    _id: "user-2",
+    id: "user-2",
+    name: "Discord username",
+    nicknames: { "guild-1": "Server display name" },
+  }, { guildId: "guild-1" });
+
+  assert.equal(userWithGuildNickname.name, "Server display name");
 });
 
 test("normalizeEventDoc normalizes participants, ids, and optional match references", () => {

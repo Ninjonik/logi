@@ -338,6 +338,11 @@ function GroupedUserList({
                       <AvatarImage src={user.avatar} alt={user.name} />
                       <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
                     </Avatar>
+                    <GroupInlineIcons
+                      assignment={assignment}
+                      groupsById={groupsById}
+                      signupGroupName={user.signupRoleLabel}
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1">
                         {user.note ? (
@@ -389,12 +394,7 @@ function GroupedUserList({
                           </HoverCard>
                         ) : null}
                       </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                        <GroupInlineIcons
-                          assignment={assignment}
-                          groupsById={groupsById}
-                          signupGroupName={user.signupRoleLabel}
-                        />
+                      <div className="flex items-center text-[10px] text-muted-foreground">
                         <span className="truncate">{formatRosterScoreline(user, dictionary, serverDiscordId)}</span>
                       </div>
                     </div>

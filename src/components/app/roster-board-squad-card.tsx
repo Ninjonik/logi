@@ -329,6 +329,13 @@ export function SquadCard({
                         {slotUser ? <AvatarImage src={slotUser.avatar} alt={slotUser.name} /> : null}
                         <AvatarFallback>{(slotUser?.name ?? placeholderName ?? "?").slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
+                      {slotUser ? (
+                        <GroupInlineIcons
+                          assignment={assignment}
+                          groupsById={groupsById}
+                          signupGroupName={signupRoleLabel}
+                        />
+                      ) : null}
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
                           {slotUser?.note ? (
@@ -369,12 +376,7 @@ export function SquadCard({
                           </div>
                         </div>
                         {slotUser ? (
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                            <GroupInlineIcons
-                              assignment={assignment}
-                              groupsById={groupsById}
-                              signupGroupName={signupRoleLabel}
-                            />
+                          <div className="flex items-center text-[10px] text-muted-foreground">
                             <span className="truncate">{formatRosterScoreline(slotUser, dictionary, serverDiscordId)}</span>
                           </div>
                         ) : null}
