@@ -231,12 +231,13 @@ test("buildEventEmbed uses plain display names instead of Discord mentions", () 
   assert.doesNotMatch(combinedValues, /<@/);
 });
 
-test("buildEventEmbed lays out match signup names in up to three left-to-right columns", () => {
+test("buildEventEmbed renders each signup group as a full-width field", () => {
   const embed = buildEventEmbed(
     config,
     groups,
     eventCategories,
     createMatchEvent({
+      signupGroupIds: ["command"],
       participants: [
         { userId: "user-1", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
         { userId: "user-2", status: "attending", group: "command", updatedAt: "2026-07-29T10:00:00.000Z" },
@@ -260,13 +261,12 @@ test("buildEventEmbed lays out match signup names in up to three left-to-right c
   );
 
   const fields = embed.toJSON().fields ?? [];
-  assert.equal(fields[0]?.inline, true);
-  assert.equal(fields[1]?.inline, true);
-  assert.equal(fields[2]?.inline, true);
+  assert.equal(fields.length, 2);
+  assert.equal(fields[0]?.inline, false);
   assert.match(fields[0]?.name ?? "", /Command \(7\)/);
-  assert.equal(fields[0]?.value, "Alpha\nDelta\nGolf");
-  assert.equal(fields[1]?.value, "Bravo\nEcho");
-  assert.equal(fields[2]?.value, "Charlie\nFoxtrot");
+  assert.equal(fields[0]?.value, "Alpha\nBravo\nCharlie\nDelta\nEcho\nFoxtrot\nGolf");
+  assert.equal(fields[1]?.inline, false);
+  assert.match(fields[1]?.name ?? "", /Neúčastní se|Not attending/i);
 });
 
 test("buildEventEmbed does not add blank fields between signup sections", () => {

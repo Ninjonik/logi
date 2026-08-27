@@ -94,24 +94,12 @@ function toDiscordColor(color: string) {
   return Number.parseInt("FFB000", 16);
 }
 
-function buildInlineSignupFields(name: string, members: string[], emptyLabel: string): APIEmbedField[] {
-  if (!members.length) {
-    return [{ name, value: emptyLabel, inline: true }];
-  }
-
-  const columnCount = Math.min(3, members.length);
-  const columns = Array.from({ length: columnCount }, () => [] as string[]);
-  for (let index = 0; index < members.length; index += 1) {
-    columns[index % columnCount]!.push(members[index]!);
-  }
-
-  const fields: APIEmbedField[] = columns.map((columnMembers, index) => ({
-    name: index === 0 ? name : "\u200B",
-    value: columnMembers.join("\n"),
-    inline: true,
-  }));
-
-  return fields;
+function buildSignupField(name: string, members: string[], emptyLabel: string): APIEmbedField {
+  return {
+    name,
+    value: members.length ? members.join("\n") : emptyLabel,
+    inline: false,
+  };
 }
 
 export function buildEventEmbed(
@@ -191,12 +179,12 @@ export function buildEventEmbed(
   if (event.kind === "match") {
     const configuredGroupIds = event.signupGroupIds ? new Set(event.signupGroupIds) : null;
     const visibleGroups = configuredGroupIds ? groups.filter((group) => configuredGroupIds.has(group.id)) : groups;
-    const signupSections: APIEmbedField[][] = [];
+    const signupFields: APIEmbedField[] = [];
 
     for (const group of visibleGroups) {
       const members = signupsByGroup.get(group.name) ?? [];
-      signupSections.push(
-        buildInlineSignupFields(
+      signupFields.push(
+        buildSignupField(
           `${group.discordEmoji ?? "👥"} ${group.name} (${members.length})`,
           members,
           messages.embed.nobodyYet,
@@ -206,8 +194,8 @@ export function buildEventEmbed(
 
     const generalAttending = signupsByGroup.get("ATTENDING") ?? [];
     if (generalAttending.length > 0) {
-      signupSections.push(
-        buildInlineSignupFields(
+      signupFields.push(
+        buildSignupField(
           `✅ ${messages.embed.attending} (${generalAttending.length})`,
           generalAttending,
           messages.embed.nobodyYet,
@@ -216,17 +204,15 @@ export function buildEventEmbed(
     }
 
     const nonAttending = signupsByGroup.get(SIGNUP_NOT_ATTENDING) ?? [];
-    signupSections.push(
-      buildInlineSignupFields(
+    signupFields.push(
+      buildSignupField(
         `❌ ${messages.embed.notAttending} (${nonAttending.length})`,
         nonAttending,
         messages.embed.nobodyYet,
       ),
     );
 
-    signupSections.forEach((sectionFields) => {
-      embed.addFields(...sectionFields);
-    });
+    embed.addFields(...signupFields);
 
     return embed;
   }
