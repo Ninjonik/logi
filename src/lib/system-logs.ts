@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
 
 export type SystemLogLevel = "INFO" | "WARN" | "ERROR";
 export type SystemLogSource = "nextjs" | "discord-bot";
@@ -43,9 +43,28 @@ type SqliteLogRow = {
   request_path: string | null;
 };
 
+type SqliteStatement = {
+  run(...values: Array<string | number | null>): unknown;
+  get(...values: Array<string | number | null>): unknown;
+  all(...values: Array<string | number | null>): unknown[];
+};
+
+type SqliteDatabase = {
+  exec(sql: string): void;
+  prepare(sql: string): SqliteStatement;
+};
+
+type DatabaseSyncConstructor = new (path: string) => SqliteDatabase;
+
 const LOG_DB_PATH = process.env.LOGI_LOG_DB_PATH ?? path.join(process.cwd(), "data", "logs.db");
 
-let database: DatabaseSync | null = null;
+const requireNodeModule = createRequire(process.cwd() + "/system-logs.cjs");
+let database: SqliteDatabase | null = null;
+
+function getDatabaseSyncConstructor(): DatabaseSyncConstructor {
+  const moduleName = ["node", "sqlite"].join(":");
+  return (requireNodeModule(moduleName) as { DatabaseSync: DatabaseSyncConstructor }).DatabaseSync;
+}
 
 function ensureDatabase() {
   if (database) {
@@ -54,6 +73,7 @@ function ensureDatabase() {
 
   mkdirSync(path.dirname(LOG_DB_PATH), { recursive: true });
 
+  const DatabaseSync = getDatabaseSyncConstructor();
   const db = new DatabaseSync(LOG_DB_PATH);
   db.exec(`
     CREATE TABLE IF NOT EXISTS system_logs (
