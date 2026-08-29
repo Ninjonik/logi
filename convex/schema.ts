@@ -462,9 +462,10 @@ export default defineSchema({
     dueAt: v.string(),
     status: v.union(v.literal("pending"), v.literal("processing")),
     attempts: v.number(),
+    claimedAt: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.string(),
-  }).index("eventId", ["eventId"]).index("status_dueAt", ["status", "dueAt"]),
+  }).index("eventId", ["eventId"]).index("status_dueAt", ["status", "dueAt"]).index("status", ["status"]),
   stratmaps: defineTable({
     guildId: v.string(),
     eventId: v.optional(v.id("events")),

@@ -44,6 +44,10 @@ async function runTick() {
       limit: RECONCILE_BATCH_SIZE,
     })) as Array<{ id: string; eventId: string }>;
 
+    if (jobs.length > 0) {
+      workerPort.postMessage({ type: "scheduledJobsClaimed", count: jobs.length, eventIds: jobs.map((job) => job.eventId) });
+    }
+
     for (const job of jobs) {
       try {
         const result = (await convex.mutation(references.reconcileStatuses, {
@@ -81,7 +85,11 @@ async function runTick() {
   }
 }
 
-void convex.mutation(references.backfillMissingScheduledJobs, { secret: env.internalSecret })
+void convex.mutation(references.recoverScheduledJobQueue, { secret: env.internalSecret })
+  .then((result) => {
+    workerPort.postMessage({ type: "scheduledJobsRecovered", ...result });
+    return convex.mutation(references.backfillMissingScheduledJobs, { secret: env.internalSecret });
+  })
   .then(() => runTick())
   .catch((error) => workerPort.postMessage({ type: "error", error: error instanceof Error ? error.message : String(error) }));
 setInterval(() => {
