@@ -33,7 +33,7 @@ export async function syncGuildPayload(
     processAttendanceReminders(client, queuedEventIds, payload),
   );
 
-  await syncPayloadEvents(client, queuedEventIds, payload);
+  await syncPayloadEvents(client, queuedEventIds, payload, { syncRoles: mode === "full" });
 }
 
 async function runGuildSyncStep(client: Client, step: string, payload: SyncPayload, execute: () => Promise<void>) {
