@@ -42,8 +42,8 @@ const SQUAD_LABEL_GAP = 8;
 const ROLE_LABEL_HEIGHT = 16;
 const ROLE_LABEL_GAP = 5;
 const ROLE_SECTION_GAP = 8;
-const PLAYER_ROW_HEIGHT = 32;
-const PLAYER_ROW_HEIGHT_EMPTY = 24;
+const PLAYER_ROW_HEIGHT = 40;
+const PLAYER_ROW_HEIGHT_EMPTY = 32;
 const PLAYER_ROW_GAP = 4;
 const SAFETY_BUFFER = 24; // tiny cushion so rounding never clips the bottom edge
 
@@ -349,7 +349,7 @@ export async function GET(
 
   const DETAIL_CHARS_PER_LINE = 36;
   const DETAIL_MAX_LINES = 3;
-  const DETAIL_LINE_HEIGHT = 15;
+  const DETAIL_LINE_HEIGHT = 23;
 
   const showServer = hasValue(data.event.server);
   const showServerPassword = hasValue(data.event.serverPassword);
@@ -507,22 +507,22 @@ export async function GET(
                                       <img
                                         src={resolveAssetUrl(user.avatar)}
                                         alt=""
-                                        width="20"
-                                        height="20"
-                                        style={{ display: "flex", width: "20px", height: "20px", borderRadius: "999px", objectFit: "cover", flexShrink: 0 }}
+                                        width="28"
+                                        height="28"
+                                        style={{ display: "flex", width: "28px", height: "28px", borderRadius: "999px", objectFit: "cover", flexShrink: 0 }}
                                       />
                                     ) : playerName ? (
                                       <div
                                         style={{
                                           display: "flex",
-                                          width: "20px",
-                                          height: "20px",
+                                          width: "28px",
+                                          height: "28px",
                                           borderRadius: "999px",
                                           background: "#334155",
                                           color: "#e2e8f0",
                                           alignItems: "center",
                                           justifyContent: "center",
-                                          fontSize: "9px",
+                                          fontSize: "12px",
                                           fontWeight: 700,
                                           flexShrink: 0,
                                         }}
@@ -535,7 +535,7 @@ export async function GET(
                                         display: "flex",
                                         flex: 1,
                                         minWidth: 0,
-                                        fontSize: "12px",
+                                        fontSize: "20px",
                                         fontWeight: 600,
                                         color: playerName ? "#e2e8f0" : "#64748b",
                                         justifyContent: playerName ? "flex-start" : "center",
@@ -554,15 +554,15 @@ export async function GET(
                                           flexShrink: 0,
                                           alignItems: "center",
                                           justifyContent: "center",
-                                          maxWidth: "40%",
+                                          maxWidth: "60%",
                                           borderRadius: "999px",
                                           background: "rgba(125, 211, 252, 0.12)",
                                           border: "1px solid rgba(125, 211, 252, 0.35)",
                                           color: "#dbeafe",
                                           padding: "3px 8px",
-                                          fontSize: "8px",
+                                          fontSize: "18px",
                                           fontWeight: 700,
-                                          lineHeight: 1.1,
+                                          lineHeight: 1.2,
                                           whiteSpace: "nowrap",
                                           overflow: "hidden",
                                           textOverflow: "ellipsis",
@@ -687,7 +687,7 @@ export async function GET(
                   <div style={{ display: "flex", fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#64748b" }}>{messages.rosterImage.notes}</div>
                   <div style={{ display: "flex", flexDirection: "column" }}>
                     {notesLines.map((line, index) => (
-                      <div key={`note-${index}`} style={{ display: "flex", fontSize: "12px", color: "#cbd5e1", lineHeight: "15px" }}>{line}</div>
+                      <div key={`note-${index}`} style={{ display: "flex", fontSize: "18px", color: "#cbd5e1", lineHeight: "23px" }}>{line}</div>
                     ))}
                   </div>
                 </div>
