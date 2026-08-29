@@ -55,12 +55,39 @@ function buildRosterImageCacheKey(eventId: string, rosterUpdatedAt?: string) {
   return Buffer.from(versionSource).toString("base64url");
 }
 
+// Keep signup and other embed-only changes out of this version. They should
+// edit the existing Discord message without forcing a new expensive roster PNG.
+export function getRosterImageVersion(event: EventRecord, rosterUpdatedAt?: string) {
+  return JSON.stringify([
+    rosterUpdatedAt,
+    event.name,
+    event.map,
+    event.side,
+    event.meetingStart,
+    event.gameStart,
+    event.gameEnd,
+    event.cap,
+    event.notes,
+    event.server,
+    event.serverPassword,
+    event.description,
+  ]);
+}
+
 export function buildRosterImageUrl(eventId: string, rosterUpdatedAt?: string) {
   const url = new URL(`/api/discord/roster-image/${eventId}`, env.appSiteUrl);
   url.searchParams.set("secret", env.internalSecret);
-  url.searchParams.set("fresh", "1");
   url.searchParams.set("cb", buildRosterImageCacheKey(eventId, rosterUpdatedAt));
   return url.toString();
+}
+
+export async function warmRosterImage(eventId: string, rosterUpdatedAt?: string) {
+  const publicUrl = new URL(buildRosterImageUrl(eventId, rosterUpdatedAt));
+  const internalOrigin = new URL(env.internalAppSiteUrl);
+  const warmUrl = new URL(`${publicUrl.pathname}${publicUrl.search}`, internalOrigin);
+  const response = await withTimeout(fetch(warmUrl), 45_000, `Roster image warm-up for ${eventId}`);
+
+  return response.ok && response.headers.get("content-type") === "image/png";
 }
 
 export function pickButtonStyle(color: string) {

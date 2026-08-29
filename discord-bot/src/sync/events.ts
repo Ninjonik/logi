@@ -16,7 +16,7 @@ import {
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types";
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules";
 import { getCalendarSyncVersion } from "./work";
-import { withTimeout } from "../utils";
+import { getRosterImageVersion, warmRosterImage, withTimeout } from "../utils";
 
 function shouldShowPublishedRosterImage(event: EventRecord, rosterUpdatedAt?: string) {
   return Boolean(rosterUpdatedAt && (event.status === "closed" || event.status === "starting"));
@@ -58,14 +58,20 @@ async function syncEventMessage(channel: TextChannel, messageId: string | undefi
     await existing?.delete().catch(() => null);
     return undefined;
   }
+  if (!includeSignup && shouldShowPublishedRosterImage(event, roster?.updatedAt)) {
+    const warmed = await warmRosterImage(event.id, getRosterImageVersion(event, roster?.updatedAt));
+    if (!warmed) {
+      throw new Error(`Roster image warm-up failed for event ${event.id}.`);
+    }
+  }
   const displayEvent = !includeSignup && !roster?.published ? { ...event, participants: [], signUps: [] } : event;
   const displayPayload = displayEvent === event ? payload : { ...payload, events: payload.events.map((item) => item.id === event.id ? displayEvent : item) };
   const names = await resolveAnnouncementDisplayNames(displayPayload, displayEvent, guild);
   const { embed, components } = buildAnnouncementMessage(displayPayload, displayEvent, names, { showPublishedRosterImage: !includeSignup });
   const messageComponents = includeSignup ? components : [];
   if (existing) {
-    if (shouldShowPublishedRosterImage(event, roster?.updatedAt) && existing.embeds.length) await existing.delete().catch(() => null);
-    else { await existing.edit({ embeds: [embed], components: messageComponents }); return existing.id; }
+    await existing.edit({ embeds: [embed], components: messageComponents });
+    return existing.id;
   }
   return (await channel.send({ embeds: [embed], components: messageComponents })).id;
 }
@@ -271,11 +277,6 @@ async function syncEvent(
         ? await textChannel.messages.fetch(announcementMessageId).catch(() => null)
         : null;
       if (previousChannel?.isTextBased() && announcementMessageId) await previousChannel.messages.fetch(announcementMessageId).then((message) => message.delete()).catch(() => null);
-      const shouldRecreateAnnouncementForRosterImage =
-        Boolean(existingMessage) &&
-        shouldShowPublishedRosterImage(event, roster?.updatedAt) &&
-        state?.lastRosterUpdatedAt !== roster?.updatedAt;
-
       if (event.status === "concluded") {
         if (existingMessage) {
           await existingMessage.delete().catch(() => null);
@@ -286,19 +287,6 @@ async function syncEvent(
           });
           announcementMessageId = undefined;
         }
-      } else if (existingMessage && shouldRecreateAnnouncementForRosterImage) {
-        await existingMessage.delete().catch(() => null);
-        const created = await textChannel.send({ embeds: [embed], components });
-        announcementMessageId = created.id;
-        logInfo("announcement", "Recreated event announcement for roster image refresh", {
-          eventId: event.id,
-          guildId: payload.config.guildId,
-          channelId: textChannel.id,
-          previousMessageId: existingMessage.id,
-          messageId: created.id,
-          previousRosterUpdatedAt: state?.lastRosterUpdatedAt,
-          rosterUpdatedAt: roster?.updatedAt,
-        });
       } else if (existingMessage) {
         await existingMessage.edit({ embeds: [embed], components });
         logInfo("announcement", "Updated event announcement", {

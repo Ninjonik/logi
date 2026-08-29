@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildCalendarPanelEmbed, buildEventComponents, buildEventEmbed } from "./message-builders";
-import type { CalendarItem, DiscordConfig, EventCategory, EventRecord, Group } from "./types";
+import type { CalendarItem, DiscordConfig, EventCategory, EventRecord, Group, Roster } from "./types";
 
 const config: DiscordConfig = {
   id: "config-1",
@@ -300,4 +300,38 @@ test("buildEventEmbed pads signup sections so the next group starts on a new row
 
   const fields = embed.toJSON().fields ?? [];
   assert.equal(fields.some((field) => field.name === "\u200B" && field.value === "\u200B"), true);
+});
+
+test("published roster image keeps its URL for signup-only changes and changes for roster content", () => {
+  const roster: Roster = {
+    id: "roster-1",
+    eventId: "event-1",
+    published: true,
+    reservePlayerIds: [],
+    updatedAt: "2026-07-29T10:00:00.000Z",
+    squads: [],
+  };
+  const event = createMatchEvent({ status: "closed", updatedAt: "2026-07-29T10:00:00.000Z" });
+  const imageUrl = buildEventEmbed(config, groups, eventCategories, event, roster, {}, { showPublishedRosterImage: true }).toJSON().image?.url;
+  const signupOnlyUrl = buildEventEmbed(
+    config,
+    groups,
+    eventCategories,
+    { ...event, updatedAt: "2026-07-29T10:01:00.000Z", signUps: [{ userId: "user-1" }] },
+    roster,
+    {},
+    { showPublishedRosterImage: true },
+  ).toJSON().image?.url;
+  const rosterChangedUrl = buildEventEmbed(
+    config,
+    groups,
+    eventCategories,
+    event,
+    { ...roster, updatedAt: "2026-07-29T10:02:00.000Z" },
+    {},
+    { showPublishedRosterImage: true },
+  ).toJSON().image?.url;
+
+  assert.equal(signupOnlyUrl, imageUrl);
+  assert.notEqual(rosterChangedUrl, imageUrl);
 });

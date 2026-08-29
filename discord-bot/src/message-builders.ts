@@ -26,6 +26,7 @@ import type {
 } from "./types";
 import {
   buildForumThreadName,
+  getRosterImageVersion,
   buildRosterImageUrl,
   formatEventStatus,
   formatInTimezone,
@@ -191,7 +192,7 @@ export function buildEventEmbed(
   }
 
   if (event.kind === "match" && roster?.published && (options?.showPublishedRosterImage || shouldShowPublishedRosterImage(event, roster))) {
-    embed.setImage(buildRosterImageUrl(event.id, roster?.updatedAt));
+    embed.setImage(buildRosterImageUrl(event.id, getRosterImageVersion(event, roster?.updatedAt)));
     return embed;
   }
 

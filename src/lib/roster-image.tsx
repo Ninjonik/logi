@@ -106,7 +106,6 @@ export function resolveSiteAssetUrl(path?: string) {
 export function buildRosterImageUrl(eventId: string, rosterUpdatedAt?: string) {
   const url = new URL(`/api/discord/roster-image/${eventId}`, getSiteUrl());
   url.searchParams.set("secret", getInternalAuthSecret());
-  url.searchParams.set("fresh", "1");
   url.searchParams.set("cb", buildRosterImageCacheKey(eventId, rosterUpdatedAt));
   return url.toString();
 }

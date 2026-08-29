@@ -4,9 +4,23 @@ import { NextResponse } from "next/server";
 import { getInternalAuthSecret, getSiteUrl } from "@/lib/env";
 import { getClanDiscordMessages, getIntlLocaleForClanLanguage } from "@/lib/clan-language";
 import { parseDiscordCustomEmoji } from "@/lib/discord-emoji";
+import { rosterImageCache } from "@/lib/roster-image-cache";
 import { getRosterImageContext, getRosterImageContextCached, resolveSiteAssetUrl } from "@/lib/roster-image";
 
 export const contentType = "image/png";
+
+function createImageResponse(image: Uint8Array) {
+  const body = new Uint8Array(image.byteLength);
+  body.set(image);
+  return new Response(body.buffer, {
+    headers: {
+      "content-type": contentType,
+      // `cb` is a content version, so every version is immutable. This lets
+      // Discord retain the already-warmed image instead of re-rendering it.
+      "cache-control": "public, max-age=31536000, immutable",
+    },
+  });
+}
 
 // ---- Layout constants (kept in one place so the JSX and the height/width
 // math below are always talking about the same numbers) ----------------
@@ -247,6 +261,12 @@ export async function GET(
   const url = new URL(request.url);
   if (url.searchParams.get("secret") !== getInternalAuthSecret()) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  const imageCacheKey = url.searchParams.get("cb");
+  if (imageCacheKey) {
+    const cachedImage = rosterImageCache.get(`${eventId}:${imageCacheKey}`);
+    if (cachedImage) return createImageResponse(cachedImage);
   }
 
   const useFreshData = url.searchParams.get("fresh") === "1";
@@ -587,7 +607,7 @@ export async function GET(
     );
   };
 
-  return new ImageResponse(
+  const renderedImage = new ImageResponse(
     (
       <div
         style={{
@@ -688,4 +708,7 @@ export async function GET(
     ),
     { width: CANVAS_WIDTH, height: Math.round(canvasHeight) },
   );
+  const image = new Uint8Array(await renderedImage.arrayBuffer());
+  if (imageCacheKey) rosterImageCache.set(`${eventId}:${imageCacheKey}`, image);
+  return createImageResponse(image);
 }

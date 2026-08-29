@@ -21,8 +21,13 @@ if (!convexUrl || !internalSecret || !botToken) {
   throw new Error("Missing NEXT_PUBLIC_CONVEX_URL/CONVEX_SELF_HOSTED_URL, INTERNAL_AUTH_SECRET, or DISCORD_BOT_TOKEN.");
 }
 
+const appSiteUrl = process.env.SITE_URL ?? "http://localhost:3000";
+
 export const env = {
-  appSiteUrl: process.env.SITE_URL ?? "http://localhost:3000",
+  appSiteUrl,
+  // The public URL is embedded in Discord. A colocated bot can use a private
+  // origin to pre-render images without relying on public hairpin routing.
+  internalAppSiteUrl: process.env.INTERNAL_SITE_URL ?? appSiteUrl,
   botToken,
   convexUrl,
   internalSecret,
