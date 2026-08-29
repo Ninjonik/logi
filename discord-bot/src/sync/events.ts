@@ -69,7 +69,12 @@ async function syncEventMessage(channel: TextChannel, messageId: string | undefi
   return (await channel.send({ embeds: [embed], components: messageComponents })).id;
 }
 
-export async function syncPayloadEvents(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
+export async function syncPayloadEvents(
+  client: Client,
+  queuedEventIds: Set<string>,
+  payload: SyncPayload,
+  options: { syncRoles: boolean } = { syncRoles: true },
+) {
   for (const event of payload.events) {
     const state = payload.syncStates.find((item) => item.eventId === event.id);
     const roster = payload.rosters.find((item) => item.eventId === event.id);
@@ -137,7 +142,7 @@ export async function syncPayloadEvents(client: Client, queuedEventIds: Set<stri
         hasState: Boolean(state),
         hasRoster: Boolean(roster),
       });
-      await syncEvent(client, payload, event, state);
+      await syncEvent(client, payload, event, state, options);
     } catch (error) {
       logError("event-sync", "Discord bot event sync failed", {
         eventId: event.id,
@@ -161,7 +166,13 @@ export async function syncPayloadEvents(client: Client, queuedEventIds: Set<stri
   }
 }
 
-async function syncEvent(client: Client, payload: SyncPayload, event: EventRecord, state?: SyncState) {
+async function syncEvent(
+  client: Client,
+  payload: SyncPayload,
+  event: EventRecord,
+  state?: SyncState,
+  options: { syncRoles: boolean } = { syncRoles: true },
+) {
   const guild = await client.guilds.fetch(payload.config.guildId).catch(() => null);
   if (!guild) {
     logWarn("event-sync", "Skipping event sync because guild could not be fetched", {
@@ -172,7 +183,9 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
   }
 
   const roster = payload.rosters.find((item) => item.eventId === event.id);
-  const eventRoles = await syncEventRoles(guild, event, roster ?? null);
+  const eventRoles = options.syncRoles
+    ? await syncEventRoles(guild, event, roster ?? null)
+    : { attendeeRoleId: event.attendeeRoleId, reserveRoleId: event.reserveRoleId };
   let announcementMessageId = state?.announcementMessageId;
   let eventInfoMessageId = state?.eventInfoMessageId;
   let scheduledEventId = state?.scheduledEventId;
