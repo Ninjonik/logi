@@ -103,6 +103,10 @@ function resolveAssetUrl(path?: string) {
   return resolveSiteAssetUrl(path);
 }
 
+function isOccupiedSlot(player: Player) {
+  return Boolean(player.id || player.customName?.trim());
+}
+
 // True only for meaningful values — filters out null/undefined, empty
 // strings, and the "-" placeholder some forms use for "not set".
 function hasValue(value?: string | null): value is string {
@@ -313,7 +317,7 @@ export async function GET(
 
   const reserveUsers = data.roster.reservePlayerIds.map((id) => usersById.get(id)).filter(Boolean);
   const totalAssigned = data.roster.squads.reduce(
-    (sum, squad) => sum + squad.players.filter((player) => getFilledPlayerName(player)).length,
+    (sum, squad) => sum + squad.players.filter(isOccupiedSlot).length,
     0,
   );
 
@@ -454,7 +458,7 @@ export async function GET(
                                   alt=""
                                   width="16"
                                   height="16"
-                                  style={{ display: "flex", objectFit: "contain" }}
+                                  style={{ display: "flex", width: "16px", height: "16px", flexShrink: 0, objectFit: "contain" }}
                                 />
                               ) : null}
                               <span>{section.roleName}</span>
