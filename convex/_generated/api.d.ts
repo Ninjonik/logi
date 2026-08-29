@@ -25,6 +25,7 @@ import type * as players from "../players.js";
 import type * as publicStats from "../publicStats.js";
 import type * as rosterSync from "../rosterSync.js";
 import type * as rosters from "../rosters.js";
+import type * as scheduledJobs from "../scheduledJobs.js";
 import type * as serverContext from "../serverContext.js";
 import type * as serverMetadata from "../serverMetadata.js";
 import type * as serverRosters from "../serverRosters.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   publicStats: typeof publicStats;
   rosterSync: typeof rosterSync;
   rosters: typeof rosters;
+  scheduledJobs: typeof scheduledJobs;
   serverContext: typeof serverContext;
   serverMetadata: typeof serverMetadata;
   serverRosters: typeof serverRosters;
