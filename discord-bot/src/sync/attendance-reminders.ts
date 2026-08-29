@@ -9,7 +9,12 @@ import { buildAttendanceReminderComponents } from "../message-builders";
 import type { SyncPayload } from "../types";
 import { buildDiscordMessageLink } from "../utils";
 
-export async function processAttendanceReminders(client: Client, queuedEventIds: Set<string>, payload: SyncPayload) {
+export async function processAttendanceReminders(
+  client: Client,
+  queuedEventIds: Set<string>,
+  payload: SyncPayload,
+  dueEventIds: ReadonlySet<string>,
+) {
   const guild = await client.guilds.fetch(payload.config.guildId).catch(() => null);
   if (!guild) {
     logWarn("attendance-reminders", "Skipping attendance reminders because guild could not be fetched", {
@@ -19,6 +24,7 @@ export async function processAttendanceReminders(client: Client, queuedEventIds:
   }
 
   for (const event of payload.events) {
+    if (!dueEventIds.has(event.id)) continue;
     if (event.status !== "starting") continue;
 
     const roster = payload.rosters.find((item) => item.eventId === event.id && item.published);

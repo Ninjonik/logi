@@ -58,6 +58,14 @@ function startFallbackWorker() {
       return;
     }
 
+    if (message.type === "attendanceRemindersDue") {
+      for (const eventId of message.eventIds ?? []) {
+        syncService.queueAttendanceReminder(eventId);
+      }
+      syncService.triggerSoon(250);
+      return;
+    }
+
     if (message.type === "eventsChanged") {
       logInfo("fallback-worker", "Received changed events", {
         eventIds: message.eventIds ?? [],

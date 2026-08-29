@@ -14,6 +14,7 @@ export async function syncGuildPayload(
   queuedEventIds: Set<string>,
   payload: SyncPayload,
   mode: "full" | "events_only" = "full",
+  attendanceReminderEventIds = new Set<string>(),
 ) {
   logInfo("guild-sync", "Syncing guild payload", {
     guildId: payload.config.guildId,
@@ -34,9 +35,11 @@ export async function syncGuildPayload(
 
   // Event lifecycle and message changes are user-visible state. Never hold them
   // behind potentially slow direct-message delivery.
-  await runGuildSyncStep(client, "attendance reminder sync", payload, () =>
-    processAttendanceReminders(client, queuedEventIds, payload),
-  );
+  if (attendanceReminderEventIds.size > 0) {
+    await runGuildSyncStep(client, "attendance reminder sync", payload, () =>
+      processAttendanceReminders(client, queuedEventIds, payload, attendanceReminderEventIds),
+    );
+  }
 }
 
 async function runGuildSyncStep(client: Client, step: string, payload: SyncPayload, execute: () => Promise<void>) {

@@ -42,7 +42,8 @@ async function runTick() {
     const jobs = (await convex.mutation(references.claimDueScheduledJobs, {
       secret: env.internalSecret,
       limit: RECONCILE_BATCH_SIZE,
-    })) as Array<{ id: string; eventId: string }>;
+    })) as Array<{ id: string; eventId: string; kind: "close-registration" | "start-event" | "conclude-event" | "attendance-reminder" }>;
+    const attendanceReminderEventIds = new Set<string>();
 
     if (jobs.length > 0) {
       workerPort.postMessage({ type: "scheduledJobsClaimed", count: jobs.length, eventIds: jobs.map((job) => job.eventId) });
@@ -59,6 +60,7 @@ async function runTick() {
         if (!changedEventIds.includes(job.eventId)) changedEventIds.push(job.eventId);
         for (const eventId of result.scoreEventIds) scoreEventIds.add(eventId);
         await convex.mutation(references.completeScheduledJob, { secret: env.internalSecret, jobId: job.id as never });
+        if (job.kind === "attendance-reminder") attendanceReminderEventIds.add(job.eventId);
       } catch {
         await convex.mutation(references.releaseScheduledJob, { secret: env.internalSecret, jobId: job.id as never });
       }
@@ -73,6 +75,9 @@ async function runTick() {
 
     if (changedEventIds.length > 0) {
       workerPort.postMessage({ type: "eventsChanged", eventIds: changedEventIds });
+    }
+    if (attendanceReminderEventIds.size > 0) {
+      workerPort.postMessage({ type: "attendanceRemindersDue", eventIds: [...attendanceReminderEventIds] });
     }
 
   } catch (error) {

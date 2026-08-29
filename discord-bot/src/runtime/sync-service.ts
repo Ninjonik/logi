@@ -21,6 +21,7 @@ type RosterIndexRecord = EventSyncIndex["rosters"][number];
 
 export class DiscordSyncService {
   private readonly queuedEventIds = new Set<string>();
+  private readonly queuedAttendanceReminderEventIds = new Set<string>();
   private readonly queuedGuildIds = new Set<string>();
   private readonly guildCache = new GuildCache();
   private readonly eventIndexById = new Map<string, EventIndexRecord>();
@@ -104,6 +105,11 @@ export class DiscordSyncService {
       guildId,
       queuedGuilds: this.queuedGuildIds.size,
     });
+  }
+
+  queueAttendanceReminder(eventId: string) {
+    this.queuedAttendanceReminderEventIds.add(eventId);
+    this.queueEventSync(eventId);
   }
 
   getGuildConfig(guildId: string) {
@@ -191,6 +197,8 @@ export class DiscordSyncService {
         // next loop instead of being erased after the older snapshot completes.
         const queuedEventIdsForCycle = new Set(this.queuedEventIds);
         this.queuedEventIds.clear();
+        const queuedAttendanceReminderEventIdsForCycle = new Set(this.queuedAttendanceReminderEventIds);
+        this.queuedAttendanceReminderEventIds.clear();
         const guildIds = [...this.queuedGuildIds];
         this.queuedGuildIds.clear();
         if (guildIds.length > 0) {
@@ -219,7 +227,11 @@ export class DiscordSyncService {
         }
         for (const eventId of eventIds) {
           try {
-            await this.syncEvent(eventId, queuedEventIdsForCycle);
+            await this.syncEvent(
+              eventId,
+              queuedEventIdsForCycle,
+              queuedAttendanceReminderEventIdsForCycle.has(eventId),
+            );
           } catch (error) {
             logError("sync-service", "Discord bot queued event sync failed", {
               eventId,
@@ -294,7 +306,7 @@ export class DiscordSyncService {
     await syncGuildPayload(this.client, queuedEventIds, payload, "full");
   }
 
-  private async syncEvent(eventId: string, queuedEventIds: Set<string>) {
+  private async syncEvent(eventId: string, queuedEventIds: Set<string>, attendanceReminderDue: boolean) {
     const context = await this.loadEventSyncContext(eventId);
     if (!context) {
       logWarn("sync-service", "Skipping event sync because context was not found", { eventId });
@@ -324,7 +336,13 @@ export class DiscordSyncService {
       rosterCount: payload.rosters.length,
       hasSyncState: payload.syncStates.length > 0,
     });
-    await syncGuildPayload(this.client, queuedEventIds, payload, "events_only");
+    await syncGuildPayload(
+      this.client,
+      queuedEventIds,
+      payload,
+      "events_only",
+      attendanceReminderDue ? new Set([eventId]) : new Set(),
+    );
     if (context.syncState?.lastCalendarSyncVersion !== getCalendarSyncVersion(context.event)) {
       await this.syncGuildCalendar(context.event.guildId);
     }
