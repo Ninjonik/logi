@@ -11,8 +11,6 @@ const upsertGroupReference = makeFunctionReference<"mutation">("groups:upsert");
 const removeGroupReference = makeFunctionReference<"mutation">("groups:remove");
 
 export async function getServerGroups(serverId: string) {
-  "use cache";
-  tagCacheEntries([appCacheTags.groups(serverId)]);
   return (await fetchQuery(listGroupsReference, { guildId: serverId as never })) as Group[];
 }
 

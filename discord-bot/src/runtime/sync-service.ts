@@ -10,6 +10,7 @@ import { env } from "../environment";
 import { logError, logInfo, logWarn } from "../log";
 import { syncGuildPayload } from "../sync";
 import { syncCalendarPanel } from "../sync/panels";
+import { getCalendarSyncVersion } from "../sync/work";
 import type { EventSyncContext, EventSyncIndex, SyncPayload } from "../types";
 
 import { GuildCache, hasConfiguredClanDiscordTarget, type GuildRuntimeData } from "./guild-cache";
@@ -104,6 +105,10 @@ export class DiscordSyncService {
     });
   }
 
+  getGuildConfig(guildId: string) {
+    return this.guildCache.get(guildId)?.config;
+  }
+
   triggerSoon(delayMs = 2000) {
     logInfo("sync-service", "Triggering scheduled flush", {
       delayMs,
@@ -178,7 +183,11 @@ export class DiscordSyncService {
           });
         }
 
+        // Take ownership of this cycle's work before awaiting any Discord calls.
+        // Work enqueued while the cycle is running remains in the live set for the
+        // next loop instead of being erased after the older snapshot completes.
         const queuedEventIdsForCycle = new Set(this.queuedEventIds);
+        this.queuedEventIds.clear();
         const guildIds = [...this.queuedGuildIds];
         this.queuedGuildIds.clear();
         if (guildIds.length > 0) {
@@ -199,7 +208,6 @@ export class DiscordSyncService {
         }
 
         const eventIds = [...queuedEventIdsForCycle];
-        this.queuedEventIds.clear();
         if (eventIds.length > 0) {
           logInfo("sync-service", "Processing queued events", {
             eventIds,
@@ -313,7 +321,9 @@ export class DiscordSyncService {
       hasSyncState: payload.syncStates.length > 0,
     });
     await syncGuildPayload(this.client, queuedEventIds, payload, "events_only");
-    await this.syncGuildCalendar(context.event.guildId);
+    if (context.syncState?.lastCalendarSyncVersion !== getCalendarSyncVersion(context.event)) {
+      await this.syncGuildCalendar(context.event.guildId);
+    }
   }
 
   private async loadEventSyncContext(eventId: string) {

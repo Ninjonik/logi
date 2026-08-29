@@ -11,13 +11,16 @@ export class ReconcileEventStatusesUseCase {
     private readonly clock: Clock,
   ) {}
 
-  async execute(input?: { cursor?: string | null; limit?: number }): Promise<{
+  async execute(input?: { cursor?: string | null; limit?: number; eventId?: string }): Promise<{
     changedEventIds: string[];
     scoreEventIds: string[];
     continueCursor: string | null;
     isDone: boolean;
   }> {
-    const page = input?.limit
+    const directEvent = input?.eventId ? await this.events.getById(input.eventId) : null;
+    const page = directEvent
+      ? { records: [directEvent], continueCursor: null, isDone: true }
+      : input?.limit
       ? await this.events.listPage(input.cursor ?? null, input.limit)
       : {
           records: await this.events.listAll(),

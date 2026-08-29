@@ -24,7 +24,15 @@ export async function syncEventRoles(guild: Guild, event: EventRecord, roster: R
     const rosteredIds: string[] = roster?.squads.flatMap((squad) => squad.players.map((player) => player.id).filter((id): id is string => Boolean(id))) ?? [];
     for (const id of rosteredIds) attendeeIds.add(id);
     for (const id of reserveIds) attendeeIds.delete(id);
-    const members = await guild.members.fetch().catch(() => null);
+    const attendeeRole = await guild.roles.fetch(attendeeRoleId!).catch(() => null);
+    const reserveRole = await guild.roles.fetch(reserveRoleId!).catch(() => null);
+    const relevantMemberIds = new Set([
+      ...attendeeIds,
+      ...reserveIds,
+      ...(attendeeRole ? attendeeRole.members.keys() : []),
+      ...(reserveRole ? reserveRole.members.keys() : []),
+    ]);
+    const members = await guild.members.fetch({ user: [...relevantMemberIds] }).catch(() => null);
     if (members) await Promise.all([...members.values()].map(async (member) => Promise.all([
       attendeeIds.has(member.id) ? member.roles.add(attendeeRoleId!) : member.roles.remove(attendeeRoleId!),
       reserveIds.has(member.id) ? member.roles.add(reserveRoleId!) : member.roles.remove(reserveRoleId!),

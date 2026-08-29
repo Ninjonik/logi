@@ -106,6 +106,7 @@ export function RosterBoard({
   const [notifyRosterChanges, setNotifyRosterChanges] = useState(true);
   const [postRosterChanges, setPostRosterChanges] = useState(false);
   const [autoFillDialogOpen, setAutoFillDialogOpen] = useState(false);
+  const [unsignedPlayerAssignment, setUnsignedPlayerAssignment] = useState<{ userId: string; squadIndex: number; playerIndex: number } | null>(null);
   const [autoFillScoreWeight, setAutoFillScoreWeight] = useState(50);
   const [autoFillKdWeight, setAutoFillKdWeight] = useState(50);
   const dragPointerYRef = useRef<number | null>(null);
@@ -399,6 +400,17 @@ export function RosterBoard({
   }
 
   function assignUserToSlot(userId: string, squadIndex: number, playerIndex: number) {
+    const isAlreadyOnRoster = board?.reservePlayerIds.includes(userId)
+      || board?.squads.some((squad) => squad.players.some((player) => player.id === userId));
+    if (!isAlreadyOnRoster && !participantStatusByUserId.has(userId)) {
+      setUnsignedPlayerAssignment({ userId, squadIndex, playerIndex });
+      return;
+    }
+
+    placeUserInSlot(userId, squadIndex, playerIndex);
+  }
+
+  function placeUserInSlot(userId: string, squadIndex: number, playerIndex: number) {
     setIsDirty(true);
     setBoard((current) => {
       if (!current) return current;
@@ -1247,6 +1259,38 @@ export function RosterBoard({
             <Button className="rounded-xl" onClick={() => handleSave(true)} disabled={isPending || isConfirmingMeetingChannel}>
               {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               {dictionary.roster.publishRoster}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={Boolean(unsignedPlayerAssignment)} onOpenChange={(open) => !open && setUnsignedPlayerAssignment(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dictionary.roster.unsignedPlayerConfirmTitle}</DialogTitle>
+            <DialogDescription>
+              {dictionary.roster.unsignedPlayerConfirmDescription.replace(
+                "{name}",
+                usersById.get(unsignedPlayerAssignment?.userId ?? "")?.name ?? dictionary.common.unknown,
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">{dictionary.common.cancel}</Button>
+            </DialogClose>
+            <Button
+              onClick={() => {
+                if (unsignedPlayerAssignment) {
+                  placeUserInSlot(
+                    unsignedPlayerAssignment.userId,
+                    unsignedPlayerAssignment.squadIndex,
+                    unsignedPlayerAssignment.playerIndex,
+                  );
+                }
+                setUnsignedPlayerAssignment(null);
+              }}
+            >
+              {dictionary.roster.unsignedPlayerConfirmAction}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -456,6 +456,15 @@ export default defineSchema({
     createdAt: v.string(),
     updatedAt: v.optional(v.string()),
   }).index("guildId", ["guildId"]),
+  eventScheduleJobs: defineTable({
+    eventId: v.id("events"),
+    kind: v.union(v.literal("close-registration"), v.literal("start-event"), v.literal("conclude-event"), v.literal("attendance-reminder")),
+    dueAt: v.string(),
+    status: v.union(v.literal("pending"), v.literal("processing")),
+    attempts: v.number(),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  }).index("eventId", ["eventId"]).index("status_dueAt", ["status", "dueAt"]),
   stratmaps: defineTable({
     guildId: v.string(),
     eventId: v.optional(v.id("events")),
@@ -523,6 +532,7 @@ export default defineSchema({
     lastEventUpdatedAt: v.optional(v.string()),
     lastRosterUpdatedAt: v.optional(v.string()),
     lastConfigUpdatedAt: v.optional(v.string()),
+    lastCalendarSyncVersion: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.string(),
   })

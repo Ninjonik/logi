@@ -7,6 +7,7 @@ import { env } from "./environment";
 import { createInteractionHandler } from "./interactions";
 import { logError, logInfo, logWarn } from "./log";
 import { DiscordSyncService } from "./runtime/sync-service";
+import { removeGuildMemberAccess, syncGuildMemberAccessMember } from "./sync/member-access";
 
 const syncService = new DiscordSyncService(client);
 const require = createRequire(import.meta.url);
@@ -146,26 +147,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-client.on(Events.VoiceStateUpdate, (oldState, newState) => {
-  const guildId = newState.guild.id ?? oldState.guild.id;
-  if (!guildId) {
-    return;
-  }
-
-  const oldChannelId = oldState.channelId ?? undefined;
-  const newChannelId = newState.channelId ?? undefined;
-  if (oldChannelId === newChannelId) {
-    return;
-  }
-
-  logInfo("voice-state", "Queued guild sync from voice state update", {
-    guildId,
-    userId: newState.id ?? oldState.id,
-    oldChannelId,
-    newChannelId,
-  });
-  syncService.queueGuildSync(guildId);
-  syncService.triggerSoon(250);
+client.on(Events.GuildMemberAdd, (member) => {
+  const config = syncService.getGuildConfig(member.guild.id);
+  void syncGuildMemberAccessMember(member, config?.dashboardAdminRoleId).catch((error) => logError("member-access", "Failed to add member access", { guildId: member.guild.id, userId: member.id, error }));
+});
+client.on(Events.GuildMemberUpdate, (_before, member) => {
+  const config = syncService.getGuildConfig(member.guild.id);
+  void syncGuildMemberAccessMember(member, config?.dashboardAdminRoleId).catch((error) => logError("member-access", "Failed to update member access", { guildId: member.guild.id, userId: member.id, error }));
+});
+client.on(Events.GuildMemberRemove, (member) => {
+  void removeGuildMemberAccess(member.guild.id, member.id).catch((error) => logError("member-access", "Failed to remove member access", { guildId: member.guild.id, userId: member.id, error }));
 });
 
 client.on(Events.Error, (error) => {

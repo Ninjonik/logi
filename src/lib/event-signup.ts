@@ -131,6 +131,7 @@ export function resolveEventSignupSelection(input: {
   event: Pick<EventRecord, "kind" | "signupGroupIds" | "allowedSignupStatuses" | "useGeneralSignup" | "requiredRoleIds" | "registrationEnd" | "status">;
   groups: SignupGroupLike[];
   memberRoleIds?: string[] | null;
+  assignedGroupIds?: string[];
   membershipStatus?: SignupMembershipStatus | null;
   actionId: string;
   labels: Pick<SignupLanguageLabels, "registrationClosed" | "invalidSignupButton" | "unableToResolveMembership" | "missingRequiredRole" | "membershipStatusNotAllowed" | "signupUpdated" | "markedNotAttending">;
@@ -153,6 +154,7 @@ export function resolveEventSignupSelection(input: {
   }
 
   const memberRoleIds = new Set(input.memberRoleIds);
+  const assignedGroupIds = new Set(input.assignedGroupIds ?? []);
   const isTrainingAttend = input.event.kind === "training" && input.actionId === TRAINING_ATTEND;
   const isGeneralSignup = input.event.kind === "match" && input.actionId === SIGNUP_GENERAL;
   const selectedGroup = isGeneralSignup || isTrainingAttend || input.actionId === SIGNUP_NOT_ATTENDING
@@ -167,7 +169,11 @@ export function resolveEventSignupSelection(input: {
     return { ok: false as const, error: input.labels.missingRequiredRole };
   }
 
-  if (selectedGroup?.discordRoleId && !memberRoleIds.has(selectedGroup.discordRoleId)) {
+  if (
+    selectedGroup?.discordRoleId
+    && !memberRoleIds.has(selectedGroup.discordRoleId)
+    && !assignedGroupIds.has(selectedGroup.id)
+  ) {
     return { ok: false as const, error: input.labels.missingRequiredRole };
   }
 

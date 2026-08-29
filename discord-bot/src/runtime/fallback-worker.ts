@@ -39,22 +39,25 @@ async function runTick() {
   try {
     const changedEventIds: string[] = [];
     const scoreEventIds = new Set<string>();
-    let cursor: string | null = null;
-    let isDone = false;
+    const jobs = (await convex.mutation(references.claimDueScheduledJobs, {
+      secret: env.internalSecret,
+      limit: RECONCILE_BATCH_SIZE,
+    })) as Array<{ id: string; eventId: string }>;
 
-    while (!isDone) {
-      const result = (await convex.mutation(references.reconcileStatuses, {
+    for (const job of jobs) {
+      try {
+        const result = (await convex.mutation(references.reconcileStatuses, {
         secret: env.internalSecret,
-        cursor: cursor ?? undefined,
-        limit: RECONCILE_BATCH_SIZE,
-      })) as { changedEventIds: string[]; scoreEventIds: string[]; continueCursor: string | null; isDone: boolean };
+        eventId: job.eventId as never,
+      })) as { changedEventIds: string[]; scoreEventIds: string[] };
 
-      changedEventIds.push(...result.changedEventIds);
-      for (const eventId of result.scoreEventIds) {
-        scoreEventIds.add(eventId);
+        changedEventIds.push(...result.changedEventIds);
+        if (!changedEventIds.includes(job.eventId)) changedEventIds.push(job.eventId);
+        for (const eventId of result.scoreEventIds) scoreEventIds.add(eventId);
+        await convex.mutation(references.completeScheduledJob, { secret: env.internalSecret, jobId: job.id as never });
+      } catch {
+        await convex.mutation(references.releaseScheduledJob, { secret: env.internalSecret, jobId: job.id as never });
       }
-      cursor = result.continueCursor;
-      isDone = result.isDone;
     }
 
     for (const eventId of scoreEventIds) {
@@ -78,7 +81,9 @@ async function runTick() {
   }
 }
 
-void runTick();
+void convex.mutation(references.backfillMissingScheduledJobs, { secret: env.internalSecret })
+  .then(() => runTick())
+  .catch((error) => workerPort.postMessage({ type: "error", error: error instanceof Error ? error.message : String(error) }));
 setInterval(() => {
   void runTick();
 }, RECONCILE_INTERVAL_MS);

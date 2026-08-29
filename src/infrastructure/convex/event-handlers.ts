@@ -49,8 +49,8 @@ export async function handleToggleSignup(input: {
 export async function handleReconcileStatuses(input: {
   secret: string;
   expectedSecret: string;
-  args: { cursor: string | null; limit: number };
-  createUseCase: () => ExecuteUseCase<{ cursor: string | null; limit: number }, unknown>;
+  args: { cursor: string | null; limit: number; eventId?: string };
+  createUseCase: () => ExecuteUseCase<{ cursor: string | null; limit: number; eventId?: string }, unknown>;
 }) {
   assertInternalSecret(input.secret, input.expectedSecret);
   return await input.createUseCase().execute(input.args);

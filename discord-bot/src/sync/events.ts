@@ -15,6 +15,7 @@ import {
 } from "../scheduled-events";
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types";
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules";
+import { getCalendarSyncVersion } from "./work";
 
 function shouldShowPublishedRosterImage(event: EventRecord, rosterUpdatedAt?: string) {
   return Boolean(rosterUpdatedAt && (event.status === "closed" || event.status === "starting"));
@@ -99,6 +100,7 @@ export async function syncPayloadEvents(client: Client, queuedEventIds: Set<stri
         lastEventUpdatedAt: event.updatedAt,
         lastRosterUpdatedAt: roster?.updatedAt,
         lastConfigUpdatedAt: payload.config.updatedAt,
+        lastCalendarSyncVersion: getCalendarSyncVersion(event),
         lastSyncedAt: new Date().toISOString(),
       });
       continue;
@@ -409,6 +411,7 @@ async function syncEvent(client: Client, payload: SyncPayload, event: EventRecor
     lastEventUpdatedAt: event.updatedAt,
     lastRosterUpdatedAt: roster?.updatedAt,
     lastConfigUpdatedAt: payload.config.updatedAt,
+    lastCalendarSyncVersion: getCalendarSyncVersion(event),
     lastSyncedAt: new Date().toISOString(),
   });
   logInfo("event-sync", "Persisted event sync state", {

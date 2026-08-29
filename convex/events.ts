@@ -97,7 +97,7 @@ export const upsert = mutation({
     stratmapIds: v.optional(v.array(v.id("stratmaps"))),
   },
   handler: async (ctx, args) => {
-    return await handleUpsertEvent({
+    const eventId = await handleUpsertEvent({
       secret: args.secret,
       expectedSecret: INTERNAL_AUTH_SECRET,
       args: {
@@ -116,6 +116,21 @@ export const upsert = mutation({
         systemClock,
       ),
     });
+    const event = await ctx.db.get(eventId as Id<"events">);
+    if (event) {
+      const now = new Date().toISOString();
+      const existingJobs = await ctx.db.query("eventScheduleJobs").withIndex("eventId", (q) => q.eq("eventId", event._id)).collect();
+      await Promise.all(existingJobs.map((job) => ctx.db.delete(job._id)));
+      const startAtMs = Math.max(new Date(event.registrationEnd).getTime(), new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000);
+      const deadlines = [
+        ["close-registration", event.registrationEnd],
+        ["start-event", new Date(startAtMs).toISOString()],
+        ["conclude-event", event.gameEnd],
+        ...[24, 18, 12, 6].map((hours) => ["attendance-reminder", new Date(new Date(event.meetingStart).getTime() - hours * 60 * 60 * 1000).toISOString()] as const),
+      ] as const;
+      await Promise.all(deadlines.filter(([, dueAt]) => Number.isFinite(new Date(dueAt).getTime())).map(([kind, dueAt]) => ctx.db.insert("eventScheduleJobs", { eventId: event._id, kind, dueAt, status: "pending", attempts: 0, createdAt: now, updatedAt: now })));
+    }
+    return eventId;
   },
 });
 
@@ -180,6 +195,7 @@ export const reconcileStatuses = mutation({
     secret: v.string(),
     cursor: v.optional(v.string()),
     limit: v.optional(v.number()),
+    eventId: v.optional(v.id("events")),
   },
   handler: async (ctx, args) => {
     return await handleReconcileStatuses({
@@ -188,6 +204,7 @@ export const reconcileStatuses = mutation({
       args: {
         cursor: args.cursor ?? null,
         limit: args.limit ?? 25,
+        eventId: args.eventId ? String(args.eventId) : undefined,
       },
       createUseCase: () => new ReconcileEventStatusesUseCase(
         new ConvexEventCommandRepository(ctx),

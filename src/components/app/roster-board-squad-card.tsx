@@ -588,6 +588,9 @@ export function SquadCard({
                                     const assignment = assignmentsByUserId.get(user.discordId);
                                     const assignedElsewhere = assignedElsewhereUserIds.has(user.discordId);
                                     const userSignupLabel = getUserSignupLabel(user.discordId, signupGroupByUserId);
+                                    const participantStatus = participantStatusByUserId.get(user.discordId);
+                                    const hasNotSignedUp = !participantStatus;
+                                    const isNotAttending = hasNotSignedUp || participantStatus === "not_attending";
 
                                     return (
                                       <CommandItem
@@ -595,6 +598,7 @@ export function SquadCard({
                                         value={user.name}
                                         className={cn(
                                           assignedElsewhere && "bg-amber-500/10 text-amber-100 data-[selected=true]:bg-amber-500/20",
+                                          isNotAttending && "bg-muted/80 data-[selected=true]:bg-muted",
                                         )}
                                         onSelect={() => {
                                           assignUserToSlot(user.discordId, squadIndex, playerIndex);
@@ -612,6 +616,14 @@ export function SquadCard({
                                             {userSignupLabel ? (
                                               <Badge variant="outline" className="rounded-full px-1.5 py-0 text-[10px]">
                                                 {userSignupLabel}
+                                              </Badge>
+                                            ) : hasNotSignedUp ? (
+                                              <Badge variant="secondary" className="rounded-full px-1.5 py-0 text-[10px] text-muted-foreground">
+                                                {dictionary.roster.noSignupResponse}
+                                              </Badge>
+                                            ) : isNotAttending ? (
+                                              <Badge variant="secondary" className="rounded-full px-1.5 py-0 text-[10px] text-muted-foreground">
+                                                {dictionary.roster.declinedSignup}
                                               </Badge>
                                             ) : null}
                                           </div>

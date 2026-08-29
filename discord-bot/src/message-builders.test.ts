@@ -128,6 +128,22 @@ test("buildEventEmbed uses training-specific start wording for trainings", () =>
   assert.doesNotMatch(embed.toJSON().description ?? "", /Start zápasu|Match Start/);
 });
 
+test("buildCalendarPanelEmbed does not repeat a category emoji when it is the color chip", () => {
+  const embed = buildCalendarPanelEmbed(
+    { ...config, defaultLanguage: "en" },
+    [{ id: "friendly", label: "Friendly", color: "#22c55e", emoji: "🟩" }],
+    [createMatchEvent({
+      matchType: "friendly",
+      meetingStart: "2099-01-01T19:00:00.000Z",
+      gameStart: "2099-01-01T20:00:00.000Z",
+      gameEnd: "2099-01-01T21:30:00.000Z",
+    })],
+  );
+
+  assert.match(embed.toJSON().description ?? "", /🟩 Friendly/);
+  assert.doesNotMatch(embed.toJSON().description ?? "", /🟩 🟩 Friendly/);
+});
+
 test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched color chips", () => {
   const embed = buildCalendarPanelEmbed(
     config,
