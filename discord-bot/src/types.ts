@@ -344,6 +344,7 @@ export type EventSyncIndex = {
     id: string;
     guildId: string;
     status: EventRecord["status"];
+    gameEnd: string;
     updatedAt: string;
   }>;
   rosters: Array<Roster>;
