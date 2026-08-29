@@ -315,6 +315,7 @@ export type SyncState = {
   lastEventUpdatedAt?: string;
   lastRosterUpdatedAt?: string;
   lastConfigUpdatedAt?: string;
+  lastCalendarSyncVersion?: string;
 };
 
 export type SyncPayload = {
@@ -361,6 +362,7 @@ export type EventInteractionContext = {
   assignments?: Array<{
     userId: string;
     primaryGroupId?: string;
+    secondaryGroupIds?: string[];
     type?: "member" | "reserve_member" | "mercenary";
     status?: "pending" | "recruit" | "active";
   }>;

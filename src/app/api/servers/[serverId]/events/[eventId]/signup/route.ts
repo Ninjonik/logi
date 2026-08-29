@@ -37,6 +37,9 @@ export async function POST(
     event,
     groups: context.groups,
     memberRoleIds: context.memberRoleIds,
+    assignedGroupIds: assignment
+      ? [assignment.primaryGroupId, ...assignment.secondaryGroupIds].filter((groupId): groupId is string => Boolean(groupId))
+      : [],
     membershipStatus,
     actionId: String(body.actionId ?? ""),
     labels: {

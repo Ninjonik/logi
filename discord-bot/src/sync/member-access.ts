@@ -1,4 +1,4 @@
-import type { Client } from "discord.js";
+import type { Client, GuildMember } from "discord.js";
 
 import { revalidateAppData } from "../cache";
 import { convex, references } from "../convex";
@@ -51,4 +51,20 @@ export async function syncGuildMemberAccess(client: Client, payload: SyncPayload
     type: "server-context-changed",
     serverId: payload.config.guildId,
   });
+}
+
+export async function syncGuildMemberAccessMember(member: GuildMember, dashboardAdminRoleId?: string) {
+  const roleIds = [...member.roles.cache.keys()].filter((roleId) => roleId !== member.guild.id);
+  await convex.mutation(references.upsertMemberAccess, {
+    secret: env.internalSecret,
+    guildId: member.guild.id,
+    userId: member.id,
+    roleIds,
+    isAdmin: member.permissions.has("Administrator"),
+    hasDashboardAccess: member.permissions.has("Administrator") || Boolean(dashboardAdminRoleId && roleIds.includes(dashboardAdminRoleId)),
+  });
+}
+
+export async function removeGuildMemberAccess(guildId: string, userId: string) {
+  await convex.mutation(references.removeMemberAccess, { secret: env.internalSecret, guildId, userId });
 }

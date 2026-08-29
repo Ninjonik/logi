@@ -27,10 +27,11 @@ export async function syncGuildPayload(
     await runGuildSyncStep(client, "ticket panel sync", payload, () => syncTicketPanel(client, payload));
     await runGuildSyncStep(client, "membership panel sync", payload, () => syncMembershipPanel(client, payload));
     await runGuildSyncStep(client, "calendar panel sync", payload, () => syncCalendarPanel(client, payload));
-    await runGuildSyncStep(client, "attendance reminder sync", payload, () =>
-      processAttendanceReminders(client, queuedEventIds, payload),
-    );
   }
+
+  await runGuildSyncStep(client, "attendance reminder sync", payload, () =>
+    processAttendanceReminders(client, queuedEventIds, payload),
+  );
 
   await syncPayloadEvents(client, queuedEventIds, payload);
 }

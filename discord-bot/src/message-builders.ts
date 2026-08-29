@@ -666,7 +666,8 @@ export function buildCalendarPanelEmbed(
     }
 
     const chip = getColorChipEmoji(entry.color);
-    const legendParts = [chip, entry.emoji?.trim(), entry.label.trim()].filter(Boolean);
+    const categoryEmoji = entry.emoji?.trim();
+    const legendParts = [chip, categoryEmoji === chip ? undefined : categoryEmoji, entry.label.trim()].filter(Boolean);
     legendEntries.set(`${entry.label.trim().toLowerCase()}:${entry.color}:${entry.emoji?.trim() ?? ""}`, legendParts.join(" "));
   }
 

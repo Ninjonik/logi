@@ -80,6 +80,9 @@ export async function handleEventButtonInteraction(
       event: context.event,
       groups: context.groups,
       memberRoleIds: member ? [...member.roles.cache.keys()] : null,
+      assignedGroupIds: assignment
+        ? [assignment.primaryGroupId, ...(assignment.secondaryGroupIds ?? [])].filter((groupId): groupId is string => Boolean(groupId))
+        : [],
       membershipStatus,
       actionId: groupId,
       labels: {

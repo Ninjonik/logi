@@ -190,6 +190,7 @@ export const getEventSignupContext = query({
       assignments: assignments.map((assignment) => ({
         userId: assignment.userId,
         primaryGroupId: assignment.primaryGroupId ? String(assignment.primaryGroupId) : undefined,
+        secondaryGroupIds: (assignment.secondaryGroupIds ?? []).map((groupId) => String(groupId)),
         type: assignment.type,
         status: assignment.status,
       })),
@@ -245,6 +246,7 @@ export const updateEventSyncState = mutation({
     lastEventUpdatedAt: v.optional(v.string()),
     lastRosterUpdatedAt: v.optional(v.string()),
     lastConfigUpdatedAt: v.optional(v.string()),
+    lastCalendarSyncVersion: v.optional(v.string()),
     lastSyncedAt: v.string(),
   },
   handler: async (ctx, args) => {
@@ -266,6 +268,7 @@ export const updateEventSyncState = mutation({
       lastEventUpdatedAt: args.lastEventUpdatedAt,
       lastRosterUpdatedAt: args.lastRosterUpdatedAt,
       lastConfigUpdatedAt: args.lastConfigUpdatedAt,
+      lastCalendarSyncVersion: args.lastCalendarSyncVersion,
       lastSyncedAt: args.lastSyncedAt,
       updatedAt: now,
     };
@@ -338,5 +341,28 @@ export const syncMemberAccess = mutation({
     }
 
     return { ok: true };
+  },
+});
+
+export const upsertMemberAccess = mutation({
+  args: {
+    secret: v.string(), guildId: v.string(), userId: v.string(), roleIds: v.array(v.string()), isAdmin: v.boolean(), hasDashboardAccess: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+    const now = new Date().toISOString();
+    const existing = await ctx.db.query("discordMemberAccess").withIndex("guildId_userId", (q) => q.eq("guildId", args.guildId).eq("userId", args.userId)).unique();
+    const patch = { roleIds: args.roleIds, isAdmin: args.isAdmin, hasDashboardAccess: args.hasDashboardAccess, updatedAt: now };
+    if (existing) { await ctx.db.patch(existing._id, patch); return String(existing._id); }
+    return String(await ctx.db.insert("discordMemberAccess", { guildId: args.guildId, userId: args.userId, ...patch, createdAt: now }));
+  },
+});
+
+export const removeMemberAccess = mutation({
+  args: { secret: v.string(), guildId: v.string(), userId: v.string() },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+    const existing = await ctx.db.query("discordMemberAccess").withIndex("guildId_userId", (q) => q.eq("guildId", args.guildId).eq("userId", args.userId)).unique();
+    if (existing) await ctx.db.delete(existing._id);
   },
 });
