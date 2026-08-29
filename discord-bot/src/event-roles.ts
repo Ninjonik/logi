@@ -33,10 +33,21 @@ export async function syncEventRoles(guild: Guild, event: EventRecord, roster: R
       ...(reserveRole ? reserveRole.members.keys() : []),
     ]);
     const members = await guild.members.fetch({ user: [...relevantMemberIds] }).catch(() => null);
-    if (members) await Promise.all([...members.values()].map(async (member) => Promise.all([
-      attendeeIds.has(member.id) ? member.roles.add(attendeeRoleId!) : member.roles.remove(attendeeRoleId!),
-      reserveIds.has(member.id) ? member.roles.add(reserveRoleId!) : member.roles.remove(reserveRoleId!),
-    ].map((operation) => operation.catch(() => null)))));
+    if (members) {
+      const roleUpdates = [...members.values()].flatMap((member) => {
+        const updates: Promise<unknown>[] = [];
+        const hasAttendeeRole = member.roles.cache.has(attendeeRoleId!);
+        const hasReserveRole = member.roles.cache.has(reserveRoleId!);
+        if (attendeeIds.has(member.id) !== hasAttendeeRole) {
+          updates.push((attendeeIds.has(member.id) ? member.roles.add(attendeeRoleId!) : member.roles.remove(attendeeRoleId!)).catch(() => null));
+        }
+        if (reserveIds.has(member.id) !== hasReserveRole) {
+          updates.push((reserveIds.has(member.id) ? member.roles.add(reserveRoleId!) : member.roles.remove(reserveRoleId!)).catch(() => null));
+        }
+        return updates;
+      });
+      await Promise.all(roleUpdates);
+    }
   } catch (error) {
     void reportClanDiscordError({ client: guild.client, guildId: guild.id, error, action: `Sync event roles for "${event.name}"`, location: "Event roles", scope: "event-roles", target: event.name, details: { eventId: event.id } });
   }

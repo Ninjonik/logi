@@ -117,7 +117,8 @@ export const upsert = mutation({
       ),
     });
     const event = await ctx.db.get(eventId as Id<"events">);
-    if (event) {
+    const historical = Boolean(event && new Date(event.gameEnd).getTime() < Date.now() - 7 * 24 * 60 * 60 * 1000);
+    if (event && !historical) {
       const now = new Date().toISOString();
       const existingJobs = await ctx.db.query("eventScheduleJobs").withIndex("eventId", (q) => q.eq("eventId", event._id)).collect();
       await Promise.all(existingJobs.map((job) => ctx.db.delete(job._id)));
@@ -128,7 +129,9 @@ export const upsert = mutation({
         ["conclude-event", event.gameEnd],
         ...[24, 18, 12, 6].map((hours) => ["attendance-reminder", new Date(new Date(event.meetingStart).getTime() - hours * 60 * 60 * 1000).toISOString()] as const),
       ] as const;
-      await Promise.all(deadlines.filter(([, dueAt]) => Number.isFinite(new Date(dueAt).getTime())).map(([kind, dueAt]) => ctx.db.insert("eventScheduleJobs", { eventId: event._id, kind, dueAt, status: "pending", attempts: 0, createdAt: now, updatedAt: now })));
+      await Promise.all(deadlines
+        .filter(([, dueAt]) => Number.isFinite(new Date(dueAt).getTime()) && new Date(dueAt).getTime() > Date.now())
+        .map(([kind, dueAt]) => ctx.db.insert("eventScheduleJobs", { eventId: event._id, kind, dueAt, status: "pending", attempts: 0, createdAt: now, updatedAt: now })));
     }
     return eventId;
   },
