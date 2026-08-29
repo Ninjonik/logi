@@ -120,9 +120,7 @@ export async function syncPayloadEvents(
       desiredScheduledEventStatus,
       meetingChannelConfigured: Boolean(payload.config.meetingChannelId),
       eventInfoChannelConfigured: event.kind === "match" && Boolean(payload.config.announcementsChannelId && payload.config.eventInfoChannelId),
-      eventInfoMessageRequired: Boolean(
-        roster?.published && (event.status === "closed" || event.status === "starting"),
-      ),
+      eventInfoMessageRequired: event.kind === "match" && Boolean(payload.config.announcementsChannelId && payload.config.eventInfoChannelId),
       queued,
     });
 
@@ -201,27 +199,27 @@ async function syncEvent(
     guildId: payload.config.guildId,
     eventStatus: event.status,
     announcementChannelId: payload.config.announcementsChannelId,
+    eventInfoChannelId: payload.config.eventInfoChannelId,
     meetingChannelId: payload.config.meetingChannelId,
     forumCategoryId: payload.config.forumCategoryId,
     createForumChannel: event.createForumChannel,
   });
 
   const splitChannels = event.kind === "match" && Boolean(payload.config.announcementsChannelId && payload.config.eventInfoChannelId);
-  const shouldShowEventInfo = Boolean(roster?.published && (event.status === "closed" || event.status === "starting"));
+  logInfo("event-sync", "Resolved event message channels", {
+    eventId: event.id,
+    eventKind: event.kind,
+    registrationChannelId: payload.config.announcementsChannelId,
+    eventInfoChannelId: payload.config.eventInfoChannelId,
+    splitChannels,
+    rosterPublished: Boolean(roster?.published),
+  });
   const registrationChannel = payload.config.announcementsChannelId ? await guild.channels.fetch(payload.config.announcementsChannelId).catch(() => null) : null;
   const infoChannel = splitChannels && payload.config.eventInfoChannelId ? await guild.channels.fetch(payload.config.eventInfoChannelId).catch(() => null) : null;
   if (splitChannels && registrationChannel?.isTextBased() && infoChannel?.isTextBased() && registrationChannel.type !== ChannelType.GuildVoice && infoChannel.type !== ChannelType.GuildVoice) {
     const registrationText = registrationChannel as TextChannel;
     const infoText = infoChannel as TextChannel;
-    if (shouldShowEventInfo) {
-      eventInfoMessageId = await syncEventMessage(infoText, eventInfoMessageId, payload, event, roster, guild, false);
-    } else {
-      const eventInfoMessage = eventInfoMessageId
-        ? await infoText.messages.fetch(eventInfoMessageId).catch(() => null)
-        : null;
-      await eventInfoMessage?.delete().catch(() => null);
-      eventInfoMessageId = undefined;
-    }
+    eventInfoMessageId = await syncEventMessage(infoText, eventInfoMessageId, payload, event, roster, guild, false);
     if (event.status === "registration") {
       announcementMessageId = await syncEventMessage(registrationText, announcementMessageId, payload, event, roster, guild);
     } else {
