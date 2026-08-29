@@ -30,11 +30,13 @@ export async function syncGuildPayload(
     await runGuildSyncStep(client, "calendar panel sync", payload, () => syncCalendarPanel(client, payload));
   }
 
+  await syncPayloadEvents(client, queuedEventIds, payload, { syncRoles: mode === "full" });
+
+  // Event lifecycle and message changes are user-visible state. Never hold them
+  // behind potentially slow direct-message delivery.
   await runGuildSyncStep(client, "attendance reminder sync", payload, () =>
     processAttendanceReminders(client, queuedEventIds, payload),
   );
-
-  await syncPayloadEvents(client, queuedEventIds, payload, { syncRoles: mode === "full" });
 }
 
 async function runGuildSyncStep(client: Client, step: string, payload: SyncPayload, execute: () => Promise<void>) {
