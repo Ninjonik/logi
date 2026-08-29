@@ -5,6 +5,17 @@ import { getClanDiscordMessages, getIntlLocaleForClanLanguage } from "../../src/
 import { env } from "./environment";
 import type { ClanLanguage, DiscordConfig, EventRecord } from "./types";
 
+export async function withTimeout<T>(operation: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([operation, new Promise<T>((_resolve, reject) => {
+      timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms.`)), timeoutMs);
+    })]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export function generateCalendarUrl(event: EventRecord, language: ClanLanguage): string {
   const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";
   const title = encodeURIComponent(event.name);

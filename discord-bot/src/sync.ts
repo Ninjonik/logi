@@ -7,6 +7,7 @@ import { syncPayloadEvents } from "./sync/events";
 import { syncGuildMemberAccess } from "./sync/member-access";
 import { syncCalendarPanel, syncMembershipPanel, syncTicketPanel } from "./sync/panels";
 import type { SyncPayload } from "./types";
+import { withTimeout } from "./utils";
 
 export async function syncGuildPayload(
   client: Client,
@@ -38,7 +39,7 @@ export async function syncGuildPayload(
 
 async function runGuildSyncStep(client: Client, step: string, payload: SyncPayload, execute: () => Promise<void>) {
   try {
-    await execute();
+    await withTimeout(execute(), 20_000, `${step} for guild ${payload.config.guildId}`);
   } catch (error) {
     logError("guild-sync", `Discord bot ${step} failed`, {
       guildId: payload.config.guildId,

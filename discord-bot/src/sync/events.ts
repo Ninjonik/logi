@@ -16,6 +16,7 @@ import {
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types";
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules";
 import { getCalendarSyncVersion } from "./work";
+import { withTimeout } from "../utils";
 
 function shouldShowPublishedRosterImage(event: EventRecord, rosterUpdatedAt?: string) {
   return Boolean(rosterUpdatedAt && (event.status === "closed" || event.status === "starting"));
@@ -142,7 +143,7 @@ export async function syncPayloadEvents(
         hasState: Boolean(state),
         hasRoster: Boolean(roster),
       });
-      await syncEvent(client, payload, event, state, options);
+      await withTimeout(syncEvent(client, payload, event, state, options), 20_000, `event sync ${event.id}`);
     } catch (error) {
       logError("event-sync", "Discord bot event sync failed", {
         eventId: event.id,
