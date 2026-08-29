@@ -34,12 +34,14 @@ export const backfillMissing = mutation({
     const events = await ctx.db.query("events").collect();
     let created = 0;
     for (const event of events) {
+      const historical = new Date(event.gameEnd).getTime() < Date.now() - 7 * 24 * 60 * 60 * 1000;
+      if (historical) continue;
       const existing = await ctx.db.query("eventScheduleJobs").withIndex("eventId", (q) => q.eq("eventId", event._id)).first();
       if (existing) continue;
       const startAtMs = Math.max(new Date(event.registrationEnd).getTime(), new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000);
       const deadlines = [["close-registration", event.registrationEnd], ["start-event", new Date(startAtMs).toISOString()], ["conclude-event", event.gameEnd], ...[24, 18, 12, 6].map((hours) => ["attendance-reminder", new Date(new Date(event.meetingStart).getTime() - hours * 60 * 60 * 1000).toISOString()])] as const;
       for (const [kind, dueAt] of deadlines) {
-        if (!Number.isFinite(new Date(dueAt).getTime())) continue;
+        if (!Number.isFinite(new Date(dueAt).getTime()) || new Date(dueAt).getTime() <= Date.now()) continue;
         await ctx.db.insert("eventScheduleJobs", { eventId: event._id, kind: kind as "close-registration" | "start-event" | "conclude-event" | "attendance-reminder", dueAt, status: "pending", attempts: 0, createdAt: now, updatedAt: now });
         created += 1;
       }
