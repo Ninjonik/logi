@@ -132,6 +132,7 @@ export const listEventSyncIndex = query({
           id: normalized.id,
           guildId: normalized.guildId,
           status: normalized.status,
+          gameEnd: normalized.gameEnd,
           updatedAt: normalized.updatedAt,
         };
       }),

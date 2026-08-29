@@ -11,6 +11,7 @@ import { logError, logInfo, logWarn } from "../log";
 import { syncGuildPayload } from "../sync";
 import { syncCalendarPanel } from "../sync/panels";
 import { getCalendarSyncVersion } from "../sync/work";
+import { isHistoricalConcludedEvent } from "../sync/relevance";
 import type { EventSyncContext, EventSyncIndex, SyncPayload } from "../types";
 
 import { GuildCache, hasConfiguredClanDiscordTarget, type GuildRuntimeData } from "./guild-cache";
@@ -236,7 +237,8 @@ export class DiscordSyncService {
   private applyEventIndex(index: EventSyncIndex, initialLoad: boolean) {
     const nextEventIndexById = new Map(index.events.map((event) => [event.id, event]));
     const { rosterIndexByEventId: nextRosterIndexByEventId, signatures: nextEventSignatureById } = buildEventSignatureMap(index);
-    const queuedDueToIndexChanges = getChangedEventIds(nextEventSignatureById, this.eventSignatureById, initialLoad);
+    const queuedDueToIndexChanges = getChangedEventIds(nextEventSignatureById, this.eventSignatureById, initialLoad)
+      .filter((eventId) => !isHistoricalConcludedEvent(nextEventIndexById.get(eventId)!));
     for (const eventId of queuedDueToIndexChanges) {
       this.queuedEventIds.add(eventId);
     }
@@ -279,7 +281,7 @@ export class DiscordSyncService {
     }
 
     const eventIds = [...this.eventIndexById.values()]
-      .filter((event) => event.guildId === guildId)
+      .filter((event) => event.guildId === guildId && !isHistoricalConcludedEvent(event))
       .map((event) => event.id);
     const contexts = await Promise.all(eventIds.map((eventId) => this.loadEventSyncContext(eventId)));
     const payload = buildGuildPayload(runtime, contexts);
@@ -342,7 +344,7 @@ export class DiscordSyncService {
     }
 
     const eventIds = [...this.eventIndexById.values()]
-      .filter((event) => event.guildId === guildId)
+      .filter((event) => event.guildId === guildId && !isHistoricalConcludedEvent(event))
       .map((event) => event.id);
     const contexts = await Promise.all(eventIds.map((eventId) => this.loadEventSyncContext(eventId)));
     const payload = buildGuildPayload(runtime, contexts);
