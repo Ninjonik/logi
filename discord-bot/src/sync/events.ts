@@ -70,7 +70,7 @@ async function syncEventMessage(channel: TextChannel, messageId: string | undefi
   return (await channel.send({ embeds: [embed], components: messageComponents })).id;
 }
 
-async function recoverEventInfoMessageId(channel: TextChannel, messageId: string | undefined, event: EventRecord, botUserId?: string) {
+async function recoverEventMessageId(channel: TextChannel, messageId: string | undefined, event: EventRecord, botUserId?: string) {
   const stored = messageId ? await channel.messages.fetch(messageId).catch(() => null) : null;
   const messages = await channel.messages.fetch({ limit: 100 }).catch(() => null);
   const matches = messages
@@ -236,8 +236,9 @@ async function syncEvent(
   if (splitChannels && registrationChannel?.isTextBased() && infoChannel?.isTextBased() && registrationChannel.type !== ChannelType.GuildVoice && infoChannel.type !== ChannelType.GuildVoice) {
     const registrationText = registrationChannel as TextChannel;
     const infoText = infoChannel as TextChannel;
-    eventInfoMessageId = await recoverEventInfoMessageId(infoText, eventInfoMessageId, event, guild.client.user?.id);
+    eventInfoMessageId = await recoverEventMessageId(infoText, eventInfoMessageId, event, guild.client.user?.id);
     eventInfoMessageId = await syncEventMessage(infoText, eventInfoMessageId, payload, event, roster, guild, false);
+    announcementMessageId = await recoverEventMessageId(registrationText, announcementMessageId, event, guild.client.user?.id);
     if (event.status === "registration") {
       announcementMessageId = await syncEventMessage(registrationText, announcementMessageId, payload, event, roster, guild);
     } else {
