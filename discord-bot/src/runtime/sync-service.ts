@@ -156,8 +156,10 @@ export class DiscordSyncService {
 
   private async flush() {
     if (this.isFlushing) {
-      logWarn("sync-service", "Flush requested while another flush is running");
-      this.scheduleFlush(500);
+      // The active flush drains the live queues in its loop. Scheduling another
+      // timer here only creates an endless 500ms warning loop while a Discord
+      // request is slow; it cannot make the queued work run sooner.
+      logInfo("sync-service", "Flush request coalesced into active flush");
       return;
     }
 
