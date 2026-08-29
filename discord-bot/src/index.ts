@@ -41,7 +41,23 @@ function startFallbackWorker() {
     execArgv: getWorkerExecArgv(),
   });
 
-  fallbackWorker.on("message", (message: { type: string; eventIds?: string[]; error?: string }) => {
+  fallbackWorker.on("message", (message: { type: string; eventIds?: string[]; error?: string; count?: number; removed?: number; released?: number }) => {
+    if (message.type === "scheduledJobsRecovered") {
+      logInfo("fallback-worker", "Recovered scheduled job queue", {
+        removed: message.removed ?? 0,
+        released: message.released ?? 0,
+      });
+      return;
+    }
+
+    if (message.type === "scheduledJobsClaimed") {
+      logInfo("fallback-worker", "Claimed due scheduled jobs", {
+        count: message.count ?? 0,
+        eventIds: message.eventIds ?? [],
+      });
+      return;
+    }
+
     if (message.type === "eventsChanged") {
       logInfo("fallback-worker", "Received changed events", {
         eventIds: message.eventIds ?? [],

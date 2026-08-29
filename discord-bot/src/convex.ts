@@ -70,6 +70,7 @@ export const references = {
   completeScheduledJob: makeFunctionReference<"mutation">("scheduledJobs:complete"),
   releaseScheduledJob: makeFunctionReference<"mutation">("scheduledJobs:release"),
   backfillMissingScheduledJobs: makeFunctionReference<"mutation">("scheduledJobs:backfillMissing"),
+  recoverScheduledJobQueue: makeFunctionReference<"mutation">("scheduledJobs:recoverQueue"),
   setDiscordEventRoles: makeFunctionReference<"mutation">("events:setDiscordEventRoles"),
   syncMemberAccess: makeFunctionReference<"mutation">("discordSync:syncMemberAccess"),
   upsertMemberAccess: makeFunctionReference<"mutation">("discordSync:upsertMemberAccess"),
