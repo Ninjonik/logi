@@ -24,6 +24,7 @@ export async function handleEventButtonInteraction(
   const groupId = decodeURIComponent(encodedGroupId ?? "");
 
   if (interaction.customId.startsWith("attendance:")) {
+    await interaction.deferReply({ ephemeral: Boolean(interaction.guildId) });
     const context = (await convex.query(references.getEventInteractionContext, {
       secret: env.internalSecret,
       eventId: eventId as never,
@@ -63,7 +64,7 @@ export async function handleEventButtonInteraction(
     })) as EventInteractionContext | null;
 
     if (!context) {
-      await interaction.reply({ content: getClanDiscordMessages("en").interaction.unableToLoadEventContext, ephemeral: true });
+      await interaction.editReply({ content: getClanDiscordMessages("en").interaction.unableToLoadEventContext });
       return;
     }
 
@@ -149,15 +150,14 @@ async function handleAttendanceInteraction(
   context: EventInteractionContext,
   options: InteractionHandlerOptions,
 ) {
-  const replyOptions = { ephemeral: Boolean(interaction.guildId) };
   const messages = getClanDiscordMessages(context.config.defaultLanguage);
 
   if (context.event.status !== "starting") {
-    await interaction.reply({ content: messages.interaction.attendanceNotOpen, ...replyOptions });
+    await interaction.editReply({ content: messages.interaction.attendanceNotOpen });
     return;
   }
   if (!context.roster?.published) {
-    await interaction.reply({ content: messages.interaction.rosterNotPublished, ...replyOptions });
+    await interaction.editReply({ content: messages.interaction.rosterNotPublished });
     return;
   }
 
@@ -165,7 +165,7 @@ async function handleAttendanceInteraction(
     squad.players.some((player) => player.id === interaction.user.id),
   );
   if (!isOnRoster) {
-    await interaction.reply({ content: messages.interaction.notOnRoster, ...replyOptions });
+    await interaction.editReply({ content: messages.interaction.notOnRoster });
     return;
   }
 
@@ -196,5 +196,5 @@ async function handleAttendanceInteraction(
     guildId: interaction.guildId,
   });
 
-  await interaction.reply({ content: messages.interaction.attendanceAcknowledged, ...replyOptions });
+  await interaction.editReply({ content: messages.interaction.attendanceAcknowledged });
 }

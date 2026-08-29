@@ -238,6 +238,12 @@ async function syncEvent(
     const infoText = infoChannel as TextChannel;
     eventInfoMessageId = await recoverEventMessageId(infoText, eventInfoMessageId, event, guild.client.user?.id);
     eventInfoMessageId = await syncEventMessage(infoText, eventInfoMessageId, payload, event, roster, guild, false);
+    logInfo("event-sync", "Synchronized event info message", {
+      eventId: event.id,
+      guildId: payload.config.guildId,
+      messageId: eventInfoMessageId,
+      rosterImageAttached: Boolean(event.kind === "match" && roster?.published),
+    });
     announcementMessageId = await recoverEventMessageId(registrationText, announcementMessageId, event, guild.client.user?.id);
     if (event.status === "registration") {
       announcementMessageId = await syncEventMessage(registrationText, announcementMessageId, payload, event, roster, guild);
