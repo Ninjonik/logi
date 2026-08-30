@@ -212,6 +212,31 @@ const matchPlayerTeam = v.object({
   ratio: v.optional(v.number()),
 });
 
+const matchPlayerSteamInfo = v.object({
+  id: v.number(),
+  created: v.string(),
+  updated: v.union(v.string(), v.null()),
+  profile: v.union(v.string(), v.null()),
+  country: v.union(v.string(), v.null()),
+  bans: v.union(v.number(), v.null()),
+  has_bans: v.boolean(),
+});
+
+const matchPlayerUnit = v.object({
+  ts: v.number(),
+  team: v.number(),
+  squad: v.number(),
+  role: v.number(),
+});
+
+const matchPlayerEncounter = v.object({
+  action: v.string(),
+  player_id: v.string(),
+  player_name: v.string(),
+  ts: v.number(),
+  weapon: v.string(),
+});
+
 const matchPlayerStat = v.object({
   id: v.number(),
   player_id: v.string(),
@@ -246,6 +271,14 @@ const matchPlayerStat = v.object({
   death_by_weapons: v.record(v.string(), v.number()),
   team: matchPlayerTeam,
   level: v.number(),
+  platform: v.optional(v.string()),
+  steaminfo: v.optional(matchPlayerSteamInfo),
+  vehicle_kills: v.optional(v.number()),
+  vehicles_destroyed: v.optional(v.number()),
+  kills_and_assists: v.optional(v.number()),
+  deaths_and_redeploys: v.optional(v.number()),
+  units: v.optional(v.array(matchPlayerUnit)),
+  encounters: v.optional(v.array(matchPlayerEncounter)),
 });
 
 const rawMatch = v.object({
@@ -263,6 +296,12 @@ const rawMatch = v.object({
     requested: v.array(v.union(v.number(), v.null())),
     set: v.array(v.string()),
   }),
+  cap_flips: v.optional(v.array(v.object({
+    allied_score: v.number(),
+    axis_score: v.number(),
+    ts: v.number(),
+  }))),
+  match_time: v.optional(v.number()),
   player_stats: v.array(matchPlayerStat),
   map: v.object({
     id: v.string(),

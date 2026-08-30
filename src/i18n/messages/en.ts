@@ -666,6 +666,7 @@ export const enMessages = {
     postRosterChanges: "Post this roster update in the event info channel",
     updatePosted: "Roster saved and update posted.",
     updateSavedWithoutPost: "Roster saved. Player DMs were sent.",
+    updateDmDeliveryFailed: "Roster saved, but one or more player DMs could not be delivered.",
   },
   event: {
     infoTitle: "Event information",

@@ -665,6 +665,7 @@ export const csMessages = {
     postRosterChanges: "Poslat update soupisky do informačního kanálu události",
     updatePosted: "Soupiska uložena a update byl odeslán.",
     updateSavedWithoutPost: "Soupiska uložena. DM hráčům byly odeslány.",
+    updateDmDeliveryFailed: "Soupiska byla uložena, ale jednomu nebo více hráčům se nepodařilo doručit DM.",
   },
   event: {
     infoTitle: "Informace o akci",

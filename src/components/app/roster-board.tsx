@@ -876,7 +876,7 @@ export function RosterBoard({
         }).catch(() => null);
 
         if (previousRoster?.published && published) {
-          await fetch(`/api/servers/${serverId}/rosters/${nextRosterId}/update-notifications`, {
+          const notificationResponse = await fetch(`/api/servers/${serverId}/rosters/${nextRosterId}/update-notifications`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
@@ -892,7 +892,18 @@ export function RosterBoard({
               postAnnouncement: options?.postAnnouncement ?? false,
               notifyPlayers: options?.notifyPlayers ?? true,
             }),
-          }).catch(() => null);
+          });
+          const notificationBody = await notificationResponse.json().catch(() => null) as {
+            dmFailedUserIds?: string[];
+          } | null;
+
+          if (!notificationResponse.ok) {
+            throw new Error("Unable to send roster update notifications.");
+          }
+
+          if (notificationBody?.dmFailedUserIds?.length) {
+            toast.warning(dictionary.roster.updateDmDeliveryFailed);
+          }
         }
 
         toast.success(
