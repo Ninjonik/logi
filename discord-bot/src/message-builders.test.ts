@@ -128,6 +128,27 @@ test("buildEventEmbed uses training-specific start wording for trainings", () =>
   assert.doesNotMatch(embed.toJSON().description ?? "", /Start zápasu|Match Start/);
 });
 
+test("buildEventEmbed prioritizes match headcount, briefing, and registration times", () => {
+  const embed = buildEventEmbed(
+    { ...config, defaultLanguage: "en" },
+    groups,
+    eventCategories,
+    createMatchEvent(),
+  );
+  const description = embed.toJSON().description ?? "";
+
+  const headcountIndex = description.indexOf("Headcount Start");
+  const briefingIndex = description.indexOf("Briefing Start");
+  const registrationIndex = description.indexOf("Registration Ends");
+
+  assert.ok(headcountIndex >= 0);
+  assert.ok(briefingIndex > headcountIndex);
+  assert.ok(registrationIndex > briefingIndex);
+  assert.match(description, /Headcount Start:\*\* <t:\d+:F>/);
+  assert.match(description, /Briefing Start:\*\* <t:\d+:F>/);
+  assert.match(description, /Registration Ends:\*\* <t:\d+:F>/);
+});
+
 test("buildCalendarPanelEmbed does not repeat a category emoji when it is the color chip", () => {
   const embed = buildCalendarPanelEmbed(
     { ...config, defaultLanguage: "en" },

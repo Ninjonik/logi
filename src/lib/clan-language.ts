@@ -44,6 +44,8 @@ type ClanDiscordMessages = {
     description: string;
     registrationEnds: string;
     meeting: string;
+    headcountStart: string;
+    briefingStart: string;
     matchStart: string;
     trainingStart: string;
     status: string;
@@ -332,6 +334,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       description: "Description",
       registrationEnds: "Registration Ends",
       meeting: "Headcount / Meeting",
+      headcountStart: "Headcount Start",
+      briefingStart: "Briefing Start",
       matchStart: "Match Start",
       trainingStart: "Training Start",
       status: "Status",
@@ -714,6 +718,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       description: "Popis",
       registrationEnds: "Konec registrace",
       meeting: "Sraz / Headcount",
+      headcountStart: "Začátek headcountu",
+      briefingStart: "Začátek briefingu",
       matchStart: "Start zápasu",
       trainingStart: "Začátek trainingu",
       status: "Stav",

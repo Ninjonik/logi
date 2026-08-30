@@ -158,6 +158,13 @@ export function buildEventEmbed(
   const regEndUnix = Math.floor(new Date(event.registrationEnd).getTime() / 1000);
   const descriptionLines: string[] = [];
 
+  if (event.kind === "match") {
+    descriptionLines.push(`**📢 ${messages.embed.headcountStart}:** <t:${meetingUnix}:F>`);
+    descriptionLines.push(`**🚀 ${messages.embed.briefingStart}:** <t:${gameStartUnix}:F>`);
+    descriptionLines.push(`**⏰ ${messages.embed.registrationEnds}:** <t:${regEndUnix}:F>`);
+    descriptionLines.push("----------------------------------------");
+  }
+
   if (event.kind === "match" && event.map) descriptionLines.push(`**🗺️ ${messages.embed.map}:** ${event.map}`);
   if (event.kind === "match" && event.side) descriptionLines.push(`**⚔️ ${messages.embed.side}:** ${event.side}`);
   if (event.kind === "match" && event.cap) descriptionLines.push(`**🧢 ${messages.embed.cap}:** ${event.cap}`);
@@ -172,9 +179,11 @@ export function buildEventEmbed(
     descriptionLines.push("----------------------------------------");
   }
 
-  descriptionLines.push(`**⏰ ${messages.embed.registrationEnds}:** <t:${regEndUnix}:R> (<t:${regEndUnix}:f>)`);
-  descriptionLines.push(`**📢 ${messages.embed.meeting}:** <t:${meetingUnix}:t>`);
-  descriptionLines.push(`**🚀 ${event.kind === "training" ? messages.embed.trainingStart : messages.embed.matchStart}:** <t:${gameStartUnix}:F>`);
+  if (event.kind === "training") {
+    descriptionLines.push(`**⏰ ${messages.embed.registrationEnds}:** <t:${regEndUnix}:R> (<t:${regEndUnix}:f>)`);
+    descriptionLines.push(`**📢 ${messages.embed.meeting}:** <t:${meetingUnix}:t>`);
+    descriptionLines.push(`**🚀 ${messages.embed.trainingStart}:** <t:${gameStartUnix}:F>`);
+  }
   const categoryLabel = resolveEventCategoryLabel(categories, event);
   if (categoryLabel) {
     descriptionLines.push(`**🏷️ ${messages.calendar.matchLabel}:** ${categoryLabel}`);
