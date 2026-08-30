@@ -130,7 +130,12 @@ export async function POST(
   }
 
   const messages = getClanDiscordMessages(discordConfig?.defaultLanguage);
-  const syncContext = await fetchQuery(getEventSyncContextReference, { secret: getInternalAuthSecret(), eventId: event.id as never }) as { syncState: { eventInfoMessageId?: string; announcementMessageId?: string } | null } | null;
+  // The roster link is useful context, but a temporary Convex read failure must
+  // never prevent the actual DM notification from being sent.
+  const syncContext = await fetchQuery(getEventSyncContextReference, {
+    secret: getInternalAuthSecret(),
+    eventId: event.id as never,
+  }).catch(() => null) as { syncState: { eventInfoMessageId?: string; announcementMessageId?: string } | null } | null;
   const rosterMessageId = syncContext?.syncState?.eventInfoMessageId ?? syncContext?.syncState?.announcementMessageId;
   const rosterChannelId = syncContext?.syncState?.eventInfoMessageId ? discordConfig?.eventInfoChannelId : discordConfig?.announcementsChannelId;
   const rosterUrl = rosterChannelId && rosterMessageId ? `https://discord.com/channels/${guild.discordId}/${rosterChannelId}/${rosterMessageId}` : undefined;
@@ -142,6 +147,7 @@ export async function POST(
   ])];
   const usersById = new Map(users.map((user) => [user.discordId, user]));
   const dmSentUserIds: string[] = [];
+  const dmFailedUserIds: string[] = [];
 
   if (body.notifyPlayers !== false) await Promise.all(changedRecipients.map(async (userId) => {
     const user = usersById.get(userId);
@@ -157,7 +163,7 @@ export async function POST(
       }));
       dmSentUserIds.push(userId);
     } catch {
-      // Best effort only.
+      dmFailedUserIds.push(userId);
     }
   }));
 
@@ -177,6 +183,7 @@ export async function POST(
     ok: true,
     hasChanges: true,
     dmSentUserIds,
+    dmFailedUserIds,
     postedAnnouncement: Boolean(body.postAnnouncement && rosterUpdateChannelId),
   });
 }

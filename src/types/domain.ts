@@ -349,6 +349,12 @@ export type MatchStatsRecord = {
       requested: Array<number | null>;
       set: string[];
     };
+    cap_flips?: Array<{
+      allied_score: number;
+      axis_score: number;
+      ts: number;
+    }>;
+    match_time?: number;
     player_stats: Array<{
       id: number;
       player_id: string;
@@ -387,6 +393,33 @@ export type MatchStatsRecord = {
         ratio?: number;
       };
       level: number;
+      platform?: string;
+      steaminfo?: {
+        id: number;
+        created: Timestamp;
+        updated: Timestamp | null;
+        profile: string | null;
+        country: string | null;
+        bans: number | null;
+        has_bans: boolean;
+      };
+      vehicle_kills?: number;
+      vehicles_destroyed?: number;
+      kills_and_assists?: number;
+      deaths_and_redeploys?: number;
+      units?: Array<{
+        ts: number;
+        team: number;
+        squad: number;
+        role: number;
+      }>;
+      encounters?: Array<{
+        action: string;
+        player_id: string;
+        player_name: string;
+        ts: number;
+        weapon: string;
+      }>;
     }>;
     map: {
       id: string;

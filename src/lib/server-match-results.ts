@@ -37,6 +37,12 @@ type ScoreboardResponse = {
       requested: Array<number | null>;
       set: string[];
     };
+    cap_flips?: Array<{
+      allied_score: number;
+      axis_score: number;
+      ts: number;
+    }>;
+    match_time?: number;
     map: {
       id: string;
       pretty_name: string;
@@ -93,6 +99,33 @@ type ScoreboardResponse = {
         ratio?: number;
       };
       level: number;
+      platform?: string;
+      steaminfo?: {
+        id: number;
+        created: string;
+        updated: string | null;
+        profile: string | null;
+        country: string | null;
+        bans: number | null;
+        has_bans: boolean;
+      };
+      vehicle_kills?: number;
+      vehicles_destroyed?: number;
+      kills_and_assists?: number;
+      deaths_and_redeploys?: number;
+      units?: Array<{
+        ts: number;
+        team: number;
+        squad: number;
+        role: number;
+      }>;
+      encounters?: Array<{
+        action: string;
+        player_id: string;
+        player_name: string;
+        ts: number;
+        weapon: string;
+      }>;
     }>;
   };
 };
@@ -253,9 +286,8 @@ function sanitizeScoreboardResult(payload: ScoreboardResponse["result"]): Saniti
       set: Array.isArray(payload.game_layout?.set) ? payload.game_layout.set : [],
     },
     player_stats: payload.player_stats.map((player) => {
-      const { steaminfo: _steaminfo, ...rest } = player as typeof player & { steaminfo?: unknown };
       return {
-        ...rest,
+        ...player,
         kills_by_type: player.kills_by_type ?? {},
         deaths_by_type: player.deaths_by_type ?? {},
         most_killed: sanitizeRecordKeys(player.most_killed),
