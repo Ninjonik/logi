@@ -16,6 +16,11 @@ const getMatchByEventIdReference = makeFunctionReference<"query">("matchStats:ge
 export async function getGuildMetadata(serverId: string) {
   "use cache";
   if (serverId.startsWith("sample-")) return null;
+  // Session-only Discord guild entries use the Discord snowflake as their route
+  // identifier. Resolve those safely instead of passing them to v.id("guilds").
+  if (/^\d{17,20}$/.test(serverId)) {
+    return await getGuildMetadataByDiscordId(serverId);
+  }
   tagCacheEntries([appCacheTags.server(serverId)]);
   return await fetchQuery(getGuildByIdReference, { guildId: serverId as never });
 }

@@ -117,7 +117,12 @@ type ClanDiscordMessages = {
     outcomeRecruit: string;
     outcomeMember: string;
     outcomeMercenary: string;
+    playerDescription: string;
+    playerOptionDescription: string;
+    playerServerOnly: string;
+    playerNotFound: string;
   };
+  playerStats: { clanScore: string; matches: string; performance: string; kills: string; deaths: string; offense: string; defense: string; support: string; recentMatches: string; noMatchHistory: string; profileImage: string; };
   platformLink: {
     button: string;
     dmIntro: string;
@@ -414,7 +419,12 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       outcomeRecruit: "Recruit",
       outcomeMember: "Member",
       outcomeMercenary: "Mercenary",
+      playerDescription: "Search clan players and view their stats.",
+      playerOptionDescription: "Pick a player from this clan.",
+      playerServerOnly: "This command can only be used in a server.",
+      playerNotFound: "Player not found in this clan.",
     },
+    playerStats: { clanScore: "Clan score", matches: "Matches", performance: "Performance", kills: "Kills", deaths: "Deaths", offense: "Offense", defense: "Defense", support: "Support", recentMatches: "Recent matches", noMatchHistory: "No imported match history.", profileImage: "profile image" },
     platformLink: {
       button: "Submit platform ID",
       dmIntro: "Before we can continue, we need a platform ID we can match to Hell Let Loose.",
@@ -805,7 +815,12 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       outcomeRecruit: "Rekrut",
       outcomeMember: "Člen",
       outcomeMercenary: "Žoldák",
+      playerDescription: "Vyhledejte hráče klanu a zobrazte jeho statistiky.",
+      playerOptionDescription: "Vyberte hráče z tohoto klanu.",
+      playerServerOnly: "Tento příkaz lze použít pouze na serveru.",
+      playerNotFound: "Hráč nebyl v tomto klanu nalezen.",
     },
+    playerStats: { clanScore: "Skóre klanu", matches: "Zápasy", performance: "Výkon", kills: "Zabití", deaths: "Úmrtí", offense: "Útok", defense: "Obrana", support: "Podpora", recentMatches: "Poslední zápasy", noMatchHistory: "Žádná importovaná historie zápasů.", profileImage: "profilový obrázek" },
     platformLink: {
       button: "Zadat platform ID",
       dmIntro: "Než budeme moci pokračovat, potřebujeme platform ID, které můžeme spárovat s Hell Let Loose.",

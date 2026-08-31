@@ -5,6 +5,14 @@ export const csMessages = {
     description:
       "Organizujte klanové akce, stavte soupisky, publikujte briefingy a připravujte operace propojené s Discordem.",
   },
+  home: {
+    openApp: "Otevřít aplikaci", signIn: "Přihlásit se přes Discord", contribute: "Přispět na GitHubu", loggedInAs: "Přihlášen jako {name}", dashboard: "Přehled",
+    badge: "Discord operace pro organizované skupiny", title: "Logi udržuje komunitní operace přehledné, strukturované a na jednom místě.", description: "Logi je open-source platforma pro skupiny, které pořádají akce, spravují soupisky, tréninky, zápasy a koordinaci přes Discord.",
+    featuresTitle: "Co skutečně umí", featuresDescription: "Plánujte akce, spravujte přihlášky, tvořte soupisky, připravujte zápasy a synchronizujte Discord.", featureEvents: "Akce, tréninky a workflow zápasů", featureRosters: "Správa soupisek a účasti", featureDiscord: "Správa serveru propojená s Discordem", featureTools: "Sdílené nástroje pro organizované komunity",
+    commsBadge: "LogiComms", commsTitle: "Jasná komunikace jednotky bez zbytečné režie.", commsDescription: "LogiComms je lehká a rychlá desktopová aplikace pro efektivní komunikaci v jednotce. Nastavíte ji rychle a přizpůsobíte fungování své jednotky.", commsDownload: "Stáhnout pro Windows", commsUnavailable: "Stažení pro Windows je dočasně nedostupné.",
+    freeToUse: "Zdarma k použití", sourceAvailable: "Zdrojový kód na GitHubu", contributionsWelcome: "Příspěvky vítány", noMarketingFiller: "Bez marketingové výplně",
+    pillars: { operationsTitle: "Řeší nudné věci", operationsDescription: "Plánování, přihlášky, organizace soupisek, příprava zápasů a Discord koordinace na jednom místě.", communitiesTitle: "Pro skutečné komunity", communitiesDescription: "Pro klany, jednotky a organizované skupiny, které potřebují strukturu bez zbytečné složitosti.", contributorsTitle: "Otevřené pro přispěvatele", contributorsDescription: "Open source, otevřené pull requesty a veřejné zlepšování s lidmi, kteří jej používají." },
+  },
   auth: {
     loginTitle: "Naplánujte svou další operaci",
     loginDescription:
@@ -107,6 +115,7 @@ export const csMessages = {
     operations: "Operace",
     configuration: "Konfigurace",
     bot: "Bot",
+    logiComms: "LogiComms",
   },
   common: {
     actions: "Akce",
