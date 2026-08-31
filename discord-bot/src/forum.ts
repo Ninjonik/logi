@@ -1,9 +1,9 @@
-import { ChannelType, EmbedBuilder, ForumChannel } from "discord.js";
+import { ChannelType, EmbedBuilder, ForumChannel, MessageFlags } from "discord.js";
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 
 import { reportClanDiscordError } from "./error-reporting";
-import { buildForumInfoEmbed, buildForumThreadName } from "./message-builders";
+import { buildForumInfoEmbed, buildForumInfoV2Message, buildForumThreadName } from "./message-builders";
 import { env } from "./environment";
 import { logWarn } from "./log";
 import type { ClanLanguage, DiscordConfig, EventRecord, TopicPreset } from "./types";
@@ -124,11 +124,12 @@ export async function syncForumChannel(input: {
   const infoPost = existingPosts.find((post) => infoPostNames.includes(post.name));
   const stratmapLinks = (event.stratmapIds ?? []).map((stratmapId) => `${env.appSiteUrl}/${config.defaultLanguage}/stratmaps/${stratmapId}`);
   const infoEmbed = buildForumInfoEmbed(config, event, stratmapLinks);
+  const infoV2Message = buildForumInfoV2Message(config, event, stratmapLinks);
 
   if (infoPost) {
     const starter = await infoPost.fetchStarterMessage().catch(() => null);
     if (starter) {
-      await starter.edit({ embeds: [infoEmbed] }).catch((error) => {
+      await starter.edit(starter.flags.has(MessageFlags.IsComponentsV2) ? infoV2Message : { embeds: [infoEmbed] }).catch((error) => {
         logWarn("forum", "Failed to edit forum info starter message", {
           guildId: guild.id,
           forumChannelId: forumChannel.id,
@@ -156,7 +157,7 @@ export async function syncForumChannel(input: {
   } else {
     const createdPost = await forumChannel.threads.create({
       name: messages.forum.matchInformation,
-      message: { embeds: [infoEmbed] },
+      message: { ...infoV2Message, flags: MessageFlags.IsComponentsV2 },
     }).catch((error) => {
       logWarn("forum", "Failed to create forum info post", {
         guildId: guild.id,

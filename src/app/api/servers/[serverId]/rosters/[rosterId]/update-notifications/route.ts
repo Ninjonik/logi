@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchQuery } from "convex/nextjs";
+import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
 import { getClanDiscordMessages } from "@/lib/clan-language";
@@ -13,6 +13,7 @@ import { getUsersByIds } from "@/lib/server-user-management";
 import type { Roster } from "@/types/domain";
 
 const getEventSyncContextReference = makeFunctionReference<"query">("discordSync:getEventSyncContext");
+const updateRosterUpdateMessageReference = makeFunctionReference<"mutation">("discordSync:updateRosterUpdateMessage");
 
 type UpdateNotificationBody = {
   previousRoster: Roster;
@@ -21,25 +22,26 @@ type UpdateNotificationBody = {
   notifyPlayers?: boolean;
 };
 
-async function postDiscordChannelMessage(channelId: string, content: string) {
+async function postDiscordChannelMessage(channelId: string, content: string, messageId?: string) {
   const botToken = getDiscordBotToken();
   if (!botToken) {
     throw new Error("Discord bot token is missing.");
   }
 
-  const response = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
+  const response = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages${messageId ? `/${messageId}` : ""}`, {
+    method: messageId ? "PATCH" : "POST",
     headers: {
       Authorization: `Bot ${botToken}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ flags: 32768, components: [{ type: 17, accent_color: 0x5865f2, components: [{ type: 10, content }] }] }),
     cache: "no-store",
   });
 
   if (!response.ok) {
     throw new Error("Unable to post roster update message to Discord.");
   }
+  return await response.json() as { id: string };
 }
 
 function formatAnnouncementMessage(input: {
@@ -135,7 +137,7 @@ export async function POST(
   const syncContext = await fetchQuery(getEventSyncContextReference, {
     secret: getInternalAuthSecret(),
     eventId: event.id as never,
-  }).catch(() => null) as { syncState: { eventInfoMessageId?: string; announcementMessageId?: string } | null } | null;
+  }).catch(() => null) as { syncState: { eventInfoMessageId?: string; announcementMessageId?: string; rosterUpdateChannelId?: string; rosterUpdateMessageId?: string } | null } | null;
   const rosterMessageId = syncContext?.syncState?.eventInfoMessageId ?? syncContext?.syncState?.announcementMessageId;
   const rosterChannelId = syncContext?.syncState?.eventInfoMessageId ? discordConfig?.eventInfoChannelId : discordConfig?.announcementsChannelId;
   const rosterUrl = rosterChannelId && rosterMessageId ? `https://discord.com/channels/${guild.discordId}/${rosterChannelId}/${rosterMessageId}` : undefined;
@@ -169,14 +171,22 @@ export async function POST(
 
   const rosterUpdateChannelId = discordConfig?.eventInfoChannelId ?? discordConfig?.announcementsChannelId;
   if (body.postAnnouncement && rosterUpdateChannelId) {
-    await postDiscordChannelMessage(
+    const existingDigestId = syncContext?.syncState?.rosterUpdateChannelId === rosterUpdateChannelId
+      ? syncContext.syncState.rosterUpdateMessageId
+      : undefined;
+    const digest = await postDiscordChannelMessage(
       rosterUpdateChannelId,
       formatAnnouncementMessage({
         eventName: event.name,
         messages,
         summary,
       }),
+      existingDigestId,
     );
+    await fetchMutation(updateRosterUpdateMessageReference, {
+      secret: getInternalAuthSecret(), eventId: event.id as never, guildId: guild.discordId,
+      channelId: rosterUpdateChannelId, messageId: digest.id,
+    });
   }
 
   return NextResponse.json({

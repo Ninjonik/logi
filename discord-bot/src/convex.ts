@@ -80,6 +80,7 @@ export const references = {
   updateMembershipApplicationTranscriptMessage: makeFunctionReference<"mutation">("discordMembership:updateMembershipApplicationTranscriptMessage"),
   updateMembershipPanelState: makeFunctionReference<"mutation">("discordConfig:updateMembershipPanelState"),
   updateEventSyncState: makeFunctionReference<"mutation">("discordSync:updateEventSyncState"),
+  updateRosterUpdateMessage: makeFunctionReference<"mutation">("discordSync:updateRosterUpdateMessage"),
   updateCalendarPanelState: makeFunctionReference<"mutation">("discordConfig:updateCalendarPanelState"),
   updateTicketTranscriptMessage: makeFunctionReference<"mutation">("discordMembership:updateTicketTranscriptMessage"),
   updateTicketPanelState: makeFunctionReference<"mutation">("discordConfig:updateTicketPanelState"),

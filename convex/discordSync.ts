@@ -291,6 +291,17 @@ export const updateEventSyncState = mutation({
   },
 });
 
+export const updateRosterUpdateMessage = mutation({
+  args: { secret: v.string(), eventId: v.id("events"), guildId: v.string(), channelId: v.string(), messageId: v.string() },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+    const existing = await ctx.db.query("discordEventSyncs").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique();
+    if (!existing) return null;
+    await ctx.db.patch(existing._id, { rosterUpdateChannelId: args.channelId, rosterUpdateMessageId: args.messageId, updatedAt: new Date().toISOString() });
+    return String(existing._id);
+  },
+});
+
 export const syncMemberAccess = mutation({
   args: {
     secret: v.string(),

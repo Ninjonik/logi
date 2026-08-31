@@ -41,7 +41,6 @@ export async function syncGuildMemberAccess(client: Client, payload: SyncPayload
       return {
         userId: member.id,
         roleIds,
-        voiceChannelId: member.voice.channelId ?? undefined,
         isAdmin,
         hasDashboardAccess,
       };

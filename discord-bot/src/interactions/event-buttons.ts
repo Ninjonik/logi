@@ -1,4 +1,4 @@
-import { type ButtonInteraction, type GuildMember } from "discord.js";
+import { ActionRowBuilder, StringSelectMenuBuilder, type ButtonInteraction, type GuildMember, type StringSelectMenuInteraction } from "discord.js";
 
 import { getResolvedMemberStatus } from "../../../src/domain/assignments/policy";
 import { getClanDiscordMessages } from "../../../src/lib/clan-language";
@@ -14,16 +14,83 @@ type InteractionHandlerOptions = {
   triggerPollSoon: () => void;
 };
 
+export async function handleEventSignupPickerInteraction(interaction: ButtonInteraction) {
+  if (!interaction.guildId) {
+    await interaction.reply({ content: getClanDiscordMessages("en").interaction.signupServerOnly, ephemeral: true });
+    return;
+  }
+  const eventId = interaction.customId.replace("signup-picker:", "");
+  const context = (await convex.query(references.getEventSignupContext, {
+    secret: env.internalSecret,
+    guildId: interaction.guildId,
+    eventId: eventId as never,
+  })) as EventInteractionContext | null;
+  if (!context) {
+    await interaction.reply({ content: getClanDiscordMessages("en").interaction.unableToLoadEventContext, ephemeral: true });
+    return;
+  }
+  const member = interaction.member as GuildMember | null;
+  const messages = getClanDiscordMessages(context.config.defaultLanguage);
+  const assignment = context.assignments?.find((item) => item.userId === interaction.user.id);
+  const resolvedMembershipStatus = assignment?.type && assignment.status
+    ? getResolvedMemberStatus(assignment.type, assignment.status)
+    : null;
+  const membershipStatus = resolvedMembershipStatus && resolvedMembershipStatus !== "pending" ? resolvedMembershipStatus : null;
+  const available = buildEventSignupActions(context.event, context.groups, messages.buttons).filter((action) =>
+    resolveEventSignupSelection({
+      event: context.event,
+      groups: context.groups,
+      memberRoleIds: member ? [...member.roles.cache.keys()] : null,
+      assignedGroupIds: assignment ? [assignment.primaryGroupId, ...(assignment.secondaryGroupIds ?? [])].filter((id): id is string => Boolean(id)) : [],
+      membershipStatus,
+      actionId: action.id,
+      labels: messages.interaction,
+    }).ok,
+  );
+  if (!available.length) {
+    await interaction.reply({ content: messages.interaction.missingRequiredRole, ephemeral: true });
+    return;
+  }
+  await interaction.reply({
+    content: messages.embed.chooseSignup,
+    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+      new StringSelectMenuBuilder().setCustomId(`signup:${eventId}:select`).setPlaceholder(messages.embed.chooseSignup).addOptions(
+        available.slice(0, 25).map((action) => ({
+          label: action.label.slice(0, 100),
+          value: action.id,
+          ...(getSignupActionEmoji(action.id, available) ? { emoji: getSignupActionEmoji(action.id, available) } : {}),
+        })),
+      ),
+    )],
+    ephemeral: true,
+  });
+}
+
+export async function handleRosterAssignmentInteraction(interaction: ButtonInteraction) {
+  const eventId = interaction.customId.replace("roster-assignment:", "");
+  const context = (await convex.query(references.getEventInteractionContext, { secret: env.internalSecret, eventId: eventId as never })) as EventInteractionContext | null;
+  const messages = getClanDiscordMessages(context?.config.defaultLanguage);
+  const roster = context?.roster;
+  const squad = roster?.squads.find((item) => item.players.some((player) => player.id === interaction.user.id));
+  const player = squad?.players.find((item) => item.id === interaction.user.id);
+  const content = player && squad
+    ? `**${squad.name}**${player.roleName ? ` — **${player.roleName}**` : ""}${player.note ? `\n${player.note}` : ""}`
+    : roster?.reservePlayerIds.includes(interaction.user.id)
+      ? messages.embed.assignmentReserve
+      : messages.embed.assignmentUnassigned;
+  await interaction.reply({ content, ephemeral: true });
+}
+
 const signupInteractionLocks = new Map<string, Promise<void>>();
 
 export async function handleEventButtonInteraction(
-  interaction: ButtonInteraction,
+  interaction: ButtonInteraction | StringSelectMenuInteraction,
   options: InteractionHandlerOptions,
 ) {
   const [, eventId, encodedGroupId] = interaction.customId.split(":");
-  const groupId = decodeURIComponent(encodedGroupId ?? "");
+  const groupId = interaction.isStringSelectMenu() ? (interaction.values[0] ?? "") : decodeURIComponent(encodedGroupId ?? "");
 
-  if (interaction.customId.startsWith("attendance:")) {
+  if (interaction.isButton() && interaction.customId.startsWith("attendance:")) {
     await interaction.deferReply({ ephemeral: Boolean(interaction.guildId) });
     const context = (await convex.query(references.getEventInteractionContext, {
       secret: env.internalSecret,

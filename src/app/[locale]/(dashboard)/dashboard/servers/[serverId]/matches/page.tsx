@@ -56,7 +56,9 @@ export default async function MatchesPage({
   const context = await getServerContext(serverId);
   if (!context) return null;
   const { events, canAdmin, discordConfig } = context;
-  const matches = events.filter((event) => event.kind === "match");
+  const matches = events
+    .filter((event) => event.kind === "match")
+    .sort((left, right) => new Date(right.meetingStart).getTime() - new Date(left.meetingStart).getTime());
   const paginated = getPaginatedRows({
     rows: matches,
     searchParams: resolvedSearchParams,

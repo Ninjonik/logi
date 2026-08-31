@@ -44,6 +44,15 @@ type ClanDiscordMessages = {
     description: string;
     registrationEnds: string;
     meeting: string;
+    headcountStart: string;
+    briefingStart: string;
+    chooseSignup: string;
+    runningLate: string;
+    lateNoticeTitle: string;
+    lateNoticeLabel: string;
+    myAssignment: string;
+    assignmentReserve: string;
+    assignmentUnassigned: string;
     matchStart: string;
     trainingStart: string;
     status: string;
@@ -332,6 +341,15 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       description: "Description",
       registrationEnds: "Registration Ends",
       meeting: "Headcount / Meeting",
+      headcountStart: "Headcount Start",
+      briefingStart: "Briefing Start",
+      chooseSignup: "Sign up",
+      runningLate: "Running late",
+      lateNoticeTitle: "Running late",
+      lateNoticeLabel: "Expected arrival and note",
+      myAssignment: "My assignment",
+      assignmentReserve: "You are a reserve for this event.",
+      assignmentUnassigned: "You do not have a roster assignment yet.",
       matchStart: "Match Start",
       trainingStart: "Training Start",
       status: "Status",
@@ -714,6 +732,15 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       description: "Popis",
       registrationEnds: "Konec registrace",
       meeting: "Sraz / Headcount",
+      headcountStart: "Začátek headcountu",
+      briefingStart: "Začátek briefingu",
+      chooseSignup: "Přihlásit se",
+      runningLate: "Přijdu pozdě",
+      lateNoticeTitle: "Přijdu pozdě",
+      lateNoticeLabel: "Předpokládaný příchod a poznámka",
+      myAssignment: "Moje zařazení",
+      assignmentReserve: "Pro tuto akci jste náhradník.",
+      assignmentUnassigned: "Zatím nemáte zařazení do soupisky.",
       matchStart: "Start zápasu",
       trainingStart: "Začátek trainingu",
       status: "Stav",
