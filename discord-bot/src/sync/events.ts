@@ -1,4 +1,4 @@
-import { ChannelType, type Client, type Guild, type TextChannel } from "discord.js";
+import { ChannelType, MessageFlags, type Client, type Guild, type TextChannel } from "discord.js";
 
 import { convex, references } from "../convex";
 import { env } from "../environment";
@@ -6,7 +6,7 @@ import { reportClanDiscordError } from "../error-reporting";
 import { syncForumChannel } from "../forum";
 import { syncEventRoles } from "../event-roles";
 import { logError, logInfo, logWarn } from "../log";
-import { buildAnnouncementMessage } from "../message-builders";
+import { buildAnnouncementMessage, buildAnnouncementV2Message } from "../message-builders";
 import {
   cancelScheduledDiscordEvent,
   deriveScheduledEventLifecycle,
@@ -67,13 +67,19 @@ async function syncEventMessage(channel: TextChannel, messageId: string | undefi
   const displayEvent = !includeSignup && !roster?.published ? { ...event, participants: [], signUps: [] } : event;
   const displayPayload = displayEvent === event ? payload : { ...payload, events: payload.events.map((item) => item.id === event.id ? displayEvent : item) };
   const names = await resolveAnnouncementDisplayNames(displayPayload, displayEvent, guild);
-  const { embed, components } = buildAnnouncementMessage(displayPayload, displayEvent, names, { showPublishedRosterImage: !includeSignup });
-  const messageComponents = includeSignup ? components : [];
   if (existing) {
-    await existing.edit({ embeds: [embed], components: messageComponents });
+    if (existing.flags.has(MessageFlags.IsComponentsV2)) {
+      await existing.edit(buildAnnouncementV2Message(displayPayload, displayEvent, names, { showPublishedRosterImage: !includeSignup }));
+    } else {
+      const { embed, components } = buildAnnouncementMessage(displayPayload, displayEvent, names, { showPublishedRosterImage: !includeSignup });
+      await existing.edit({ embeds: [embed], components: includeSignup ? components : [] });
+    }
     return existing.id;
   }
-  return (await channel.send({ embeds: [embed], components: messageComponents })).id;
+  return (await channel.send({
+    ...buildAnnouncementV2Message(displayPayload, displayEvent, names, { showPublishedRosterImage: !includeSignup }),
+    flags: MessageFlags.IsComponentsV2,
+  })).id;
 }
 
 async function recoverEventMessageId(channel: TextChannel, messageId: string | undefined, event: EventRecord, botUserId?: string) {
@@ -242,8 +248,14 @@ async function syncEvent(
   if (splitChannels && registrationChannel?.isTextBased() && infoChannel?.isTextBased() && registrationChannel.type !== ChannelType.GuildVoice && infoChannel.type !== ChannelType.GuildVoice) {
     const registrationText = registrationChannel as TextChannel;
     const infoText = infoChannel as TextChannel;
-    eventInfoMessageId = await recoverEventMessageId(infoText, eventInfoMessageId, event, guild.client.user?.id);
-    eventInfoMessageId = await syncEventMessage(infoText, eventInfoMessageId, payload, event, roster, guild, false);
+    if (roster?.published) {
+      eventInfoMessageId = await recoverEventMessageId(infoText, eventInfoMessageId, event, guild.client.user?.id);
+      eventInfoMessageId = await syncEventMessage(infoText, eventInfoMessageId, payload, event, roster, guild, false);
+    } else if (eventInfoMessageId) {
+      const existingInfo = await infoText.messages.fetch(eventInfoMessageId).catch(() => null);
+      await existingInfo?.delete().catch(() => null);
+      eventInfoMessageId = undefined;
+    }
     logInfo("event-sync", "Synchronized event info message", {
       eventId: event.id,
       guildId: payload.config.guildId,
@@ -269,7 +281,6 @@ async function syncEvent(
     ) {
       const textChannel = channel as TextChannel;
       const userDisplayNames = await resolveAnnouncementDisplayNames(payload, event, guild);
-      const { embed, components } = buildAnnouncementMessage(payload, event, userDisplayNames);
       const previousChannel = state?.announcementChannelId && state.announcementChannelId !== textChannel.id
         ? await guild.channels.fetch(state.announcementChannelId).catch(() => null)
         : null;
@@ -288,7 +299,12 @@ async function syncEvent(
           announcementMessageId = undefined;
         }
       } else if (existingMessage) {
-        await existingMessage.edit({ embeds: [embed], components });
+        if (existingMessage.flags.has(MessageFlags.IsComponentsV2)) {
+          await existingMessage.edit(buildAnnouncementV2Message(payload, event, userDisplayNames));
+        } else {
+          const { embed, components } = buildAnnouncementMessage(payload, event, userDisplayNames);
+          await existingMessage.edit({ embeds: [embed], components });
+        }
         logInfo("announcement", "Updated event announcement", {
           eventId: event.id,
           guildId: payload.config.guildId,
@@ -296,7 +312,10 @@ async function syncEvent(
           messageId: existingMessage.id,
         });
       } else {
-        const created = await textChannel.send({ embeds: [embed], components });
+        const created = await textChannel.send({
+          ...buildAnnouncementV2Message(payload, event, userDisplayNames),
+          flags: MessageFlags.IsComponentsV2,
+        });
         announcementMessageId = created.id;
         logInfo("announcement", "Created event announcement", {
           eventId: event.id,

@@ -35,7 +35,7 @@ export const getRosterImageContext = query({
 });
 
 export const confirmRosterAttendanceFromMeetingChannel = mutation({
-  args: { secret: v.string(), guildId: v.string(), rosterId: v.id("rosters") },
+  args: { secret: v.string(), guildId: v.string(), rosterId: v.id("rosters"), memberIdsInMeetingChannel: v.array(v.string()) },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
     const [config, roster] = await Promise.all([
@@ -47,10 +47,7 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
     const event = await ctx.db.get(roster.eventId);
     if (!event || event.guildId !== args.guildId) throw new Error("Roster does not belong to this server.");
 
-    const memberAccess = await ctx.db.query("discordMemberAccess").withIndex("guildId", (q) => q.eq("guildId", args.guildId)).collect();
-    const memberIdsInMeetingChannel = new Set(
-      memberAccess.filter((member) => member.voiceChannelId === config.meetingChannelId).map((member) => member.userId),
-    );
+    const memberIdsInMeetingChannel = new Set(args.memberIdsInMeetingChannel);
 
     let rosteredCount = 0;
     let reserveCount = 0;

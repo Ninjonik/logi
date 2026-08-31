@@ -290,8 +290,10 @@ export type Roster = {
     order: number;
     players: Array<{
       id?: string;
+      customName?: string;
       ack: boolean;
       confirmed?: boolean;
+      note?: string;
       roleName?: string;
     }>;
   }>;
@@ -303,6 +305,8 @@ export type SyncState = {
   guildId: string;
   announcementChannelId?: string;
   announcementMessageId?: string;
+  rosterUpdateChannelId?: string;
+  rosterUpdateMessageId?: string;
   eventInfoMessageId?: string;
   eventInfoMessageRenderVersion?: string;
   scheduledEventId?: string;

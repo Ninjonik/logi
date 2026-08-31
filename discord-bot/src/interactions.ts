@@ -8,6 +8,10 @@ import {
   ChannelType,
   ChatInputCommandInteraction,
   EmbedBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  MediaGalleryBuilder,
   GuildMember,
   MessageFlags,
   ModalBuilder,
@@ -27,7 +31,7 @@ import { convex, references } from "./convex";
 import { client } from "./discord-client";
 import { env } from "./environment";
 import { reportClanDiscordError } from "./error-reporting";
-import { handleEventButtonInteraction } from "./interactions/event-buttons";
+import { handleEventButtonInteraction, handleEventSignupPickerInteraction, handleRosterAssignmentInteraction } from "./interactions/event-buttons";
 import {
   buildMockPlayerMessage,
   buildPlatformGuideMessage,
@@ -271,6 +275,27 @@ function buildClanPlayerProfileEmbed(profile: ClanPlayerProfile) {
   return embed;
 }
 
+function buildClanPlayerProfileV2(profile: ClanPlayerProfile) {
+  const container = new ContainerBuilder().setAccentColor(0x5865f2);
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent([
+    `# ${profile.name}`,
+    `**${getAssignmentBadge(profile.assignment)}**`,
+    `Clan score: **${profile.score ?? 0}** · Matches: **${profile.performance.matchesPlayed ?? 0}**`,
+  ].join("\n")));
+  container.addSeparatorComponents(new SeparatorBuilder());
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent([
+    "## Performance",
+    `Kills **${formatNumber(profile.performance.averages.kills)}** · Deaths **${formatNumber(profile.performance.averages.deaths)}** · KD **${formatNumber(profile.performance.averages.killDeathRatio)}**`,
+    `Offense **${formatNumber(profile.performance.averages.offense)}** · Defense **${formatNumber(profile.performance.averages.defense)}** · Support **${formatNumber(profile.performance.averages.support)}**`,
+    "\n## Recent matches",
+    buildRecentMatchesValue(profile),
+  ].join("\n")));
+  if (profile.avatar) {
+    container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems({ media: { url: profile.avatar }, description: `${profile.name} profile image` }));
+  }
+  return { components: [container] };
+}
+
 function buildTicketCloseEmbed(input: {
   messages: ReturnType<typeof getClanDiscordMessages>;
   ticketNumber: number;
@@ -321,6 +346,21 @@ function buildMembershipApplicationCloseEmbed(input: {
 export function createInteractionHandler(options: InteractionHandlerOptions) {
   return {
     async handleButtonInteraction(interaction: ButtonInteraction) {
+      if (interaction.customId.startsWith("attendance-late:")) {
+        const eventId = interaction.customId.replace("attendance-late:", "");
+        const config = await convex.query(references.getConfigByDiscordGuildId, { guildId: interaction.guildId! }).catch(() => null) as { defaultLanguage?: string } | null;
+        const messages = getClanDiscordMessages(config?.defaultLanguage);
+        await openNoticeModal(interaction, eventId, messages.embed.lateNoticeTitle, messages.embed.lateNoticeLabel);
+        return;
+      }
+      if (interaction.customId.startsWith("signup-picker:")) {
+        await handleEventSignupPickerInteraction(interaction);
+        return;
+      }
+      if (interaction.customId.startsWith("roster-assignment:")) {
+        await handleRosterAssignmentInteraction(interaction);
+        return;
+      }
       if (interaction.customId.startsWith("signup:") || interaction.customId.startsWith("attendance:")) {
         await handleEventButtonInteraction(interaction, options);
         return;
@@ -342,6 +382,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     },
 
     async handleStringSelectMenuInteraction(interaction: StringSelectMenuInteraction) {
+      if (interaction.customId.startsWith("signup:")) {
+        await handleEventButtonInteraction(interaction, options);
+        return;
+      }
       if (interaction.customId.startsWith("plink:")) {
         await handlePlatformLinkSelectInteraction(interaction);
       }
@@ -604,7 +648,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     await interaction.editReply({
-      embeds: [buildClanPlayerProfileEmbed(profile)],
+      ...buildClanPlayerProfileV2(profile),
+      flags: MessageFlags.IsComponentsV2,
     });
   }
 
@@ -657,7 +702,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
   }
 
   async function openNoticeModal(
-    interaction: ChatInputCommandInteraction,
+    interaction: ChatInputCommandInteraction | ButtonInteraction,
     eventId: string,
     modalTitle: string,
     reasonLabel: string,

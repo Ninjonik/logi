@@ -37,11 +37,21 @@ export default async function RostersPage({
   const context = await getServerContext(serverId);
   if (!context) return null;
   const { rosters, events, canAdmin } = context;
+  const eventById = new Map(events.map((event) => [event.id, event]));
+  const sortedRosters = [...rosters].sort((left, right) => {
+    const leftMeetingStart = eventById.get(left.eventId)?.meetingStart;
+    const rightMeetingStart = eventById.get(right.eventId)?.meetingStart;
+
+    if (!leftMeetingStart) return rightMeetingStart ? 1 : 0;
+    if (!rightMeetingStart) return -1;
+
+    return new Date(rightMeetingStart).getTime() - new Date(leftMeetingStart).getTime();
+  });
   const paginated = getPaginatedRows({
-    rows: rosters,
+    rows: sortedRosters,
     searchParams: resolvedSearchParams,
     getSearchText: (roster) => {
-      const eventName = events.find((event) => event.id === roster.eventId)?.name;
+      const eventName = eventById.get(roster.eventId)?.name;
       return [eventName, roster.published ? dictionary.common.published : dictionary.tables.hidden].filter(Boolean).join(" ");
     },
   });
@@ -71,7 +81,7 @@ export default async function RostersPage({
             {
               key: "event",
               title: dictionary.tables.event,
-              render: (roster) => events.find((event) => event.id === roster.eventId)?.name ?? dictionary.tables.unassigned,
+              render: (roster) => eventById.get(roster.eventId)?.name ?? dictionary.tables.unassigned,
             },
             { key: "squads", title: dictionary.tables.squads, render: (roster) => roster.squads.length },
             { key: "reserves", title: dictionary.tables.reserves, render: (roster) => roster.reservePlayerIds.length },

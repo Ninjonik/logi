@@ -128,7 +128,7 @@ test("buildEventEmbed uses training-specific start wording for trainings", () =>
   assert.doesNotMatch(embed.toJSON().description ?? "", /Start zápasu|Match Start/);
 });
 
-test("buildEventEmbed prioritizes match headcount, briefing, and registration times", () => {
+test("buildEventEmbed prioritizes match headcount, match start, and registration times", () => {
   const embed = buildEventEmbed(
     { ...config, defaultLanguage: "en" },
     groups,
@@ -138,14 +138,14 @@ test("buildEventEmbed prioritizes match headcount, briefing, and registration ti
   const description = embed.toJSON().description ?? "";
 
   const headcountIndex = description.indexOf("Headcount Start");
-  const briefingIndex = description.indexOf("Briefing Start");
+  const matchStartIndex = description.indexOf("Match Start");
   const registrationIndex = description.indexOf("Registration Ends");
 
   assert.ok(headcountIndex >= 0);
-  assert.ok(briefingIndex > headcountIndex);
-  assert.ok(registrationIndex > briefingIndex);
+  assert.ok(matchStartIndex > headcountIndex);
+  assert.ok(registrationIndex > matchStartIndex);
   assert.match(description, /Headcount Start:\*\* <t:\d+:F>/);
-  assert.match(description, /Briefing Start:\*\* <t:\d+:F>/);
+  assert.match(description, /Match Start:\*\* <t:\d+:F>/);
   assert.match(description, /Registration Ends:\*\* <t:\d+:F>/);
 });
 

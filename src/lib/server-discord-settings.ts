@@ -61,11 +61,13 @@ const confirmRosterAttendanceFromMeetingChannelReference = makeFunctionReference
 export async function confirmRosterAttendanceFromMeetingChannel(input: {
   guildId: string;
   rosterId: string;
+  memberIdsInMeetingChannel: string[];
 }) {
   return await fetchMutation(confirmRosterAttendanceFromMeetingChannelReference, {
     secret: getInternalAuthSecret(),
     guildId: input.guildId,
     rosterId: input.rosterId as any,
+    memberIdsInMeetingChannel: input.memberIdsInMeetingChannel,
   }) as {
     matchedVoiceCount: number;
     rosteredCount: number;

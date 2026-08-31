@@ -4,6 +4,7 @@ import { handleIfNotLoggedIn } from "@/lib/auth";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 import { confirmRosterAttendanceFromMeetingChannel } from "@/lib/server-discord-settings";
 import { getServerContext } from "@/lib/server-context";
+import { getDiscordBotToken } from "@/lib/env";
 import { logNextError, logNextInfo } from "@/lib/system-logs";
 
 export async function POST(
@@ -19,12 +20,25 @@ export async function POST(
   }
 
   try {
+    const roster = serverContext.rosters.find((item) => item.id === rosterId);
+    const meetingChannelId = serverContext.discordConfig?.meetingChannelId;
+    if (!roster || !meetingChannelId) throw new Error("Meeting channel is not configured.");
+    const candidateIds = [...new Set([
+      ...roster.reservePlayerIds,
+      ...roster.squads.flatMap((squad) => squad.players.map((player) => player.id).filter((id): id is string => Boolean(id))),
+    ])];
+    const token = getDiscordBotToken();
+    const voiceStates = await Promise.all(candidateIds.map(async (userId) => {
+      const response = await fetch(`https://discord.com/api/v10/guilds/${serverContext.server.discordId}/voice-states/${userId}`, { headers: { Authorization: `Bot ${token}` }, cache: "no-store" });
+      if (!response.ok) return null;
+      return await response.json() as { channel_id?: string | null };
+    }));
     const result = await confirmRosterAttendanceFromMeetingChannel({
       guildId: serverContext.server.discordId,
       rosterId,
+      memberIdsInMeetingChannel: candidateIds.filter((_, index) => voiceStates[index]?.channel_id === meetingChannelId),
     });
 
-    const roster = serverContext.rosters.find((item) => item.id === rosterId);
     revalidateCacheEntries([
       appCacheTags.serverContext(serverId),
       appCacheTags.rosters(serverId),

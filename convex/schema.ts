@@ -555,6 +555,8 @@ export default defineSchema({
     guildId: v.string(),
     announcementChannelId: v.optional(v.string()),
     announcementMessageId: v.optional(v.string()),
+    rosterUpdateChannelId: v.optional(v.string()),
+    rosterUpdateMessageId: v.optional(v.string()),
     eventInfoMessageId: v.optional(v.string()),
     eventInfoMessageRenderVersion: v.optional(v.string()),
     scheduledEventId: v.optional(v.string()),

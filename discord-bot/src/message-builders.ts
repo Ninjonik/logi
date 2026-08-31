@@ -2,13 +2,18 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  ContainerBuilder,
   EmbedBuilder,
+  MediaGalleryBuilder,
+  SeparatorBuilder,
+  TextDisplayBuilder,
   type APIEmbedField,
 } from "discord.js";
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language";
 import { expandCalendarItems } from "../../src/lib/calendar-items";
 import { formatDiscordMarkdown } from "../../src/lib/discord-markdown";
+import { formatHllPresetLabel } from "../../src/lib/hll-map-presets";
 import { canAcceptSignups } from "../../src/domain/events/status";
 
 import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
@@ -45,6 +50,56 @@ export function buildAnnouncementMessage(
     embed: buildEventEmbed(payload.config, payload.groups, payload.guild.eventCategories, event, roster, userDisplayNames, options),
     components: buildEventComponents(payload.config, payload.groups, event, roster),
   };
+}
+
+export function buildAnnouncementV2Message(
+  payload: SyncPayload,
+  event: EventRecord,
+  userDisplayNames: Record<string, string> = payload.userDisplayNames,
+  options?: { showPublishedRosterImage?: boolean },
+) {
+  const legacy = buildAnnouncementMessage(payload, event, userDisplayNames, options);
+  const embed = legacy.embed.toJSON();
+  const container = new ContainerBuilder().setAccentColor(embed.color ?? 0xFFB000);
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(`# ${event.name}\n${embed.description ?? ""}`.slice(0, 4000)),
+  );
+
+  const rosterLines: string[] = [];
+  for (const field of embed.fields ?? []) {
+    if (field.name !== "\u200B") rosterLines.push(`**${field.name}**\n${field.value}`);
+    else if (rosterLines.length > 0) rosterLines[rosterLines.length - 1] += `\n${field.value}`;
+  }
+  const rosterText = rosterLines.join("\n");
+  if (rosterText) {
+    container.addSeparatorComponents(new SeparatorBuilder());
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(rosterText.slice(0, 4000)));
+  }
+
+  const publishedRoster = payload.rosters.find((item) => item.eventId === event.id && item.published);
+  const messages = getClanDiscordMessages(payload.config.defaultLanguage);
+
+  const imageUrl = embed.image?.url;
+  if (imageUrl) {
+    container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems({ media: { url: imageUrl }, description: `${event.name} roster` }));
+  }
+  const v2Controls = options?.showPublishedRosterImage && publishedRoster
+    ? [new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder().setCustomId(`roster-assignment:${event.id}`).setStyle(ButtonStyle.Primary).setLabel(messages.embed.myAssignment),
+      new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel(messages.buttons.addToCalendar).setURL(generateCalendarUrl(event, payload.config.defaultLanguage)),
+    )]
+    : isSignupOpen(event) && event.kind === "match"
+    ? [new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder().setCustomId(`signup-picker:${event.id}`).setStyle(ButtonStyle.Primary).setLabel(getClanDiscordMessages(payload.config.defaultLanguage).embed.chooseSignup),
+      new ButtonBuilder().setCustomId(`signup:${event.id}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`).setStyle(ButtonStyle.Danger).setLabel(getClanDiscordMessages(payload.config.defaultLanguage).buttons.decline),
+      new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel(getClanDiscordMessages(payload.config.defaultLanguage).buttons.addToCalendar).setURL(generateCalendarUrl(event, payload.config.defaultLanguage)),
+    )]
+    : legacy.components;
+  for (const row of v2Controls) {
+    container.addActionRowComponents(row);
+  }
+
+  return { components: [container] };
 }
 
 function escapeDisplayName(value: string) {
@@ -159,15 +214,15 @@ export function buildEventEmbed(
   const descriptionLines: string[] = [];
 
   if (event.kind === "match") {
-    descriptionLines.push(`**📢 ${messages.embed.headcountStart}:** <t:${meetingUnix}:F>`);
-    descriptionLines.push(`**🚀 ${messages.embed.briefingStart}:** <t:${gameStartUnix}:F>`);
-    descriptionLines.push(`**⏰ ${messages.embed.registrationEnds}:** <t:${regEndUnix}:F>`);
+    descriptionLines.push(`**👥 ${messages.embed.headcountStart}:** <t:${meetingUnix}:F>`);
+    descriptionLines.push(`**🎮 ${messages.embed.matchStart}:** <t:${gameStartUnix}:F>`);
+    descriptionLines.push(`**🔒 ${messages.embed.registrationEnds}:** <t:${regEndUnix}:F>`);
     descriptionLines.push("----------------------------------------");
   }
 
-  if (event.kind === "match" && event.map) descriptionLines.push(`**🗺️ ${messages.embed.map}:** ${event.map}`);
+  if (event.kind === "match" && event.map) descriptionLines.push(`**🗺️ ${messages.embed.map}:** ${formatHllPresetLabel(event.map) ?? event.map}`);
   if (event.kind === "match" && event.side) descriptionLines.push(`**⚔️ ${messages.embed.side}:** ${event.side}`);
-  if (event.kind === "match" && event.cap) descriptionLines.push(`**🧢 ${messages.embed.cap}:** ${event.cap}`);
+  if (event.kind === "match" && event.cap) descriptionLines.push(`**🎯 ${messages.embed.cap}:** ${event.cap}`);
   if (event.server) descriptionLines.push(`**🖥️ ${messages.embed.server}:** ${event.server}`);
   if (event.kind === "match" && event.serverPassword) {
     descriptionLines.push(`**🔑 ${messages.embed.password}:** \`${event.serverPassword}\``);
@@ -180,9 +235,9 @@ export function buildEventEmbed(
   }
 
   if (event.kind === "training") {
-    descriptionLines.push(`**⏰ ${messages.embed.registrationEnds}:** <t:${regEndUnix}:R> (<t:${regEndUnix}:f>)`);
-    descriptionLines.push(`**📢 ${messages.embed.meeting}:** <t:${meetingUnix}:t>`);
-    descriptionLines.push(`**🚀 ${messages.embed.trainingStart}:** <t:${gameStartUnix}:F>`);
+    descriptionLines.push(`**🔒 ${messages.embed.registrationEnds}:** <t:${regEndUnix}:R> (<t:${regEndUnix}:f>)`);
+    descriptionLines.push(`**👥 ${messages.embed.meeting}:** <t:${meetingUnix}:t>`);
+    descriptionLines.push(`**🎯 ${messages.embed.trainingStart}:** <t:${gameStartUnix}:F>`);
   }
   const categoryLabel = resolveEventCategoryLabel(categories, event);
   if (categoryLabel) {
@@ -293,6 +348,10 @@ export function buildEventComponents(config: DiscordConfig, groups: Group[], eve
           .setStyle(ButtonStyle.Success)
           .setLabel(messages.buttons.acknowledgeAttendance),
         new ButtonBuilder()
+          .setCustomId(`attendance-late:${event.id}`)
+          .setStyle(ButtonStyle.Secondary)
+          .setLabel(messages.embed.runningLate),
+        new ButtonBuilder()
           .setStyle(ButtonStyle.Link)
           .setLabel(messages.buttons.addToCalendar)
           .setEmoji("➕")
@@ -329,7 +388,7 @@ export function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord, s
 
   if (event.kind === "match") {
     embed.addFields(
-      { name: messages.forum.map, value: event.map ?? messages.forum.notSet, inline: true },
+      { name: messages.forum.map, value: event.map ? (formatHllPresetLabel(event.map) ?? event.map) : messages.forum.notSet, inline: true },
       { name: messages.forum.side, value: event.side ?? messages.forum.notSet, inline: true },
       { name: messages.forum.cap, value: event.cap ?? messages.forum.notSet, inline: true },
       { name: messages.forum.server, value: event.server ?? messages.forum.notSet, inline: true },
@@ -361,6 +420,21 @@ export function buildForumInfoEmbed(config: DiscordConfig, event: EventRecord, s
   return embed;
 }
 
+export function buildForumInfoV2Message(config: DiscordConfig, event: EventRecord, stratmapLinks: string[] = []) {
+  const embed = buildForumInfoEmbed(config, event, stratmapLinks).toJSON();
+  const container = new ContainerBuilder().setAccentColor(toDiscordColor(resolveEventCategoryColor([], event)));
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`# ${event.name}\n${embed.description ?? ""}`.slice(0, 4000)));
+  const details = (embed.fields ?? []).map((field) => `**${field.name}:** ${field.value}`).join("\n");
+  if (details) {
+    container.addSeparatorComponents(new SeparatorBuilder());
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(details.slice(0, 4000)));
+  }
+  if (embed.image?.url) {
+    container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems({ media: { url: embed.image.url }, description: `${event.name} briefing` }));
+  }
+  return { components: [container] };
+}
+
 export function buildAttendanceReminderComponents(eventId: string, language: ClanLanguage) {
   const messages = getClanDiscordMessages(language);
   return [
@@ -369,6 +443,10 @@ export function buildAttendanceReminderComponents(eventId: string, language: Cla
         .setCustomId(`attendance:${eventId}:ack`)
         .setStyle(ButtonStyle.Success)
         .setLabel(messages.buttons.acknowledgeAttendance),
+      new ButtonBuilder()
+        .setCustomId(`attendance-late:${eventId}`)
+        .setStyle(ButtonStyle.Secondary)
+        .setLabel(messages.embed.runningLate),
     ),
   ];
 }
