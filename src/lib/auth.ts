@@ -191,7 +191,7 @@ export const getVisibleGuildsForLoggedInUser = cache(async function getVisibleGu
 
       const mergedGuilds = new Map<string, Guild>();
       for (const guild of [...visibleGuilds, ...allGuilds]) {
-        const key = guild.id || guild.discordId;
+        const key = guild.discordId;
         const existing = mergedGuilds.get(key);
         mergedGuilds.set(key, {
           ...existing,
@@ -208,7 +208,7 @@ export const getVisibleGuildsForLoggedInUser = cache(async function getVisibleGu
       const mergedGuilds = new Map<string, Guild>();
 
       for (const guild of [...sessionGuilds, ...knownGuilds]) {
-        const key = guild.id || guild.discordId;
+        const key = guild.discordId;
         const existing = mergedGuilds.get(key);
         mergedGuilds.set(key, {
           ...existing,

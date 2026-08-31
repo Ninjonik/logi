@@ -232,9 +232,9 @@ function buildPlatformFieldValue(platformIds: string[]) {
   return lines.join("\n").slice(0, 1024);
 }
 
-function buildRecentMatchesValue(profile: ClanPlayerProfile) {
+function buildRecentMatchesValue(profile: ClanPlayerProfile, messages = getClanDiscordMessages("en")) {
   if (!profile.recentMatches.length) {
-    return "No imported match history.";
+    return messages.playerStats.noMatchHistory;
   }
 
   return profile.recentMatches.map((match) => {
@@ -275,20 +275,20 @@ function buildClanPlayerProfileEmbed(profile: ClanPlayerProfile) {
   return embed;
 }
 
-function buildClanPlayerProfileV2(profile: ClanPlayerProfile) {
+function buildClanPlayerProfileV2(profile: ClanPlayerProfile, messages: ReturnType<typeof getClanDiscordMessages>) {
   const container = new ContainerBuilder().setAccentColor(0x5865f2);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent([
     `# ${profile.name}`,
     `**${getAssignmentBadge(profile.assignment)}**`,
-    `Clan score: **${profile.score ?? 0}** · Matches: **${profile.performance.matchesPlayed ?? 0}**`,
+    `${messages.playerStats.clanScore}: **${profile.score ?? 0}** · ${messages.playerStats.matches}: **${profile.performance.matchesPlayed ?? 0}**`,
   ].join("\n")));
   container.addSeparatorComponents(new SeparatorBuilder());
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent([
-    "## Performance",
+    `## ${messages.playerStats.performance}`,
     `Kills **${formatNumber(profile.performance.averages.kills)}** · Deaths **${formatNumber(profile.performance.averages.deaths)}** · KD **${formatNumber(profile.performance.averages.killDeathRatio)}**`,
     `Offense **${formatNumber(profile.performance.averages.offense)}** · Defense **${formatNumber(profile.performance.averages.defense)}** · Support **${formatNumber(profile.performance.averages.support)}**`,
     "\n## Recent matches",
-    buildRecentMatchesValue(profile),
+    buildRecentMatchesValue(profile, messages),
   ].join("\n")));
   if (profile.avatar) {
     container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems({ media: { url: profile.avatar }, description: `${profile.name} profile image` }));
@@ -494,11 +494,13 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
           .setDMPermission(false),
         new SlashCommandBuilder()
           .setName("player")
-          .setDescription("Search clan players and view their stats")
+          .setDescription(messages.commands.playerDescription)
+          .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.playerDescription })
           .addStringOption((option) =>
             option
               .setName("player")
-              .setDescription("Pick a player from this clan")
+              .setDescription(messages.commands.playerOptionDescription)
+              .setDescriptionLocalizations({ cs: getClanDiscordMessages("cs").commands.playerOptionDescription })
               .setRequired(true)
               .setAutocomplete(true),
           )
@@ -630,11 +632,15 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
   async function handlePlayerCommand(interaction: ChatInputCommandInteraction) {
     if (!interaction.guildId) {
-      await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: getClanDiscordMessages("en").commands.playerServerOnly, flags: MessageFlags.Ephemeral });
       return;
     }
 
     await interaction.deferReply();
+    const guildConfig = await convex.query(references.getConfigByDiscordGuildId, {
+      guildId: interaction.guildId,
+    }).catch(() => null) as { defaultLanguage?: "en" | "cs" } | null;
+    const messages = getClanDiscordMessages(guildConfig?.defaultLanguage);
 
     const playerId = interaction.options.getString("player", true).trim();
     const profile = await convex.query(references.getClanPlayerProfile, {
@@ -643,12 +649,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }).catch(() => null) as ClanPlayerProfile | null;
 
     if (!profile) {
-      await interaction.editReply({ content: "Player not found in this clan." });
+      await interaction.editReply({ content: messages.commands.playerNotFound });
       return;
     }
 
     await interaction.editReply({
-      ...buildClanPlayerProfileV2(profile),
+      ...buildClanPlayerProfileV2(profile, messages),
       flags: MessageFlags.IsComponentsV2,
     });
   }

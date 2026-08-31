@@ -14,6 +14,7 @@ import {
   CalendarIcon,
   Map,
   Bot,
+  Radio,
 } from "lucide-react";
 
 import { AppLogo } from "@/components/app/app-logo";
@@ -236,6 +237,16 @@ export function AppSidebar({
           },
         ]
       : []),
+    {
+      label: dictionary.sidebar.logiComms,
+      items: [
+        {
+          title: dictionary.sidebar.logiComms,
+          url: `/${locale}#logicomms`,
+          icon: Radio,
+        },
+      ],
+    },
   ];
 
   return (

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bot } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { BotInviteButton } from "@/components/app/bot-invite-button";
 import { PageHeader } from "@/components/app/page-header";
@@ -10,6 +11,7 @@ import { isLocale } from "@/i18n/config";
 import { getCurrentPlayer, getVisibleGuildsForLoggedInUser, isCurrentUserSuperadmin } from "@/lib/auth";
 import { buildDiscordBotInviteUrl } from "@/lib/discord";
 import { getServerContext } from "@/lib/server-context";
+import { getGuildMetadataByDiscordId } from "@/lib/server-metadata";
 
 function requiresBotRoleHierarchySetup(
   context: Awaited<ReturnType<typeof getServerContext>>,
@@ -56,6 +58,12 @@ export default async function DashboardHomePage({
 
   const visibleGuilds = await getVisibleGuildsForLoggedInUser();
   const mainServer = user.guildId ? visibleGuilds.find((guild) => guild.discordId === user.guildId) : undefined;
+  if (mainServer) {
+    const persistedMainServer = await getGuildMetadataByDiscordId(mainServer.discordId);
+    if (persistedMainServer) {
+      redirect(`/${safeLocale}/dashboard/servers/${persistedMainServer.id}`);
+    }
+  }
   const managedServers = superadmin
     ? visibleGuilds
     : visibleGuilds.filter((guild) => user.managedGuildIds.includes(guild.discordId));
@@ -75,22 +83,6 @@ export default async function DashboardHomePage({
     <>
       <PageHeader title={dictionary.dashboard.title} description={dictionary.dashboard.description} />
       <div className="space-y-8 px-4 lg:px-6">
-        {mainServer ? (
-          <section className="space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-              {dictionary.dashboard.homeServer}
-            </h2>
-            <div className="grid gap-4 xl:grid-cols-2">
-              <ServerCard
-                locale={safeLocale}
-                guild={mainServer}
-                label={dictionary.dashboard.homeServer}
-                dictionary={dictionary}
-                inviteRoleHierarchyRelevant={inviteRoleHierarchyByGuildId.get(mainServer.id) ?? false}
-              />
-            </div>
-          </section>
-        ) : null}
         {managedServers.length ? (
           <section className="space-y-4">
             <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/50 p-4 sm:flex-row sm:items-center sm:justify-between">

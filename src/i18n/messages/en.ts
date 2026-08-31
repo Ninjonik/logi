@@ -5,6 +5,14 @@ export const enMessages = {
     description:
       "Organize clan events, build rosters, publish briefings, and prepare Discord-connected operations.",
   },
+  home: {
+    openApp: "Open app", signIn: "Sign in with Discord", contribute: "Contribute on GitHub", loggedInAs: "Signed in as {name}", dashboard: "Dashboard",
+    badge: "Discord operations for organized groups", title: "Logi keeps community operations readable, structured, and in one place.", description: "Logi is an open-source platform for groups that run events, rosters, trainings, matches, and Discord coordination.",
+    featuresTitle: "What it actually does", featuresDescription: "Plan events, manage signups, build rosters, prepare matches, and keep Discord synchronized.", featureEvents: "Events, trainings, and match workflows", featureRosters: "Roster and attendance management", featureDiscord: "Discord-linked server administration", featureTools: "Shared tooling for organized communities",
+    commsBadge: "LogiComms", commsTitle: "Clear squad communication without the overhead.", commsDescription: "LogiComms is a lightweight, fast desktop app for efficient in-squad communication. Set it up quickly and tailor it to how your unit operates.", commsDownload: "Download for Windows", commsUnavailable: "Windows download is temporarily unavailable.",
+    freeToUse: "Free to use", sourceAvailable: "Source available on GitHub", contributionsWelcome: "Contributions welcome", noMarketingFiller: "No marketing filler",
+    pillars: { operationsTitle: "Runs the boring parts", operationsDescription: "Scheduling, signups, roster organization, match prep, and Discord coordination in one place.", communitiesTitle: "Built for real communities", communitiesDescription: "Made for clans, units, and organized groups that need structure without extra ceremony.", contributorsTitle: "Open to contributors", contributorsDescription: "Open source, open to pull requests, and improved in public with people who use it." },
+  },
   auth: {
     loginTitle: "Deploy your next operation",
     loginDescription:
@@ -107,6 +115,7 @@ export const enMessages = {
     operations: "Operations",
     configuration: "Configuration",
     bot: "Bot",
+    logiComms: "LogiComms",
   },
   common: {
     actions: "Actions",
