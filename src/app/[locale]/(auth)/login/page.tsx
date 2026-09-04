@@ -8,23 +8,10 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getCurrentPlayer } from "@/lib/auth";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-
-  return {
-    title: dictionary.auth.loginTitle,
-    description: dictionary.auth.loginDescription,
-    openGraph: {
-      title: dictionary.auth.loginTitle,
-      description: dictionary.auth.loginDescription,
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: "Sign in | Logi",
+  description: "Sign in to continue to Logi.",
+};
 
 export default async function LoginPage({
   params,

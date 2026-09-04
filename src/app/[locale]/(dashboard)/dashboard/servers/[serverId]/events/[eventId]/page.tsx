@@ -11,18 +11,10 @@ import { getEventStatusMeta } from "@/lib/event-status";
 import { getEventMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string; serverId: string; eventId: string }>;
-}): Promise<Metadata> {
-  const { eventId } = await params;
-  const event = await getEventMetadata(eventId);
-  return {
-    title: event?.name ?? "Event",
-    description: event?.description,
-  };
-}
+export const metadata: Metadata = {
+  title: "Event | Logi",
+  description: "View and manage an event.",
+};
 
 export function generateStaticParams() {
   return [{ eventId: "sample-event" }];

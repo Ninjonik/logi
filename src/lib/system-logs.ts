@@ -349,7 +349,7 @@ export async function getKnownLogScopes() {
 }
 
 export async function readLogDatabaseFile() {
-  return await readFile(LOG_DB_PATH);
+  return await readFile(/* turbopackIgnore: true */ LOG_DB_PATH);
 }
 
 export function getLogDatabasePath() {

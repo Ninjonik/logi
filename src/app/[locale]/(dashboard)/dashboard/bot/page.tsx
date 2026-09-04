@@ -34,18 +34,10 @@ function parsePositiveInt(value: string | undefined, fallback: number) {
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: dictionary.dashboard.botTitle,
-    description: dictionary.dashboard.botDescription,
-  };
-}
+export const metadata: Metadata = {
+  title: "Bot dashboard | Logi",
+  description: "Discord bot status and system logs.",
+};
 
 export default async function BotDashboardPage({
   params,

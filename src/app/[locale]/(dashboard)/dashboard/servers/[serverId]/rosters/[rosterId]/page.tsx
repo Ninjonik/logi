@@ -9,19 +9,10 @@ import { getEventMetadata, getRosterMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getUsersByIds } from "@/lib/server-user-management";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; rosterId: string }>;
-}): Promise<Metadata> {
-  const { rosterId } = await params;
-  const roster = await getRosterMetadata(rosterId);
-  const event = roster?.eventId ? await getEventMetadata(String(roster.eventId)) : null;
-  return {
-    title: event ? `${event.name} roster` : "Roster",
-    description: "Roster board with reserves, role slots, publish state, and acknowledgements.",
-  };
-}
+export const metadata: Metadata = {
+  title: "Roster | Logi",
+  description: "Roster board with reserves, role slots, publish state, and acknowledgements.",
+};
 
 export function generateStaticParams() {
   return [{ rosterId: "sample-roster" }];

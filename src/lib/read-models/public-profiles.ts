@@ -11,8 +11,17 @@ const getPublicClanReference = makeFunctionReference<"query">("publicProfiles:ge
 const listPublicClansReference = makeFunctionReference<"query">("publicProfiles:listClans");
 const listPublicMatchesReference = makeFunctionReference<"query">("publicProfiles:listMatches");
 const searchPublicPlayersReference = makeFunctionReference<"query">("publicProfiles:searchPlayers");
+const getPublicPreviewReference = makeFunctionReference<"query">("publicPreviews:get");
 
 export type PublicPlayerProfile = Awaited<ReturnType<typeof getPublicPlayerProfile>>;
+
+export async function getPublicPreview(entityType: "player" | "clan" | "match", entityId: string) {
+  "use cache";
+  cacheLife("max");
+  cacheTag(appCacheTags.publicDiscovery());
+  cacheTag(entityType === "match" ? appCacheTags.publicMatch(entityId) : entityType === "clan" ? appCacheTags.publicClan(entityId) : appCacheTags.publicProfile(entityId));
+  return await fetchQuery(getPublicPreviewReference, { entityType, entityId }) as { title: string; description: string; imageVersion: string } | null;
+}
 
 export async function getPublicPlayerProfile(playerId: string) {
   "use cache";

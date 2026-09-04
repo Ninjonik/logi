@@ -7,18 +7,10 @@ import { isLocale } from "@/i18n/config";
 import { getGroupMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; groupId: string }>;
-}): Promise<Metadata> {
-  const { groupId } = await params;
-  const group = await getGroupMetadata(groupId);
-  return {
-    title: group?.name ?? "Group",
-    description: group?.description,
-  };
-}
+export const metadata: Metadata = {
+  title: "Group | Logi",
+  description: "Manage a server group.",
+};
 
 export function generateStaticParams() {
   return [{ groupId: "sample-group" }];

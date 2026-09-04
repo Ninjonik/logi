@@ -29,19 +29,10 @@ function getEventResultLabel(event: EventRecord, dictionary: ReturnType<typeof g
   return `${outcomeLabel} ${event.eventResult.score.sideA}-${event.eventResult.score.sideB}`;
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; locale: string }>;
-}): Promise<Metadata> {
-  const { serverId, locale } = await params;
-  const server = await getGuildMetadata(serverId);
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: `${server?.name ?? "Clan"} ${dictionary.sidebar.events}`,
-    description: dictionary.event.listDescription,
-  };
-}
+export const metadata: Metadata = {
+  title: "Events | Logi",
+  description: "Manage server events.",
+};
 
 export default async function EventsPage({
   params,

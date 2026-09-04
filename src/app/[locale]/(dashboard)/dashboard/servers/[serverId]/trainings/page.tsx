@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
+import { Suspense } from "react";
 
 import { PageHeader } from "@/components/app/page-header";
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table";
@@ -12,18 +14,22 @@ import { formatDateTime } from "@/lib/format";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; locale: string }>;
-}): Promise<Metadata> {
-  const { serverId, locale } = await params;
-  const server = await getGuildMetadata(serverId);
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: `${server?.name ?? "Clan"} ${dictionary.sidebar.trainings ?? "Trainings"}`,
-    description: dictionary.event.listDescription,
-  };
+async function ConnectionMarker() {
+  await connection();
+  return null;
+}
+
+async function DynamicMetadataMarker() {
+  return <Suspense><ConnectionMarker /></Suspense>;
+}
+
+export const metadata: Metadata = {
+  title: "Trainings | Logi",
+  description: "Training events and registration.",
+};
+
+export function generateStaticParams() {
+  return [{ locale: "en", serverId: "sample-server" }];
 }
 
 export default async function TrainingsPage({
@@ -47,7 +53,7 @@ export default async function TrainingsPage({
   });
 
   return (
-    <TablePageLayout
+    <><TablePageLayout
       header={(
         <PageHeader
           title={dictionary.sidebar.trainings ?? "Trainings"}
@@ -85,6 +91,6 @@ export default async function TrainingsPage({
           },
         ]}
       />
-    </TablePageLayout>
+    </TablePageLayout><DynamicMetadataMarker /></>
   );
 }

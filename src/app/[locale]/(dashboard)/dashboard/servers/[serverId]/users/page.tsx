@@ -29,19 +29,10 @@ function getAssignmentStatusLabel(
   return dictionary.userManagement.memberLabel;
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string; serverId: string }>;
-}): Promise<Metadata> {
-  const { serverId, locale } = await params;
-  const server = await getGuildMetadata(serverId);
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: `${server?.name ?? "Clan"} ${dictionary.userManagement.title}`,
-    description: dictionary.userManagement.description,
-  };
-}
+export const metadata: Metadata = {
+  title: "Members | Logi",
+  description: "Manage server members.",
+};
 
 export default async function ServerUsersPage({
   params,

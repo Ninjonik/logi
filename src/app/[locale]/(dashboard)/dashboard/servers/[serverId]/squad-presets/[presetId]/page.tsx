@@ -7,18 +7,10 @@ import { isLocale } from "@/i18n/config";
 import { getSquadPresetMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; presetId: string }>;
-}): Promise<Metadata> {
-  const { presetId } = await params;
-  const preset = await getSquadPresetMetadata(presetId);
-  return {
-    title: preset?.name ?? "Squad preset",
-    description: "Preset squad structure for new rosters.",
-  };
-}
+export const metadata: Metadata = {
+  title: "Squad preset | Logi",
+  description: "Preset squad structure for new rosters.",
+};
 
 export function generateStaticParams() {
   return [{ presetId: "sample-squad-preset" }];

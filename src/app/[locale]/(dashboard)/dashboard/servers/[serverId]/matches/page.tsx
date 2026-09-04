@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
+import { Suspense } from "react";
 
 import { PageHeader } from "@/components/app/page-header";
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table";
@@ -15,6 +17,15 @@ import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import type { EventRecord } from "@/types/domain";
 
+async function ConnectionMarker() {
+  await connection();
+  return null;
+}
+
+async function DynamicMetadataMarker() {
+  return <Suspense><ConnectionMarker /></Suspense>;
+}
+
 function getEventResultLabel(event: EventRecord, dictionary: ReturnType<typeof getDictionary>) {
   if (!event.eventResult) {
     return dictionary.shared.notSet;
@@ -29,19 +40,10 @@ function getEventResultLabel(event: EventRecord, dictionary: ReturnType<typeof g
   return `${outcomeLabel} ${event.eventResult.score.sideA}-${event.eventResult.score.sideB}`;
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; locale: string }>;
-}): Promise<Metadata> {
-  const { serverId, locale } = await params;
-  const server = await getGuildMetadata(serverId);
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: `${server?.name ?? "Clan"} ${dictionary.sidebar.matches ?? "Matches"}`,
-    description: dictionary.event.listDescription,
-  };
-}
+export const metadata: Metadata = {
+  title: "Matches | Logi",
+  description: "Matches, results, and registration.",
+};
 
 export default async function MatchesPage({
   params,
@@ -73,7 +75,7 @@ export default async function MatchesPage({
   });
 
   return (
-    <TablePageLayout
+    <><TablePageLayout
       header={(
         <PageHeader
           title={dictionary.sidebar.matches ?? "Matches"}
@@ -125,6 +127,6 @@ export default async function MatchesPage({
           },
         ]}
       />
-    </TablePageLayout>
+    </TablePageLayout><DynamicMetadataMarker /></>
   );
 }

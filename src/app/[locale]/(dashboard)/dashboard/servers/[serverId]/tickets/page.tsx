@@ -8,19 +8,10 @@ import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string; serverId: string }>;
-}): Promise<Metadata> {
-  const { locale, serverId } = await params;
-  const server = await getGuildMetadata(serverId);
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: `${server?.name ?? "Clan"} ${dictionary.ticketSettings.title}`,
-    description: dictionary.ticketSettings.pageDescription,
-  };
-}
+export const metadata: Metadata = {
+  title: "Ticket settings | Logi",
+  description: "Manage server ticket settings.",
+};
 
 export default async function ServerTicketsPage({
   params,
