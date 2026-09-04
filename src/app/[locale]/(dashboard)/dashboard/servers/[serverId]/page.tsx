@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CalendarDays, ClipboardList, ListTodo, Radio, Users } from "lucide-react";
+import { CalendarDays, ClipboardList, Info, ListTodo, Radio, Target, Trophy, Users } from "lucide-react";
 import { addDays, format } from "date-fns";
 
 import { PageHeader } from "@/components/app/page-header";
@@ -9,12 +9,14 @@ import { EmojiValue } from "@/components/app/emoji-value";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getDictionary } from "@/i18n/dictionaries";
 import { type Locale, isLocale } from "@/i18n/config";
 import { getEventCategoryPresentation } from "@/lib/event-categories";
 import { formatDateKey, formatTime } from "@/lib/format";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
+import { getRecentMatchSummary } from "@/lib/read-models/server-dashboard";
 import { getLoggedInUser } from "@/lib/auth"
 
 export const metadata: Metadata = {
@@ -57,6 +59,7 @@ export default async function ServerOverviewPage({
   const dictionary = getDictionary(safeLocale);
   const context = await getServerContext(serverId);
   if (!context) return null;
+  const recentMatchSummary = await getRecentMatchSummary(serverId);
   const {
     server,
     events,
@@ -167,6 +170,69 @@ export default async function ServerOverviewPage({
                 icon={ClipboardList}
               />
             </div>
+          </CardContent>
+        </Card>
+        <Card className="overflow-hidden rounded-2xl border-border/60">
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <div>
+              <CardTitle>{dictionary.clan.recentGames}</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">{dictionary.clan.lastTenGames}</p>
+            </div>
+            <Trophy className="size-5 text-amber-500" aria-hidden="true" />
+          </CardHeader>
+          <CardContent>
+            {recentMatchSummary?.recentMatches.length ? (
+              <>
+                <div className="mb-5 grid gap-3 sm:grid-cols-2">
+                  <StatCard title={dictionary.clan.record} value={`${recentMatchSummary.wins}W - ${recentMatchSummary.losses}L`} description={dictionary.clan.lastTenGames} icon={Trophy} />
+                  <StatCard title={dictionary.clan.winRate} value={`${Math.round(recentMatchSummary.winRate * 100)}%`} description={dictionary.clan.lastTenGames} icon={Trophy} />
+                </div>
+                <div className="space-y-2">
+                  {recentMatchSummary.recentMatches.map((match) => (
+                    <a key={match.id} href={`/${safeLocale}/dashboard/servers/${serverId}/matches/${match.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 p-3 transition hover:bg-muted/60">
+                      <span className="font-medium">{match.name}</span>
+                      <span className="flex items-center gap-3">
+                        <span className={match.outcome === "victory" ? "text-sm font-medium text-emerald-600 dark:text-emerald-400" : match.outcome === "defeat" ? "text-sm font-medium text-red-600 dark:text-red-400" : "text-sm font-medium text-muted-foreground"}>
+                          {match.outcome === "victory" ? dictionary.publicProfiles.victory : match.outcome === "defeat" ? dictionary.publicProfiles.defeat : dictionary.clan.draw}
+                        </span>
+                        <span className="font-semibold tabular-nums">{match.score.sideA} – {match.score.sideB}</span>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+                <div className="mt-6 border-t border-border/60 pt-5">
+                  <div className="mb-3 flex items-center gap-1.5">
+                    <h3 className="font-semibold">{dictionary.clan.topPlayers}</h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="rounded-full text-muted-foreground hover:text-foreground" aria-label={dictionary.clan.topPlayersCalculation}>
+                          <Info className="size-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-72">{dictionary.clan.topPlayersCalculation}</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  {(recentMatchSummary.topPlayers ?? []).length ? (
+                    <div className="grid gap-3 lg:grid-cols-5">
+                      {(recentMatchSummary.topPlayers ?? []).map((player, index) => (
+                        <div key={player.id} className="rounded-xl border border-border/60 p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate font-medium">#{index + 1} {player.name}</span>
+                            <span className="flex items-center gap-1 text-sm font-semibold tabular-nums"><Target className="size-3.5 text-muted-foreground" />{player.kills} {dictionary.clan.kills}</span>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">{player.matches} {dictionary.clan.matchesPlayed}</p>
+                          {player.roles.length ? <div className="mt-3 flex flex-wrap gap-1.5">{player.roles.map((role) => (
+                            <Badge key={`${role.name}:${role.icon ?? ""}`} variant="secondary" className="gap-1 rounded-full px-2 py-1 text-xs">
+                              {role.icon ? <img src={role.icon} alt="" className="size-3.5 object-contain invert dark:invert-0" /> : null}{role.name}
+                            </Badge>
+                          ))}</div> : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="text-sm text-muted-foreground">{dictionary.clan.noPlayerStats}</p>}
+                </div>
+              </>
+            ) : <p className="rounded-xl border border-dashed border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">{dictionary.clan.noRecentGames}</p>}
           </CardContent>
         </Card>
         <Card className="overflow-hidden rounded-2xl border-border/60">
