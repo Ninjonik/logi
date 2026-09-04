@@ -38,18 +38,18 @@ function resolvePointValue(mapId: string, value: string | undefined, valueMode: 
 }
 
 function SearchableSelect({
-  value,
-  onChange,
-  options,
-  placeholder,
-  searchPlaceholder,
-  noneLabel,
-  noResults,
-  disabled,
-  open,
-  onOpenChange,
-  onSelectComplete,
-}: {
+                            value,
+                            onChange,
+                            options,
+                            placeholder,
+                            searchPlaceholder,
+                            noneLabel,
+                            noResults,
+                            disabled,
+                            open,
+                            onOpenChange,
+                            onSelectComplete,
+                          }: {
   value?: string;
   onChange: (value: string) => void;
   options: Array<{ value: string; label: string; searchText?: string; detail?: string }>;
@@ -122,21 +122,24 @@ function SearchableSelect({
 }
 
 export function HllMapSelector({
-  mapId,
-  onMapIdChange,
-  time,
-  onTimeChange,
-  mode,
-  onModeChange,
-  pointValue,
-  onPointValueChange,
-  pointValueMode = "label",
-  pointShowGrid = true,
-  includeVariants = false,
-  includePoint = true,
-  disabled,
-  labels,
-}: {
+                                 mapId,
+                                 onMapIdChange,
+                                 time,
+                                 onTimeChange,
+                                 mode,
+                                 onModeChange,
+                                 pointValue,
+                                 onPointValueChange,
+                                 sideValue,
+                                 onSideValueChange,
+                                 pointValueMode = "label",
+                                 pointShowGrid = true,
+                                 includeVariants = false,
+                                 includePoint = true,
+                                 includeSide = false,
+                                 disabled,
+                                 labels,
+                               }: {
   mapId: string;
   onMapIdChange: (value: string) => void;
   time?: string;
@@ -145,10 +148,13 @@ export function HllMapSelector({
   onModeChange?: (value: string) => void;
   pointValue?: string;
   onPointValueChange?: (value: string) => void;
+  sideValue?: string;
+  onSideValueChange?: (value: string) => void;
   pointValueMode?: "id" | "label";
   pointShowGrid?: boolean;
   includeVariants?: boolean;
   includePoint?: boolean;
+  includeSide?: boolean;
   disabled?: boolean;
   labels: {
     map: string;
@@ -159,6 +165,7 @@ export function HllMapSelector({
     pointSearch: string;
     optional?: string;
     noResults: string;
+    side?: string;
   };
 }) {
   const maps = getHllStratmapMaps();
@@ -170,6 +177,7 @@ export function HllMapSelector({
   const [timeOpen, setTimeOpen] = useState(false);
   const [modeOpen, setModeOpen] = useState(false);
   const [pointOpen, setPointOpen] = useState(false);
+  const [sideOpen, setSideOpen] = useState(false);
 
   useEffect(() => {
     if (!includeVariants) {
@@ -184,9 +192,15 @@ export function HllMapSelector({
     }
   }, [includePoint]);
 
+  useEffect(() => {
+    if (!includeSide) {
+      setSideOpen(false);
+    }
+  }, [includeSide]);
+
   return (
-    <div className={`min-w-0 overflow-x-hidden grid gap-3 ${includeVariants ? "md:grid-cols-4" : "md:grid-cols-2"}`}>
-      <div className="min-w-0 space-y-1.5">
+    <div className="flex flex-row flex-wrap gap-2 w-full min-w-0 overflow-x-hidden">
+      <div className="flex-1 min-w-48 space-y-1.5">
         <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.map}</div>
         <SearchableSelect
           value={mapId}
@@ -215,7 +229,7 @@ export function HllMapSelector({
         />
       </div>
       {includeVariants ? (
-        <div className="min-w-0 space-y-1.5">
+        <div className="flex-1 min-w-48 space-y-1.5">
           <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.time}</div>
           <SearchableSelect
             value={time}
@@ -232,7 +246,7 @@ export function HllMapSelector({
         </div>
       ) : null}
       {includeVariants ? (
-        <div className="min-w-0 space-y-1.5">
+        <div className="flex-1 min-w-48 space-y-1.5">
           <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.mode}</div>
           <SearchableSelect
             value={mode}
@@ -253,7 +267,7 @@ export function HllMapSelector({
         </div>
       ) : null}
       {includePoint ? (
-        <div className="min-w-0 space-y-1.5">
+        <div className="flex-1 min-w-48 space-y-1.5">
           <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.point}</div>
           <SearchableSelect
             value={selectedPoint?.id ?? ""}
@@ -273,11 +287,36 @@ export function HllMapSelector({
             noResults={labels.noResults}
             open={pointOpen}
             onOpenChange={setPointOpen}
+            onSelectComplete={() => {
+              if (includeSide) {
+                setSideOpen(true);
+              }
+            }}
             options={(selectedMap?.strongpoints ?? []).map((point) => ({
               value: point.id,
               label: point.label,
               searchText: `${point.label} ${point.id}`,
             }))}
+          />
+        </div>
+      ) : null}
+      {includeSide ? (
+        <div className="flex-1 min-w-48 space-y-1.5">
+          <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.side ?? "Side"}</div>
+          <SearchableSelect
+            value={sideValue ?? ""}
+            onChange={(value) => onSideValueChange?.(value)}
+            disabled={disabled}
+            placeholder={labels.side ?? "Side"}
+            searchPlaceholder={labels.side ?? "Side"}
+            noneLabel={labels.optional}
+            noResults={labels.noResults}
+            open={sideOpen}
+            onOpenChange={setSideOpen}
+            options={[
+              { value: "Allies", label: "Allies" },
+              { value: "Axis", label: "Axis" },
+            ]}
           />
         </div>
       ) : null}

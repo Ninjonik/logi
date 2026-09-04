@@ -8,9 +8,7 @@ import { MatchDetails } from "@/components/app/match-details";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPublicMatch } from "@/lib/read-models/public-profiles";
-import { ensurePublicMatchPreview } from "@/lib/public-preview-ensure";
 import { getPublicPreviewMetadata } from "@/lib/public-preview-metadata";
-import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 
 type Props = { params: Promise<{ locale: string; eventId: string }> };
 
@@ -43,7 +41,5 @@ export default async function PublicMatchPage({ params }: Props) {
   const dictionary = getDictionary(resolvedLocale);
   const match = await getPublicMatch(eventId);
   if (!match) notFound();
-  await ensurePublicMatchPreview(eventId);
-  revalidateCacheEntries([appCacheTags.publicMatch(eventId)]);
   return <><main className="min-h-screen bg-background px-4 py-8 sm:px-6"><div className="mx-auto max-w-6xl space-y-6"><Link className="text-sm text-muted-foreground hover:text-foreground" href={`/${resolvedLocale}`}>&larr; {dictionary.publicProfiles.backToLogi}</Link><MatchDetails match={match} dictionary={dictionary} /></div></main><DynamicMetadataMarker /></>;
 }
