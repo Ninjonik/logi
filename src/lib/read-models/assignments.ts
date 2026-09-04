@@ -1,7 +1,7 @@
 import { fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
-import { appCacheTags, tagCacheEntries } from "@/lib/cache-tags";
+import { appCacheTags, cachedRead } from "@/lib/cache-tags";
 
 const listAssignmentsReference = makeFunctionReference<"query">("userAssignments:listForServer");
 const getAssignmentByIdReference = makeFunctionReference<"query">("userAssignments:getById");
@@ -22,15 +22,11 @@ export type ServerUserAssignmentReadModel = {
 };
 
 export async function getServerUserAssignmentsReadModel(serverId: string): Promise<ServerUserAssignmentReadModel[]> {
-  "use cache";
-  tagCacheEntries([appCacheTags.assignments(serverId)]);
-  return (await fetchQuery(listAssignmentsReference, { serverId })) as ServerUserAssignmentReadModel[];
+  return await cachedRead(["assignments", serverId], [appCacheTags.assignments(serverId)], async () => (await fetchQuery(listAssignmentsReference, { serverId })) as ServerUserAssignmentReadModel[]);
 }
 
 export async function getServerUserAssignmentReadModel(assignmentId: string) {
-  "use cache";
-  tagCacheEntries([appCacheTags.assignment(assignmentId)]);
-  return (await fetchQuery(getAssignmentByIdReference, {
+  return await cachedRead(["assignment", assignmentId], [appCacheTags.assignment(assignmentId)], async () => (await fetchQuery(getAssignmentByIdReference, {
     assignmentId: assignmentId as never,
-  })) as ServerUserAssignmentReadModel | null;
+  })) as ServerUserAssignmentReadModel | null);
 }

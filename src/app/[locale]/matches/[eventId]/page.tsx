@@ -9,6 +9,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPublicMatch } from "@/lib/read-models/public-profiles";
 import { ensurePublicMatchPreview } from "@/lib/public-preview-ensure";
+import { getPublicPreviewMetadata } from "@/lib/public-preview-metadata";
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
 
 type Props = { params: Promise<{ locale: string; eventId: string }> };
@@ -22,14 +23,18 @@ async function ConnectionMarker() {
   return null;
 }
 
-async function DynamicMetadataMarker() {
+function DynamicMetadataMarker() {
   return <Suspense><ConnectionMarker /></Suspense>;
 }
 
-export const metadata: Metadata = {
-  title: "Match result | Logi",
-  description: "Recorded public match result.",
-};
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { eventId } = await params;
+  const preview = await getPublicPreviewMetadata("match", eventId);
+  const title = preview?.title ?? "Match result | Logi";
+  const description = preview?.description ?? "Recorded public match result.";
+  const image = `/api/og/match/${eventId}?v=${encodeURIComponent(preview?.imageVersion ?? "current")}`;
+  return { title, description, openGraph: { title, description, images: [{ url: image, width: 1200, height: 630 }] }, twitter: { card: "summary_large_image", images: [image] } };
+}
 
 export default async function PublicMatchPage({ params }: Props) {
   const { locale, eventId } = await params;

@@ -2,7 +2,6 @@ import { fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
 import { getLoggedInUser } from "@/lib/auth";
-import { appCacheTags, tagCacheEntries } from "@/lib/cache-tags";
 
 const getStratmapByIdReference = makeFunctionReference<"query">("stratmaps:getById");
 const listStratmapsByGuildReference = makeFunctionReference<"query">("stratmaps:listByGuild");
@@ -13,7 +12,6 @@ export async function getStratmapDetail(stratmapId: string) {
     return null;
   }
 
-  tagCacheEntries([appCacheTags.stratmap(stratmapId)]);
   return await fetchQuery(getStratmapByIdReference, {
     userId: user.discordId,
     stratmapId: stratmapId as never,
@@ -43,7 +41,6 @@ export async function listServerStratmaps(serverId: string) {
     return null;
   }
 
-  tagCacheEntries([appCacheTags.stratmaps(serverId), appCacheTags.serverContext(serverId)]);
   return await fetchQuery(listStratmapsByGuildReference, {
     userId: user.discordId,
     serverId: serverId as never,

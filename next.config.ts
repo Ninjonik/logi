@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   },
   turbopack: {},
 
-  cacheComponents: true,
+  cacheComponents: false,
 
   // Image optimization
   images: {

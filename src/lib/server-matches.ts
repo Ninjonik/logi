@@ -1,7 +1,7 @@
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
-import { appCacheTags, tagCacheEntries } from "@/lib/cache-tags";
+import { appCacheTags, cachedRead } from "@/lib/cache-tags";
 import { getInternalAuthSecret } from "@/lib/env";
 import type { MatchRecord } from "@/types/domain";
 
@@ -23,12 +23,10 @@ export async function saveServerMatch(input: {
 }
 
 export async function getServerMatchByEventId(eventId: string) {
-  "use cache";
   if (eventId.startsWith("sample-")) return null;
-  tagCacheEntries([appCacheTags.match(eventId)]);
-  return await fetchQuery(getMatchByEventIdReference, {
+  return await cachedRead(["server-match", eventId], [appCacheTags.match(eventId)], () => fetchQuery(getMatchByEventIdReference, {
     eventId: eventId as never,
-  }) as MatchRecord | null;
+  }) as Promise<MatchRecord | null>);
 }
 
 export async function findServerMatchByIdentity(input: {

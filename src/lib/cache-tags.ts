@@ -1,4 +1,4 @@
-import { cacheTag, revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 
 export const appCacheTags = {
   server: (serverId: string) => `server:${serverId}`,
@@ -31,9 +31,14 @@ export const appCacheTags = {
   rosterImageEvent: (eventId: string) => `roster-image:v3:${eventId}`,
 } as const;
 
-export function tagCacheEntries(tags: Array<string | null | undefined | false>) {
+export function cachedRead<T>(
+  keyParts: string[],
+  tags: Array<string | null | undefined | false>,
+  read: () => Promise<T>,
+  revalidate = 3600,
+) {
   const uniqueTags = [...new Set(tags.filter((tag): tag is string => Boolean(tag)))];
-  uniqueTags.forEach((tag) => cacheTag(tag));
+  return unstable_cache(read, keyParts, { tags: uniqueTags, revalidate })();
 }
 
 export function revalidateCacheEntries(tags: Array<string | null | undefined | false>) {
