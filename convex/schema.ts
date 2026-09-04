@@ -719,4 +719,13 @@ export default defineSchema({
   })
     .index("guildId", ["guildId"])
     .index("eventId", ["eventId"]),
+  publicPreviews: defineTable({
+    entityType: v.union(v.literal("player"), v.literal("clan"), v.literal("match")),
+    entityId: v.string(),
+    title: v.string(),
+    description: v.string(),
+    imageVersion: v.string(),
+    updatedAt: v.string(),
+    expiresAt: v.string(),
+  }).index("entity", ["entityType", "entityId"]).index("expiresAt", ["expiresAt"]),
 });
