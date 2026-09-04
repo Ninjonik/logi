@@ -65,6 +65,9 @@ type EventRouteDeps<TEventInput> = {
     assignments(serverId: string): string;
     player(userId: string): string;
     playerStats(userId: string): string;
+    publicProfile(userId: string): string;
+    publicMatch(eventId: string): string;
+    publicDiscovery(): string;
     users(): string;
   };
   logRouteError: (scope: string, error: unknown) => void;
@@ -89,6 +92,7 @@ function buildImportedUserTags(
   return importedUserIds.flatMap((userId) => [
     appCacheTags.player(userId),
     appCacheTags.playerStats(userId),
+    appCacheTags.publicProfile(userId),
     appCacheTags.users(),
   ]);
 }
@@ -121,11 +125,13 @@ function createImportEventsStream(deps: EventRouteDeps<unknown>, input: {
           deps.appCacheTags.serverContext(input.serverId),
           deps.appCacheTags.events(input.serverId),
           deps.appCacheTags.matches(input.serverId),
+          deps.appCacheTags.publicDiscovery(),
           deps.appCacheTags.rosters(input.serverId),
           deps.appCacheTags.assignments(input.serverId),
           ...importedEventIds.flatMap((eventId) => [
             deps.appCacheTags.event(eventId),
             deps.appCacheTags.match(eventId),
+            deps.appCacheTags.publicMatch(eventId),
             deps.appCacheTags.rosterImageEvent(eventId),
           ]),
           ...buildImportedUserTags(result.importedUserIds, deps.appCacheTags),
@@ -184,11 +190,13 @@ export function createServerEventsPostHandler<TEventInput>(deps: EventRouteDeps<
           deps.appCacheTags.serverContext(serverId),
           deps.appCacheTags.events(serverId),
           deps.appCacheTags.matches(serverId),
+          deps.appCacheTags.publicDiscovery(),
           deps.appCacheTags.rosters(serverId),
           deps.appCacheTags.assignments(serverId),
           ...importedEventIds.flatMap((eventId) => [
             deps.appCacheTags.event(eventId),
             deps.appCacheTags.match(eventId),
+            deps.appCacheTags.publicMatch(eventId),
             deps.appCacheTags.rosterImageEvent(eventId),
           ]),
           ...buildImportedUserTags(result.importedUserIds, deps.appCacheTags),
@@ -326,6 +334,8 @@ export function createServerEventPostHandler<TEventInput>(deps: EventRouteDeps<T
           deps.appCacheTags.event(eventId),
           deps.appCacheTags.matches(serverId),
           deps.appCacheTags.match(eventId),
+          deps.appCacheTags.publicMatch(eventId),
+          deps.appCacheTags.publicDiscovery(),
           deps.appCacheTags.rosters(serverId),
           deps.appCacheTags.assignments(serverId),
           deps.appCacheTags.rosterImageEvent(eventId),

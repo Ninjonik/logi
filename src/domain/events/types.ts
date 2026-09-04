@@ -73,6 +73,8 @@ export type EventLike = {
   updatedAt?: string;
   thumbnailUrl?: string;
   imageUrl?: string;
+  announcementChannelId?: string;
+  eventInfoChannelId?: string;
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
@@ -80,4 +82,7 @@ export type EventLike = {
   signupGroupIds?: string[];
   allowedSignupStatuses?: SignupMembershipStatus[];
   useGeneralSignup?: boolean;
+  pingClan?: boolean;
+  pingMode?: "none" | "clan" | "roles";
+  pingRoleIds?: string[];
 };

@@ -130,3 +130,21 @@ test("UpsertEventUseCase updates an existing event and triggers scoring when con
   assert.equal(repo.events.get("event-1")?.status, "concluded");
   assert.deepEqual(scores.calls, ["event-1"]);
 });
+
+test("UpsertEventUseCase preserves creation-time Discord routing on update", async () => {
+  const repo = new InMemoryEventCommandRepository(new Map([["event-1", {
+    id: "event-1", guildId: "guild-1", kind: "match", name: "Old",
+    registrationEnd: "2026-07-23T10:00:00.000Z", meetingStart: "2026-07-23T11:00:00.000Z", gameEnd: "2026-07-23T14:00:00.000Z",
+    announcementChannelId: "registration", eventInfoChannelId: "roster", status: "registration", participants: [], signUps: [], absenceNotices: [],
+  }]]));
+  const useCase = new UpsertEventUseCase(repo, new RecordingScorePort(), new FakeClock(new Date("2026-07-22T12:00:00.000Z")));
+
+  await useCase.execute({
+    eventId: "event-1", guildId: "guild-1", kind: "match", name: "Updated",
+    registrationEnd: "2026-07-23T10:00:00.000Z", meetingStart: "2026-07-23T11:00:00.000Z", gameStart: "2026-07-23T12:00:00.000Z", gameEnd: "2026-07-23T14:00:00.000Z",
+    announcementChannelId: "other-registration", eventInfoChannelId: "other-roster", pingClan: false,
+  });
+
+  assert.equal(repo.events.get("event-1")?.announcementChannelId, "registration");
+  assert.equal(repo.events.get("event-1")?.eventInfoChannelId, "roster");
+});

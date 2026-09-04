@@ -24,6 +24,7 @@ export async function POST(request: Request) {
 
     revalidateCacheEntries([
       appCacheTags.player(userId),
+      appCacheTags.publicProfile(userId),
       appCacheTags.users(),
     ]);
 

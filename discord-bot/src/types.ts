@@ -233,6 +233,8 @@ export type EventRecord = {
   description?: string;
   thumbnailUrl?: string;
   imageUrl?: string;
+  announcementChannelId?: string;
+  eventInfoChannelId?: string;
   meetingChannelId?: string;
   requiredRoleIds: string[];
   rewardRoleIds: string[];
@@ -252,6 +254,8 @@ export type EventRecord = {
   gameStart: string;
   gameEnd: string;
   pingClan: boolean;
+  pingMode?: "none" | "clan" | "roles";
+  pingRoleIds?: string[];
   createForumChannel: boolean;
   topicPresetId?: string;
   stratmapIds?: string[];

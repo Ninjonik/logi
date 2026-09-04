@@ -18,6 +18,8 @@ export async function saveServerEventCommand(input: {
   description?: string;
   thumbnailUrl?: string;
   imageUrl?: string;
+  announcementChannelId?: string;
+  eventInfoChannelId?: string;
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
@@ -35,6 +37,8 @@ export async function saveServerEventCommand(input: {
   gameStart?: string;
   gameEnd?: string;
   pingClan: boolean;
+  pingMode?: "none" | "clan" | "roles";
+  pingRoleIds?: string[];
   createForumChannel: boolean;
   topicPresetId?: string;
   stratmapIds?: string[];
@@ -49,6 +53,8 @@ export async function saveServerEventCommand(input: {
     description: input.description,
     thumbnailUrl: input.thumbnailUrl,
     imageUrl: input.imageUrl,
+    announcementChannelId: input.announcementChannelId,
+    eventInfoChannelId: input.eventInfoChannelId,
     meetingChannelId: input.meetingChannelId,
     requiredRoleIds: input.requiredRoleIds,
     rewardRoleIds: input.rewardRoleIds,
@@ -66,6 +72,8 @@ export async function saveServerEventCommand(input: {
     gameStart: input.gameStart ?? input.meetingStart,
     gameEnd: input.gameEnd ?? input.gameStart ?? input.meetingStart,
     pingClan: input.pingClan,
+    pingMode: input.pingMode,
+    pingRoleIds: input.pingRoleIds,
     createForumChannel: input.createForumChannel,
     topicPresetId: input.topicPresetId as never,
     stratmapIds: input.stratmapIds,

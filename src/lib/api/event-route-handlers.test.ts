@@ -72,6 +72,9 @@ function createDeps() {
         assignments: (serverId: string) => `assignments:${serverId}`,
         player: (userId: string) => `player:${userId}`,
         playerStats: (userId: string) => `player-stats:${userId}`,
+        publicProfile: (userId: string) => `public-profile:${userId}`,
+        publicMatch: (eventId: string) => `public-match:${eventId}`,
+        publicDiscovery: () => "public-discovery",
         users: () => "users",
       },
       logRouteError: (scope: string, error: unknown) => {
@@ -137,13 +140,16 @@ test("server events POST imports events and revalidates imported entity tags", a
     "server-context:guild-1",
     "events:guild-1",
     "matches:guild-1",
+    "public-discovery",
     "rosters:guild-1",
     "assignments:guild-1",
     "event:event-1",
     "match:event-1",
+    "public-match:event-1",
     "roster-image:event-1",
     "player:user-1",
     "player-stats:user-1",
+    "public-profile:user-1",
     "users",
   ]);
 });
@@ -229,9 +235,11 @@ test("server event POST completes a training and revalidates related caches", as
     "roster-image:event-1",
     "player:user-1",
     "player-stats:user-1",
+    "public-profile:user-1",
     "users",
     "player:user-2",
     "player-stats:user-2",
+    "public-profile:user-2",
     "users",
   ]);
 });
@@ -259,14 +267,18 @@ test("server event POST submits match results and revalidates related caches", a
     "event:event-1",
     "matches:guild-1",
     "match:event-1",
+    "public-match:event-1",
+    "public-discovery",
     "rosters:guild-1",
     "assignments:guild-1",
     "roster-image:event-1",
     "player:user-1",
     "player-stats:user-1",
+    "public-profile:user-1",
     "users",
     "player:user-2",
     "player-stats:user-2",
+    "public-profile:user-2",
     "users",
   ]);
 });
