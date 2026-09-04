@@ -17,22 +17,10 @@ import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getLoggedInUser } from "@/lib/auth"
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string; serverId: string }>;
-}): Promise<Metadata> {
-  const { locale, serverId } = await params;
-  const safeLocale = isLocale(locale) ? locale : "en";
-  const server = await getGuildMetadata(serverId);
-  const dictionary = getDictionary(safeLocale);
-
-  return {
-    title: `${server?.name ?? "Clan"} ${dictionary.sidebar.overview}`,
-    description: server?.description,
-    alternates: { canonical: `/${safeLocale}/dashboard/servers/${serverId}` },
-  };
-}
+export const metadata: Metadata = {
+  title: "Server dashboard | Logi",
+  description: "Manage your server community.",
+};
 
 function getGreeting(dictionary: ReturnType<typeof getDictionary>, timezone?: string) {
   const hour = Number(

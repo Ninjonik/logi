@@ -1,7 +1,7 @@
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
-import { appCacheTags, tagCacheEntries } from "@/lib/cache-tags";
+import { appCacheTags, cachedRead } from "@/lib/cache-tags";
 import { getInternalAuthSecret } from "@/lib/env";
 import type { Group } from "@/types/domain";
 
@@ -15,9 +15,7 @@ export async function getServerGroups(serverId: string) {
 }
 
 export async function getServerGroup(groupId: string) {
-  "use cache";
-  tagCacheEntries([appCacheTags.group(groupId)]);
-  return (await fetchQuery(getGroupByIdReference, { groupId: groupId as never })) as Group | null;
+  return await cachedRead(["server-group", groupId], [appCacheTags.group(groupId)], async () => (await fetchQuery(getGroupByIdReference, { groupId: groupId as never })) as Group | null);
 }
 
 export async function saveServerGroup(input: {

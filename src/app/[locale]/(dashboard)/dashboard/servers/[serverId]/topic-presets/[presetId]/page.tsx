@@ -7,18 +7,10 @@ import { isLocale } from "@/i18n/config";
 import { getTopicPresetMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; presetId: string }>;
-}): Promise<Metadata> {
-  const { presetId } = await params;
-  const preset = await getTopicPresetMetadata(presetId);
-  return {
-    title: preset?.name ?? "Topic preset",
-    description: preset?.notes,
-  };
-}
+export const metadata: Metadata = {
+  title: "Topic preset | Logi",
+  description: "Manage an event topic preset.",
+};
 
 export function generateStaticParams() {
   return [{ presetId: "sample-topic-preset" }];

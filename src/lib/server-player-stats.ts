@@ -1,8 +1,7 @@
-import { cacheLife, cacheTag } from "next/cache";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
-import { appCacheTags } from "@/lib/cache-tags";
+import { appCacheTags, cachedRead } from "@/lib/cache-tags";
 import { getInternalAuthSecret } from "@/lib/env";
 import type { EventRecord, PlayerMatchStats } from "@/types/domain";
 
@@ -89,27 +88,14 @@ export async function dedupePlayerStatsForEvents(eventIds: string[]) {
 }
 
 export async function getPlayerStatsDocsCached(userId: string) {
-  "use cache";
-
-  cacheLife("weeks");
-  cacheTag(appCacheTags.playerStats(userId));
-
-  return await getPlayerStatsDocs(userId);
+  return await cachedRead(["player-stats-docs", userId], [appCacheTags.playerStats(userId)], () => getPlayerStatsDocs(userId), 604800);
 }
 
 export async function getPlayerStatsSummaryCached(userId: string, events: EventRecord[]) {
-  "use cache";
-
-  cacheLife("weeks");
-  cacheTag(appCacheTags.playerStats(userId));
-
-  const docs = await getPlayerStatsDocs(userId);
-  const sortedMatches = sortPlayerMatches(
-    flattenPlayerMatches(docs),
-    new Map(events.map((event) => [event.id, event])),
-  );
-
-  return buildPlayerStatsSummary(sortedMatches);
+  return await cachedRead(["player-stats-summary", userId, events.map((event) => `${event.id}:${event.updatedAt}`).join(",")], [appCacheTags.playerStats(userId)], async () => {
+    const docs = await getPlayerStatsDocs(userId);
+    return buildPlayerStatsSummary(sortPlayerMatches(flattenPlayerMatches(docs), new Map(events.map((event) => [event.id, event]))));
+  }, 604800);
 }
 
 export function flattenPlayerMatches(docs: PlayerStatsDoc[]): PlayerMatchStats[] {

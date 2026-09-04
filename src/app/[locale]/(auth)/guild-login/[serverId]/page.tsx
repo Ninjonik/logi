@@ -18,23 +18,13 @@ type GuildLoginPageProps = {
   }>;
 };
 
-export async function generateMetadata({ params }: GuildLoginPageProps): Promise<Metadata> {
-  const { locale } = await params;
-  const safeLocale = isLocale(locale) ? locale : "en";
-  const dictionary = getDictionary(safeLocale);
-
-  return {
-    title: dictionary.auth.loginTitle,
-    description: dictionary.auth.loginDescription,
-    openGraph: {
-      title: dictionary.auth.loginTitle,
-      description: dictionary.auth.loginDescription,
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: "Sign in | Logi",
+  description: "Sign in to continue to Logi.",
+};
 
 export function generateStaticParams() {
-  return [{ serverId: "sample-server" }];
+  return [{ locale: "en", serverId: "sample-server" }];
 }
 
 export default async function GuildLoginPage({ params }: GuildLoginPageProps) {

@@ -28,18 +28,10 @@ function requiresBotRoleHierarchySetup(
   return hasGroupRoleSync || hasMembershipRoleSync;
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: dictionary.dashboard.title,
-    description: dictionary.dashboard.description,
-  };
-}
+export const metadata: Metadata = {
+  title: "Dashboard | Logi",
+  description: "Manage your Discord communities.",
+};
 
 export default async function DashboardHomePage({
   params,

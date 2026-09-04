@@ -7,7 +7,7 @@ import { parseDiscordCustomEmoji } from "@/lib/discord-emoji";
 import { rosterImageCache } from "@/lib/roster-image-cache";
 import { getRosterImageContext, getRosterImageContextCached, resolveSiteAssetUrl } from "@/lib/roster-image";
 
-export const contentType = "image/png";
+const contentType = "image/png";
 
 function createImageResponse(image: Uint8Array) {
   const body = new Uint8Array(image.byteLength);

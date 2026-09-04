@@ -17,19 +17,10 @@ import { getSiteUrl } from "@/lib/env";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string; serverId: string }>;
-}): Promise<Metadata> {
-  const { locale, serverId } = await params;
-  const server = await getGuildMetadata(serverId);
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: `${server?.name ?? "Clan"} ${dictionary.serverSettings.title}`,
-    description: dictionary.serverSettings.pageDescription,
-  };
-}
+export const metadata: Metadata = {
+  title: "Server settings | Logi",
+  description: "Manage server and Discord settings.",
+};
 
 export default async function ServerSettingsPage({
   params,

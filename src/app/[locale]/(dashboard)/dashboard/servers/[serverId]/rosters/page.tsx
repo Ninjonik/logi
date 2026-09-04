@@ -10,19 +10,10 @@ import { getPaginatedRows } from "@/lib/data-table";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; locale: string }>;
-}): Promise<Metadata> {
-  const { serverId, locale } = await params;
-  const server = await getGuildMetadata(serverId);
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: `${server?.name ?? "Clan"} ${dictionary.sidebar.rosters}`,
-    description: dictionary.roster.listDescription,
-  };
-}
+export const metadata: Metadata = {
+  title: "Rosters | Logi",
+  description: "Manage event rosters.",
+};
 
 export default async function RostersPage({
   params,

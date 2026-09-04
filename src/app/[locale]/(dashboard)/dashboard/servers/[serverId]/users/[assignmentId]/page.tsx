@@ -19,19 +19,10 @@ import {
   getUsersByIds,
 } from "@/lib/server-user-management";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; assignmentId: string }>;
-}): Promise<Metadata> {
-  const { assignmentId } = await params;
-  const assignment = await getAssignmentMetadata(assignmentId);
-  const user = assignment ? await getPlayerMetadata(assignment.userId) : undefined;
-  return {
-    title: user ? `${user.name} ${getDictionary("en").userManagement.assignmentTitleSuffix}` : getDictionary("en").userManagement.editAssignment,
-    description: getDictionary("en").userManagement.assignmentMetaDescription,
-  };
-}
+export const metadata: Metadata = {
+  title: "Edit assignment | Logi",
+  description: "Manage a member's server assignment.",
+};
 
 export function generateStaticParams() {
   return [{ assignmentId: "sample-assignment" }];

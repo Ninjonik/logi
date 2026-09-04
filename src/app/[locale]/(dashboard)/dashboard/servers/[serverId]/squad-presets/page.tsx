@@ -10,19 +10,10 @@ import { getPaginatedRows } from "@/lib/data-table";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; locale: string }>;
-}): Promise<Metadata> {
-  const { serverId, locale } = await params;
-  const server = await getGuildMetadata(serverId);
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: `${server?.name ?? "Clan"} ${dictionary.presets.squadTitle}`,
-    description: dictionary.presets.squadPresetMetaDescription,
-  };
-}
+export const metadata: Metadata = {
+  title: "Squad presets | Logi",
+  description: "Manage preset squad structures.",
+};
 
 export default async function SquadPresetsPage({
   params,

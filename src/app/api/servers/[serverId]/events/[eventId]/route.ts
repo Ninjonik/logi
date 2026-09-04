@@ -12,7 +12,7 @@ import { eventSchema } from "@/lib/validation/event";
 import { getEventMetadata, getGuildMetadata } from "@/lib/server-metadata";
 import { getUsersByIds } from "@/lib/server-user-management";
 
-export const PATCH = createServerEventPatchHandler({
+const patchHandler = createServerEventPatchHandler({
   eventSchema,
   saveServerEvent,
   concludeServerEvent,
@@ -27,7 +27,7 @@ export const PATCH = createServerEventPatchHandler({
   getUserSafeErrorMessage,
 });
 
-export const POST = createServerEventPostHandler({
+const postHandler = createServerEventPostHandler({
   eventSchema,
   saveServerEvent,
   concludeServerEvent,
@@ -98,3 +98,11 @@ export const POST = createServerEventPostHandler({
   logRouteError,
   getUserSafeErrorMessage,
 });
+
+export async function PATCH(request: Request, context: { params: Promise<{ serverId: string; eventId: string }> }) {
+  return patchHandler(request, context);
+}
+
+export async function POST(request: Request, context: { params: Promise<{ serverId: string; eventId: string }> }) {
+  return postHandler(request, context);
+}

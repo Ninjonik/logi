@@ -6,24 +6,14 @@ import {getMessages, setRequestLocale} from "next-intl/server";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale, type Locale } from "@/i18n/config";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
-  const dictionary = getDictionary(locale);
-
-  return {
-    title: dictionary.app.name,
-    description: dictionary.app.description,
-    openGraph: {
-      title: dictionary.app.name,
-      description: dictionary.app.description,
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: "Logi",
+  description: "Server and community management for Discord.",
+  openGraph: {
+    title: "Logi",
+    description: "Server and community management for Discord.",
+  },
+};
 
 export default async function LocaleLayout({
   children,

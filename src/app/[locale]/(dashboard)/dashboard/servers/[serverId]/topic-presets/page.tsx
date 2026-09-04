@@ -11,19 +11,10 @@ import { formatHllPresetLabel } from "@/lib/hll-map-presets";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ serverId: string; locale: string }>;
-}): Promise<Metadata> {
-  const { serverId, locale } = await params;
-  const server = await getGuildMetadata(serverId);
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  return {
-    title: `${server?.name ?? "Clan"} ${dictionary.presets.topicTitle}`,
-    description: dictionary.presets.topicPresetMetaDescription,
-  };
-}
+export const metadata: Metadata = {
+  title: "Topic presets | Logi",
+  description: "Manage event topic presets.",
+};
 
 export default async function TopicPresetsPage({
   params,

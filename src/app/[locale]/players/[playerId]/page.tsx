@@ -3,21 +3,37 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { Suspense } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { DynamicMetadataMarker } from "@/components/public/dynamic-metadata-marker";
 import { PublicStat } from "@/components/public/public-stat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPublicPlayerProfile } from "@/lib/read-models/public-profiles";
+import { getPublicPreviewMetadata } from "@/lib/public-preview-metadata";
 
 type Props = { params: Promise<{ locale: string; playerId: string }> };
 
-export const metadata: Metadata = { title: "Player profile | Logi", description: "Public player profile and recorded match history." };
+async function ConnectionMarker() {
+  await connection();
+  return null;
+}
+
+function DynamicMetadataMarker() {
+  return <Suspense><ConnectionMarker /></Suspense>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { playerId } = await params;
+  const preview = await getPublicPreviewMetadata("player", playerId);
+  const title = preview?.title ?? "Player profile | Logi";
+  const description = preview?.description ?? "Public player profile and recorded match history.";
+  const image = `/api/og/player/${playerId}?v=${encodeURIComponent(preview?.imageVersion ?? "current")}`;
+  return { title, description, openGraph: { title, description, images: [{ url: image, width: 1200, height: 630 }] }, twitter: { card: "summary_large_image", images: [image] } };
+}
 
 export default async function PublicPlayerPage({ params }: Props) {
-  await connection();
   const { locale, playerId } = await params;
   const resolvedLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(resolvedLocale);
