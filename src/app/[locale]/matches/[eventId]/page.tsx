@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { connection } from "next/server";
 
 import { MatchDetails } from "@/components/app/match-details";
 import { DynamicMetadataMarker } from "@/components/public/dynamic-metadata-marker";
@@ -14,7 +13,6 @@ type Props = { params: Promise<{ locale: string; eventId: string }> };
 export const metadata: Metadata = { title: "Match result | Logi", description: "Recorded public match result." };
 
 export default async function PublicMatchPage({ params }: Props) {
-  await connection();
   const { locale, eventId } = await params;
   const resolvedLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(resolvedLocale);
