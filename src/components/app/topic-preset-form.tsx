@@ -14,7 +14,6 @@ import { HllMapSelector } from "@/components/app/hll-map-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { uploadFileToConvex } from "@/lib/client-uploads";
@@ -61,13 +60,13 @@ function getFirstErrorMessage(errors: FieldErrors<TopicPresetInput>): string | u
 }
 
 export function TopicPresetForm({
-  preset,
-  serverId,
-  locale,
-  canEdit,
-  dictionary,
-  createMode = false,
-}: {
+                                  preset,
+                                  serverId,
+                                  locale,
+                                  canEdit,
+                                  dictionary,
+                                  createMode = false,
+                                }: {
   preset?: TopicPreset;
   serverId: string;
   locale: string;
@@ -164,7 +163,7 @@ export function TopicPresetForm({
           })}
         >
           <div className="grid gap-4 md:grid-cols-2">
-            <div>
+            <div className="md:col-span-2">
               <FieldLabel label={dictionary.presets.fields.name} required />
               <Input {...form.register("name")} className="rounded-xl" disabled={!canEdit} />
               {form.formState.errors.name ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.name.message}</p> : null}
@@ -179,7 +178,11 @@ export function TopicPresetForm({
                 }}
                 pointValue={form.watch("cap") ?? ""}
                 onPointValueChange={(value) => form.setValue("cap", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
+                sideValue={form.watch("side") ?? ""}
+                onSideValueChange={(value) => form.setValue("side", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
                 includeVariants={false}
+                includePoint={true}
+                includeSide={true}
                 disabled={!canEdit}
                 labels={{
                   map: dictionary.presets.fields.map,
@@ -188,33 +191,11 @@ export function TopicPresetForm({
                   mode: dictionary.event.fields.mapMode,
                   point: dictionary.presets.fields.cap,
                   pointSearch: dictionary.presets.fields.cap,
+                  side: dictionary.presets.fields.side,
                   optional: dictionary.shared.notSet,
                   noResults: dictionary.shared.noMatchingResults,
                 }}
               />
-            </div>
-            <div>
-              <FieldLabel label={dictionary.presets.fields.side} />
-              {canEdit ? (
-                <Controller
-                  control={form.control}
-                  name="side"
-                  render={({ field }) => (
-                    <Select value={field.value || "__none"} onValueChange={(value) => field.onChange(value === "__none" ? "" : value)}>
-                      <SelectTrigger className="w-full rounded-xl">
-                        <SelectValue placeholder={dictionary.shared.notSet} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none">{dictionary.shared.notSet}</SelectItem>
-                        <SelectItem value="Allies">Allies</SelectItem>
-                        <SelectItem value="Axis">Axis</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              ) : (
-                <Input value={form.watch("side") ?? ""} className="rounded-xl" disabled />
-              )}
             </div>
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.presets.fields.notes} />

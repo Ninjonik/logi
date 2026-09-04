@@ -17,12 +17,12 @@ import { getHllStratmapMaps } from "@/lib/stratmaps";
 const createStratmapReference = makeFunctionReference<"mutation">("stratmaps:create");
 
 export function StratmapCreateForm({
-  locale,
-  serverId,
-  userId,
-  dictionary,
-  defaultTitle = "",
-}: {
+                                     locale,
+                                     serverId,
+                                     userId,
+                                     dictionary,
+                                     defaultTitle = "",
+                                   }: {
   locale: string;
   serverId: string;
   userId: string;
@@ -74,43 +74,34 @@ export function StratmapCreateForm({
           <Label>{dictionary.stratmaps.titleLabel}</Label>
           <Input value={title} onChange={(event) => setTitle(event.target.value)} className="min-w-0 overflow-hidden rounded-xl" />
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="min-w-0 space-y-2 md:col-span-2">
-            <Label>{dictionary.stratmaps.mapAndPoint}</Label>
-            <HllMapSelector
-              mapId={baseMapId}
-              onMapIdChange={(value) => {
-                setBaseMapId(value);
-                setStrongpointId("");
-              }}
-              pointValue={strongpointId}
-              onPointValueChange={setStrongpointId}
-              pointValueMode="id"
-              includeVariants={false}
-              labels={{
-                map: dictionary.stratmaps.baseMap,
-                mapSearch: dictionary.stratmaps.searchMap,
-                time: "Variant",
-                mode: "Mode",
-                point: dictionary.stratmaps.point,
-                pointSearch: dictionary.stratmaps.searchPoint,
-                optional: dictionary.event.optionalLabel,
-                noResults: dictionary.stratmaps.noResults,
-              }}
-            />
-          </div>
-          <div className="min-w-0 space-y-2">
-            <Label>{dictionary.stratmaps.side}</Label>
-            <div className="text-xs font-medium uppercase tracking-[0.2em] text-transparent select-none">
-              {dictionary.event.optionalLabel}
-            </div>
-            <Input
-              value={side}
-              onChange={(event) => setSide(event.target.value)}
-              className="min-w-0 overflow-hidden rounded-xl"
-              placeholder={dictionary.event.optionalLabel}
-            />
-          </div>
+        <div className="space-y-2">
+          <Label>{dictionary.stratmaps.mapAndPoint}</Label>
+          <HllMapSelector
+            mapId={baseMapId}
+            onMapIdChange={(value) => {
+              setBaseMapId(value);
+              setStrongpointId("");
+            }}
+            pointValue={strongpointId}
+            onPointValueChange={setStrongpointId}
+            pointValueMode="id"
+            sideValue={side}
+            onSideValueChange={setSide}
+            includeVariants={false}
+            includePoint={true}
+            includeSide={true}
+            labels={{
+              map: dictionary.stratmaps.baseMap,
+              mapSearch: dictionary.stratmaps.searchMap,
+              time: "Variant",
+              mode: "Mode",
+              point: dictionary.stratmaps.point,
+              pointSearch: dictionary.stratmaps.searchPoint,
+              side: dictionary.stratmaps.side,
+              optional: dictionary.event.optionalLabel,
+              noResults: dictionary.stratmaps.noResults,
+            }}
+          />
         </div>
         <Button className="rounded-xl" onClick={handleSubmit} disabled={isPending}>
           {dictionary.stratmaps.createTitle}

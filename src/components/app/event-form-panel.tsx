@@ -1,42 +1,50 @@
-"use client";
+"use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { useEffect, useMemo, useState, useTransition } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Controller, useForm } from "react-hook-form"
+import { toast } from "sonner"
 
-import { AvatarPicker } from "@/components/app/avatar-picker";
-import { ConfigNotice } from "@/components/app/config-notice";
-import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
-import { DiscordMarkdownText, DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
-import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
-import { EmojiValue } from "@/components/app/emoji-value";
-import { HllMapSelector } from "@/components/app/hll-map-selector";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import type { Dictionary } from "@/i18n/dictionaries";
-import { supportedTimezones } from "@/lib/discord-timezones";
-import { getEventCategoryLabel } from "@/lib/event-categories";
+import { AvatarPicker } from "@/components/app/avatar-picker"
+import { ConfigNotice } from "@/components/app/config-notice"
+import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select"
+import { DiscordMarkdownText, DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
+import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
+import { EmojiValue } from "@/components/app/emoji-value"
+import { HllMapSelector } from "@/components/app/hll-map-selector"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import type { Dictionary } from "@/i18n/dictionaries"
+import { supportedTimezones } from "@/lib/discord-timezones"
+import { getEventCategoryLabel } from "@/lib/event-categories"
 import {
   formatHllPresetLabel,
   inferHllBaseMapId,
   inferHllSelection,
   resolveHllPresetCode,
-} from "@/lib/hll-map-presets";
-import { fromDateTimeLocalInTimeZone, toDateTimeLocalInTimeZone } from "@/lib/timezone-datetime";
-import { cn } from "@/lib/utils";
-import { eventSchema, type EventInput } from "@/lib/validation/event";
-import type { DiscordConfig, EventCategory, EventRecord, Group, StratmapRecord, TopicPreset } from "@/types/domain";
+} from "@/lib/hll-map-presets"
+import { fromDateTimeLocalInTimeZone, toDateTimeLocalInTimeZone } from "@/lib/timezone-datetime"
+import { cn } from "@/lib/utils"
+import { eventSchema, type EventInput } from "@/lib/validation/event"
+import type { DiscordConfig, EventCategory, EventRecord, Group, StratmapRecord, TopicPreset } from "@/types/domain"
 
 type DiscordMetadata = {
   roles: DiscordSelectOption[];
@@ -60,11 +68,11 @@ function FieldLabel({
       <span>{label}</span>
       {required && <span className="text-destructive font-bold">*</span>}
     </div>
-  );
+  )
 }
 
 function normalizeMatchValue(value?: string) {
-  return value?.trim().toLowerCase() ?? "";
+  return value?.trim().toLowerCase() ?? ""
 }
 
 type TopicPresetMatchContext = {
@@ -79,32 +87,32 @@ type TopicPresetMatchContext = {
 function getOutcomeLabel(outcome: "victory" | "defeat" | "draw", dictionary: Dictionary) {
   switch (outcome) {
     case "victory":
-      return dictionary.event.resultVictory;
+      return dictionary.event.resultVictory
     case "defeat":
-      return dictionary.event.resultDefeat;
+      return dictionary.event.resultDefeat
     case "draw":
-      return dictionary.event.resultDraw;
+      return dictionary.event.resultDraw
     default:
-      return outcome;
+      return outcome
   }
 }
 
 function getPresetMatch(preset: TopicPreset, context: TopicPresetMatchContext) {
-  const presetSelection = inferHllSelection(preset.map);
-  const presetMapId = presetSelection?.mapId ?? inferHllBaseMapId(preset.map);
-  const hasComparableMapCode = Boolean(context.mapCode && preset.map);
-  const hasComparableMapId = Boolean(context.mapId && presetMapId);
-  const hasComparableTime = Boolean(context.time && presetSelection?.time);
-  const hasComparableMode = Boolean(context.mode && presetSelection?.mode);
-  const hasComparableSide = Boolean(context.side && preset.side);
-  const hasComparableCap = Boolean(context.cap && preset.cap);
+  const presetSelection = inferHllSelection(preset.map)
+  const presetMapId = presetSelection?.mapId ?? inferHllBaseMapId(preset.map)
+  const hasComparableMapCode = Boolean(context.mapCode && preset.map)
+  const hasComparableMapId = Boolean(context.mapId && presetMapId)
+  const hasComparableTime = Boolean(context.time && presetSelection?.time)
+  const hasComparableMode = Boolean(context.mode && presetSelection?.mode)
+  const hasComparableSide = Boolean(context.side && preset.side)
+  const hasComparableCap = Boolean(context.cap && preset.cap)
 
-  const exactMapCodeMatch = hasComparableMapCode && normalizeMatchValue(context.mapCode) === normalizeMatchValue(preset.map);
-  const mapIdMatch = hasComparableMapId && context.mapId === presetMapId;
-  const timeMatch = hasComparableTime && context.time === presetSelection?.time;
-  const modeMatch = hasComparableMode && context.mode === presetSelection?.mode;
-  const sideMatch = hasComparableSide && normalizeMatchValue(context.side) === normalizeMatchValue(preset.side);
-  const capMatch = hasComparableCap && normalizeMatchValue(context.cap) === normalizeMatchValue(preset.cap);
+  const exactMapCodeMatch = hasComparableMapCode && normalizeMatchValue(context.mapCode) === normalizeMatchValue(preset.map)
+  const mapIdMatch = hasComparableMapId && context.mapId === presetMapId
+  const timeMatch = hasComparableTime && context.time === presetSelection?.time
+  const modeMatch = hasComparableMode && context.mode === presetSelection?.mode
+  const sideMatch = hasComparableSide && normalizeMatchValue(context.side) === normalizeMatchValue(preset.side)
+  const capMatch = hasComparableCap && normalizeMatchValue(context.cap) === normalizeMatchValue(preset.cap)
 
   const matchedFields = [
     exactMapCodeMatch || mapIdMatch ? "Map" : null,
@@ -112,7 +120,7 @@ function getPresetMatch(preset: TopicPreset, context: TopicPresetMatchContext) {
     modeMatch ? "Mode" : null,
     sideMatch ? "Side" : null,
     capMatch ? "Point" : null,
-  ].filter((value): value is string => Boolean(value));
+  ].filter((value): value is string => Boolean(value))
 
   const score =
     (exactMapCodeMatch ? 200 : 0) +
@@ -120,7 +128,7 @@ function getPresetMatch(preset: TopicPreset, context: TopicPresetMatchContext) {
     (modeMatch ? 30 : 0) +
     (timeMatch ? 20 : 0) +
     (sideMatch ? 8 : 0) +
-    (capMatch ? 4 : 0);
+    (capMatch ? 4 : 0)
 
   const comparableFieldCount = [
     hasComparableMapCode || hasComparableMapId,
@@ -128,34 +136,34 @@ function getPresetMatch(preset: TopicPreset, context: TopicPresetMatchContext) {
     hasComparableMode,
     hasComparableSide,
     hasComparableCap,
-  ].filter(Boolean).length;
+  ].filter(Boolean).length
 
   return {
     score,
     isFullMatch: comparableFieldCount > 0 && matchedFields.length === comparableFieldCount,
     label: matchedFields.join(" + "),
     metaLabel: formatHllPresetLabel(preset.map) ?? preset.map ?? "",
-  };
+  }
 }
 
 function resolveTrainingEndTime(values: EventInput, timezone: string) {
-  const meetingStartIso = fromDateTimeLocalInTimeZone(values.meetingStart, timezone);
+  const meetingStartIso = fromDateTimeLocalInTimeZone(values.meetingStart, timezone)
   const fallbackEndIso = values.gameEnd
     ? fromDateTimeLocalInTimeZone(values.gameEnd, timezone)
-    : meetingStartIso;
+    : meetingStartIso
 
-  const meetingStartMs = new Date(meetingStartIso).getTime();
-  const fallbackEndMs = new Date(fallbackEndIso).getTime();
+  const meetingStartMs = new Date(meetingStartIso).getTime()
+  const fallbackEndMs = new Date(fallbackEndIso).getTime()
 
   if (!Number.isFinite(meetingStartMs) || !Number.isFinite(fallbackEndMs)) {
-    return fallbackEndIso;
+    return fallbackEndIso
   }
 
   if (fallbackEndMs > meetingStartMs) {
-    return fallbackEndIso;
+    return fallbackEndIso
   }
 
-  return new Date(meetingStartMs + 90 * 60 * 1000).toISOString();
+  return new Date(meetingStartMs + 90 * 60 * 1000).toISOString()
 }
 
 function getAllowedSignupStatusLabel(
@@ -164,29 +172,29 @@ function getAllowedSignupStatusLabel(
 ) {
   switch (status) {
     case "recruit":
-      return dictionary.userManagement.recruitLabel;
+      return dictionary.userManagement.recruitLabel
     case "reserve_member":
-      return dictionary.userManagement.reserveMemberLabel;
+      return dictionary.userManagement.reserveMemberLabel
     case "mercenary":
-      return dictionary.userManagement.mercLabel;
+      return dictionary.userManagement.mercLabel
     default:
-      return dictionary.userManagement.memberLabel;
+      return dictionary.userManagement.memberLabel
   }
 }
 
 function TopicPresetSelect({
-  value,
-  onChange,
-  options,
-  dictionary,
-}: {
+                             value,
+                             onChange,
+                             options,
+                             dictionary,
+                           }: {
   value?: string;
   onChange: (value: string) => void;
   options: TopicPresetOption[];
   dictionary: Dictionary;
 }) {
-  const [open, setOpen] = useState(false);
-  const selectedOption = options.find(({ preset }) => preset.id === value);
+  const [open, setOpen] = useState(false)
+  const selectedOption = options.find(({ preset }) => preset.id === value)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -212,8 +220,8 @@ function TopicPresetSelect({
               <CommandItem
                 value={dictionary.event.noPreset}
                 onSelect={() => {
-                  onChange("");
-                  setOpen(false);
+                  onChange("")
+                  setOpen(false)
                 }}
               >
                 <Check className={cn("mr-2 size-4", !value ? "opacity-100" : "opacity-0")} />
@@ -224,11 +232,12 @@ function TopicPresetSelect({
                   key={preset.id}
                   value={[preset.name, match.metaLabel, preset.side, preset.cap, preset.map].filter(Boolean).join(" ")}
                   onSelect={() => {
-                    onChange(preset.id);
-                    setOpen(false);
+                    onChange(preset.id)
+                    setOpen(false)
                   }}
                 >
-                  <Check className={cn("mr-2 mt-0.5 size-4 shrink-0", value === preset.id ? "opacity-100" : "opacity-0")} />
+                  <Check
+                    className={cn("mr-2 mt-0.5 size-4 shrink-0", value === preset.id ? "opacity-100" : "opacity-0")} />
                   <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="truncate font-medium">{preset.name}</div>
@@ -252,14 +261,14 @@ function TopicPresetSelect({
         </Command>
       </PopoverContent>
     </Popover>
-  );
+  )
 }
 
 function ReadOnlyValue({
-  value,
-  emptyLabel,
-  className = "",
-}: {
+                         value,
+                         emptyLabel,
+                         className = "",
+                       }: {
   value?: string | null;
   emptyLabel: string;
   className?: string;
@@ -268,13 +277,13 @@ function ReadOnlyValue({
     <div className={`rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm ${className}`.trim()}>
       {value?.trim() || emptyLabel}
     </div>
-  );
+  )
 }
 
 function ReadOnlyList({
-  values,
-  emptyLabel,
-}: {
+                        values,
+                        emptyLabel,
+                      }: {
   values: string[];
   emptyLabel: string;
 }) {
@@ -282,35 +291,35 @@ function ReadOnlyList({
     <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm">
       {values.length ? values.join(", ") : emptyLabel}
     </div>
-  );
+  )
 }
 
 function StratmapMultiSelect({
-  value,
-  onChange,
-  stratmaps,
-  dictionary,
-}: {
+                               value,
+                               onChange,
+                               stratmaps,
+                               dictionary,
+                             }: {
   value: string[];
   onChange: (value: string[]) => void;
   stratmaps: StratmapRecord[];
   dictionary: Dictionary;
 }) {
-  const [open, setOpen] = useState(false);
-  const selectedIds = new Set(value);
+  const [open, setOpen] = useState(false)
+  const selectedIds = new Set(value)
 
   function toggle(stratmapId: string) {
     if (selectedIds.has(stratmapId)) {
-      onChange(value.filter((id) => id !== stratmapId));
-      return;
+      onChange(value.filter((id) => id !== stratmapId))
+      return
     }
 
-    onChange([...value, stratmapId]);
+    onChange([...value, stratmapId])
   }
 
   const selectedLabels = stratmaps
     .filter((stratmap) => selectedIds.has(stratmap.id))
-    .map((stratmap) => stratmap.title);
+    .map((stratmap) => stratmap.title)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -356,23 +365,23 @@ function StratmapMultiSelect({
         </Command>
       </PopoverContent>
     </Popover>
-  );
+  )
 }
 
 export function EventFormPanel({
-  event,
-  serverId,
-  locale,
-  topicPresets,
-  stratmaps,
-  groups,
-  eventCategories = [],
-  timezone = "UTC",
-  canEdit,
-  dictionary,
-  createMode = false,
-  discordConfig,
-}: {
+                                 event,
+                                 serverId,
+                                 locale,
+                                 topicPresets,
+                                 stratmaps,
+                                 groups,
+                                 eventCategories = [],
+                                 timezone = "UTC",
+                                 canEdit,
+                                 dictionary,
+                                 createMode = false,
+                                 discordConfig,
+                               }: {
   event: EventRecord;
   serverId: string;
   locale: string;
@@ -386,18 +395,20 @@ export function EventFormPanel({
   createMode?: boolean;
   discordConfig?: DiscordConfig | null;
 }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
-  const [selectedMapId, setSelectedMapId] = useState("");
-  const [selectedMapTime, setSelectedMapTime] = useState("");
-  const [selectedMapMode, setSelectedMapMode] = useState("");
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
+  const [selectedMapId, setSelectedMapId] = useState("")
+  const [selectedMapTime, setSelectedMapTime] = useState("")
+  const [selectedMapMode, setSelectedMapMode] = useState("")
   const [quickSchedule, setQuickSchedule] = useState({
     eventStart: toDateTimeLocalInTimeZone(event.kind === "match" ? event.gameStart : event.meetingStart, timezone),
     registrationHours: "24",
     meetingMinutes: "30",
-    durationHours: "2",
-  });
+    durationMinutes: "90",
+  })
+  const [quickScheduleOpen, setQuickScheduleOpen] = useState(false)
+  const [quickScheduleStep, setQuickScheduleStep] = useState(0)
 
   const form = useForm<EventInput>({
     resolver: zodResolver(eventSchema),
@@ -433,31 +444,38 @@ export function EventFormPanel({
       allowedSignupStatuses: event.allowedSignupStatuses ?? [],
       useGeneralSignup: event.useGeneralSignup ?? false,
     },
-  });
-  const eventKind = form.watch("kind");
-  const detailBasePath = eventKind === "training" ? "trainings" : "matches";
-  const eventName = form.watch("name");
-  const eventCategoryValue = form.watch("matchType");
-  const sideValue = form.watch("side");
-  const mapValue = form.watch("map");
-  const pingMode = form.watch("pingMode");
-  const createForumChannel = form.watch("createForumChannel");
-  const eventMatchValues = form.watch(["map", "side", "cap"]);
+  })
+  const eventKind = form.watch("kind")
+  const detailBasePath = eventKind === "training" ? "trainings" : "matches"
+  const eventName = form.watch("name")
+  const eventCategoryValue = form.watch("matchType")
+  const sideValue = form.watch("side")
+  const mapValue = form.watch("map")
+  const pingMode = form.watch("pingMode")
+  const createForumChannel = form.watch("createForumChannel")
+  const eventMatchValues = form.watch(["map", "side", "cap"])
+  const scheduleValues = form.watch(["registrationEnd", "meetingStart", "gameStart", "gameEnd"])
+  const formatScheduleValue = (value?: string) => value && !Number.isNaN(new Date(value).getTime())
+    ? new Intl.DateTimeFormat(locale === "cs" ? "cs-CZ" : "en-GB", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(value))
+    : dictionary.shared.notSet
   const presetMatchValues = {
     map: eventMatchValues[0],
     side: eventMatchValues[1],
     cap: eventMatchValues[2],
-  };
-  const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
-  const announcementChannels = metadata?.channels?.filter((channel) => channel.type === 0 || channel.type === 5) ?? [];
+  }
+  const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? []
+  const announcementChannels = metadata?.channels?.filter((channel) => channel.type === 0 || channel.type === 5) ?? []
   const roleNameById = useMemo(
     () => new Map((metadata?.roles ?? []).map((role) => [role.id, role.name])),
     [metadata?.roles],
-  );
+  )
   const channelNameById = useMemo(
     () => new Map((metadata?.channels ?? []).map((channel) => [channel.id, channel.name])),
     [metadata?.channels],
-  );
+  )
   const presetMatchContext = useMemo<TopicPresetMatchContext>(
     () => ({
       mapCode: mapValue,
@@ -468,7 +486,7 @@ export function EventFormPanel({
       cap: presetMatchValues.cap,
     }),
     [mapValue, presetMatchValues.cap, selectedMapId, selectedMapMode, selectedMapTime, sideValue],
-  );
+  )
   const topicPresetOptions = useMemo(
     () =>
       topicPresets
@@ -482,43 +500,43 @@ export function EventFormPanel({
           left.preset.name.localeCompare(right.preset.name),
         ),
     [presetMatchContext, topicPresets],
-  );
+  )
 
   useEffect(() => {
-    if (!canEdit) return;
+    if (!canEdit) return
 
     fetch(`/api/servers/${serverId}/discord-metadata`)
       .then(async (response) => {
-        const body = await response.json();
+        const body = await response.json()
         if (!response.ok || !body || !Array.isArray(body.roles) || !Array.isArray(body.channels)) {
-          throw new Error("Unable to load Discord metadata.");
+          throw new Error("Unable to load Discord metadata.")
         }
-        setMetadata(body);
+        setMetadata(body)
       })
-      .catch(() => setMetadata(null));
-  }, [canEdit, serverId]);
+      .catch(() => setMetadata(null))
+  }, [canEdit, serverId])
 
   useEffect(() => {
     if (eventKind !== "match") {
-      return;
+      return
     }
 
-    const inferredSelection = inferHllSelection(mapValue);
+    const inferredSelection = inferHllSelection(mapValue)
     if (inferredSelection) {
-      setSelectedMapId(inferredSelection.mapId);
-      setSelectedMapTime(inferredSelection.time);
-      setSelectedMapMode(inferredSelection.mode);
-      return;
+      setSelectedMapId(inferredSelection.mapId)
+      setSelectedMapTime(inferredSelection.time)
+      setSelectedMapMode(inferredSelection.mode)
+      return
     }
 
-    setSelectedMapId("");
-    setSelectedMapTime("");
-    setSelectedMapMode("");
-  }, [eventKind, mapValue]);
+    setSelectedMapId("")
+    setSelectedMapTime("")
+    setSelectedMapMode("")
+  }, [eventKind, mapValue])
 
   useEffect(() => {
     if (eventKind !== "match" || !selectedMapId || !selectedMapTime || !selectedMapMode) {
-      return;
+      return
     }
 
     const resolvedCode = resolveHllPresetCode({
@@ -526,46 +544,57 @@ export function EventFormPanel({
       time: selectedMapTime,
       mode: selectedMapMode,
       side: sideValue,
-    });
+    })
 
     if (resolvedCode && resolvedCode !== mapValue) {
-      form.setValue("map", resolvedCode, { shouldDirty: true, shouldTouch: true });
+      form.setValue("map", resolvedCode, { shouldDirty: true, shouldTouch: true })
     }
-  }, [eventKind, form, mapValue, selectedMapId, selectedMapMode, selectedMapTime, sideValue]);
+  }, [eventKind, form, mapValue, selectedMapId, selectedMapMode, selectedMapTime, sideValue])
 
   useEffect(() => {
     if (eventKind === "training" && form.getValues("createForumChannel")) {
-      form.setValue("createForumChannel", false, { shouldDirty: true, shouldTouch: true });
+      form.setValue("createForumChannel", false, { shouldDirty: true, shouldTouch: true })
     }
-  }, [eventKind, form]);
+  }, [eventKind, form])
 
   function handleMapSelection(mapId: string) {
-    setSelectedMapId(mapId);
-    setSelectedMapTime("");
-    setSelectedMapMode("");
-    form.setValue("cap", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setSelectedMapId(mapId)
+    setSelectedMapTime("")
+    setSelectedMapMode("")
+    form.setValue("cap", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true })
   }
 
   function handleMapTimeSelection(time: string) {
-    setSelectedMapTime(time);
-    setSelectedMapMode("");
+    setSelectedMapTime(time)
+    setSelectedMapMode("")
   }
 
   function handleMapModeSelection(mode: string) {
-    setSelectedMapMode(mode);
+    setSelectedMapMode(mode)
   }
 
   function applyQuickSchedule() {
-    const eventStart = new Date(fromDateTimeLocalInTimeZone(quickSchedule.eventStart, timezone));
-    const registrationHours = Number(quickSchedule.registrationHours);
-    const meetingMinutes = Number(quickSchedule.meetingMinutes);
-    const durationHours = Number(quickSchedule.durationHours);
-    if (!Number.isFinite(eventStart.getTime()) || registrationHours < 0 || meetingMinutes < 0 || durationHours <= 0) return;
-    const toLocal = (value: Date) => toDateTimeLocalInTimeZone(value.toISOString(), timezone);
-    form.setValue("registrationEnd", toLocal(new Date(eventStart.getTime() - registrationHours * 60 * 60 * 1000)), { shouldDirty: true, shouldValidate: true });
-    form.setValue("meetingStart", toLocal(new Date(eventStart.getTime() - meetingMinutes * 60 * 1000)), { shouldDirty: true, shouldValidate: true });
-    form.setValue("gameStart", toLocal(eventStart), { shouldDirty: true, shouldValidate: true });
-    form.setValue("gameEnd", toLocal(new Date(eventStart.getTime() + durationHours * 60 * 60 * 1000)), { shouldDirty: true, shouldValidate: true });
+    const eventStart = new Date(fromDateTimeLocalInTimeZone(quickSchedule.eventStart, timezone))
+    const registrationHours = Number(quickSchedule.registrationHours)
+    const meetingMinutes = Number(quickSchedule.meetingMinutes)
+    const durationMinutes = Number(quickSchedule.durationMinutes)
+    if (!Number.isFinite(eventStart.getTime()) || registrationHours < 0 || meetingMinutes < 0 || durationMinutes <= 0) return
+    const toLocal = (value: Date) => toDateTimeLocalInTimeZone(value.toISOString(), timezone)
+    form.setValue("registrationEnd", toLocal(new Date(eventStart.getTime() - registrationHours * 60 * 60 * 1000)), {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+    form.setValue("meetingStart", toLocal(new Date(eventStart.getTime() - meetingMinutes * 60 * 1000)), {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+    form.setValue("gameStart", toLocal(eventStart), { shouldDirty: true, shouldValidate: true })
+    form.setValue("gameEnd", toLocal(new Date(eventStart.getTime() + durationMinutes * 60 * 1000)), {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+    toast.success(dictionary.event.quickScheduleApplied)
+    setQuickScheduleOpen(false)
   }
 
   async function submit(values: EventInput) {
@@ -593,7 +622,7 @@ export function EventFormPanel({
       eventInfoChannelId: values.kind === "match" ? values.eventInfoChannelId || undefined : undefined,
       pingClan: values.pingMode === "clan",
       pingRoleIds: values.pingMode === "roles" ? values.pingRoleIds : [],
-    };
+    }
 
     const response = await fetch(
       createMode ? `/api/servers/${serverId}/events` : `/api/servers/${serverId}/events/${event.id}`,
@@ -604,28 +633,29 @@ export function EventFormPanel({
         },
         body: JSON.stringify(payload),
       },
-    );
+    )
 
-    const body = await response.json();
+    const body = await response.json()
     if (!response.ok) {
-      toast.error(body.error ?? dictionary.event.saveError);
+      toast.error(body.error ?? dictionary.event.saveError)
       form.setError("root", {
         message: body.error ?? dictionary.event.saveError,
-      });
-      return;
+      })
+      return
     }
 
-    toast.success(createMode ? dictionary.event.created : dictionary.event.saved);
+    toast.success(createMode ? dictionary.event.created : dictionary.event.saved)
     startTransition(() => {
-      router.push(`/${locale}/dashboard/servers/${serverId}/${detailBasePath}/${createMode ? body.eventId : event.id}`);
-      router.refresh();
-    });
+      router.push(`/${locale}/dashboard/servers/${serverId}/${detailBasePath}/${createMode ? body.eventId : event.id}`)
+      router.refresh()
+    })
   }
 
   return (
     <Card className="rounded-2xl border-border/60">
       <CardHeader>
-        <CardTitle className="text-2xl">{createMode ? dictionary.event.createTitle : dictionary.event.infoTitle}</CardTitle>
+        <CardTitle
+          className="text-2xl">{createMode ? dictionary.event.createTitle : dictionary.event.infoTitle}</CardTitle>
         <p className="text-sm text-muted-foreground">
           {createMode ? dictionary.event.createDescription : dictionary.event.infoDescription}
         </p>
@@ -663,7 +693,8 @@ export function EventFormPanel({
           {event.kind === "match" && event.eventResult ? (
             <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
               <div className="flex flex-wrap items-center gap-3">
-                <Badge variant={event.eventResult.outcome === "victory" ? "default" : "secondary"} className="rounded-full px-3">
+                <Badge variant={event.eventResult.outcome === "victory" ? "default" : "secondary"}
+                       className="rounded-full px-3">
                   {getOutcomeLabel(event.eventResult.outcome, dictionary)}
                 </Badge>
                 <div className="text-lg font-semibold">
@@ -687,53 +718,84 @@ export function EventFormPanel({
             </div>
           ) : null}
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2 md:col-span-2">
-              <FieldLabel label={dictionary.event.fields.kind} required />
-              {canEdit ? (
-                <Controller
-                  control={form.control}
-                  name="kind"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={(value) => field.onChange(value as EventInput["kind"])}>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="match">{dictionary.sidebar.matches}</SelectItem>
-                        <SelectItem value="training">{dictionary.sidebar.trainings}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              ) : (
-                <ReadOnlyValue value={eventKind === "training" ? dictionary.sidebar.trainings : dictionary.sidebar.matches} emptyLabel={dictionary.shared.notSet} />
-              )}
-            </div>
-            <div>
-              <FieldLabel label={dictionary.event.fields.name} required  />
-              {canEdit ? <Input {...form.register("name")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("name")} emptyLabel={dictionary.shared.notSet} />}
-              {form.formState.errors.name ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.name.message}</p> : null}
+            <div className={"flex flex-row gap-4 col-span-2"}>
+              <div className="md:col-span-2">
+                <FieldLabel label={dictionary.event.fields.kind} required />
+                {canEdit ? (
+                  <Controller
+                    control={form.control}
+                    name="kind"
+                    render={({ field }) => (
+                      <Select value={field.value}
+                              onValueChange={(value) => field.onChange(value as EventInput["kind"])}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="match">{dictionary.sidebar.matches}</SelectItem>
+                          <SelectItem value="training">{dictionary.sidebar.trainings}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                ) : (
+                  <ReadOnlyValue
+                    value={eventKind === "training" ? dictionary.sidebar.trainings : dictionary.sidebar.matches}
+                    emptyLabel={dictionary.shared.notSet} />
+                )}
+              </div>
+              {eventKind === "match" ?
+                <div className="w-40"><FieldLabel label={dictionary.event.fields.matchType} />{canEdit ?
+                  <Controller control={form.control} name="matchType"
+                              render={({ field }) => <Select value={field.value || "__none"}
+                                                             onValueChange={(value) => field.onChange(value === "__none" ? "" : value)}><SelectTrigger
+                                className="rounded-xl w-40"><SelectValue
+                                placeholder={dictionary.shared.notSet} /></SelectTrigger><SelectContent><SelectItem
+                                value="__none">{dictionary.shared.notSet}</SelectItem>{eventCategories.map((category) =>
+                                <SelectItem key={category.id} value={category.id}><span
+                                  className="inline-flex items-center gap-2"><EmojiValue
+                                  value={category.emoji} /><span>{category.label}</span></span></SelectItem>)}
+                              </SelectContent></Select>} /> :
+                  <ReadOnlyValue value={getEventCategoryLabel({ matchType: eventCategoryValue }, eventCategories)}
+                                 emptyLabel={dictionary.shared.notSet} />}</div> : null}
+              <div className="w-full">
+                <FieldLabel label={dictionary.event.fields.name} required />
+                {canEdit ? <Input {...form.register("name")} className="rounded-xl" /> :
+                  <ReadOnlyValue value={form.watch("name")} emptyLabel={dictionary.shared.notSet} />}
+                {form.formState.errors.name ?
+                  <p className="mt-2 text-sm text-destructive">{form.formState.errors.name.message}</p> : null}
+              </div>
             </div>
             {eventKind === "match" ? (
-              <div className="space-y-3 md:col-span-2">
-                <FieldLabel label={dictionary.event.fields.map}  />
+              <div className="space-y-3 md:col-span-2 flex flex-row gap-4">
                 {canEdit ? (
                   <HllMapSelector
                     mapId={selectedMapId}
                     onMapIdChange={(value) => {
-                      handleMapSelection(value);
-                      form.setValue("map", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                      handleMapSelection(value)
+                      form.setValue("map", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true })
                     }}
                     time={selectedMapTime}
                     onTimeChange={(value) => {
-                      handleMapTimeSelection(value);
-                      form.setValue("map", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                      handleMapTimeSelection(value)
+                      form.setValue("map", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true })
                     }}
                     mode={selectedMapMode}
                     onModeChange={handleMapModeSelection}
                     pointValue={form.watch("cap")}
-                    onPointValueChange={(value) => form.setValue("cap", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
+                    onPointValueChange={(value) => form.setValue("cap", value, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    })}
+                    sideValue={form.watch("side")}
+                    onSideValueChange={(value) => form.setValue("side", value, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    })}
                     includeVariants
+                    includeSide
                     labels={{
                       map: dictionary.event.fields.map,
                       mapSearch: dictionary.event.fields.map,
@@ -741,56 +803,103 @@ export function EventFormPanel({
                       mode: dictionary.event.fields.mapMode,
                       point: dictionary.event.fields.capMode,
                       pointSearch: dictionary.event.fields.capMode,
+                      side: dictionary.event.fields.side,
                       optional: dictionary.shared.notSet,
                       noResults: dictionary.shared.noMatchingResults,
                     }}
                   />
                 ) : (
-                  <ReadOnlyValue value={formatHllPresetLabel(mapValue) ?? mapValue} emptyLabel={dictionary.shared.notSet} />
+                  <ReadOnlyValue value={formatHllPresetLabel(mapValue) ?? mapValue}
+                                 emptyLabel={dictionary.shared.notSet} />
                 )}
-                {mapValue ? (
-                  <p className="text-xs text-muted-foreground">
-                    {dictionary.event.fields.mapPresetCode}: <span className="font-mono">{mapValue}</span>
-                  </p>
-                ) : null}
               </div>
             ) : null}
             {eventKind === "match" ? (
-            <>
-            {canEdit ? <div className="md:col-span-2 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
-              <div><FieldLabel label={dictionary.event.quickScheduleTitle} /><p className="text-sm text-muted-foreground">{dictionary.event.quickScheduleDescription}</p></div>
-              <div className="grid gap-3 md:grid-cols-4"><Input type="datetime-local" value={quickSchedule.eventStart} onChange={(event) => setQuickSchedule((current) => ({ ...current, eventStart: event.target.value }))} /><Input type="number" min="0" value={quickSchedule.registrationHours} onChange={(event) => setQuickSchedule((current) => ({ ...current, registrationHours: event.target.value }))} aria-label={dictionary.event.registrationHoursBefore} /><Input type="number" min="0" value={quickSchedule.meetingMinutes} onChange={(event) => setQuickSchedule((current) => ({ ...current, meetingMinutes: event.target.value }))} aria-label={dictionary.event.meetingMinutesBefore} /><Input type="number" min="0.25" step="0.25" value={quickSchedule.durationHours} onChange={(event) => setQuickSchedule((current) => ({ ...current, durationHours: event.target.value }))} aria-label={dictionary.event.durationHours} /></div>
-              <div className="flex flex-wrap gap-3"><span className="text-sm text-muted-foreground">{dictionary.event.registrationHoursBefore} · {dictionary.event.meetingMinutesBefore} · {dictionary.event.durationHours}</span><Button type="button" variant="outline" className="rounded-xl" onClick={applyQuickSchedule}>{dictionary.event.applyQuickSchedule}</Button></div>
-            </div> : null}
-            <div>
-              <FieldLabel label={dictionary.event.fields.side}  />
-              {canEdit ? (
-                <Controller
-                  control={form.control}
-                  name="side"
-                  render={({ field }) => (
-                    <Select value={field.value || "__none"} onValueChange={(value) => field.onChange(value === "__none" ? "" : value)}>
-                      <SelectTrigger className="w-full rounded-xl">
-                        <SelectValue placeholder={dictionary.shared.notSet} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none">{dictionary.shared.notSet}</SelectItem>
-                        <SelectItem value="Allies">Allies</SelectItem>
-                        <SelectItem value="Axis">Axis</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              ) : <ReadOnlyValue value={form.watch("side")} emptyLabel={dictionary.shared.notSet} />}
-            </div>
-            </>
+              <>
+                {canEdit ? <div
+                  className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3">
+                  <div className="grid gap-x-5 gap-y-1 text-sm sm:grid-cols-2">
+                    <span><strong>{dictionary.event.fields.registrationEnd}:</strong> {formatScheduleValue(scheduleValues[0])}</span><span><strong>{dictionary.event.fields.meetingStart}:</strong> {formatScheduleValue(scheduleValues[1])}</span><span><strong>{dictionary.event.fields.gameStart}:</strong> {formatScheduleValue(scheduleValues[2])}</span><span><strong>{dictionary.event.fields.gameEnd}:</strong> {formatScheduleValue(scheduleValues[3])}</span>
+                  </div>
+                  <Button type="button" variant="outline" className="rounded-xl" onClick={() => {
+                    setQuickScheduleStep(0)
+                    setQuickScheduleOpen(true)
+                  }}>{dictionary.event.editSchedule}</Button></div> : null}
+                <Dialog open={quickScheduleOpen} onOpenChange={setQuickScheduleOpen}><DialogContent
+                  className="max-w-md rounded-2xl"><DialogHeader><DialogTitle>{dictionary.event.quickScheduleTitle}</DialogTitle><DialogDescription>{dictionary.event.quickScheduleStepLabel.replace("{step}", String(quickScheduleStep + 1))}</DialogDescription></DialogHeader>
+                  <div className="space-y-3"><FieldLabel
+                    label={[dictionary.event.quickEventStart, dictionary.event.meetingMinutesBefore, dictionary.event.registrationHoursBefore, dictionary.event.durationMinutes][quickScheduleStep]}
+                    required={quickScheduleStep === 0} />{quickScheduleStep === 0 ?
+                    <Input type="datetime-local" value={quickSchedule.eventStart}
+                           onChange={(event) => setQuickSchedule((current) => ({
+                             ...current,
+                             eventStart: event.target.value,
+                           }))} /> : null}{quickScheduleStep === 1 ?
+                    <Input type="number" min="0" value={quickSchedule.meetingMinutes}
+                           onChange={(event) => setQuickSchedule((current) => ({
+                             ...current,
+                             meetingMinutes: event.target.value,
+                           }))} /> : null}{quickScheduleStep === 2 ?
+                    <Input type="number" min="0" value={quickSchedule.registrationHours}
+                           onChange={(event) => setQuickSchedule((current) => ({
+                             ...current,
+                             registrationHours: event.target.value,
+                           }))} /> : null}{quickScheduleStep === 3 ?
+                    <Input type="number" min="1" step="1" value={quickSchedule.durationMinutes}
+                           onChange={(event) => setQuickSchedule((current) => ({
+                             ...current,
+                             durationMinutes: event.target.value,
+                           }))} /> : null}</div>
+                  <DialogFooter><Button type="button" variant="outline" disabled={quickScheduleStep === 0}
+                                        onClick={() => setQuickScheduleStep((step) => step - 1)}>{dictionary.event.wizardBack}</Button>{quickScheduleStep < 3 ?
+                    <Button type="button"
+                            onClick={() => setQuickScheduleStep((step) => step + 1)}>{dictionary.event.wizardNext}</Button> :
+                    <Button type="button" onClick={applyQuickSchedule}>{dictionary.event.applyQuickSchedule}</Button>}
+                  </DialogFooter></DialogContent></Dialog>
+                {canEdit ?
+                  <div className="hidden md:col-span-2 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
+                    <div><FieldLabel label={dictionary.event.quickScheduleTitle} /><p
+                      className="text-sm text-muted-foreground">{dictionary.event.quickScheduleDescription}</p></div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <div><FieldLabel label={dictionary.event.quickEventStart} required /><Input type="datetime-local"
+                                                                                                  value={quickSchedule.eventStart}
+                                                                                                  onChange={(event) => setQuickSchedule((current) => ({
+                                                                                                    ...current,
+                                                                                                    eventStart: event.target.value,
+                                                                                                  }))} /></div>
+                      <div><FieldLabel label={dictionary.event.registrationHoursBefore} /><Input type="number" min="0"
+                                                                                                 value={quickSchedule.registrationHours}
+                                                                                                 onChange={(event) => setQuickSchedule((current) => ({
+                                                                                                   ...current,
+                                                                                                   registrationHours: event.target.value,
+                                                                                                 }))} /></div>
+                      <div><FieldLabel label={dictionary.event.meetingMinutesBefore} /><Input type="number" min="0"
+                                                                                              value={quickSchedule.meetingMinutes}
+                                                                                              onChange={(event) => setQuickSchedule((current) => ({
+                                                                                                ...current,
+                                                                                                meetingMinutes: event.target.value,
+                                                                                              }))} /></div>
+                      <div><FieldLabel label={dictionary.event.durationMinutes} /><Input type="number" min="1" step="1"
+                                                                                         value={quickSchedule.durationMinutes}
+                                                                                         onChange={(event) => setQuickSchedule((current) => ({
+                                                                                           ...current,
+                                                                                           durationMinutes: event.target.value,
+                                                                                         }))} /></div>
+                    </div>
+                    <div className="flex flex-wrap gap-3"><span
+                      className="text-sm text-muted-foreground">{dictionary.event.registrationHoursBefore} · {dictionary.event.meetingMinutesBefore} · {dictionary.event.durationHours}</span><Button
+                      type="button" variant="outline" className="rounded-xl"
+                      onClick={applyQuickSchedule}>{dictionary.event.applyQuickSchedule}</Button></div>
+                  </div> : null}
+              </>
             ) : null}
             <div className="md:col-span-2">
               <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
                 {dictionary.serverSettings.timezone}: {supportedTimezones.includes(timezone as (typeof supportedTimezones)[number]) ? timezone : "UTC"}
               </div>
             </div>
-            <div className="md:col-span-2">
+          <div className={"flex flex-row gap-4 col-span-2"}>
+            <div className="w-1/2">
               {canEdit ? (
                 <Controller
                   control={form.control}
@@ -812,7 +921,7 @@ export function EventFormPanel({
               )}
             </div>
             {eventKind === "match" ? (
-              <div className="md:col-span-2">
+              <div className="w-1/2">
                 {canEdit ? (
                   <Controller
                     control={form.control}
@@ -834,8 +943,9 @@ export function EventFormPanel({
                 )}
               </div>
             ) : null}
+          </div>
             <div className="md:col-span-2">
-              <FieldLabel label={dictionary.event.fields.description}  />
+              <FieldLabel label={dictionary.event.fields.description} />
               {canEdit ? (
                 <Controller
                   control={form.control}
@@ -849,148 +959,120 @@ export function EventFormPanel({
                     />
                   )}
                 />
-              ) : <DiscordMarkdownText markdown={form.watch("description")} emptyLabel={dictionary.shared.notSet} className="min-h-24 rounded-xl" />}
-            </div>
-            <div className="md:col-span-2 rounded-xl border border-[#1e2d45] bg-[#313338] p-4 text-[#dbdee1]">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#b5bac1]">{dictionary.event.discordPreview}</p>
-              <div className="border-l-4 border-[#5865f2] pl-3">
-                <p className="font-semibold text-white">{form.watch("name") || dictionary.event.previewUntitled}</p>
-                <DiscordMarkdownText markdown={form.watch("description")} emptyLabel={dictionary.event.previewNoDescription} className="mt-1 text-sm text-[#dbdee1]" />
-                {form.watch("thumbnailUrl") ? <img src={form.watch("thumbnailUrl")} alt="" className="mt-3 size-20 rounded object-cover" /> : null}
-                {form.watch("imageUrl") ? <img src={form.watch("imageUrl")} alt="" className="mt-3 max-h-56 rounded object-cover" /> : null}
-              </div>
-            </div>
-            <div className="md:col-span-2">
-              <FieldLabel label={dictionary.event.fields.matchType}  />
-              {canEdit ? (
-                <Controller
-                  control={form.control}
-                  name="matchType"
-                  render={({ field }) => (
-                    <Select value={field.value || "__none"} onValueChange={(value) => field.onChange(value === "__none" ? "" : value)}>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder={dictionary.shared.notSet} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none">{dictionary.shared.notSet}</SelectItem>
-                        {eventCategories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            <span className="inline-flex items-center gap-2">
-                              <EmojiValue value={category.emoji} />
-                              <span>{category.label}</span>
-                            </span>
-                          </SelectItem>
-                        ))}
-                        {field.value && !eventCategories.some((category) => category.id === field.value) ? (
-                          <SelectItem value={field.value}>{field.value}</SelectItem>
-                        ) : null}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              ) : (
-                <ReadOnlyValue value={getEventCategoryLabel({ matchType: eventCategoryValue }, eventCategories)} emptyLabel={dictionary.shared.notSet} />
-              )}
+              ) : <DiscordMarkdownText markdown={form.watch("description")} emptyLabel={dictionary.shared.notSet}
+                                       className="min-h-24 rounded-xl" />}
             </div>
             {eventKind === "match" ? (
-            <div className="md:col-span-2 md:grid md:grid-cols-3 md:gap-4">
-              <div>
-                <FieldLabel label={dictionary.event.fields.meetingChannelId}  />
-                {canEdit ? (
-                  <Controller
-                    control={form.control}
-                    name="meetingChannelId"
-                    render={({ field }) => (
-                      <DiscordEntitySelect
-                        value={field.value || undefined}
-                        onChange={(value) => field.onChange(value ?? "")}
-                        options={meetingChannels}
-                        placeholder={dictionary.event.fields.meetingChannelId}
-                        noneLabel={dictionary.shared.notSet}
-                      />
-                    )}
-                  />
-                ) : (
-                  <ReadOnlyValue
-                    value={(() => {
-                      const meetingChannelId = form.watch("meetingChannelId");
-                      return meetingChannelId ? (channelNameById.get(meetingChannelId) ?? meetingChannelId) : undefined;
-                    })()}
-                    emptyLabel={dictionary.shared.notSet}
-                  />
-                )}
+              <div className="md:col-span-2 md:grid md:grid-cols-3 md:gap-4">
+                <div>
+                  <FieldLabel label={dictionary.event.fields.meetingChannelId} />
+                  {canEdit ? (
+                    <Controller
+                      control={form.control}
+                      name="meetingChannelId"
+                      render={({ field }) => (
+                        <DiscordEntitySelect
+                          value={field.value || undefined}
+                          onChange={(value) => field.onChange(value ?? "")}
+                          options={meetingChannels}
+                          placeholder={dictionary.event.fields.meetingChannelId}
+                          noneLabel={dictionary.shared.notSet}
+                        />
+                      )}
+                    />
+                  ) : (
+                    <ReadOnlyValue
+                      value={(() => {
+                        const meetingChannelId = form.watch("meetingChannelId")
+                        return meetingChannelId ? (channelNameById.get(meetingChannelId) ?? meetingChannelId) : undefined
+                      })()}
+                      emptyLabel={dictionary.shared.notSet}
+                    />
+                  )}
+                </div>
+                <div>
+                  <FieldLabel label={dictionary.event.fields.server} />
+                  {canEdit ?
+                    <Input {...form.register("server")} autoComplete="one-time-code" className="rounded-xl" /> :
+                    <ReadOnlyValue value={form.watch("server")} emptyLabel={dictionary.shared.notSet} />}
+                </div>
+                <div>
+                  <FieldLabel label={dictionary.event.fields.serverPassword} />
+                  {canEdit ? <Input {...form.register("serverPassword")} autoComplete={"new-password"}
+                                    className="rounded-xl" /> :
+                    <ReadOnlyValue value={form.watch("serverPassword")} emptyLabel={dictionary.shared.notSet} />}
+                </div>
               </div>
-              <div>
-                <FieldLabel label={dictionary.event.fields.server}  />
-                {canEdit ? <Input {...form.register("server")} autoComplete="one-time-code" className="rounded-xl" /> : <ReadOnlyValue value={form.watch("server")} emptyLabel={dictionary.shared.notSet} />}
-              </div>
-              <div>
-                <FieldLabel label={dictionary.event.fields.serverPassword}  />
-                {canEdit ? <Input {...form.register("serverPassword")} autoComplete={"new-password"} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("serverPassword")} emptyLabel={dictionary.shared.notSet} />}
-              </div>
-            </div>
             ) : null}
             <div className="md:col-span-2 rounded-xl border border-border/60 p-4">
-              <FieldLabel label={dictionary.event.fields.announcementChannelId} />
               {canEdit && createMode ? (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Controller control={form.control} name="announcementChannelId" render={({ field }) => (
-                    <DiscordEntitySelect value={field.value || undefined} onChange={(value) => field.onChange(value ?? "")} options={announcementChannels} placeholder={dictionary.event.fields.announcementChannelId} noneLabel={dictionary.shared.notSet} />
-                  )} />
-                  {eventKind === "match" ? <Controller control={form.control} name="eventInfoChannelId" render={({ field }) => (
-                    <DiscordEntitySelect value={field.value || undefined} onChange={(value) => field.onChange(value ?? "")} options={announcementChannels} placeholder={dictionary.event.fields.eventInfoChannelId} noneLabel={dictionary.shared.notSet} />
-                  )} /> : null}
+                  <div><FieldLabel label={dictionary.event.fields.announcementChannelId} required /><Controller
+                    control={form.control} name="announcementChannelId" render={({ field }) => (
+                    <DiscordEntitySelect value={field.value || undefined}
+                                         onChange={(value) => field.onChange(value ?? "")}
+                                         options={announcementChannels}
+                                         placeholder={dictionary.event.fields.announcementChannelId}
+                                         noneLabel={dictionary.shared.notSet} />
+                  )} /></div>
+                  {eventKind === "match" ?
+                    <div><FieldLabel label={dictionary.event.fields.eventInfoChannelId} /><Controller
+                      control={form.control} name="eventInfoChannelId" render={({ field }) => (
+                      <DiscordEntitySelect value={field.value || undefined}
+                                           onChange={(value) => field.onChange(value ?? "")}
+                                           options={announcementChannels}
+                                           placeholder={dictionary.event.fields.eventInfoChannelId}
+                                           noneLabel={dictionary.shared.notSet} />
+                    )} /></div> : null}
                 </div>
-              ) : <ReadOnlyList values={[form.watch("announcementChannelId"), eventKind === "match" ? form.watch("eventInfoChannelId") : undefined].filter((value): value is string => Boolean(value)).map((id) => channelNameById.get(id) ?? id)} emptyLabel={dictionary.shared.notSet} />}
-              <p className="mt-2 text-sm text-muted-foreground">{createMode ? dictionary.event.channelRoutingCreateHelp : dictionary.event.channelRoutingLockedHelp}</p>
+              ) : <ReadOnlyList
+                values={[form.watch("announcementChannelId"), eventKind === "match" ? form.watch("eventInfoChannelId") : undefined].filter((value): value is string => Boolean(value)).map((id) => channelNameById.get(id) ?? id)}
+                emptyLabel={dictionary.shared.notSet} />}
+              <p
+                className="mt-2 text-sm text-muted-foreground">{createMode ? dictionary.event.channelRoutingSharedHelp : dictionary.event.channelRoutingLockedHelp}</p>
             </div>
-            <div>
-              <FieldLabel label={dictionary.event.fields.registrationEnd} required  />
-              {canEdit ? <Input type="datetime-local" {...form.register("registrationEnd")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("registrationEnd")} emptyLabel={dictionary.shared.notSet} />}
-              {form.formState.errors.registrationEnd ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.registrationEnd.message}</p> : null}
-            </div>
-            <div>
-              <FieldLabel label={dictionary.event.fields.meetingStart} required  />
-              {canEdit ? <Input type="datetime-local" {...form.register("meetingStart")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("meetingStart")} emptyLabel={dictionary.shared.notSet} />}
-              {form.formState.errors.meetingStart ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.meetingStart.message}</p> : null}
-            </div>
-            {eventKind === "match" ? (
+            {eventKind === "training" ? (
               <>
                 <div>
-                  <FieldLabel label={dictionary.event.fields.gameStart} required  />
-                  {canEdit ? <Input type="datetime-local" {...form.register("gameStart")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("gameStart")} emptyLabel={dictionary.shared.notSet} />}
-                  {form.formState.errors.gameStart ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.gameStart.message}</p> : null}
+                  <FieldLabel label={dictionary.event.fields.registrationEnd} required />
+                  {canEdit ? <Input type="datetime-local" {...form.register("registrationEnd")} className="rounded-xl" /> :
+                    <ReadOnlyValue value={form.watch("registrationEnd")} emptyLabel={dictionary.shared.notSet} />}
+                  {form.formState.errors.registrationEnd ?
+                    <p className="mt-2 text-sm text-destructive">{form.formState.errors.registrationEnd.message}</p> : null}
                 </div>
                 <div>
-                  <FieldLabel label={dictionary.event.fields.gameEnd} required  />
-                  {canEdit ? <Input type="datetime-local" {...form.register("gameEnd")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("gameEnd")} emptyLabel={dictionary.shared.notSet} />}
-                  {form.formState.errors.gameEnd ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.gameEnd.message}</p> : null}
+                  <FieldLabel label={dictionary.event.fields.meetingStart} required />
+                  {canEdit ? <Input type="datetime-local" {...form.register("meetingStart")} className="rounded-xl" /> :
+                    <ReadOnlyValue value={form.watch("meetingStart")} emptyLabel={dictionary.shared.notSet} />}
+                  {form.formState.errors.meetingStart ?
+                    <p className="mt-2 text-sm text-destructive">{form.formState.errors.meetingStart.message}</p> : null}
                 </div>
               </>
             ) : null}
             {eventKind === "match" ? (
-            <div className="md:col-span-2">
-              <FieldLabel label={dictionary.event.topicPreset}  />
-              {canEdit ? (
-                <Controller
-                  control={form.control}
-                  name="topicPresetId"
-                  render={({ field }) => (
-                    <TopicPresetSelect
-                      value={field.value}
-                      onChange={field.onChange}
-                      options={topicPresetOptions}
-                      dictionary={dictionary}
-                    />
-                  )}
-                />
-              ) : (
-                <ReadOnlyValue value={topicPresets.find((preset) => preset.id === form.watch("topicPresetId"))?.name} emptyLabel={dictionary.event.noPreset} />
-              )}
-            </div>
+              <div className="md:col-span-2">
+                <FieldLabel label={dictionary.event.topicPreset} />
+                {canEdit ? (
+                  <Controller
+                    control={form.control}
+                    name="topicPresetId"
+                    render={({ field }) => (
+                      <TopicPresetSelect
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={topicPresetOptions}
+                        dictionary={dictionary}
+                      />
+                    )}
+                  />
+                ) : (
+                  <ReadOnlyValue value={topicPresets.find((preset) => preset.id === form.watch("topicPresetId"))?.name}
+                                 emptyLabel={dictionary.event.noPreset} />
+                )}
+              </div>
             ) : null}
             <div className="md:col-span-2">
-              <FieldLabel label={dictionary.event.fields.notes}  />
+              <FieldLabel label={dictionary.event.fields.notes} />
               {canEdit ? (
                 <Controller
                   control={form.control}
@@ -1004,28 +1086,31 @@ export function EventFormPanel({
                     />
                   )}
                 />
-              ) : <DiscordMarkdownText markdown={form.watch("notes")} emptyLabel={dictionary.shared.notSet} className="min-h-28 rounded-xl" />}
+              ) : <DiscordMarkdownText markdown={form.watch("notes")} emptyLabel={dictionary.shared.notSet}
+                                       className="min-h-28 rounded-xl" />}
             </div>
             {eventKind === "match" ? (
-            <div className="md:col-span-2">
-              <FieldLabel label={dictionary.event.fields.stratmaps}  />
-              {canEdit ? (
-                <Controller
-                  control={form.control}
-                  name="stratmapIds"
-                  render={({ field }) => (
-                    <StratmapMultiSelect
-                      value={field.value ?? []}
-                      onChange={field.onChange}
-                      stratmaps={stratmaps}
-                      dictionary={dictionary}
-                    />
-                  )}
-                />
-              ) : (
-                <ReadOnlyList values={(form.watch("stratmapIds") ?? []).map((id) => stratmaps.find((item) => item.id === id)?.title ?? id)} emptyLabel={dictionary.shared.notSet} />
-              )}
-            </div>
+              <div className="md:col-span-2">
+                <FieldLabel label={dictionary.event.fields.stratmaps} />
+                {canEdit ? (
+                  <Controller
+                    control={form.control}
+                    name="stratmapIds"
+                    render={({ field }) => (
+                      <StratmapMultiSelect
+                        value={field.value ?? []}
+                        onChange={field.onChange}
+                        stratmaps={stratmaps}
+                        dictionary={dictionary}
+                      />
+                    )}
+                  />
+                ) : (
+                  <ReadOnlyList
+                    values={(form.watch("stratmapIds") ?? []).map((id) => stratmaps.find((item) => item.id === id)?.title ?? id)}
+                    emptyLabel={dictionary.shared.notSet} />
+                )}
+              </div>
             ) : null}
             {eventKind === "match" ? (
               <>
@@ -1036,27 +1121,29 @@ export function EventFormPanel({
                       control={form.control}
                       name="allowedSignupStatuses"
                       render={({ field }) => {
-                        const selectedStatuses = new Set(field.value ?? []);
+                        const selectedStatuses = new Set(field.value ?? [])
                         const statusOptions = [
                           "recruit",
                           "member",
                           "reserve_member",
                           "mercenary",
-                        ] as const;
+                        ] as const
 
                         return (
                           <div className="space-y-3 rounded-xl border border-border/60 p-4">
-                            <p className="text-sm text-muted-foreground">{dictionary.event.allowedSignupStatusesDescription}</p>
+                            <p
+                              className="text-sm text-muted-foreground">{dictionary.event.allowedSignupStatusesDescription}</p>
                             <div className="grid gap-2 md:grid-cols-2">
                               {statusOptions.map((status) => (
-                                <label key={status} className="flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2">
+                                <label key={status}
+                                       className="flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2">
                                   <Checkbox
                                     checked={selectedStatuses.has(status)}
                                     onCheckedChange={(checked) => {
                                       const nextValues = checked
                                         ? [...selectedStatuses, status]
-                                        : [...selectedStatuses].filter((value) => value !== status);
-                                      field.onChange(nextValues);
+                                        : [...selectedStatuses].filter((value) => value !== status)
+                                      field.onChange(nextValues)
                                     }}
                                   />
                                   <span className="text-sm">{getAllowedSignupStatusLabel(status, dictionary)}</span>
@@ -1064,98 +1151,107 @@ export function EventFormPanel({
                               ))}
                             </div>
                           </div>
-                        );
+                        )
                       }}
                     />
                   ) : (
                     <ReadOnlyList
                       values={(form.watch("allowedSignupStatuses") ?? []).length
                         ? (form.watch("allowedSignupStatuses") ?? []).map((status) =>
-                            getAllowedSignupStatusLabel(status, dictionary))
+                          getAllowedSignupStatusLabel(status, dictionary))
                         : [dictionary.event.allowedSignupStatusesAll]}
                       emptyLabel={dictionary.event.allowedSignupStatusesAll}
                     />
                   )}
                 </div>
                 <div className="md:col-span-2">
-              {canEdit ? (
-                <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
-                  <div>
-                    <FieldLabel label={dictionary.event.fields.useGeneralSignup} />
-                    <p className="text-sm text-muted-foreground">{dictionary.event.generalSignupDescription}</p>
-                  </div>
-                  <Controller
-                    control={form.control}
-                    name="useGeneralSignup"
-                    render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
-                  />
-                </div>
-              ) : (
-                <ReadOnlyValue value={form.watch("useGeneralSignup") ? dictionary.tables.enabled : dictionary.tables.disabled} emptyLabel={dictionary.shared.notSet} />
-              )}
+                  {canEdit ? (
+                    <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                      <div>
+                        <FieldLabel label={dictionary.event.fields.useGeneralSignup} />
+                        <p className="text-sm text-muted-foreground">{dictionary.event.generalSignupDescription}</p>
+                      </div>
+                      <Controller
+                        control={form.control}
+                        name="useGeneralSignup"
+                        render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
+                      />
+                    </div>
+                  ) : (
+                    <ReadOnlyValue
+                      value={form.watch("useGeneralSignup") ? dictionary.tables.enabled : dictionary.tables.disabled}
+                      emptyLabel={dictionary.shared.notSet} />
+                  )}
                 </div>
               </>
             ) : null}
             {eventKind === "match" ? (
-            <div className="md:col-span-2">
-              <FieldLabel label={dictionary.event.fields.signupGroupIds} />
-              {canEdit ? (
-                <Controller
-                  control={form.control}
-                  name="signupGroupIds"
-                  render={({ field }) => {
-                    const selectedIds = new Set(field.value ?? []);
-
-                    return (
-                      <div className="space-y-3 rounded-xl border border-border/60 p-4">
-                        <p className="text-sm text-muted-foreground">{dictionary.event.signupGroupsDescription}</p>
-                        <div className="grid gap-2 md:grid-cols-2">
-                          {groups.map((group) => (
-                            <label key={group.id} className="flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2">
-                              <Checkbox
-                                checked={selectedIds.has(group.id)}
-                                onCheckedChange={(checked) => {
-                                  const nextValues = checked
-                                    ? [...selectedIds, group.id]
-                                    : [...selectedIds].filter((groupId) => groupId !== group.id);
-                                  field.onChange(nextValues);
-                                }}
-                              />
-                              <span className="size-3 rounded-full border border-border/60" style={{ backgroundColor: group.color }} />
-                              <span className="text-sm">{group.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                        {!groups.length ? <div className="text-sm text-muted-foreground">{dictionary.shared.nothingCreatedYet}</div> : null}
-                      </div>
-                    );
-                  }}
-                />
-              ) : (
-                <ReadOnlyList values={(form.watch("signupGroupIds") ?? []).map((id) => groups.find((group) => group.id === id)?.name ?? id)} emptyLabel={dictionary.shared.notSet} />
-              )}
-            </div>
-            ) : null}
-            {eventKind === "match" ? (
-            <div className="md:col-span-2">
-              {canEdit ? (
-                <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
-                  <div>
-                    <FieldLabel label={dictionary.event.fields.createForumChannel}  />
-                    <p className="text-sm text-muted-foreground">
-                      {dictionary.event.createForumChannelDescription}
-                    </p>
-                  </div>
+              <div className="md:col-span-2">
+                <FieldLabel label={dictionary.event.fields.signupGroupIds} />
+                {canEdit ? (
                   <Controller
                     control={form.control}
-                    name="createForumChannel"
-                    render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
+                    name="signupGroupIds"
+                    render={({ field }) => {
+                      const selectedIds = new Set(field.value ?? [])
+
+                      return (
+                        <div className="space-y-3 rounded-xl border border-border/60 p-4">
+                          <p className="text-sm text-muted-foreground">{dictionary.event.signupGroupsDescription}</p>
+                          <div className="grid gap-2 md:grid-cols-2">
+                            {groups.map((group) => (
+                              <label key={group.id}
+                                     className="flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2">
+                                <Checkbox
+                                  checked={selectedIds.has(group.id)}
+                                  onCheckedChange={(checked) => {
+                                    const nextValues = checked
+                                      ? [...selectedIds, group.id]
+                                      : [...selectedIds].filter((groupId) => groupId !== group.id)
+                                    field.onChange(nextValues)
+                                  }}
+                                />
+                                <span className="size-3 rounded-full border border-border/60"
+                                      style={{ backgroundColor: group.color }} />
+                                <span className="text-sm">{group.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                          {!groups.length ? <div
+                            className="text-sm text-muted-foreground">{dictionary.shared.nothingCreatedYet}</div> : null}
+                        </div>
+                      )
+                    }}
                   />
-                </div>
-              ) : (
-                <ReadOnlyValue value={form.watch("createForumChannel") ? dictionary.tables.enabled : dictionary.tables.disabled} emptyLabel={dictionary.shared.notSet} />
-              )}
-            </div>
+                ) : (
+                  <ReadOnlyList
+                    values={(form.watch("signupGroupIds") ?? []).map((id) => groups.find((group) => group.id === id)?.name ?? id)}
+                    emptyLabel={dictionary.shared.notSet} />
+                )}
+              </div>
+            ) : null}
+            {eventKind === "match" ? (
+              <div className="md:col-span-2">
+                {canEdit ? (
+                  <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                    <div>
+                      <FieldLabel label={dictionary.event.fields.createForumChannel} />
+                      <p className="text-sm text-muted-foreground">
+                        {dictionary.event.createForumChannelDescription}
+                      </p>
+                    </div>
+                    <Controller
+                      control={form.control}
+                      name="createForumChannel"
+                      render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
+                    />
+                  </div>
+                ) : (
+                  <ReadOnlyValue
+                    value={form.watch("createForumChannel") ? dictionary.tables.enabled : dictionary.tables.disabled}
+                    emptyLabel={dictionary.shared.notSet} />
+                )}
+              </div>
             ) : null}
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.requiredRoleIds} />
@@ -1173,7 +1269,8 @@ export function EventFormPanel({
                   )}
                 />
               ) : (
-                <ReadOnlyList values={(form.watch("requiredRoleIds") ?? []).map((id) => roleNameById.get(id) ?? id)} emptyLabel={dictionary.shared.notSet} />
+                <ReadOnlyList values={(form.watch("requiredRoleIds") ?? []).map((id) => roleNameById.get(id) ?? id)}
+                              emptyLabel={dictionary.shared.notSet} />
               )}
             </div>
             <div className="md:col-span-2">
@@ -1192,29 +1289,42 @@ export function EventFormPanel({
                   )}
                 />
               ) : (
-                <ReadOnlyList values={(form.watch("rewardRoleIds") ?? []).map((id) => roleNameById.get(id) ?? id)} emptyLabel={dictionary.shared.notSet} />
+                <ReadOnlyList values={(form.watch("rewardRoleIds") ?? []).map((id) => roleNameById.get(id) ?? id)}
+                              emptyLabel={dictionary.shared.notSet} />
               )}
             </div>
             {eventKind === "match" ? (
-            <div className="md:col-span-2">
-              {canEdit ? (
-                <div className="space-y-3 rounded-xl border border-border/60 p-4">
-                  <FieldLabel label={dictionary.event.fields.pingMode} />
-                  <Controller control={form.control} name="pingMode" render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">{dictionary.event.pingNone}</SelectItem><SelectItem value="clan">{dictionary.event.pingClanOption}</SelectItem><SelectItem value="roles">{dictionary.event.pingRolesOption}</SelectItem></SelectContent></Select>
-                  )} />
-                  {pingMode === "roles" ? <Controller control={form.control} name="pingRoleIds" render={({ field }) => <DiscordMultiEntitySelect value={field.value ?? []} onChange={field.onChange} options={metadata?.roles ?? []} placeholder={dictionary.event.fields.pingRoleIds} />} /> : null}
-                </div>
-              ) : (
-                <ReadOnlyValue value={pingMode === "clan" ? dictionary.event.pingClanOption : pingMode === "roles" ? (form.watch("pingRoleIds") ?? []).map((id) => roleNameById.get(id) ?? id).join(", ") : dictionary.event.pingNone} emptyLabel={dictionary.shared.notSet} />
-              )}
-            </div>
+              <div className="md:col-span-2">
+                {canEdit ? (
+                  <div className="space-y-3 rounded-xl border border-border/60 p-4">
+                    <FieldLabel label={dictionary.event.fields.pingMode} />
+                    <Controller control={form.control} name="pingMode" render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}><SelectTrigger
+                        className="rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem
+                        value="none">{dictionary.event.pingNone}</SelectItem><SelectItem
+                        value="clan">{dictionary.event.pingClanOption}</SelectItem><SelectItem
+                        value="roles">{dictionary.event.pingRolesOption}</SelectItem></SelectContent></Select>
+                    )} />
+                    {pingMode === "roles" ? <Controller control={form.control} name="pingRoleIds"
+                                                        render={({ field }) => <DiscordMultiEntitySelect
+                                                          value={field.value ?? []} onChange={field.onChange}
+                                                          options={metadata?.roles ?? []}
+                                                          placeholder={dictionary.event.fields.pingRoleIds} />} /> : null}
+                  </div>
+                ) : (
+                  <ReadOnlyValue
+                    value={pingMode === "clan" ? dictionary.event.pingClanOption : pingMode === "roles" ? (form.watch("pingRoleIds") ?? []).map((id) => roleNameById.get(id) ?? id).join(", ") : dictionary.event.pingNone}
+                    emptyLabel={dictionary.shared.notSet} />
+                )}
+              </div>
             ) : null}
           </div>
-          {form.formState.errors.root ? <p className="text-sm text-destructive">{form.formState.errors.root.message}</p> : null}
+          {form.formState.errors.root ?
+            <p className="text-sm text-destructive">{form.formState.errors.root.message}</p> : null}
           {canEdit ? (
             <div className="flex flex-wrap gap-3">
-              <Button className="rounded-xl" type="submit" disabled={!canEdit || isPending || form.formState.isSubmitting}>
+              <Button className="rounded-xl" type="submit"
+                      disabled={!canEdit || isPending || form.formState.isSubmitting}>
                 {dictionary.common.save}
               </Button>
             </div>
@@ -1222,5 +1332,5 @@ export function EventFormPanel({
         </form>
       </CardContent>
     </Card>
-  );
+  )
 }

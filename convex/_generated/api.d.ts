@@ -30,6 +30,7 @@ import type * as rosterSync from "../rosterSync.js";
 import type * as rosters from "../rosters.js";
 import type * as scheduledJobs from "../scheduledJobs.js";
 import type * as serverContext from "../serverContext.js";
+import type * as serverDashboard from "../serverDashboard.js";
 import type * as serverMetadata from "../serverMetadata.js";
 import type * as serverRosters from "../serverRosters.js";
 import type * as serverSetup from "../serverSetup.js";
@@ -69,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   rosters: typeof rosters;
   scheduledJobs: typeof scheduledJobs;
   serverContext: typeof serverContext;
+  serverDashboard: typeof serverDashboard;
   serverMetadata: typeof serverMetadata;
   serverRosters: typeof serverRosters;
   serverSetup: typeof serverSetup;

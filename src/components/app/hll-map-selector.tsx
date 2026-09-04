@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronsUpDown, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -38,18 +38,18 @@ function resolvePointValue(mapId: string, value: string | undefined, valueMode: 
 }
 
 function SearchableSelect({
-  value,
-  onChange,
-  options,
-  placeholder,
-  searchPlaceholder,
-  noneLabel,
-  noResults,
-  disabled,
-  open,
-  onOpenChange,
-  onSelectComplete,
-}: {
+                            value,
+                            onChange,
+                            options,
+                            placeholder,
+                            searchPlaceholder,
+                            noneLabel,
+                            noResults,
+                            disabled,
+                            open,
+                            onOpenChange,
+                            onClosed,
+                          }: {
   value?: string;
   onChange: (value: string) => void;
   options: Array<{ value: string; label: string; searchText?: string; detail?: string }>;
@@ -58,16 +58,22 @@ function SearchableSelect({
   noneLabel?: string;
   noResults: string;
   disabled?: boolean;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  onSelectComplete?: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Fires once Radix has fully finished closing this popover (animation included). */
+  onClosed?: () => void;
 }) {
   const selected = options.find((option) => option.value === value);
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" className="h-auto min-h-9 w-full min-w-0 justify-between overflow-hidden rounded-lg px-3 py-2 text-sm" disabled={disabled}>
+        <Button
+          variant="outline"
+          role="combobox"
+          className="h-auto min-h-9 w-full min-w-0 justify-between overflow-hidden rounded-lg px-3 py-2 text-sm"
+          disabled={disabled}
+        >
           <span className="flex min-w-0 flex-col items-start text-left">
             <span className={cn("truncate font-medium", !selected && "text-muted-foreground")}>
               {selected?.label ?? noneLabel ?? placeholder}
@@ -77,7 +83,21 @@ function SearchableSelect({
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[360px] p-0" align="start">
+      <PopoverContent
+        className="w-[360px] p-0"
+        align="start"
+        onCloseAutoFocus={(event) => {
+          // The trigger is either about to be permanently disabled (locked
+          // field) or the user just dismissed without picking anything —
+          // either way, returning focus to it isn't useful, and doing so is
+          // what caused the race with the next popover opening. This event
+          // is also our reliable "I am fully done closing" signal, so we
+          // use it to drive the next-field-opens logic instead of guessing
+          // with timers.
+          event.preventDefault();
+          onClosed?.();
+        }}
+      >
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
@@ -88,8 +108,6 @@ function SearchableSelect({
                   value={noneLabel}
                   onSelect={() => {
                     onChange("");
-                    onOpenChange?.(false);
-                    onSelectComplete?.();
                   }}
                 >
                   <Check className={cn("mr-2 size-4", !value ? "opacity-100" : "opacity-0")} />
@@ -102,8 +120,6 @@ function SearchableSelect({
                   value={option.searchText ?? `${option.label} ${option.detail ?? ""}`}
                   onSelect={() => {
                     onChange(option.value);
-                    onOpenChange?.(false);
-                    onSelectComplete?.();
                   }}
                 >
                   <Check className={cn("mr-2 size-4", value === option.value ? "opacity-100" : "opacity-0")} />
@@ -121,22 +137,27 @@ function SearchableSelect({
   );
 }
 
+type SelectorField = "map" | "time" | "mode" | "point" | "side";
+
 export function HllMapSelector({
-  mapId,
-  onMapIdChange,
-  time,
-  onTimeChange,
-  mode,
-  onModeChange,
-  pointValue,
-  onPointValueChange,
-  pointValueMode = "label",
-  pointShowGrid = true,
-  includeVariants = false,
-  includePoint = true,
-  disabled,
-  labels,
-}: {
+                                 mapId,
+                                 onMapIdChange,
+                                 time,
+                                 onTimeChange,
+                                 mode,
+                                 onModeChange,
+                                 pointValue,
+                                 onPointValueChange,
+                                 sideValue,
+                                 onSideValueChange,
+                                 pointValueMode = "label",
+                                 pointShowGrid = true,
+                                 includeVariants = false,
+                                 includePoint = true,
+                                 includeSide = false,
+                                 disabled,
+                                 labels,
+                               }: {
   mapId: string;
   onMapIdChange: (value: string) => void;
   time?: string;
@@ -145,10 +166,13 @@ export function HllMapSelector({
   onModeChange?: (value: string) => void;
   pointValue?: string;
   onPointValueChange?: (value: string) => void;
+  sideValue?: string;
+  onSideValueChange?: (value: string) => void;
   pointValueMode?: "id" | "label";
   pointShowGrid?: boolean;
   includeVariants?: boolean;
   includePoint?: boolean;
+  includeSide?: boolean;
   disabled?: boolean;
   labels: {
     map: string;
@@ -159,6 +183,8 @@ export function HllMapSelector({
     pointSearch: string;
     optional?: string;
     noResults: string;
+    side?: string;
+    reset?: string;
   };
 }) {
   const maps = getHllStratmapMaps();
@@ -166,47 +192,99 @@ export function HllMapSelector({
   const selectedPoint = mapId ? resolvePointValue(mapId, pointValue, pointValueMode) : undefined;
   const timeOptions = mapId ? getHllTimeOptions(mapId) : [];
   const modeOptions = mapId && time ? getHllModeOptions(mapId, time) : [];
-  const [mapOpen, setMapOpen] = useState(false);
-  const [timeOpen, setTimeOpen] = useState(false);
-  const [modeOpen, setModeOpen] = useState(false);
-  const [pointOpen, setPointOpen] = useState(false);
 
-  useEffect(() => {
-    if (!includeVariants) {
-      setTimeOpen(false);
-      setModeOpen(false);
-    }
-  }, [includeVariants]);
+  // Only the fields that are actually rendered, in the order they get
+  // filled in and locked.
+  const fieldOrder: SelectorField[] = [
+    "map",
+    ...(includeVariants ? (["time", "mode"] as const) : []),
+    ...(includePoint ? (["point"] as const) : []),
+    ...(includeSide ? (["side"] as const) : []),
+  ];
 
-  useEffect(() => {
-    if (!includePoint) {
-      setPointOpen(false);
+  // Explicit, not inferred from "does it have a value" — picking "None" on
+  // an optional field is still a choice and should lock it too.
+  const [lockedFields, setLockedFields] = useState<Record<SelectorField, boolean>>({
+    map: false,
+    time: false,
+    mode: false,
+    point: false,
+    side: false,
+  });
+  const [openField, setOpenField] = useState<SelectorField | null>(null);
+
+  const isLocked = (field: SelectorField) => lockedFields[field];
+
+  const dependencyDisabled = (field: SelectorField) => {
+    switch (field) {
+      case "time":
+        return !mapId;
+      case "mode":
+        return !mapId || !time;
+      case "point":
+        return !mapId;
+      default:
+        return false;
     }
-  }, [includePoint]);
+  };
+
+  const isOpenFor = (field: SelectorField) =>
+    openField === field && !isLocked(field) && !dependencyDisabled(field) && !disabled;
+
+  const openChangeHandler = (field: SelectorField) => (isOpen: boolean) => {
+    setOpenField((current) => {
+      if (isOpen) return field;
+      return current === field ? null : current;
+    });
+  };
+
+  const lockField = (field: SelectorField) => {
+    setLockedFields((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
+  };
+
+  const advanceFrom = (field: SelectorField) => {
+    const idx = fieldOrder.indexOf(field);
+    setOpenField(idx === -1 ? null : fieldOrder[idx + 1] ?? null);
+  };
+
+  // Only chain to the next field if THIS popover closed because the user
+  // just locked it in — not if they dismissed it (Escape / click outside)
+  // while it was still editable.
+  const handleClosed = (field: SelectorField) => () => {
+    if (lockedFields[field]) {
+      advanceFrom(field);
+    }
+  };
+
+  const hasAnyValue = fieldOrder.some((field) => lockedFields[field]);
+
+  const handleReset = () => {
+    onMapIdChange("");
+    onTimeChange?.("");
+    onModeChange?.("");
+    onPointValueChange?.("");
+    onSideValueChange?.("");
+    setLockedFields({ map: false, time: false, mode: false, point: false, side: false });
+    setOpenField(null);
+  };
 
   return (
-    <div className={`min-w-0 overflow-x-hidden grid gap-3 ${includeVariants ? "md:grid-cols-4" : "md:grid-cols-2"}`}>
-      <div className="min-w-0 space-y-1.5">
+    <div className="flex flex-row flex-wrap items-end gap-2 w-full min-w-0 overflow-x-hidden">
+      <div className="flex-1 min-w-48 space-y-1.5">
         <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.map}</div>
         <SearchableSelect
           value={mapId}
-          onChange={onMapIdChange}
-          disabled={disabled}
+          open={isOpenFor("map")}
+          onOpenChange={openChangeHandler("map")}
+          onClosed={handleClosed("map")}
+          onChange={(value) => {
+            onMapIdChange(value);
+            lockField("map");
+          }}
+          disabled={disabled || isLocked("map")}
           placeholder={labels.map}
           searchPlaceholder={labels.mapSearch}
           noResults={labels.noResults}
-          open={mapOpen}
-          onOpenChange={setMapOpen}
-          onSelectComplete={() => {
-            if (includeVariants) {
-              setTimeOpen(true);
-              return;
-            }
-
-            if (includePoint) {
-              setPointOpen(true);
-            }
-          }}
           options={maps.map((map) => ({
             value: map.id,
             label: getDisplayMapName(map.id),
@@ -215,64 +293,67 @@ export function HllMapSelector({
         />
       </div>
       {includeVariants ? (
-        <div className="min-w-0 space-y-1.5">
+        <div className="flex-1 min-w-48 space-y-1.5">
           <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.time}</div>
           <SearchableSelect
             value={time}
-            onChange={(value) => onTimeChange?.(value)}
-            disabled={disabled || !mapId}
+            open={isOpenFor("time")}
+            onOpenChange={openChangeHandler("time")}
+            onClosed={handleClosed("time")}
+            onChange={(value) => {
+              onTimeChange?.(value);
+              lockField("time");
+            }}
+            disabled={disabled || dependencyDisabled("time") || isLocked("time")}
             placeholder={labels.time}
             searchPlaceholder={labels.time}
             noResults={labels.noResults}
-            open={timeOpen}
-            onOpenChange={setTimeOpen}
-            onSelectComplete={() => setModeOpen(true)}
             options={timeOptions}
           />
         </div>
       ) : null}
       {includeVariants ? (
-        <div className="min-w-0 space-y-1.5">
+        <div className="flex-1 min-w-48 space-y-1.5">
           <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.mode}</div>
           <SearchableSelect
             value={mode}
-            onChange={(value) => onModeChange?.(value)}
-            disabled={disabled || !mapId || !time}
+            open={isOpenFor("mode")}
+            onOpenChange={openChangeHandler("mode")}
+            onClosed={handleClosed("mode")}
+            onChange={(value) => {
+              onModeChange?.(value);
+              lockField("mode");
+            }}
+            disabled={disabled || dependencyDisabled("mode") || isLocked("mode")}
             placeholder={labels.mode}
             searchPlaceholder={labels.mode}
             noResults={labels.noResults}
-            open={modeOpen}
-            onOpenChange={setModeOpen}
-            onSelectComplete={() => {
-              if (includePoint) {
-                setPointOpen(true);
-              }
-            }}
             options={modeOptions}
           />
         </div>
       ) : null}
       {includePoint ? (
-        <div className="min-w-0 space-y-1.5">
+        <div className="flex-1 min-w-48 space-y-1.5">
           <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.point}</div>
           <SearchableSelect
             value={selectedPoint?.id ?? ""}
+            open={isOpenFor("point")}
+            onOpenChange={openChangeHandler("point")}
+            onClosed={handleClosed("point")}
             onChange={(value) => {
               if (!value) {
                 onPointValueChange?.("");
-                return;
+              } else {
+                const point = resolvePointValue(mapId, value, "id");
+                onPointValueChange?.(point ? (pointValueMode === "id" ? point.id : point.label) : value);
               }
-
-              const point = resolvePointValue(mapId, value, "id");
-              onPointValueChange?.(point ? (pointValueMode === "id" ? point.id : point.label) : value);
+              lockField("point");
             }}
-            disabled={disabled || !mapId}
+            disabled={disabled || dependencyDisabled("point") || isLocked("point")}
             placeholder={labels.point}
             searchPlaceholder={labels.pointSearch}
             noneLabel={labels.optional}
             noResults={labels.noResults}
-            open={pointOpen}
-            onOpenChange={setPointOpen}
             options={(selectedMap?.strongpoints ?? []).map((point) => ({
               value: point.id,
               label: point.label,
@@ -281,6 +362,41 @@ export function HllMapSelector({
           />
         </div>
       ) : null}
+      {includeSide ? (
+        <div className="flex-1 min-w-48 space-y-1.5">
+          <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{labels.side ?? "Side"}</div>
+          <SearchableSelect
+            value={sideValue ?? ""}
+            open={isOpenFor("side")}
+            onOpenChange={openChangeHandler("side")}
+            onClosed={handleClosed("side")}
+            onChange={(value) => {
+              onSideValueChange?.(value);
+              lockField("side");
+            }}
+            disabled={disabled || isLocked("side")}
+            placeholder={labels.side ?? "Side"}
+            searchPlaceholder={labels.side ?? "Side"}
+            noneLabel={labels.optional}
+            noResults={labels.noResults}
+            options={[
+              { value: "Allies", label: "Allies" },
+              { value: "Axis", label: "Axis" },
+            ]}
+          />
+        </div>
+      ) : null}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-9 shrink-0 gap-1.5 rounded-lg"
+        disabled={disabled || !hasAnyValue}
+        onClick={handleReset}
+      >
+        <RotateCcw className="size-4" />
+        {labels.reset ?? "Reset"}
+      </Button>
     </div>
   );
 }
