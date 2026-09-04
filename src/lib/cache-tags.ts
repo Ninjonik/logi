@@ -23,6 +23,10 @@ export const appCacheTags = {
   users: () => "users",
   player: (userId: string) => `player:${userId}`,
   playerStats: (userId: string) => `player-stats:${userId}`,
+  publicProfile: (userId: string) => `public-profile:${userId}`,
+  publicClan: (guildId: string) => `public-clan:${guildId}`,
+  publicMatch: (eventId: string) => `public-match:${eventId}`,
+  publicDiscovery: () => "public-discovery",
   rosterImage: () => "roster-image:v3",
   rosterImageEvent: (eventId: string) => `roster-image:v3:${eventId}`,
 } as const;

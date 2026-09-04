@@ -12,6 +12,8 @@ export type EventUpsertInput = {
   description?: string;
   thumbnailUrl?: string;
   imageUrl?: string;
+  announcementChannelId?: string;
+  eventInfoChannelId?: string;
   meetingChannelId?: string;
   requiredRoleIds?: string[];
   rewardRoleIds?: string[];
@@ -26,6 +28,8 @@ export type EventUpsertInput = {
   gameStart: string;
   gameEnd: string;
   pingClan: boolean;
+  pingMode?: "none" | "clan" | "roles";
+  pingRoleIds?: string[];
   createForumChannel?: boolean;
   topicPresetId?: string;
   stratmapIds?: string[];
@@ -49,6 +53,8 @@ export function buildEventBasePayload(input: EventUpsertInput) {
     description: trimOptional(input.description),
     thumbnailUrl: trimOptional(input.thumbnailUrl),
     imageUrl: trimOptional(input.imageUrl),
+    announcementChannelId: trimOptional(input.announcementChannelId),
+    eventInfoChannelId: kind === "match" ? trimOptional(input.eventInfoChannelId) : undefined,
     meetingChannelId: trimOptional(input.meetingChannelId),
     requiredRoleIds: normalizeOptionalArray(input.requiredRoleIds).map((roleId) => roleId.trim()).filter(Boolean),
     rewardRoleIds: normalizeOptionalArray(input.rewardRoleIds).map((roleId) => roleId.trim()).filter(Boolean),
@@ -63,6 +69,8 @@ export function buildEventBasePayload(input: EventUpsertInput) {
     gameStart: input.gameStart,
     gameEnd: input.gameEnd,
     pingClan: input.pingClan,
+    pingMode: input.pingMode ?? (input.pingClan ? "clan" : "none"),
+    pingRoleIds: normalizeOptionalArray(input.pingRoleIds).map((roleId) => roleId.trim()).filter(Boolean),
     createForumChannel: kind === "training" ? false : input.createForumChannel ?? true,
     topicPresetId: input.topicPresetId,
     stratmapIds: normalizeOptionalArray(input.stratmapIds).map((id) => id.trim()).filter(Boolean),
@@ -106,6 +114,10 @@ export function buildUpdateEventPatch(
 ) {
   const nowIso = now.toISOString();
   const base = buildEventBasePayload(input);
+  // Discord message locations and recipients are creation-time choices.  The
+  // bot persists message IDs per location, so changing either later could
+  // update or delete a message belonging to a different event.
+  const { announcementChannelId: _announcementChannelId, eventInfoChannelId: _eventInfoChannelId, ...mutableBase } = base;
   const derivedStatus: EventStatus = deriveEventStatus({
     registrationEnd: input.registrationEnd,
     meetingStart: input.meetingStart,
@@ -114,7 +126,9 @@ export function buildUpdateEventPatch(
   }, now);
 
   return {
-    ...base,
+    ...mutableBase,
+    announcementChannelId: existing.announcementChannelId,
+    eventInfoChannelId: existing.eventInfoChannelId,
     status: derivedStatus,
     statusUpdatedAt: nowIso,
     concludedAt: derivedStatus === "concluded" ? existing.concludedAt ?? nowIso : undefined,

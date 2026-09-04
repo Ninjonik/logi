@@ -392,6 +392,12 @@ export function EventFormPanel({
   const [selectedMapId, setSelectedMapId] = useState("");
   const [selectedMapTime, setSelectedMapTime] = useState("");
   const [selectedMapMode, setSelectedMapMode] = useState("");
+  const [quickSchedule, setQuickSchedule] = useState({
+    eventStart: toDateTimeLocalInTimeZone(event.kind === "match" ? event.gameStart : event.meetingStart, timezone),
+    registrationHours: "24",
+    meetingMinutes: "30",
+    durationHours: "2",
+  });
 
   const form = useForm<EventInput>({
     resolver: zodResolver(eventSchema),
@@ -402,6 +408,8 @@ export function EventFormPanel({
       description: event.description ?? "",
       thumbnailUrl: event.thumbnailUrl ?? "",
       imageUrl: event.imageUrl ?? "",
+      announcementChannelId: event.announcementChannelId ?? (createMode ? discordConfig?.announcementsChannelId ?? "" : ""),
+      eventInfoChannelId: event.eventInfoChannelId ?? (createMode ? discordConfig?.eventInfoChannelId ?? "" : ""),
       meetingChannelId: event.meetingChannelId ?? "",
       requiredRoleIds: event.requiredRoleIds,
       rewardRoleIds: event.rewardRoleIds,
@@ -416,6 +424,8 @@ export function EventFormPanel({
       gameStart: toDateTimeLocalInTimeZone(event.gameStart, timezone),
       gameEnd: toDateTimeLocalInTimeZone(event.gameEnd, timezone),
       pingClan: event.pingClan,
+      pingMode: event.pingMode ?? (event.pingClan ? "clan" : "none"),
+      pingRoleIds: event.pingRoleIds ?? [],
       createForumChannel: event.createForumChannel,
       topicPresetId: event.topicPresetId ?? "",
       stratmapIds: event.stratmapIds ?? [],
@@ -430,7 +440,7 @@ export function EventFormPanel({
   const eventCategoryValue = form.watch("matchType");
   const sideValue = form.watch("side");
   const mapValue = form.watch("map");
-  const pingClan = form.watch("pingClan");
+  const pingMode = form.watch("pingMode");
   const createForumChannel = form.watch("createForumChannel");
   const eventMatchValues = form.watch(["map", "side", "cap"]);
   const presetMatchValues = {
@@ -439,13 +449,14 @@ export function EventFormPanel({
     cap: eventMatchValues[2],
   };
   const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
+  const announcementChannels = metadata?.channels?.filter((channel) => channel.type === 0 || channel.type === 5) ?? [];
   const roleNameById = useMemo(
     () => new Map((metadata?.roles ?? []).map((role) => [role.id, role.name])),
     [metadata?.roles],
   );
   const channelNameById = useMemo(
-    () => new Map(meetingChannels.map((channel) => [channel.id, channel.name])),
-    [meetingChannels],
+    () => new Map((metadata?.channels ?? []).map((channel) => [channel.id, channel.name])),
+    [metadata?.channels],
   );
   const presetMatchContext = useMemo<TopicPresetMatchContext>(
     () => ({
@@ -544,6 +555,19 @@ export function EventFormPanel({
     setSelectedMapMode(mode);
   }
 
+  function applyQuickSchedule() {
+    const eventStart = new Date(fromDateTimeLocalInTimeZone(quickSchedule.eventStart, timezone));
+    const registrationHours = Number(quickSchedule.registrationHours);
+    const meetingMinutes = Number(quickSchedule.meetingMinutes);
+    const durationHours = Number(quickSchedule.durationHours);
+    if (!Number.isFinite(eventStart.getTime()) || registrationHours < 0 || meetingMinutes < 0 || durationHours <= 0) return;
+    const toLocal = (value: Date) => toDateTimeLocalInTimeZone(value.toISOString(), timezone);
+    form.setValue("registrationEnd", toLocal(new Date(eventStart.getTime() - registrationHours * 60 * 60 * 1000)), { shouldDirty: true, shouldValidate: true });
+    form.setValue("meetingStart", toLocal(new Date(eventStart.getTime() - meetingMinutes * 60 * 1000)), { shouldDirty: true, shouldValidate: true });
+    form.setValue("gameStart", toLocal(eventStart), { shouldDirty: true, shouldValidate: true });
+    form.setValue("gameEnd", toLocal(new Date(eventStart.getTime() + durationHours * 60 * 60 * 1000)), { shouldDirty: true, shouldValidate: true });
+  }
+
   async function submit(values: EventInput) {
     const payload = {
       ...values,
@@ -565,6 +589,10 @@ export function EventFormPanel({
       useGeneralSignup: values.kind === "match" ? values.useGeneralSignup : false,
       thumbnailUrl: values.thumbnailUrl || undefined,
       imageUrl: values.imageUrl || undefined,
+      announcementChannelId: values.announcementChannelId || undefined,
+      eventInfoChannelId: values.kind === "match" ? values.eventInfoChannelId || undefined : undefined,
+      pingClan: values.pingMode === "clan",
+      pingRoleIds: values.pingMode === "roles" ? values.pingRoleIds : [],
     };
 
     const response = await fetch(
@@ -604,7 +632,7 @@ export function EventFormPanel({
       </CardHeader>
       <CardContent>
         <form className="space-y-6" onSubmit={form.handleSubmit(submit)}>
-          {eventKind === "match" && pingClan && !discordConfig?.announcementsChannelId ? (
+          {eventKind === "match" && pingMode !== "none" && !form.watch("announcementChannelId") ? (
             <ConfigNotice
               title={dictionary.event.notices.announcementsTitle}
               href={canEdit ? `/${locale}/dashboard/servers/${serverId}/settings` : undefined}
@@ -728,6 +756,12 @@ export function EventFormPanel({
               </div>
             ) : null}
             {eventKind === "match" ? (
+            <>
+            {canEdit ? <div className="md:col-span-2 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
+              <div><FieldLabel label={dictionary.event.quickScheduleTitle} /><p className="text-sm text-muted-foreground">{dictionary.event.quickScheduleDescription}</p></div>
+              <div className="grid gap-3 md:grid-cols-4"><Input type="datetime-local" value={quickSchedule.eventStart} onChange={(event) => setQuickSchedule((current) => ({ ...current, eventStart: event.target.value }))} /><Input type="number" min="0" value={quickSchedule.registrationHours} onChange={(event) => setQuickSchedule((current) => ({ ...current, registrationHours: event.target.value }))} aria-label={dictionary.event.registrationHoursBefore} /><Input type="number" min="0" value={quickSchedule.meetingMinutes} onChange={(event) => setQuickSchedule((current) => ({ ...current, meetingMinutes: event.target.value }))} aria-label={dictionary.event.meetingMinutesBefore} /><Input type="number" min="0.25" step="0.25" value={quickSchedule.durationHours} onChange={(event) => setQuickSchedule((current) => ({ ...current, durationHours: event.target.value }))} aria-label={dictionary.event.durationHours} /></div>
+              <div className="flex flex-wrap gap-3"><span className="text-sm text-muted-foreground">{dictionary.event.registrationHoursBefore} · {dictionary.event.meetingMinutesBefore} · {dictionary.event.durationHours}</span><Button type="button" variant="outline" className="rounded-xl" onClick={applyQuickSchedule}>{dictionary.event.applyQuickSchedule}</Button></div>
+            </div> : null}
             <div>
               <FieldLabel label={dictionary.event.fields.side}  />
               {canEdit ? (
@@ -749,6 +783,7 @@ export function EventFormPanel({
                 />
               ) : <ReadOnlyValue value={form.watch("side")} emptyLabel={dictionary.shared.notSet} />}
             </div>
+            </>
             ) : null}
             <div className="md:col-span-2">
               <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
@@ -815,6 +850,15 @@ export function EventFormPanel({
                   )}
                 />
               ) : <DiscordMarkdownText markdown={form.watch("description")} emptyLabel={dictionary.shared.notSet} className="min-h-24 rounded-xl" />}
+            </div>
+            <div className="md:col-span-2 rounded-xl border border-[#1e2d45] bg-[#313338] p-4 text-[#dbdee1]">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#b5bac1]">{dictionary.event.discordPreview}</p>
+              <div className="border-l-4 border-[#5865f2] pl-3">
+                <p className="font-semibold text-white">{form.watch("name") || dictionary.event.previewUntitled}</p>
+                <DiscordMarkdownText markdown={form.watch("description")} emptyLabel={dictionary.event.previewNoDescription} className="mt-1 text-sm text-[#dbdee1]" />
+                {form.watch("thumbnailUrl") ? <img src={form.watch("thumbnailUrl")} alt="" className="mt-3 size-20 rounded object-cover" /> : null}
+                {form.watch("imageUrl") ? <img src={form.watch("imageUrl")} alt="" className="mt-3 max-h-56 rounded object-cover" /> : null}
+              </div>
             </div>
             <div className="md:col-span-2">
               <FieldLabel label={dictionary.event.fields.matchType}  />
@@ -886,6 +930,20 @@ export function EventFormPanel({
               </div>
             </div>
             ) : null}
+            <div className="md:col-span-2 rounded-xl border border-border/60 p-4">
+              <FieldLabel label={dictionary.event.fields.announcementChannelId} />
+              {canEdit && createMode ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Controller control={form.control} name="announcementChannelId" render={({ field }) => (
+                    <DiscordEntitySelect value={field.value || undefined} onChange={(value) => field.onChange(value ?? "")} options={announcementChannels} placeholder={dictionary.event.fields.announcementChannelId} noneLabel={dictionary.shared.notSet} />
+                  )} />
+                  {eventKind === "match" ? <Controller control={form.control} name="eventInfoChannelId" render={({ field }) => (
+                    <DiscordEntitySelect value={field.value || undefined} onChange={(value) => field.onChange(value ?? "")} options={announcementChannels} placeholder={dictionary.event.fields.eventInfoChannelId} noneLabel={dictionary.shared.notSet} />
+                  )} /> : null}
+                </div>
+              ) : <ReadOnlyList values={[form.watch("announcementChannelId"), eventKind === "match" ? form.watch("eventInfoChannelId") : undefined].filter((value): value is string => Boolean(value)).map((id) => channelNameById.get(id) ?? id)} emptyLabel={dictionary.shared.notSet} />}
+              <p className="mt-2 text-sm text-muted-foreground">{createMode ? dictionary.event.channelRoutingCreateHelp : dictionary.event.channelRoutingLockedHelp}</p>
+            </div>
             <div>
               <FieldLabel label={dictionary.event.fields.registrationEnd} required  />
               {canEdit ? <Input type="datetime-local" {...form.register("registrationEnd")} className="rounded-xl" /> : <ReadOnlyValue value={form.watch("registrationEnd")} emptyLabel={dictionary.shared.notSet} />}
@@ -1140,18 +1198,15 @@ export function EventFormPanel({
             {eventKind === "match" ? (
             <div className="md:col-span-2">
               {canEdit ? (
-                <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
-                  <div>
-                    <FieldLabel label={dictionary.event.fields.pingClan}  />
-                  </div>
-                  <Controller
-                    control={form.control}
-                    name="pingClan"
-                    render={({ field }) => <Switch checked={field.value} onCheckedChange={field.onChange} />}
-                  />
+                <div className="space-y-3 rounded-xl border border-border/60 p-4">
+                  <FieldLabel label={dictionary.event.fields.pingMode} />
+                  <Controller control={form.control} name="pingMode" render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">{dictionary.event.pingNone}</SelectItem><SelectItem value="clan">{dictionary.event.pingClanOption}</SelectItem><SelectItem value="roles">{dictionary.event.pingRolesOption}</SelectItem></SelectContent></Select>
+                  )} />
+                  {pingMode === "roles" ? <Controller control={form.control} name="pingRoleIds" render={({ field }) => <DiscordMultiEntitySelect value={field.value ?? []} onChange={field.onChange} options={metadata?.roles ?? []} placeholder={dictionary.event.fields.pingRoleIds} />} /> : null}
                 </div>
               ) : (
-                <ReadOnlyValue value={form.watch("pingClan") ? dictionary.tables.enabled : dictionary.tables.disabled} emptyLabel={dictionary.shared.notSet} />
+                <ReadOnlyValue value={pingMode === "clan" ? dictionary.event.pingClanOption : pingMode === "roles" ? (form.watch("pingRoleIds") ?? []).map((id) => roleNameById.get(id) ?? id).join(", ") : dictionary.event.pingNone} emptyLabel={dictionary.shared.notSet} />
               )}
             </div>
             ) : null}

@@ -234,17 +234,21 @@ async function syncEvent(
     createForumChannel: event.createForumChannel,
   });
 
-  const splitChannels = event.kind === "match" && Boolean(payload.config.announcementsChannelId && payload.config.eventInfoChannelId);
+  // New events snapshot their routing; records created before this field was
+  // introduced intentionally retain the central-setting fallback.
+  const announcementChannelId = event.announcementChannelId ?? payload.config.announcementsChannelId;
+  const eventInfoChannelId = event.eventInfoChannelId ?? payload.config.eventInfoChannelId;
+  const splitChannels = event.kind === "match" && Boolean(announcementChannelId && eventInfoChannelId);
   logInfo("event-sync", "Resolved event message channels", {
     eventId: event.id,
     eventKind: event.kind,
-    registrationChannelId: payload.config.announcementsChannelId,
-    eventInfoChannelId: payload.config.eventInfoChannelId,
+    registrationChannelId: announcementChannelId,
+    eventInfoChannelId,
     splitChannels,
     rosterPublished: Boolean(roster?.published),
   });
-  const registrationChannel = payload.config.announcementsChannelId ? await guild.channels.fetch(payload.config.announcementsChannelId).catch(() => null) : null;
-  const infoChannel = splitChannels && payload.config.eventInfoChannelId ? await guild.channels.fetch(payload.config.eventInfoChannelId).catch(() => null) : null;
+  const registrationChannel = announcementChannelId ? await guild.channels.fetch(announcementChannelId).catch(() => null) : null;
+  const infoChannel = splitChannels && eventInfoChannelId ? await guild.channels.fetch(eventInfoChannelId).catch(() => null) : null;
   if (splitChannels && registrationChannel?.isTextBased() && infoChannel?.isTextBased() && registrationChannel.type !== ChannelType.GuildVoice && infoChannel.type !== ChannelType.GuildVoice) {
     const registrationText = registrationChannel as TextChannel;
     const infoText = infoChannel as TextChannel;
@@ -272,7 +276,7 @@ async function syncEvent(
     }
   }
   const shouldUseEventInfoChannel = false;
-  const displayChannelId = splitChannels ? undefined : payload.config.announcementsChannelId;
+  const displayChannelId = splitChannels ? undefined : announcementChannelId;
   if (displayChannelId && !(event.status === "concluded" && !announcementMessageId)) {
     const channel = await guild.channels.fetch(displayChannelId).catch(() => null);
     if (
@@ -312,8 +316,15 @@ async function syncEvent(
           messageId: existingMessage.id,
         });
       } else {
+        const pingRoleIds = event.pingMode === "roles"
+          ? event.pingRoleIds ?? []
+          : event.pingMode === "clan" || (event.pingMode === undefined && event.pingClan)
+            ? (payload.config.clanRoleId ? [payload.config.clanRoleId] : [])
+            : [];
         const created = await textChannel.send({
           ...buildAnnouncementV2Message(payload, event, userDisplayNames),
+          content: pingRoleIds.map((roleId) => `<@&${roleId}>`).join(" ") || undefined,
+          allowedMentions: { roles: pingRoleIds, parse: [] },
           flags: MessageFlags.IsComponentsV2,
         });
         announcementMessageId = created.id;
@@ -328,14 +339,14 @@ async function syncEvent(
       logWarn("announcement", "Announcement channel is unavailable or not a text channel", {
         eventId: event.id,
         guildId: payload.config.guildId,
-        channelId: payload.config.announcementsChannelId,
+        channelId: announcementChannelId,
       });
     }
   } else {
     logInfo("announcement", "Skipping announcement sync", {
       eventId: event.id,
       guildId: payload.config.guildId,
-      reason: payload.config.announcementsChannelId
+      reason: announcementChannelId
         ? "concluded-without-existing-message"
         : "announcements-channel-not-configured",
     });

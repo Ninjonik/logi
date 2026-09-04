@@ -30,7 +30,8 @@ const users = defineTable({
   updatedAt: v.string(),
 })
   .index("discordId", ["discordId"])
-  .index("id", ["id"]);
+  .index("id", ["id"])
+  .searchIndex("name", { searchField: "name" });
 
 const guildMember = v.object({
   id: v.string(),
@@ -449,6 +450,10 @@ export default defineSchema({
     description: v.optional(v.string()),
     thumbnailUrl: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
+    // Copied from the clan defaults when an event is created.  Keeping these
+    // on the event prevents later setting changes from moving existing bot messages.
+    announcementChannelId: v.optional(v.string()),
+    eventInfoChannelId: v.optional(v.string()),
     meetingChannelId: v.optional(v.string()),
     requiredRoleIds: v.optional(v.array(v.string())),
     rewardRoleIds: v.optional(v.array(v.string())),
@@ -473,6 +478,8 @@ export default defineSchema({
     gameStart: v.string(),
     gameEnd: v.string(),
     pingClan: v.boolean(),
+    pingMode: v.optional(v.union(v.literal("none"), v.literal("clan"), v.literal("roles"))),
+    pingRoleIds: v.optional(v.array(v.string())),
     createForumChannel: v.optional(v.boolean()),
     topicPresetId: v.optional(v.id("topicPresets")),
     stratmapIds: v.optional(v.array(v.id("stratmaps"))),
