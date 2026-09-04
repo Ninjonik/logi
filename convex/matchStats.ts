@@ -1,4 +1,6 @@
 import { query, mutation } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
 import { v } from "convex/values";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
@@ -143,6 +145,42 @@ function normalizeDoc<T extends { _id: unknown; eventId: unknown; matchId: strin
   };
 }
 
+async function upsertMatchPreview(ctx: MutationCtx, event: Pick<Doc<"events">, "_id" | "name">, raw: { map: { pretty_name: string }; result: { allied: number; axis: number } }, now: string) {
+  const entityId = String(event._id);
+  const score = `${raw.result.allied} – ${raw.result.axis}`;
+  const existing = await ctx.db.query("publicPreviews").withIndex("entity", (q) => q.eq("entityType", "match").eq("entityId", entityId)).unique();
+  const preview = { entityType: "match" as const, entityId, title: `${event.name} · ${score}`, description: `${raw.map.pretty_name} · Recorded match result`, imageVersion: now, updatedAt: now, expiresAt: new Date(new Date(now).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() };
+  if (existing) await ctx.db.patch(existing._id, preview); else await ctx.db.insert("publicPreviews", preview);
+}
+
+function previewExpiry(now: string) {
+  return new Date(new Date(now).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+}
+
+async function upsertPreview(ctx: MutationCtx, entityType: "player" | "clan", entityId: string, title: string, description: string, now: string) {
+  const existing = await ctx.db.query("publicPreviews").withIndex("entity", (q) => q.eq("entityType", entityType).eq("entityId", entityId)).unique();
+  const preview = { entityType, entityId, title, description, imageVersion: now, updatedAt: now, expiresAt: previewExpiry(now) };
+  if (existing) await ctx.db.patch(existing._id, preview); else await ctx.db.insert("publicPreviews", preview);
+}
+
+async function refreshRelatedPreviews(ctx: MutationCtx, event: Pick<Doc<"events">, "_id" | "guildId">, now: string) {
+  const guild = await ctx.db.query("guilds").withIndex("discordId", (q) => q.eq("discordId", event.guildId)).unique()
+    ?? await ctx.db.query("guilds").withIndex("id", (q) => q.eq("id", event.guildId)).unique();
+  if (guild) await upsertPreview(ctx, "clan", event.guildId, guild.name, "Public clan profile and recorded match history.", now);
+
+  const stats = await ctx.db.query("playerStats").collect();
+  const linked = stats.filter((entry) => entry.userId && Object.prototype.hasOwnProperty.call(entry.matches, String(event._id)));
+  await Promise.all(linked.map(async (entry) => {
+    const user = await ctx.db.query("users").withIndex("id", (q) => q.eq("id", entry.userId!)).unique()
+      ?? await ctx.db.query("users").withIndex("discordId", (q) => q.eq("discordId", entry.userId!)).unique();
+    if (!user) return;
+    const matches = Object.values(entry.matches);
+    const kills = matches.reduce((total, match) => total + match.kills, 0);
+    const deaths = matches.reduce((total, match) => total + match.deaths, 0);
+    await upsertPreview(ctx, "player", entry.userId!, user.name, `${matches.length} recorded matches · ${(deaths ? kills / deaths : kills).toFixed(2)} K/D`, now);
+  }));
+}
+
 export const upsertForEvent = mutation({
   args: {
     secret: v.string(),
@@ -177,6 +215,8 @@ export const upsertForEvent = mutation({
         matchStatsId: existing._id,
         updatedAt: now,
       });
+      await upsertMatchPreview(ctx, event, args.raw, now);
+      await refreshRelatedPreviews(ctx, event, now);
 
       return String(existing._id);
     }
@@ -196,6 +236,8 @@ export const upsertForEvent = mutation({
       matchStatsId: insertedId,
       updatedAt: now,
     });
+    await upsertMatchPreview(ctx, event, args.raw, now);
+    await refreshRelatedPreviews(ctx, event, now);
 
     return String(insertedId);
   },
