@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as competitions from "../competitions.js";
 import type * as crons from "../crons.js";
 import type * as discordConfig from "../discordConfig.js";
 import type * as discordMembership from "../discordMembership.js";
@@ -48,6 +49,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  competitions: typeof competitions;
   crons: typeof crons;
   discordConfig: typeof discordConfig;
   discordMembership: typeof discordMembership;

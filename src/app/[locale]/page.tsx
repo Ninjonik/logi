@@ -1,8 +1,7 @@
 import Link from "next/link"
-import { ArrowRight, BarChart3, CalendarDays, Download, Github, HeartHandshake, Shield, SquareTerminal, Trophy, Users } from "lucide-react"
+import { ArrowRight, BarChart3, CalendarDays, Download, HeartHandshake, Shield, SquareTerminal, Trophy, Users } from "lucide-react"
 
-import { UserAvatar } from "@/components/auth/user-avatar"
-import { Logo } from "@/components/logo"
+import { PublicSiteShell } from "@/components/public/public-site-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,8 +11,6 @@ import { getDictionary } from "@/i18n/dictionaries"
 import { getCurrentPlayer } from "@/lib/auth"
 import { getLatestLogiCommsWindowsDownload } from "@/lib/logicomms"
 
-const githubHref = "https://github.com/ninjonik/logi"
-
 export default async function LocaleHomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   const resolvedLocale = isLocale(locale) ? locale : defaultLocale
@@ -22,20 +19,8 @@ export default async function LocaleHomePage({ params }: { params: Promise<{ loc
   const pillars = [[dictionary.home.pillars.operationsTitle, dictionary.home.pillars.operationsDescription, SquareTerminal], [dictionary.home.pillars.communitiesTitle, dictionary.home.pillars.communitiesDescription, Shield], [dictionary.home.pillars.contributorsTitle, dictionary.home.pillars.contributorsDescription, HeartHandshake]] as const
   const features = [dictionary.home.featureEvents, dictionary.home.featureRosters, dictionary.home.featureDiscord, dictionary.home.featureTools]
 
-  return <main className="min-h-screen bg-background text-foreground">
-    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-6 sm:px-8 lg:px-10">
-      <header className="flex items-center justify-between border-b pb-5"><Link href={`/${resolvedLocale}`}
-                                                                                className="inline-flex items-center gap-3 text-sm font-medium tracking-[0.18em] uppercase"><span
-        className="flex size-11 items-center justify-center rounded-xl border bg-card"><Logo
-        size={22} /></span><span>{dictionary.app.name}</span></Link>
-        <nav className="hidden items-center gap-5 text-sm text-muted-foreground lg:flex"><Link href={`/${resolvedLocale}/community`} className="hover:text-foreground">{dictionary.home.community}</Link><Link href="#features" className="hover:text-foreground">{dictionary.home.featuresNav}</Link><Link href="#logicomms" className="hover:text-foreground">LogiComms</Link></nav>
-        <div className="flex items-center gap-3"><Button asChild variant="ghost"><Link href={githubHref} target="_blank"
-                                                                                       rel="noreferrer"><Github />GitHub</Link></Button>{user ?
-          <Button asChild variant="outline"><Link href={`/${resolvedLocale}/dashboard`}><UserAvatar
-            avatarLink={user.avatar} className="size-5" />{dictionary.home.dashboard}</Link></Button> :
-          <Button asChild><Link
-            href={`/${resolvedLocale}/login`}>{dictionary.home.openApp}<ArrowRight /></Link></Button>}</div>
-      </header>
+  return <PublicSiteShell locale={resolvedLocale}><main className="flex-1">
+    <div className="mx-auto flex w-full max-w-6xl flex-col px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       {user ? <p
         className="mt-4 text-sm text-muted-foreground">{dictionary.home.loggedInAs.replace("{name}", user.name)}</p> : null}
       <section className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[1.05fr_.95fr] lg:py-20">
@@ -48,7 +33,7 @@ export default async function LocaleHomePage({ params }: { params: Promise<{ loc
           </div>
           <div className="flex flex-wrap gap-3"><Button asChild size="lg"><Link
             href={`/${resolvedLocale}/${user ? "dashboard" : "login"}`}>{user ? dictionary.home.dashboard : dictionary.home.signIn}<ArrowRight /></Link></Button><Button
-            asChild size="lg" variant="outline"><Link href={`/${resolvedLocale}/community`}>{dictionary.home.community}</Link></Button>
+            asChild size="lg" variant="outline"><Link href={`/${resolvedLocale}/community`}>{dictionary.home.community}</Link></Button><Button asChild size="lg" variant="outline"><Link href={`/${resolvedLocale}/competitions`}>Competitions</Link></Button>
           </div>
           <div
             className="grid gap-3 sm:grid-cols-2">{[dictionary.home.freeToUse, dictionary.home.sourceAvailable, dictionary.home.contributionsWelcome, dictionary.home.noMarketingFiller].map((item) =>
@@ -83,7 +68,7 @@ export default async function LocaleHomePage({ params }: { params: Promise<{ loc
           className="leading-6">{description}</CardDescription></div>
       </CardHeader></Card>)}</section>
     </div>
-  </main>
+  </main></PublicSiteShell>
 }
 
 function HeroMetric({ icon: Icon, label, value }: { icon: typeof CalendarDays; label: string; value: string }) { return <div className="rounded-xl border border-white/15 bg-white/10 p-3"><Icon className="size-4 text-white/75" /><p className="mt-3 text-xl font-semibold">{value}</p><p className="text-xs text-white/70">{label}</p></div> }

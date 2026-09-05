@@ -493,6 +493,7 @@ export default defineSchema({
     concludedAt: v.optional(v.string()),
     eventResult: v.optional(eventResult),
     matchStatsId: v.optional(v.id("matchStats")),
+    competitionFixtureId: v.optional(v.id("competitionFixtures")),
     attendanceReminderLog: v.optional(v.array(attendanceReminder)),
     participants: v.optional(v.array(eventParticipant)),
     signUps: v.optional(v.array(signUp)),
@@ -502,6 +503,14 @@ export default defineSchema({
     createdAt: v.string(),
     updatedAt: v.optional(v.string()),
   }).index("guildId", ["guildId"]),
+  competitions: defineTable({
+    slug: v.string(), name: v.string(), season: v.string(), description: v.optional(v.string()),
+    format: v.object({ kind: v.literal("league_with_playoffs"), standings: v.literal("ecl_cap_score") }),
+    createdAt: v.string(), updatedAt: v.string(),
+  }).index("slug", ["slug"]),
+  competitionDivisions: defineTable({ competitionId: v.id("competitions"), name: v.string(), order: v.number(), createdAt: v.string() }).index("competitionId", ["competitionId"]),
+  competitionTeams: defineTable({ competitionId: v.id("competitions"), guildId: v.id("guilds"), divisionId: v.optional(v.id("competitionDivisions")), withdrawn: v.boolean(), createdAt: v.string(), updatedAt: v.string() }).index("competitionId", ["competitionId"]).index("guildId", ["guildId"]).index("competitionId_guildId", ["competitionId", "guildId"]),
+  competitionFixtures: defineTable({ competitionId: v.id("competitions"), divisionId: v.optional(v.id("competitionDivisions")), phase: v.union(v.literal("league"), v.literal("playoff"), v.literal("relegation")), teamAId: v.id("guilds"), teamBId: v.id("guilds"), scheduledAt: v.optional(v.string()), scoreA: v.optional(v.number()), scoreB: v.optional(v.number()), status: v.union(v.literal("scheduled"), v.literal("final"), v.literal("forfeit")), eventId: v.optional(v.id("events")), createdAt: v.string(), updatedAt: v.string() }).index("competitionId", ["competitionId"]).index("eventId", ["eventId"]),
   eventScheduleJobs: defineTable({
     eventId: v.id("events"),
     kind: v.union(v.literal("close-registration"), v.literal("start-event"), v.literal("conclude-event"), v.literal("attendance-reminder")),

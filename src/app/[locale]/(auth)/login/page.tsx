@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { DiscordSignInButton } from "@/components/auth/discord-sign-in-button";
 import { Logo } from "@/components/logo";
+import { PublicPage, PublicSiteShell } from "@/components/public/public-site-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
@@ -26,7 +27,7 @@ export default async function LoginPage({
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#101826,#0a0f18)] px-6 py-12 text-white">
+    <PublicSiteShell locale={safeLocale}><PublicPage className="flex max-w-sm items-center">
       <Card className="w-full max-w-sm rounded-2xl border-white/10 bg-white/6 text-white shadow-2xl shadow-black/30 backdrop-blur-xl">
         <CardContent className="flex flex-col items-center gap-7 p-8 text-center">
           <div className="flex size-28 items-center justify-center rounded-2xl border border-white/10 bg-black/20">
@@ -38,6 +39,6 @@ export default async function LoginPage({
           </div>
         </CardContent>
       </Card>
-    </main>
+    </PublicPage></PublicSiteShell>
   );
 }

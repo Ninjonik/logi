@@ -32,8 +32,12 @@ export const enMessages = {
     description:
       "Organize clan events, build rosters, publish briefings, and prepare Discord-connected operations.",
   },
+  publicNavigation: {
+    privacy: "Privacy",
+    terms: "Terms",
+  },
   home: {
-    openApp: "Open app", signIn: "Sign in with Discord", contribute: "Contribute on GitHub", loggedInAs: "Signed in as {name}", dashboard: "Dashboard", community: "Explore community", featuresNav: "Features", liveOperations: "Operations, connected", commandCenter: "Your operation command center", commandCenterDescription: "Events, rosters, Discord coordination, and public match history in one place.", eventsMetric: "events", playersMetric: "players", matchesMetric: "matches", nextOperation: "Next operation", registrationOpen: "Registration open", sampleOperation: "Saturday competitive match", sampleOperationMeta: "19:30 · 31 registered", featuresEyebrow: "Built for organized teams", featureEventsDescription: "Plan every stage of an operation with clear times and Discord-ready announcements.", featureRostersDescription: "Build lineups, coordinate attendance, and keep everyone on the same page.", featureStats: "Public match history", featureStatsDescription: "Share player profiles, results, and detailed match analysis with your community.",
+    openApp: "Open app", signIn: "Sign in with Discord", contribute: "Contribute on GitHub", loggedInAs: "Signed in as {name}", dashboard: "Dashboard", community: "Explore community", competitions: "Competitions", featuresNav: "Features", liveOperations: "Operations, connected", commandCenter: "Your operation command center", commandCenterDescription: "Events, rosters, Discord coordination, and public match history in one place.", eventsMetric: "events", playersMetric: "players", matchesMetric: "matches", nextOperation: "Next operation", registrationOpen: "Registration open", sampleOperation: "Saturday competitive match", sampleOperationMeta: "19:30 · 31 registered", featuresEyebrow: "Built for organized teams", featureEventsDescription: "Plan every stage of an operation with clear times and Discord-ready announcements.", featureRostersDescription: "Build lineups, coordinate attendance, and keep everyone on the same page.", featureStats: "Public match history", featureStatsDescription: "Share player profiles, results, and detailed match analysis with your community.",
     badge: "Discord operations for organized groups", title: "Logi keeps community operations readable, structured, and in one place.", description: "Logi is an open-source platform for groups that run events, rosters, trainings, matches, and Discord coordination.",
     featuresTitle: "What it actually does", featuresDescription: "Plan events, manage signups, build rosters, prepare matches, and keep Discord synchronized.", featureEvents: "Events, trainings, and match workflows", featureRosters: "Roster and attendance management", featureDiscord: "Discord-linked server administration", featureTools: "Shared tooling for organized communities",
     commsBadge: "LogiComms", commsTitle: "Clear squad communication without the overhead.", commsDescription: "LogiComms is a lightweight, fast desktop app for efficient in-squad communication. Set it up quickly and tailor it to how your unit operates.", commsDownload: "Download for Windows", commsUnavailable: "Windows download is temporarily unavailable.",
@@ -142,7 +146,17 @@ export const enMessages = {
     operations: "Operations",
     configuration: "Configuration",
     bot: "Bot",
+    competitions: "Competitions",
     logiComms: "LogiComms",
+  },
+  competition: {
+    title: "Competitions", description: "Official competition information and results tracked in Logi.",
+    back: "Back to Logi", standings: "View standings and results", rules: "Official rules", website: "Official website",
+    seasonSummary: "{season} season · standings and results tracked by Logi", divisions: "{count} divisions · live standings and recorded results",
+    results: "Results", statistics: "Match statistics", statisticsUnavailable: "Statistics unavailable", noCompetitions: "No public competitions have been created yet.",
+    capScore: "Cap Score", regularWins: "Regular Wins", totalWins: "Total Wins", regularMatches: "Regular Matches", totalMatches: "Total Matches", team: "Team", withdrawn: "(withdrawn)",
+    manageDescription: "Manage global seasons, teams, fixtures, and result links.", manualResult: "Add a manual result", manualResultDescription: "Use this when no Logi match event is linked.", division: "Division", teamA: "Team A", teamB: "Team B", chooseTeam: "Choose team", teamAScore: "Team A score", teamBScore: "Team B score", saveResult: "Save result", saving: "Saving…", resultSaved: "Result saved.", resultSaveFailed: "Unable to save the result.",
+    mergeAliases: "Merge clan aliases", mergeDescription: "Move competition history from a ghost or alias clan to the real clan.", clanToKeep: "Clan to keep", chooseRealClan: "Choose the real clan", ghostToMerge: "Ghost or alias to merge", chooseDuplicate: "Choose the duplicate", mergeClans: "Merge clans", merging: "Merging…", mergeFailed: "Unable to merge clans.", mergeSuccess: "Clan history merged.", createEcl: "Create ECL 2026", createFailed: "Unable to create ECL.", createSuccess: "ECL 2026 created.",
   },
   common: {
     actions: "Actions",

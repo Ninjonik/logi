@@ -78,7 +78,7 @@ export const getMatch = query({
       ctx.db.query("matchStats").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique(),
     ]);
     if (!event || !match || event.matchStatsId !== match._id) return null;
-    return { ...match, id: String(match._id), eventId: String(event._id) };
+    return { ...match, id: String(match._id), eventId: String(event._id), eventName: event.name, thumbnailUrl: event.thumbnailUrl };
   },
 });
 
@@ -93,7 +93,8 @@ export const getClan = query({
       ctx.db.query("events").withIndex("guildId", (q) => q.eq("guildId", guildId)).collect(),
     ]);
     const activeMembers = assignments.filter((assignment) => assignment.status === "active");
-    if (!activeMembers.length) return null;
+    const memberCount = new Set([...activeMembers.map((assignment) => assignment.userId), ...guild.memberIds]).size;
+    if (memberCount < 1) return null;
     const recordedEvents = events.filter((event) => event.kind !== "training" && event.matchStatsId);
     const recentMatches = (await Promise.all(recordedEvents.sort((left, right) => new Date(right.gameEnd).getTime() - new Date(left.gameEnd).getTime()).slice(0, 12).map(async (event) => {
       const match = await ctx.db.query("matchStats").withIndex("eventId", (q) => q.eq("eventId", event._id)).unique();
@@ -102,20 +103,25 @@ export const getClan = query({
     }))).filter((match): match is NonNullable<typeof match> => Boolean(match));
     const decidedMatches = recordedEvents.filter((event) => event.eventResult?.outcome === "victory" || event.eventResult?.outcome === "defeat");
     const wins = recordedEvents.filter((event) => event.eventResult?.outcome === "victory").length;
-    return { id: guildId, name: guild.name, avatar: guild.avatar, description: guild.description, memberCount: activeMembers.length, stats: { matches: recordedEvents.length, wins, winRate: decidedMatches.length ? wins / decidedMatches.length : 0 }, recentMatches, updatedAt: guild.updatedAt };
+    return { id: guildId, name: guild.name, avatar: guild.avatar, description: guild.description, memberCount, stats: { matches: recordedEvents.length, wins, winRate: decidedMatches.length ? wins / decidedMatches.length : 0 }, recentMatches, updatedAt: guild.updatedAt };
   },
 });
 
 export const listClans = query({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
-    const result = await ctx.db.query("guilds").order("desc").paginate(args.paginationOpts);
-    const page = (await Promise.all(result.page.map(async (guild) => {
+    // Filter before paging: otherwise recently-created ghost competition teams
+    // can fill an entire page and hide eligible real clans behind it.
+    const guilds = (await ctx.db.query("guilds").collect()).sort((left, right) => right._creationTime - left._creationTime);
+    const eligible = (await Promise.all(guilds.map(async (guild) => {
       const assignments = await ctx.db.query("userAssignments").withIndex("serverId", (q) => q.eq("serverId", getGuildDiscordId(guild))).collect();
-      const memberCount = assignments.filter((assignment) => assignment.status === "active").length;
-      return memberCount ? { id: getGuildDiscordId(guild), name: guild.name, avatar: guild.avatar, description: guild.description, memberCount } : null;
+      const memberCount = new Set([...assignments.filter((assignment) => assignment.status === "active").map((assignment) => assignment.userId), ...guild.memberIds]).size;
+      return memberCount >= 1 ? { id: getGuildDiscordId(guild), name: guild.name, avatar: guild.avatar, description: guild.description, memberCount } : null;
     }))).filter((guild): guild is NonNullable<typeof guild> => Boolean(guild));
-    return { ...result, page };
+    const offset = args.paginationOpts.cursor ? Number(args.paginationOpts.cursor) : 0;
+    const page = eligible.slice(offset, offset + args.paginationOpts.numItems);
+    const nextOffset = offset + page.length;
+    return { page, isDone: nextOffset >= eligible.length, continueCursor: nextOffset >= eligible.length ? "" : String(nextOffset) };
   },
 });
 
