@@ -10,6 +10,7 @@ import { LinkMissingDiscordIdsButton } from "@/components/app/link-missing-disco
 import { MigrateMembershipStatusButton } from "@/components/app/migrate-membership-status-button";
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form";
 import { AutoLinkPlatformIdsButton } from "@/components/app/auto-link-platform-ids-button";
+import { ApiKeyManager } from "@/components/app/api-key-manager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
@@ -39,6 +40,7 @@ export default async function ServerSettingsPage({
       <PageHeader title={dictionary.serverSettings.title} description={dictionary.serverSettings.pageDescription} />
       <div className="space-y-6 px-4 lg:px-6">
         {canAdmin ? <ServerFrontendSettingsForm server={server} dictionary={dictionary} guildLoginUrl={guildLoginUrl} /> : null}
+        {canAdmin ? <Card className="rounded-2xl border-border/60"><CardHeader><CardTitle>Website API</CardTitle></CardHeader><CardContent><ApiKeyManager serverId={serverId} /></CardContent></Card> : null}
         {canAdmin ? (
           <DiscordServerSettingsForm
             serverId={serverId}

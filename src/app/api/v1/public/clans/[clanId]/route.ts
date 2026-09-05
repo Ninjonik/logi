@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server";
+import { getPublicClan } from "@/lib/read-models/public-profiles";
+import { checkPublicApiRateLimit } from "@/lib/public-api";
+export async function GET(request: Request, { params }: { params: Promise<{ clanId: string }> }) { const limit = await checkPublicApiRateLimit(`public:${request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"}`, 60); if (!limit.allowed) return NextResponse.json({ error: { code: "rate_limited", message: "Too many requests." } }, { status: 429 }); const { clanId } = await params; const data = await getPublicClan(clanId); return data ? NextResponse.json({ data }, { headers: { "Cache-Control": "public, max-age=60" } }) : NextResponse.json({ error: { code: "not_found", message: "Clan not found." } }, { status: 404 }); }

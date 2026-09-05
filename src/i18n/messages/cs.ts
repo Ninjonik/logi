@@ -147,6 +147,7 @@ export const csMessages = {
     configuration: "Konfigurace",
     bot: "Bot",
     competitions: "Soutěže",
+    articles: "Články",
     logiComms: "LogiComms",
   },
   competition: {
@@ -158,6 +159,7 @@ export const csMessages = {
     manageDescription: "Správa globálních sezón, týmů, zápasů a odkazů na výsledky.", manualResult: "Přidat ruční výsledek", manualResultDescription: "Použijte, když není propojena událost zápasu v Logi.", division: "Divize", teamA: "Tým A", teamB: "Tým B", chooseTeam: "Vyberte tým", teamAScore: "Skóre týmu A", teamBScore: "Skóre týmu B", saveResult: "Uložit výsledek", saving: "Ukládání…", resultSaved: "Výsledek uložen.", resultSaveFailed: "Výsledek se nepodařilo uložit.",
     mergeAliases: "Sloučit aliasy klanů", mergeDescription: "Přesunout historii soutěže z pomocného nebo duplicitního klanu do skutečného klanu.", clanToKeep: "Klan, který zůstane", chooseRealClan: "Vyberte skutečný klan", ghostToMerge: "Pomocný nebo duplicitní klan", chooseDuplicate: "Vyberte duplicitu", mergeClans: "Sloučit klany", merging: "Slučování…", mergeFailed: "Klany se nepodařilo sloučit.", mergeSuccess: "Historie klanu sloučena.", createEcl: "Vytvořit ECL 2026", createFailed: "ECL se nepodařilo vytvořit.", createSuccess: "ECL 2026 vytvořena.",
   },
+  articles: { title: "Články", description: "Novinky klanu a delší aktualizace.", createTitle: "Vytvořit článek", createDescription: "Napište článek klanu v Markdownu.", create: "Vytvořit článek", noArticles: "Zatím nejsou žádné články.", titlePlaceholder: "Název", descriptionPlaceholder: "Krátký popis", tagsPlaceholder: "Štítky oddělené čárkou", bodyPlaceholder: "Obsah článku", publish: "Publikovat článek", attachments: "Přílohy", saveFailed: "Článek se nepodařilo publikovat." },
   common: {
     actions: "Akce",
     edit: "Režim úprav",

@@ -728,6 +728,23 @@ export default defineSchema({
   })
     .index("guildId", ["guildId"])
     .index("eventId", ["eventId"]),
+  apiKeys: defineTable({
+    guildId: v.string(),
+    name: v.string(),
+    keyHash: v.string(),
+    keyPrefix: v.string(),
+    createdAt: v.string(),
+    lastUsedAt: v.optional(v.string()),
+    revokedAt: v.optional(v.string()),
+  }).index("guildId", ["guildId"]).index("keyHash", ["keyHash"]),
+  apiRateLimitBuckets: defineTable({
+    bucket: v.string(),
+    resetAt: v.number(),
+    count: v.number(),
+  }).index("bucket", ["bucket"]),
+  articles: defineTable({
+    guildId: v.string(), title: v.string(), description: v.string(), tags: v.array(v.string()), body: v.string(), attachments: v.array(v.string()), authorId: v.string(), createdAt: v.string(), updatedAt: v.string(),
+  }).index("guildId", ["guildId"]),
   publicPreviews: defineTable({
     entityType: v.union(v.literal("player"), v.literal("clan"), v.literal("match")),
     entityId: v.string(),

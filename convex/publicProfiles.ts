@@ -78,7 +78,19 @@ export const getMatch = query({
       ctx.db.query("matchStats").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique(),
     ]);
     if (!event || !match || event.matchStatsId !== match._id) return null;
-    return { ...match, id: String(match._id), eventId: String(event._id), eventName: event.name, thumbnailUrl: event.thumbnailUrl };
+    return {
+      ...match,
+      id: String(match._id),
+      eventId: String(event._id),
+      eventName: event.name,
+      thumbnailUrl: event.thumbnailUrl,
+      clanResult: event.eventResult ? {
+        clanLabel: event.eventResult.sideA,
+        opponentLabel: event.eventResult.sideB,
+        clanScore: event.eventResult.score.sideA,
+        opponentScore: event.eventResult.score.sideB,
+      } : undefined,
+    };
   },
 });
 
