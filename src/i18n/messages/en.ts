@@ -147,6 +147,7 @@ export const enMessages = {
     configuration: "Configuration",
     bot: "Bot",
     competitions: "Competitions",
+    articles: "Articles",
     logiComms: "LogiComms",
   },
   competition: {
@@ -158,6 +159,7 @@ export const enMessages = {
     manageDescription: "Manage global seasons, teams, fixtures, and result links.", manualResult: "Add a manual result", manualResultDescription: "Use this when no Logi match event is linked.", division: "Division", teamA: "Team A", teamB: "Team B", chooseTeam: "Choose team", teamAScore: "Team A score", teamBScore: "Team B score", saveResult: "Save result", saving: "Saving…", resultSaved: "Result saved.", resultSaveFailed: "Unable to save the result.",
     mergeAliases: "Merge clan aliases", mergeDescription: "Move competition history from a ghost or alias clan to the real clan.", clanToKeep: "Clan to keep", chooseRealClan: "Choose the real clan", ghostToMerge: "Ghost or alias to merge", chooseDuplicate: "Choose the duplicate", mergeClans: "Merge clans", merging: "Merging…", mergeFailed: "Unable to merge clans.", mergeSuccess: "Clan history merged.", createEcl: "Create ECL 2026", createFailed: "Unable to create ECL.", createSuccess: "ECL 2026 created.",
   },
+  articles: { title: "Articles", description: "Clan news and long-form updates.", createTitle: "Create article", createDescription: "Write a clan article in Markdown.", create: "Create article", noArticles: "No articles yet.", titlePlaceholder: "Title", descriptionPlaceholder: "Short description", tagsPlaceholder: "Tags, comma separated", bodyPlaceholder: "Article body", publish: "Publish article", attachments: "Attachments", saveFailed: "Unable to publish article." },
   common: {
     actions: "Actions",
     edit: "Edit mode",

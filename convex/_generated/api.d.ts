@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as articles from "../articles.js";
 import type * as competitions from "../competitions.js";
 import type * as crons from "../crons.js";
 import type * as discordConfig from "../discordConfig.js";
@@ -24,6 +25,7 @@ import type * as migrations from "../migrations.js";
 import type * as platformIdLinks from "../platformIdLinks.js";
 import type * as playerStats from "../playerStats.js";
 import type * as players from "../players.js";
+import type * as publicApi from "../publicApi.js";
 import type * as publicPreviews from "../publicPreviews.js";
 import type * as publicProfiles from "../publicProfiles.js";
 import type * as publicStats from "../publicStats.js";
@@ -49,6 +51,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  articles: typeof articles;
   competitions: typeof competitions;
   crons: typeof crons;
   discordConfig: typeof discordConfig;
@@ -65,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   platformIdLinks: typeof platformIdLinks;
   playerStats: typeof playerStats;
   players: typeof players;
+  publicApi: typeof publicApi;
   publicPreviews: typeof publicPreviews;
   publicProfiles: typeof publicProfiles;
   publicStats: typeof publicStats;

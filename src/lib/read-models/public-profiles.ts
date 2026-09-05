@@ -29,7 +29,7 @@ export async function getPublicPlayerProfile(playerId: string) {
 }
 
 export async function getPublicMatch(eventId: string) {
-  return await cachedRead(["public-match", eventId], [appCacheTags.publicMatch(eventId), appCacheTags.match(eventId)], async () => (await fetchQuery(getPublicMatchReference, { eventId: eventId as never })) as (MatchRecord & { eventName: string; thumbnailUrl?: string }) | null, 86400);
+  return await cachedRead(["public-match", eventId], [appCacheTags.publicMatch(eventId), appCacheTags.match(eventId)], async () => (await fetchQuery(getPublicMatchReference, { eventId: eventId as never })) as (MatchRecord & { eventName: string; thumbnailUrl?: string; clanResult?: { clanLabel: string; opponentLabel: string; clanScore: number; opponentScore: number } }) | null, 86400);
 }
 
 export async function getPublicClan(guildId: string) {

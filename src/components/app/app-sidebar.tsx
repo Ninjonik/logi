@@ -103,6 +103,11 @@ export function AppSidebar({
                 url: `${base}/calendar`,
                 icon: CalendarDays,
               },
+              {
+                title: dictionary.sidebar.articles,
+                url: `${base}/articles`,
+                icon: ClipboardList,
+              },
             ],
           },
           {
