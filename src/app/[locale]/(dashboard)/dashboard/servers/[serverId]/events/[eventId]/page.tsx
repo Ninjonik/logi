@@ -4,12 +4,14 @@ import { ConcludeEventButton } from "@/components/app/conclude-event-button";
 import { EventFormPanel } from "@/components/app/event-form-panel";
 import { PageHeader } from "@/components/app/page-header";
 import { SubmitMatchResultsButton } from "@/components/app/submit-match-results-button";
+import { LinkCompetitionEvent } from "@/components/app/link-competition-event";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getEventStatusMeta } from "@/lib/event-status";
 import { getEventMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
+import { getPublicCompetition } from "@/lib/read-models/competitions";
 
 export const metadata: Metadata = {
   title: "Event | Logi",
@@ -38,6 +40,9 @@ export default async function EventDetailPage({
   if (!event) return null;
 
   const statusMeta = getEventStatusMeta(event.status, dictionary);
+  const competition = event.kind === "match" && canAdmin && !event.competitionFixtureId
+    ? await getPublicCompetition("ecl-2026")
+    : null;
 
   return (
     <>
@@ -83,6 +88,7 @@ export default async function EventDetailPage({
       />
       <div className="px-4 lg:px-6">
         <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} groups={groups} eventCategories={context.server.eventCategories ?? []} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
+        {competition ? <div className="mt-6"><LinkCompetitionEvent serverId={context.server.id} eventId={event.id} competition={competition} /></div> : null}
       </div>
     </>
   );

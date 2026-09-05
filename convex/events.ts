@@ -350,7 +350,7 @@ export const setResult = mutation({
     eventResult,
   },
   handler: async (ctx, args) => {
-    return await handleSetEventResult({
+    const result = await handleSetEventResult({
       secret: args.secret,
       expectedSecret: INTERNAL_AUTH_SECRET,
       eventId: String(args.eventId),
@@ -358,5 +358,15 @@ export const setResult = mutation({
       getEventById: async (eventId) => await ctx.db.get(eventId as Id<"events">),
       patchEvent: async (eventId, patch) => await ctx.db.patch(eventId as Id<"events">, patch),
     });
+    const event = await ctx.db.get(args.eventId);
+    if (event?.competitionFixtureId) {
+      await ctx.db.patch(event.competitionFixtureId, {
+        scoreA: args.eventResult.score.sideA,
+        scoreB: args.eventResult.score.sideB,
+        status: "final",
+        updatedAt: new Date().toISOString(),
+      });
+    }
+    return result;
   },
 });

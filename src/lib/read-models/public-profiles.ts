@@ -29,7 +29,7 @@ export async function getPublicPlayerProfile(playerId: string) {
 }
 
 export async function getPublicMatch(eventId: string) {
-  return await cachedRead(["public-match", eventId], [appCacheTags.publicMatch(eventId), appCacheTags.match(eventId)], async () => (await fetchQuery(getPublicMatchReference, { eventId: eventId as never })) as MatchRecord | null, 86400);
+  return await cachedRead(["public-match", eventId], [appCacheTags.publicMatch(eventId), appCacheTags.match(eventId)], async () => (await fetchQuery(getPublicMatchReference, { eventId: eventId as never })) as (MatchRecord & { eventName: string; thumbnailUrl?: string }) | null, 86400);
 }
 
 export async function getPublicClan(guildId: string) {
@@ -41,7 +41,7 @@ export async function getPublicClan(guildId: string) {
 }
 
 export async function listPublicClans(cursor: string | null) {
-  return await cachedRead(["public-clans", cursor ?? "start"], [appCacheTags.publicDiscovery()], async () => (await fetchQuery(listPublicClansReference, { paginationOpts: { cursor, numItems: 12 } })) as PublicPage<{ id: string; name: string; avatar: string; description?: string; memberCount: number }>, 86400);
+  return (await fetchQuery(listPublicClansReference, { paginationOpts: { cursor, numItems: 12 } })) as PublicPage<{ id: string; name: string; avatar: string; description?: string; memberCount: number }>;
 }
 
 type PublicPage<T> = { page: T[]; continueCursor: string; isDone: boolean };

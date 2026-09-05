@@ -157,6 +157,7 @@ export function normalizeEventDoc<T extends {
     };
   };
   matchStatsId?: unknown;
+  competitionFixtureId?: unknown;
   attendanceReminderLog?: Array<{ userId: string; offsetHours: number; sentAt: string }>;
   participants?: Array<{ userId: string; status: "attending" | "not_attending"; group?: string | null; completed?: "passed" | "failed"; updatedAt: string }>;
   signUps?: Array<{ userId: string; group?: string | null }>;
@@ -173,6 +174,7 @@ export function normalizeEventDoc<T extends {
     ...normalized,
     matchStatsId: normalized.matchStatsId ? String(normalized.matchStatsId) : undefined,
     matchId: normalized.matchStatsId ? String(normalized.matchStatsId) : undefined,
+    competitionFixtureId: event.competitionFixtureId ? String(event.competitionFixtureId) : undefined,
   };
 }
 

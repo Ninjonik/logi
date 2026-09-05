@@ -268,6 +268,7 @@ export type EventRecord = {
   statusUpdatedAt: Timestamp;
   concludedAt?: Timestamp;
   matchStatsId?: string;
+  competitionFixtureId?: string;
   matchId?: string;
   eventResult?: {
     sourceUrl: string;

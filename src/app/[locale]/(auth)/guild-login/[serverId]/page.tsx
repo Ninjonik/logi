@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { DiscordSignInButton } from "@/components/auth/discord-sign-in-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { PublicPage, PublicSiteShell } from "@/components/public/public-site-shell";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth";
@@ -52,7 +53,7 @@ export default async function GuildLoginPage({ params }: GuildLoginPageProps) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#101826,#0a0f18)] px-6 py-12 text-white">
+    <PublicSiteShell locale={safeLocale}><PublicPage className="flex max-w-sm items-center">
       <Card className="w-full max-w-sm rounded-2xl border-white/10 bg-white/6 text-white shadow-2xl shadow-black/30 backdrop-blur-xl">
         <CardContent className="flex flex-col items-center gap-7 p-8 text-center">
           <Avatar className="size-28 rounded-2xl border border-white/10 bg-black/20">
@@ -68,6 +69,6 @@ export default async function GuildLoginPage({ params }: GuildLoginPageProps) {
           </div>
         </CardContent>
       </Card>
-    </main>
+    </PublicPage></PublicSiteShell>
   );
 }

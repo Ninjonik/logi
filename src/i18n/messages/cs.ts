@@ -32,8 +32,12 @@ export const csMessages = {
     description:
       "Organizujte klanové akce, stavte soupisky, publikujte briefingy a připravujte operace propojené s Discordem.",
   },
+  publicNavigation: {
+    privacy: "Soukromí",
+    terms: "Podmínky",
+  },
   home: {
-    openApp: "Otevřít aplikaci", signIn: "Přihlásit se přes Discord", contribute: "Přispět na GitHubu", loggedInAs: "Přihlášen jako {name}", dashboard: "Dashboard", community: "Prozkoumat komunitu", featuresNav: "Funkce", liveOperations: "Operace propojené", commandCenter: "Velitelské centrum operací", commandCenterDescription: "Akce, soupisky, koordinace přes Discord a veřejná historie zápasů na jednom místě.", eventsMetric: "akcí", playersMetric: "hráčů", matchesMetric: "zápasů", nextOperation: "Další operace", registrationOpen: "Registrace otevřena", sampleOperation: "Sobotní kompetitivní zápas", sampleOperationMeta: "19:30 · 31 přihlášených", featuresEyebrow: "Pro organizované týmy", featureEventsDescription: "Naplánujte každý krok operace s jasnými časy a oznámeními připravenými pro Discord.", featureRostersDescription: "Sestavujte lineupy, koordinujte účast a udržte celý tým v obraze.", featureStats: "Veřejná historie zápasů", featureStatsDescription: "Sdílejte profily hráčů, výsledky a detailní analýzu zápasů s komunitou.",
+    openApp: "Otevřít aplikaci", signIn: "Přihlásit se přes Discord", contribute: "Přispět na GitHubu", loggedInAs: "Přihlášen jako {name}", dashboard: "Dashboard", community: "Prozkoumat komunitu", competitions: "Soutěže", featuresNav: "Funkce", liveOperations: "Operace propojené", commandCenter: "Velitelské centrum operací", commandCenterDescription: "Akce, soupisky, koordinace přes Discord a veřejná historie zápasů na jednom místě.", eventsMetric: "akcí", playersMetric: "hráčů", matchesMetric: "zápasů", nextOperation: "Další operace", registrationOpen: "Registrace otevřena", sampleOperation: "Sobotní kompetitivní zápas", sampleOperationMeta: "19:30 · 31 přihlášených", featuresEyebrow: "Pro organizované týmy", featureEventsDescription: "Naplánujte každý krok operace s jasnými časy a oznámeními připravenými pro Discord.", featureRostersDescription: "Sestavujte lineupy, koordinujte účast a udržte celý tým v obraze.", featureStats: "Veřejná historie zápasů", featureStatsDescription: "Sdílejte profily hráčů, výsledky a detailní analýzu zápasů s komunitou.",
     badge: "Discord operace pro organizované skupiny", title: "Logi udržuje komunitní operace přehledné, strukturované a na jednom místě.", description: "Logi je open-source platforma pro skupiny, které pořádají akce, spravují soupisky, tréninky, zápasy a koordinaci přes Discord.",
     featuresTitle: "Co skutečně umí", featuresDescription: "Plánujte akce, spravujte přihlášky, tvořte soupisky, připravujte zápasy a synchronizujte Discord.", featureEvents: "Akce, tréninky a workflow zápasů", featureRosters: "Správa soupisek a účasti", featureDiscord: "Správa serveru propojená s Discordem", featureTools: "Sdílené nástroje pro organizované komunity",
     commsBadge: "LogiComms", commsTitle: "Jasná komunikace jednotky bez zbytečné režie.", commsDescription: "LogiComms je lehká a rychlá desktopová aplikace pro efektivní komunikaci v jednotce. Nastavíte ji rychle a přizpůsobíte fungování své jednotky.", commsDownload: "Stáhnout pro Windows", commsUnavailable: "Stažení pro Windows je dočasně nedostupné.",
@@ -142,7 +146,17 @@ export const csMessages = {
     operations: "Operace",
     configuration: "Konfigurace",
     bot: "Bot",
+    competitions: "Soutěže",
     logiComms: "LogiComms",
+  },
+  competition: {
+    title: "Soutěže", description: "Oficiální informace o soutěžích a výsledky sledované v Logi.",
+    back: "Zpět do Logi", standings: "Zobrazit tabulku a výsledky", rules: "Oficiální pravidla", website: "Oficiální web",
+    seasonSummary: "Sezóna {season} · tabulky a výsledky sledované v Logi", divisions: "{count} divizí · živé tabulky a zaznamenané výsledky",
+    results: "Výsledky", statistics: "Statistiky zápasu", statisticsUnavailable: "Statistiky nejsou k dispozici", noCompetitions: "Zatím nebyly vytvořeny žádné veřejné soutěže.",
+    capScore: "Cap Score", regularWins: "Běžné výhry", totalWins: "Celkem výher", regularMatches: "Běžné zápasy", totalMatches: "Celkem zápasů", team: "Tým", withdrawn: "(odstoupil)",
+    manageDescription: "Správa globálních sezón, týmů, zápasů a odkazů na výsledky.", manualResult: "Přidat ruční výsledek", manualResultDescription: "Použijte, když není propojena událost zápasu v Logi.", division: "Divize", teamA: "Tým A", teamB: "Tým B", chooseTeam: "Vyberte tým", teamAScore: "Skóre týmu A", teamBScore: "Skóre týmu B", saveResult: "Uložit výsledek", saving: "Ukládání…", resultSaved: "Výsledek uložen.", resultSaveFailed: "Výsledek se nepodařilo uložit.",
+    mergeAliases: "Sloučit aliasy klanů", mergeDescription: "Přesunout historii soutěže z pomocného nebo duplicitního klanu do skutečného klanu.", clanToKeep: "Klan, který zůstane", chooseRealClan: "Vyberte skutečný klan", ghostToMerge: "Pomocný nebo duplicitní klan", chooseDuplicate: "Vyberte duplicitu", mergeClans: "Sloučit klany", merging: "Slučování…", mergeFailed: "Klany se nepodařilo sloučit.", mergeSuccess: "Historie klanu sloučena.", createEcl: "Vytvořit ECL 2026", createFailed: "ECL se nepodařilo vytvořit.", createSuccess: "ECL 2026 vytvořena.",
   },
   common: {
     actions: "Akce",

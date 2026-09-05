@@ -3,6 +3,7 @@ import { makeFunctionReference } from "convex/server";
 import type { Metadata } from "next";
 
 import { PlatformIdLinkForm } from "@/components/app/platform-id-link-form";
+import { PublicPage, PublicSiteShell } from "@/components/public/public-site-shell";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 
@@ -26,7 +27,7 @@ export default async function LocalizedPlatformIdLinkPage({
   const isExpired = !tokenRecord || Boolean(tokenRecord.consumedAt) || new Date(tokenRecord.expiresAt).getTime() < Date.now();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-xl items-center px-6 py-16">
+    <PublicSiteShell locale={safeLocale}><PublicPage className="flex max-w-xl items-center">
       <div className="w-full rounded-3xl border border-border/60 bg-card p-8 shadow-sm">
         <PlatformIdLinkForm
           token={token}
@@ -36,6 +37,6 @@ export default async function LocalizedPlatformIdLinkPage({
           dictionary={dictionary}
         />
       </div>
-    </main>
+    </PublicPage></PublicSiteShell>
   );
 }

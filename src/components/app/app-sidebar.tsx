@@ -15,6 +15,7 @@ import {
   Map,
   Bot,
   Radio,
+  Trophy,
 } from "lucide-react";
 
 import { AppLogo } from "@/components/app/app-logo";
@@ -228,6 +229,7 @@ export function AppSidebar({
           {
             label: dictionary.sidebar.bot,
             items: [
+              { title: dictionary.sidebar.competitions, url: `/${locale}/dashboard/competitions`, icon: Trophy },
               {
                 title: dictionary.sidebar.bot,
                 url: `/${locale}/dashboard/bot`,
