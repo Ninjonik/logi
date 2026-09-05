@@ -12,7 +12,6 @@ import { getPublicMatch } from "@/lib/read-models/public-profiles";
 import { getPublicPreviewMetadata } from "@/lib/public-preview-metadata";
 
 type Props = { params: Promise<{ locale: string; eventId: string }> };
-export async function generateStaticParams() { return [{ eventId: "sample-event" }]; }
 async function ConnectionMarker() { await connection(); return null; }
 function DynamicMetadataMarker() { return <Suspense><ConnectionMarker /></Suspense>; }
 
@@ -24,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PublicMatchPage({ params }: Props) {
-  const { locale, eventId } = await params; if (eventId === "sample-event") notFound();
+  const { locale, eventId } = await params;
   const resolvedLocale = isLocale(locale) ? locale : "en"; const dictionary = getDictionary(resolvedLocale); const match = await getPublicMatch(eventId); if (!match) notFound();
   return <PublicSiteShell locale={resolvedLocale}><PublicPage><div className="space-y-6"><PublicBreadcrumbs items={[{ label: dictionary.app.name, href: `/${resolvedLocale}` }, { label: dictionary.publicProfiles.communityTitle, href: `/${resolvedLocale}/community` }, { label: dictionary.publicProfiles.matches }]} /><MatchDetails match={match} dictionary={dictionary} /></div></PublicPage><DynamicMetadataMarker /></PublicSiteShell>;
 }
