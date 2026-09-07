@@ -23,7 +23,7 @@ test("toggleSignup adds an attending participant", () => {
   assert.equal(result.signUps[0]?.group, "INF");
 });
 
-test("toggleSignup removes an unchanged signup on second click", () => {
+test("toggleSignup keeps an unchanged signup on repeated clicks", () => {
   const now = new Date("2026-01-01T09:00:00.000Z");
   const first = toggleSignup({
     participants: [],
@@ -51,7 +51,13 @@ test("toggleSignup removes an unchanged signup on second click", () => {
     membershipStatus: "member",
   });
 
-  assert.equal(second.participants.length, 0);
+  assert.deepEqual(second.participants, [{
+    userId: "user-1",
+    status: "attending",
+    group: "INF",
+    updatedAt: "2026-01-01T09:00:00.000Z",
+    completed: undefined,
+  }]);
 });
 
 test("toggleSignup rejects closed signups", () => {
@@ -114,7 +120,7 @@ test("toggleSignup switches an attending player to a different group and preserv
   }]);
 });
 
-test("toggleSignup records not attending signups and removes them on second click", () => {
+test("toggleSignup keeps a not-attending selection on repeated clicks", () => {
   const first = toggleSignup({
     participants: [],
     event: {
@@ -149,7 +155,13 @@ test("toggleSignup records not attending signups and removes them on second clic
     membershipStatus: "member",
   });
 
-  assert.deepEqual(second.participants, []);
+  assert.deepEqual(second.participants, [{
+    userId: "user-1",
+    status: "not_attending",
+    group: null,
+    updatedAt: "2026-01-01T09:05:00.000Z",
+    completed: undefined,
+  }]);
 });
 
 test("toggleSignup rejects match signups for disallowed membership statuses", () => {
