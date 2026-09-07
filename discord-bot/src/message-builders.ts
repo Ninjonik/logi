@@ -5,8 +5,10 @@ import {
   ContainerBuilder,
   EmbedBuilder,
   MediaGalleryBuilder,
+  SectionBuilder,
   SeparatorBuilder,
   TextDisplayBuilder,
+  ThumbnailBuilder,
   type APIEmbedField,
 } from "discord.js";
 
@@ -66,9 +68,25 @@ export function buildAnnouncementV2Message(
   if (roleMentions) {
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(roleMentions));
   }
-  container.addTextDisplayComponents(
-    new TextDisplayBuilder().setContent(`# ${event.name}\n${embed.description ?? ""}`.slice(0, 4000)),
-  );
+  const descriptionBlocks = (embed.description ?? "")
+    .split(/\n?-{20,}\n?/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  const heading = [`# ${event.name}`, descriptionBlocks.shift()].filter(Boolean).join("\n").slice(0, 4000);
+  const thumbnailUrl = embed.thumbnail?.url;
+  if (thumbnailUrl) {
+    container.addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(heading))
+        .setThumbnailAccessory(new ThumbnailBuilder({ media: { url: thumbnailUrl }, description: `${event.name} thumbnail` })),
+    );
+  } else {
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(heading));
+  }
+  for (const block of descriptionBlocks) {
+    container.addSeparatorComponents(new SeparatorBuilder());
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(block.slice(0, 4000)));
+  }
 
   const rosterText = buildCompactV2FieldText(embed.fields ?? []);
   if (rosterText) {
