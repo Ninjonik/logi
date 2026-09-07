@@ -339,7 +339,7 @@ export async function GET(
   );
   const totalSlots = data.roster.squads.reduce((sum, squad) => sum + squad.players.length, 0);
   const mapLabel = data.event.map
-    ? (formatHllPresetLabel(data.event.map) ?? data.event.map).replaceAll("\u00c2\u00b7", " - ")
+    ? (formatHllPresetLabel(data.event.map) ?? data.event.map).replace(/\u00c2\u00b7/g, " - ")
     : messages.rosterImage.unknown;
 
   // ---- Compute the canvas height from the actual data, so nothing gets
