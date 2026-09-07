@@ -3,6 +3,7 @@ import { makeFunctionReference } from "convex/server";
 
 import { appCacheTags, cachedRead } from "@/lib/cache-tags";
 import type { MatchRecord } from "@/types/domain";
+import type { CollectionFilter } from "@/domain/shared/collection-query";
 
 const getPublicPlayerReference = makeFunctionReference<"query">("publicProfiles:getPlayer");
 const getPublicMatchReference = makeFunctionReference<"query">("publicProfiles:getMatch");
@@ -46,8 +47,8 @@ export async function listPublicClans(cursor: string | null) {
 
 type PublicPage<T> = { page: T[]; continueCursor: string; isDone: boolean };
 
-export async function listPublicMatches(cursor: string | null) {
-  return await cachedRead(["public-matches", cursor ?? "start"], [appCacheTags.publicDiscovery()], async () => (await fetchQuery(listPublicMatchesReference, { paginationOpts: { cursor, numItems: 12 } })) as PublicPage<{
+export async function listPublicMatches(cursor: string | null, limit = 25, filters: CollectionFilter[] = []) {
+  return await cachedRead(["public-matches", cursor ?? "start", String(limit), JSON.stringify(filters)], [appCacheTags.publicDiscovery()], async () => (await fetchQuery(listPublicMatchesReference, { paginationOpts: { cursor, numItems: limit }, filters })) as PublicPage<{
     eventId: string; name: string; gameEnd: string; clan: { id: string; name: string; avatar: string } | null;
     mapName: string; score: { axis: number; allied: number }; outcome?: string; category?: string;
   }>, 86400);

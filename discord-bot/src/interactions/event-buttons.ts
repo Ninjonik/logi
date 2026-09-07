@@ -8,11 +8,48 @@ import { convex, references } from "../convex";
 import { env } from "../environment";
 import { logInfo } from "../log";
 import type { EventInteractionContext } from "../types";
+import { SIGNUP_PRIMARY_GROUP } from "../constants";
 
 type InteractionHandlerOptions = {
   enqueueEventSync: (eventId: string) => void;
   triggerPollSoon: () => void;
 };
+
+function buildSignupSelectionRow(
+  context: EventInteractionContext,
+  member: GuildMember | null,
+  userId: string,
+  messages: ReturnType<typeof getClanDiscordMessages>,
+) {
+  const assignment = context.assignments?.find((item) => item.userId === userId);
+  const resolvedMembershipStatus = assignment?.type && assignment.status
+    ? getResolvedMemberStatus(assignment.type, assignment.status)
+    : null;
+  const membershipStatus = resolvedMembershipStatus && resolvedMembershipStatus !== "pending" ? resolvedMembershipStatus : null;
+  const available = buildEventSignupActions(context.event, context.groups, messages.buttons).filter((action) =>
+    resolveEventSignupSelection({
+      event: context.event,
+      groups: context.groups,
+      memberRoleIds: member ? [...member.roles.cache.keys()] : null,
+      assignedGroupIds: assignment ? [assignment.primaryGroupId, ...(assignment.secondaryGroupIds ?? [])].filter((id): id is string => Boolean(id)) : [],
+      membershipStatus,
+      actionId: action.id,
+      labels: messages.interaction,
+    }).ok,
+  );
+
+  return available.length
+    ? new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+      new StringSelectMenuBuilder().setCustomId(`signup:${context.event.id}:select`).setPlaceholder(messages.embed.chooseSignup).addOptions(
+        available.slice(0, 25).map((action) => ({
+          label: action.label.slice(0, 100),
+          value: action.id,
+          ...(getSignupActionEmoji(action.id, available) ? { emoji: getSignupActionEmoji(action.id, available) } : {}),
+        })),
+      ),
+    )
+    : null;
+}
 
 export async function handleEventSignupPickerInteraction(interaction: ButtonInteraction) {
   if (!interaction.guildId) {
@@ -31,37 +68,14 @@ export async function handleEventSignupPickerInteraction(interaction: ButtonInte
   }
   const member = interaction.member as GuildMember | null;
   const messages = getClanDiscordMessages(context.config.defaultLanguage);
-  const assignment = context.assignments?.find((item) => item.userId === interaction.user.id);
-  const resolvedMembershipStatus = assignment?.type && assignment.status
-    ? getResolvedMemberStatus(assignment.type, assignment.status)
-    : null;
-  const membershipStatus = resolvedMembershipStatus && resolvedMembershipStatus !== "pending" ? resolvedMembershipStatus : null;
-  const available = buildEventSignupActions(context.event, context.groups, messages.buttons).filter((action) =>
-    resolveEventSignupSelection({
-      event: context.event,
-      groups: context.groups,
-      memberRoleIds: member ? [...member.roles.cache.keys()] : null,
-      assignedGroupIds: assignment ? [assignment.primaryGroupId, ...(assignment.secondaryGroupIds ?? [])].filter((id): id is string => Boolean(id)) : [],
-      membershipStatus,
-      actionId: action.id,
-      labels: messages.interaction,
-    }).ok,
-  );
-  if (!available.length) {
+  const selectionRow = buildSignupSelectionRow(context, member, interaction.user.id, messages);
+  if (!selectionRow) {
     await interaction.reply({ content: messages.interaction.missingRequiredRole, ephemeral: true });
     return;
   }
   await interaction.reply({
     content: messages.embed.chooseSignup,
-    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-      new StringSelectMenuBuilder().setCustomId(`signup:${eventId}:select`).setPlaceholder(messages.embed.chooseSignup).addOptions(
-        available.slice(0, 25).map((action) => ({
-          label: action.label.slice(0, 100),
-          value: action.id,
-          ...(getSignupActionEmoji(action.id, available) ? { emoji: getSignupActionEmoji(action.id, available) } : {}),
-        })),
-      ),
-    )],
+    components: [selectionRow],
     ephemeral: true,
   });
 }
@@ -88,7 +102,7 @@ export async function handleEventButtonInteraction(
   options: InteractionHandlerOptions,
 ) {
   const [, eventId, encodedGroupId] = interaction.customId.split(":");
-  const groupId = interaction.isStringSelectMenu() ? (interaction.values[0] ?? "") : decodeURIComponent(encodedGroupId ?? "");
+  const requestedGroupId = interaction.isStringSelectMenu() ? (interaction.values[0] ?? "") : decodeURIComponent(encodedGroupId ?? "");
 
   if (interaction.isButton() && interaction.customId.startsWith("attendance:")) {
     await interaction.deferReply({ ephemeral: Boolean(interaction.guildId) });
@@ -138,6 +152,9 @@ export async function handleEventButtonInteraction(
     const member = interaction.member as GuildMember | null;
     const messages = getClanDiscordMessages(context.config.defaultLanguage);
     const assignment = context.assignments?.find((item) => item.userId === interaction.user.id);
+    const groupId = requestedGroupId === SIGNUP_PRIMARY_GROUP
+      ? assignment?.primaryGroupId ?? ""
+      : requestedGroupId;
     const resolvedMembershipStatus = assignment?.type && assignment.status
       ? getResolvedMemberStatus(assignment.type, assignment.status)
       : null;
@@ -194,14 +211,18 @@ export async function handleEventButtonInteraction(
 
     const actions = buildEventSignupActions(context.event, context.groups, messages.buttons);
     const emoji = getSignupActionEmoji(groupId, actions);
+    const selectionRow = requestedGroupId === SIGNUP_PRIMARY_GROUP
+      ? buildSignupSelectionRow(context, member, interaction.user.id, messages)
+      : null;
 
     await interaction.reply({
-      content: formatSignupResultMessage({
+      content: [formatSignupResultMessage({
         removed: result.removed,
         appliedSignupLabel: result.appliedSignupLabel,
         labels: { ...messages.interaction, ...messages.buttons },
         emoji,
-      }),
+      }), ...(selectionRow ? [messages.interaction.changeSignupSelection] : [])].join("\n"),
+      ...(selectionRow ? { components: [selectionRow] } : {}),
       ephemeral: true,
     });
   } finally {

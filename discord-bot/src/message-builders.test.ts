@@ -356,3 +356,29 @@ test("published roster image keeps its URL for signup-only changes and changes f
   assert.equal(signupOnlyUrl, imageUrl);
   assert.notEqual(rosterChangedUrl, imageUrl);
 });
+
+test("published roster keeps signup groups visible while registration is open", () => {
+  const roster: Roster = {
+    id: "roster-1",
+    eventId: "event-1",
+    published: true,
+    reservePlayerIds: [],
+    updatedAt: "2099-01-01T10:00:00.000Z",
+    squads: [],
+  };
+  const event = createMatchEvent({
+    registrationEnd: "2099-01-01T12:30:00.000Z",
+    meetingStart: "2099-01-01T13:00:00.000Z",
+    gameStart: "2099-01-01T14:00:00.000Z",
+    gameEnd: "2099-01-01T16:00:00.000Z",
+    signUps: [{ userId: "user-1", group: "Command" }],
+  });
+
+  const embed = buildEventEmbed(config, groups, eventCategories, event, roster, {
+    "user-1": "Alpha",
+  }, { showPublishedRosterImage: true }).toJSON();
+
+  assert.ok(embed.image?.url);
+  assert.equal(embed.fields?.some((field) => /Command \(1\)/.test(field.name)), true);
+  assert.equal(embed.fields?.some((field) => field.value === "Alpha"), true);
+});

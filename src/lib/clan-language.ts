@@ -9,6 +9,7 @@ type ClanDiscordMessages = {
     attend: string;
     generalSignup: string;
     addToCalendar: string;
+    viewFullRoster: string;
     decline: string;
   };
   interaction: {
@@ -23,6 +24,7 @@ type ClanDiscordMessages = {
     signupUpdatedWithType: string;
     signupRemovedWithType: string;
     markedNotAttending: string;
+    changeSignupSelection: string;
     attendanceNotOpen: string;
     rosterNotPublished: string;
     notOnRoster: string;
@@ -32,6 +34,8 @@ type ClanDiscordMessages = {
     title: string;
     body: string;
     meeting: string;
+    assignment: string;
+    notes: string;
     eventThread: string;
     openInDiscord: string;
   };
@@ -311,6 +315,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       attend: "Attend",
       generalSignup: "Sign up",
       addToCalendar: "Add to Calendar",
+      viewFullRoster: "View roster",
       decline: "Decline",
     },
     interaction: {
@@ -325,6 +330,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       signupUpdatedWithType: "Signup updated - {type}.",
       signupRemovedWithType: "Removed signup from {type}.",
       markedNotAttending: "Marked as not attending.",
+      changeSignupSelection: "To change your assignment, select an option below.",
       attendanceNotOpen: "Attendance acknowledgement is not open right now.",
       rosterNotPublished: "Roster is not published for this event yet.",
       notOnRoster: "You are not on the roster for this event.",
@@ -334,6 +340,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       title: "Attendance check for",
       body: "Please acknowledge before the meeting if you can still make it.",
       meeting: "Meeting",
+      assignment: "Your roster assignment",
+      notes: "Notes",
       eventThread: "Event thread",
       openInDiscord: "open in Discord",
     },
@@ -707,6 +715,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       attend: "Zúčastním se",
       generalSignup: "Přihlásit se",
       addToCalendar: "Přidat do kalendáře",
+      viewFullRoster: "Zobrazit soupisku",
       decline: "Odmítnout",
     },
     interaction: {
@@ -721,6 +730,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       signupUpdatedWithType: "Přihlášení bylo upraveno - {type}.",
       signupRemovedWithType: "Odhlášeno z {type}.",
       markedNotAttending: "Označeno jako neúčast.",
+      changeSignupSelection: "Pokud chcete změnit své zařazení, vyberte možnost níže.",
       attendanceNotOpen: "Potvrzování účasti teď není otevřené.",
       rosterNotPublished: "Soupiska pro tuto akci ještě není publikovaná.",
       notOnRoster: "Na soupisce této akce nejste.",
@@ -730,6 +740,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
       title: "Kontrola účasti pro",
       body: "Prosím potvrďte účast před srazem, pokud stále můžete dorazit.",
       meeting: "Sraz",
+      assignment: "Vaše zařazení do soupisky",
+      notes: "Poznámky",
       eventThread: "Vlákno akce",
       openInDiscord: "otevřít na Discordu",
     },

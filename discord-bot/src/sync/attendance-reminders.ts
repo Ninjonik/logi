@@ -9,6 +9,37 @@ import { buildAttendanceReminderComponents } from "../message-builders";
 import type { SyncPayload } from "../types";
 import { buildDiscordMessageLink } from "../utils";
 
+type RosterAssignment = {
+  squadName: string;
+  roleName?: string;
+  note?: string;
+};
+
+export function buildAttendanceReminderMessage(input: {
+  eventName: string;
+  meetingStartMs: number;
+  eventMessageUrl?: string;
+  assignment?: RosterAssignment;
+  messages: ReturnType<typeof getClanDiscordMessages>;
+}) {
+  const assignment = input.assignment
+    ? [input.assignment.squadName, input.assignment.roleName].filter(Boolean).join(" — ")
+    : null;
+
+  return [
+    `${input.messages.reminders.title} **${input.eventName}**.`,
+    input.messages.reminders.body,
+    `${input.messages.reminders.meeting}: <t:${Math.floor(input.meetingStartMs / 1000)}:F>`,
+    assignment ? `${input.messages.reminders.assignment}: **${assignment}**` : null,
+    input.assignment?.note?.trim() ? `${input.messages.reminders.notes}: ${input.assignment.note.trim()}` : null,
+    input.eventMessageUrl
+      ? `${input.messages.reminders.eventThread}: [${input.messages.reminders.openInDiscord}](${input.eventMessageUrl})`
+      : null,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
+}
+
 export async function processAttendanceReminders(
   client: Client,
   queuedEventIds: Set<string>,
@@ -47,11 +78,19 @@ export async function processAttendanceReminders(
       continue;
     }
 
-    const unacknowledgedUserIds = new Set(
-      roster.squads.flatMap((squad) =>
-        squad.players.filter((player) => player.id && !player.ack).map((player) => player.id!),
-      ),
-    );
+    const assignmentsByUserId = new Map<string, RosterAssignment>();
+    for (const squad of roster.squads) {
+      for (const player of squad.players) {
+        if (player.id && !player.ack) {
+          assignmentsByUserId.set(player.id, {
+            squadName: squad.name,
+            roleName: player.roleName,
+            note: player.note,
+          });
+        }
+      }
+    }
+    const unacknowledgedUserIds = new Set(assignmentsByUserId.keys());
     if (!unacknowledgedUserIds.size) {
       logInfo("attendance-reminders", "Skipping reminders because everyone already acknowledged attendance", {
         eventId: event.id,
@@ -65,6 +104,11 @@ export async function processAttendanceReminders(
     const eventMessageUrl =
       buildDiscordMessageLink(
         payload.config.guildId,
+        event.eventInfoChannelId ?? payload.config.eventInfoChannelId,
+        syncState?.eventInfoMessageId,
+      ) ??
+      buildDiscordMessageLink(
+        payload.config.guildId,
         syncState?.announcementChannelId,
         syncState?.announcementMessageId,
       ) ??
@@ -74,17 +118,6 @@ export async function processAttendanceReminders(
         syncState?.infoMessageId,
       );
     const messages = getClanDiscordMessages(payload.config.defaultLanguage);
-    const message = [
-      `${messages.reminders.title} **${event.name}**.`,
-      messages.reminders.body,
-      `${messages.reminders.meeting}: <t:${Math.floor(meetingStartMs / 1000)}:F>`,
-      eventMessageUrl
-        ? `${messages.reminders.eventThread}: [${messages.reminders.openInDiscord}](${eventMessageUrl})`
-        : null,
-    ]
-      .filter((line): line is string => Boolean(line))
-      .join("\n");
-
     for (const userId of unacknowledgedUserIds) {
       const dueOffsets = ATTENDANCE_OFFSETS_HOURS
         .filter((offsetHours) => now >= meetingStartMs - offsetHours * 60 * 60 * 1000)
@@ -100,6 +133,13 @@ export async function processAttendanceReminders(
       if (!user) continue;
 
       const sentAt = new Date().toISOString();
+      const message = buildAttendanceReminderMessage({
+        eventName: event.name,
+        meetingStartMs,
+        eventMessageUrl: eventMessageUrl ?? undefined,
+        assignment: assignmentsByUserId.get(userId),
+        messages,
+      });
 
       try {
         await user.send({

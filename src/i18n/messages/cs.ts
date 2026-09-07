@@ -870,7 +870,7 @@ export const csMessages = {
     pingRolesOption: "Upozornit vybrané role",
     quickScheduleTitle: "Rychlé nastavení času",
     quickScheduleDescription: "Nastavte čtyři hlavní časy zápasu. Vygenerovanou časovou osu můžete kdykoli upravit.",
-    registrationHoursBefore: "Hodin před začátkem uzavřít registraci",
+    registrationHoursBefore: "Hodin před headcountem uzavřít registraci",
     meetingMinutesBefore: "Minut před začátkem zahájit sraz",
     durationHours: "Délka (hodiny)",
     durationMinutes: "Délka zápasu (minuty)",

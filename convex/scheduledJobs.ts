@@ -1,6 +1,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { isExpiredScheduledJobClaim, shouldDiscardScheduledJob } from "../src/domain/events/scheduled-job-policy";
+import { getAttendanceReminderDueAt, isExpiredScheduledJobClaim, shouldDiscardScheduledJob } from "../src/domain/events/scheduled-job-policy";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 function assertSecret(secret: string) { if (secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized."); }
@@ -75,7 +75,8 @@ export const backfillMissing = mutation({
   args: { secret: v.string() },
   handler: async (ctx, args) => {
     assertSecret(args.secret);
-    const now = new Date().toISOString();
+    const nowDate = new Date();
+    const now = nowDate.toISOString();
     const events = await ctx.db.query("events").collect();
     let created = 0;
     for (const event of events) {
@@ -84,9 +85,12 @@ export const backfillMissing = mutation({
       const existing = await ctx.db.query("eventScheduleJobs").withIndex("eventId", (q) => q.eq("eventId", event._id)).first();
       if (existing) continue;
       const startAtMs = Math.max(new Date(event.registrationEnd).getTime(), new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000);
-      const deadlines = [["close-registration", event.registrationEnd], ["start-event", new Date(startAtMs).toISOString()], ["conclude-event", event.gameEnd], ...[24, 18, 12, 6].map((hours) => ["attendance-reminder", new Date(new Date(event.meetingStart).getTime() - hours * 60 * 60 * 1000).toISOString()])] as const;
+      const deadlines = [["close-registration", event.registrationEnd], ["start-event", new Date(startAtMs).toISOString()], ["conclude-event", event.gameEnd], ...[24, 18, 12, 6].flatMap((hours) => {
+        const dueAt = getAttendanceReminderDueAt(event.meetingStart, hours, nowDate);
+        return dueAt ? [["attendance-reminder", dueAt] as const] : [];
+      })] as const;
       for (const [kind, dueAt] of deadlines) {
-        if (!Number.isFinite(new Date(dueAt).getTime()) || new Date(dueAt).getTime() <= Date.now()) continue;
+        if (!Number.isFinite(new Date(dueAt).getTime()) || new Date(dueAt).getTime() < nowDate.getTime()) continue;
         await ctx.db.insert("eventScheduleJobs", { eventId: event._id, kind: kind as "close-registration" | "start-event" | "conclude-event" | "attendance-reminder", dueAt, status: "pending", attempts: 0, createdAt: now, updatedAt: now });
         created += 1;
       }

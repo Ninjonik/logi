@@ -2,11 +2,13 @@ import { ConcludeEventButton } from "@/components/app/conclude-event-button";
 import { EventFormPanel } from "@/components/app/event-form-panel";
 import { PageHeader } from "@/components/app/page-header";
 import { SubmitMatchResultsButton } from "@/components/app/submit-match-results-button";
+import { LinkCompetitionEvent } from "@/components/app/link-competition-event";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getEventStatusMeta } from "@/lib/event-status";
 import { getServerContext } from "@/lib/server-context";
+import { listPublicCompetitions } from "@/lib/read-models/competitions";
 
 export default async function MatchDetailPage({
   params,
@@ -24,6 +26,7 @@ export default async function MatchDetailPage({
   if (!event) return null;
 
   const statusMeta = getEventStatusMeta(event.status, dictionary);
+  const competitions = canAdmin && !event.competitionFixtureId ? await listPublicCompetitions() : [];
 
   return (
     <>
@@ -55,6 +58,7 @@ export default async function MatchDetailPage({
       />
       <div className="px-4 lg:px-6">
         <EventFormPanel event={event} serverId={serverId} locale={locale} topicPresets={topicPresets} stratmaps={stratmaps} groups={groups} eventCategories={context.server.eventCategories ?? []} timezone={discordConfig?.timezone ?? "UTC"} canEdit={canAdmin} dictionary={dictionary} createMode={false} discordConfig={discordConfig} />
+        {competitions.length ? <div className="mt-6"><LinkCompetitionEvent serverId={context.server.id} serverName={context.server.name} eventId={event.id} competitions={competitions} /></div> : null}
       </div>
     </>
   );

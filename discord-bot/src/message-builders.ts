@@ -16,7 +16,7 @@ import { formatDiscordMarkdown } from "../../src/lib/discord-markdown";
 import { formatHllPresetLabel } from "../../src/lib/hll-map-presets";
 import { canAcceptSignups } from "../../src/domain/events/status";
 
-import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "./constants";
+import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING, SIGNUP_PRIMARY_GROUP, TRAINING_ATTEND } from "./constants";
 import type {
   ClanLanguage,
   DiscordConfig,
@@ -36,6 +36,7 @@ import {
   formatEventStatus,
   formatInTimezone,
   generateCalendarUrl,
+  buildPublicRosterUrl,
   pickButtonStyle,
 } from "./utils";
 
@@ -86,11 +87,12 @@ export function buildAnnouncementV2Message(
   const v2Controls = options?.showPublishedRosterImage && publishedRoster
     ? [new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder().setCustomId(`roster-assignment:${event.id}`).setStyle(ButtonStyle.Primary).setLabel(messages.embed.myAssignment),
+      new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel(messages.buttons.viewFullRoster).setURL(buildPublicRosterUrl(event.id, payload.config.defaultLanguage)),
       new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel(messages.buttons.addToCalendar).setURL(generateCalendarUrl(event, payload.config.defaultLanguage)),
     )]
     : isSignupOpen(event) && event.kind === "match"
     ? [new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId(`signup-picker:${event.id}`).setStyle(ButtonStyle.Primary).setLabel(getClanDiscordMessages(payload.config.defaultLanguage).embed.chooseSignup),
+      new ButtonBuilder().setCustomId(`signup:${event.id}:${SIGNUP_PRIMARY_GROUP}`).setStyle(ButtonStyle.Primary).setLabel(getClanDiscordMessages(payload.config.defaultLanguage).embed.chooseSignup),
       new ButtonBuilder().setCustomId(`signup:${event.id}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`).setStyle(ButtonStyle.Danger).setLabel(getClanDiscordMessages(payload.config.defaultLanguage).buttons.decline),
       new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel(getClanDiscordMessages(payload.config.defaultLanguage).buttons.addToCalendar).setURL(generateCalendarUrl(event, payload.config.defaultLanguage)),
     )]
@@ -257,7 +259,9 @@ export function buildEventEmbed(
 
   if (event.kind === "match" && roster?.published && (options?.showPublishedRosterImage || shouldShowPublishedRosterImage(event, roster))) {
     embed.setImage(buildRosterImageUrl(event.id, getRosterImageVersion(event, roster?.updatedAt)));
-    return embed;
+    if (!isSignupOpen(event)) {
+      return embed;
+    }
   }
 
   if (event.kind === "match" && event.imageUrl) {

@@ -42,12 +42,20 @@ export const getRosterDetail = query({
       .withIndex("guildId_userId", (q) => q.eq("guildId", serverDiscordId).eq("userId", args.userId))
       .unique();
 
-    if (!canAccessServerContext({ user, serverDiscordId, discordAccess })) {
+    if (!canAccessServerContext({
+      user,
+      userId: args.userId,
+      serverDiscordId,
+      serverAdminIds: server.adminIds,
+      dashboardAdminIds: server.dashboardAdminIds,
+      discordAccess,
+    })) {
       return null;
     }
 
     const canAdmin = canAdminServerContext({
       serverAdminIds: server.adminIds,
+      dashboardAdminIds: server.dashboardAdminIds,
       userId: args.userId,
       discordAccess,
     });

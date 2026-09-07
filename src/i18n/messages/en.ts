@@ -874,7 +874,7 @@ export const enMessages = {
     pingRolesOption: "Ping selected roles",
     quickScheduleTitle: "Quick schedule",
     quickScheduleDescription: "Set the four key times for this match. You can revise the generated timeline at any time.",
-    registrationHoursBefore: "Hours before start to close registration",
+    registrationHoursBefore: "Hours before headcount to close registration",
     meetingMinutesBefore: "Minutes before start for the meeting",
     durationHours: "Duration (hours)",
     durationMinutes: "Match duration (minutes)",

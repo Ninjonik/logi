@@ -43,7 +43,14 @@ async function buildServerContext(
     .withIndex("guildId_userId", (q) => q.eq("guildId", serverDiscordId).eq("userId", args.userId))
     .unique();
 
-  if (!options.bypassAccessCheck && !canAccessServerContext({ user, serverDiscordId, discordAccess })) {
+  if (!options.bypassAccessCheck && !canAccessServerContext({
+    user,
+    userId: args.userId,
+    serverDiscordId,
+    serverAdminIds: server.adminIds,
+    dashboardAdminIds: server.dashboardAdminIds,
+    discordAccess,
+  })) {
     return null;
   }
 
@@ -51,6 +58,7 @@ async function buildServerContext(
     ? true
     : canAdminServerContext({
         serverAdminIds: server.adminIds,
+        dashboardAdminIds: server.dashboardAdminIds,
         userId: args.userId,
         discordAccess,
       });

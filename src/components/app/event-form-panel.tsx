@@ -580,11 +580,12 @@ export function EventFormPanel({
     const durationMinutes = Number(quickSchedule.durationMinutes)
     if (!Number.isFinite(eventStart.getTime()) || registrationHours < 0 || meetingMinutes < 0 || durationMinutes <= 0) return
     const toLocal = (value: Date) => toDateTimeLocalInTimeZone(value.toISOString(), timezone)
-    form.setValue("registrationEnd", toLocal(new Date(eventStart.getTime() - registrationHours * 60 * 60 * 1000)), {
+    const meetingStart = new Date(eventStart.getTime() - meetingMinutes * 60 * 1000)
+    form.setValue("registrationEnd", toLocal(new Date(meetingStart.getTime() - registrationHours * 60 * 60 * 1000)), {
       shouldDirty: true,
       shouldValidate: true,
     })
-    form.setValue("meetingStart", toLocal(new Date(eventStart.getTime() - meetingMinutes * 60 * 1000)), {
+    form.setValue("meetingStart", toLocal(meetingStart), {
       shouldDirty: true,
       shouldValidate: true,
     })
