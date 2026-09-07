@@ -22,6 +22,16 @@ function shouldShowPublishedRosterImage(event: EventRecord, rosterUpdatedAt?: st
   return Boolean(rosterUpdatedAt && (event.status === "closed" || event.status === "starting"));
 }
 
+export function getAnnouncementPingRoleIds(payload: SyncPayload, event: EventRecord) {
+  const roleIds = event.pingMode === "roles"
+    ? event.pingRoleIds ?? []
+    : event.pingMode === "clan" || (event.pingMode === undefined && event.pingClan)
+      ? (payload.config.clanRoleId ? [payload.config.clanRoleId] : [])
+      : [];
+
+  return [...new Set(roleIds.map((roleId) => roleId.trim()).filter(Boolean))];
+}
+
 async function resolveAnnouncementDisplayNames(payload: SyncPayload, event: EventRecord, guild: Guild) {
   const userIds = new Set<string>();
 
@@ -76,8 +86,15 @@ async function syncEventMessage(channel: TextChannel, messageId: string | undefi
     }
     return existing.id;
   }
+  const pingRoleIds = includeSignup ? getAnnouncementPingRoleIds(payload, event) : [];
   return (await channel.send({
     ...buildAnnouncementV2Message(displayPayload, displayEvent, names, { showPublishedRosterImage: !includeSignup }),
+    ...(pingRoleIds.length > 0
+      ? {
+        content: pingRoleIds.map((roleId) => `<@&${roleId}>`).join(" "),
+        allowedMentions: { roles: pingRoleIds, parse: [] },
+      }
+      : {}),
     flags: MessageFlags.IsComponentsV2,
   })).id;
 }
@@ -316,11 +333,7 @@ async function syncEvent(
           messageId: existingMessage.id,
         });
       } else {
-        const pingRoleIds = event.pingMode === "roles"
-          ? event.pingRoleIds ?? []
-          : event.pingMode === "clan" || (event.pingMode === undefined && event.pingClan)
-            ? (payload.config.clanRoleId ? [payload.config.clanRoleId] : [])
-            : [];
+        const pingRoleIds = getAnnouncementPingRoleIds(payload, event);
         const created = await textChannel.send({
           ...buildAnnouncementV2Message(payload, event, userDisplayNames),
           content: pingRoleIds.map((roleId) => `<@&${roleId}>`).join(" ") || undefined,
