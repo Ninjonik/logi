@@ -152,38 +152,52 @@ export async function handleEventButtonInteraction(
     const member = interaction.member as GuildMember | null;
     const messages = getClanDiscordMessages(context.config.defaultLanguage);
     const assignment = context.assignments?.find((item) => item.userId === interaction.user.id);
-    const groupId = requestedGroupId === SIGNUP_PRIMARY_GROUP
-      ? assignment?.primaryGroupId ?? ""
-      : requestedGroupId;
+    const candidateGroupIds = requestedGroupId === SIGNUP_PRIMARY_GROUP
+      ? [...new Set([assignment?.primaryGroupId, ...(assignment?.secondaryGroupIds ?? [])].filter((groupId): groupId is string => Boolean(groupId)))]
+      : [requestedGroupId];
     const resolvedMembershipStatus = assignment?.type && assignment.status
       ? getResolvedMemberStatus(assignment.type, assignment.status)
       : null;
     const membershipStatus = resolvedMembershipStatus && resolvedMembershipStatus !== "pending"
       ? resolvedMembershipStatus
       : null;
-    const resolved = resolveEventSignupSelection({
-      event: context.event,
-      groups: context.groups,
-      memberRoleIds: member ? [...member.roles.cache.keys()] : null,
-      assignedGroupIds: assignment
-        ? [assignment.primaryGroupId, ...(assignment.secondaryGroupIds ?? [])].filter((groupId): groupId is string => Boolean(groupId))
-        : [],
-      membershipStatus,
-      actionId: groupId,
-      labels: {
-        registrationClosed: messages.interaction.registrationClosed,
-        invalidSignupButton: messages.interaction.invalidSignupButton,
-        unableToResolveMembership: messages.interaction.unableToResolveMembership,
-        missingRequiredRole: messages.interaction.missingRequiredRole,
-        membershipStatusNotAllowed: messages.interaction.membershipStatusNotAllowed,
-        signupUpdated: messages.interaction.signupUpdated,
-        markedNotAttending: messages.interaction.markedNotAttending,
-      },
-    });
+    const assignedGroupIds = assignment
+      ? [assignment.primaryGroupId, ...(assignment.secondaryGroupIds ?? [])].filter((groupId): groupId is string => Boolean(groupId))
+      : [];
+    const labels = {
+      registrationClosed: messages.interaction.registrationClosed,
+      invalidSignupButton: messages.interaction.invalidSignupButton,
+      unableToResolveMembership: messages.interaction.unableToResolveMembership,
+      missingRequiredRole: messages.interaction.missingRequiredRole,
+      membershipStatusNotAllowed: messages.interaction.membershipStatusNotAllowed,
+      signupUpdated: messages.interaction.signupUpdated,
+      markedNotAttending: messages.interaction.markedNotAttending,
+    };
+    let resolvedGroupId = candidateGroupIds[0] ?? "";
+    let resolved: ReturnType<typeof resolveEventSignupSelection> | null = null;
+    let lastError = labels.invalidSignupButton;
 
-    if (!resolved.ok) {
+    for (const candidateGroupId of candidateGroupIds.length > 0 ? candidateGroupIds : [""]) {
+      const candidate = resolveEventSignupSelection({
+        event: context.event,
+        groups: context.groups,
+        memberRoleIds: member ? [...member.roles.cache.keys()] : null,
+        assignedGroupIds,
+        membershipStatus,
+        actionId: candidateGroupId,
+        labels,
+      });
+      if (candidate.ok) {
+        resolved = candidate;
+        resolvedGroupId = candidateGroupId;
+        break;
+      }
+      lastError = candidate.error;
+    }
+
+    if (!resolved) {
       await interaction.reply({
-        content: resolved.error,
+        content: lastError,
         ephemeral: true,
       });
       return;
@@ -210,7 +224,7 @@ export async function handleEventButtonInteraction(
     });
 
     const actions = buildEventSignupActions(context.event, context.groups, messages.buttons);
-    const emoji = getSignupActionEmoji(groupId, actions);
+    const emoji = getSignupActionEmoji(resolvedGroupId, actions);
     const selectionRow = requestedGroupId === SIGNUP_PRIMARY_GROUP
       ? buildSignupSelectionRow(context, member, interaction.user.id, messages)
       : null;
