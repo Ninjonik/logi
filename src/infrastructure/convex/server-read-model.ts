@@ -221,6 +221,9 @@ export function canAccessServerContext(input: {
     mercenaryGuildIds: string[];
   };
   serverDiscordId: string;
+  serverAdminIds?: string[];
+  dashboardAdminIds?: string[];
+  userId?: string;
   discordAccess?: {
     hasDashboardAccess?: boolean;
     isAdmin?: boolean;
@@ -232,16 +235,21 @@ export function canAccessServerContext(input: {
     user.guildId === serverDiscordId ||
     user.managedGuildIds.includes(serverDiscordId) ||
     user.mercenaryGuildIds.includes(serverDiscordId) ||
+    Boolean(input.userId && input.serverAdminIds?.includes(input.userId)) ||
+    Boolean(input.userId && input.dashboardAdminIds?.includes(input.userId)) ||
     Boolean(discordAccess?.hasDashboardAccess)
   );
 }
 
 export function canAdminServerContext(input: {
   serverAdminIds: string[];
+  dashboardAdminIds?: string[];
   userId: string;
   discordAccess?: {
     isAdmin?: boolean;
   } | null;
 }) {
-  return input.serverAdminIds.includes(input.userId) || Boolean(input.discordAccess?.isAdmin);
+  return input.serverAdminIds.includes(input.userId) ||
+    input.dashboardAdminIds?.includes(input.userId) ||
+    Boolean(input.discordAccess?.isAdmin);
 }

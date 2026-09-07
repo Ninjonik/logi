@@ -9,11 +9,13 @@ const saveFixtureReference = makeFunctionReference<"mutation">("competitions:sav
 const listGuildsReference = makeFunctionReference<"query">("competitions:listGuilds");
 const mergeGuildsReference = makeFunctionReference<"mutation">("competitions:mergeGuilds");
 const linkEventReference = makeFunctionReference<"mutation">("competitions:linkEvent");
+const listPublicSlugsReference = makeFunctionReference<"query">("competitions:listPublicSlugs");
 export type PublicCompetition = { id: string; slug: string; name: string; season: string; divisions: Array<{ id: string; name: string; teams: Array<{ id: string; name: string; withdrawn: boolean }>; fixtures: Array<{ id: string; phase: "league" | "playoff" | "relegation"; teamAId: string; teamBId: string; scoreA?: number; scoreB?: number; status: "scheduled" | "final" | "forfeit"; scheduledAt?: string; eventId?: string }> }> };
 
 export async function getPublicCompetition(slug: string) {
   return await cachedRead(["competition", slug], [appCacheTags.competition(slug)], async () => (await fetchQuery(getPublicReference, { slug })) as PublicCompetition | null, 300);
 }
+export async function listPublicCompetitions() { const slugs = (await fetchQuery(listPublicSlugsReference, {})) as string[]; return (await Promise.all(slugs.map(getPublicCompetition))).filter((competition): competition is PublicCompetition => Boolean(competition)); }
 export async function seedEclCompetition() { return await fetchMutation(seedReference, { secret: getInternalAuthSecret() }); }
 export async function saveCompetitionFixture(input: { competitionId: string; divisionId?: string; phase: "league" | "playoff" | "relegation"; teamAId: string; teamBId: string; scoreA?: number; scoreB?: number; status: "scheduled" | "final" | "forfeit" }) { return await fetchMutation(saveFixtureReference, { secret: getInternalAuthSecret(), ...input, competitionId: input.competitionId as never, divisionId: input.divisionId as never, teamAId: input.teamAId as never, teamBId: input.teamBId as never }); }
 export async function listCompetitionGuilds() { return (await fetchQuery(listGuildsReference, {})) as Array<{ id: string; name: string; isGhost: boolean }>; }

@@ -390,6 +390,9 @@ export default defineSchema({
     eventCategories: v.optional(v.array(eventCategory)),
     botInside: v.boolean(),
     adminIds: v.array(v.string()),
+    // Admins explicitly assigned in Logi are kept separate from admins derived
+    // from the Discord dashboard role, so a role resync cannot revoke them.
+    dashboardAdminIds: v.optional(v.array(v.string())),
     memberIds: v.array(v.string()),
     members: v.array(guildMember),
     mercenaryIds: v.array(v.string()),

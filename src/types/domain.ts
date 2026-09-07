@@ -93,6 +93,7 @@ export type Guild = {
   botInside: boolean;
   canAdmin?: boolean;
   adminIds: string[];
+  dashboardAdminIds?: string[];
   memberIds: string[];
   members: GuildMember[];
   mercenaryIds: string[];

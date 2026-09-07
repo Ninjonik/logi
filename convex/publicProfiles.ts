@@ -5,6 +5,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 
 import { getGuildByDiscordId, getGuildDiscordId, getUserByIdentifier, getUserStableId } from "./identity";
+import { filterCollection, paginateCollection } from "../src/domain/shared/collection-query";
 
 function sortedMatches(matches: Array<Record<string, unknown>>) {
   return [...matches].sort((left, right) =>
@@ -141,11 +142,15 @@ export const listClans = query({
  * points at its imported result; this intentionally excludes planned and
  * partially imported matches. */
 export const listMatches = query({
-  args: { paginationOpts: paginationOptsValidator },
+  args: { paginationOpts: paginationOptsValidator, filters: v.optional(v.array(v.object({ path: v.string(), value: v.string() }))) },
   handler: async (ctx, args) => {
-    const result = await ctx.db.query("matchStats").order("desc").paginate(args.paginationOpts);
+    // Preserve database cursor pagination for the common unfiltered request.
+    // A filtered page must be formed after the public projection (which adds
+    // event and clan fields), so it deliberately filters before slicing.
+    const databasePage = args.filters?.length ? null : await ctx.db.query("matchStats").order("desc").paginate(args.paginationOpts);
+    const matches = databasePage?.page ?? await ctx.db.query("matchStats").order("desc").collect();
     const guilds = new Map<string, Awaited<ReturnType<typeof getGuildByDiscordId>>>();
-    const page = (await Promise.all(result.page.map(async (match) => {
+    const publicMatches = (await Promise.all(matches.map(async (match) => {
       const event = await ctx.db.get(match.eventId);
       if (!event || event.kind === "training" || event.matchStatsId !== match._id) return null;
       let guild = guilds.get(match.guildId);
@@ -165,7 +170,10 @@ export const listMatches = query({
         category: category?.label ?? event.matchType,
       };
     }))).filter((match): match is NonNullable<typeof match> => Boolean(match));
-    return { ...result, page };
+    if (databasePage) return { ...databasePage, page: publicMatches };
+    const offset = args.paginationOpts.cursor ? Number(args.paginationOpts.cursor) : 0;
+    const result = paginateCollection(filterCollection(publicMatches, args.filters ?? []), Number.isSafeInteger(offset) && offset >= 0 ? offset : 0, args.paginationOpts.numItems);
+    return { page: result.page, isDone: result.nextOffset === null, continueCursor: result.nextOffset === null ? "" : String(result.nextOffset) };
   },
 });
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Activity, Shield, Skull, Swords, Target, Wrench } from "lucide-react";
 
 import { PageHeader } from "@/components/app/page-header";
+import { PlayerAdminAccessButton } from "@/components/app/player-admin-access-button";
 import { ResourceTable } from "@/components/app/resource-table";
 import { StatCard } from "@/components/app/stat-card";
 import { TablePageLayout } from "@/components/app/table-page-layout";
@@ -161,6 +162,16 @@ export default async function ServerUserDetailPage({
             },
           ]}
         />
+        {context.canAdmin ? (
+          <div className="flex justify-end">
+            <PlayerAdminAccessButton
+              serverId={server.id}
+              actorId={context.user.discordId}
+              playerId={user.discordId}
+              initialIsAdmin={server.adminIds.includes(user.discordId)}
+            />
+          </div>
+        ) : null}
         <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} assignment={assignment} config={context.discordConfig} canManage={context.canAdmin} />
       </div>
     </TablePageLayout>

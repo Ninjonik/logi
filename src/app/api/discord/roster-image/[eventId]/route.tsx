@@ -1,9 +1,10 @@
 import { ImageResponse } from "next/og";
 import { NextResponse } from "next/server";
 
-import { getInternalAuthSecret, getSiteUrl } from "@/lib/env";
+import { getSiteUrl } from "@/lib/env";
 import { getClanDiscordMessages, getIntlLocaleForClanLanguage } from "@/lib/clan-language";
 import { parseDiscordCustomEmoji } from "@/lib/discord-emoji";
+import { formatHllPresetLabel } from "@/lib/hll-map-presets";
 import { rosterImageCache } from "@/lib/roster-image-cache";
 import { getRosterImageContext, getRosterImageContextCached, resolveSiteAssetUrl } from "@/lib/roster-image";
 
@@ -259,10 +260,6 @@ export async function GET(
 ) {
   const { eventId } = await context.params;
   const url = new URL(request.url);
-  if (url.searchParams.get("secret") !== getInternalAuthSecret()) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
-
   const imageCacheKey = url.searchParams.get("cb");
   if (imageCacheKey) {
     const cachedImage = rosterImageCache.get(`${eventId}:${imageCacheKey}`);
@@ -340,6 +337,10 @@ export async function GET(
     (sum, squad) => sum + squad.players.filter(isOccupiedSlot).length,
     0,
   );
+  const totalSlots = data.roster.squads.reduce((sum, squad) => sum + squad.players.length, 0);
+  const mapLabel = data.event.map
+    ? (formatHllPresetLabel(data.event.map) ?? data.event.map).replaceAll("\u00c2\u00b7", " - ")
+    : messages.rosterImage.unknown;
 
   // ---- Compute the canvas height from the actual data, so nothing gets
   // clipped no matter how many groups/squads/players this roster has. ----
@@ -362,8 +363,8 @@ export async function GET(
     : [];
   const hasDetails = descriptionLines.length > 0 || notesLines.length > 0;
 
-  const rosterCardHeight = 102 + (showServer ? 20 : 0) + (showServerPassword ? 20 : 0);
-  const meetingCardHeight = 172 + (showCap ? 34 : 0);
+  const rosterCardHeight = 102 + (showCap ? 20 : 0) + (showServer ? 20 : 0) + (showServerPassword ? 20 : 0);
+  const meetingCardHeight = 138;
   const reserveRowsHeight = reserveUsers.length > 0 ? Math.min(reserveUsers.length, 20) * 30 : 22;
   const reservesCardHeight = 56 + reserveRowsHeight;
   const detailsCardHeight = hasDetails
@@ -625,8 +626,19 @@ export async function GET(
           <div style={{ display: "flex", flexDirection: "column", border: "1px solid rgba(148,163,184,.18)", borderRadius: "22px", padding: "16px", background: "#121b2c" }}>
             <div style={{ display: "flex", fontSize: "14px", letterSpacing: "0.18em", textTransform: "uppercase", color: "#7dd3fc" }}>{messages.rosterImage.roster}</div>
             <div style={{ display: "flex", fontSize: "24px", fontWeight: 700, marginTop: "8px" }}>{data.event.name}</div>
-            <div style={{ display: "flex", fontSize: "14px", color: "#94a3b8", marginTop: "6px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "14px", color: "#94a3b8", marginTop: "6px" }}>
+              <div style={{ display: "flex" }}>{`${mapLabel} - ${data.event.side ?? messages.rosterImage.unknown}`}</div>
+              <div style={{ display: "none" }}>
+              <div style={{ display: "flex" }}>{`${mapLabel} · ${data.event.side ?? messages.rosterImage.unknown}`}</div>
+              </div>
+              {showCap ? (
+                <div style={{ display: "flex", fontSize: "12px", color: "#7dd3fc" }}>
+                  {`${messages.rosterImage.cap}: ${data.event.cap}`}
+                </div>
+              ) : null}
+              <div style={{ display: "none" }}>
               {`${data.event.map ?? messages.rosterImage.unknown} • ${data.event.side ?? messages.rosterImage.unknown}`}
+            </div>
             </div>
             {showServer ? (
               <div style={{ display: "flex", fontSize: "12px", color: "#7dd3fc", marginTop: "8px" }}>
@@ -644,14 +656,6 @@ export async function GET(
             <div style={{ display: "flex", fontSize: "15px", fontWeight: 600 }}>{formatDate(data.event.meetingStart, intlLocale, configTimezone)}</div>
             <div style={{ display: "flex", fontSize: "11px", letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8", marginTop: "4px" }}>{messages.rosterImage.matchStart}</div>
             <div style={{ display: "flex", fontSize: "15px", fontWeight: 600 }}>{formatDate(data.event.gameStart, intlLocale, configTimezone)}</div>
-            <div style={{ display: "flex", fontSize: "11px", letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8", marginTop: "4px" }}>{messages.rosterImage.stats}</div>
-            <div style={{ display: "flex", fontSize: "15px", fontWeight: 600 }}>{`${totalAssigned} ${messages.rosterImage.assigned}`}</div>
-            {showCap ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <div style={{ display: "flex", fontSize: "11px", letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8", marginTop: "4px" }}>{messages.rosterImage.cap}</div>
-                <div style={{ display: "flex", fontSize: "15px", fontWeight: 600 }}>{data.event.cap}</div>
-              </div>
-            ) : null}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px", border: "1px solid rgba(148,163,184,.18)", borderRadius: "22px", padding: "16px", background: "#121b2c" }}>
             <div style={{ display: "flex", fontSize: "12px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#22d3ee" }}>{messages.rosterImage.reserves}</div>
@@ -696,7 +700,8 @@ export async function GET(
           ) : null}
         </div>
         <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: `${MAIN_COLUMN_GAP}px`, minWidth: 0 }}>
-          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", padding: "0 4px" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "0 4px", gap: "3px" }}>
+            <div style={{ display: "flex", fontSize: "14px", fontWeight: 700, color: "#cbd5e1" }}>{`${totalAssigned} / ${totalSlots}`}</div>
             <div style={{ display: "flex", fontSize: "12px", color: "#64748b" }}>{formatDate(data.roster.updatedAt, intlLocale, configTimezone)}</div>
           </div>
 

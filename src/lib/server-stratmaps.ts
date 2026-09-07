@@ -4,6 +4,7 @@ import { makeFunctionReference } from "convex/server";
 import { getLoggedInUser } from "@/lib/auth";
 
 const getStratmapByIdReference = makeFunctionReference<"query">("stratmaps:getById");
+const getPublicStratmapByIdReference = makeFunctionReference<"query">("stratmaps:getPublicById");
 const listStratmapsByGuildReference = makeFunctionReference<"query">("stratmaps:listByGuild");
 
 export async function getStratmapDetail(stratmapId: string) {
@@ -32,6 +33,12 @@ export async function getStratmapDetail(stratmapId: string) {
       createdAt: string;
       updatedAt: string;
     };
+  } | null;
+}
+
+export async function getPublicStratmapDetail(stratmapId: string) {
+  return await fetchQuery(getPublicStratmapByIdReference, { stratmapId: stratmapId as never }) as {
+    id: string; guildId: string; eventId?: string; title: string; description?: string; baseMapId: string; side?: string; strongpointId?: string; state: string; createdBy: string; createdAt: string; updatedAt: string;
   } | null;
 }
 

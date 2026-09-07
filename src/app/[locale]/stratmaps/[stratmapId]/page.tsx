@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
-
+import { StratmapEditor } from "@/components/app/stratmap-editor";
+import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
-import { getStratmapDetail } from "@/lib/server-stratmaps";
+import { getPublicStratmapDetail } from "@/lib/server-stratmaps";
 
 export default async function PublicStratmapRedirectPage({
   params,
@@ -10,10 +10,9 @@ export default async function PublicStratmapRedirectPage({
 }) {
   const { locale, stratmapId } = await params;
   const safeLocale = isLocale(locale) ? locale : "en";
-  const detail = await getStratmapDetail(stratmapId);
-  if (!detail) {
+  const stratmap = await getPublicStratmapDetail(stratmapId);
+  if (!stratmap) {
     return null;
   }
-
-  redirect(`/${safeLocale}/dashboard/servers/${detail.serverId}/stratmaps/${detail.stratmap.id}`);
+  return <div className="h-dvh p-4"><StratmapEditor locale={safeLocale} userId="public" stratmapId={stratmapId} initialCanAdmin={false} initialStratmap={stratmap} dictionary={getDictionary(safeLocale)} /></div>;
 }

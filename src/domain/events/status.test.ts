@@ -26,6 +26,15 @@ test("deriveEventStatus returns starting in meeting countdown window", () => {
   }, new Date("2026-01-01T11:00:00.000Z")), "starting");
 });
 
+test("deriveEventStatus restores registration when a starting event is rescheduled before registration closes", () => {
+  assert.equal(deriveEventStatus({
+    registrationEnd: "2026-01-02T10:00:00.000Z",
+    meetingStart: "2026-01-03T12:00:00.000Z",
+    gameEnd: "2026-01-03T14:00:00.000Z",
+    status: "starting",
+  }, new Date("2026-01-01T09:00:00.000Z")), "registration");
+});
+
 test("training registration can stay open after starting", () => {
   const event = {
     kind: "training" as const,

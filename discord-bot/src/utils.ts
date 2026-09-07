@@ -76,9 +76,12 @@ export function getRosterImageVersion(event: EventRecord, rosterUpdatedAt?: stri
 
 export function buildRosterImageUrl(eventId: string, rosterUpdatedAt?: string) {
   const url = new URL(`/api/discord/roster-image/${eventId}`, env.appSiteUrl);
-  url.searchParams.set("secret", env.internalSecret);
   url.searchParams.set("cb", buildRosterImageCacheKey(eventId, rosterUpdatedAt));
   return url.toString();
+}
+
+export function buildPublicRosterUrl(eventId: string, language: ClanLanguage) {
+  return new URL(`/${language}/rosters/${eventId}`, env.appSiteUrl).toString();
 }
 
 export async function warmRosterImage(eventId: string, rosterUpdatedAt?: string) {

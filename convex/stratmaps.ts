@@ -24,7 +24,14 @@ async function resolveGuildAccess(ctx: QueryCtx | MutationCtx, input: {
     .withIndex("guildId_userId", (q) => q.eq("guildId", input.guildDiscordId).eq("userId", input.userId))
     .unique();
 
-  if (!canAccessServerContext({ user, serverDiscordId: input.guildDiscordId, discordAccess })) {
+  if (!canAccessServerContext({
+    user,
+    userId: input.userId,
+    serverDiscordId: input.guildDiscordId,
+    serverAdminIds: guild.adminIds,
+    dashboardAdminIds: guild.dashboardAdminIds,
+    discordAccess,
+  })) {
     return null;
   }
 
@@ -32,6 +39,7 @@ async function resolveGuildAccess(ctx: QueryCtx | MutationCtx, input: {
     guild,
     canAdmin: canAdminServerContext({
       serverAdminIds: guild.adminIds,
+      dashboardAdminIds: guild.dashboardAdminIds,
       userId: input.userId,
       discordAccess,
     }),
@@ -96,6 +104,14 @@ export const getById = query({
       serverId: String(access.guild._id),
       stratmap: normalizeStratmapDoc(stratmap),
     };
+  },
+});
+
+export const getPublicById = query({
+  args: { stratmapId: v.id("stratmaps") },
+  handler: async (ctx, args) => {
+    const stratmap = await ctx.db.get(args.stratmapId);
+    return stratmap ? normalizeStratmapDoc(stratmap) : null;
   },
 });
 

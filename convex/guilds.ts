@@ -77,6 +77,13 @@ export const visibleForUser = query({
       }
     }
 
+    const directlyAssignedGuilds = (await ctx.db.query("guilds").collect()).filter((guild) =>
+      guild.adminIds.includes(args.userId) || guild.dashboardAdminIds?.includes(args.userId),
+    );
+    for (const guild of directlyAssignedGuilds) {
+      ids.add(getGuildDiscordId(guild));
+    }
+
     const adminGuildIds = new Set<string>(user.managedGuildIds);
     for (const access of discordAccess) {
       if (access.isAdmin) {
@@ -94,7 +101,9 @@ export const visibleForUser = query({
 
     return guilds.map((guild) => ({
         ...normalizeGuildDoc(guild),
-        canAdmin: guild.adminIds.includes(args.userId) || adminGuildIds.has(getGuildDiscordId(guild)),
+        canAdmin: guild.adminIds.includes(args.userId) ||
+          guild.dashboardAdminIds?.includes(args.userId) ||
+          adminGuildIds.has(getGuildDiscordId(guild)),
       }));
   },
 });
@@ -259,13 +268,51 @@ export const resyncDashboardAdmins = mutation({
       .map((access) => access.userId);
 
     await ctx.db.patch(guild._id, {
-      adminIds: dashboardAdminIds,
+      dashboardAdminIds,
       updatedAt: new Date().toISOString(),
     });
 
     return {
       adminCount: dashboardAdminIds.length,
     };
+  },
+});
+
+export const setPlayerAdminAccess = mutation({
+  args: {
+    userId: v.string(),
+    serverId: v.id("guilds"),
+    playerId: v.string(),
+    isAdmin: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const [actor, guild, player] = await Promise.all([
+      getUserByDiscordId(ctx, args.userId),
+      ctx.db.get(args.serverId),
+      getUserByDiscordId(ctx, args.playerId),
+    ]);
+    if (!actor || !guild || !player) {
+      throw new Error("Player or server not found.");
+    }
+
+    const guildDiscordId = getGuildDiscordId(guild);
+    const actorAccess = await ctx.db
+      .query("discordMemberAccess")
+      .withIndex("guildId_userId", (q) => q.eq("guildId", guildDiscordId).eq("userId", args.userId))
+      .unique();
+
+    const canManage = guild.adminIds.includes(args.userId) ||
+      guild.dashboardAdminIds?.includes(args.userId) ||
+      actorAccess?.isAdmin;
+    if (!canManage) {
+      throw new Error("Unauthorized.");
+    }
+
+    const adminIds = args.isAdmin
+      ? [...new Set([...guild.adminIds, args.playerId])]
+      : guild.adminIds.filter((id) => id !== args.playerId);
+    await ctx.db.patch(guild._id, { adminIds, updatedAt: new Date().toISOString() });
+    return { isAdmin: adminIds.includes(args.playerId) };
   },
 });
 

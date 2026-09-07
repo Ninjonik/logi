@@ -57,6 +57,8 @@ export const getPublic = query({ args: { slug: v.string() }, handler: async (ctx
   return { id: String(competition._id), slug: competition.slug, name: competition.name, season: competition.season, divisions: divisions.sort((a,b) => a.order-b.order).map(division => ({ id: String(division._id), name: division.name, teams: joins.filter(x => x.divisionId === division._id).map(x => ({ id: String(x.guildId), name: guilds.get(x.guildId)?.name ?? "Unknown team", withdrawn: x.withdrawn })), fixtures: fixtures.filter(x => x.divisionId === division._id).map(x => ({ id: String(x._id), phase: x.phase, teamAId: String(x.teamAId), teamBId: String(x.teamBId), scoreA: x.scoreA, scoreB: x.scoreB, status: x.status, scheduledAt: x.scheduledAt, eventId: x.eventId ? String(x.eventId) : undefined })) })) };
 } });
 
+export const listPublicSlugs = query({ args: {}, handler: async (ctx) => (await ctx.db.query("competitions").collect()).map((competition) => competition.slug) });
+
 export const listGuilds = query({ args: {}, handler: async (ctx) => (await ctx.db.query("guilds").collect()).map(guild => ({ id: String(guild._id), name: guild.name, isGhost: !guild.discordId && !guild.id })).sort((left, right) => left.name.localeCompare(right.name)) });
 
 export const mergeGuilds = mutation({ args: { secret: v.string(), primaryGuildId: v.id("guilds"), secondaryGuildId: v.id("guilds") }, handler: async (ctx, args) => {

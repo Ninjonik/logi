@@ -29,12 +29,28 @@ test("canAccessServerContext allows direct guild members and dashboard access", 
     serverDiscordId: "guild-1",
     discordAccess: { hasDashboardAccess: true },
   }), true);
+
+  assert.equal(canAccessServerContext({
+    user: {
+      managedGuildIds: [],
+      mercenaryGuildIds: [],
+    },
+    userId: "user-1",
+    serverDiscordId: "guild-1",
+    serverAdminIds: ["user-1"],
+  }), true);
 });
 
-test("canAdminServerContext allows server admins and discord admins", () => {
+test("canAdminServerContext allows explicit, dashboard-role, and Discord admins", () => {
   assert.equal(canAdminServerContext({
     serverAdminIds: ["user-1"],
     userId: "user-1",
+  }), true);
+
+  assert.equal(canAdminServerContext({
+    serverAdminIds: [],
+    dashboardAdminIds: ["user-2"],
+    userId: "user-2",
   }), true);
 
   assert.equal(canAdminServerContext({
