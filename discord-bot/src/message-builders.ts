@@ -70,12 +70,7 @@ export function buildAnnouncementV2Message(
     new TextDisplayBuilder().setContent(`# ${event.name}\n${embed.description ?? ""}`.slice(0, 4000)),
   );
 
-  const rosterLines: string[] = [];
-  for (const field of embed.fields ?? []) {
-    if (field.name !== "\u200B") rosterLines.push(`**${field.name}**\n${field.value}`);
-    else if (rosterLines.length > 0) rosterLines[rosterLines.length - 1] += `\n${field.value}`;
-  }
-  const rosterText = rosterLines.join("\n");
+  const rosterText = buildCompactV2FieldText(embed.fields ?? []);
   if (rosterText) {
     container.addSeparatorComponents(new SeparatorBuilder());
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(rosterText.slice(0, 4000)));
@@ -106,6 +101,30 @@ export function buildAnnouncementV2Message(
   }
 
   return { components: [container] };
+}
+
+export function buildCompactV2FieldText(fields: APIEmbedField[]) {
+  const sections: Array<{ name: string; values: string[] }> = [];
+
+  for (const field of fields) {
+    if (field.name !== "\u200B") {
+      sections.push({ name: field.name, values: [field.value] });
+      continue;
+    }
+
+    if (field.value !== "\u200B") {
+      sections[sections.length - 1]?.values.push(field.value);
+    }
+  }
+
+  return sections
+    .map((section) => {
+      const members = section.values
+        .flatMap((value) => value.split("\n"))
+        .filter((value) => value.trim() && value !== "\u200B");
+      return `**${section.name}**\n${members.join(", ")}`;
+    })
+    .join("\n\n");
 }
 
 function escapeDisplayName(value: string) {

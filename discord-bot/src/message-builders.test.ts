@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildCalendarPanelEmbed, buildEventComponents, buildEventEmbed } from "./message-builders";
+import { buildCalendarPanelEmbed, buildCompactV2FieldText, buildEventComponents, buildEventEmbed } from "./message-builders";
 import type { CalendarItem, DiscordConfig, EventCategory, EventRecord, Group, Roster } from "./types";
 
 const config: DiscordConfig = {
@@ -74,6 +74,18 @@ function createTrainingEvent(patch: Partial<EventRecord> = {}): EventRecord {
     ...patch,
   };
 }
+
+test("buildCompactV2FieldText removes legacy embed padding and compacts field columns", () => {
+  const result = buildCompactV2FieldText([
+    { name: "Infantry (4)", value: "Alpha\nDelta", inline: true },
+    { name: "\u200B", value: "Bravo", inline: true },
+    { name: "\u200B", value: "Charlie", inline: true },
+    { name: "\u200B", value: "\u200B", inline: true },
+    { name: "Armor (0)", value: "Nobody yet", inline: true },
+  ]);
+
+  assert.equal(result, "**Infantry (4)**\nAlpha, Delta, Bravo, Charlie\n\n**Armor (0)**\nNobody yet");
+});
 
 test("buildEventComponents omits group buttons when signupGroupIds is empty", () => {
   const rows = buildEventComponents(
