@@ -1,9 +1,25 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { execFileSync } from "node:child_process";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+function getBuildVersion() {
+  try {
+    const commitCount = execFileSync("git", ["rev-list", "--count", "HEAD"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return `1.0.${commitCount}`;
+  } catch {
+    return "1.0.0";
+  }
+}
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_VERSION: getBuildVersion(),
+  },
   experimental: {
     optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],
   },
