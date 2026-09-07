@@ -57,11 +57,15 @@ export function buildAnnouncementV2Message(
   payload: SyncPayload,
   event: EventRecord,
   userDisplayNames: Record<string, string> = payload.userDisplayNames,
-  options?: { showPublishedRosterImage?: boolean },
+  options?: { showPublishedRosterImage?: boolean; pingRoleIds?: string[] },
 ) {
   const legacy = buildAnnouncementMessage(payload, event, userDisplayNames, options);
   const embed = legacy.embed.toJSON();
   const container = new ContainerBuilder().setAccentColor(embed.color ?? 0xFFB000);
+  const roleMentions = options?.pingRoleIds?.map((roleId) => `<@&${roleId}>`).join(" ");
+  if (roleMentions) {
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(roleMentions));
+  }
   container.addTextDisplayComponents(
     new TextDisplayBuilder().setContent(`# ${event.name}\n${embed.description ?? ""}`.slice(0, 4000)),
   );

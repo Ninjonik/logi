@@ -88,13 +88,11 @@ async function syncEventMessage(channel: TextChannel, messageId: string | undefi
   }
   const pingRoleIds = includeSignup ? getAnnouncementPingRoleIds(payload, event) : [];
   return (await channel.send({
-    ...buildAnnouncementV2Message(displayPayload, displayEvent, names, { showPublishedRosterImage: !includeSignup }),
-    ...(pingRoleIds.length > 0
-      ? {
-        content: pingRoleIds.map((roleId) => `<@&${roleId}>`).join(" "),
-        allowedMentions: { roles: pingRoleIds, parse: [] },
-      }
-      : {}),
+    ...buildAnnouncementV2Message(displayPayload, displayEvent, names, {
+      showPublishedRosterImage: !includeSignup,
+      pingRoleIds,
+    }),
+    allowedMentions: { roles: pingRoleIds, parse: [] },
     flags: MessageFlags.IsComponentsV2,
   })).id;
 }
@@ -335,8 +333,7 @@ async function syncEvent(
       } else {
         const pingRoleIds = getAnnouncementPingRoleIds(payload, event);
         const created = await textChannel.send({
-          ...buildAnnouncementV2Message(payload, event, userDisplayNames),
-          content: pingRoleIds.map((roleId) => `<@&${roleId}>`).join(" ") || undefined,
+          ...buildAnnouncementV2Message(payload, event, userDisplayNames, { pingRoleIds }),
           allowedMentions: { roles: pingRoleIds, parse: [] },
           flags: MessageFlags.IsComponentsV2,
         });
