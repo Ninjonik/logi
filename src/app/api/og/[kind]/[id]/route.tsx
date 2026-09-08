@@ -1,9 +1,13 @@
 import { ImageResponse } from "next/og";
+import path from "node:path";
+import fs from "node:fs/promises";
+import sharp, { type OverlayOptions } from "sharp";
 
 import { publicImageCache } from "@/lib/public-image-cache";
 import { getPublicClan, getPublicMatch, getPublicPlayerProfile } from "@/lib/read-models/public-profiles";
-import { getGuildPerformanceHistory } from "@/lib/read-models/performance-history";
 import { getPerformanceTrendDeltas } from "@/lib/performance-trends";
+import { getPublicStratmapDetail } from "@/lib/server-stratmaps";
+import { getHllStratmapMapById, parseStratmapState } from "@/lib/stratmaps";
 
 type Props = { params: Promise<{ kind: string; id: string }> };
 const palette = { bg: "#17140f", panel: "#211d17", line: "#655f55", muted: "#aaa397", text: "#f7f3ed", gold: "#d5a44b", win: "#25a35a", loss: "#cf4d45", neutral: "#4d91d8" };
@@ -42,10 +46,6 @@ function Shell({ label, children }: { label: string; children: React.ReactNode }
 function Metrics({ items }: { items: Array<[string, string, string?]> }) {
   return <div style={{ display: "flex", marginTop: 23, paddingTop: 20, borderTop: `1px solid ${palette.line}`, gap: 30 }}>{items.map(([label, value, detail]) => <div key={label} style={{ display: "flex", flex: 1, flexDirection: "column" }}><div style={{ display: "flex", color: palette.muted, fontSize: 17, fontWeight: 700 }}>{label}</div><div style={{ display: "flex", marginTop: 7, fontSize: 31, fontWeight: 800 }}>{value}</div>{detail ? <div style={{ display: "flex", marginTop: 3, color: palette.muted, fontSize: 16 }}>{detail}</div> : null}</div>)}</div>;
 }
-function TrendLine({ trends }: { trends: ReturnType<typeof getPerformanceTrendDeltas> }) {
-  if (!trends) return null;
-  return <div style={{ display: "flex", gap: 18, marginTop: 12, fontSize: 16 }}><span style={{ color: trends.kd >= 0 ? palette.win : palette.loss }}>K/D {trends.kd >= 0 ? "↑ +" : "↓ "}{trends.kd}</span><span style={{ color: trends.offense >= 0 ? palette.win : palette.loss }}>Combat {trends.offense >= 0 ? "↑ +" : "↓ "}{trends.offense}</span><span style={{ color: trends.support >= 0 ? palette.win : palette.loss }}>Support {trends.support >= 0 ? "↑ +" : "↓ "}{trends.support}</span></div>;
-}
 function PlayerHistory({ matches }: { matches: Array<{ eventId: string; kills: number; deaths: number; offense: number; defense: number; support: number }> }) {
   const recent = matches.slice(0, 10).reverse();
   const series = [
@@ -67,7 +67,46 @@ function TeamChart({ match }: { match: NonNullable<Awaited<ReturnType<typeof get
 }
 function PlayerCard({ player, avatar }: { player: NonNullable<Awaited<ReturnType<typeof getPublicPlayerProfile>>>; avatar: string | null }) {
   const recent = player.recentMatches.slice(0, 9).reverse(); const maximum = Math.max(1, ...recent.map((match) => match.killDeathRatio)); const trends = getPerformanceTrendDeltas(player.recentMatches.map((match) => ({ kd: match.killDeathRatio, offense: match.offense + match.defense, support: match.support })));
-  return <Shell label="PLAYER PERFORMANCE"><div style={{ display: "flex", marginTop: 28, alignItems: "center", gap: 22 }}><Identity name={player.name} image={avatar} /><div style={{ display: "flex", flexDirection: "column" }}><div style={{ display: "flex", fontSize: 54, fontWeight: 900 }}>{truncate(player.name, 30)}</div><div style={{ display: "flex", marginTop: 5, color: palette.muted, fontSize: 20 }}>{player.clans.map((clan) => clan.name).slice(0, 2).join(" · ") || "Independent player"}</div></div></div><Metrics items={[["RECORDED MATCHES", String(player.stats.matches)], ["KILL / DEATH", `${player.stats.kd.toFixed(2)} K/D`, `${player.stats.kills} kills · ${player.stats.deaths} deaths`], ["RECENT FORM", recent.length ? `${recent.at(-1)?.killDeathRatio.toFixed(2)} K/D` : "—"]]} /><div style={{ display: "flex", marginTop: 20, padding: "16px 18px", borderRadius: 14, background: palette.panel, flexDirection: "column" }}><div style={{ display: "flex", justifyContent: "space-between", color: palette.muted, fontSize: 17 }}><span>RECENT MATCH FORM</span><span>Each bar = K/D</span></div><div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 58, marginTop: 10 }}>{recent.map((match) => <div key={match.eventId} style={{ display: "flex", flex: 1, height: `${Math.max(14, Math.round(match.killDeathRatio / maximum * 50))}px`, borderRadius: 4, background: match.killDeathRatio >= 1 ? palette.win : palette.loss }} />)}</div></div><PlayerHistory matches={player.recentMatches} /></Shell>;
+  return <Shell label="PLAYER PERFORMANCE">
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 28, width: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+        <Identity name={player.name} image={avatar} />
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", fontSize: 54, fontWeight: 900 }}>{truncate(player.name, 30)}</div>
+          <div style={{ display: "flex", marginTop: 5, color: palette.muted, fontSize: 20 }}>{player.clans.map((clan) => clan.name).slice(0, 2).join(" · ") || "Independent player"}</div>
+        </div>
+      </div>
+      {trends ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 16, background: palette.panel, padding: "10px 18px", borderRadius: 12, border: `1px solid ${palette.line}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 18, fontWeight: 700, color: trends.kd >= 0 ? palette.win : palette.loss }}>
+            <span>K/D</span>
+            <span>{trends.kd >= 0 ? "↑ +" : "↓ "}{trends.kd}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 18, fontWeight: 700, color: trends.offense >= 0 ? palette.win : palette.loss }}>
+            <span>Combat Score</span>
+            <span>{trends.offense >= 0 ? "↑ +" : "↓ "}{trends.offense}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 18, fontWeight: 700, color: trends.support >= 0 ? palette.win : palette.loss }}>
+            <span>Support Score</span>
+            <span>{trends.support >= 0 ? "↑ +" : "↓ "}{trends.support}</span>
+          </div>
+        </div>
+      ) : null}
+    </div>
+    <Metrics items={[["RECORDED MATCHES", String(player.stats.matches)], ["KILL / DEATH", `${player.stats.kd.toFixed(2)} K/D`, `${player.stats.kills} kills · ${player.stats.deaths} deaths`], ["RECENT FORM", recent.length ? `${recent.at(-1)?.killDeathRatio.toFixed(2)} K/D` : "—"]]} />
+    <div style={{ display: "flex", marginTop: 20, padding: "16px 18px", borderRadius: 14, background: palette.panel, flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", color: palette.muted, fontSize: 17 }}>
+        <span>RECENT MATCH FORM</span>
+        <span>Each bar = K/D</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 58, marginTop: 10 }}>
+        {recent.map((match) => (
+          <div key={match.eventId} style={{ display: "flex", flex: 1, height: `${Math.max(14, Math.round(match.killDeathRatio / maximum * 50))}px`, borderRadius: 4, background: match.killDeathRatio >= 1 ? palette.win : palette.loss }} />
+        ))}
+      </div>
+    </div>
+    <PlayerHistory matches={player.recentMatches} />
+  </Shell>;
 }
 
 function ClanCard({ clan, avatar }: { clan: NonNullable<Awaited<ReturnType<typeof getPublicClan>>>; avatar: string | null }) {
@@ -81,22 +120,141 @@ function ClanRecordDetails({ clan }: { clan: NonNullable<Awaited<ReturnType<type
 function ClanResultScores({ matches }: { matches: NonNullable<Awaited<ReturnType<typeof getPublicClan>>>["recentMatches"] }) {
   return <div style={{ display: "flex", gap: 6, marginTop: 10 }}>{matches.slice(0, 10).reverse().map((match) => <div key={match.eventId} style={{ display: "flex", flex: 1, justifyContent: "center", color: palette.muted, fontSize: 12 }}>{match.score.allied}—{match.score.axis}</div>)}</div>;
 }
-function PlayerSheet({ player, avatar }: { player: NonNullable<Awaited<ReturnType<typeof getPublicPlayerProfile>>>; avatar: string | null }) {
-  const matches = player.recentMatches; const oldest = matches[matches.length - 1]; const newest = matches[0]; const top = [...matches].sort((a, b) => b.kills - a.kills).slice(0, 4); const combat = matches.reduce((sum, item) => sum + item.offense + item.defense, 0); const support = matches.reduce((sum, item) => sum + item.support, 0); const total = Math.max(1, player.stats.kills + player.stats.deaths + combat / 200 + support / 200);
-  return <Shell label="PLAYER PERFORMANCE"><div style={{ display: "flex", marginTop: 24, alignItems: "center", gap: 22 }}><Identity name={player.name} image={avatar} /><div style={{ display: "flex", fontSize: 54, fontWeight: 900 }}>{truncate(player.name, 30)}</div></div><Metrics items={[["FIRST RECORDED", oldest?.endedAt ? new Date(oldest.endedAt).toLocaleDateString("en-GB") : "—", oldest?.mapName], ["LAST RECORDED", newest?.endedAt ? new Date(newest.endedAt).toLocaleDateString("en-GB") : "—", newest?.mapName], ["MATCHES PLAYED", String(player.stats.matches), `${player.stats.kills} kills · ${player.stats.deaths} deaths`]]} /><div style={{ display: "flex", marginTop: 18, flexDirection: "column" }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 18 }}><span>MATCH CONTRIBUTION</span><span>{player.stats.kills} K · {player.stats.deaths} D · {combat} combat · {support} support</span></div><div style={{ display: "flex", height: 25, marginTop: 10, borderRadius: 4, overflow: "hidden", background: palette.panel }}><div style={{ display: "flex", width: `${player.stats.kills / total * 100}%`, background: palette.win }} /><div style={{ display: "flex", width: `${player.stats.deaths / total * 100}%`, background: palette.loss }} /><div style={{ display: "flex", width: `${combat / 200 / total * 100}%`, background: palette.gold }} /><div style={{ display: "flex", width: `${support / 200 / total * 100}%`, background: palette.neutral }} /></div></div><div style={{ display: "flex", marginTop: 18, paddingTop: 14, borderTop: `1px solid ${palette.line}`, flexDirection: "column", gap: 7 }}><div style={{ display: "flex", fontSize: 20, fontWeight: 800 }}>MOST KILLS (RECENT)</div>{top.map((match, index) => <div key={match.eventId} style={{ display: "flex", color: palette.text, fontSize: 18 }}><span style={{ display: "flex", width: 34 }}>{index + 1}.</span><span>{match.kills} kills / {match.deaths} deaths on {truncate(match.name, 32)} <span style={{ color: palette.muted }}>— {match.mapName ?? "Unknown map"}</span></span></div>)}</div></Shell>;
-}
 
 function MatchCard({ match, thumbnail }: { match: NonNullable<Awaited<ReturnType<typeof getPublicMatch>>>; thumbnail: string | null }) {
   const clanScore = match.clanResult?.clanScore ?? match.raw.result.allied; const opponentScore = match.clanResult?.opponentScore ?? match.raw.result.axis; const leaders = [...match.raw.player_stats].sort((a, b) => b.kills - a.kills).slice(0, 5); const minutes = match.raw.match_time ? Math.round(match.raw.match_time / 60) : null;
   return <Shell label="MATCH RESULT"><div style={{ display: "flex", marginTop: 28, alignItems: "center", gap: 22 }}>{thumbnail ? <img src={thumbnail} width="102" height="102" style={{ display: "flex", width: 102, height: 102, objectFit: "cover", borderRadius: 18 }} /> : <Identity name={match.eventName} image={null} square />}<div style={{ display: "flex", flexDirection: "column", flex: 1 }}><div style={{ display: "flex", fontSize: 46, fontWeight: 900 }}>{truncate(match.eventName, 38)}</div><div style={{ display: "flex", marginTop: 5, color: palette.muted, fontSize: 20 }}>{match.raw.map.pretty_name}</div></div><div style={{ display: "flex", fontSize: 56, fontWeight: 900 }}>{match.raw.result.allied} — {match.raw.result.axis}</div></div><Metrics items={[["PLAYERS RECORDED", String(match.raw.player_stats.length)], ["MATCH DURATION", minutes ? `${minutes} min` : "Recorded"], ["TOP KILLER", leaders[0] ? `${leaders[0].kills} kills` : "—", leaders[0]?.player]]} /><div style={{ display: "flex", marginTop: 20, padding: "16px 18px", borderRadius: 14, background: palette.panel, flexDirection: "column" }}><div style={{ display: "flex", color: palette.muted, fontSize: 17 }}>TOP PLAYERS BY KILLS</div><div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 20 }}>{leaders.map((player, index) => <div key={player.player_id} style={{ display: "flex", gap: 8 }}><span style={{ color: palette.muted }}>{index + 1}.</span><span>{truncate(player.player, 18)}</span><span style={{ color: palette.gold }}>{player.kills} K</span></div>)}</div></div><TeamChart match={match} /></Shell>;
 }
 
+async function renderStratmapCardImage(stratmap: NonNullable<Awaited<ReturnType<typeof getPublicStratmapDetail>>>): Promise<string | null> {
+  const mapDef = getHllStratmapMapById(stratmap.baseMapId);
+  const state = parseStratmapState(stratmap.state, stratmap.baseMapId);
+  const firstSlide = state.slides[0];
+
+  try {
+    if (firstSlide?.background?.kind === "image" && firstSlide.background.imageUrl) {
+      const customUrl = firstSlide.background.imageUrl;
+      const data = await toDataUrl(customUrl);
+      if (data) return data;
+    }
+
+    if (!mapDef) return null;
+    const cleanImagePath = mapDef.imagePath.startsWith("/") ? mapDef.imagePath.slice(1) : mapDef.imagePath;
+    const filePath = path.join(process.cwd(), "public", cleanImagePath);
+    const targetSize = 520;
+    const scale = targetSize / (mapDef.mapSize || 1920);
+
+    const composites: OverlayOptions[] = [];
+    if (firstSlide) {
+      const visiblePointIds = new Set(firstSlide.overlays?.visibleStrongpointIds ?? []);
+      for (const point of mapDef.strongpoints) {
+        if (visiblePointIds.has(point.id)) {
+          const spriteRelative = point.spritePath.startsWith("/") ? point.spritePath.slice(1) : point.spritePath;
+          const spriteFile = path.join(process.cwd(), "public", spriteRelative);
+          try {
+            const w = Math.max(1, Math.round(point.bounds.width * scale));
+            const h = Math.max(1, Math.round(point.bounds.height * scale));
+            const spriteBuf = await sharp(spriteFile).resize(w, h).toBuffer();
+            composites.push({
+              input: spriteBuf,
+              left: Math.max(0, Math.round(point.bounds.x * scale)),
+              top: Math.max(0, Math.round(point.bounds.y * scale)),
+            });
+          } catch {
+            // Strongpoint sprite missing or invalid, skip gracefully
+          }
+        }
+      }
+    }
+
+    let pipeline = sharp(filePath).resize(targetSize, targetSize, { fit: "cover" });
+    if (composites.length > 0) {
+      pipeline = pipeline.composite(composites);
+    }
+    const buf = await pipeline.jpeg({ quality: 80 }).toBuffer();
+    return `data:image/jpeg;base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+function StratmapCard({
+  stratmap,
+  mapImage,
+}: {
+  stratmap: NonNullable<Awaited<ReturnType<typeof getPublicStratmapDetail>>>;
+  mapImage: string | null;
+}) {
+  const mapDef = getHllStratmapMapById(stratmap.baseMapId);
+  const state = parseStratmapState(stratmap.state, stratmap.baseMapId);
+  const slideCount = state.slides.length;
+  const mapName = mapDef?.name ?? stratmap.baseMapId;
+  const strongpoint = stratmap.strongpointId
+    ? mapDef?.strongpoints.find((sp) => sp.id === stratmap.strongpointId)?.label ?? stratmap.strongpointId
+    : undefined;
+
+  const metrics: Array<[string, string, string?]> = [
+    ["BASE MAP", mapName],
+    ["SLIDES", String(slideCount)],
+  ];
+  if (strongpoint) {
+    metrics.push(["OBJECTIVE", strongpoint]);
+  } else if (stratmap.side) {
+    metrics.push(["SIDE", stratmap.side.toUpperCase()]);
+  }
+
+  return (
+    <Shell label="TACTICAL STRATMAP">
+      <div style={{ display: "flex", flex: 1, marginTop: 24, gap: 36, alignItems: "center" }}>
+        <div style={{ display: "flex", flex: 1, flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", fontSize: 46, fontWeight: 900, lineHeight: 1.15 }}>
+              {truncate(stratmap.title, 34)}
+            </div>
+            {stratmap.description ? (
+              <div style={{ display: "flex", marginTop: 10, color: palette.muted, fontSize: 19, lineHeight: 1.3 }}>
+                {truncate(stratmap.description, 90)}
+              </div>
+            ) : null}
+            <div style={{ display: "flex", marginTop: 8, color: palette.gold, fontSize: 20, fontWeight: 700 }}>
+              {[mapName, stratmap.side?.toUpperCase(), strongpoint].filter(Boolean).join(" · ")}
+            </div>
+          </div>
+          <Metrics items={metrics} />
+        </div>
+        {mapImage ? (
+          <img
+            src={mapImage}
+            width="460"
+            height="460"
+            style={{
+              display: "flex",
+              width: 460,
+              height: 460,
+              objectFit: "cover",
+              borderRadius: 20,
+              border: `2px solid ${palette.line}`,
+            }}
+          />
+        ) : null}
+      </div>
+    </Shell>
+  );
+}
+
 export async function GET(request: Request, { params }: Props) {
   const { kind, id } = await params; const version = new URL(request.url).searchParams.get("v") ?? "current"; const key = `${kind}:${id}:${version}`; const cached = publicImageCache.get(key); if (cached) return png(cached);
   let element: React.ReactElement | null = null;
-  if (kind === "player") { const player = await getPublicPlayerProfile(id); if (player) element = <PlayerSheet player={player} avatar={await toDataUrl(player.avatar)} />; }
+  if (kind === "player") { const player = await getPublicPlayerProfile(id); if (player) element = <PlayerCard player={player} avatar={await toDataUrl(player.avatar)} />; }
   else if (kind === "clan") { const clan = await getPublicClan(id); if (clan) element = <ClanCard clan={clan} avatar={await toDataUrl(clan.avatar)} />; }
   else if (kind === "match") { const match = await getPublicMatch(id); if (match) element = <MatchCard match={match} thumbnail={match.thumbnailUrl ?? null} />; }
+  else if (kind === "stratmap") {
+    const stratmap = await getPublicStratmapDetail(id);
+    if (stratmap) {
+      const mapImage = await renderStratmapCardImage(stratmap);
+      element = <StratmapCard stratmap={stratmap} mapImage={mapImage} />;
+    }
+  }
   if (!element) return new Response("Not found", { status: 404 });
   const rendered = new ImageResponse(element, { width: 1200, height: 630 }); const image = new Uint8Array(await rendered.arrayBuffer()); publicImageCache.set(key, image); return png(image);
 }

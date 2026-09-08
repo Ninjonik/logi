@@ -1056,6 +1056,7 @@ export const csMessages = {
     pageDescription: "Uložené realtime taktické mapy pro plánování Hell Let Loose zápasů.",
     createDescription: "Vytvořte uložený realtime taktický náčrt, který půjde později připojit k match briefingu.",
     detailDescription: "Realtime spolupráce nad taktickou mapou pro plánování zápasu.",
+    viewMap: "Zobrazit interaktivní stratmapu a taktické plánování.",
     searchPlaceholder: "Hledat stratmapy...",
     tableTitle: "Název",
     tableMap: "Mapa",

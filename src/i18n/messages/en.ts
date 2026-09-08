@@ -1057,6 +1057,7 @@ export const enMessages = {
     pageDescription: "Saved realtime tactical maps for Hell Let Loose match planning.",
     createDescription: "Create a saved realtime tactical sketch that can later be attached to match briefings.",
     detailDescription: "Realtime tactical map collaboration for match planning.",
+    viewMap: "View interactive stratmap and tactical planning.",
     searchPlaceholder: "Search stratmaps...",
     tableTitle: "Title",
     tableMap: "Map",

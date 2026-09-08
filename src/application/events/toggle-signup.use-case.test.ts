@@ -213,7 +213,7 @@ test("ToggleSignupUseCase enforces allowed match signup statuses", async () => {
   assert.deepEqual(result.signUps, [{ userId: "user-2", group: "INF" }]);
 });
 
-test("ToggleSignupUseCase marks repeated signup clicks as removed", async () => {
+test("ToggleSignupUseCase keeps existing signup on repeated clicks", async () => {
   const syncPort = new NoopEventWorkflowSyncPort();
   const events = new InMemoryEventWorkflowRepository(
     new Map([
@@ -250,6 +250,6 @@ test("ToggleSignupUseCase marks repeated signup clicks as removed", async () => 
     group: "INF",
   });
 
-  assert.equal(result.removed, true);
-  assert.deepEqual(result.signUps, []);
+  assert.equal(result.removed, false);
+  assert.deepEqual(result.signUps, [{ userId: "user-1", group: "INF" }]);
 });
