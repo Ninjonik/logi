@@ -1,20 +1,24 @@
-import { fetchMutation } from "convex/nextjs";
-import { makeFunctionReference } from "convex/server";
+import { makeFunctionReference } from "convex/server"
+import { fetchMutation } from "convex/nextjs"
 
-import { getInternalAuthSecret } from "@/lib/env";
-import type { SquadPresetInput } from "@/lib/validation/squad-preset";
+import type { SquadPresetInput } from "@/lib/validation/squad-preset"
+import { getInternalAuthSecret } from "@/lib/env"
 
-const upsertSquadPresetReference = makeFunctionReference<"mutation">("squadPresets:upsert");
+const upsertSquadPresetReference = makeFunctionReference<"mutation">(
+    "squadPresets:upsert"
+)
 
-export async function saveSquadPreset(input: SquadPresetInput & {
-  serverId: string;
-  presetId?: string;
-}) {
-  return await fetchMutation(upsertSquadPresetReference, {
-    secret: getInternalAuthSecret(),
-    serverId: input.serverId,
-    presetId: input.presetId as never,
-    name: input.name,
-    squads: input.squads,
-  });
+export async function saveSquadPreset(
+    input: SquadPresetInput & {
+        serverId: string
+        presetId?: string
+    }
+) {
+    return await fetchMutation(upsertSquadPresetReference, {
+        secret: getInternalAuthSecret(),
+        serverId: input.serverId,
+        presetId: input.presetId as never,
+        name: input.name,
+        squads: input.squads,
+    })
 }

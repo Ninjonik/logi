@@ -1,9 +1,14 @@
-import { cronJobs } from "convex/server";
+import { cronJobs } from "convex/server"
 
-import { internal } from "./_generated/api";
+import { internal } from "./_generated/api"
 
-const crons = cronJobs();
+const crons = cronJobs()
 
-crons.daily("remove expired public previews", { hourUTC: 3, minuteUTC: 15 }, internal.publicPreviews.removeExpired, {});
+crons.daily(
+    "remove expired public previews",
+    { hourUTC: 3, minuteUTC: 15 },
+    internal.publicPreviews.removeExpired,
+    {}
+)
 
-export default crons;
+export default crons

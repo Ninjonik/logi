@@ -1,11 +1,11 @@
 export function generateStaticParams() {
-  return [{ serverId: "sample-server" }];
+    return [{ serverId: "sample-server" }]
 }
 
 export default function ServerLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode
 }) {
-  return children;
+    return children
 }

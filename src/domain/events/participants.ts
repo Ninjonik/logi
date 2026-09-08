@@ -1,27 +1,40 @@
-import { normalizeOptionalArray } from "@/domain/shared/collections";
+import { normalizeOptionalArray } from "@/domain/shared/collections"
 
-import { SIGNUP_ATTENDING, SIGNUP_NOT_ATTENDING, type EventParticipant, type EventSignup } from "./types";
+import {
+    SIGNUP_ATTENDING,
+    SIGNUP_NOT_ATTENDING,
+    type EventParticipant,
+    type EventSignup,
+} from "./types"
 
 export function normalizeParticipants(
-  participants: EventParticipant[] | undefined,
-  signUps: EventSignup[] | undefined,
-  nowIso: string,
+    participants: EventParticipant[] | undefined,
+    signUps: EventSignup[] | undefined,
+    nowIso: string
 ): EventParticipant[] {
-  if (Array.isArray(participants) && participants.length > 0) {
-    return participants;
-  }
+    if (Array.isArray(participants) && participants.length > 0) {
+        return participants
+    }
 
-  return normalizeOptionalArray(signUps).map((signUp) => ({
-    userId: signUp.userId,
-    status: signUp.group === SIGNUP_NOT_ATTENDING ? "not_attending" as const : "attending" as const,
-    group: signUp.group ?? null,
-    updatedAt: nowIso,
-  }));
+    return normalizeOptionalArray(signUps).map((signUp) => ({
+        userId: signUp.userId,
+        status:
+            signUp.group === SIGNUP_NOT_ATTENDING
+                ? ("not_attending" as const)
+                : ("attending" as const),
+        group: signUp.group ?? null,
+        updatedAt: nowIso,
+    }))
 }
 
-export function participantsToSignUps(participants: EventParticipant[]): EventSignup[] {
-  return participants.map((participant) => ({
-    userId: participant.userId,
-    group: participant.status === "attending" ? (participant.group ?? SIGNUP_ATTENDING) : SIGNUP_NOT_ATTENDING,
-  }));
+export function participantsToSignUps(
+    participants: EventParticipant[]
+): EventSignup[] {
+    return participants.map((participant) => ({
+        userId: participant.userId,
+        group:
+            participant.status === "attending"
+                ? (participant.group ?? SIGNUP_ATTENDING)
+                : SIGNUP_NOT_ATTENDING,
+    }))
 }

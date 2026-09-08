@@ -1,90 +1,189 @@
-import { ConvexReactClient } from "convex/react";
-import { makeFunctionReference } from "convex/server";
-import WebSocket from "ws";
+import { makeFunctionReference } from "convex/server"
+import { ConvexReactClient } from "convex/react"
+import WebSocket from "ws"
 
-import { env } from "./environment";
+import { env } from "./environment"
 
 // Node 20 on the production host does not expose a global WebSocket.
 // Convex's reactive client expects one for query watchers used by the bot.
 if (typeof globalThis.WebSocket === "undefined") {
-  globalThis.WebSocket = WebSocket as typeof globalThis.WebSocket;
+    globalThis.WebSocket = WebSocket as typeof globalThis.WebSocket
 }
 
-let convexClient: ConvexReactClient | null = null;
+let convexClient: ConvexReactClient | null = null
 
 function getConvexClient() {
-  if (!convexClient) {
-    convexClient = new ConvexReactClient(env.convexUrl);
-  }
+    if (!convexClient) {
+        convexClient = new ConvexReactClient(env.convexUrl)
+    }
 
-  return convexClient;
+    return convexClient
 }
 
 export const convex = new Proxy({} as ConvexReactClient, {
-  get(_target, property, receiver) {
-    const value = Reflect.get(getConvexClient() as object, property, receiver);
-    return typeof value === "function" ? value.bind(getConvexClient()) : value;
-  },
-});
+    get(_target, property, receiver) {
+        const value = Reflect.get(
+            getConvexClient() as object,
+            property,
+            receiver
+        )
+        return typeof value === "function"
+            ? value.bind(getConvexClient())
+            : value
+    },
+})
 
 export async function closeConvexClient() {
-  if (!convexClient) {
-    return;
-  }
+    if (!convexClient) {
+        return
+    }
 
-  const client = convexClient;
-  convexClient = null;
-  await client.close();
+    const client = convexClient
+    convexClient = null
+    await client.close()
 }
 
 export const references = {
-  acknowledgeAttendance: makeFunctionReference<"mutation">("rosters:acknowledgeAttendance"),
-  applyEventScore: makeFunctionReference<"mutation">("events:applyEventScore"),
-  appendAttendanceReminderLog: makeFunctionReference<"mutation">("events:appendAttendanceReminderLog"),
-  closeTicketThread: makeFunctionReference<"mutation">("discordMembership:closeTicketThread"),
-  closeMembershipApplicationThread: makeFunctionReference<"mutation">("discordMembership:closeMembershipApplicationThread"),
-  consumePlatformIdLinkToken: makeFunctionReference<"mutation">("platformIdLinks:consumePlatformIdLinkToken"),
-  createMembershipApplicationThread: makeFunctionReference<"mutation">("discordMembership:createMembershipApplicationThread"),
-  createPlatformIdLinkToken: makeFunctionReference<"mutation">("platformIdLinks:createPlatformIdLinkToken"),
-  createTicketThread: makeFunctionReference<"mutation">("discordMembership:createTicketThread"),
-  getEventInteractionContext: makeFunctionReference<"query">("discordSync:getEventInteractionContext"),
-  getEventSignupContext: makeFunctionReference<"query">("discordSync:getEventSignupContext"),
-  getEventSyncContext: makeFunctionReference<"query">("discordSync:getEventSyncContext"),
-  findNoticeTarget: makeFunctionReference<"query">("events:findNoticeTarget"),
-  getConfigByDiscordGuildId: makeFunctionReference<"query">("discordConfig:getConfigByDiscordGuildId"),
-  getMembershipApplicationPrereq: makeFunctionReference<"query">("discordMembership:getMembershipApplicationPrereq"),
-  getMembershipApplicationThreadContext: makeFunctionReference<"query">("discordMembership:getMembershipApplicationThreadContext"),
-  getMembershipCategoryContext: makeFunctionReference<"query">("discordMembership:getMembershipCategoryContext"),
-  getTicketCategoryContext: makeFunctionReference<"query">("discordMembership:getTicketCategoryContext"),
-  getTicketThreadContext: makeFunctionReference<"query">("discordMembership:getTicketThreadContext"),
-  getDiscordPlatformLinkState: makeFunctionReference<"query">("players:getDiscordPlatformLinkState"),
-  searchClanPlayers: makeFunctionReference<"query">("players:searchClanPlayers"),
-  getClanPlayerProfile: makeFunctionReference<"query">("players:getClanPlayerProfile"),
-  linkDiscordPlatformId: makeFunctionReference<"mutation">("players:linkDiscordPlatformId"),
-  unlinkDiscordPlatformId: makeFunctionReference<"mutation">("players:unlinkDiscordPlatformId"),
-  listEventSyncIndex: makeFunctionReference<"query">("discordSync:listEventSyncIndex"),
-  listGuildCacheSnapshot: makeFunctionReference<"query">("discordSync:listGuildCacheSnapshot"),
-  listSyncPayloads: makeFunctionReference<"query">("discordSync:listSyncPayloads"),
-  reconcileStatuses: makeFunctionReference<"mutation">("events:reconcileStatuses"),
-  claimDueScheduledJobs: makeFunctionReference<"mutation">("scheduledJobs:claimDue"),
-  completeScheduledJob: makeFunctionReference<"mutation">("scheduledJobs:complete"),
-  releaseScheduledJob: makeFunctionReference<"mutation">("scheduledJobs:release"),
-  backfillMissingScheduledJobs: makeFunctionReference<"mutation">("scheduledJobs:backfillMissing"),
-  recoverScheduledJobQueue: makeFunctionReference<"mutation">("scheduledJobs:recoverQueue"),
-  setDiscordEventRoles: makeFunctionReference<"mutation">("events:setDiscordEventRoles"),
-  syncMemberAccess: makeFunctionReference<"mutation">("discordSync:syncMemberAccess"),
-  upsertMemberAccess: makeFunctionReference<"mutation">("discordSync:upsertMemberAccess"),
-  removeMemberAccess: makeFunctionReference<"mutation">("discordSync:removeMemberAccess"),
-  toggleSignUp: makeFunctionReference<"mutation">("events:toggleSignUp"),
-  upsertNotice: makeFunctionReference<"mutation">("events:upsertNotice"),
-  updateMembershipApplicationTranscriptMessage: makeFunctionReference<"mutation">("discordMembership:updateMembershipApplicationTranscriptMessage"),
-  updateMembershipPanelState: makeFunctionReference<"mutation">("discordConfig:updateMembershipPanelState"),
-  updateEventSyncState: makeFunctionReference<"mutation">("discordSync:updateEventSyncState"),
-  updateRosterUpdateMessage: makeFunctionReference<"mutation">("discordSync:updateRosterUpdateMessage"),
-  updateCalendarPanelState: makeFunctionReference<"mutation">("discordConfig:updateCalendarPanelState"),
-  updateTicketTranscriptMessage: makeFunctionReference<"mutation">("discordMembership:updateTicketTranscriptMessage"),
-  updateTicketPanelState: makeFunctionReference<"mutation">("discordConfig:updateTicketPanelState"),
-  upsertAssignment: makeFunctionReference<"mutation">("userAssignments:upsertByServerDiscordId"),
-  removeAssignment: makeFunctionReference<"mutation">("userAssignments:remove"),
-  getAssignmentForServerUser: makeFunctionReference<"query">("userAssignments:getForServerUser"),
-};
+    acknowledgeAttendance: makeFunctionReference<"mutation">(
+        "rosters:acknowledgeAttendance"
+    ),
+    applyEventScore: makeFunctionReference<"mutation">(
+        "events:applyEventScore"
+    ),
+    appendAttendanceReminderLog: makeFunctionReference<"mutation">(
+        "events:appendAttendanceReminderLog"
+    ),
+    closeTicketThread: makeFunctionReference<"mutation">(
+        "discordMembership:closeTicketThread"
+    ),
+    closeMembershipApplicationThread: makeFunctionReference<"mutation">(
+        "discordMembership:closeMembershipApplicationThread"
+    ),
+    consumePlatformIdLinkToken: makeFunctionReference<"mutation">(
+        "platformIdLinks:consumePlatformIdLinkToken"
+    ),
+    createMembershipApplicationThread: makeFunctionReference<"mutation">(
+        "discordMembership:createMembershipApplicationThread"
+    ),
+    createPlatformIdLinkToken: makeFunctionReference<"mutation">(
+        "platformIdLinks:createPlatformIdLinkToken"
+    ),
+    createTicketThread: makeFunctionReference<"mutation">(
+        "discordMembership:createTicketThread"
+    ),
+    getEventInteractionContext: makeFunctionReference<"query">(
+        "discordSync:getEventInteractionContext"
+    ),
+    getEventSignupContext: makeFunctionReference<"query">(
+        "discordSync:getEventSignupContext"
+    ),
+    getEventSyncContext: makeFunctionReference<"query">(
+        "discordSync:getEventSyncContext"
+    ),
+    findNoticeTarget: makeFunctionReference<"query">("events:findNoticeTarget"),
+    getConfigByDiscordGuildId: makeFunctionReference<"query">(
+        "discordConfig:getConfigByDiscordGuildId"
+    ),
+    getMembershipApplicationPrereq: makeFunctionReference<"query">(
+        "discordMembership:getMembershipApplicationPrereq"
+    ),
+    getMembershipApplicationThreadContext: makeFunctionReference<"query">(
+        "discordMembership:getMembershipApplicationThreadContext"
+    ),
+    getMembershipCategoryContext: makeFunctionReference<"query">(
+        "discordMembership:getMembershipCategoryContext"
+    ),
+    getTicketCategoryContext: makeFunctionReference<"query">(
+        "discordMembership:getTicketCategoryContext"
+    ),
+    getTicketThreadContext: makeFunctionReference<"query">(
+        "discordMembership:getTicketThreadContext"
+    ),
+    getDiscordPlatformLinkState: makeFunctionReference<"query">(
+        "players:getDiscordPlatformLinkState"
+    ),
+    searchClanPlayers: makeFunctionReference<"query">(
+        "players:searchClanPlayers"
+    ),
+    getClanPlayerProfile: makeFunctionReference<"query">(
+        "players:getClanPlayerProfile"
+    ),
+    linkDiscordPlatformId: makeFunctionReference<"mutation">(
+        "players:linkDiscordPlatformId"
+    ),
+    unlinkDiscordPlatformId: makeFunctionReference<"mutation">(
+        "players:unlinkDiscordPlatformId"
+    ),
+    listEventSyncIndex: makeFunctionReference<"query">(
+        "discordSync:listEventSyncIndex"
+    ),
+    listGuildCacheSnapshot: makeFunctionReference<"query">(
+        "discordSync:listGuildCacheSnapshot"
+    ),
+    listSyncPayloads: makeFunctionReference<"query">(
+        "discordSync:listSyncPayloads"
+    ),
+    reconcileStatuses: makeFunctionReference<"mutation">(
+        "events:reconcileStatuses"
+    ),
+    claimDueScheduledJobs: makeFunctionReference<"mutation">(
+        "scheduledJobs:claimDue"
+    ),
+    completeScheduledJob: makeFunctionReference<"mutation">(
+        "scheduledJobs:complete"
+    ),
+    releaseScheduledJob: makeFunctionReference<"mutation">(
+        "scheduledJobs:release"
+    ),
+    backfillMissingScheduledJobs: makeFunctionReference<"mutation">(
+        "scheduledJobs:backfillMissing"
+    ),
+    recoverScheduledJobQueue: makeFunctionReference<"mutation">(
+        "scheduledJobs:recoverQueue"
+    ),
+    setDiscordEventRoles: makeFunctionReference<"mutation">(
+        "events:setDiscordEventRoles"
+    ),
+    syncMemberAccess: makeFunctionReference<"mutation">(
+        "discordSync:syncMemberAccess"
+    ),
+    upsertMemberAccess: makeFunctionReference<"mutation">(
+        "discordSync:upsertMemberAccess"
+    ),
+    removeMemberAccess: makeFunctionReference<"mutation">(
+        "discordSync:removeMemberAccess"
+    ),
+    toggleSignUp: makeFunctionReference<"mutation">("events:toggleSignUp"),
+    upsertNotice: makeFunctionReference<"mutation">("events:upsertNotice"),
+    updateMembershipApplicationTranscriptMessage:
+        makeFunctionReference<"mutation">(
+            "discordMembership:updateMembershipApplicationTranscriptMessage"
+        ),
+    updateMembershipPanelState: makeFunctionReference<"mutation">(
+        "discordConfig:updateMembershipPanelState"
+    ),
+    updateEventSyncState: makeFunctionReference<"mutation">(
+        "discordSync:updateEventSyncState"
+    ),
+    updateRosterUpdateMessage: makeFunctionReference<"mutation">(
+        "discordSync:updateRosterUpdateMessage"
+    ),
+    updateCalendarPanelState: makeFunctionReference<"mutation">(
+        "discordConfig:updateCalendarPanelState"
+    ),
+    updateTicketTranscriptMessage: makeFunctionReference<"mutation">(
+        "discordMembership:updateTicketTranscriptMessage"
+    ),
+    updateTicketPanelState: makeFunctionReference<"mutation">(
+        "discordConfig:updateTicketPanelState"
+    ),
+    upsertAssignment: makeFunctionReference<"mutation">(
+        "userAssignments:upsertByServerDiscordId"
+    ),
+    removeAssignment: makeFunctionReference<"mutation">(
+        "userAssignments:remove"
+    ),
+    getAssignmentForServerUser: makeFunctionReference<"query">(
+        "userAssignments:getForServerUser"
+    ),
+}

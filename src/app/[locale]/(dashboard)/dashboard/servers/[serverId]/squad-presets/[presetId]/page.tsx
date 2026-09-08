@@ -1,50 +1,53 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next"
 
-import { PageHeader } from "@/components/app/page-header";
-import { SquadPresetEditor } from "@/components/app/squad-preset-editor";
-import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale } from "@/i18n/config";
-import { getSquadPresetMetadata } from "@/lib/server-metadata";
-import { getServerContext } from "@/lib/server-context";
+import { SquadPresetEditor } from "@/components/app/squad-preset-editor"
+import { getSquadPresetMetadata } from "@/lib/server-metadata"
+import { PageHeader } from "@/components/app/page-header"
+import { getServerContext } from "@/lib/server-context"
+import { getDictionary } from "@/i18n/dictionaries"
+import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-  title: "Squad preset | Logi",
-  description: "Preset squad structure for new rosters.",
-};
+    title: "Squad preset | Logi",
+    description: "Preset squad structure for new rosters.",
+}
 
 export function generateStaticParams() {
-  return [{ presetId: "sample-squad-preset" }];
+    return [{ presetId: "sample-squad-preset" }]
 }
 
 export default async function SquadPresetDetailPage({
-  params,
+    params,
 }: {
-  params: Promise<{ locale: string; serverId: string; presetId: string }>;
+    params: Promise<{ locale: string; serverId: string; presetId: string }>
 }) {
-  const { locale, serverId, presetId } = await params;
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const context = await getServerContext(serverId);
-  if (!context) return null;
-  const { squadPresets, canAdmin, groups = [] } = context;
-  const preset = squadPresets.find((item) => item.id === presetId);
+    const { locale, serverId, presetId } = await params
+    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
+    const context = await getServerContext(serverId)
+    if (!context) return null
+    const { squadPresets, canAdmin, groups = [] } = context
+    const preset = squadPresets.find((item) => item.id === presetId)
 
-  if (!preset) return null;
+    if (!preset) return null
 
-  return (
-    <>
-      <PageHeader title={preset.name} description={dictionary.presets.squadPresetPageDescription} />
-      <div className="px-4 lg:px-6">
-        <SquadPresetEditor
-          name={preset.name}
-          squads={preset.squads}
-          groups={groups}
-          canEdit={canAdmin}
-          dictionary={dictionary}
-          serverId={serverId}
-          locale={locale}
-          presetId={preset.id}
-        />
-      </div>
-    </>
-  );
+    return (
+        <>
+            <PageHeader
+                title={preset.name}
+                description={dictionary.presets.squadPresetPageDescription}
+            />
+            <div className="px-4 lg:px-6">
+                <SquadPresetEditor
+                    name={preset.name}
+                    squads={preset.squads}
+                    groups={groups}
+                    canEdit={canAdmin}
+                    dictionary={dictionary}
+                    serverId={serverId}
+                    locale={locale}
+                    presetId={preset.id}
+                />
+            </div>
+        </>
+    )
 }

@@ -1,92 +1,108 @@
-import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"
+import { cookies } from "next/headers"
 
-import { createSessionToken, setPrimaryGuildForCurrentPlayer, setSessionToken, syncCurrentPlayerFromDiscord, syncManagedGuildsForCurrentPlayer } from "@/lib/auth";
 import {
-  exchangeDiscordCode,
-  fetchDiscordGuilds,
-  fetchDiscordUser,
-  getDiscordAvatarUrl,
-  getDiscordGuildIconUrl,
-  isBotInsideDiscordGuild,
-  isDiscordGuildAdmin,
-} from "@/lib/discord";
-import { getSiteUrl } from "@/lib/env";
-import { logNextError, logNextInfo } from "@/lib/system-logs";
+    exchangeDiscordCode,
+    fetchDiscordGuilds,
+    fetchDiscordUser,
+    getDiscordAvatarUrl,
+    getDiscordGuildIconUrl,
+    isBotInsideDiscordGuild,
+    isDiscordGuildAdmin,
+} from "@/lib/discord"
+import {
+    createSessionToken,
+    setPrimaryGuildForCurrentPlayer,
+    setSessionToken,
+    syncCurrentPlayerFromDiscord,
+    syncManagedGuildsForCurrentPlayer,
+} from "@/lib/auth"
+import { logNextError, logNextInfo } from "@/lib/system-logs"
+import { getSiteUrl } from "@/lib/env"
 
-const STATE_COOKIE = "discord_oauth_state";
-const REDIRECT_COOKIE = "discord_oauth_redirect";
-const GUILD_COOKIE = "discord_oauth_guild";
+const STATE_COOKIE = "discord_oauth_state"
+const REDIRECT_COOKIE = "discord_oauth_redirect"
+const GUILD_COOKIE = "discord_oauth_guild"
 
 function cleanOauthCookies(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  cookieStore.delete(STATE_COOKIE);
-  cookieStore.delete(REDIRECT_COOKIE);
-  cookieStore.delete(GUILD_COOKIE);
+    cookieStore.delete(STATE_COOKIE)
+    cookieStore.delete(REDIRECT_COOKIE)
+    cookieStore.delete(GUILD_COOKIE)
 }
 
 export async function GET(request: NextRequest) {
-  const cookieStore = await cookies();
-  const code = request.nextUrl.searchParams.get("code");
-  const state = request.nextUrl.searchParams.get("state");
-  const expectedState = cookieStore.get(STATE_COOKIE)?.value;
-  const redirectTo = cookieStore.get(REDIRECT_COOKIE)?.value ?? "/en/dashboard";
-  const requestedGuildId = cookieStore.get(GUILD_COOKIE)?.value;
+    const cookieStore = await cookies()
+    const code = request.nextUrl.searchParams.get("code")
+    const state = request.nextUrl.searchParams.get("state")
+    const expectedState = cookieStore.get(STATE_COOKIE)?.value
+    const redirectTo =
+        cookieStore.get(REDIRECT_COOKIE)?.value ?? "/en/dashboard"
+    const requestedGuildId = cookieStore.get(GUILD_COOKIE)?.value
 
-  if (!code || !state || !expectedState || state !== expectedState) {
-    cleanOauthCookies(cookieStore);
-    return NextResponse.redirect(new URL("/en/login?error=oauth-state", getSiteUrl()));
-  }
-
-  try {
-    const tokenResponse = await exchangeDiscordCode(code);
-    const discordUser = await fetchDiscordUser(tokenResponse.access_token);
-    const discordGuilds = await fetchDiscordGuilds(tokenResponse.access_token);
-    const userId = discordUser.id;
-    const session = {
-      sub: userId,
-      name: discordUser.username,
-      avatar: getDiscordAvatarUrl(discordUser),
-      discordGuilds: await Promise.all(
-        discordGuilds
-          .filter(isDiscordGuildAdmin)
-          .map(async (guild) => ({
-          id: guild.id,
-          canAdmin: isDiscordGuildAdmin(guild),
-          botInside: isDiscordGuildAdmin(guild)
-            ? await isBotInsideDiscordGuild(guild.id)
-            : false,
-        })),
-      ),
-    };
-
-    await syncCurrentPlayerFromDiscord(session);
-    const managedGuilds = await Promise.all(
-      discordGuilds
-        .filter(isDiscordGuildAdmin)
-        .map(async (guild) => ({
-          id: guild.id,
-          name: guild.name,
-          avatar: getDiscordGuildIconUrl(guild),
-          botInside: await isBotInsideDiscordGuild(guild.id),
-        })),
-    );
-    await syncManagedGuildsForCurrentPlayer(userId, managedGuilds);
-    if (requestedGuildId && discordGuilds.some((guild) => guild.id === requestedGuildId)) {
-      await setPrimaryGuildForCurrentPlayer(userId, requestedGuildId);
+    if (!code || !state || !expectedState || state !== expectedState) {
+        cleanOauthCookies(cookieStore)
+        return NextResponse.redirect(
+            new URL("/en/login?error=oauth-state", getSiteUrl())
+        )
     }
-    const sessionToken = await createSessionToken(session);
-    await setSessionToken(sessionToken);
-    cleanOauthCookies(cookieStore);
 
-    logNextInfo("discord-auth", "Completed Discord login", {
-      userId,
-      managedGuildCount: managedGuilds.length,
-      requestedGuildId,
-    });
-    return NextResponse.redirect(new URL(redirectTo, getSiteUrl()));
-  } catch (e) {
-    logNextError("discord-auth", "Failed to exchange Discord code", { error: e });
-    cleanOauthCookies(cookieStore);
-    return NextResponse.redirect(new URL("/en/login?error=discord-login", getSiteUrl()));
-  }
+    try {
+        const tokenResponse = await exchangeDiscordCode(code)
+        const discordUser = await fetchDiscordUser(tokenResponse.access_token)
+        const discordGuilds = await fetchDiscordGuilds(
+            tokenResponse.access_token
+        )
+        const userId = discordUser.id
+        const session = {
+            sub: userId,
+            name: discordUser.username,
+            avatar: getDiscordAvatarUrl(discordUser),
+            discordGuilds: await Promise.all(
+                discordGuilds
+                    .filter(isDiscordGuildAdmin)
+                    .map(async (guild) => ({
+                        id: guild.id,
+                        canAdmin: isDiscordGuildAdmin(guild),
+                        botInside: isDiscordGuildAdmin(guild)
+                            ? await isBotInsideDiscordGuild(guild.id)
+                            : false,
+                    }))
+            ),
+        }
+
+        await syncCurrentPlayerFromDiscord(session)
+        const managedGuilds = await Promise.all(
+            discordGuilds.filter(isDiscordGuildAdmin).map(async (guild) => ({
+                id: guild.id,
+                name: guild.name,
+                avatar: getDiscordGuildIconUrl(guild),
+                botInside: await isBotInsideDiscordGuild(guild.id),
+            }))
+        )
+        await syncManagedGuildsForCurrentPlayer(userId, managedGuilds)
+        if (
+            requestedGuildId &&
+            discordGuilds.some((guild) => guild.id === requestedGuildId)
+        ) {
+            await setPrimaryGuildForCurrentPlayer(userId, requestedGuildId)
+        }
+        const sessionToken = await createSessionToken(session)
+        await setSessionToken(sessionToken)
+        cleanOauthCookies(cookieStore)
+
+        logNextInfo("discord-auth", "Completed Discord login", {
+            userId,
+            managedGuildCount: managedGuilds.length,
+            requestedGuildId,
+        })
+        return NextResponse.redirect(new URL(redirectTo, getSiteUrl()))
+    } catch (e) {
+        logNextError("discord-auth", "Failed to exchange Discord code", {
+            error: e,
+        })
+        cleanOauthCookies(cookieStore)
+        return NextResponse.redirect(
+            new URL("/en/login?error=discord-login", getSiteUrl())
+        )
+    }
 }

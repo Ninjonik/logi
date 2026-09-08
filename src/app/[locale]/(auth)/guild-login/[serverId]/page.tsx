@@ -1,74 +1,91 @@
-import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
-import { connection } from "next/server";
+import { notFound, redirect } from "next/navigation"
+import { connection } from "next/server"
+import type { Metadata } from "next"
 
-import { DiscordSignInButton } from "@/components/auth/discord-sign-in-button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
-import { PublicPage, PublicSiteShell } from "@/components/public/public-site-shell";
-import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale } from "@/i18n/config";
-import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth";
-import { getGuildMetadataByDiscordId } from "@/lib/server-metadata";
-import type { Guild } from "@/types/domain";
+import {
+    PublicPage,
+    PublicSiteShell,
+} from "@/components/public/public-site-shell"
+import { DiscordSignInButton } from "@/components/auth/discord-sign-in-button"
+import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { getGuildMetadataByDiscordId } from "@/lib/server-metadata"
+import { Card, CardContent } from "@/components/ui/card"
+import { getDictionary } from "@/i18n/dictionaries"
+import type { Guild } from "@/types/domain"
+import { isLocale } from "@/i18n/config"
 
 type GuildLoginPageProps = {
-  params: Promise<{
-    locale: string;
-    serverId: string;
-  }>;
-};
+    params: Promise<{
+        locale: string
+        serverId: string
+    }>
+}
 
 export const metadata: Metadata = {
-  title: "Sign in | Logi",
-  description: "Sign in to continue to Logi.",
-};
+    title: "Sign in | Logi",
+    description: "Sign in to continue to Logi.",
+}
 
 export function generateStaticParams() {
-  return [{ locale: "en", serverId: "sample-server" }];
+    return [{ locale: "en", serverId: "sample-server" }]
 }
 
 export default async function GuildLoginPage({ params }: GuildLoginPageProps) {
-  await connection();
+    await connection()
 
-  const { locale, serverId } = await params;
-  const safeLocale = isLocale(locale) ? locale : "en";
-  const dictionary = getDictionary(safeLocale);
-  const guild = (await getGuildMetadataByDiscordId(serverId)) as Guild | null;
+    const { locale, serverId } = await params
+    const safeLocale = isLocale(locale) ? locale : "en"
+    const dictionary = getDictionary(safeLocale)
+    const guild = (await getGuildMetadataByDiscordId(serverId)) as Guild | null
 
-  if (!guild) {
-    notFound();
-  }
-
-  const redirectTo = `/${safeLocale}/dashboard/servers/${guild.id}`;
-  const user = await getCurrentPlayer();
-
-  if (user) {
-    const visibleGuilds = await getVisibleGuildsForLoggedInUser();
-    const canOpenGuild = visibleGuilds.some((visibleGuild) => visibleGuild.id === guild.id);
-
-    if (canOpenGuild) {
-      redirect(redirectTo);
+    if (!guild) {
+        notFound()
     }
-  }
 
-  return (
-    <PublicSiteShell locale={safeLocale}><PublicPage className="flex max-w-sm items-center">
-      <Card className="w-full max-w-sm rounded-2xl border-white/10 bg-white/6 text-white shadow-2xl shadow-black/30 backdrop-blur-xl">
-        <CardContent className="flex flex-col items-center gap-7 p-8 text-center">
-          <Avatar className="size-28 rounded-2xl border border-white/10 bg-black/20">
-            <AvatarImage src={guild.avatar} alt={guild.name} className="object-cover" />
-            <AvatarFallback className="rounded-2xl bg-black/30 text-3xl text-white">
-              {guild.name.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+    const redirectTo = `/${safeLocale}/dashboard/servers/${guild.id}`
+    const user = await getCurrentPlayer()
 
-          <div className="w-full space-y-3">
-            <h1 className="text-2xl font-semibold">{guild.name}</h1>
-            <DiscordSignInButton redirectTo={redirectTo} label={dictionary.auth.loginButton} guildId={guild.discordId} />
-          </div>
-        </CardContent>
-      </Card>
-    </PublicPage></PublicSiteShell>
-  );
+    if (user) {
+        const visibleGuilds = await getVisibleGuildsForLoggedInUser()
+        const canOpenGuild = visibleGuilds.some(
+            (visibleGuild) => visibleGuild.id === guild.id
+        )
+
+        if (canOpenGuild) {
+            redirect(redirectTo)
+        }
+    }
+
+    return (
+        <PublicSiteShell locale={safeLocale}>
+            <PublicPage className="flex max-w-sm items-center">
+                <Card className="w-full max-w-sm rounded-2xl border-white/10 bg-white/6 text-white shadow-2xl shadow-black/30 backdrop-blur-xl">
+                    <CardContent className="flex flex-col items-center gap-7 p-8 text-center">
+                        <Avatar className="size-28 rounded-2xl border border-white/10 bg-black/20">
+                            <AvatarImage
+                                src={guild.avatar}
+                                alt={guild.name}
+                                className="object-cover"
+                            />
+                            <AvatarFallback className="rounded-2xl bg-black/30 text-3xl text-white">
+                                {guild.name.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
+
+                        <div className="w-full space-y-3">
+                            <h1 className="text-2xl font-semibold">
+                                {guild.name}
+                            </h1>
+                            <DiscordSignInButton
+                                redirectTo={redirectTo}
+                                label={dictionary.auth.loginButton}
+                                guildId={guild.discordId}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+            </PublicPage>
+        </PublicSiteShell>
+    )
 }

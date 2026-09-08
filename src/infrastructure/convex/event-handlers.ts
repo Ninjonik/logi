@@ -1,160 +1,195 @@
-import { findEligibleNoticeTargets } from "@/domain/events/notice-policy";
-import type { EventLike } from "@/domain/events/types";
-import { normalizeEventRecord } from "@/domain/events/normalization";
+import { findEligibleNoticeTargets } from "@/domain/events/notice-policy"
+import { normalizeEventRecord } from "@/domain/events/normalization"
+import type { EventLike } from "@/domain/events/types"
 
 type ExecuteUseCase<TInput = void, TResult = unknown> = {
-  execute(input: TInput): Promise<TResult>;
-};
+    execute(input: TInput): Promise<TResult>
+}
 
 export function assertInternalSecret(secret: string, expectedSecret: string) {
-  if (secret !== expectedSecret) {
-    throw new Error("Unauthorized.");
-  }
+    if (secret !== expectedSecret) {
+        throw new Error("Unauthorized.")
+    }
 }
 
 export async function handleUpsertEvent(input: {
-  secret: string;
-  expectedSecret: string;
-  args: Record<string, unknown> & { secret: string; serverId: string; eventId?: string; topicPresetId?: string };
-  getGuildById: (serverId: string) => Promise<{ discordId?: string; id?: string } | null>;
-  getGuildDiscordId: (guild: { discordId?: string; id?: string }) => string;
-  createUseCase: () => ExecuteUseCase<any, unknown>;
+    secret: string
+    expectedSecret: string
+    args: Record<string, unknown> & {
+        secret: string
+        serverId: string
+        eventId?: string
+        topicPresetId?: string
+    }
+    getGuildById: (
+        serverId: string
+    ) => Promise<{ discordId?: string; id?: string } | null>
+    getGuildDiscordId: (guild: { discordId?: string; id?: string }) => string
+    createUseCase: () => ExecuteUseCase<any, unknown>
 }) {
-  assertInternalSecret(input.secret, input.expectedSecret);
+    assertInternalSecret(input.secret, input.expectedSecret)
 
-  const guild = await input.getGuildById(input.args.serverId);
-  if (!guild) {
-    throw new Error("Server not found.");
-  }
+    const guild = await input.getGuildById(input.args.serverId)
+    if (!guild) {
+        throw new Error("Server not found.")
+    }
 
-  const { secret: _secret, serverId: _serverId, ...command } = input.args;
+    const { secret: _secret, serverId: _serverId, ...command } = input.args
 
-  return await input.createUseCase().execute({
-    ...command,
-    guildId: input.getGuildDiscordId(guild),
-    topicPresetId: input.args.topicPresetId ? String(input.args.topicPresetId) : undefined,
-  });
+    return await input.createUseCase().execute({
+        ...command,
+        guildId: input.getGuildDiscordId(guild),
+        topicPresetId: input.args.topicPresetId
+            ? String(input.args.topicPresetId)
+            : undefined,
+    })
 }
 
 export async function handleToggleSignup(input: {
-  secret: string;
-  expectedSecret: string;
-  args: { eventId: string; userId: string; group: string | null };
-  createUseCase: () => ExecuteUseCase<{ eventId: string; userId: string; group: string | null }, unknown>;
+    secret: string
+    expectedSecret: string
+    args: { eventId: string; userId: string; group: string | null }
+    createUseCase: () => ExecuteUseCase<
+        { eventId: string; userId: string; group: string | null },
+        unknown
+    >
 }) {
-  assertInternalSecret(input.secret, input.expectedSecret);
-  return await input.createUseCase().execute(input.args);
+    assertInternalSecret(input.secret, input.expectedSecret)
+    return await input.createUseCase().execute(input.args)
 }
 
 export async function handleReconcileStatuses(input: {
-  secret: string;
-  expectedSecret: string;
-  args: { cursor: string | null; limit: number; eventId?: string };
-  createUseCase: () => ExecuteUseCase<{ cursor: string | null; limit: number; eventId?: string }, unknown>;
+    secret: string
+    expectedSecret: string
+    args: { cursor: string | null; limit: number; eventId?: string }
+    createUseCase: () => ExecuteUseCase<
+        { cursor: string | null; limit: number; eventId?: string },
+        unknown
+    >
 }) {
-  assertInternalSecret(input.secret, input.expectedSecret);
-  return await input.createUseCase().execute(input.args);
+    assertInternalSecret(input.secret, input.expectedSecret)
+    return await input.createUseCase().execute(input.args)
 }
 
 export async function handleConcludeEvent(input: {
-  secret: string;
-  expectedSecret: string;
-  eventId: string;
-  createUseCase: () => ExecuteUseCase<string, unknown>;
+    secret: string
+    expectedSecret: string
+    eventId: string
+    createUseCase: () => ExecuteUseCase<string, unknown>
 }) {
-  assertInternalSecret(input.secret, input.expectedSecret);
-  return await input.createUseCase().execute(input.eventId);
+    assertInternalSecret(input.secret, input.expectedSecret)
+    return await input.createUseCase().execute(input.eventId)
 }
 
 export async function handleAppendAttendanceReminderLog(input: {
-  secret: string;
-  expectedSecret: string;
-  eventId: string;
-  reminders: Array<{ userId: string; offsetHours: number; sentAt: string }>;
-  getEventById: (eventId: string) => Promise<(Record<string, unknown> & EventLike) | null>;
-  patchEvent: (eventId: string, patch: Record<string, unknown>) => Promise<void>;
+    secret: string
+    expectedSecret: string
+    eventId: string
+    reminders: Array<{ userId: string; offsetHours: number; sentAt: string }>
+    getEventById: (
+        eventId: string
+    ) => Promise<(Record<string, unknown> & EventLike) | null>
+    patchEvent: (
+        eventId: string,
+        patch: Record<string, unknown>
+    ) => Promise<void>
 }) {
-  assertInternalSecret(input.secret, input.expectedSecret);
+    assertInternalSecret(input.secret, input.expectedSecret)
 
-  const event = await input.getEventById(input.eventId);
-  if (!event) {
-    throw new Error("Event not found.");
-  }
+    const event = await input.getEventById(input.eventId)
+    if (!event) {
+        throw new Error("Event not found.")
+    }
 
-  const normalizedEvent = normalizeEventRecord(event);
+    const normalizedEvent = normalizeEventRecord(event)
 
-  await input.patchEvent(input.eventId, {
-    attendanceReminderLog: [...normalizedEvent.attendanceReminderLog, ...input.reminders],
-    updatedAt: new Date().toISOString(),
-  });
+    await input.patchEvent(input.eventId, {
+        attendanceReminderLog: [
+            ...normalizedEvent.attendanceReminderLog,
+            ...input.reminders,
+        ],
+        updatedAt: new Date().toISOString(),
+    })
 
-  return { ok: true as const };
+    return { ok: true as const }
 }
 
 export async function handleUpsertNotice(input: {
-  secret: string;
-  expectedSecret: string;
-  args: { eventId: string; userId: string; reason: string };
-  createUseCase: () => ExecuteUseCase<{ eventId: string; userId: string; reason: string }, { ok: true }>;
+    secret: string
+    expectedSecret: string
+    args: { eventId: string; userId: string; reason: string }
+    createUseCase: () => ExecuteUseCase<
+        { eventId: string; userId: string; reason: string },
+        { ok: true }
+    >
 }) {
-  assertInternalSecret(input.secret, input.expectedSecret);
-  return await input.createUseCase().execute(input.args);
+    assertInternalSecret(input.secret, input.expectedSecret)
+    return await input.createUseCase().execute(input.args)
 }
 
 export async function handleSetEventResult(input: {
-  secret: string;
-  expectedSecret: string;
-  eventId: string;
-  eventResult: Record<string, unknown>;
-  getEventById: (eventId: string) => Promise<Record<string, unknown> | null>;
-  patchEvent: (eventId: string, patch: Record<string, unknown>) => Promise<void>;
+    secret: string
+    expectedSecret: string
+    eventId: string
+    eventResult: Record<string, unknown>
+    getEventById: (eventId: string) => Promise<Record<string, unknown> | null>
+    patchEvent: (
+        eventId: string,
+        patch: Record<string, unknown>
+    ) => Promise<void>
 }) {
-  assertInternalSecret(input.secret, input.expectedSecret);
+    assertInternalSecret(input.secret, input.expectedSecret)
 
-  const event = await input.getEventById(input.eventId);
-  if (!event) {
-    throw new Error("Event not found.");
-  }
+    const event = await input.getEventById(input.eventId)
+    if (!event) {
+        throw new Error("Event not found.")
+    }
 
-  await input.patchEvent(input.eventId, {
-    eventResult: input.eventResult,
-    updatedAt: new Date().toISOString(),
-  });
+    await input.patchEvent(input.eventId, {
+        eventResult: input.eventResult,
+        updatedAt: new Date().toISOString(),
+    })
 
-  return { ok: true as const };
+    return { ok: true as const }
 }
 
 export function handleFindNoticeTarget(input: {
-  events: Array<(Record<string, unknown> & EventLike) & { _id: unknown; name: string; reservePlayerIds?: string[] }>;
-  userId: string;
-  query: string;
-  now: Date;
+    events: Array<
+        (Record<string, unknown> & EventLike) & {
+            _id: unknown
+            name: string
+            reservePlayerIds?: string[]
+        }
+    >
+    userId: string
+    query: string
+    now: Date
 }) {
-  return findEligibleNoticeTargets({
-    events: input.events.map((event) => {
-      const normalized = normalizeEventRecord(event, input.now);
-      return {
-        id: String(event._id),
+    return findEligibleNoticeTargets({
+        events: input.events.map((event) => {
+            const normalized = normalizeEventRecord(event, input.now)
+            return {
+                id: String(event._id),
+                name: event.name,
+                gameStart: normalized.gameStart ?? normalized.meetingStart,
+                status: normalized.status,
+                participants: normalized.participants,
+                reservePlayerIds: event.reservePlayerIds,
+            }
+        }),
+        userId: input.userId,
+        query: input.query,
+        now: input.now,
+    }).map((event) => ({
+        id: event.id,
         name: event.name,
-        gameStart: normalized.gameStart ?? normalized.meetingStart,
-        status: normalized.status,
-        participants: normalized.participants,
-        reservePlayerIds: event.reservePlayerIds,
-      };
-    }),
-    userId: input.userId,
-    query: input.query,
-    now: input.now,
-  }).map((event) => ({
-    id: event.id,
-    name: event.name,
-    gameStart: event.gameStart,
-  }));
+        gameStart: event.gameStart,
+    }))
 }
 
 export async function handleApplyEventScore(input: {
-  eventId: string;
-  createUseCase: () => ExecuteUseCase<string, unknown>;
+    eventId: string
+    createUseCase: () => ExecuteUseCase<string, unknown>
 }) {
-  return await input.createUseCase().execute(input.eventId);
+    return await input.createUseCase().execute(input.eventId)
 }

@@ -1,0 +1,13 @@
+{
+    "trailingComma": "es5",
+    "tabWidth": 4,
+    "semi": false,
+    "singleQuote": false,
+    "sortingMethod": "lineLength",
+    "plugins": [
+        "prettier-plugin-organize-imports",
+        "prettier-plugin-tailwindcss",
+        "prettier-plugin-sort-imports",
+        "prettier-plugin-merge"
+    ]
+}

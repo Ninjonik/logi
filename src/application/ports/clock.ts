@@ -1,3 +1,3 @@
 export type Clock = {
-  now(): Date;
-};
+    now(): Date
+}

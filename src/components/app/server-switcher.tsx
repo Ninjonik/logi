@@ -1,169 +1,206 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import * as React from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { Check, ChevronsUpDown } from "lucide-react"
+import * as React from "react"
+import Link from "next/link"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { Locale } from "@/i18n/config";
-import type { Guild } from "@/types/domain";
-import { cn } from "@/lib/utils";
+    Command,
+    CommandEmpty,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import type { Guild } from "@/types/domain"
+import type { Locale } from "@/i18n/config"
+import { cn } from "@/lib/utils"
 
-const MAX_VISIBLE_RESULTS = 5;
+const MAX_VISIBLE_RESULTS = 5
 
 function getServerScore(server: Guild, query: string) {
-  if (!query) {
-    return 0;
-  }
+    if (!query) {
+        return 0
+    }
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const name = server.name.toLowerCase();
-  const description = server.description?.toLowerCase() ?? "";
+    const normalizedQuery = query.trim().toLowerCase()
+    const name = server.name.toLowerCase()
+    const description = server.description?.toLowerCase() ?? ""
 
-  if (name === normalizedQuery) return 100;
-  if (name.startsWith(normalizedQuery)) return 80;
-  if (name.includes(normalizedQuery)) return 60;
-  if (description.startsWith(normalizedQuery)) return 40;
-  if (description.includes(normalizedQuery)) return 20;
-  return -1;
+    if (name === normalizedQuery) return 100
+    if (name.startsWith(normalizedQuery)) return 80
+    if (name.includes(normalizedQuery)) return 60
+    if (description.startsWith(normalizedQuery)) return 40
+    if (description.includes(normalizedQuery)) return 20
+    return -1
 }
 
 export function ServerSwitcher({
-  locale,
-  servers,
-  activeServerId,
-  labels,
+    locale,
+    servers,
+    activeServerId,
+    labels,
 }: {
-  locale: Locale;
-  servers: Guild[];
-  activeServerId?: string;
-  labels: {
-    selectWorkspace: string;
-    activeWorkspace: string;
-    noWorkspaceSelected: string;
-    searchWorkspace: string;
-    noMatchingResults: string;
-  };
-}) {
-  const [open, setOpen] = React.useState(false);
-  const [query, setQuery] = React.useState("");
-  const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedServerId = activeServerId ?? searchParams.get("workspace") ?? undefined;
-  const activeServer = selectedServerId
-    ? servers.find((server) => server.id === selectedServerId)
-    : undefined;
-
-  const rankedServers = React.useMemo(() => {
-    if (!query.trim()) {
-      return [...servers]
-        .sort((left, right) => left.name.localeCompare(right.name))
-        .slice(0, MAX_VISIBLE_RESULTS);
+    locale: Locale
+    servers: Guild[]
+    activeServerId?: string
+    labels: {
+        selectWorkspace: string
+        activeWorkspace: string
+        noWorkspaceSelected: string
+        searchWorkspace: string
+        noMatchingResults: string
     }
+}) {
+    const [open, setOpen] = React.useState(false)
+    const [query, setQuery] = React.useState("")
+    const pathname = usePathname()
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const selectedServerId =
+        activeServerId ?? searchParams.get("workspace") ?? undefined
+    const activeServer = selectedServerId
+        ? servers.find((server) => server.id === selectedServerId)
+        : undefined
 
-    return [...servers]
-      .map((server) => ({
-        server,
-        score: getServerScore(server, query),
-      }))
-      .filter((entry) => entry.score >= 0)
-      .sort((left, right) => {
-        if (right.score !== left.score) {
-          return right.score - left.score;
+    const rankedServers = React.useMemo(() => {
+        if (!query.trim()) {
+            return [...servers]
+                .sort((left, right) => left.name.localeCompare(right.name))
+                .slice(0, MAX_VISIBLE_RESULTS)
         }
 
-        return left.server.name.localeCompare(right.server.name);
-      })
-      .slice(0, MAX_VISIBLE_RESULTS)
-      .map((entry) => entry.server);
-  }, [query, servers]);
+        return [...servers]
+            .map((server) => ({
+                server,
+                score: getServerScore(server, query),
+            }))
+            .filter((entry) => entry.score >= 0)
+            .sort((left, right) => {
+                if (right.score !== left.score) {
+                    return right.score - left.score
+                }
 
-  return (
-    <Popover
-      open={open}
-      onOpenChange={(nextOpen) => {
-        setOpen(nextOpen);
-        if (!nextOpen) {
-          setQuery("");
-        }
-      }}
-    >
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="h-10 w-full justify-between rounded-lg px-2 2xl:h-12 2xl:rounded-xl 2xl:px-4">
-          <div className="flex min-w-0 items-center gap-2 2xl:gap-3">
-            <Avatar className="size-7 rounded-md 2xl:size-8 2xl:rounded-lg">
-              <AvatarImage src={activeServer?.avatar} alt={activeServer?.name} />
-              <AvatarFallback>{activeServer?.name?.slice(0, 2) ?? "WS"}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 text-left">
-              <div className="truncate text-xs font-semibold 2xl:text-sm">{activeServer?.name ?? labels.selectWorkspace}</div>
-              <div className="truncate text-[10px] text-muted-foreground 2xl:text-xs">
-                {activeServer ? labels.activeWorkspace : labels.noWorkspaceSelected}
-              </div>
-            </div>
-          </div>
-          <ChevronsUpDown className="size-3.5 text-muted-foreground 2xl:size-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[22rem] p-0" align="start">
-        <Command shouldFilter={false}>
-          <CommandInput
-            value={query}
-            onValueChange={setQuery}
-            placeholder={labels.searchWorkspace}
-          />
-          <CommandList>
-            <CommandEmpty>{labels.noMatchingResults}</CommandEmpty>
-            {rankedServers.map((server) => {
-              const target =
-                pathname?.includes("/servers/") && selectedServerId && pathname.includes(`/${selectedServerId}/`)
-                  ? pathname.replace(`/servers/${selectedServerId}`, `/servers/${server.id}`)
-                  : `/${locale}/dashboard/servers/${server.id}`;
+                return left.server.name.localeCompare(right.server.name)
+            })
+            .slice(0, MAX_VISIBLE_RESULTS)
+            .map((entry) => entry.server)
+    }, [query, servers])
 
-              return (
-                <CommandItem
-                  key={server.id}
-                  value={`${server.name} ${server.description ?? ""}`}
-                  onSelect={() => {
-                    setOpen(false);
-                    setQuery("");
-                  }}
-                  onMouseEnter={() => router.prefetch(target)}
-                  asChild
+    return (
+        <Popover
+            open={open}
+            onOpenChange={(nextOpen) => {
+                setOpen(nextOpen)
+                if (!nextOpen) {
+                    setQuery("")
+                }
+            }}
+        >
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    className="h-10 w-full justify-between rounded-lg px-2 2xl:h-12 2xl:rounded-xl 2xl:px-4"
                 >
-                  <Link href={target} prefetch className="flex items-center gap-3">
-                    <Avatar className="size-8 rounded-lg">
-                      <AvatarImage src={server.avatar} alt={server.name} />
-                      <AvatarFallback>{server.name.slice(0, 2)}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium">{server.name}</div>
-                      <div className="truncate text-xs text-muted-foreground">{server.description}</div>
+                    <div className="flex min-w-0 items-center gap-2 2xl:gap-3">
+                        <Avatar className="size-7 rounded-md 2xl:size-8 2xl:rounded-lg">
+                            <AvatarImage
+                                src={activeServer?.avatar}
+                                alt={activeServer?.name}
+                            />
+                            <AvatarFallback>
+                                {activeServer?.name?.slice(0, 2) ?? "WS"}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 text-left">
+                            <div className="truncate text-xs font-semibold 2xl:text-sm">
+                                {activeServer?.name ?? labels.selectWorkspace}
+                            </div>
+                            <div className="text-muted-foreground truncate text-[10px] 2xl:text-xs">
+                                {activeServer
+                                    ? labels.activeWorkspace
+                                    : labels.noWorkspaceSelected}
+                            </div>
+                        </div>
                     </div>
-                    <Check
-                      className={cn(
-                        "size-4 text-muted-foreground",
-                        selectedServerId === server.id ? "opacity-100" : "opacity-0",
-                      )}
+                    <ChevronsUpDown className="text-muted-foreground size-3.5 2xl:size-4" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[22rem] p-0" align="start">
+                <Command shouldFilter={false}>
+                    <CommandInput
+                        value={query}
+                        onValueChange={setQuery}
+                        placeholder={labels.searchWorkspace}
                     />
-                  </Link>
-                </CommandItem>
-              );
-            })}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
+                    <CommandList>
+                        <CommandEmpty>{labels.noMatchingResults}</CommandEmpty>
+                        {rankedServers.map((server) => {
+                            const target =
+                                pathname?.includes("/servers/") &&
+                                selectedServerId &&
+                                pathname.includes(`/${selectedServerId}/`)
+                                    ? pathname.replace(
+                                          `/servers/${selectedServerId}`,
+                                          `/servers/${server.id}`
+                                      )
+                                    : `/${locale}/dashboard/servers/${server.id}`
+
+                            return (
+                                <CommandItem
+                                    key={server.id}
+                                    value={`${server.name} ${server.description ?? ""}`}
+                                    onSelect={() => {
+                                        setOpen(false)
+                                        setQuery("")
+                                    }}
+                                    onMouseEnter={() => router.prefetch(target)}
+                                    asChild
+                                >
+                                    <Link
+                                        href={target}
+                                        prefetch
+                                        className="flex items-center gap-3"
+                                    >
+                                        <Avatar className="size-8 rounded-lg">
+                                            <AvatarImage
+                                                src={server.avatar}
+                                                alt={server.name}
+                                            />
+                                            <AvatarFallback>
+                                                {server.name.slice(0, 2)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="truncate font-medium">
+                                                {server.name}
+                                            </div>
+                                            <div className="text-muted-foreground truncate text-xs">
+                                                {server.description}
+                                            </div>
+                                        </div>
+                                        <Check
+                                            className={cn(
+                                                "text-muted-foreground size-4",
+                                                selectedServerId === server.id
+                                                    ? "opacity-100"
+                                                    : "opacity-0"
+                                            )}
+                                        />
+                                    </Link>
+                                </CommandItem>
+                            )
+                        })}
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    )
 }
