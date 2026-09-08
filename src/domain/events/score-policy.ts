@@ -77,7 +77,7 @@ export function resolveRosterScoreDelta(input: {
     return input.settings.declined;
   }
 
-  if (participant?.status !== "attending") {
+  if (participant?.status !== "attending" && !rosterLookup.reserveUserIds.has(input.userId)) {
     return input.settings.noCategory;
   }
 

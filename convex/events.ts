@@ -168,8 +168,16 @@ export const findNoticeTarget = query({
       .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
       .collect();
 
+    const eventsWithReserves = await Promise.all(events.map(async (event) => {
+      const roster = await ctx.db
+        .query("rosters")
+        .withIndex("eventId", (q) => q.eq("eventId", event._id))
+        .unique();
+      return { ...event, reservePlayerIds: roster?.reservePlayerIds ?? [] };
+    }));
+
     return handleFindNoticeTarget({
-      events,
+      events: eventsWithReserves,
       userId: args.userId,
       query: args.query.trim(),
       now: new Date(),

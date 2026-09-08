@@ -21,14 +21,6 @@ export const userAssignmentSchema = z
       });
     }
 
-    if (value.primaryGroupId && value.secondaryGroupIds.includes(value.primaryGroupId)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["secondaryGroupIds"],
-        message: "Primary group cannot also be selected as a secondary group.",
-      });
-    }
-
     if ((value.type === "mercenary" || value.type === "reserve_member") && value.status === "recruit") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

@@ -125,7 +125,7 @@ export async function handleSetEventResult(input: {
 }
 
 export function handleFindNoticeTarget(input: {
-  events: Array<(Record<string, unknown> & EventLike) & { _id: unknown; name: string }>;
+  events: Array<(Record<string, unknown> & EventLike) & { _id: unknown; name: string; reservePlayerIds?: string[] }>;
   userId: string;
   query: string;
   now: Date;
@@ -139,6 +139,7 @@ export function handleFindNoticeTarget(input: {
         gameStart: normalized.gameStart ?? normalized.meetingStart,
         status: normalized.status,
         participants: normalized.participants,
+        reservePlayerIds: event.reservePlayerIds,
       };
     }),
     userId: input.userId,

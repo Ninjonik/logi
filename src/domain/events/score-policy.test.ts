@@ -64,3 +64,17 @@ test("resolveRosterScoreDelta returns reserve absence score for unconfirmed rese
     },
   }), -1);
 });
+
+test("resolveRosterScoreDelta scores a reserve assigned without an event signup", () => {
+  assert.equal(resolveRosterScoreDelta({
+    userId: "user-1",
+    settings,
+    participants: [],
+    notices: [{ userId: "user-1" }],
+    roster: {
+      squads: [{ players: [] }],
+      reservePlayerIds: ["user-1"],
+      reserveAttendances: [{ userId: "user-1", confirmed: false }],
+    },
+  }), 2);
+});

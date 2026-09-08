@@ -28,6 +28,10 @@ export async function POST(
 ) {
   try {
     const body = userAssignmentSchema.parse(await request.json());
+    const normalizedBody = {
+      ...body,
+      secondaryGroupIds: body.secondaryGroupIds.filter((groupId) => groupId !== body.primaryGroupId),
+    };
     const { serverId } = await params;
     const serverContext = await getServerContext(serverId);
     if (!serverContext?.canAdmin) {
@@ -35,25 +39,25 @@ export async function POST(
     }
     const assignmentId = await saveServerUserAssignment({
       serverId,
-      ...body,
+      ...normalizedBody,
       membershipCategoryId: undefined,
     });
     await savePlayerPlatformId({
-      userId: body.userId,
-      platformIds: body.platformIds,
+      userId: normalizedBody.userId,
+      platformIds: normalizedBody.platformIds,
     });
     await savePlayerNote({
-      userId: body.userId,
-      note: body.note,
+      userId: normalizedBody.userId,
+      note: normalizedBody.note,
     });
     await syncRolesSafely({
       serverId,
       discordGuildId: serverContext.server.discordId,
-      userId: body.userId,
-      afterPrimaryGroupId: body.primaryGroupId || undefined,
-      afterSecondaryGroupIds: body.secondaryGroupIds,
-      afterAssignmentType: body.type,
-      afterMembershipStatus: body.status,
+      userId: normalizedBody.userId,
+      afterPrimaryGroupId: normalizedBody.primaryGroupId || undefined,
+      afterSecondaryGroupIds: normalizedBody.secondaryGroupIds,
+      afterAssignmentType: normalizedBody.type,
+      afterMembershipStatus: normalizedBody.status,
       afterMembershipCategoryId: undefined,
     });
 

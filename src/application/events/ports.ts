@@ -27,6 +27,7 @@ export interface EventWorkflowRepository {
     status?: "pending" | "recruit" | "active";
   } | null>;
   getGroupNameById(groupId: string): Promise<string | null>;
+  getReservePlayerIds(eventId: string): Promise<string[]>;
   saveSignupState(eventId: string, input: {
     participants: EventParticipant[];
     signUps: EventSignup[];

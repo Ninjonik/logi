@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import * as React from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -58,6 +58,7 @@ export function ServerSwitcher({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const selectedServerId = activeServerId ?? searchParams.get("workspace") ?? undefined;
   const activeServer = selectedServerId
@@ -138,9 +139,10 @@ export function ServerSwitcher({
                     setOpen(false);
                     setQuery("");
                   }}
+                  onMouseEnter={() => router.prefetch(target)}
                   asChild
                 >
-                  <Link href={target} prefetch={false} className="flex items-center gap-3">
+                  <Link href={target} prefetch className="flex items-center gap-3">
                     <Avatar className="size-8 rounded-lg">
                       <AvatarImage src={server.avatar} alt={server.name} />
                       <AvatarFallback>{server.name.slice(0, 2)}</AvatarFallback>

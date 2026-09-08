@@ -325,6 +325,7 @@ export function RosterBoard({
   const reserveUsers = useMemo(() => {
     if (!board) return [];
     const notAttendingIds = new Set(board.notAttendingPlayerIds || []);
+    const reserveAttendanceByUserId = new Map((board.reserveAttendances ?? []).map((attendance) => [attendance.userId, attendance]));
 
     const filtered = (board.reservePlayerIds || [])
       .filter((id) => !notAttendingIds.has(id))
@@ -339,6 +340,11 @@ export function RosterBoard({
         ...user,
         _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.discordId), groupsById, dictionary),
         signupRoleLabel: getUserSignupLabel(user.discordId, signupGroupByUserId) ?? undefined,
+        attendanceStatus: reserveAttendanceByUserId.get(user.discordId)?.confirmed
+          ? "confirmed" as const
+          : reserveAttendanceByUserId.get(user.discordId)?.ack
+            ? "acknowledged" as const
+            : "pending" as const,
       }));
   }, [assignedPlayerIds, assignmentsByUserId, board, dictionary, groupsById, normalizedReserveSearch, rankingContext, signupGroupByUserId, usersById]);
 
@@ -839,6 +845,7 @@ export function RosterBoard({
           squadPresetId: board.squadPresetId as Id<"squadPresets">,
           squads: saveSquads,
           reservePlayerIds: cleanReservePlayerIds,
+          reserveAttendances: (board.reserveAttendances ?? []).filter((attendance) => cleanReservePlayerIds.includes(attendance.userId)),
           notAttendingPlayerIds: cleanNotAttendingPlayerIds,
           streamerId: board.streamerId,
           published: published,
@@ -853,6 +860,7 @@ export function RosterBoard({
                 ...prev,
                 id: wasDraft ? nextRosterId : prev.id,
                 reservePlayerIds: cleanReservePlayerIds,
+                reserveAttendances: (prev.reserveAttendances ?? []).filter((attendance) => cleanReservePlayerIds.includes(attendance.userId)),
                 notAttendingPlayerIds: cleanNotAttendingPlayerIds,
                 published,
               }
@@ -885,6 +893,7 @@ export function RosterBoard({
                 ...board,
                 id: nextRosterId,
                 reservePlayerIds: cleanReservePlayerIds,
+                reserveAttendances: (board.reserveAttendances ?? []).filter((attendance) => cleanReservePlayerIds.includes(attendance.userId)),
                 notAttendingPlayerIds: cleanNotAttendingPlayerIds,
                 squads: saveSquads,
                 published: true,
