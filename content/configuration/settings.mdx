@@ -1,0 +1,40 @@
+---
+title: Server settings
+description: Configure the selected workspace without exposing sensitive information.
+---
+
+import { Callout, Steps } from "nextra/components"
+
+# Server settings
+
+Server settings belong to the active workspace. Only managers should change them, and changes can affect how the dashboard, Discord coordination, events, and membership features behave.
+
+## Change settings carefully
+
+<Steps>
+
+### Confirm the workspace
+
+Check the server name in the sidebar before changing anything. Settings apply to that server, not to every community you can access.
+
+### Change one concern at a time
+
+Review the relevant section, make the smallest intended change, and save it.
+
+### Verify in the affected feature
+
+For example, after a scheduling or Discord-related change, inspect an event or the related Discord configuration rather than assuming the setting took effect as expected.
+
+</Steps>
+
+## API keys and Discord metadata
+
+Some server configuration is exposed through protected dashboard/API routes, including API-key and Discord-metadata management. Treat keys, webhook-like values, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
+
+<Callout type="warning">
+    Do not rotate, delete, or reveal an API key unless you understand every
+    integration using it. A broken key can interrupt an external integration
+    immediately.
+</Callout>
+
+> **Screenshot placeholder — settings:** Show the server Settings page with the active workspace name, clearly separated settings sections, and a redacted example of any sensitive key field.

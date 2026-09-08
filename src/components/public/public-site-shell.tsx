@@ -78,6 +78,12 @@ export function PublicSiteShell({
                             {dictionary.publicNavigation.privacy}
                         </Link>
                         <Link
+                            href={`/${locale}/gdpr`}
+                            className="hover:text-foreground"
+                        >
+                            {dictionary.publicNavigation.gdpr}
+                        </Link>
+                        <Link
                             href={`/${locale}/tos`}
                             className="hover:text-foreground"
                         >

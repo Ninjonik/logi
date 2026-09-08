@@ -47,13 +47,6 @@ export function getPlatformFlowMessages(language: ClanLanguage) {
         return messages.platformFlow
     }
 
-    if (language === "cs") {
-        return (getClanDiscordMessages("en").platformFlowCsFallback ??
-            getClanDiscordMessages("en").platformFlow)! as NonNullable<
-            ReturnType<typeof getClanDiscordMessages>["platformFlow"]
-        >
-    }
-
     return getClanDiscordMessages("en").platformFlow!
 }
 

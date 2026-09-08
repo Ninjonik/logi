@@ -1,0 +1,44 @@
+---
+title: Members and groups
+description: Maintain server people records, access relationships, and groups.
+---
+
+import { Callout, Steps } from "nextra/components"
+
+# Members and groups
+
+These pages are for server managers. They control the server’s working data; they do not change a person’s global Logi account.
+
+## Members
+
+The **Members** page lists people known to the workspace. Managers can view a person, create a record where the workflow allows it, and manage server-specific assignments. Carefully distinguish the person’s identity from their roles and groups in this one server.
+
+The available maintenance actions can include importing Discord members, linking missing Discord IDs, linking platform IDs, merging duplicate records, and cleaning duplicate player statistics. Use these only after checking the affected records: they change or combine real server data.
+
+<Callout type="warning">
+    Merge and deduplication actions can be difficult to undo. Confirm the source
+    and destination records, and avoid using bulk maintenance tools as a
+    substitute for checking individual data.
+</Callout>
+
+## Groups
+
+Groups organise people for your community and can have a name, description, and hierarchy. They are also used by member assignments and can be reflected in roster information.
+
+<Steps>
+
+### Create the group
+
+Open **Groups**, create a group, and use a name that members will recognise.
+
+### Describe its purpose
+
+Add a short description explaining who belongs in it or how it is used.
+
+### Check dependencies before changing it
+
+Before renaming or deleting a group, look at the usage count and related member assignments. Update those relationships first where necessary.
+
+</Steps>
+
+> **Screenshot placeholder — members and groups:** Show the Members table with a member detail/assignment action and the Groups list with name, usage count, and description columns.

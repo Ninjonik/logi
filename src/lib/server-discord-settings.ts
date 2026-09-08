@@ -38,7 +38,7 @@ export async function getMembershipApplicationByAssignment(
 export async function saveDiscordConfig(input: {
     guildId: string
     timezone: string
-    defaultLanguage: "en" | "cs"
+    defaultLanguage: "en" | "cs" | "de"
     announcementsChannelId?: string
     eventInfoChannelId?: string
     errorsChannelId?: string

@@ -122,6 +122,7 @@ While editing:
 - preserve locale-aware routing under `src/app/[locale]`
 - add or update tests for normal, invalid, edge, and regression behavior when business logic changes
 - update documentation when commands, architecture, environment requirements, or user-visible behavior materially change
+- when an application feature, screen, permission, workflow, condition, or user-visible wording changes, update the matching public wiki page under `content/` in the same change; add a page when the feature has no suitable coverage
 
 Do not opportunistically reformat, rename, or refactor unrelated code. Do not overwrite or discard changes you did not create.
 
@@ -221,8 +222,6 @@ Before handing work back:
 - verify all new imports, links, routes, and environment variable names
 - update relevant Markdown when behavior or developer workflow changed
 - state what changed, what was validated, and any remaining risk or unrun check
-
-
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

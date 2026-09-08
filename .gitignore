@@ -43,3 +43,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# A stale local Pagefind folder is never source-controlled.
+public/_pagefind/

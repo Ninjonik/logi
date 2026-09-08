@@ -1,4 +1,4 @@
-export type ClanLanguage = "en" | "cs"
+export type ClanLanguage = "en" | "cs" | "de"
 
 export type TicketModalQuestion = {
     id: string

@@ -40,7 +40,7 @@ export function EventCalendarEventDialog({
     eventCategories?: EventCategory[]
     timezone?: string
     dictionary: Dictionary
-    signupLanguage: "en" | "cs"
+    signupLanguage: "en" | "cs" | "de"
 }) {
     const category = getEventCategoryPresentation(event, eventCategories)
 

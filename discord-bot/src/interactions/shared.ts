@@ -9,6 +9,7 @@ import {
 } from "discord.js"
 
 import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import type { ClanLanguage } from "../../../src/lib/clan-language"
 import { buildDiscordMessageUrl } from "../../../src/lib/discord"
 
 import { reportClanDiscordError } from "../error-reporting"
@@ -30,7 +31,7 @@ export function formatTemplate(
 }
 
 export function getOutcomeLabel(
-    language: "en" | "cs",
+    language: ClanLanguage,
     outcome: "denied" | "pending" | "recruit" | "member" | "mercenary"
 ) {
     const messages = getClanDiscordMessages(language)
@@ -102,7 +103,7 @@ export function resolveSupportMemberIds(
 export async function sendPlatformIdDm(
     interaction: ButtonInteraction,
     link: string,
-    language: "en" | "cs"
+    language: ClanLanguage
 ) {
     return sendPlatformIdDmWithCopy(interaction, link, language, "membership")
 }
@@ -111,7 +112,7 @@ export async function startPlatformIdLinkFlow(
     interaction: ButtonInteraction | ChatInputCommandInteraction,
     input: {
         guildId: string
-        language: "en" | "cs"
+        language: ClanLanguage
         completionMode: "membership" | "link"
         categoryId?: string
         applyMessageUrl?: string
@@ -156,7 +157,7 @@ export async function startPlatformIdLinkFlow(
 async function sendPlatformIdDmWithCopy(
     interaction: ButtonInteraction | ChatInputCommandInteraction,
     link: string,
-    language: "en" | "cs",
+    language: ClanLanguage,
     completionMode: "membership" | "link"
 ) {
     try {

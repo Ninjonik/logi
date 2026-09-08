@@ -178,6 +178,7 @@ export async function syncForumChannel(input: {
         messages.forum.matchInformation,
         getClanDiscordMessages("en").forum.matchInformation,
         getClanDiscordMessages("cs").forum.matchInformation,
+        getClanDiscordMessages("de").forum.matchInformation,
     ]
     const infoPost = existingPosts.find((post) =>
         infoPostNames.includes(post.name)
@@ -403,6 +404,7 @@ export async function finalizeForumAfterConclusion(
         messages.forum.debrief,
         getClanDiscordMessages("en").forum.debrief,
         getClanDiscordMessages("cs").forum.debrief,
+        getClanDiscordMessages("de").forum.debrief,
     ]
 
     let debriefPost = existingPosts.find((post) =>

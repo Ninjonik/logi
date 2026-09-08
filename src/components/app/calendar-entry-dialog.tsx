@@ -38,7 +38,7 @@ export function CalendarEntryDialog({
     groups: Group[]
     timezone?: string
     dictionary: Dictionary
-    signupLanguage: "en" | "cs"
+    signupLanguage: "en" | "cs" | "de"
 }) {
     const detailPath =
         entry.kind === "event"

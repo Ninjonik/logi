@@ -431,7 +431,11 @@ export default defineSchema({
     discordConfigs: defineTable({
         guildId: v.string(),
         timezone: v.string(),
-        defaultLanguage: v.union(v.literal("en"), v.literal("cs")),
+        defaultLanguage: v.union(
+            v.literal("en"),
+            v.literal("cs"),
+            v.literal("de")
+        ),
         announcementsChannelId: v.optional(v.string()),
         eventInfoChannelId: v.optional(v.string()),
         errorsChannelId: v.optional(v.string()),
@@ -808,6 +812,22 @@ export default defineSchema({
     })
         .index("token", ["token"])
         .index("userId", ["userId"]),
+    privacyRequests: defineTable({
+        userId: v.string(),
+        discordId: v.string(),
+        userName: v.string(),
+        type: v.union(v.literal("export"), v.literal("erasure")),
+        status: v.union(
+            v.literal("requested"),
+            v.literal("completed"),
+            v.literal("rejected")
+        ),
+        requestedAt: v.string(),
+        completedAt: v.optional(v.string()),
+        note: v.optional(v.string()),
+    })
+        .index("userId", ["userId"])
+        .index("status_requestedAt", ["status", "requestedAt"]),
     userAssignments,
     playerStats: defineTable({
         id: v.string(),

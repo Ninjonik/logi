@@ -170,23 +170,10 @@ export function ToolPropertiesPanel({
                                                 }
                                                 title={item.label}
                                             >
-                                                <div
-                                                    className="size-5"
-                                                    style={{
-                                                        backgroundColor:
-                                                            "#39ff14",
-                                                        WebkitMaskImage: `url(${item.iconPath})`,
-                                                        maskImage: `url(${item.iconPath})`,
-                                                        WebkitMaskRepeat:
-                                                            "no-repeat",
-                                                        maskRepeat: "no-repeat",
-                                                        WebkitMaskPosition:
-                                                            "center",
-                                                        maskPosition: "center",
-                                                        WebkitMaskSize:
-                                                            "contain",
-                                                        maskSize: "contain",
-                                                    }}
+                                                <img
+                                                    src={item.iconPath}
+                                                    alt=""
+                                                    className="size-5 object-contain"
                                                 />
                                             </button>
                                         ))}

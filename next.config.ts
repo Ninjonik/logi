@@ -1,8 +1,13 @@
 import createNextIntlPlugin from "next-intl/plugin"
 import { execFileSync } from "node:child_process"
 import type { NextConfig } from "next"
+import nextra from "nextra"
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts")
+const withNextra = nextra({
+    contentDirBasePath: "/wiki",
+    search: { codeblocks: false },
+})
 
 function getBuildVersion() {
     try {
@@ -89,4 +94,4 @@ const nextConfig: NextConfig = {
     },
 }
 
-export default withNextIntl(nextConfig)
+export default withNextra(withNextIntl(nextConfig))

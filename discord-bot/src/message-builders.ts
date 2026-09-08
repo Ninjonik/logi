@@ -1013,11 +1013,15 @@ function formatCalendarTime(
 }
 
 function configureLocale(language: ClanLanguage) {
-    return language === "cs" ? "cs-CZ" : "en-GB"
+    return language === "cs" ? "cs-CZ" : language === "de" ? "de-DE" : "en-GB"
 }
 
 function getCalendarAllDayLabel(language: ClanLanguage) {
-    return language === "cs" ? "Celý den" : "All day"
+    return language === "cs"
+        ? "Celý den"
+        : language === "de"
+          ? "Ganztägig"
+          : "All day"
 }
 
 function getColorChipEmoji(color?: string) {

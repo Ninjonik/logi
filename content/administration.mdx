@@ -1,0 +1,43 @@
+---
+title: Administrator reference
+description: Platform-wide tools, bot visibility, and safe operational practice.
+---
+
+import { Callout, Cards } from "nextra/components"
+
+# Administrator reference
+
+This page is for people with elevated Logi access. Superadmin-only pages appear in the dashboard only for accounts authorised for them.
+
+<Cards>
+    <Cards.Card
+        title="Competitions"
+        href="/wiki/public/matches-and-competitions"
+    />
+    <Cards.Card
+        title="Server configuration"
+        href="/wiki/configuration/settings"
+    />
+    <Cards.Card title="Member maintenance" href="/wiki/configuration/members" />
+    <Cards.Card title="Set up the Discord bot" href="/wiki/discord-bot-setup" />
+</Cards>
+
+## Bot dashboard and logs
+
+The bot dashboard provides operational visibility into bot activity, including timestamp, level, source, scope, message, and context. Use it to investigate a specific issue, not as a place to expose private data. Copy only the minimum useful diagnostic information into a support report.
+
+## Competitions
+
+The dashboard competition area is distinct from the public competition pages. Elevated users may manage platform-side competition information; always verify the selected workspace and source data before modifying fixtures or links.
+
+## LogiComms
+
+LogiComms is available from the dashboard navigation. Use it according to your community’s communication process, and keep operational messaging clear about audience, timing, and action required.
+
+<Callout type="warning">
+    Elevated access is not a reason to bypass normal checks. Before a
+    destructive or broad-impact action, confirm the workspace, the intended
+    target, and the user-facing consequences.
+</Callout>
+
+> **Screenshot placeholder — administrator tools:** Show the superadmin navigation group with Competitions and Bot dashboard, plus a sample bot-log table with sensitive message content redacted.

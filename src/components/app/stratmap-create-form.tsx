@@ -13,6 +13,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
+import { importMapsLetLooseJson } from "@/domain/stratmaps/import-maps-let-loose"
 import { HllMapSelector } from "@/components/app/hll-map-selector"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { getHllStratmapMaps } from "@/lib/stratmaps"
@@ -44,6 +45,33 @@ export function StratmapCreateForm({
     const [baseMapId, setBaseMapId] = useState(maps[0]?.id ?? "carentan")
     const [side, setSide] = useState("")
     const [strongpointId, setStrongpointId] = useState("")
+    const [importState, setImportState] = useState<string | null>(null)
+    const [importSummary, setImportSummary] = useState<string | null>(null)
+
+    async function handleImport(file: File | undefined) {
+        if (!file) return
+        try {
+            const imported = importMapsLetLooseJson(
+                JSON.parse(await file.text())
+            )
+            if (imported.baseMapId) setBaseMapId(imported.baseMapId)
+            setStrongpointId("")
+            setImportState(JSON.stringify(imported.state))
+            setImportSummary(
+                dictionary.stratmaps.importSummary
+                    .replace("{slides}", String(imported.state.slides.length))
+                    .replace(
+                        "{skipped}",
+                        imported.skippedElements
+                            ? `; ${imported.skippedElements} unsupported item${imported.skippedElements === 1 ? "" : "s"} skipped`
+                            : ""
+                    )
+            )
+        } catch (error) {
+            console.error(error)
+            toast.error(dictionary.stratmaps.importInvalid)
+        }
+    }
 
     async function handleSubmit() {
         if (!title.trim()) {
@@ -60,6 +88,7 @@ export function StratmapCreateForm({
                     baseMapId,
                     side: side.trim() || undefined,
                     strongpointId: strongpointId || undefined,
+                    state: importState ?? undefined,
                 })
 
                 router.push(
@@ -88,6 +117,27 @@ export function StratmapCreateForm({
                         onChange={(event) => setTitle(event.target.value)}
                         className="min-w-0 overflow-hidden rounded-xl"
                     />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="maps-let-loose-import">
+                        {dictionary.stratmaps.importLabel}
+                    </Label>
+                    <Input
+                        id="maps-let-loose-import"
+                        type="file"
+                        accept="application/json,.json"
+                        onChange={(event) =>
+                            handleImport(event.target.files?.[0])
+                        }
+                    />
+                    <p className="text-muted-foreground text-sm">
+                        {dictionary.stratmaps.importHint}
+                    </p>
+                    {importSummary ? (
+                        <p className="text-sm text-emerald-600">
+                            {importSummary}
+                        </p>
+                    ) : null}
                 </div>
                 <div className="space-y-2">
                     <Label>{dictionary.stratmaps.mapAndPoint}</Label>

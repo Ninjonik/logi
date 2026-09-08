@@ -147,6 +147,7 @@ export const create = mutation({
         side: v.optional(v.string()),
         strongpointId: v.optional(v.string()),
         eventId: v.optional(v.id("events")),
+        state: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const guild = await getGuildById(ctx, String(args.serverId))
@@ -173,9 +174,11 @@ export const create = mutation({
             baseMapId: args.baseMapId,
             side: args.side?.trim() || undefined,
             strongpointId: args.strongpointId?.trim() || undefined,
-            state: stringifyStratmapState(
-                buildDefaultStratmapState(args.baseMapId)
-            ),
+            state:
+                args.state ??
+                stringifyStratmapState(
+                    buildDefaultStratmapState(args.baseMapId)
+                ),
             createdBy: args.userId,
             createdAt: now,
             updatedAt: now,

@@ -45,7 +45,7 @@ type RosterImageContext = {
     config?: {
         guildId: string
         timezone: string
-        defaultLanguage: "en" | "cs"
+        defaultLanguage: "en" | "cs" | "de"
     }
     groups: Array<{
         id: string

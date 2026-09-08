@@ -36,6 +36,7 @@ export const csMessages = {
             "Organizujte klanové akce, stavte soupisky, publikujte briefingy a připravujte operace propojené s Discordem.",
     },
     publicNavigation: {
+        gdpr: "GDPR",
         privacy: "Soukromí",
         terms: "Podmínky",
     },
@@ -88,6 +89,138 @@ export const csMessages = {
         sourceAvailable: "Zdrojový kód na GitHubu",
         contributionsWelcome: "Příspěvky vítány",
         noMarketingFiller: "Bez marketingové výplně",
+        landing: {
+            heroEyebrow: "Operační systém pro vaši komunitu",
+            heroLineOne: "Každý hráč.",
+            heroLineAccent: "Každá operace.",
+            heroLineThree: "V sestavě.",
+            heroDescription:
+                "Logi proměňuje krásný chaos vedení Hell Let Loose komunity v jedno živé velitelské centrum.",
+            deployCommunity: "Spusťte svou komunitu",
+            seeEverything: "Prohlédnout všechny funkce",
+            playersConfirmed: "31 hráčů potvrzeno",
+            marquee: [
+                "Operace",
+                "Soupisky",
+                "Zápasy",
+                "Briefingy",
+                "Členové",
+                "Discord",
+                "Analytika",
+            ],
+            arsenalEyebrow: "Kompletní výbava",
+            arsenalTitle:
+                "Ne landing page plná slibů. Skutečné velitelské centrum, obrazovku po obrazovce.",
+            arsenalDescription:
+                "Každý modul už je součástí Logi. Prozkoumejte celý systém níže.",
+            features: {
+                dashboard: {
+                    title: "Operační dashboard",
+                    description:
+                        "Puls vaší komunity: akce, výkon, hráči a další věc, kterou je třeba spustit.",
+                },
+                calendar: {
+                    title: "Kalendář a akce",
+                    description:
+                        "Plánujte tréninky, zápasy a komunitní večery bez lovení informací na Discordu.",
+                },
+                roster: {
+                    title: "Tvorba soupisek",
+                    description:
+                        "Sestavujte týmy vizuálně, obsazujte každou roli a přesně víte, kdo je připraven.",
+                },
+                briefing: {
+                    title: "Briefingy a mapy",
+                    description:
+                        "Mějte plán, mapu i rozkazy tam, kde je najde každý hráč.",
+                },
+                matches: {
+                    title: "Historie zápasů",
+                    description:
+                        "Uchovejte záznam: výsledky, skóre, výkon a okamžiky, na kterých záleží.",
+                },
+                members: {
+                    title: "Adresář členů",
+                    description:
+                        "Opravdový přehled o lidech, rolích, účasti a zdraví komunity.",
+                },
+                event: {
+                    title: "Velení akce",
+                    description:
+                        "Od jednoduché přihlášky po kompletní operační briefing má každá akce svůj domov.",
+                },
+                presets: {
+                    title: "Předvolby squadů",
+                    description:
+                        "Nastavte strukturu jednotky jednou. Známou formaci vytvoříte za sekundy.",
+                },
+                assignments: {
+                    title: "Přiřazení",
+                    description:
+                        "Přesuňte hráče na správné místo pomocí workflow vytvořeného pro velitele.",
+                },
+                matchData: {
+                    title: "Data ze zápasů",
+                    description:
+                        "Mějte detail za každým výsledkem po ruce pro velitele, analytiky i hráče.",
+                },
+                api: {
+                    title: "Veřejné API a dokumentace",
+                    description:
+                        "Rozsáhlá reference API a dokumentace pro správce serverů, integrace a přispěvatele.",
+                },
+            },
+            workflowEyebrow: "Od briefingu po vyhodnocení",
+            workflowTitle: "Práce plyne. Vaše nástroje by měly taky.",
+            workflowDescription:
+                "Správná operace není jedna obrazovka. Je to rytmus, který Logi drží pohromadě.",
+            workflow: [
+                {
+                    title: "Plánujte",
+                    description:
+                        "Vytvořte akci, vyberte mapu a zveřejněte briefing.",
+                },
+                {
+                    title: "Naplňte",
+                    description:
+                        "Otevřete přihlášky, sestavte soupisku a přiřaďte každý slot.",
+                },
+                {
+                    title: "Veďte",
+                    description: "Dejte velitelům živý, sdílený zdroj pravdy.",
+                },
+                {
+                    title: "Pamatujte",
+                    description:
+                        "Zaznamenejte výsledky, sledujte výkon a budujte příběh.",
+                },
+            ],
+            ownershipEyebrow: "Navždy vaše",
+            ownershipTitle:
+                "Zdarma používat. Zdarma vlastnit. Zdarma rozvíjet.",
+            ownershipDescription:
+                "Používejte Logi na naší hostované platformě zdarma, nebo spusťte celý stack na vlastní infrastruktuře, když je vlastnictví dat nepřekročitelné.",
+            values: {
+                hosted: {
+                    title: "Hostované, navždy zdarma",
+                    description:
+                        "Začněte svou komunitu organizovat ihned. Hostovaná verze je zdarma — bez omezení funkcí a překvapivých upgradů.",
+                },
+                selfHosted: {
+                    title: "Hostujte sami, když na tom záleží",
+                    description:
+                        "Chcete úplnou kontrolu nad daty, prostředím a nasazením? Spusťte Logi sami a nechte si klíče.",
+                },
+                openSource: {
+                    title: "Open source, do hloubky zdokumentované",
+                    description:
+                        "Prozkoumejte kód, přispívejte vylepšeními a využijte rozsáhlou dokumentaci API pro napojení vlastních nástrojů.",
+                },
+            },
+            finalTitle: "Vaše další operace už čeká.",
+            finalDescription:
+                "Vytvořte místo, kterému vaši hráči důvěřují ještě před prvním ready checkem.",
+        },
         pillars: {
             operationsTitle: "Řeší nudné věci",
             operationsDescription:
@@ -348,6 +481,14 @@ export const csMessages = {
         flagsCategory: "Vlajky",
     },
     userSettings: {
+        privacyTitle: "Soukromí a data",
+        privacyDescription:
+            "Požádejte o kopii svých osobních údajů nebo o výmaz účtu.",
+        requestExport: "Požádat o export mých dat",
+        requestErasure: "Požádat o výmaz účtu",
+        erasureWarning:
+            "Výmaz také odstraní vaše přiřazení ke klanům, přihlášky, umístění v soupiskách a další záznamy propojené s účtem. Některá data mohou být uchována, pokud to vyžaduje zákon.",
+        requestSubmitted: "Vaše žádost o soukromí byla odeslána.",
         title: "Nastavení uživatele",
         description:
             "Spravujte svůj profil a platformní identitu používanou pro párování importovaných zápasů.",
@@ -391,6 +532,7 @@ export const csMessages = {
         defaultLanguage: "Jazyk klanu",
         languageEnglish: "Angličtina",
         languageCzech: "Čeština",
+        languageGerman: "Němčina",
         announcementsChannelId: "ID kanálu pro oznámení",
         eventInfoChannelId: "ID informačního kanálu události",
         errorsChannelId: "ID kanálu pro chyby",
@@ -1345,6 +1487,11 @@ export const csMessages = {
         saveStateError: "Stav stratmapy se nepodařilo uložit.",
         createError: "Stratmapu se nepodařilo vytvořit.",
         titleRequired: "Název je povinný.",
+        importLabel: "Import z Maps Let Loose (volitelně)",
+        importHint:
+            "Nahrajte rozbalený soubor mll_config.json z exportu Maps Let Loose. Před vytvořením vyberte podrobnosti mapy níže.",
+        importInvalid: "Toto není platný JSON export z Maps Let Loose.",
+        importSummary: "Importováno slidů: {slides}{skipped}.",
         liveAccess:
             "Admini mohou tuhle stratmapu upravovat. Ostatní změny vidí živě.",
         slides: "Slidy",
