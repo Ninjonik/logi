@@ -30,6 +30,10 @@ export async function PATCH(
 ) {
   try {
     const body = userAssignmentSchema.parse(await request.json());
+    const normalizedBody = {
+      ...body,
+      secondaryGroupIds: body.secondaryGroupIds.filter((groupId) => groupId !== body.primaryGroupId),
+    };
     const { serverId, assignmentId } = await params;
     const serverContext = await getServerContext(serverId);
     if (!serverContext?.canAdmin) {
@@ -43,30 +47,30 @@ export async function PATCH(
     const updatedAssignmentId = await saveServerUserAssignment({
       assignmentId,
       serverId,
-      ...body,
+      ...normalizedBody,
       membershipCategoryId: effectiveMembershipCategoryId,
     });
     await savePlayerPlatformId({
-      userId: body.userId,
-      platformIds: body.platformIds,
+      userId: normalizedBody.userId,
+      platformIds: normalizedBody.platformIds,
     });
     await savePlayerNote({
-      userId: body.userId,
-      note: body.note,
+      userId: normalizedBody.userId,
+      note: normalizedBody.note,
     });
     await syncRolesSafely({
       serverId,
       discordGuildId: serverContext.server.discordId,
-      userId: body.userId,
+      userId: normalizedBody.userId,
       beforePrimaryGroupId: existingAssignment?.primaryGroupId,
       beforeSecondaryGroupIds: existingAssignment?.secondaryGroupIds ?? [],
       beforeAssignmentType: existingAssignment?.type,
       beforeMembershipStatus: existingAssignment?.status,
       beforeMembershipCategoryId: effectiveMembershipCategoryId,
-      afterPrimaryGroupId: body.primaryGroupId || undefined,
-      afterSecondaryGroupIds: body.secondaryGroupIds,
-      afterAssignmentType: body.type,
-      afterMembershipStatus: body.status,
+      afterPrimaryGroupId: normalizedBody.primaryGroupId || undefined,
+      afterSecondaryGroupIds: normalizedBody.secondaryGroupIds,
+      afterAssignmentType: normalizedBody.type,
+      afterMembershipStatus: normalizedBody.status,
       afterMembershipCategoryId: effectiveMembershipCategoryId,
     });
 

@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getGuildByDiscordId, getGuildDiscordId, getUserByDiscordId } from "./identity";
+import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 export const DEFAULT_ROSTER_SCORE_SETTINGS = {
@@ -101,9 +102,13 @@ export const visibleForUser = query({
 
     return guilds.map((guild) => ({
         ...normalizeGuildDoc(guild),
-        canAdmin: guild.adminIds.includes(args.userId) ||
-          guild.dashboardAdminIds?.includes(args.userId) ||
-          adminGuildIds.has(getGuildDiscordId(guild)),
+        canAdmin: canAdminServerContext({
+          serverAdminIds: guild.adminIds,
+          dashboardAdminIds: guild.dashboardAdminIds,
+          adminAccessOverrides: guild.adminAccessOverrides,
+          userId: args.userId,
+          discordAccess: { isAdmin: adminGuildIds.has(getGuildDiscordId(guild)) },
+        }),
       }));
   },
 });
@@ -308,11 +313,32 @@ export const setPlayerAdminAccess = mutation({
       throw new Error("Unauthorized.");
     }
 
-    const adminIds = args.isAdmin
-      ? [...new Set([...guild.adminIds, args.playerId])]
-      : guild.adminIds.filter((id) => id !== args.playerId);
-    await ctx.db.patch(guild._id, { adminIds, updatedAt: new Date().toISOString() });
-    return { isAdmin: adminIds.includes(args.playerId) };
+    const adminAccessOverrides = { ...guild.adminAccessOverrides, [args.playerId]: args.isAdmin };
+    await ctx.db.patch(guild._id, { adminAccessOverrides, updatedAt: new Date().toISOString() });
+    return { isAdmin: args.isAdmin };
+  },
+});
+
+export const setPlayerAdminAccessInternal = mutation({
+  args: {
+    secret: v.string(),
+    serverId: v.id("guilds"),
+    playerId: v.string(),
+    isAdmin: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+    const [guild, player] = await Promise.all([
+      ctx.db.get(args.serverId),
+      getUserByDiscordId(ctx, args.playerId),
+    ]);
+    if (!guild || !player) {
+      throw new Error("Player or server not found.");
+    }
+
+    const adminAccessOverrides = { ...guild.adminAccessOverrides, [args.playerId]: args.isAdmin };
+    await ctx.db.patch(guild._id, { adminAccessOverrides, updatedAt: new Date().toISOString() });
+    return { isAdmin: args.isAdmin };
   },
 });
 

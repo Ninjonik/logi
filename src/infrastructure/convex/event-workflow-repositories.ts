@@ -55,6 +55,15 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
     return group?.name ?? null;
   }
 
+  async getReservePlayerIds(eventId: string) {
+    const roster = await this.ctx.db
+      .query("rosters")
+      .withIndex("eventId", (q) => q.eq("eventId", eventId as Id<"events">))
+      .unique();
+
+    return roster?.reservePlayerIds ?? [];
+  }
+
   async saveSignupState(eventId: string, input: {
     participants: EventWorkflowRecord["participants"];
     signUps: EventWorkflowRecord["signUps"];

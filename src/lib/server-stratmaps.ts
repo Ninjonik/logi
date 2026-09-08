@@ -1,3 +1,4 @@
+import { appCacheTags, cachedRead } from "@/lib/cache-tags";
 import { fetchQuery } from "convex/nextjs";
 import { makeFunctionReference } from "convex/server";
 
@@ -37,9 +38,14 @@ export async function getStratmapDetail(stratmapId: string) {
 }
 
 export async function getPublicStratmapDetail(stratmapId: string) {
-  return await fetchQuery(getPublicStratmapByIdReference, { stratmapId: stratmapId as never }) as {
-    id: string; guildId: string; eventId?: string; title: string; description?: string; baseMapId: string; side?: string; strongpointId?: string; state: string; createdBy: string; createdAt: string; updatedAt: string;
-  } | null;
+  return await cachedRead(
+    ["public-stratmap", stratmapId],
+    [appCacheTags.stratmap(stratmapId), appCacheTags.publicDiscovery()],
+    async () => (await fetchQuery(getPublicStratmapByIdReference, { stratmapId: stratmapId as never })) as {
+      id: string; guildId: string; eventId?: string; title: string; description?: string; baseMapId: string; side?: string; strongpointId?: string; state: string; createdBy: string; createdAt: string; updatedAt: string;
+    } | null,
+    300,
+  );
 }
 
 export async function listServerStratmaps(serverId: string) {

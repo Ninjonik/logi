@@ -23,6 +23,10 @@ export class InMemoryEventWorkflowRepository implements EventWorkflowRepository 
     return this.groupNames.get(groupId) ?? null;
   }
 
+  async getReservePlayerIds(_eventId: string) {
+    return [];
+  }
+
   async saveSignupState(eventId: string, input: {
     participants: EventWorkflowRecord["participants"];
     signUps: EventWorkflowRecord["signUps"];

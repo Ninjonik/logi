@@ -41,14 +41,16 @@ export default async function DashboardHomePage({
   const { locale } = await params;
   const safeLocale = isLocale(locale) ? locale : "en";
   const dictionary = getDictionary(safeLocale);
-  const user = await getCurrentPlayer();
-  const superadmin = await isCurrentUserSuperadmin();
+  const [user, superadmin, visibleGuilds] = await Promise.all([
+    getCurrentPlayer(),
+    isCurrentUserSuperadmin(),
+    getVisibleGuildsForLoggedInUser(),
+  ]);
 
   if (!user) {
     return null;
   }
 
-  const visibleGuilds = await getVisibleGuildsForLoggedInUser();
   const mainServer = user.guildId ? visibleGuilds.find((guild) => guild.discordId === user.guildId) : undefined;
   if (mainServer) {
     const persistedMainServer = await getGuildMetadataByDiscordId(mainServer.discordId);

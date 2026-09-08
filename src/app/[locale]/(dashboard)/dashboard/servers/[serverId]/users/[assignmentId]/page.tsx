@@ -13,6 +13,8 @@ import { getPaginatedRows } from "@/lib/data-table";
 import { formatDateTime } from "@/lib/format";
 import { getAssignmentMetadata, getPlayerMetadata } from "@/lib/server-metadata";
 import { buildPlayerStatsSummary, flattenPlayerMatches, getPlayerStatsDocs, sortPlayerMatches } from "@/lib/server-player-stats";
+import { getPlayerPerformanceHistory } from "@/lib/read-models/performance-history";
+import { PerformanceHistoryChart } from "@/components/app/performance-history-chart";
 import { getServerContext } from "@/lib/server-context";
 import {
   getEligibleUsersForServer,
@@ -57,6 +59,7 @@ export default async function ServerUserDetailPage({
     new Map(context.events.map((event) => [event.id, event])),
   );
   const recentSummary = buildPlayerStatsSummary(sortedMatches);
+  const performanceHistory = await getPlayerPerformanceHistory(server.discordId, user.id, serverId);
   const paginatedMatches = getPaginatedRows({
     rows: sortedMatches,
     searchParams: resolvedSearchParams,
@@ -88,6 +91,17 @@ export default async function ServerUserDetailPage({
         <PageHeader
           title={user.name}
           description={user.platformIds.length ? dictionary.userSettings.platformConnected : dictionary.userManagement.platformNotConnected}
+          actions={context.canAdmin ? (
+            <PlayerAdminAccessButton
+              serverId={server.id}
+              playerId={user.discordId}
+              initialIsAdmin={server.adminAccessOverrides?.[user.discordId] ?? (
+                server.adminIds.includes(user.discordId) ||
+                Boolean(server.dashboardAdminIds?.includes(user.discordId))
+              )}
+              dictionary={dictionary}
+            />
+          ) : undefined}
         />
       }
     >
@@ -99,6 +113,10 @@ export default async function ServerUserDetailPage({
           <StatCard title={dictionary.userManagement.averageOffense} value={formatAverage(recentSummary.averages.offense)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(sortedMatches.length))} icon={Activity} />
           <StatCard title={dictionary.userManagement.averageDefense} value={formatAverage(recentSummary.averages.defense)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(sortedMatches.length))} icon={Shield} />
           <StatCard title={dictionary.userManagement.averageSupport} value={formatAverage(recentSummary.averages.support)} description={dictionary.userManagement.storedAverageDescription.replace("{count}", String(sortedMatches.length))} icon={Wrench} />
+        </div>
+        <div className="grid gap-6 xl:grid-cols-2">
+          <PerformanceHistoryChart title={dictionary.clan.playerPerformanceTrend} matches={performanceHistory} dictionary={dictionary} kind="playerEffectiveness" />
+          <PerformanceHistoryChart title={dictionary.clan.kd} matches={performanceHistory} dictionary={dictionary} kind="combat" />
         </div>
         <ResourceTable
           className="h-auto max-h-[32rem]"
@@ -162,16 +180,6 @@ export default async function ServerUserDetailPage({
             },
           ]}
         />
-        {context.canAdmin ? (
-          <div className="flex justify-end">
-            <PlayerAdminAccessButton
-              serverId={server.id}
-              actorId={context.user.discordId}
-              playerId={user.discordId}
-              initialIsAdmin={server.adminIds.includes(user.discordId)}
-            />
-          </div>
-        ) : null}
         <UserAssignmentForm locale={safeLocale} server={server} dictionary={dictionary} eligibleUsers={eligibleUsers} groups={groups} assignment={assignment} config={context.discordConfig} canManage={context.canAdmin} />
       </div>
     </TablePageLayout>

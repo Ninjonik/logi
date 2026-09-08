@@ -446,7 +446,17 @@ export function UserAssignmentForm({
                   name="primaryGroupId"
                   render={({ field }) => (
                     canEditFields ? (
-                      <Select value={field.value || "__none__"} onValueChange={(value) => field.onChange(value === "__none__" ? "" : value)}>
+                      <Select value={field.value || "__none__"} onValueChange={(value) => {
+                        const primaryGroupId = value === "__none__" ? "" : value;
+                        field.onChange(primaryGroupId);
+                        if (primaryGroupId) {
+                          form.setValue(
+                            "secondaryGroupIds",
+                            secondaryGroupIds.filter((groupId) => groupId !== primaryGroupId),
+                            { shouldValidate: true },
+                          );
+                        }
+                      }}>
                         <SelectTrigger className="w-full rounded-xl">
                           <SelectValue />
                         </SelectTrigger>

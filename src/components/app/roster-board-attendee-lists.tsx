@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, CalendarClock, Check, Clock3, GripVertical, MessageCircleOff, UserPlus } from "lucide-react";
+import { Ban, CalendarClock, Check, Circle, CircleDot, Clock3, GripVertical, MessageCircleOff, UserPlus } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,11 @@ import { getUserScoreForGuild } from "@/lib/user-scores";
 import type { AppUser, Group, Roster } from "@/types/domain";
 import type { DragState } from "@/components/app/roster-board-types";
 
-type RosterUser = AppUser & { _reserveSection?: string; signupRoleLabel?: string };
+type RosterUser = AppUser & {
+  _reserveSection?: string;
+  signupRoleLabel?: string;
+  attendanceStatus?: "pending" | "acknowledged" | "confirmed";
+};
 
 export function RosterBoardAttendeeLists({
   board,
@@ -316,6 +320,11 @@ function GroupedUserList({
               const isReserveMember = assignment?.type === "reserve_member" && assignment.status === "active";
               const noticeReason = noticeReasonByUserId.get(user.discordId);
               const notAttendingIndicator = notAttendingIndicatorByUserId.get(user.discordId);
+              const attendanceLabel = user.attendanceStatus === "confirmed"
+                ? dictionary.roster.attendanceConfirmed
+                : user.attendanceStatus === "acknowledged"
+                  ? dictionary.roster.attendanceAcknowledged
+                  : dictionary.roster.attendancePending;
 
               return (
                 <div
@@ -365,6 +374,20 @@ function GroupedUserList({
                             <HoverCardContent className="text-xs">
                               {dictionary.userManagement.reserveMemberLabel}
                             </HoverCardContent>
+                          </HoverCard>
+                        ) : null}
+                        {user.attendanceStatus ? (
+                          <HoverCard>
+                            <HoverCardTrigger asChild>
+                              {user.attendanceStatus === "confirmed" ? (
+                                <Check className="size-3.5 text-emerald-500" />
+                              ) : user.attendanceStatus === "acknowledged" ? (
+                                <CircleDot className="size-3.5 text-sky-500" />
+                              ) : (
+                                <Circle className="size-3.5 text-muted-foreground" />
+                              )}
+                            </HoverCardTrigger>
+                            <HoverCardContent className="text-xs">{attendanceLabel}</HoverCardContent>
                           </HoverCard>
                         ) : null}
                         {noticeReason ? (

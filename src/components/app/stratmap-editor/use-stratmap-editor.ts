@@ -265,6 +265,7 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
   }
 
   function setElementUpdater(elementId: string, updater: (element: StratmapElement) => StratmapElement) {
+    if (!canEdit) return;
     applyStateChange((current) => updateSlide(current, selectedSlideId, (slide) => ({ ...slide, elements: slide.elements.map((element) => element.id === elementId ? updater(element) : element) })));
   }
 
@@ -315,6 +316,7 @@ export function useStratmapEditor({ userId, stratmapId, initialCanAdmin, initial
   }
 
   function handleSelectedElementChange(updater: (element: StratmapElement) => StratmapElement) {
+    if (!canEdit) return;
     if (selectedElementId) setElementUpdater(selectedElementId, updater);
   }
 

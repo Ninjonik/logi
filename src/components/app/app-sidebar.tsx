@@ -5,7 +5,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   ClipboardList,
-  Home,
   LayoutDashboard,
   Settings,
   Shield,
@@ -61,7 +60,8 @@ export function AppSidebar({
   const selectedWorkspaceId = searchParams.get("workspace") ?? undefined;
   const resolvedServerId = pathServerId ?? selectedWorkspaceId ?? activeServerId;
   const resolvedServer = resolvedServerId ? servers.find((server) => server.id === resolvedServerId) : undefined;
-  const resolvedCanAdmin = Boolean(
+  const adminAccessOverride = resolvedServer?.adminAccessOverrides?.[user.discordId];
+  const resolvedCanAdmin = adminAccessOverride ?? Boolean(
     resolvedServerId &&
       (
         resolvedServer?.canAdmin ||
@@ -69,25 +69,15 @@ export function AppSidebar({
         canAdmin
       ),
   );
-  const workspaceEnabled = Boolean(resolvedServer?.botInside || pathServerId);
+  const workspaceEnabled = Boolean(resolvedServer && (resolvedServer.botInside || pathServerId || isSuperadmin));
   const base = resolvedServerId
     ? `/${locale}/dashboard/servers/${resolvedServerId}`
     : `/${locale}/dashboard`;
-  const homeUrl = resolvedServerId
-    ? `/${locale}/dashboard?workspace=${encodeURIComponent(resolvedServerId)}`
-    : `/${locale}/dashboard`;
+  const superadminWorkspaceQuery = resolvedServerId
+    ? `?workspace=${encodeURIComponent(resolvedServerId)}`
+    : "";
 
   const navGroups = [
-    {
-      label: dictionary.sidebar.home,
-      items: [
-        {
-          title: dictionary.sidebar.home,
-          url: homeUrl,
-          icon: Home,
-        },
-      ],
-    },
     ...(resolvedServerId && workspaceEnabled
       ? [
           {
@@ -234,10 +224,10 @@ export function AppSidebar({
           {
             label: dictionary.sidebar.bot,
             items: [
-              { title: dictionary.sidebar.competitions, url: `/${locale}/dashboard/competitions`, icon: Trophy },
+              { title: dictionary.sidebar.competitions, url: `/${locale}/dashboard/competitions${superadminWorkspaceQuery}`, icon: Trophy },
               {
                 title: dictionary.sidebar.bot,
-                url: `/${locale}/dashboard/bot`,
+                url: `/${locale}/dashboard/bot${superadminWorkspaceQuery}`,
                 icon: Bot,
               },
             ],
@@ -249,7 +239,7 @@ export function AppSidebar({
       items: [
         {
           title: dictionary.sidebar.logiComms,
-          url: `/${locale}#logicomms`,
+          url: `/${locale}/dashboard/logicomms${superadminWorkspaceQuery}`,
           icon: Radio,
         },
       ],
@@ -262,7 +252,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild isActive={pathname === `/${locale}/dashboard`} className="h-10 gap-2 p-1.5 text-[13px] 2xl:h-12 2xl:p-2 2xl:text-sm">
-              <Link href={homeUrl}>
+              <Link href={`/${locale}/dashboard${superadminWorkspaceQuery}`}>
                 <AppLogo />
                 <div className="grid flex-1 text-left text-[13px] leading-tight 2xl:text-sm">
                   <span className="truncate font-semibold">{dictionary.app.name}</span>

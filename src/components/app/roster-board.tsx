@@ -10,6 +10,7 @@ import {
   Save,
   Send,
   Settings2,
+  Trash2,
   EyeOff,
   WandSparkles,
 } from "lucide-react";
@@ -34,11 +35,12 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RosterBoardAttendeeLists } from "@/components/app/roster-board-attendee-lists";
+import { PublicShareLinkButton } from "@/components/app/public-share-link-button";
 import { SquadCard } from "@/components/app/roster-board-squad-card";
 import type { AttendanceStatus, DragState, RosterBoardMode } from "@/components/app/roster-board-types";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
-import type { AppUser, EventRecord, Group, Roster } from "@/types/domain";
+import type { AppUser, EventRecord, Group, Roster, SquadPreset } from "@/types/domain";
 import { formatDateTime } from "@/lib/format";
 import { formatHllPresetLabel } from "@/lib/hll-map-presets";
 import {
@@ -70,6 +72,7 @@ export function RosterBoard({
   users,
   userAssignments,
   groups,
+  squadPresets = [],
   canAdmin,
   dictionary,
   serverId,
@@ -83,6 +86,7 @@ export function RosterBoard({
   users: AppUser[];
   userAssignments: ServerUserAssignment[];
   groups: Group[];
+  squadPresets?: SquadPreset[];
   canAdmin: boolean;
   dictionary: Dictionary;
   serverId: string;
@@ -106,6 +110,10 @@ export function RosterBoard({
   const [notifyRosterChanges, setNotifyRosterChanges] = useState(true);
   const [postRosterChanges, setPostRosterChanges] = useState(false);
   const [autoFillDialogOpen, setAutoFillDialogOpen] = useState(false);
+  const [templateChangeDialogOpen, setTemplateChangeDialogOpen] = useState(false);
+  const [pendingPresetId, setPendingPresetId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [unsignedPlayerAssignment, setUnsignedPlayerAssignment] = useState<{ userId: string; squadIndex: number; playerIndex: number } | null>(null);
   const [autoFillScoreWeight, setAutoFillScoreWeight] = useState(50);
   const [autoFillKdWeight, setAutoFillKdWeight] = useState(50);
@@ -297,7 +305,12 @@ export function RosterBoard({
       }
     });
 
-    return result;
+    // Preset groups are also used as a catalogue for editing, so many of them
+    // legitimately have no squads in a particular roster. Do not render those
+    // empty headers in either roster view or editor mode.
+    return result.filter((entry) =>
+      entry.squads.length > 0 || entry.subgroups.some((subgroup) => subgroup.squads.length > 0),
+    );
   }, [board, groups, sortedSquads]);
 
   const assignedCount = useMemo(
@@ -325,6 +338,7 @@ export function RosterBoard({
   const reserveUsers = useMemo(() => {
     if (!board) return [];
     const notAttendingIds = new Set(board.notAttendingPlayerIds || []);
+    const reserveAttendanceByUserId = new Map((board.reserveAttendances ?? []).map((attendance) => [attendance.userId, attendance]));
 
     const filtered = (board.reservePlayerIds || [])
       .filter((id) => !notAttendingIds.has(id))
@@ -339,6 +353,11 @@ export function RosterBoard({
         ...user,
         _reserveSection: getPrimaryGroupLabel(assignmentsByUserId.get(user.discordId), groupsById, dictionary),
         signupRoleLabel: getUserSignupLabel(user.discordId, signupGroupByUserId) ?? undefined,
+        attendanceStatus: reserveAttendanceByUserId.get(user.discordId)?.confirmed
+          ? "confirmed" as const
+          : reserveAttendanceByUserId.get(user.discordId)?.ack
+            ? "acknowledged" as const
+            : "pending" as const,
       }));
   }, [assignedPlayerIds, assignmentsByUserId, board, dictionary, groupsById, normalizedReserveSearch, rankingContext, signupGroupByUserId, usersById]);
 
@@ -805,6 +824,83 @@ export function RosterBoard({
     toast.success(dictionary.roster.autoFilled);
   }
 
+  const pendingPreset = squadPresets.find((preset) => preset.id === pendingPresetId);
+
+  function requestTemplateChange(presetId: string) {
+    if (!board || presetId === board.squadPresetId) return;
+    setPendingPresetId(presetId);
+    setTemplateChangeDialogOpen(true);
+  }
+
+  function applyTemplateChange() {
+    if (!pendingPreset) return;
+
+    setBoard((current) => {
+      if (!current) return current;
+
+      const assignedPlayerIds = current.squads.flatMap((squad) =>
+        squad.players.flatMap((player) => player.id ? [player.id] : []),
+      );
+      const notAttendingPlayerIds = new Set(current.notAttendingPlayerIds);
+      const reservePlayerIds = Array.from(new Set([
+        ...current.reservePlayerIds,
+        ...assignedPlayerIds,
+      ])).filter((userId) => !notAttendingPlayerIds.has(userId));
+
+      return {
+        ...current,
+        squadPresetId: pendingPreset.id,
+        squads: pendingPreset.squads.map((squad) => ({
+          name: squad.name,
+          group: squad.group,
+          order: squad.order,
+          color: squad.color,
+          icon: squad.icon,
+          players: squad.roles.flatMap((role) => Array.from({ length: role.count }, () => ({
+            ack: false,
+            confirmed: false,
+            note: role.note,
+            roleName: role.name,
+            roleIcon: role.icon,
+          }))),
+        })),
+        reservePlayerIds,
+        reserveAttendances: reservePlayerIds.map((userId) => ({
+          userId,
+          ack: false,
+          confirmed: false,
+        })),
+      };
+    });
+    setIsDirty(true);
+    setTemplateChangeDialogOpen(false);
+    setPendingPresetId(null);
+    toast.success(dictionary.roster.squadTemplateChanged);
+  }
+
+  async function deleteDraftRoster() {
+    if (!board || board.id === "draft-roster" || board.published) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/servers/${serverId}/rosters/${board.id}`, { method: "DELETE" });
+      const body = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) {
+        throw new Error(body?.error ?? dictionary.common.error);
+      }
+
+      toast.success(dictionary.roster.deleted);
+      router.replace(`/${locale}/dashboard/servers/${serverId}/rosters`);
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to delete roster:", error);
+      toast.error(error instanceof Error ? error.message : dictionary.common.error);
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+    }
+  }
+
   const executeSave = async (published: boolean = false, options?: { postAnnouncement?: boolean; notifyPlayers?: boolean }) => {
     if (!board || !event) return;
     const previousRoster = roster;
@@ -839,6 +935,7 @@ export function RosterBoard({
           squadPresetId: board.squadPresetId as Id<"squadPresets">,
           squads: saveSquads,
           reservePlayerIds: cleanReservePlayerIds,
+          reserveAttendances: (board.reserveAttendances ?? []).filter((attendance) => cleanReservePlayerIds.includes(attendance.userId)),
           notAttendingPlayerIds: cleanNotAttendingPlayerIds,
           streamerId: board.streamerId,
           published: published,
@@ -853,6 +950,7 @@ export function RosterBoard({
                 ...prev,
                 id: wasDraft ? nextRosterId : prev.id,
                 reservePlayerIds: cleanReservePlayerIds,
+                reserveAttendances: (prev.reserveAttendances ?? []).filter((attendance) => cleanReservePlayerIds.includes(attendance.userId)),
                 notAttendingPlayerIds: cleanNotAttendingPlayerIds,
                 published,
               }
@@ -885,6 +983,7 @@ export function RosterBoard({
                 ...board,
                 id: nextRosterId,
                 reservePlayerIds: cleanReservePlayerIds,
+                reserveAttendances: (board.reserveAttendances ?? []).filter((attendance) => cleanReservePlayerIds.includes(attendance.userId)),
                 notAttendingPlayerIds: cleanNotAttendingPlayerIds,
                 squads: saveSquads,
                 published: true,
@@ -1028,6 +1127,18 @@ export function RosterBoard({
                 <SelectItem value="assignment">{dictionary.roster.modeAssignment}</SelectItem>
               </SelectContent>
             </Select>
+            {board && squadPresets.length > 0 ? (
+              <Select value={board.squadPresetId} onValueChange={requestTemplateChange}>
+                <SelectTrigger className={actionSelectTriggerClass}>
+                  <SelectValue placeholder={dictionary.roster.selectPresetPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {squadPresets.map((preset) => (
+                    <SelectItem key={preset.id} value={preset.id}>{preset.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
             {shouldShowMeetingChannelConfirmation ? (
               canConfirmFromMeetingChannel ? (
                 confirmFromMeetingChannelButton
@@ -1055,6 +1166,9 @@ export function RosterBoard({
                 {dictionary.roster.autoFill}
               </Button>
             ) : null}
+            {board?.published && event ? (
+              <PublicShareLinkButton href={`/${locale}/rosters/${event.id}`} dictionary={dictionary} />
+            ) : null}
             <Button
               variant="outline"
               className={actionControlClass}
@@ -1065,15 +1179,28 @@ export function RosterBoard({
               {dictionary.common.save}
             </Button>
             {!board?.published ? (
-              <Button
-                variant="default"
-                className={actionControlClass}
-                onClick={() => setPublishDialogOpen(true)}
-                disabled={isPending || isConfirmingMeetingChannel}
-              >
-                {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                {dictionary.roster.publishRoster}
-              </Button>
+              <>
+                <Button
+                  variant="default"
+                  className={actionControlClass}
+                  onClick={() => setPublishDialogOpen(true)}
+                  disabled={isPending || isConfirmingMeetingChannel}
+                >
+                  {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                  {dictionary.roster.publishRoster}
+                </Button>
+                {board?.id !== "draft-roster" ? (
+                  <Button
+                    variant="destructive"
+                    className={actionControlClass}
+                    onClick={() => setDeleteDialogOpen(true)}
+                    disabled={isPending || isConfirmingMeetingChannel || isDeleting}
+                  >
+                    {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                    {dictionary.roster.deleteRoster}
+                  </Button>
+                ) : null}
+              </>
             ) : (
               <Button
                 variant="outline"
@@ -1255,6 +1382,37 @@ export function RosterBoard({
           </div>
         </CardContent>
       </Card>
+      <Dialog open={templateChangeDialogOpen} onOpenChange={setTemplateChangeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dictionary.roster.changeSquadTemplateTitle}</DialogTitle>
+            <DialogDescription>{dictionary.roster.changeSquadTemplateDescription}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" onClick={() => setPendingPresetId(null)}>{dictionary.common.cancel}</Button>
+            </DialogClose>
+            <Button onClick={applyTemplateChange}>{dictionary.roster.changeSquadTemplateAction}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dictionary.roster.deleteRosterTitle}</DialogTitle>
+            <DialogDescription>{dictionary.roster.deleteRosterDescription}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">{dictionary.common.cancel}</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={deleteDraftRoster} disabled={isDeleting}>
+              {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+              {dictionary.roster.deleteRoster}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen}>
         <DialogContent>
           <DialogHeader>

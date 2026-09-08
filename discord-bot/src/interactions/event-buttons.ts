@@ -265,7 +265,7 @@ async function handleAttendanceInteraction(
 
   const isOnRoster = context.roster.squads.some((squad) =>
     squad.players.some((player) => player.id === interaction.user.id),
-  );
+  ) || context.roster.reservePlayerIds.includes(interaction.user.id);
   if (!isOnRoster) {
     await interaction.editReply({ content: messages.interaction.notOnRoster });
     return;

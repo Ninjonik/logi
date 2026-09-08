@@ -1,10 +1,11 @@
 import Link from "next/link"
-import { ArrowRight, BarChart3, CalendarDays, Download, HeartHandshake, Shield, SquareTerminal, Trophy, Users } from "lucide-react"
+import { ArrowRight, BarChart3, CalendarDays, HeartHandshake, Shield, SquareTerminal, Trophy, Users } from "lucide-react"
 
 import { PublicSiteShell } from "@/components/public/public-site-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { LogicommsDownload } from "@/components/app/logicomms-download"
 import { Separator } from "@/components/ui/separator"
 import { defaultLocale, isLocale } from "@/i18n/config"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -48,17 +49,7 @@ export default async function LocaleHomePage({ params }: { params: Promise<{ loc
                                                               className="rounded-lg border px-4 py-3">{item}</div>)}</CardContent></Card>*/}
       </section>
       <section id="features" className="border-t py-10"><div className="mb-6 flex items-end justify-between gap-4"><div><p className="text-sm font-medium text-primary">{dictionary.home.featuresEyebrow}</p><h2 className="mt-1 text-3xl font-semibold tracking-tight">{dictionary.home.featuresTitle}</h2></div><Link href={`/${resolvedLocale}/community`} className="text-sm font-medium text-primary hover:underline">{dictionary.home.community} <ArrowRight className="inline size-4" /></Link></div><div className="grid gap-4 md:grid-cols-3"><FeatureCard icon={CalendarDays} title={dictionary.home.featureEvents} description={dictionary.home.featureEventsDescription} /><FeatureCard icon={Users} title={dictionary.home.featureRosters} description={dictionary.home.featureRostersDescription} /><FeatureCard icon={Trophy} title={dictionary.home.featureStats} description={dictionary.home.featureStatsDescription} /></div></section>
-      <section id="logicomms" className="border-t py-10">
-        <div className="grid gap-6 rounded-2xl border bg-card p-6 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="space-y-3"><Badge variant="outline"
-                                            className="rounded-full">{dictionary.home.commsBadge}</Badge><h2
-            className="text-2xl font-semibold tracking-tight">{dictionary.home.commsTitle}</h2><p
-            className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">{dictionary.home.commsDescription}</p>
-          </div>
-          {logiCommsDownload ?
-            <Button asChild size="lg"><a href={logiCommsDownload}><Download />{dictionary.home.commsDownload}
-            </a></Button> : <p className="text-sm text-muted-foreground">{dictionary.home.commsUnavailable}</p>}</div>
-      </section>
+      <LogicommsDownload dictionary={dictionary} downloadUrl={logiCommsDownload} />
       <Separator />
       <section className="grid gap-5 py-10 lg:grid-cols-3">{pillars.map(([title, description, Icon]) => <Card
         key={title} className="shadow-none"><CardHeader className="gap-4">

@@ -7,6 +7,7 @@ export function findEligibleNoticeTargets(input: {
     gameStart: string;
     status: EventStatus;
     participants: EventParticipant[];
+    reservePlayerIds?: string[];
   }>;
   userId: string;
   query: string;
@@ -20,8 +21,9 @@ export function findEligibleNoticeTargets(input: {
       const gameStart = new Date(event.gameStart).getTime();
       const isEligibleTime = Number.isFinite(gameStart) && nowValue < gameStart;
       const participant = event.participants.find((entry) => entry.userId === input.userId);
+      const isReserve = event.reservePlayerIds?.includes(input.userId) ?? false;
 
-      if (!isEligibleTime || event.status === "concluded" || participant?.status !== "attending") {
+      if (!isEligibleTime || event.status === "concluded" || (participant?.status !== "attending" && !isReserve)) {
         return false;
       }
 
@@ -39,6 +41,7 @@ export function upsertNotice(input: {
     gameStart: string;
     status: EventStatus;
     participants: EventParticipant[];
+    reservePlayerIds?: string[];
     absenceNotices: EventNotice[];
   };
   userId: string;
@@ -57,7 +60,8 @@ export function upsertNotice(input: {
   }
 
   const participant = input.event.participants.find((entry) => entry.userId === input.userId);
-  if (!participant || participant.status !== "attending") {
+  const isReserve = input.event.reservePlayerIds?.includes(input.userId) ?? false;
+  if (participant?.status !== "attending" && !isReserve) {
     throw new Error("Only attending players can submit a notice.");
   }
 

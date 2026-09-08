@@ -18,6 +18,11 @@ import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules";
 import { getCalendarSyncVersion } from "./work";
 import { getRosterImageVersion, warmRosterImage, withTimeout } from "../utils";
 
+// One event can legitimately include role reconciliation, two message writes,
+// a scheduled Discord event and forum provisioning. Discord rate limits make
+// the previous 20-second aggregate deadline too short for that valid work.
+const EVENT_SYNC_TIMEOUT_MS = 60_000;
+
 function shouldShowPublishedRosterImage(event: EventRecord, rosterUpdatedAt?: string) {
   return Boolean(rosterUpdatedAt && (event.status === "closed" || event.status === "starting"));
 }
@@ -185,7 +190,7 @@ export async function syncPayloadEvents(
         hasState: Boolean(state),
         hasRoster: Boolean(roster),
       });
-      await withTimeout(syncEvent(client, payload, event, state, options), 20_000, `event sync ${event.id}`);
+      await withTimeout(syncEvent(client, payload, event, state, options), EVENT_SYNC_TIMEOUT_MS, `event sync ${event.id}`);
     } catch (error) {
       logError("event-sync", "Discord bot event sync failed", {
         eventId: event.id,

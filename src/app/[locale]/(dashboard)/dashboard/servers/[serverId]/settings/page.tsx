@@ -10,6 +10,7 @@ import { LinkMissingDiscordIdsButton } from "@/components/app/link-missing-disco
 import { MigrateMembershipStatusButton } from "@/components/app/migrate-membership-status-button";
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form";
 import { AutoLinkPlatformIdsButton } from "@/components/app/auto-link-platform-ids-button";
+import { RefreshPerformanceHistoryButton } from "@/components/app/refresh-performance-history-button";
 import { ApiKeyManager } from "@/components/app/api-key-manager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -75,6 +76,7 @@ export default async function ServerSettingsPage({
                   defaultRoleId={context.discordConfig?.clanRoleId}
                 />
                 <DedupePlayerStatsButton serverId={serverId} dictionary={dictionary} />
+                <RefreshPerformanceHistoryButton serverId={serverId} dictionary={dictionary} />
               </div>
             </CardContent>
           </Card>

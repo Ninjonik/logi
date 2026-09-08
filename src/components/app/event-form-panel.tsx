@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, Loader2, RefreshCw } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -409,6 +409,7 @@ export function EventFormPanel({
   })
   const [quickScheduleOpen, setQuickScheduleOpen] = useState(false)
   const [quickScheduleStep, setQuickScheduleStep] = useState(0)
+  const [isResyncingTopicThread, setIsResyncingTopicThread] = useState(false)
 
   const form = useForm<EventInput>({
     resolver: zodResolver(eventSchema),
@@ -650,6 +651,21 @@ export function EventFormPanel({
       router.push(`/${locale}/dashboard/servers/${serverId}/${detailBasePath}/${createMode ? body.eventId : event.id}`)
       router.refresh()
     })
+  }
+
+  async function resyncTopicThread() {
+    setIsResyncingTopicThread(true)
+    try {
+      const response = await fetch(`/api/servers/${serverId}/events/${event.id}/resync-topic-thread`, { method: "POST" })
+      const body = await response.json().catch(() => null) as { error?: string } | null
+      if (!response.ok) throw new Error(body?.error ?? dictionary.common.error)
+      toast.success(dictionary.event.topicThreadResyncQueued)
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : dictionary.common.error)
+    } finally {
+      setIsResyncingTopicThread(false)
+    }
   }
 
   return (
@@ -1328,6 +1344,18 @@ export function EventFormPanel({
                       disabled={!canEdit || isPending || form.formState.isSubmitting}>
                 {dictionary.common.save}
               </Button>
+              {!createMode && event.kind === "match" && event.status !== "concluded" && event.createForumChannel && event.topicPresetId ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => void resyncTopicThread()}
+                  disabled={isResyncingTopicThread}
+                >
+                  {isResyncingTopicThread ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+                  {dictionary.event.resyncTopicThread}
+                </Button>
+              ) : null}
             </div>
           ) : null}
         </form>

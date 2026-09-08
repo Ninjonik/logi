@@ -78,6 +78,7 @@ export async function processAttendanceReminders(
       continue;
     }
 
+    const messages = getClanDiscordMessages(payload.config.defaultLanguage);
     const assignmentsByUserId = new Map<string, RosterAssignment>();
     for (const squad of roster.squads) {
       for (const player of squad.players) {
@@ -89,6 +90,13 @@ export async function processAttendanceReminders(
           });
         }
       }
+    }
+    const reserveAttendanceByUserId = new Map(
+      (roster.reserveAttendances ?? []).map((attendance) => [attendance.userId, attendance]),
+    );
+    for (const userId of roster.reservePlayerIds) {
+      if (reserveAttendanceByUserId.get(userId)?.ack) continue;
+      assignmentsByUserId.set(userId, { squadName: messages.embed.assignmentReserve });
     }
     const unacknowledgedUserIds = new Set(assignmentsByUserId.keys());
     if (!unacknowledgedUserIds.size) {
@@ -117,7 +125,6 @@ export async function processAttendanceReminders(
         syncState?.forumChannelId,
         syncState?.infoMessageId,
       );
-    const messages = getClanDiscordMessages(payload.config.defaultLanguage);
     for (const userId of unacknowledgedUserIds) {
       const dueOffsets = ATTENDANCE_OFFSETS_HOURS
         .filter((offsetHours) => now >= meetingStartMs - offsetHours * 60 * 60 * 1000)

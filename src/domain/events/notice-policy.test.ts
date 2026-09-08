@@ -108,6 +108,23 @@ test("upsertNotice replaces an existing notice for the same user and trims the r
   ]);
 });
 
+test("upsertNotice permits a reserve assigned without an event signup", () => {
+  const notices = upsertNotice({
+    event: {
+      gameStart: "2026-01-01T11:00:00.000Z",
+      status: "starting",
+      participants: [],
+      reservePlayerIds: ["user-1"],
+      absenceNotices: [],
+    },
+    userId: "user-1",
+    reason: "Unavailable",
+    now: new Date("2026-01-01T10:30:00.000Z"),
+  });
+
+  assert.equal(notices[0]?.userId, "user-1");
+});
+
 test("upsertNotice rejects invalid time windows and non-attending users", () => {
   assert.throws(() => upsertNotice({
     event: {

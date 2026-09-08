@@ -4,7 +4,7 @@ import { makeFunctionReference } from "convex/server";
 import { useQuery } from "convex/react";
 
 import type { Dictionary } from "@/i18n/dictionaries";
-import type { DiscordConfig, EventRecord, Group, Roster, AppUser } from "@/types/domain";
+import type { DiscordConfig, EventRecord, Group, Roster, AppUser, SquadPreset } from "@/types/domain";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
 
 import { RosterBoard } from "./roster-board";
@@ -20,6 +20,7 @@ type LiveRosterBoardProps = {
   initialUsers: AppUser[];
   initialAssignments: ServerUserAssignment[];
   initialGroups: Group[];
+  initialSquadPresets: SquadPreset[];
   initialCanAdmin: boolean;
   initialDiscordConfig: DiscordConfig | null;
 };
@@ -48,7 +49,9 @@ export function LiveRosterBoard(props: LiveRosterBoardProps) {
   const users = liveData?.users ?? props.initialUsers;
   const userAssignments = liveData?.assignments ?? props.initialAssignments;
   const groups = liveData?.groups ?? props.initialGroups;
-  const canAdmin = liveData?.canAdmin ?? props.initialCanAdmin;
+  // Keep server-rendered admin access while the live query resolves. This also
+  // preserves superadmin access, which is intentionally granted server-side.
+  const canAdmin = props.initialCanAdmin || Boolean(liveData?.canAdmin);
   const discordConfig = liveData?.discordConfig ?? props.initialDiscordConfig;
 
   return (
@@ -58,6 +61,7 @@ export function LiveRosterBoard(props: LiveRosterBoardProps) {
       users={users}
       userAssignments={userAssignments}
       groups={groups}
+      squadPresets={props.initialSquadPresets}
       canAdmin={canAdmin}
       dictionary={props.dictionary}
       serverId={props.serverId}

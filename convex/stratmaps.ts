@@ -30,6 +30,7 @@ async function resolveGuildAccess(ctx: QueryCtx | MutationCtx, input: {
     serverDiscordId: input.guildDiscordId,
     serverAdminIds: guild.adminIds,
     dashboardAdminIds: guild.dashboardAdminIds,
+    adminAccessOverrides: guild.adminAccessOverrides,
     discordAccess,
   })) {
     return null;
@@ -40,6 +41,7 @@ async function resolveGuildAccess(ctx: QueryCtx | MutationCtx, input: {
     canAdmin: canAdminServerContext({
       serverAdminIds: guild.adminIds,
       dashboardAdminIds: guild.dashboardAdminIds,
+      adminAccessOverrides: guild.adminAccessOverrides,
       userId: input.userId,
       discordAccess,
     }),

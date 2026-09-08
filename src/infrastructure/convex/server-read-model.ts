@@ -223,6 +223,7 @@ export function canAccessServerContext(input: {
   serverDiscordId: string;
   serverAdminIds?: string[];
   dashboardAdminIds?: string[];
+  adminAccessOverrides?: Record<string, boolean>;
   userId?: string;
   discordAccess?: {
     hasDashboardAccess?: boolean;
@@ -244,11 +245,17 @@ export function canAccessServerContext(input: {
 export function canAdminServerContext(input: {
   serverAdminIds: string[];
   dashboardAdminIds?: string[];
+  adminAccessOverrides?: Record<string, boolean>;
   userId: string;
   discordAccess?: {
     isAdmin?: boolean;
   } | null;
 }) {
+  const override = input.adminAccessOverrides?.[input.userId];
+  if (override !== undefined) {
+    return override;
+  }
+
   return input.serverAdminIds.includes(input.userId) ||
     input.dashboardAdminIds?.includes(input.userId) ||
     Boolean(input.discordAccess?.isAdmin);

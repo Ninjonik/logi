@@ -192,12 +192,16 @@ export async function syncForumChannel(input: {
     stateChanged = true;
   }
 
-  if (!topicMessageIds.length) {
-    topicMessageIds = await ensureForumTopicPosts(forumChannel, topicPreset, config.defaultLanguage);
-  }
-  if (topicMessageIds.length > 0 && !existingTopicMessageIds?.length) {
+  const syncedTopicMessageIds = await ensureForumTopicPosts(
+    forumChannel,
+    topicPreset,
+    config.defaultLanguage,
+    topicMessageIds,
+  );
+  if (syncedTopicMessageIds.join(",") !== topicMessageIds.join(",")) {
     stateChanged = true;
   }
+  topicMessageIds = syncedTopicMessageIds;
 
   if (event.status === "concluded") {
     await finalizeForumAfterConclusion(forumChannel, event, config.defaultLanguage);
@@ -215,11 +219,34 @@ export async function ensureForumTopicPosts(
   forumChannel: ForumChannel,
   topicPreset: TopicPreset | undefined,
   language: ClanLanguage,
+  existingTopicMessageIds: string[] = [],
 ) {
   const messages = getClanDiscordMessages(language);
   const topicMessages: string[] = [];
 
-  for (const topic of topicPreset?.topics ?? []) {
+  for (const [index, topic] of (topicPreset?.topics ?? []).entries()) {
+    const existingTopicId = existingTopicMessageIds[index];
+    const existingThread = existingTopicId
+      ? await forumChannel.threads.fetch(existingTopicId).catch(() => null)
+      : null;
+    if (existingThread) {
+      await existingThread.edit({ name: topic.title }).catch(() => null);
+      const starter = await existingThread.fetchStarterMessage().catch(() => null);
+      if (starter) {
+        await starter.edit({
+          content: topic.attachments.length ? topic.attachments.join("\n") : undefined,
+          embeds: [
+            new EmbedBuilder()
+              .setTitle(topic.title)
+              .setDescription(topic.body || messages.forum.noExtraNotes)
+              .setFooter({ text: topic.attachments.length ? topic.attachments.join(" | ") : messages.forum.noExtraNotes }),
+          ],
+        }).catch(() => null);
+        topicMessages.push(starter.id);
+        continue;
+      }
+    }
+
     const createdPost = await forumChannel.threads.create({
       name: topic.title,
       message: {
@@ -238,6 +265,11 @@ export async function ensureForumTopicPosts(
     if (starter) {
       topicMessages.push(starter.id);
     }
+  }
+
+  for (const staleTopicId of existingTopicMessageIds.slice(topicMessages.length)) {
+    const staleThread = await forumChannel.threads.fetch(staleTopicId).catch(() => null);
+    await staleThread?.delete("Topic template was resynchronized").catch(() => null);
   }
 
   return topicMessages;

@@ -22,11 +22,13 @@ export class UpsertNoticeUseCase {
 
     const now = this.clock.now();
     const normalizedEvent = normalizeEventRecord(event, now);
+    const reservePlayerIds = await this.events.getReservePlayerIds(input.eventId);
     const absenceNotices = upsertNotice({
       event: {
         gameStart: normalizedEvent.gameStart ?? normalizedEvent.meetingStart,
         status: normalizedEvent.status,
         participants: normalizedEvent.participants,
+        reservePlayerIds,
         absenceNotices: normalizedEvent.absenceNotices,
       },
       userId: input.userId,

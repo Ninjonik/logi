@@ -22,6 +22,7 @@ import type * as guilds from "../guilds.js";
 import type * as identity from "../identity.js";
 import type * as matchStats from "../matchStats.js";
 import type * as migrations from "../migrations.js";
+import type * as performanceHistory from "../performanceHistory.js";
 import type * as platformIdLinks from "../platformIdLinks.js";
 import type * as playerStats from "../playerStats.js";
 import type * as players from "../players.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   identity: typeof identity;
   matchStats: typeof matchStats;
   migrations: typeof migrations;
+  performanceHistory: typeof performanceHistory;
   platformIdLinks: typeof platformIdLinks;
   playerStats: typeof playerStats;
   players: typeof players;

@@ -286,6 +286,11 @@ export type Roster = {
   eventId: string;
   published: boolean;
   reservePlayerIds: string[];
+  reserveAttendances?: Array<{
+    userId: string;
+    ack: boolean;
+    confirmed?: boolean;
+  }>;
   updatedAt: string;
   squads: Array<{
     name: string;

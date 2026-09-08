@@ -14,6 +14,8 @@ import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getServerUserAssignments, getUsersByIds } from "@/lib/server-user-management";
 import { getUserScoreForGuild } from "@/lib/user-scores";
+import { getPlayersPerformanceHistories } from "@/lib/read-models/performance-history";
+import { PlayerTrendIndicators } from "@/components/app/player-trend-indicators";
 
 function getAssignmentStatusLabel(
   assignment: {
@@ -53,6 +55,7 @@ export default async function ServerUsersPage({
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId), context.server.discordId);
   const assignmentUserMap = new Map(assignmentUsers.map((user) => [user.discordId, user]));
+  const performanceByUserId = await getPlayersPerformanceHistories(context.server.discordId, assignments.map((assignment) => assignment.userId), serverId);
   const mergeUserOptions = assignmentUsers
     .map((user) => ({
       id: user.id,
@@ -153,12 +156,15 @@ export default async function ServerUsersPage({
                 return 0;
               }
 
-              const kd = user.performance?.averages.killDeathRatio;
               const score = getUserScoreForGuild(user, context.server.discordId);
-              return typeof kd === "number"
-                ? `${score} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`
-                : score;
+              const kd = user.performance?.averages.killDeathRatio;
+              return typeof kd === "number" ? `${score} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}` : score;
             },
+          },
+          {
+            key: "trends",
+            title: dictionary.clan.playerPerformanceTrend,
+            render: (assignment) => <PlayerTrendIndicators matches={performanceByUserId[assignment.userId] ?? []} dictionary={dictionary} />,
           },
           {
             key: "status",

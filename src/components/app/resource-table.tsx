@@ -50,7 +50,7 @@ export function ResourceTable<T extends { id: string }>({
       rows={rows.map((row) => ({
         id: row.id,
         href: getHref(row),
-        cells: columns.map((column) => column.render(row)),
+        cells: columns.map((column) => <React.Fragment key={column.key}>{column.render(row)}</React.Fragment>),
       }))}
     />
   );

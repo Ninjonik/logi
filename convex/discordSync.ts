@@ -229,6 +229,31 @@ export const getEventInteractionContext = query({
   },
 });
 
+/** Marks an existing forum-backed event for a fresh topic-template sync. */
+export const requestForumTopicResync = mutation({
+  args: { secret: v.string(), eventId: v.id("events") },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const event = await ctx.db.get(args.eventId);
+    if (!event) throw new Error("Event not found.");
+    if (event.status === "concluded") throw new Error("Concluded events cannot be resynced.");
+    if (!event.createForumChannel || !event.topicPresetId) {
+      throw new Error("This event does not have a forum topic template.");
+    }
+
+    const [preset, syncState] = await Promise.all([
+      ctx.db.get(event.topicPresetId),
+      ctx.db.query("discordEventSyncs").withIndex("eventId", (q) => q.eq("eventId", args.eventId)).unique(),
+    ]);
+    if (!preset || preset.guildId !== event.guildId) throw new Error("Topic preset not found.");
+    if (!syncState?.forumChannelId) throw new Error("This event does not have a forum channel yet.");
+
+    await ctx.db.patch(args.eventId, { updatedAt: new Date().toISOString() });
+    return { ok: true as const };
+  },
+});
+
 export const updateEventSyncState = mutation({
   args: {
     secret: v.string(),
