@@ -7,7 +7,7 @@ import { publicImageCache } from "@/lib/public-image-cache";
 import { getPublicClan, getPublicMatch, getPublicPlayerProfile } from "@/lib/read-models/public-profiles";
 import { getPerformanceTrendDeltas } from "@/lib/performance-trends";
 import { getPublicStratmapDetail } from "@/lib/server-stratmaps";
-import { getHllStratmapMapById, parseStratmapState } from "@/lib/stratmaps";
+import { getHllStratmapMapById, getHllStratmapCatalog, parseStratmapState } from "@/lib/stratmaps";
 
 type Props = { params: Promise<{ kind: string; id: string }> };
 const palette = { bg: "#17140f", panel: "#211d17", line: "#655f55", muted: "#aaa397", text: "#f7f3ed", gold: "#d5a44b", win: "#25a35a", loss: "#cf4d45", neutral: "#4d91d8" };
@@ -80,7 +80,7 @@ function PlayerCard({ player, avatar }: { player: NonNullable<Awaited<ReturnType
         <div style={{ display: "flex", alignItems: "center", gap: 16, background: palette.panel, padding: "10px 18px", borderRadius: 12, border: `1px solid ${palette.line}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 18, fontWeight: 700, color: trends.kd >= 0 ? palette.win : palette.loss }}>
             <span>K/D</span>
-            <span>{trends.kd >= 0 ? "↑ +" : "↓ "}{trends.kd}</span>
+            <span>{trends.kd >= 0 ? "↑ +" : "↓ "}{trends.kd.toFixed(2)}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 18, fontWeight: 700, color: trends.offense >= 0 ? palette.win : palette.loss }}>
             <span>Combat Score</span>
