@@ -195,6 +195,14 @@ export function buildAnnouncementV2Message(
                                 ).embed.chooseSignup
                             ),
                         new ButtonBuilder()
+                            .setCustomId(`check-signup:${event.id}`)
+                            .setStyle(ButtonStyle.Secondary)
+                            .setLabel(
+                                getClanDiscordMessages(
+                                    payload.config.defaultLanguage
+                                ).buttons.checkSignup
+                            ),
+                        new ButtonBuilder()
                             .setCustomId(
                                 `signup:${event.id}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`
                             )
@@ -396,6 +404,12 @@ export function buildEventEmbed(
         signupsByGroup.set(key, list)
     }
 
+    for (const members of signupsByGroup.values()) {
+        members.sort((left, right) =>
+            left.localeCompare(right, undefined, { sensitivity: "base" })
+        )
+    }
+
     const gameStartUnix = Math.floor(new Date(event.gameStart).getTime() / 1000)
     const meetingUnix = Math.floor(
         new Date(event.meetingStart).getTime() / 1000
@@ -463,6 +477,18 @@ export function buildEventEmbed(
     }
     descriptionLines.push(
         `**📌 ${messages.embed.status}:** ${formatEventStatus(event.status, config.defaultLanguage)}`
+    )
+    const signedUpCount = signups.filter(
+        (signUp) => signUp.group !== SIGNUP_NOT_ATTENDING
+    ).length
+    const signupCapacity = roster
+        ? roster.squads.reduce(
+              (total, squad) => total + squad.players.length,
+              0
+          )
+        : 49
+    descriptionLines.push(
+        `**👥 ${messages.embed.signupCapacity}:** ${signedUpCount} / ${signupCapacity}`
     )
 
     const embed = new EmbedBuilder()
@@ -1305,6 +1331,10 @@ function buildSignupButtons(
                     .setStyle(ButtonStyle.Primary)
                     .setLabel(messages.buttons.attend),
                 new ButtonBuilder()
+                    .setCustomId(`check-signup:${eventId}`)
+                    .setStyle(ButtonStyle.Secondary)
+                    .setLabel(messages.buttons.checkSignup),
+                new ButtonBuilder()
                     .setCustomId(
                         `signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`
                     )
@@ -1352,6 +1382,10 @@ function buildSignupButtons(
 
             return button
         }),
+        new ButtonBuilder()
+            .setCustomId(`check-signup:${eventId}`)
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel(messages.buttons.checkSignup),
         new ButtonBuilder()
             .setCustomId(
                 `signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`

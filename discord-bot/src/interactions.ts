@@ -61,6 +61,12 @@ import {
     rollbackMembershipApplicationSetup,
     syncMembershipRoles,
 } from "./interactions/shared"
+import {
+    handleEventButtonInteraction,
+    handleCheckSignupInteraction,
+    handleEventSignupPickerInteraction,
+    handleRosterAssignmentInteraction,
+} from "./interactions/event-buttons"
 import type {
     EventInteractionContext,
     MembershipApplicationThreadRecord,
@@ -68,11 +74,6 @@ import type {
     TicketCategory,
     TicketThreadRecord,
 } from "./types"
-import {
-    handleEventButtonInteraction,
-    handleEventSignupPickerInteraction,
-    handleRosterAssignmentInteraction,
-} from "./interactions/event-buttons"
 import {
     detectPlatformFromStatsId,
     extractPlayerSearchResults,
@@ -504,6 +505,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             }
             if (interaction.customId.startsWith("signup-picker:")) {
                 await handleEventSignupPickerInteraction(interaction)
+                return
+            }
+            if (interaction.customId.startsWith("check-signup:")) {
+                await handleCheckSignupInteraction(interaction)
                 return
             }
             if (interaction.customId.startsWith("roster-assignment:")) {
