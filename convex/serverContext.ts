@@ -49,6 +49,7 @@ async function buildServerContext(
     serverDiscordId,
     serverAdminIds: server.adminIds,
     dashboardAdminIds: server.dashboardAdminIds,
+    adminAccessOverrides: server.adminAccessOverrides,
     discordAccess,
   })) {
     return null;
@@ -59,6 +60,7 @@ async function buildServerContext(
     : canAdminServerContext({
         serverAdminIds: server.adminIds,
         dashboardAdminIds: server.dashboardAdminIds,
+        adminAccessOverrides: server.adminAccessOverrides,
         userId: args.userId,
         discordAccess,
       });

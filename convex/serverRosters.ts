@@ -48,6 +48,7 @@ export const getRosterDetail = query({
       serverDiscordId,
       serverAdminIds: server.adminIds,
       dashboardAdminIds: server.dashboardAdminIds,
+      adminAccessOverrides: server.adminAccessOverrides,
       discordAccess,
     })) {
       return null;
@@ -56,6 +57,7 @@ export const getRosterDetail = query({
     const canAdmin = canAdminServerContext({
       serverAdminIds: server.adminIds,
       dashboardAdminIds: server.dashboardAdminIds,
+      adminAccessOverrides: server.adminAccessOverrides,
       userId: args.userId,
       discordAccess,
     });

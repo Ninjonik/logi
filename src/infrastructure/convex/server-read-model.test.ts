@@ -118,6 +118,22 @@ test("normalizeDoc, normalizeGuildDoc, and normalizeUserDoc normalize identifier
   assert.equal(userWithGuildNickname.name, "Server display name");
 });
 
+test("canAdminServerContext lets a manual override win over inherited access", () => {
+  assert.equal(canAdminServerContext({
+    serverAdminIds: ["user-1"],
+    dashboardAdminIds: ["user-1"],
+    adminAccessOverrides: { "user-1": false },
+    userId: "user-1",
+    discordAccess: { isAdmin: true },
+  }), false);
+
+  assert.equal(canAdminServerContext({
+    serverAdminIds: [],
+    adminAccessOverrides: { "user-1": true },
+    userId: "user-1",
+  }), true);
+});
+
 test("normalizeEventDoc normalizes participants, ids, and optional match references", () => {
   const normalized = normalizeEventDoc({
     _id: "event-1",

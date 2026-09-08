@@ -76,7 +76,7 @@ export function StratmapRightSidebar(props: RightSidebarProps) {
         </EditorPanel>
       ) : null}
 
-      {selectedElement && !(mode === "view" && selectedElement.kind === "icon") ? (
+      {canEdit && selectedElement ? (
         <EditorPanel title={selectedElement.kind === "icon" ? dictionary.stratmaps.selectedIcon : dictionary.stratmaps.selectedElement} icon={SquareMousePointer} action={<CollapseButton open={selectionOpen} onClick={() => setSelectionOpen((value) => !value)} />}>
           {selectionOpen ? <SelectionInspector dictionary={dictionary} canAdmin={canAdmin} canEdit={canEdit} mode={mode} selectedElement={selectedElement} onElementChange={onSelectedElementChange} /> : null}
         </EditorPanel>

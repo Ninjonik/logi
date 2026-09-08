@@ -28,7 +28,7 @@ export function SelectionInspector({
   selectedElement: StratmapElement | null;
   onElementChange: (updater: (element: StratmapElement) => StratmapElement) => void;
 }) {
-  if (!selectedElement) return null;
+  if (!selectedElement || !canEdit || mode === "view") return null;
   if (selectedElement.kind === "icon") return <IconInspector dictionary={dictionary} canAdmin={canAdmin} canEdit={canEdit} mode={mode} selectedElement={selectedElement} onElementChange={onElementChange} />;
   if (selectedElement.kind === "text") return <TextInspector dictionary={dictionary} canAdmin={canAdmin} selectedElement={selectedElement} onElementChange={onElementChange} />;
   if (selectedElement.kind === "line") return <LineInspector dictionary={dictionary} canAdmin={canAdmin} selectedElement={selectedElement} onElementChange={onElementChange} />;

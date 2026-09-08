@@ -60,7 +60,8 @@ export function AppSidebar({
   const selectedWorkspaceId = searchParams.get("workspace") ?? undefined;
   const resolvedServerId = pathServerId ?? selectedWorkspaceId ?? activeServerId;
   const resolvedServer = resolvedServerId ? servers.find((server) => server.id === resolvedServerId) : undefined;
-  const resolvedCanAdmin = Boolean(
+  const adminAccessOverride = resolvedServer?.adminAccessOverrides?.[user.discordId];
+  const resolvedCanAdmin = adminAccessOverride ?? Boolean(
     resolvedServerId &&
       (
         resolvedServer?.canAdmin ||

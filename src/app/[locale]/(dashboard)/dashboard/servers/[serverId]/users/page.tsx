@@ -14,6 +14,8 @@ import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getServerUserAssignments, getUsersByIds } from "@/lib/server-user-management";
 import { getUserScoreForGuild } from "@/lib/user-scores";
+import { getPlayersPerformanceHistories } from "@/lib/read-models/performance-history";
+import { PlayerTrendIndicators } from "@/components/app/player-trend-indicators";
 
 function getAssignmentStatusLabel(
   assignment: {
@@ -53,6 +55,7 @@ export default async function ServerUsersPage({
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const assignmentUsers = await getUsersByIds(assignments.map((assignment) => assignment.userId), context.server.discordId);
   const assignmentUserMap = new Map(assignmentUsers.map((user) => [user.discordId, user]));
+  const performanceByUserId = await getPlayersPerformanceHistories(context.server.discordId, assignments.map((assignment) => assignment.userId), serverId);
   const mergeUserOptions = assignmentUsers
     .map((user) => ({
       id: user.id,
@@ -125,6 +128,7 @@ export default async function ServerUsersPage({
                       <span>{user.discordId}</span>
                       {user.platformIds.length ? <PlatformIdList platformIds={user.platformIds} dictionary={dictionary} compact /> : null}
                     </div>
+                    <div className="mt-1"><PlayerTrendIndicators matches={performanceByUserId[assignment.userId] ?? []} dictionary={dictionary} /></div>
                   </div>
                 </div>
               );

@@ -393,6 +393,9 @@ export default defineSchema({
     // Admins explicitly assigned in Logi are kept separate from admins derived
     // from the Discord dashboard role, so a role resync cannot revoke them.
     dashboardAdminIds: v.optional(v.array(v.string())),
+    // A manual setting wins over all inherited sources (Discord Administrator,
+    // dashboard role, and guild ownership). Missing means inherit.
+    adminAccessOverrides: v.optional(v.record(v.string(), v.boolean())),
     memberIds: v.array(v.string()),
     members: v.array(guildMember),
     mercenaryIds: v.array(v.string()),
@@ -719,6 +722,18 @@ export default defineSchema({
   })
     .index("id", ["id"])
     .index("userId", ["userId"]),
+  // Materialized, bounded read models for the dashboard.  Keeping only ten
+  // snapshots makes the analytics pages cheap even for long-running clans.
+  guildPerformanceHistory: defineTable({
+    guildId: v.string(),
+    matches: v.array(v.object({ eventId: v.string(), playedAt: v.string(), label: v.string(), combat: v.number(), offense: v.optional(v.number()), support: v.number(), kills: v.number(), deaths: v.number(), points: v.optional(v.number()), kd: v.optional(v.number()) })),
+    updatedAt: v.string(),
+  }).index("guildId", ["guildId"]),
+  playerPerformanceHistory: defineTable({
+    guildId: v.string(), userId: v.string(),
+    matches: v.array(v.object({ eventId: v.string(), playedAt: v.string(), label: v.string(), combat: v.number(), offense: v.optional(v.number()), support: v.number(), kills: v.number(), deaths: v.number(), points: v.optional(v.number()), kd: v.optional(v.number()) })),
+    updatedAt: v.string(),
+  }).index("guildId", ["guildId"]).index("guildId_userId", ["guildId", "userId"]),
   matchStats: defineTable({
     guildId: v.string(),
     eventId: v.id("events"),

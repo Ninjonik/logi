@@ -1,44 +1,43 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { makeFunctionReference } from "convex/server";
-import { useMutation } from "convex/react";
 import { ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-
-const setPlayerAdminAccessReference = makeFunctionReference<"mutation">("guilds:setPlayerAdminAccess");
+import type { Dictionary } from "@/i18n/dictionaries";
 
 export function PlayerAdminAccessButton({
   serverId,
-  actorId,
   playerId,
   initialIsAdmin,
+  dictionary,
 }: {
   serverId: string;
-  actorId: string;
   playerId: string;
   initialIsAdmin: boolean;
+  dictionary: Dictionary;
 }) {
   const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
   const [isPending, startTransition] = useTransition();
-  const setPlayerAdminAccess = useMutation(setPlayerAdminAccessReference);
-
   function updateAdminAccess(nextIsAdmin: boolean) {
     startTransition(async () => {
       try {
-        await setPlayerAdminAccess({
-          serverId: serverId as never,
-          userId: actorId,
-          playerId,
-          isAdmin: nextIsAdmin,
+        const response = await fetch(`/api/servers/${serverId}/admin-access`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            playerId,
+            isAdmin: nextIsAdmin,
+          }),
         });
+        if (!response.ok) {
+          throw new Error("Unable to update player admin access.");
+        }
         setIsAdmin(nextIsAdmin);
-        toast.success(nextIsAdmin ? "Player is now an admin." : "Player admin access removed.");
-      } catch (error) {
-        console.error(error);
-        toast.error("Unable to update player admin access.");
+        toast.success(nextIsAdmin ? dictionary.userManagement.adminAccessGranted : dictionary.userManagement.adminAccessRemoved);
+      } catch {
+        toast.error(dictionary.userManagement.adminAccessUpdateFailed);
       }
     });
   }
@@ -52,7 +51,7 @@ export function PlayerAdminAccessButton({
       onClick={() => updateAdminAccess(!isAdmin)}
     >
       <ShieldCheck className="size-4" />
-      {isAdmin ? "Remove admin access" : "Make admin"}
+      {isAdmin ? dictionary.userManagement.removeAdminAccess : dictionary.userManagement.grantAdminAccess}
     </Button>
   );
 }

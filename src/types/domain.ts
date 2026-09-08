@@ -94,6 +94,7 @@ export type Guild = {
   canAdmin?: boolean;
   adminIds: string[];
   dashboardAdminIds?: string[];
+  adminAccessOverrides?: Record<string, boolean>;
   memberIds: string[];
   members: GuildMember[];
   mercenaryIds: string[];

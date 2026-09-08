@@ -34,6 +34,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RosterBoardAttendeeLists } from "@/components/app/roster-board-attendee-lists";
+import { PublicShareLinkButton } from "@/components/app/public-share-link-button";
 import { SquadCard } from "@/components/app/roster-board-squad-card";
 import type { AttendanceStatus, DragState, RosterBoardMode } from "@/components/app/roster-board-types";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -1063,6 +1064,9 @@ export function RosterBoard({
                 <WandSparkles className="size-4" />
                 {dictionary.roster.autoFill}
               </Button>
+            ) : null}
+            {board?.published && event ? (
+              <PublicShareLinkButton href={`/${locale}/rosters/${event.id}`} dictionary={dictionary} />
             ) : null}
             <Button
               variant="outline"

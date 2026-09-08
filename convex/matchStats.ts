@@ -2,6 +2,7 @@ import { query, mutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { v } from "convex/values";
+import { rebuildGuildPerformanceHistory } from "./performanceHistory";
 
 const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
 
@@ -217,6 +218,7 @@ export const upsertForEvent = mutation({
       });
       await upsertMatchPreview(ctx, event, args.raw, now);
       await refreshRelatedPreviews(ctx, event, now);
+      await rebuildGuildPerformanceHistory(ctx, event.guildId);
 
       return String(existing._id);
     }
@@ -238,6 +240,7 @@ export const upsertForEvent = mutation({
     });
     await upsertMatchPreview(ctx, event, args.raw, now);
     await refreshRelatedPreviews(ctx, event, now);
+    await rebuildGuildPerformanceHistory(ctx, event.guildId);
 
     return String(insertedId);
   },

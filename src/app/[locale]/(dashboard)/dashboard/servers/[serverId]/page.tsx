@@ -17,6 +17,8 @@ import { formatDateKey, formatTime } from "@/lib/format";
 import { getGuildMetadata } from "@/lib/server-metadata";
 import { getServerContext } from "@/lib/server-context";
 import { getRecentMatchSummary } from "@/lib/read-models/server-dashboard";
+import { getGuildPerformanceHistory } from "@/lib/read-models/performance-history";
+import { PerformanceHistoryChart } from "@/components/app/performance-history-chart";
 import { getLoggedInUser } from "@/lib/auth"
 
 export const metadata: Metadata = {
@@ -71,6 +73,7 @@ export default async function ServerOverviewPage({
     topicPresets = [],
     discordConfig,
   } = context;
+  const performanceHistory = await getGuildPerformanceHistory(server.discordId, serverId);
 
   const user = await getLoggedInUser();
 
@@ -172,6 +175,11 @@ export default async function ServerOverviewPage({
             </div>
           </CardContent>
         </Card>
+        <div className="grid gap-6 xl:grid-cols-2">
+          <PerformanceHistoryChart title={dictionary.clan.performanceTrend} matches={performanceHistory} dictionary={dictionary} kind="effectiveness" />
+          <PerformanceHistoryChart title={dictionary.clan.kd} matches={performanceHistory} dictionary={dictionary} kind="combat" />
+          <PerformanceHistoryChart title={dictionary.clan.points} matches={performanceHistory} dictionary={dictionary} kind="points" />
+        </div>
         <Card className="overflow-hidden rounded-2xl border-border/60">
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <div>
