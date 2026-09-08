@@ -63,7 +63,7 @@ type ClanDiscordMessages = {
         matchStart: string
         trainingStart: string
         status: string
-        signupCapacity: string
+        signupCount: string
         managedFooter: string
         nobodyYet: string
         notAttending: string
@@ -416,7 +416,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             matchStart: "Match Start",
             trainingStart: "Training Start",
             status: "Status",
-            signupCapacity: "Signups",
+            signupCount: "People signed up",
             managedFooter: "Managed via Logi • Times adapt to your device",
             nobodyYet: "*Nobody yet*",
             notAttending: "Not Attending",
@@ -883,7 +883,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             openInDiscord: "otevřít na Discordu",
         },
         embed: {
-            signupCapacity: "P\u0159ihl\u00e1\u0161eno",
+            signupCount: "Počet přihlášených",
             map: "Mapa",
             side: "Strana",
             cap: "Cap",
