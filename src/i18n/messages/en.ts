@@ -37,6 +37,7 @@ export const enMessages = {
     },
     publicNavigation: {
         privacy: "Privacy",
+        gdpr: "GDPR",
         terms: "Terms",
     },
     home: {
@@ -88,6 +89,137 @@ export const enMessages = {
         sourceAvailable: "Source available on GitHub",
         contributionsWelcome: "Contributions welcome",
         noMarketingFiller: "No marketing filler",
+        landing: {
+            heroEyebrow: "The operating system for your community",
+            heroLineOne: "Every player.",
+            heroLineAccent: "Every operation.",
+            heroLineThree: "In formation.",
+            heroDescription:
+                "Logi turns the beautiful chaos of running a Hell Let Loose community into one living, breathing command center.",
+            deployCommunity: "Deploy your community",
+            seeEverything: "See everything it does",
+            playersConfirmed: "31 players confirmed",
+            marquee: [
+                "Operations",
+                "Rosters",
+                "Matches",
+                "Briefings",
+                "Members",
+                "Discord",
+                "Analytics",
+            ],
+            arsenalEyebrow: "The complete arsenal",
+            arsenalTitle:
+                "Not a landing page full of promises. A real command center, screen by screen.",
+            arsenalDescription:
+                "Every module is already part of Logi. Explore the whole system below.",
+            features: {
+                dashboard: {
+                    title: "Operations dashboard",
+                    description:
+                        "Your community’s pulse: events, performance, players and the next thing to run.",
+                },
+                calendar: {
+                    title: "Calendar & events",
+                    description:
+                        "Plan trainings, matches and community nights without the Discord scavenger hunt.",
+                },
+                roster: {
+                    title: "Roster builder",
+                    description:
+                        "Build squads visually, fill every role, and know exactly who is ready.",
+                },
+                briefing: {
+                    title: "Briefings & maps",
+                    description:
+                        "Put the plan, the map and the orders where every player can find them.",
+                },
+                matches: {
+                    title: "Match history",
+                    description:
+                        "Keep the record: results, scorelines, performance and moments that matter.",
+                },
+                members: {
+                    title: "Member directory",
+                    description:
+                        "A real view of your people, roles, attendance and community health.",
+                },
+                event: {
+                    title: "Event command",
+                    description:
+                        "From a simple signup to a full operational brief, every event gets its own home.",
+                },
+                presets: {
+                    title: "Squad presets",
+                    description:
+                        "Set your unit structure once. Spin up a familiar formation in seconds.",
+                },
+                assignments: {
+                    title: "Assignments",
+                    description:
+                        "Move players into the right place with a workflow built for commanders.",
+                },
+                matchData: {
+                    title: "Match data",
+                    description:
+                        "Keep the detail behind every result close at hand for leaders, analysts, and players.",
+                },
+                api: {
+                    title: "Public API & docs",
+                    description:
+                        "Extensive API reference and documentation for server admins, integrations, and contributors.",
+                },
+            },
+            workflowEyebrow: "From briefing to debrief",
+            workflowTitle: "The work flows. So should your tools.",
+            workflowDescription:
+                "A proper operation is not one screen. It is a rhythm that Logi keeps together.",
+            workflow: [
+                {
+                    title: "Plan",
+                    description:
+                        "Create an event, choose the map, publish the brief.",
+                },
+                {
+                    title: "Fill",
+                    description:
+                        "Open signups, shape the roster, assign every slot.",
+                },
+                {
+                    title: "Run",
+                    description: "Give leaders a live, shared source of truth.",
+                },
+                {
+                    title: "Remember",
+                    description:
+                        "Record results, follow performance, build the story.",
+                },
+            ],
+            ownershipEyebrow: "Yours, forever",
+            ownershipTitle: "Free to run. Free to own. Free to build on.",
+            ownershipDescription:
+                "Use Logi on our hosted platform at no cost, or run the full stack on your own infrastructure when data ownership is non-negotiable.",
+            values: {
+                hosted: {
+                    title: "Hosted, free forever",
+                    description:
+                        "Start running your community immediately. Our hosted version is free — no feature gate, no surprise upgrade.",
+                },
+                selfHosted: {
+                    title: "Self-host when it matters",
+                    description:
+                        "Want complete control over your data, environment, and deployment? Run Logi yourself and keep the keys.",
+                },
+                openSource: {
+                    title: "Open source, deeply documented",
+                    description:
+                        "Explore the code, contribute improvements, and use extensive API documentation to connect Logi to your own tools.",
+                },
+            },
+            finalTitle: "Your next operation is already waiting.",
+            finalDescription:
+                "Build the place your players trust before the first “ready check”.",
+        },
         pillars: {
             operationsTitle: "Runs the boring parts",
             operationsDescription:
@@ -348,6 +480,12 @@ export const enMessages = {
         flagsCategory: "Flags",
     },
     userSettings: {
+        privacyTitle: "Privacy and data",
+        privacyDescription: "Request a copy of your personal data or request account erasure.",
+        requestExport: "Request my data export",
+        requestErasure: "Request account erasure",
+        erasureWarning: "Erasure also removes your clan assignments, sign-ups, roster placements, and other account-linked records. Some data may be retained where legally required.",
+        requestSubmitted: "Your privacy request has been submitted.",
         title: "User settings",
         description:
             "Manage your profile and platform identity used for imported match matching.",
@@ -1341,6 +1479,11 @@ export const enMessages = {
         saveStateError: "Unable to save stratmap state.",
         createError: "Unable to create stratmap.",
         titleRequired: "Title is required.",
+        importLabel: "Import from Maps Let Loose (optional)",
+        importHint:
+            "Upload the extracted mll_config.json from a Maps Let Loose export. Select the map details below before creating.",
+        importInvalid: "This is not a valid Maps Let Loose JSON export.",
+        importSummary: "{slides} slide(s) imported{skipped}.",
         liveAccess: "Admins can edit this stratmap. Others see updates live.",
         slides: "Slides",
         createSlideTitle: "Create slide",

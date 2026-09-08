@@ -808,6 +808,18 @@ export default defineSchema({
     })
         .index("token", ["token"])
         .index("userId", ["userId"]),
+    privacyRequests: defineTable({
+        userId: v.string(),
+        discordId: v.string(),
+        userName: v.string(),
+        type: v.union(v.literal("export"), v.literal("erasure")),
+        status: v.union(v.literal("requested"), v.literal("completed"), v.literal("rejected")),
+        requestedAt: v.string(),
+        completedAt: v.optional(v.string()),
+        note: v.optional(v.string()),
+    })
+        .index("userId", ["userId"])
+        .index("status_requestedAt", ["status", "requestedAt"]),
     userAssignments,
     playerStats: defineTable({
         id: v.string(),

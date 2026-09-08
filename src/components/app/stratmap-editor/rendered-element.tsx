@@ -166,7 +166,7 @@ function IconElement({
     const iconY = element.y - element.size / 2
 
     return (
-        <>
+        <g style={{ isolation: "isolate" }}>
             <defs>
                 <mask
                     id={`stratmap-icon-mask-${element.id}`}
@@ -187,6 +187,15 @@ function IconElement({
                     />
                 </mask>
             </defs>
+            <image
+                href={iconPath}
+                x={iconX}
+                y={iconY}
+                width={element.size}
+                height={element.size}
+                preserveAspectRatio="xMidYMid meet"
+                pointerEvents="none"
+            />
             <rect
                 x={iconX}
                 y={iconY}
@@ -194,9 +203,18 @@ function IconElement({
                 height={element.size}
                 fill={element.color ?? "#dc2626"}
                 mask={`url(#stratmap-icon-mask-${element.id})`}
-                opacity={1}
+                style={{ mixBlendMode: "hue" }}
+                pointerEvents="none"
             />
-        </>
+            <rect
+                x={iconX}
+                y={iconY}
+                width={element.size}
+                height={element.size}
+                fill="transparent"
+                pointerEvents="all"
+            />
+        </g>
     )
 }
 
