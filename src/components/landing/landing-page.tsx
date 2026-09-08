@@ -283,18 +283,18 @@ function Deck({
 }) {
     return (
         <div
-            className={`overflow-hidden ${flush ? "rounded-t-2xl" : "rounded-2xl border border-zinc-300 bg-zinc-200 p-1 shadow-[0_35px_100px_-24px_rgba(0,0,0,.25)] dark:border-white/20 dark:bg-zinc-800 dark:shadow-[0_35px_100px_-24px_rgba(0,0,0,.8)]"} ${className}`}
+            className={`overflow-hidden ${flush ? "rounded-t-[1.75rem]" : "rounded-2xl border border-zinc-300 bg-zinc-200 p-1 shadow-[0_35px_100px_-24px_rgba(0,0,0,.25)] dark:border-white/20 dark:bg-zinc-800 dark:shadow-[0_35px_100px_-24px_rgba(0,0,0,.8)]"} ${className}`}
         >
             <img
                 src={`/images/product/${light}-light.png`}
                 alt={title}
-                className={`block w-full ${flush ? "rounded-t-2xl" : "rounded-xl"} dark:hidden ${crop ? "h-full object-cover object-top" : ""}`}
+                className={`block w-full ${flush ? "rounded-t-[1.75rem]" : "rounded-xl"} dark:hidden ${crop ? "h-full object-cover object-top" : ""}`}
                 fetchPriority={priority ? "high" : "auto"}
             />
             <img
                 src={`/images/product/${light}-dark.png`}
                 alt=""
-                className={`hidden w-full ${flush ? "rounded-t-2xl" : "rounded-xl"} dark:block ${crop ? "h-full object-cover object-top" : ""}`}
+                className={`hidden w-full ${flush ? "rounded-t-[1.75rem]" : "rounded-xl"} dark:block ${crop ? "h-full object-cover object-top" : ""}`}
                 fetchPriority={priority ? "high" : "auto"}
             />
         </div>
@@ -343,7 +343,7 @@ function Spotlight({
             viewport={{ once: true, amount: 0.15 }}
             transition={{ delay: (index % 3) * 0.08, duration: 0.6 }}
             style={{ rotateX: rx, rotateY: ry, transformPerspective: 1000 }}
-            className="group relative min-h-[540px] overflow-hidden rounded-t-[1.75rem] bg-white p-6 [transform-style:preserve-3d] dark:bg-white/[.035]"
+            className="group relative min-h-[430px] overflow-hidden rounded-t-[1.75rem] bg-white p-6 [transform-style:preserve-3d] dark:bg-white/[.035]"
         >
             <div className="relative z-10">
                 <div className="flex size-11 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10 text-amber-200">

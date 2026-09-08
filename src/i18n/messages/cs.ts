@@ -482,10 +482,12 @@ export const csMessages = {
     },
     userSettings: {
         privacyTitle: "Soukromí a data",
-        privacyDescription: "Požádejte o kopii svých osobních údajů nebo o výmaz účtu.",
+        privacyDescription:
+            "Požádejte o kopii svých osobních údajů nebo o výmaz účtu.",
         requestExport: "Požádat o export mých dat",
         requestErasure: "Požádat o výmaz účtu",
-        erasureWarning: "Výmaz také odstraní vaše přiřazení ke klanům, přihlášky, umístění v soupiskách a další záznamy propojené s účtem. Některá data mohou být uchována, pokud to vyžaduje zákon.",
+        erasureWarning:
+            "Výmaz také odstraní vaše přiřazení ke klanům, přihlášky, umístění v soupiskách a další záznamy propojené s účtem. Některá data mohou být uchována, pokud to vyžaduje zákon.",
         requestSubmitted: "Vaše žádost o soukromí byla odeslána.",
         title: "Nastavení uživatele",
         description:

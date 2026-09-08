@@ -813,7 +813,11 @@ export default defineSchema({
         discordId: v.string(),
         userName: v.string(),
         type: v.union(v.literal("export"), v.literal("erasure")),
-        status: v.union(v.literal("requested"), v.literal("completed"), v.literal("rejected")),
+        status: v.union(
+            v.literal("requested"),
+            v.literal("completed"),
+            v.literal("rejected")
+        ),
         requestedAt: v.string(),
         completedAt: v.optional(v.string()),
         note: v.optional(v.string()),

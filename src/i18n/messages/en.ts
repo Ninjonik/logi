@@ -481,10 +481,12 @@ export const enMessages = {
     },
     userSettings: {
         privacyTitle: "Privacy and data",
-        privacyDescription: "Request a copy of your personal data or request account erasure.",
+        privacyDescription:
+            "Request a copy of your personal data or request account erasure.",
         requestExport: "Request my data export",
         requestErasure: "Request account erasure",
-        erasureWarning: "Erasure also removes your clan assignments, sign-ups, roster placements, and other account-linked records. Some data may be retained where legally required.",
+        erasureWarning:
+            "Erasure also removes your clan assignments, sign-ups, roster placements, and other account-linked records. Some data may be retained where legally required.",
         requestSubmitted: "Your privacy request has been submitted.",
         title: "User settings",
         description:

@@ -1,6 +1,6 @@
 "use client"
 
-import { CircleHelp, Gamepad2 } from "lucide-react"
+import { AlertTriangle, CircleHelp, FileDown, Gamepad2 } from "lucide-react"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -60,6 +60,37 @@ export function UserSettingsForm({
 
         toast.success(dictionary.common.save)
         startTransition(() => router.refresh())
+    }
+
+    async function requestPrivacy(type: "export" | "erasure") {
+        if (type === "export") {
+            const response = await fetch("/api/user/privacy-export", {
+                method: "POST",
+            })
+            if (!response.ok) {
+                const body = await response.json().catch(() => null)
+                toast.error(body?.error ?? dictionary.common.error)
+                return
+            }
+            const url = URL.createObjectURL(await response.blob())
+            const link = document.createElement("a")
+            link.href = url
+            link.download = "logi-personal-data.zip"
+            link.click()
+            URL.revokeObjectURL(url)
+            return
+        }
+        const response = await fetch("/api/user/privacy-request", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ type }),
+        })
+        const body = await response.json()
+        if (!response.ok) {
+            toast.error(body.error ?? dictionary.common.error)
+            return
+        }
+        toast.success(dictionary.userSettings.requestSubmitted)
     }
 
     return (
@@ -220,6 +251,41 @@ export function UserSettingsForm({
                                 />
                             </div>
                         </div>
+                    </CardContent>
+                </Card>
+                <Card className="border-border/60 rounded-2xl">
+                    <CardHeader>
+                        <CardTitle>
+                            {dictionary.userSettings.privacyTitle}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p className="text-muted-foreground text-sm leading-6">
+                            {dictionary.userSettings.privacyDescription}
+                        </p>
+                        <Button
+                            variant="outline"
+                            className="w-full justify-start rounded-xl"
+                            disabled={isPending}
+                            onClick={() => requestPrivacy("export")}
+                        >
+                            <FileDown className="size-4" />
+                            {dictionary.userSettings.requestExport}
+                        </Button>
+                        <div className="border-destructive/25 bg-destructive/5 text-destructive rounded-xl border p-3 text-sm">
+                            <div className="flex gap-2">
+                                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                                <p>{dictionary.userSettings.erasureWarning}</p>
+                            </div>
+                        </div>
+                        <Button
+                            variant="destructive"
+                            className="w-full rounded-xl"
+                            disabled={isPending}
+                            onClick={() => requestPrivacy("erasure")}
+                        >
+                            {dictionary.userSettings.requestErasure}
+                        </Button>
                     </CardContent>
                 </Card>
             </div>

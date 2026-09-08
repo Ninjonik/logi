@@ -26,6 +26,7 @@ import type * as performanceHistory from "../performanceHistory.js";
 import type * as platformIdLinks from "../platformIdLinks.js";
 import type * as playerStats from "../playerStats.js";
 import type * as players from "../players.js";
+import type * as privacy from "../privacy.js";
 import type * as publicApi from "../publicApi.js";
 import type * as publicPreviews from "../publicPreviews.js";
 import type * as publicProfiles from "../publicProfiles.js";
@@ -70,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   platformIdLinks: typeof platformIdLinks;
   playerStats: typeof playerStats;
   players: typeof players;
+  privacy: typeof privacy;
   publicApi: typeof publicApi;
   publicPreviews: typeof publicPreviews;
   publicProfiles: typeof publicProfiles;
