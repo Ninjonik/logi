@@ -35,6 +35,7 @@ Then edit the correct layer first.
 3. Keep use-cases explicit and narrow.
 4. Keep Convex, web routes, and Discord handlers thin.
 5. Run tests and typecheck before finishing.
+6. Update the matching public wiki page in `content/` whenever a user-visible feature, permission, workflow, condition, or screen changes. Add new wiki coverage for new features.
 
 ## Testing Commands
 

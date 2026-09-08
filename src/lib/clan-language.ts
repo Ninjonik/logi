@@ -1,4 +1,4 @@
-export const supportedClanLanguages = ["en", "cs"] as const
+export const supportedClanLanguages = ["en", "cs", "de"] as const
 
 export type ClanLanguage = (typeof supportedClanLanguages)[number]
 
@@ -1149,6 +1149,427 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             notes: "Poznámky",
             openSlot: "Volný slot",
             slots: "slotů",
+        },
+    },
+    de: {
+        locale: "de-DE",
+        buttons: {
+            acknowledgeAttendance: "Anwesenheit bestätigen",
+            attend: "Teilnehmen",
+            generalSignup: "Anmelden",
+            checkSignup: "Anmeldung prüfen",
+            addToCalendar: "Zum Kalender hinzufügen",
+            viewFullRoster: "Roster ansehen",
+            decline: "Ablehnen",
+        },
+        interaction: {
+            unableToLoadEventContext:
+                "Der Event-Kontext konnte nicht geladen werden.",
+            signupServerOnly:
+                "Anmelde-Buttons können nur über die Event-Nachricht auf dem Server verwendet werden.",
+            registrationClosed:
+                "Die Anmeldung für dieses Event ist bereits geschlossen.",
+            invalidSignupButton: "Dieser Anmelde-Button ist nicht mehr gültig.",
+            unableToResolveMembership:
+                "Ihre Server-Mitgliedschaft konnte nicht ermittelt werden.",
+            missingRequiredRole:
+                "Ihnen fehlt die erforderliche Discord-Rolle für diese Anmeldung.",
+            membershipStatusNotAllowed:
+                "Ihr Mitgliedschaftsstatus darf sich für dieses Match nicht anmelden.",
+            signupUpdated: "Anmeldung aktualisiert.",
+            signupUpdatedWithType: "Sie sind als {type} angemeldet.",
+            signupRemovedWithType: "Anmeldung für {type} entfernt.",
+            markedNotAttending: "Als nicht teilnehmend markiert.",
+            changeSignupSelection:
+                "Sie sind bereits angemeldet. Nutzen Sie die Auswahl unten nur, um Ihre Rolle zu ändern; bei gleicher Rolle bleibt Ihre Anmeldung bestehen.",
+            attendanceNotOpen:
+                "Die Anwesenheitsbestätigung ist derzeit nicht geöffnet.",
+            rosterNotPublished:
+                "Das Roster für dieses Event ist noch nicht veröffentlicht.",
+            notOnRoster: "Sie stehen nicht auf dem Roster für dieses Event.",
+            attendanceAcknowledged: "Anwesenheit bestätigt.",
+            signupStatusSignedUp: "Sie sind für {group} angemeldet.",
+            signupStatusNotSignedUp:
+                "Sie sind für dieses Event nicht angemeldet.",
+        },
+        reminders: {
+            title: "Anwesenheitskontrolle für",
+            body: "Bitte bestätigen Sie vor dem Meeting, ob Sie es noch schaffen.",
+            meeting: "Meeting",
+            assignment: "Ihre Roster-Zuweisung",
+            notes: "Notizen",
+            eventThread: "Event-Thread",
+            openInDiscord: "in Discord öffnen",
+        },
+        embed: {
+            map: "Map",
+            side: "Seite",
+            cap: "Cap",
+            server: "Server",
+            password: "Passwort",
+            description: "Beschreibung",
+            registrationEnds: "Anmeldeschluss",
+            meeting: "Headcount / Meeting",
+            headcountStart: "Headcount-Start",
+            briefingStart: "Briefing-Start",
+            chooseSignup: "Anmelden",
+            runningLate: "Verspätung",
+            lateNoticeTitle: "Verspätung",
+            lateNoticeLabel: "Voraussichtliche Ankunft und Notiz",
+            myAssignment: "Meine Zuweisung",
+            assignmentReserve: "Sie sind Ersatz (Reserve) für dieses Event.",
+            assignmentUnassigned: "Sie haben noch keine Roster-Zuweisung.",
+            matchStart: "Match-Start",
+            trainingStart: "Trainings-Start",
+            status: "Status",
+            signupCount: "Angemeldete Personen",
+            managedFooter:
+                "Verwaltet via Logi • Zeiten passen sich Ihrem Gerät an",
+            nobodyYet: "*Noch niemand*",
+            notAttending: "Nicht teilnehmend",
+            attending: "Teilnehmend",
+        },
+        forum: {
+            matchInformation: "Match-Informationen",
+            noExtraNotes: "Noch keine weiteren Notizen.",
+            map: "Map",
+            side: "Seite",
+            cap: "Cap",
+            server: "Server",
+            serverPassword: "Server-Passwort",
+            gameStart: "Spielstart",
+            notSet: "Nicht festgelegt",
+            managedFooter: "Verwaltet aus Logi in",
+            debrief: "Debrief",
+            debriefTitle: "Debrief",
+            debriefDescription:
+                "Nutzen Sie diesen Thread für Notizen nach dem Einsatz, Lessons Learned und die anschließende Diskussion.",
+        },
+        statuses: {
+            registration: "Anmeldung",
+            closed: "Geschlossen",
+            starting: "Beginnt",
+            concluded: "Beendet",
+        },
+        calendar: {
+            fallbackDetails: "Einsatz-Briefing aus Logi.",
+            fallbackLocation: "Discord",
+            panelTitle: "Kalender",
+            panelEmpty: "Derzeit sind keine kommenden Events geplant.",
+            panelCategories: "Kategorien",
+            matchLabel: "Match",
+            trainingLabel: "Training",
+        },
+        panels: {
+            ticketManagedFooter: "Verwaltet via Logi-Tickets",
+            ticketCategories: "Kategorien",
+            membershipManagedFooter: "Verwaltet via Logi-Mitgliedschaften",
+            membershipApplications: "Bewerbungen",
+        },
+        commands: {
+            closeTicketDescription: "Schließt den aktuellen Ticket-Thread.",
+            closeApplicationDescription:
+                "Schließt den aktuellen Bewerbungs-Thread.",
+            linkDescription:
+                "Öffnet eine einmalige Seite zur Verknüpfung Ihrer Platform ID.",
+            noticeDescription:
+                "Reicht eine Verspätungsmeldung für ein kommendes Event ein.",
+            noticeEventOptionDescription:
+                "Wählen Sie eines Ihrer kommenden angemeldeten Events.",
+            reasonOptionDescription:
+                "Grund, der dem Nutzer in DMs angezeigt wird.",
+            noticeReasonLabel: "Warum werden Sie sich verspäten?",
+            noticeModalTitle: "Verspätungsmeldung",
+            noticeNoMatch:
+                "Ich konnte keines Ihrer angemeldeten Events finden, das noch nicht beendet ist und noch nicht begonnen hat.",
+            noticeMultipleMatches:
+                "Das trifft auf mehrere passende Events zu. Wählen Sie das Event aus der Autovervollständigung.",
+            noticeSaved: "Ihre Verspätungsmeldung wurde gespeichert.",
+            linkDmSent:
+                "Ich habe Ihnen eine DM mit einem direkten Link zur Eingabe Ihrer Platform ID gesendet. Öffnen Sie ihn hier: {link}. Reichen Sie sie dort ein, und ich bestätige, sobald sie gespeichert ist.",
+            linkDmFailed:
+                "Ich konnte Ihnen keine DM senden. Nutzen Sie diesen einmaligen Link zur Eingabe Ihrer Platform ID: {link}",
+            outcomeOptionDescription:
+                "Was der Bewerber nach dem Schließen werden soll.",
+            outcomeDenied: "Abgelehnt",
+            outcomePending: "Ausstehend",
+            outcomeRecruit: "Recruit",
+            outcomeMember: "Member",
+            outcomeMercenary: "Mercenary",
+            playerDescription: "Clan-Spieler suchen und deren Stats ansehen.",
+            playerOptionDescription:
+                "Wählen Sie einen Spieler aus diesem Clan.",
+            playerServerOnly:
+                "Dieser Befehl kann nur auf einem Server verwendet werden.",
+            playerNotFound: "Spieler in diesem Clan nicht gefunden.",
+        },
+        playerStats: {
+            clanScore: "Clan-Score",
+            matches: "Matches",
+            performance: "Leistung",
+            kills: "Kills",
+            deaths: "Tode",
+            offense: "Angriff",
+            defense: "Verteidigung",
+            support: "Unterstützung",
+            recentMatches: "Letzte Matches",
+            noMatchHistory: "Keine importierte Match-Historie.",
+            profileImage: "Profilbild",
+        },
+        platformLink: {
+            button: "Platform ID einreichen",
+            dmIntro:
+                "Bevor wir fortfahren können, benötigen wir eine Platform ID, die wir Hell Let Loose zuordnen können.",
+            dmInstruction:
+                "Nutzen Sie den Button unten, um die einmalige Einreichungsseite zu öffnen. Wenn dort erfolgreich steht, können Sie sie schließen.",
+            readyDm: "Ihre Platform ID wurde erfolgreich verknüpft.",
+            readyInteraction: "Ihre Platform ID wurde erfolgreich verknüpft.",
+            successPage:
+                "Platform ID erfolgreich verknüpft. Sie können diese Seite jetzt schließen.",
+        },
+        training: {
+            resultPassed: "bestanden",
+            resultFailed: "nicht bestanden",
+            rewardGranted: "Die Belohnungs-Rollen wurden in Discord vergeben.",
+            dmResult:
+                "Hallo {name}, Ihr Trainingsergebnis für **{event}** lautet: {result}.{reward}",
+        },
+        rosterUpdate: {
+            announcementTitle: "Roster-Update",
+            addedLabel: "Neuzugänge in der Startaufstellung",
+            removedLabel: "Aus der Aufstellung gestrichen",
+            movedLabel: "Squad-Wechsel",
+            roleChangedLabel: "Rollenänderungen",
+            dmIntro:
+                "Hallo {name}, das veröffentlichte Roster für **{event}** wurde aktualisiert.",
+            dmAdded: "✅ Sie sind jetzt in der Aufstellung.",
+            dmRemoved: "❌ Sie sind nicht mehr in der Aufstellung.",
+            dmMoved: "🔁 Ihre Squad-Zuweisung hat sich geändert.",
+            dmRoleChanged: "🎯 Ihre Rolle hat sich geändert.",
+        },
+        platformFlow: {
+            title: "Verknüpfen Sie Ihre Platform ID",
+            membershipIntro:
+                "Bevor wir mit Ihrer Clan-Bewerbung fortfahren können, müssen Sie hier in Discord eine Platform ID verknüpfen.",
+            linkIntro:
+                "Verknüpfen Sie Ihre Platform ID hier in Discord. Eine Website oder DM-Übergabe ist nicht mehr nötig.",
+            startButton: "Platform ID verknüpfen",
+            addAnotherButton: "Weitere Platform ID hinzufügen",
+            unlinkButton: "Platform ID trennen",
+            manageDescription:
+                "Verwalten Sie unten Ihre verknüpften Platform IDs.",
+            linkedFieldTitle: "Verknüpfte Platform IDs",
+            playedBeforePrompt:
+                "Haben Sie schon einmal auf diesem Clan-Server gespielt?",
+            playedBeforePlaceholder: "Wählen Sie eine Option",
+            playedBeforeYes: "Ja",
+            playedBeforeYesDescription:
+                "Suchen Sie Ihren Spieler unter Personen, die bereits auf den konfigurierten Servern dieses Clans gespielt haben.",
+            playedBeforeNo: "Nein",
+            playedBeforeNoDescription:
+                "Wählen Sie Ihre Plattform und geben Sie Ihre Platform ID manuell ein.",
+            playerSearchIntro:
+                "Suchen Sie Ihren Spieler und wählen Sie dann den passenden Eintrag aus den Spielern auf den konfigurierten Servern dieses Clans.",
+            playerSearchPlaceholder: "Wählen Sie Ihren Spielernamen",
+            playerSearchNoMatches:
+                "Auf den konfigurierten Servern dieses Clans wurden keine passenden Spieler gefunden.",
+            playerSearchEmptyOption: "Noch keine Suchergebnisse",
+            playerSearchEmptyDescription:
+                "Klicken Sie auf Spieler suchen, um passende Spieler zu laden",
+            playerSearchButton: "Spieler suchen",
+            playerSearchModalTitle: "Spieler suchen",
+            playerSearchModalLabel: "Spielername oder Code",
+            playerSearchModalPlaceholder:
+                "Geben Sie einen Teil des Namens oder der Spieler-ID ein",
+            platformIntro:
+                "Wählen Sie Ihre Plattform. Ich zeige dieselbe Anleitungs-Kopie wie den aktuellen Website-Flow und lasse Sie dann Ihre Platform ID eingeben.",
+            platformPlaceholder: "Wählen Sie Ihre Plattform",
+            platformSteam: "Steam",
+            platformEpic: "Epic Games",
+            platformXbox: "Xbox",
+            platformPlaystation: "PlayStation",
+            guideLinkLabel: "Anleitung",
+            submitIdButton: "Platform ID eingeben",
+            continueWithIdButton: "Platform ID eingeben und fortfahren",
+            linkedSuccess: "Ihre Platform ID wurde erfolgreich verknüpft.",
+            linkedAndContinuing:
+                "Ihre Platform ID wurde verknüpft. Ihre Clan-Bewerbung wird nun fortgesetzt.",
+            mockLinkedSuccess: "Ihre Platform ID wurde erfolgreich verknüpft.",
+            invalidPlatformId:
+                "Geben Sie eine Platform ID ohne Leerzeichen ein.",
+            unlinkPrompt:
+                "Wählen Sie die Platform ID, die Sie trennen möchten.",
+            unlinkPlaceholder: "Wählen Sie eine Platform ID zum Trennen",
+            invalidAction: "Diese Platform-Link-Aktion ist nicht mehr gültig.",
+            invalidModal: "Dieses Platform-Link-Modal ist nicht mehr gültig.",
+            invalidSearchModal:
+                "Dieses Spielersuche-Modal ist nicht mehr gültig.",
+            guides: {
+                steam: {
+                    label: "Steam64 ID",
+                    help: "Sie benötigen die lange Steam64-Nummer Ihres Kontos.",
+                    stepOne: "Öffnen Sie die Anleitung.",
+                    stepTwo: "Finden Sie die dort angezeigte Steam64 ID.",
+                    stepThree:
+                        "Kopieren Sie diese lange Nummer in den nächsten Schritt.",
+                },
+                epic: {
+                    label: "Epic Account ID",
+                    help: "Sie benötigen Ihre Epic Account ID.",
+                    stepOne: "Öffnen Sie die Anleitung.",
+                    stepTwo: "Öffnen Sie Ihre Epic-Kontodetails.",
+                    stepThree:
+                        "Kopieren Sie die Account ID in den nächsten Schritt.",
+                },
+                xbox: {
+                    label: "Xbox ID",
+                    help: "Nutzen Sie dieselbe Plattform-Anleitung, die Sie heute bereits für Xbox verwenden.",
+                    stepOne: "Öffnen Sie die Anleitung.",
+                    stepTwo: "Bestätigen Sie die korrekte Xbox-Profilkennung.",
+                    stepThree:
+                        "Fügen Sie diese Kennung in den nächsten Schritt ein.",
+                },
+                playstation: {
+                    label: "PlayStation ID",
+                    help: "Nutzen Sie dieselbe Plattform-Anleitung, die Sie heute bereits für PlayStation verwenden.",
+                    stepOne: "Öffnen Sie die Anleitung.",
+                    stepTwo:
+                        "Bestätigen Sie die korrekte PlayStation-Profilkennung.",
+                    stepThree:
+                        "Fügen Sie diese Kennung in den nächsten Schritt ein.",
+                },
+            },
+        },
+        ticket: {
+            serverOnly:
+                "Tickets können nur innerhalb eines Servers geöffnet werden.",
+            unavailable: "Das Ticket-Setup ist derzeit nicht verfügbar.",
+            modalTitle: "Ticket-Details",
+            setupIncomplete: "Das Ticket-Setup ist unvollständig.",
+            parentChannelNotText:
+                "Der Ticket-Eltern-Channel ist kein Text-Channel.",
+            createThreadFailed:
+                "Ich konnte den Ticket-Thread nicht erstellen. Prüfen Sie die Berechtigungen des Bots für den Ticket-Eltern-Channel.",
+            recordFailed:
+                "Das Ticket konnte nicht gespeichert werden, daher wurde der Thread geschlossen. Bitte versuchen Sie es erneut.",
+            introFailed:
+                "Ihr Ticket-Thread wurde erstellt, aber ich konnte die Intro-Nachricht nicht posten: {url}",
+            created: "Ihr Ticket wurde erstellt: {url}",
+            closeCommandThreadOnly:
+                "Nutzen Sie diesen Befehl innerhalb eines Ticket-Threads.",
+            notTracked: "Dieser Thread wird nicht als Ticket geführt.",
+            alreadyClosed: "Dieses Ticket ist bereits geschlossen.",
+            unableToVerifyPermissions:
+                "Ihre Berechtigungen für dieses Ticket konnten nicht geprüft werden.",
+            noClosePermission:
+                "Sie haben keine Berechtigung, dieses Ticket zu schließen.",
+            closeDmClosed:
+                "Ihr Ticket #{number} in **{guildName}** wurde geschlossen.",
+            noCloseReasonProvided: "Es wurde kein Schließungsgrund angegeben.",
+            closeEmbedTitle: "Ticket geschlossen",
+            closedByLabel: "Geschlossen von",
+            closedAtLabel: "Geschlossen am",
+            reasonLabel: "Grund",
+            closeAuditReason: "Ticket geschlossen",
+            closeReply: "Ticket geschlossen.",
+            closeReplyWithReason: "Ticket geschlossen. Grund: {reason}",
+            threadTitle: "Ticket #{number}",
+            category: "Kategorie",
+            createdBy: "Erstellt von",
+            openedBy: "Geöffnet von {creatorTag}",
+        },
+        membership: {
+            serverOnly:
+                "Bewerbungen können nur innerhalb eines Servers geöffnet werden.",
+            unavailable: "Mitgliedschaftsbewerbungen sind derzeit deaktiviert.",
+            alreadyInClan:
+                "Sie sind diesem Clan bereits hinzugefügt. Fragen Sie das Staff-Team, wenn Ihr Mitgliedschaftsstatus geändert werden muss.",
+            openApplicationExists:
+                "Sie haben bereits eine offene Clan-Bewerbung. Warten Sie, bis das Staff-Team sie schließt, bevor Sie eine weitere öffnen.",
+            dmSent: "Ich habe Ihnen eine DM mit einem direkten Link zur Eingabe Ihrer Platform ID gesendet. Öffnen Sie ihn hier: {link}. Reichen Sie sie dort ein und klicken Sie dann erneut auf diesen Button.",
+            dmFailed:
+                "Ich konnte Ihnen keine DM senden. Nutzen Sie diesen einmaligen Link zur Eingabe Ihrer Platform ID und klicken Sie dann erneut auf den Button: {link}",
+            modalTitle: "Clan-Bewerbung",
+            setupIncomplete: "Das Bewerbungs-Setup ist unvollständig.",
+            alreadyAssigned: "Sie sind diesem Clan bereits zugeordnet.",
+            parentChannelNotText:
+                "Der Bewerbungs-Eltern-Channel ist kein Text-Channel.",
+            createAssignmentFailed:
+                "Ich konnte die Mitgliedschafts-Zuweisung für diese Bewerbung nicht erstellen. Bitte versuchen Sie es erneut.",
+            createThreadFailed:
+                "Ich konnte den Bewerbungs-Thread nicht erstellen, daher wurde keine Bewerbung geöffnet. Prüfen Sie die Berechtigungen des Bots und versuchen Sie es erneut.",
+            recordFailed:
+                "Die Bewerbung konnte nicht gespeichert werden, daher wurde der Thread geschlossen. Bitte versuchen Sie es erneut.",
+            introFailed:
+                "Ihr Clan-Bewerbungs-Thread wurde erstellt, aber ich konnte die Intro-Nachricht nicht posten: {url}",
+            created: "Ihre Clan-Bewerbung wurde erstellt: {url}",
+            closeCommandThreadOnly:
+                "Nutzen Sie diesen Befehl innerhalb eines Bewerbungs-Threads.",
+            guildUnavailable:
+                "Der Server für diese Bewerbung konnte nicht ermittelt werden.",
+            notTracked:
+                "Dieser Thread wird nicht als Mitgliedschaftsbewerbung geführt.",
+            alreadyClosed: "Diese Bewerbung ist bereits geschlossen.",
+            unableToVerifyPermissions:
+                "Ihre Berechtigungen für diese Bewerbung konnten nicht geprüft werden.",
+            noClosePermission:
+                "Sie haben keine Berechtigung, diese Bewerbung zu schließen.",
+            closeDmClosed:
+                "Ihre Clan-Bewerbung #{number} in **{guildName}** wurde geschlossen.",
+            noCloseReasonProvided: "Es wurde kein Schließungsgrund angegeben.",
+            closeEmbedTitle: "Bewerbung geschlossen",
+            closedByLabel: "Geschlossen von",
+            closedAtLabel: "Geschlossen am",
+            outcomeLabel: "Ergebnis",
+            reasonLabel: "Grund",
+            closeAuditReason: "Bewerbung geschlossen",
+            closeReply: "Bewerbung geschlossen als {outcome}.",
+            closeReplyWithReason:
+                "Bewerbung geschlossen als {outcome}. Grund: {reason}",
+            platformIdButton: "Platform ID einreichen",
+            platformIdDmIntro:
+                "Bevor wir mit Ihrer Clan-Bewerbung fortfahren können, benötigen wir eine Platform ID, die wir Hell Let Loose zuordnen können.",
+            platformIdDmInstruction:
+                "Nutzen Sie den Button unten, um die einmalige Einreichungsseite zu öffnen. Wenn dort erfolgreich steht, schließen Sie sie und klicken Sie in Discord erneut auf den Bewerbungs-Button.",
+            platformIdReadyDm:
+                "Ihre Platform ID ist gespeichert. Sie können dem Clan jetzt beitreten. Öffnen Sie hier die Clan-Bewerbungsnachricht und klicken Sie erneut darauf: {link}",
+            platformIdReadyInteraction:
+                "Ihre Platform ID ist gespeichert. Sie können dem Clan jetzt beitreten. Öffnen Sie hier die Clan-Bewerbungsnachricht und klicken Sie erneut darauf: {link}",
+            threadTitle: "Bewerbung #{number}",
+            category: "Kategorie",
+            createdBy: "Erstellt von",
+            openedBy: "Geöffnet von {creatorTag}",
+            initialStatus: "Anfangsstatus",
+            statusPending: "Ausstehend",
+            statusRecruit: "Recruit",
+            statusMember: "Member",
+            statusMercenary: "Mercenary",
+        },
+        scheduledEvent: {
+            map: "Map",
+            side: "Seite",
+            cap: "Cap",
+            server: "Server",
+            password: "Passwort",
+            managedFallback: "Verwaltet via Logi.",
+        },
+        rosterImage: {
+            roster: "Roster",
+            unknown: "Unbekannt",
+            server: "Server",
+            password: "Passwort",
+            meeting: "Meeting",
+            matchStart: "Match-Start",
+            stats: "Stats",
+            assigned: "belegt",
+            cap: "Cap",
+            reserves: "Reserven",
+            noReserves: "Keine Reserven",
+            details: "Details",
+            description: "Beschreibung",
+            notes: "Notizen",
+            openSlot: "Offener Slot",
+            slots: "Slots",
         },
     },
 }

@@ -241,8 +241,11 @@ export function DiscordServerSettingsForm({
                                     {item === "en"
                                         ? dictionary.serverSettings
                                               .languageEnglish
-                                        : dictionary.serverSettings
-                                              .languageCzech}
+                                        : item === "cs"
+                                          ? dictionary.serverSettings
+                                                .languageCzech
+                                          : dictionary.serverSettings
+                                                .languageGerman}
                                 </SelectItem>
                             ))}
                         </SelectContent>

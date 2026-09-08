@@ -28,7 +28,10 @@ import {
     getPlatformProfileUrl,
     stripPlatformPrefix,
 } from "../../src/lib/platform-ids"
-import { getClanDiscordMessages } from "../../src/lib/clan-language"
+import {
+    getClanDiscordMessages,
+    type ClanLanguage,
+} from "../../src/lib/clan-language"
 
 import {
     buildMockPlayerMessage,
@@ -594,7 +597,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         async registerGuildCommands(guild: import("discord.js").Guild) {
             const messages = getClanDiscordMessages(
-                guild.preferredLocale === "cs" ? "cs" : "en"
+                guild.preferredLocale === "cs"
+                    ? "cs"
+                    : guild.preferredLocale === "de"
+                      ? "de"
+                      : "en"
             )
             const commands = [
                 new SlashCommandBuilder()
@@ -602,6 +609,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     .setDescription(messages.commands.closeTicketDescription)
                     .setDescriptionLocalizations({
                         cs: getClanDiscordMessages("cs").commands
+                            .closeTicketDescription,
+                        de: getClanDiscordMessages("de").commands
                             .closeTicketDescription,
                     })
                     .addStringOption((option) =>
@@ -612,6 +621,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                             )
                             .setDescriptionLocalizations({
                                 cs: getClanDiscordMessages("cs").commands
+                                    .reasonOptionDescription,
+                                de: getClanDiscordMessages("de").commands
                                     .reasonOptionDescription,
                             })
                             .setMaxLength(500)
@@ -626,6 +637,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     .setDescriptionLocalizations({
                         cs: getClanDiscordMessages("cs").commands
                             .closeApplicationDescription,
+                        de: getClanDiscordMessages("de").commands
+                            .closeApplicationDescription,
                     })
                     .addStringOption((option) =>
                         option
@@ -635,6 +648,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                             )
                             .setDescriptionLocalizations({
                                 cs: getClanDiscordMessages("cs").commands
+                                    .outcomeOptionDescription,
+                                de: getClanDiscordMessages("de").commands
                                     .outcomeOptionDescription,
                             })
                             .setRequired(true)
@@ -646,6 +661,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                                     name_localizations: {
                                         cs: getClanDiscordMessages("cs")
                                             .commands.outcomeDenied,
+                                        de: getClanDiscordMessages("de")
+                                            .commands.outcomeDenied,
                                     },
                                 },
                                 {
@@ -654,6 +671,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                                     value: "pending",
                                     name_localizations: {
                                         cs: getClanDiscordMessages("cs")
+                                            .commands.outcomePending,
+                                        de: getClanDiscordMessages("de")
                                             .commands.outcomePending,
                                     },
                                 },
@@ -664,6 +683,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                                     name_localizations: {
                                         cs: getClanDiscordMessages("cs")
                                             .commands.outcomeRecruit,
+                                        de: getClanDiscordMessages("de")
+                                            .commands.outcomeRecruit,
                                     },
                                 },
                                 {
@@ -673,6 +694,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                                     name_localizations: {
                                         cs: getClanDiscordMessages("cs")
                                             .commands.outcomeMember,
+                                        de: getClanDiscordMessages("de")
+                                            .commands.outcomeMember,
                                     },
                                 },
                                 {
@@ -681,6 +704,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                                     value: "mercenary",
                                     name_localizations: {
                                         cs: getClanDiscordMessages("cs")
+                                            .commands.outcomeMercenary,
+                                        de: getClanDiscordMessages("de")
                                             .commands.outcomeMercenary,
                                     },
                                 }
@@ -695,6 +720,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                             .setDescriptionLocalizations({
                                 cs: getClanDiscordMessages("cs").commands
                                     .reasonOptionDescription,
+                                de: getClanDiscordMessages("de").commands
+                                    .reasonOptionDescription,
                             })
                             .setMaxLength(500)
                             .setRequired(false)
@@ -706,6 +733,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     .setDescriptionLocalizations({
                         cs: getClanDiscordMessages("cs").commands
                             .noticeDescription,
+                        de: getClanDiscordMessages("de").commands
+                            .noticeDescription,
                     })
                     .addStringOption((option) =>
                         option
@@ -715,6 +744,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                             )
                             .setDescriptionLocalizations({
                                 cs: getClanDiscordMessages("cs").commands
+                                    .noticeEventOptionDescription,
+                                de: getClanDiscordMessages("de").commands
                                     .noticeEventOptionDescription,
                             })
                             .setRequired(true)
@@ -727,6 +758,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     .setDescriptionLocalizations({
                         cs: getClanDiscordMessages("cs").commands
                             .linkDescription,
+                        de: getClanDiscordMessages("de").commands
+                            .linkDescription,
                     })
                     .setDMPermission(false),
                 new SlashCommandBuilder()
@@ -734,6 +767,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     .setDescription(messages.commands.playerDescription)
                     .setDescriptionLocalizations({
                         cs: getClanDiscordMessages("cs").commands
+                            .playerDescription,
+                        de: getClanDiscordMessages("de").commands
                             .playerDescription,
                     })
                     .addStringOption((option) =>
@@ -744,6 +779,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                             )
                             .setDescriptionLocalizations({
                                 cs: getClanDiscordMessages("cs").commands
+                                    .playerOptionDescription,
+                                de: getClanDiscordMessages("de").commands
                                     .playerOptionDescription,
                             })
                             .setRequired(true)
@@ -846,7 +883,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             .query(references.getConfigByDiscordGuildId, {
                 guildId: interaction.guildId,
             })
-            .catch(() => null)) as { defaultLanguage?: "en" | "cs" } | null
+            .catch(() => null)) as {
+            defaultLanguage?: "en" | "cs" | "de"
+        } | null
         const messages = getClanDiscordMessages(guildConfig?.defaultLanguage)
 
         const matches = (await convex.query(references.findNoticeTarget, {
@@ -961,7 +1000,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             .query(references.getConfigByDiscordGuildId, {
                 guildId: interaction.guildId,
             })
-            .catch(() => null)) as { defaultLanguage?: "en" | "cs" } | null
+            .catch(() => null)) as {
+            defaultLanguage?: "en" | "cs" | "de"
+        } | null
         const messages = getClanDiscordMessages(guildConfig?.defaultLanguage)
 
         const playerId = interaction.options.getString("player", true).trim()
@@ -1114,7 +1155,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             .query(references.getConfigByDiscordGuildId, {
                 guildId: interaction.guildId,
             })
-            .catch(() => null)) as { defaultLanguage?: "en" | "cs" } | null
+            .catch(() => null)) as {
+            defaultLanguage?: "en" | "cs" | "de"
+        } | null
         const messages = getClanDiscordMessages(guildConfig?.defaultLanguage)
 
         await convex.mutation(references.upsertNotice, {
@@ -1152,7 +1195,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             .query(references.getConfigByDiscordGuildId, {
                 guildId: interaction.guildId,
             })
-            .catch(() => null)) as { defaultLanguage?: "en" | "cs" } | null
+            .catch(() => null)) as {
+            defaultLanguage?: "en" | "cs" | "de"
+        } | null
         const language = guildConfig?.defaultLanguage ?? "en"
         const linkState = await loadDiscordPlatformLinkState(
             interaction.user.id
@@ -1766,7 +1811,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             .query(references.getConfigByDiscordGuildId, {
                 guildId,
             })
-            .catch(() => null)) as { defaultLanguage?: "en" | "cs" } | null
+            .catch(() => null)) as {
+            defaultLanguage?: "en" | "cs" | "de"
+        } | null
 
         return guildConfig?.defaultLanguage ?? "en"
     }
@@ -1971,7 +2018,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
     function buildPlayerSearchModal(
         context: { mode: "membership" | "link"; categoryId?: string },
-        language: "en" | "cs"
+        language: ClanLanguage
     ) {
         const messages = getPlatformFlowMessages(language)
         return new ModalBuilder()
@@ -1993,7 +2040,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     function buildPlatformIdOnlyModal(
         customId: string,
         platform: "steam" | "epic" | "xbox" | "playstation",
-        language: "en" | "cs"
+        language: ClanLanguage
     ) {
         const messages =
             getClanDiscordMessages(language).platformFlow ??

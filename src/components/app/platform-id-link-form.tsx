@@ -30,6 +30,7 @@ const PLATFORM_GUIDES: Record<PlatformKey, string> = {
 const SUCCESS_CLOSE_COPY: Record<Locale, string> = {
     en: "You can close this page now.",
     cs: "Tuto stránku teď můžete zavřít.",
+    de: "Du kannst diese Seite jetzt schließen.",
 }
 
 export function PlatformIdLinkForm({

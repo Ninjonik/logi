@@ -250,7 +250,11 @@ export default async function ServerUserDetailPage({
                                 formatDateTime(
                                     match.endedAt ?? match.importedAt,
                                     context.discordConfig?.timezone,
-                                    safeLocale === "cs" ? "cs-CZ" : "en-GB"
+                                    safeLocale === "cs"
+                                        ? "cs-CZ"
+                                        : safeLocale === "de"
+                                          ? "de-DE"
+                                          : "en-GB"
                                 ),
                         },
                         {

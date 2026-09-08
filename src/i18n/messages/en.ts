@@ -530,6 +530,7 @@ export const enMessages = {
         defaultLanguage: "Clan language",
         languageEnglish: "English",
         languageCzech: "Czech",
+        languageGerman: "German",
         announcementsChannelId: "Announcements channel ID",
         eventInfoChannelId: "Event info channel ID",
         errorsChannelId: "Errors channel ID",

@@ -43,7 +43,7 @@ export function MonthCalendarView({
     groups: Group[]
     timezone?: string
     dictionary: Dictionary
-    signupLanguage: "en" | "cs"
+    signupLanguage: "en" | "cs" | "de"
 }) {
     const [currentMonth, setCurrentMonth] = useState(() =>
         startOfMonth(new Date())

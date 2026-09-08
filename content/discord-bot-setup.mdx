@@ -1,0 +1,133 @@
+---
+title: Set up the Discord bot
+description: Install, connect, configure, and verify every Logi Discord bot capability.
+---
+
+import { Callout, Steps, Tabs } from "nextra/components"
+
+# Set up the Discord bot
+
+This guide is for the person hosting Logi and the Discord server manager who configures a workspace. The bot is optional for browsing the public site, but it is required for Discord announcements, interactive sign-ups, event forum posts, scheduled events, panels, role automation, and Discord-based attendance features.
+
+<Callout type="warning">
+    Never put real tokens, secrets, or API keys in a wiki page, screenshot,
+    ticket, Discord message, or Git commit. Use placeholders such as
+    `your-secret-here` in configuration examples.
+</Callout>
+
+## What you need before starting
+
+| Requirement                                  | Why it is needed                                            |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| A deployed or running Logi dashboard         | Gives people the site links included in Discord messages.   |
+| A reachable Convex deployment                | Stores the shared dashboard and bot data.                   |
+| A Discord application with a bot user        | Supplies the bot token and application identity.            |
+| Discord server owner or administrator access | Lets you install the bot and select channels and roles.     |
+| A long-running bot process                   | The bot polls for changes and handles Discord interactions. |
+
+## 1. Create and configure the Discord application
+
+In the Discord Developer Portal, create or select the application that will represent Logi, then add a bot user. Copy the bot token only into your private environment configuration.
+
+Enable the **Server Members Intent**. Logi listens for member joins, updates, and removals so it can keep dashboard access and role-related automation current. The bot also uses guild and voice-state events.
+
+Use the Logi dashboard's bot-invite flow for the selected server. It requests the permissions Logi needs, including event management and role management. The bot must be above every role it may assign in the Discord role list; Discord will reject attempts to manage an equal or higher role.
+
+## 2. Configure the hosting environment
+
+<Tabs items={["Required for the bot", "Required for Discord sign-in", "Optional network settings"]}>
+    <Tabs.Tab>
+
+| Variable                                                 | Value                                                                                         |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `DISCORD_BOT_TOKEN`                                      | The private token for this Discord bot user.                                                  |
+| `NEXT_PUBLIC_CONVEX_URL` **or** `CONVEX_SELF_HOSTED_URL` | The Convex endpoint used by the bot. `CONVEX_URL` is also accepted by the bot runtime.        |
+| `INTERNAL_AUTH_SECRET`                                   | A private shared secret. It must exactly match the value configured for the Convex functions. |
+
+    </Tabs.Tab>
+    <Tabs.Tab>
+
+The dashboard's Discord OAuth sign-in also needs `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, and a `DISCORD_REDIRECT_URI` (or a `SITE_URL` from which the default callback URL can be built). These identify the same Discord application, but they do not replace the bot token.
+
+    </Tabs.Tab>
+    <Tabs.Tab>
+
+Set `SITE_URL` to the public dashboard URL. Discord embeds and links should lead to this address. If the bot and dashboard run in the same private network, `INTERNAL_SITE_URL` can point at the private dashboard origin used to pre-render roster images; public Discord links still use `SITE_URL`.
+
+    </Tabs.Tab>
+
+</Tabs>
+
+For local development, put values in `.env.local`; the bot loads that file from the repository root. Start the bot with `npm run bot:dev`, or start it alongside the dashboard with `npm run dev:all`. Production needs an equivalent supervised, always-on process; the dashboard alone does not run the bot.
+
+## 3. Install the bot and connect the workspace
+
+<Steps>
+
+### Invite the bot to the correct server
+
+Sign in as the server owner or an administrator, select the intended Discord server, and approve the requested permissions. Check that the bot appears in the server member list.
+
+### Sign in to Logi with an eligible account
+
+Open the dashboard, select that workspace, and verify that the workspace recognises the bot as present. The operational manager navigation appears only when the workspace and your access allow it.
+
+### Open Server settings
+
+In the workspace, open **Settings** and use the Discord settings section. Logi loads available Discord channels, roles, and emojis through the bot connection.
+
+### Save one small configuration first
+
+Set the timezone and one non-destructive channel, save, then confirm the settings reload correctly. This proves that dashboard, Convex, bot, and Discord can all communicate before you configure the rest.
+
+</Steps>
+
+> **Screenshot placeholder - bot installation:** Show the dashboard bot-invite action for a selected workspace, followed by the Discord authorization screen. Redact the application ID and never show a token.
+
+## 4. Turn on the capabilities you need
+
+Configure only the sections your community will use. Empty optional fields disable the corresponding behavior rather than making the whole bot fail.
+
+| Capability                                      | Configure in the workspace                                                                        | What to verify                                                                                                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Event announcements and sign-up buttons         | Announcements channel, plus Event info channel when using separate detail posts                   | Create a test event. Confirm an announcement is posted and a test member can respond.                             |
+| Event forum posts and briefings                 | Forum category                                                                                    | Create a test event and confirm one forum post is created or updated.                                             |
+| Discord scheduled events and meeting attendance | Meeting voice/stage channel                                                                       | Confirm the scheduled event points to the correct meeting channel; test the manager attendance confirmation flow. |
+| Calendar panel                                  | Calendar channel                                                                                  | Confirm the bot creates or refreshes the calendar panel.                                                          |
+| Bot error reporting                             | Errors channel                                                                                    | Confirm the configured channel is appropriate for restricted diagnostics.                                         |
+| Dashboard-admin role sync                       | Dashboard admin role, then use the dashboard's resync control                                     | Add and remove the role on a test account and confirm dashboard access changes after the sync.                    |
+| Group and membership role automation            | Discord roles linked to groups, clan role, and membership settings                                | Use a test member and confirm only the expected roles are added or removed.                                       |
+| Ticket panel                                    | Enable ticket settings, submit channel, ticket parent channel, and at least one category          | Confirm the panel appears and a test request creates a ticket in the intended private location.                   |
+| Membership application panel                    | Enable membership settings, submit channel, application parent channel, and at least one category | Confirm the panel appears and a test application reaches the intended private location.                           |
+| Player-stat servers                             | Player-stat token and URL entries                                                                 | Verify against a non-production test if possible. Treat tokens as secrets.                                        |
+
+<Callout type="info">
+    Event-level channel choices can override a workspace default. When a test
+    event appears in an unexpected place, check the event's own Discord/channel
+    fields before changing the server-wide setting.
+</Callout>
+
+## 5. Run a complete safe test
+
+1. Create a clearly named test event with a future time.
+2. Confirm its announcement, sign-up controls, event information, and forum post appear only in the chosen test channels.
+3. Use a non-manager test account to try sign-up and verify the status is reflected in the dashboard.
+4. Create a draft roster, publish only to the test audience, and check any notification option before enabling it for real members.
+5. If you use role automation, test it with a disposable role and account before connecting real membership roles.
+6. Inspect the bot dashboard/logs for errors, then remove the test event and any test channels or roles when finished.
+
+## Troubleshooting
+
+| Symptom                                       | First checks                                                                                                                               |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| The bot does not start                        | Confirm all three bot-required environment variables exist, the Convex URL is reachable, and the internal secret matches Convex.           |
+| The workspace does not show bot-enabled tools | Confirm the bot was invited to that exact Discord server and that the dashboard account can see/select the workspace.                      |
+| Channel or role selectors are empty           | Check the bot token, bot membership, and Discord permissions; then reload settings.                                                        |
+| The bot cannot assign a role                  | Check **Manage Roles**, then move the bot's highest role above the target role.                                                            |
+| No event post, forum post, or calendar panel  | Check the relevant configured channel/category, channel permissions, and the event-level override.                                         |
+| Buttons respond with an error                 | Confirm the bot process is running, the internal secret matches, and review the bot dashboard/log scope without sharing sensitive details. |
+| Dashboard admin access does not change        | Confirm the configured admin role is correct, then run the manager resync control and allow the bot sync to complete.                      |
+
+> **Screenshot placeholder - Discord settings:** Show the Discord settings form with each channel and role selector labelled. Use fictional channel names and redact every token, player-stat credential, and private internal channel.
+
+> **Screenshot placeholder - capability checks:** Show a test event announcement, sign-up buttons, a forum post, and a scheduled event in a Discord test server. Label each item with the matching configuration field from the table above.

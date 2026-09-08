@@ -615,10 +615,17 @@ export function EventFormPanel({
     ])
     const formatScheduleValue = (value?: string) =>
         value && !Number.isNaN(new Date(value).getTime())
-            ? new Intl.DateTimeFormat(locale === "cs" ? "cs-CZ" : "en-GB", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-              }).format(new Date(value))
+            ? new Intl.DateTimeFormat(
+                  locale === "cs"
+                      ? "cs-CZ"
+                      : locale === "de"
+                        ? "de-DE"
+                        : "en-GB",
+                  {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                  }
+              ).format(new Date(value))
             : dictionary.shared.notSet
     const presetMatchValues = {
         map: eventMatchValues[0],
@@ -1590,7 +1597,10 @@ export function EventFormPanel({
                                                                                     locale ===
                                                                                         "cs"
                                                                                         ? "cs-CZ"
-                                                                                        : "en-GB",
+                                                                                        : locale ===
+                                                                                            "de"
+                                                                                          ? "de-DE"
+                                                                                          : "en-GB",
                                                                                     {
                                                                                         weekday:
                                                                                             "long",
@@ -1669,7 +1679,10 @@ export function EventFormPanel({
                                                                             locale ===
                                                                                 "cs"
                                                                                 ? "cs-CZ"
-                                                                                : "en-GB",
+                                                                                : locale ===
+                                                                                    "de"
+                                                                                  ? "de-DE"
+                                                                                  : "en-GB",
                                                                             {
                                                                                 weekday:
                                                                                     "short",

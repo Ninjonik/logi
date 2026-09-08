@@ -532,6 +532,7 @@ export const csMessages = {
         defaultLanguage: "Jazyk klanu",
         languageEnglish: "Angličtina",
         languageCzech: "Čeština",
+        languageGerman: "Němčina",
         announcementsChannelId: "ID kanálu pro oznámení",
         eventInfoChannelId: "ID informačního kanálu události",
         errorsChannelId: "ID kanálu pro chyby",

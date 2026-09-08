@@ -182,7 +182,7 @@ export type DiscordConfig = {
     id: string
     guildId: string
     timezone: string
-    defaultLanguage: "en" | "cs"
+    defaultLanguage: "en" | "cs" | "de"
     announcementsChannelId?: string
     eventInfoChannelId?: string
     errorsChannelId?: string

@@ -35,5 +35,9 @@ export default async function LocaleLayout({
 }
 
 export function generateStaticParams() {
-    return [{ locale: "en" satisfies Locale }]
+    return [
+        { locale: "en" satisfies Locale },
+        { locale: "cs" satisfies Locale },
+        { locale: "de" satisfies Locale },
+    ]
 }

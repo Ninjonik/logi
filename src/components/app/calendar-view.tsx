@@ -41,7 +41,7 @@ export function CalendarView({
     rosters: Roster[]
     timezone?: string
     dictionary: Dictionary
-    signupLanguage: "en" | "cs"
+    signupLanguage: "en" | "cs" | "de"
 }) {
     const now = new Date()
     const displayEntries = buildCalendarDisplayEntries({

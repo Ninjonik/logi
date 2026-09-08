@@ -70,7 +70,7 @@ export async function POST(
             ok: true
             guildId: string
             userId: string
-            language: "en" | "cs"
+            language: "en" | "cs" | "de"
             completionMode: "membership" | "link"
             applyMessageUrl?: string
             interactionToken?: string

@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
 const localeOptions: Record<Locale, { flag: string; label: string }> = {
     en: { flag: "🇬🇧", label: "English" },
     cs: { flag: "🇨🇿", label: "Česky" },
+    de: { flag: "🇩🇪", label: "Deutsch" },
 }
 
 export function LocaleSwitcher({

@@ -188,7 +188,9 @@ export default async function PublicPlayerPage({ params }: Props) {
                                             {new Intl.DateTimeFormat(
                                                 resolvedLocale === "cs"
                                                     ? "cs-CZ"
-                                                    : "en-GB",
+                                                    : resolvedLocale === "de"
+                                                      ? "de-DE"
+                                                      : "en-GB",
                                                 { dateStyle: "medium" }
                                             ).format(new Date(match.endedAt))}
                                         </p>
