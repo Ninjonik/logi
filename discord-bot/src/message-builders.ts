@@ -197,6 +197,7 @@ export function buildAnnouncementV2Message(
                         new ButtonBuilder()
                             .setCustomId(`check-signup:${event.id}`)
                             .setStyle(ButtonStyle.Secondary)
+                            .setEmoji("⚠️")
                             .setLabel(
                                 getClanDiscordMessages(
                                     payload.config.defaultLanguage
@@ -1327,6 +1328,7 @@ function buildSignupButtons(
                 new ButtonBuilder()
                     .setCustomId(`check-signup:${eventId}`)
                     .setStyle(ButtonStyle.Secondary)
+                    .setEmoji("⚠️")
                     .setLabel(messages.buttons.checkSignup),
                 new ButtonBuilder()
                     .setCustomId(
@@ -1379,6 +1381,7 @@ function buildSignupButtons(
         new ButtonBuilder()
             .setCustomId(`check-signup:${eventId}`)
             .setStyle(ButtonStyle.Secondary)
+            .setEmoji("⚠️")
             .setLabel(messages.buttons.checkSignup),
         new ButtonBuilder()
             .setCustomId(
