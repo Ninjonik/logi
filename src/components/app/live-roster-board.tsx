@@ -4,7 +4,7 @@ import { makeFunctionReference } from "convex/server";
 import { useQuery } from "convex/react";
 
 import type { Dictionary } from "@/i18n/dictionaries";
-import type { DiscordConfig, EventRecord, Group, Roster, AppUser } from "@/types/domain";
+import type { DiscordConfig, EventRecord, Group, Roster, AppUser, SquadPreset } from "@/types/domain";
 import type { ServerUserAssignment } from "@/lib/server-user-management";
 
 import { RosterBoard } from "./roster-board";
@@ -20,6 +20,7 @@ type LiveRosterBoardProps = {
   initialUsers: AppUser[];
   initialAssignments: ServerUserAssignment[];
   initialGroups: Group[];
+  initialSquadPresets: SquadPreset[];
   initialCanAdmin: boolean;
   initialDiscordConfig: DiscordConfig | null;
 };
@@ -60,6 +61,7 @@ export function LiveRosterBoard(props: LiveRosterBoardProps) {
       users={users}
       userAssignments={userAssignments}
       groups={groups}
+      squadPresets={props.initialSquadPresets}
       canAdmin={canAdmin}
       dictionary={props.dictionary}
       serverId={props.serverId}

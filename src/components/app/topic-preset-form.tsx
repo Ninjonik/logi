@@ -126,11 +126,12 @@ export function TopicPresetForm({
     });
   }
 
-  async function handleUpload(topicIndex: number, files: FileList | null) {
-    if (!files?.length) return;
+  async function handleUpload(topicIndex: number, files: FileList | File[] | null) {
+    const imageFiles = Array.from(files ?? []).filter((file) => file.type.startsWith("image/"));
+    if (!imageFiles.length) return;
 
     try {
-      for (const file of Array.from(files)) {
+      for (const file of imageFiles) {
         const upload = await uploadFileToConvex(file);
         const url = upload.url;
         const current = form.getValues(`topics.${topicIndex}.attachments`) ?? [];
@@ -261,7 +262,17 @@ export function TopicPresetForm({
                       control={form.control}
                       name={`topics.${topicIndex}.attachments`}
                       render={({ field }) => (
-                        <div className="space-y-2">
+                        <div
+                          className="space-y-2 rounded-lg"
+                          onDragOver={(event) => {
+                            if (canEdit) event.preventDefault();
+                          }}
+                          onDrop={(event) => {
+                            if (!canEdit) return;
+                            event.preventDefault();
+                            void handleUpload(topicIndex, event.dataTransfer.files);
+                          }}
+                        >
                           <Textarea
                             value={field.value.join("\n")}
                             onChange={(event) => field.onChange(event.target.value.split("\n").map((line) => line.trim()).filter(Boolean))}
@@ -280,6 +291,7 @@ export function TopicPresetForm({
                                 <input
                                   type="file"
                                   multiple
+                                  accept="image/*"
                                   className="sr-only"
                                   onChange={(event) => {
                                     void handleUpload(topicIndex, event.target.files);

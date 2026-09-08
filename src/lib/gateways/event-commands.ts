@@ -8,6 +8,7 @@ const concludeEventReference = makeFunctionReference<"mutation">("events:conclud
 const completeTrainingReference = makeFunctionReference<"mutation">("events:completeTraining");
 const setEventResultReference = makeFunctionReference<"mutation">("events:setResult");
 const toggleSignupReference = makeFunctionReference<"mutation">("events:toggleSignUp");
+const requestForumTopicResyncReference = makeFunctionReference<"mutation">("discordSync:requestForumTopicResync");
 
 export async function saveServerEventCommand(input: {
   eventId?: string;
@@ -137,5 +138,12 @@ export async function toggleServerEventSignupCommand(input: {
     eventId: input.eventId as never,
     userId: input.userId,
     group: input.group,
+  });
+}
+
+export async function requestServerForumTopicResync(input: { eventId: string }) {
+  return await fetchMutation(requestForumTopicResyncReference, {
+    secret: getInternalAuthSecret(),
+    eventId: input.eventId as never,
   });
 }

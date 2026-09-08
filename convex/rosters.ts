@@ -3,6 +3,14 @@ import { mutation, query } from "./_generated/server";
 import { UpdateRosterAttendanceUseCase, UpsertRosterUseCase } from "../src/application/rosters/roster-commands.use-case";
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories";
 
+const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
+
+function assertInternalSecret(secret: string) {
+  if (secret !== INTERNAL_AUTH_SECRET) {
+    throw new Error("Unauthorized.");
+  }
+}
+
 const rosterPlayer = v.object({
   id: v.optional(v.string()),
   customName: v.optional(v.string()),
@@ -88,5 +96,27 @@ export const setAttendanceStatus = mutation({
   handler: async (ctx, args) => {
     return await new UpdateRosterAttendanceUseCase(new ConvexRosterCommandRepository(ctx))
       .setStatus(String(args.eventId), args.userId, args.status);
+  },
+});
+
+/** Deletes a draft roster only. Published rosters must be unpublished first. */
+export const deleteDraft = mutation({
+  args: {
+    secret: v.string(),
+    rosterId: v.id("rosters"),
+  },
+  handler: async (ctx, args) => {
+    assertInternalSecret(args.secret);
+
+    const roster = await ctx.db.get(args.rosterId);
+    if (!roster) {
+      throw new Error("Roster not found.");
+    }
+    if (roster.published) {
+      throw new Error("Published rosters cannot be deleted.");
+    }
+
+    await ctx.db.delete(args.rosterId);
+    return { ok: true as const };
   },
 });

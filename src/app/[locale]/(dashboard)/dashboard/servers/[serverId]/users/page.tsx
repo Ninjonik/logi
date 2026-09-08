@@ -128,7 +128,6 @@ export default async function ServerUsersPage({
                       <span>{user.discordId}</span>
                       {user.platformIds.length ? <PlatformIdList platformIds={user.platformIds} dictionary={dictionary} compact /> : null}
                     </div>
-                    <div className="mt-1"><PlayerTrendIndicators matches={performanceByUserId[assignment.userId] ?? []} dictionary={dictionary} /></div>
                   </div>
                 </div>
               );
@@ -157,12 +156,15 @@ export default async function ServerUsersPage({
                 return 0;
               }
 
-              const kd = user.performance?.averages.killDeathRatio;
               const score = getUserScoreForGuild(user, context.server.discordId);
-              return typeof kd === "number"
-                ? `${score} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}`
-                : score;
+              const kd = user.performance?.averages.killDeathRatio;
+              return typeof kd === "number" ? `${score} • ${dictionary.userManagement.matchKd} ${kd.toFixed(kd % 1 === 0 ? 0 : 2)}` : score;
             },
+          },
+          {
+            key: "trends",
+            title: dictionary.clan.playerPerformanceTrend,
+            render: (assignment) => <PlayerTrendIndicators matches={performanceByUserId[assignment.userId] ?? []} dictionary={dictionary} />,
           },
           {
             key: "status",

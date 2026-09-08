@@ -211,6 +211,7 @@ export function RosterCreator({
           users={users}
           userAssignments={userAssignments}
           groups={groups}
+          squadPresets={squadPresets}
           canAdmin={canAdmin}
           dictionary={dictionary}
           serverId={serverId}

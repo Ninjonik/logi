@@ -27,7 +27,7 @@ export default async function RosterDetailPage({
   const dictionary = getDictionary(isLocale(locale) ? locale : "en");
   const context = await getServerContext(serverId);
   if (!context) return null;
-  const { rosters, events, canAdmin, assignments = [], groups = [], discordConfig } = context;
+  const { rosters, events, squadPresets, canAdmin, assignments = [], groups = [], discordConfig } = context;
   const roster = rosters.find((item) => item.id === rosterId);
   const event = events.find((item) => item.id === roster?.eventId);
   const users = await getUsersByIds(
@@ -63,6 +63,7 @@ export default async function RosterDetailPage({
           initialUsers={users}
           initialAssignments={assignments}
           initialGroups={groups}
+          initialSquadPresets={squadPresets}
           initialCanAdmin={canAdmin}
           initialDiscordConfig={discordConfig}
         />
