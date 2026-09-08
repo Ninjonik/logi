@@ -481,14 +481,8 @@ export function buildEventEmbed(
     const signedUpCount = signups.filter(
         (signUp) => signUp.group !== SIGNUP_NOT_ATTENDING
     ).length
-    const signupCapacity = roster
-        ? roster.squads.reduce(
-              (total, squad) => total + squad.players.length,
-              0
-          )
-        : 49
     descriptionLines.push(
-        `**👥 ${messages.embed.signupCapacity}:** ${signedUpCount} / ${signupCapacity}`
+        `**👥 ${messages.embed.signupCount}:** ${signedUpCount}`
     )
 
     const embed = new EmbedBuilder()

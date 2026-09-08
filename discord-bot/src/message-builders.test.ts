@@ -190,7 +190,7 @@ test("buildEventEmbed prioritizes match headcount, match start, and registration
     assert.match(description, /Registration Ends:\*\* <t:\d+:F>/)
 })
 
-test("buildEventEmbed shows signup count using roster slots or default capacity", () => {
+test("buildEventEmbed shows the total number of signed-up players", () => {
     const event = createMatchEvent({
         participants: [
             {
@@ -205,37 +205,14 @@ test("buildEventEmbed shows signup count using roster slots or default capacity"
             },
         ],
     })
-    const withoutRoster = buildEventEmbed(
+    const description = buildEventEmbed(
         { ...config, defaultLanguage: "en" },
         groups,
         eventCategories,
         event
     ).toJSON().description
-    const withRoster = buildEventEmbed(
-        { ...config, defaultLanguage: "en" },
-        groups,
-        eventCategories,
-        event,
-        {
-            id: "roster-1",
-            eventId: event.id,
-            published: false,
-            reservePlayerIds: [],
-            updatedAt: event.updatedAt,
-            squads: [
-                {
-                    name: "Squad",
-                    group: "command",
-                    color: "#000000",
-                    order: 0,
-                    players: [{ ack: false }, { ack: false }],
-                },
-            ],
-        }
-    ).toJSON().description
 
-    assert.match(withoutRoster ?? "", /Signups:\*\* 1 \/ 49/)
-    assert.match(withRoster ?? "", /Signups:\*\* 1 \/ 2/)
+    assert.match(description ?? "", /People signed up:\*\* 1/)
 })
 
 test("buildCalendarPanelEmbed does not repeat a category emoji when it is the color chip", () => {
