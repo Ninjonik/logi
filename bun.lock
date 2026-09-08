@@ -94,6 +94,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "nextra-theme-docs@4.6.1": "patches/nextra-theme-docs@4.6.1.patch",
+  },
   "overrides": {
     "react-remove-scroll-bar": "2.3.7",
   },
