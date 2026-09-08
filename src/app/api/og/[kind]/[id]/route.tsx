@@ -2,6 +2,8 @@ import { ImageResponse } from "next/og";
 
 import { publicImageCache } from "@/lib/public-image-cache";
 import { getPublicClan, getPublicMatch, getPublicPlayerProfile } from "@/lib/read-models/public-profiles";
+import { getGuildPerformanceHistory } from "@/lib/read-models/performance-history";
+import { getPerformanceTrendDeltas } from "@/lib/performance-trends";
 
 type Props = { params: Promise<{ kind: string; id: string }> };
 const palette = { bg: "#17140f", panel: "#211d17", line: "#655f55", muted: "#aaa397", text: "#f7f3ed", gold: "#d5a44b", win: "#25a35a", loss: "#cf4d45", neutral: "#4d91d8" };
@@ -40,6 +42,10 @@ function Shell({ label, children }: { label: string; children: React.ReactNode }
 function Metrics({ items }: { items: Array<[string, string, string?]> }) {
   return <div style={{ display: "flex", marginTop: 23, paddingTop: 20, borderTop: `1px solid ${palette.line}`, gap: 30 }}>{items.map(([label, value, detail]) => <div key={label} style={{ display: "flex", flex: 1, flexDirection: "column" }}><div style={{ display: "flex", color: palette.muted, fontSize: 17, fontWeight: 700 }}>{label}</div><div style={{ display: "flex", marginTop: 7, fontSize: 31, fontWeight: 800 }}>{value}</div>{detail ? <div style={{ display: "flex", marginTop: 3, color: palette.muted, fontSize: 16 }}>{detail}</div> : null}</div>)}</div>;
 }
+function TrendLine({ trends }: { trends: ReturnType<typeof getPerformanceTrendDeltas> }) {
+  if (!trends) return null;
+  return <div style={{ display: "flex", gap: 18, marginTop: 12, fontSize: 16 }}><span style={{ color: trends.kd >= 0 ? palette.win : palette.loss }}>K/D {trends.kd >= 0 ? "↑ +" : "↓ "}{trends.kd}</span><span style={{ color: trends.offense >= 0 ? palette.win : palette.loss }}>Combat {trends.offense >= 0 ? "↑ +" : "↓ "}{trends.offense}</span><span style={{ color: trends.support >= 0 ? palette.win : palette.loss }}>Support {trends.support >= 0 ? "↑ +" : "↓ "}{trends.support}</span></div>;
+}
 function PlayerHistory({ matches }: { matches: Array<{ eventId: string; kills: number; deaths: number; offense: number; defense: number; support: number }> }) {
   const recent = matches.slice(0, 10).reverse();
   const series = [
@@ -60,7 +66,7 @@ function TeamChart({ match }: { match: NonNullable<Awaited<ReturnType<typeof get
   return <div style={{ display: "flex", marginTop: 20, flexDirection: "column", gap: 12 }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 18 }}><span>MATCH CONTRIBUTION</span><span style={{ color: palette.muted }}>Kills · combat / 200 · support / 200</span></div>{rows.map(([name, value]) => { const total = Math.max(1, value.kills + value.combat / 200 + value.support / 200); const score = name === "allies" ? match.raw.result.allied : match.raw.result.axis; return <div key={name} style={{ display: "flex", flexDirection: "column" }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}><span>{name.toUpperCase()}</span><span>{score} points · {value.kills} kills · {value.combat} combat · {value.support} support</span></div><div style={{ display: "flex", height: 22, marginTop: 5, borderRadius: 4, overflow: "hidden", background: palette.panel }}><div style={{ display: "flex", width: `${value.kills / total * 100}%`, background: palette.win }} /><div style={{ display: "flex", width: `${value.combat / 200 / total * 100}%`, background: palette.gold }} /><div style={{ display: "flex", width: `${value.support / 200 / total * 100}%`, background: palette.neutral }} /></div></div>; })}</div>;
 }
 function PlayerCard({ player, avatar }: { player: NonNullable<Awaited<ReturnType<typeof getPublicPlayerProfile>>>; avatar: string | null }) {
-  const recent = player.recentMatches.slice(0, 9).reverse(); const maximum = Math.max(1, ...recent.map((match) => match.killDeathRatio));
+  const recent = player.recentMatches.slice(0, 9).reverse(); const maximum = Math.max(1, ...recent.map((match) => match.killDeathRatio)); const trends = getPerformanceTrendDeltas(player.recentMatches.map((match) => ({ kd: match.killDeathRatio, offense: match.offense + match.defense, support: match.support })));
   return <Shell label="PLAYER PERFORMANCE"><div style={{ display: "flex", marginTop: 28, alignItems: "center", gap: 22 }}><Identity name={player.name} image={avatar} /><div style={{ display: "flex", flexDirection: "column" }}><div style={{ display: "flex", fontSize: 54, fontWeight: 900 }}>{truncate(player.name, 30)}</div><div style={{ display: "flex", marginTop: 5, color: palette.muted, fontSize: 20 }}>{player.clans.map((clan) => clan.name).slice(0, 2).join(" · ") || "Independent player"}</div></div></div><Metrics items={[["RECORDED MATCHES", String(player.stats.matches)], ["KILL / DEATH", `${player.stats.kd.toFixed(2)} K/D`, `${player.stats.kills} kills · ${player.stats.deaths} deaths`], ["RECENT FORM", recent.length ? `${recent.at(-1)?.killDeathRatio.toFixed(2)} K/D` : "—"]]} /><div style={{ display: "flex", marginTop: 20, padding: "16px 18px", borderRadius: 14, background: palette.panel, flexDirection: "column" }}><div style={{ display: "flex", justifyContent: "space-between", color: palette.muted, fontSize: 17 }}><span>RECENT MATCH FORM</span><span>Each bar = K/D</span></div><div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 58, marginTop: 10 }}>{recent.map((match) => <div key={match.eventId} style={{ display: "flex", flex: 1, height: `${Math.max(14, Math.round(match.killDeathRatio / maximum * 50))}px`, borderRadius: 4, background: match.killDeathRatio >= 1 ? palette.win : palette.loss }} />)}</div></div><PlayerHistory matches={player.recentMatches} /></Shell>;
 }
 
