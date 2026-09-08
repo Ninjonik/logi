@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { deriveScheduledEventLifecycle, shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules";
+import { eventInfoMessageRenderVersion } from "./render-version";
 
 test("deriveScheduledEventLifecycle derives canceled for concluded events before meeting", () => {
   assert.equal(
@@ -34,7 +35,7 @@ test("shouldSyncEvent does not require an event-info message before the roster i
       lastEventUpdatedAt: "event-v1",
       lastRosterUpdatedAt: undefined,
       lastConfigUpdatedAt: "config-v1",
-      eventInfoMessageRenderVersion: "3",
+      eventInfoMessageRenderVersion,
     },
     meetingChannelConfigured: false,
     eventInfoChannelConfigured: true,

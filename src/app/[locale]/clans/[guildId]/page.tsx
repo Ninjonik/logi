@@ -13,6 +13,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPublicClan } from "@/lib/read-models/public-profiles";
 import { getPublicPreviewMetadata } from "@/lib/public-preview-metadata";
+import { getPublicImageDimensions, getPublicImageVersion } from "@/lib/public-image-version";
 import { getGuildPerformanceHistory } from "@/lib/read-models/performance-history";
 import { PerformanceHistoryChart } from "@/components/app/performance-history-chart";
 import { PlayerTrendIndicators } from "@/components/app/player-trend-indicators";
@@ -27,8 +28,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const preview = await getPublicPreviewMetadata("clan", guildId);
   const title = preview?.title ?? "Clan profile | Logi";
   const description = preview?.description ?? "Public clan profile and recorded match history.";
-  const image = `/api/og/clan/${guildId}?v=${encodeURIComponent(preview?.imageVersion ?? "current")}`;
-  return { title, description, openGraph: { title, description, images: [{ url: image, width: 1200, height: 630 }] }, twitter: { card: "summary_large_image", images: [image] } };
+  const imageVersion = getPublicImageVersion(preview?.imageVersion ?? "current");
+  const image = `/api/og/clan/${guildId}?v=${encodeURIComponent(imageVersion)}`;
+  const imageDimensions = getPublicImageDimensions(imageVersion);
+  return { title, description, openGraph: { title, description, images: [{ url: image, ...imageDimensions }] }, twitter: { card: "summary_large_image", images: [image] } };
 }
 
 export default async function PublicClanPage({ params }: Props) {

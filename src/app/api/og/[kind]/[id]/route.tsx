@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import sharp, { type OverlayOptions } from "sharp";
 
 import { publicImageCache } from "@/lib/public-image-cache";
+import { getPublicImageDimensions } from "@/lib/public-image-version";
 import { getPublicClan, getPublicMatch, getPublicPlayerProfile } from "@/lib/read-models/public-profiles";
 import { getPerformanceTrendDeltas } from "@/lib/performance-trends";
 import { getPublicStratmapDetail } from "@/lib/server-stratmaps";
@@ -256,5 +257,6 @@ export async function GET(request: Request, { params }: Props) {
     }
   }
   if (!element) return new Response("Not found", { status: 404 });
-  const rendered = new ImageResponse(element, { width: 1200, height: 630 }); const image = new Uint8Array(await rendered.arrayBuffer()); publicImageCache.set(key, image); return png(image);
+  const dimensions = getPublicImageDimensions(version);
+  const rendered = new ImageResponse(element, dimensions); const image = new Uint8Array(await rendered.arrayBuffer()); publicImageCache.set(key, image); return png(image);
 }

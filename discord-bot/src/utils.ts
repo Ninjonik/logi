@@ -1,6 +1,7 @@
 import { ButtonStyle } from "discord.js";
 
 import { getClanDiscordMessages, getIntlLocaleForClanLanguage } from "../../src/lib/clan-language";
+import { eventInfoMessageRenderVersion } from "../../src/domain/discord-sync/render-version";
 
 import { env } from "./environment";
 import type { ClanLanguage, DiscordConfig, EventRecord } from "./types";
@@ -59,6 +60,7 @@ function buildRosterImageCacheKey(eventId: string, rosterUpdatedAt?: string) {
 // edit the existing Discord message without forcing a new expensive roster PNG.
 export function getRosterImageVersion(event: EventRecord, rosterUpdatedAt?: string) {
   return JSON.stringify([
+    eventInfoMessageRenderVersion,
     rosterUpdatedAt,
     event.name,
     event.map,

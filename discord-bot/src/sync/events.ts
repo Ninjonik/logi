@@ -15,6 +15,7 @@ import {
 } from "../scheduled-events";
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types";
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules";
+import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version";
 import { getCalendarSyncVersion } from "./work";
 import { getRosterImageVersion, warmRosterImage, withTimeout } from "../utils";
 
@@ -471,7 +472,7 @@ async function syncEvent(
     announcementChannelId: displayChannelId,
     announcementMessageId,
     eventInfoMessageId,
-    eventInfoMessageRenderVersion: "3",
+    eventInfoMessageRenderVersion,
     scheduledEventId,
     scheduledEventStatus,
     forumChannelId,

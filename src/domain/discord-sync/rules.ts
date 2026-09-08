@@ -1,4 +1,5 @@
 import type { SyncEventLike, SyncScheduledStatus, SyncStateLike } from "./types";
+import { eventInfoMessageRenderVersion } from "./render-version";
 
 export function shouldWriteMinimalConcludedSyncState(input: {
   event: Pick<SyncEventLike, "id" | "status">;
@@ -37,7 +38,7 @@ export function shouldSyncEvent(input: {
     state.lastRosterUpdatedAt !== rosterUpdatedAt ||
     state.lastConfigUpdatedAt !== configUpdatedAt ||
     (eventInfoChannelConfigured && (
-      state.eventInfoMessageRenderVersion !== "3" ||
+      state.eventInfoMessageRenderVersion !== eventInfoMessageRenderVersion ||
       (eventInfoMessageRequired && !state.eventInfoMessageId)
     )) ||
     state.scheduledEventStatus !== desiredScheduledEventStatus ||

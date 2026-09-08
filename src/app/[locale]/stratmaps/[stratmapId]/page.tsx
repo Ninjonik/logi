@@ -9,6 +9,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { getPublicStratmapDetail } from "@/lib/server-stratmaps";
 import { getHllStratmapMapById } from "@/lib/stratmaps";
+import { getPublicImageDimensions, getPublicImageVersion } from "@/lib/public-image-version";
 
 type Props = {
   params: Promise<{ locale: string; stratmapId: string }>;
@@ -43,7 +44,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ].filter(Boolean);
 
   const description = descriptionParts.join(" · ");
-  const image = `/api/og/stratmap/${stratmapId}?v=${encodeURIComponent(stratmap.updatedAt || "current")}`;
+  const imageVersion = getPublicImageVersion(stratmap.updatedAt || "current");
+  const image = `/api/og/stratmap/${stratmapId}?v=${encodeURIComponent(imageVersion)}`;
+  const imageDimensions = getPublicImageDimensions(imageVersion);
 
   return {
     title,
@@ -54,8 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [
         {
           url: image,
-          width: 1200,
-          height: 630,
+          ...imageDimensions,
           alt: stratmap.title,
         },
       ],
