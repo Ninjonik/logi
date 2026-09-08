@@ -115,7 +115,12 @@ test("buildEventComponents omits group buttons when signupGroupIds is empty", ()
     const buttons = rows.flatMap((row) => row.toJSON().components)
     assert.deepEqual(
         buttons.map((button) => ("label" in button ? button.label : undefined)),
-        ["Přihlásit se", "Odmítnout", "Přidat do kalendáře"]
+        [
+            "Přihlásit se",
+            "Zkontrolovat přihlášení",
+            "Odmítnout",
+            "Přidat do kalendáře",
+        ]
     )
     assert.equal(buttons[0]?.style, 3)
     assert.equal(
@@ -183,6 +188,54 @@ test("buildEventEmbed prioritizes match headcount, match start, and registration
     assert.match(description, /Headcount Start:\*\* <t:\d+:F>/)
     assert.match(description, /Match Start:\*\* <t:\d+:F>/)
     assert.match(description, /Registration Ends:\*\* <t:\d+:F>/)
+})
+
+test("buildEventEmbed shows signup count using roster slots or default capacity", () => {
+    const event = createMatchEvent({
+        participants: [
+            {
+                userId: "one",
+                status: "attending",
+                updatedAt: "2026-07-29T10:00:00.000Z",
+            },
+            {
+                userId: "two",
+                status: "not_attending",
+                updatedAt: "2026-07-29T10:00:00.000Z",
+            },
+        ],
+    })
+    const withoutRoster = buildEventEmbed(
+        { ...config, defaultLanguage: "en" },
+        groups,
+        eventCategories,
+        event
+    ).toJSON().description
+    const withRoster = buildEventEmbed(
+        { ...config, defaultLanguage: "en" },
+        groups,
+        eventCategories,
+        event,
+        {
+            id: "roster-1",
+            eventId: event.id,
+            published: false,
+            reservePlayerIds: [],
+            updatedAt: event.updatedAt,
+            squads: [
+                {
+                    name: "Squad",
+                    group: "command",
+                    color: "#000000",
+                    order: 0,
+                    players: [{ ack: false }, { ack: false }],
+                },
+            ],
+        }
+    ).toJSON().description
+
+    assert.match(withoutRoster ?? "", /Signups:\*\* 1 \/ 49/)
+    assert.match(withRoster ?? "", /Signups:\*\* 1 \/ 2/)
 })
 
 test("buildCalendarPanelEmbed does not repeat a category emoji when it is the color chip", () => {
@@ -312,7 +365,7 @@ test("buildEventEmbed uses plain display names instead of Discord mentions", () 
     assert.doesNotMatch(combinedValues, /<@/)
 })
 
-test("buildEventEmbed lays out match signup names in up to three left-to-right columns", () => {
+test("buildEventEmbed alphabetizes match signup names within each group before laying them out in columns", () => {
     const embed = buildEventEmbed(
         config,
         groups,
@@ -365,13 +418,13 @@ test("buildEventEmbed lays out match signup names in up to three left-to-right c
         }),
         undefined,
         {
-            "user-1": "Alpha",
-            "user-2": "Bravo",
-            "user-3": "Charlie",
-            "user-4": "Delta",
-            "user-5": "Echo",
-            "user-6": "Foxtrot",
-            "user-7": "Golf",
+            "user-1": "Golf",
+            "user-2": "Delta",
+            "user-3": "Alpha",
+            "user-4": "Foxtrot",
+            "user-5": "Charlie",
+            "user-6": "Echo",
+            "user-7": "Bravo",
         }
     )
 

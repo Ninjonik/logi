@@ -8,6 +8,7 @@ type ClanDiscordMessages = {
         acknowledgeAttendance: string
         attend: string
         generalSignup: string
+        checkSignup: string
         addToCalendar: string
         viewFullRoster: string
         decline: string
@@ -29,6 +30,8 @@ type ClanDiscordMessages = {
         rosterNotPublished: string
         notOnRoster: string
         attendanceAcknowledged: string
+        signupStatusSignedUp: string
+        signupStatusNotSignedUp: string
     }
     reminders: {
         title: string
@@ -60,6 +63,7 @@ type ClanDiscordMessages = {
         matchStart: string
         trainingStart: string
         status: string
+        signupCapacity: string
         managedFooter: string
         nobodyYet: string
         notAttending: string
@@ -350,6 +354,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             acknowledgeAttendance: "Acknowledge attendance",
             attend: "Attend",
             generalSignup: "Sign up",
+            checkSignup: "Check signup",
             addToCalendar: "Add to Calendar",
             viewFullRoster: "View roster",
             decline: "Decline",
@@ -378,6 +383,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             rosterNotPublished: "Roster is not published for this event yet.",
             notOnRoster: "You are not on the roster for this event.",
             attendanceAcknowledged: "Attendance acknowledged.",
+            signupStatusSignedUp: "You are signed up for {group}.",
+            signupStatusNotSignedUp: "You are not signed up for this event.",
         },
         reminders: {
             title: "Attendance check for",
@@ -409,6 +416,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             matchStart: "Match Start",
             trainingStart: "Training Start",
             status: "Status",
+            signupCapacity: "Signups",
             managedFooter: "Managed via Logi • Times adapt to your device",
             nobodyYet: "*Nobody yet*",
             notAttending: "Not Attending",
@@ -829,6 +837,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     cs: {
         locale: "cs-CZ",
         buttons: {
+            checkSignup: "Zkontrolovat p\u0159ihl\u00e1\u0161en\u00ed",
             acknowledgeAttendance: "Potvrdit účast",
             attend: "Zúčastním se",
             generalSignup: "Přihlásit se",
@@ -837,6 +846,10 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             decline: "Odmítnout",
         },
         interaction: {
+            signupStatusSignedUp:
+                "Jste p\u0159ihl\u00e1\u0161eni do skupiny {group}.",
+            signupStatusNotSignedUp:
+                "Na tuto akci nejste p\u0159ihl\u00e1\u0161eni.",
             unableToLoadEventContext: "Nepodařilo se načíst kontext akce.",
             signupServerOnly:
                 "Tlačítka přihlášení fungují pouze u zprávy akce na serveru.",
@@ -870,6 +883,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             openInDiscord: "otevřít na Discordu",
         },
         embed: {
+            signupCapacity: "P\u0159ihl\u00e1\u0161eno",
             map: "Mapa",
             side: "Strana",
             cap: "Cap",

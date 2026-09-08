@@ -12,10 +12,15 @@ import {
     getSignupActionEmoji,
     resolveEventSignupSelection,
 } from "../../../src/lib/event-signup"
+import {
+    SIGNUP_GENERAL,
+    SIGNUP_NOT_ATTENDING,
+    SIGNUP_PRIMARY_GROUP,
+    TRAINING_ATTEND,
+} from "../constants"
 import { getResolvedMemberStatus } from "../../../src/domain/assignments/policy"
 import { getClanDiscordMessages } from "../../../src/lib/clan-language"
 import type { EventInteractionContext } from "../types"
-import { SIGNUP_PRIMARY_GROUP } from "../constants"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
@@ -131,6 +136,70 @@ export async function handleEventSignupPickerInteraction(
     await interaction.reply({
         content: messages.embed.chooseSignup,
         components: [selectionRow],
+        ephemeral: true,
+    })
+}
+
+export async function handleCheckSignupInteraction(
+    interaction: ButtonInteraction
+) {
+    if (!interaction.guildId) {
+        await interaction.reply({
+            content: getClanDiscordMessages("en").interaction.signupServerOnly,
+            ephemeral: true,
+        })
+        return
+    }
+
+    const eventId = interaction.customId.replace("check-signup:", "")
+    const context = (await convex.query(references.getEventSignupContext, {
+        secret: env.internalSecret,
+        guildId: interaction.guildId,
+        eventId: eventId as never,
+    })) as EventInteractionContext | null
+    if (!context) {
+        await interaction.reply({
+            content:
+                getClanDiscordMessages("en").interaction
+                    .unableToLoadEventContext,
+            ephemeral: true,
+        })
+        return
+    }
+
+    const messages = getClanDiscordMessages(context.config.defaultLanguage)
+    const participant = context.event.participants.find(
+        (item) => item.userId === interaction.user.id
+    )
+    const legacySignup = context.event.signUps.find(
+        (item) => item.userId === interaction.user.id
+    )
+    const signup = participant
+        ? participant.status === "attending"
+            ? participant
+            : null
+        : legacySignup?.group === SIGNUP_NOT_ATTENDING
+          ? null
+          : legacySignup
+
+    if (!signup) {
+        await interaction.reply({
+            content: messages.interaction.signupStatusNotSignedUp,
+            ephemeral: true,
+        })
+        return
+    }
+
+    const group = signup.group
+    const groupLabel =
+        group === SIGNUP_GENERAL || group === TRAINING_ATTEND || !group
+            ? messages.embed.attending
+            : (context.groups.find((item) => item.id === group)?.name ?? group)
+    await interaction.reply({
+        content: messages.interaction.signupStatusSignedUp.replace(
+            "{group}",
+            groupLabel
+        ),
         ephemeral: true,
     })
 }

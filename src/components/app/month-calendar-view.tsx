@@ -8,7 +8,6 @@ import {
     format,
     isSameMonth,
     isToday,
-    parseISO,
     startOfMonth,
     startOfWeek,
     subMonths,
@@ -46,10 +45,9 @@ export function MonthCalendarView({
     dictionary: Dictionary
     signupLanguage: "en" | "cs"
 }) {
-    const [currentMonth, setCurrentMonth] = useState(() => {
-        if (entries[0]) return startOfMonth(parseISO(entries[0].startAt))
-        return startOfMonth(new Date())
-    })
+    const [currentMonth, setCurrentMonth] = useState(() =>
+        startOfMonth(new Date())
+    )
 
     const monthDays = useMemo(() => {
         const start = startOfWeek(startOfMonth(currentMonth), {
