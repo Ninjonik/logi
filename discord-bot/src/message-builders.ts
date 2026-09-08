@@ -188,7 +188,8 @@ export function buildAnnouncementV2Message(
                             .setCustomId(
                                 `signup:${event.id}:${SIGNUP_PRIMARY_GROUP}`
                             )
-                            .setStyle(ButtonStyle.Primary)
+                            .setStyle(ButtonStyle.Success)
+                            .setEmoji("✅")
                             .setLabel(
                                 getClanDiscordMessages(
                                     payload.config.defaultLanguage
@@ -196,8 +197,8 @@ export function buildAnnouncementV2Message(
                             ),
                         new ButtonBuilder()
                             .setCustomId(`check-signup:${event.id}`)
-                            .setStyle(ButtonStyle.Secondary)
-                            .setEmoji("⚠️")
+                            .setStyle(ButtonStyle.Primary)
+                            .setEmoji("🔎")
                             .setLabel(
                                 getClanDiscordMessages(
                                     payload.config.defaultLanguage
@@ -208,6 +209,7 @@ export function buildAnnouncementV2Message(
                                 `signup:${event.id}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`
                             )
                             .setStyle(ButtonStyle.Danger)
+                            .setEmoji("❌")
                             .setLabel(
                                 getClanDiscordMessages(
                                     payload.config.defaultLanguage
@@ -1323,18 +1325,20 @@ function buildSignupButtons(
                     .setCustomId(
                         `signup:${eventId}:${encodeURIComponent(TRAINING_ATTEND)}`
                     )
-                    .setStyle(ButtonStyle.Primary)
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji("✅")
                     .setLabel(messages.buttons.attend),
                 new ButtonBuilder()
                     .setCustomId(`check-signup:${eventId}`)
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji("⚠️")
+                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji("🔎")
                     .setLabel(messages.buttons.checkSignup),
                 new ButtonBuilder()
                     .setCustomId(
                         `signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`
                     )
                     .setStyle(ButtonStyle.Danger)
+                    .setEmoji("❌")
                     .setLabel(messages.buttons.decline),
                 new ButtonBuilder()
                     .setStyle(ButtonStyle.Link)
@@ -1380,14 +1384,15 @@ function buildSignupButtons(
         }),
         new ButtonBuilder()
             .setCustomId(`check-signup:${eventId}`)
-            .setStyle(ButtonStyle.Secondary)
-            .setEmoji("⚠️")
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji("🔎")
             .setLabel(messages.buttons.checkSignup),
         new ButtonBuilder()
             .setCustomId(
                 `signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`
             )
             .setStyle(ButtonStyle.Danger)
+            .setEmoji("❌")
             .setLabel(messages.buttons.decline),
         new ButtonBuilder()
             .setStyle(ButtonStyle.Link)
