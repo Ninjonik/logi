@@ -6,7 +6,7 @@ export function getPerformanceTrendDeltas(matches: TrendMatch[]) {
   if (!recent.length || !previous.length) return null;
   const average = (rows: TrendMatch[], key: keyof TrendMatch) => rows.reduce((sum, row) => sum + row[key], 0) / rows.length;
   return {
-    kd: Math.round(average(recent, "kd") - average(previous, "kd")),
+    kd: Number((average(recent, "kd") - average(previous, "kd")).toFixed(2)),
     offense: Math.round(average(recent, "offense") - average(previous, "offense")),
     support: Math.round(average(recent, "support") - average(previous, "support")),
   };
