@@ -1,35 +1,38 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next"
 
-import { PageHeader } from "@/components/app/page-header";
-import { UserSettingsForm } from "@/components/app/user-settings-form";
-import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale } from "@/i18n/config";
-import { getCurrentPlayer } from "@/lib/auth";
+import { UserSettingsForm } from "@/components/app/user-settings-form"
+import { PageHeader } from "@/components/app/page-header"
+import { getDictionary } from "@/i18n/dictionaries"
+import { getCurrentPlayer } from "@/lib/auth"
+import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-  title: "User settings | Logi",
-  description: "Manage your Logi account settings.",
-};
+    title: "User settings | Logi",
+    description: "Manage your Logi account settings.",
+}
 
 export default async function UserSettingsPage({
-  params,
+    params,
 }: {
-  params: Promise<{ locale: string }>;
+    params: Promise<{ locale: string }>
 }) {
-  const { locale } = await params;
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const user = await getCurrentPlayer();
+    const { locale } = await params
+    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
+    const user = await getCurrentPlayer()
 
-  if (!user) {
-    return null;
-  }
+    if (!user) {
+        return null
+    }
 
-  return (
-    <>
-      <PageHeader title={dictionary.userSettings.title} description={dictionary.userSettings.description} />
-      <div className="px-4 lg:px-6">
-        <UserSettingsForm user={user} dictionary={dictionary} />
-      </div>
-    </>
-  );
+    return (
+        <>
+            <PageHeader
+                title={dictionary.userSettings.title}
+                description={dictionary.userSettings.description}
+            />
+            <div className="px-4 lg:px-6">
+                <UserSettingsForm user={user} dictionary={dictionary} />
+            </div>
+        </>
+    )
 }

@@ -1,51 +1,62 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server"
 
-import { handleIfNotLoggedIn } from "@/lib/auth";
-import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
-import { getServerContext } from "@/lib/server-context";
-import { saveDiscordConfig } from "@/lib/server-discord-settings";
-import { logNextError, logNextInfo } from "@/lib/system-logs";
-import { discordSettingsSchema } from "@/lib/validation/discord-settings";
+import { discordSettingsSchema } from "@/lib/validation/discord-settings"
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { saveDiscordConfig } from "@/lib/server-discord-settings"
+import { logNextError, logNextInfo } from "@/lib/system-logs"
+import { getServerContext } from "@/lib/server-context"
+import { handleIfNotLoggedIn } from "@/lib/auth"
 
-export async function POST(request: Request, context: { params: Promise<{ serverId: string }> }) {
-  const { serverId } = await context.params;
-  await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/settings`);
+export async function POST(
+    request: Request,
+    context: { params: Promise<{ serverId: string }> }
+) {
+    const { serverId } = await context.params
+    await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/settings`)
 
-  const serverContext = await getServerContext(serverId);
-  if (!serverContext?.canAdmin) {
-    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-  }
-
-  try {
-    const json = await request.json();
-    const parsed = discordSettingsSchema.safeParse(json);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: parsed.error.issues[0]?.message ?? "Invalid Discord settings.",
-        },
-        { status: 400 },
-      );
+    const serverContext = await getServerContext(serverId)
+    if (!serverContext?.canAdmin) {
+        return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
 
-    await saveDiscordConfig({
-      guildId: serverId,
-      ...parsed.data,
-    });
+    try {
+        const json = await request.json()
+        const parsed = discordSettingsSchema.safeParse(json)
 
-    revalidateCacheEntries([
-      appCacheTags.serverContext(serverId),
-      appCacheTags.discordConfig(serverId),
-    ]);
+        if (!parsed.success) {
+            return NextResponse.json(
+                {
+                    error:
+                        parsed.error.issues[0]?.message ??
+                        "Invalid Discord settings.",
+                },
+                { status: 400 }
+            )
+        }
 
-    logNextInfo("discord-settings", "Saved Discord settings", {
-      serverId,
-      userId: serverContext.user.discordId,
-    });
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    logNextError("discord-settings", "Failed to save Discord settings", { serverId, error });
-    return NextResponse.json({ error: "Unable to save Discord settings." }, { status: 500 });
-  }
+        await saveDiscordConfig({
+            guildId: serverId,
+            ...parsed.data,
+        })
+
+        revalidateCacheEntries([
+            appCacheTags.serverContext(serverId),
+            appCacheTags.discordConfig(serverId),
+        ])
+
+        logNextInfo("discord-settings", "Saved Discord settings", {
+            serverId,
+            userId: serverContext.user.discordId,
+        })
+        return NextResponse.json({ ok: true })
+    } catch (error) {
+        logNextError("discord-settings", "Failed to save Discord settings", {
+            serverId,
+            error,
+        })
+        return NextResponse.json(
+            { error: "Unable to save Discord settings." },
+            { status: 500 }
+        )
+    }
 }

@@ -216,6 +216,7 @@ Before handing work back:
 
 - confirm the change is in the correct architectural layer
 - review the diff for accidental files, secrets, generated output, and unrelated edits
+- run Prettier on the TypeScript and TSX files changed for the task to keep them formatted without modifying unrelated work
 - run proportionate tests and typechecking
 - verify all new imports, links, routes, and environment variable names
 - update relevant Markdown when behavior or developer workflow changed

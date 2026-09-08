@@ -1,0 +1,5 @@
+.next/
+.tmp/
+convex/_generated/
+node_modules/
+tsconfig.tsbuildinfo

@@ -1,81 +1,93 @@
-import type { Clock } from "@/application/ports/clock";
-import { normalizeEventRecord } from "@/domain/events/normalization";
-import { deriveEventStatus } from "@/domain/events/status";
+import { normalizeEventRecord } from "@/domain/events/normalization"
+import { deriveEventStatus } from "@/domain/events/status"
+import type { Clock } from "@/application/ports/clock"
 
-import type { EventCommandRepository, EventScorePort } from "./command-ports";
+import type { EventCommandRepository, EventScorePort } from "./command-ports"
 
 export class ReconcileEventStatusesUseCase {
-  constructor(
-    private readonly events: EventCommandRepository,
-    private readonly scores: EventScorePort,
-    private readonly clock: Clock,
-  ) {}
+    constructor(
+        private readonly events: EventCommandRepository,
+        private readonly scores: EventScorePort,
+        private readonly clock: Clock
+    ) {}
 
-  async execute(input?: { cursor?: string | null; limit?: number; eventId?: string }): Promise<{
-    changedEventIds: string[];
-    scoreEventIds: string[];
-    continueCursor: string | null;
-    isDone: boolean;
-  }> {
-    const directEvent = input?.eventId ? await this.events.getById(input.eventId) : null;
-    const page = directEvent
-      ? { records: [directEvent], continueCursor: null, isDone: true }
-      : input?.limit
-      ? await this.events.listPage(input.cursor ?? null, input.limit)
-      : {
-          records: await this.events.listAll(),
-          continueCursor: null,
-          isDone: true,
-        };
-    const records = page.records;
-    const now = this.clock.now();
-    const nowIso = now.toISOString();
-    const changedEventIds: string[] = [];
-    const scoreEventIds: string[] = [];
+    async execute(input?: {
+        cursor?: string | null
+        limit?: number
+        eventId?: string
+    }): Promise<{
+        changedEventIds: string[]
+        scoreEventIds: string[]
+        continueCursor: string | null
+        isDone: boolean
+    }> {
+        const directEvent = input?.eventId
+            ? await this.events.getById(input.eventId)
+            : null
+        const page = directEvent
+            ? { records: [directEvent], continueCursor: null, isDone: true }
+            : input?.limit
+              ? await this.events.listPage(input.cursor ?? null, input.limit)
+              : {
+                    records: await this.events.listAll(),
+                    continueCursor: null,
+                    isDone: true,
+                }
+        const records = page.records
+        const now = this.clock.now()
+        const nowIso = now.toISOString()
+        const changedEventIds: string[] = []
+        const scoreEventIds: string[] = []
 
-    for (const event of records) {
-      const normalizedEvent = normalizeEventRecord(event, now);
-      const nextStatus = deriveEventStatus(normalizedEvent, now);
-      const shouldPatch =
-        nextStatus !== event.status ||
-        !event.statusUpdatedAt ||
-        !event.attendanceReminderLog ||
-        !event.participants ||
-        !event.signUps ||
-        (nextStatus === "concluded" && !event.scoreResolution) ||
-        !event.updatedAt;
+        for (const event of records) {
+            const normalizedEvent = normalizeEventRecord(event, now)
+            const nextStatus = deriveEventStatus(normalizedEvent, now)
+            const shouldPatch =
+                nextStatus !== event.status ||
+                !event.statusUpdatedAt ||
+                !event.attendanceReminderLog ||
+                !event.participants ||
+                !event.signUps ||
+                (nextStatus === "concluded" && !event.scoreResolution) ||
+                !event.updatedAt
 
-      if (!shouldPatch) {
-        continue;
-      }
+            if (!shouldPatch) {
+                continue
+            }
 
-      await this.events.updateStatus(event.id, {
-        status: nextStatus,
-        statusUpdatedAt: nextStatus !== event.status ? nowIso : normalizedEvent.statusUpdatedAt,
-        concludedAt: nextStatus === "concluded" ? event.concludedAt ?? nowIso : undefined,
-        eventResult: event.eventResult,
-        matchStatsId: event.matchStatsId,
-        attendanceReminderLog: normalizedEvent.attendanceReminderLog,
-        participants: normalizedEvent.participants,
-        signUps: normalizedEvent.signUps,
-        scoreAppliedAt: event.scoreAppliedAt,
-        scoreResolution: event.scoreResolution,
-        absenceNotices: normalizedEvent.absenceNotices,
-        updatedAt: nowIso,
-      });
+            await this.events.updateStatus(event.id, {
+                status: nextStatus,
+                statusUpdatedAt:
+                    nextStatus !== event.status
+                        ? nowIso
+                        : normalizedEvent.statusUpdatedAt,
+                concludedAt:
+                    nextStatus === "concluded"
+                        ? (event.concludedAt ?? nowIso)
+                        : undefined,
+                eventResult: event.eventResult,
+                matchStatsId: event.matchStatsId,
+                attendanceReminderLog: normalizedEvent.attendanceReminderLog,
+                participants: normalizedEvent.participants,
+                signUps: normalizedEvent.signUps,
+                scoreAppliedAt: event.scoreAppliedAt,
+                scoreResolution: event.scoreResolution,
+                absenceNotices: normalizedEvent.absenceNotices,
+                updatedAt: nowIso,
+            })
 
-      if (nextStatus === "concluded" && !event.scoreResolution) {
-        scoreEventIds.push(event.id);
-      }
+            if (nextStatus === "concluded" && !event.scoreResolution) {
+                scoreEventIds.push(event.id)
+            }
 
-      changedEventIds.push(event.id);
+            changedEventIds.push(event.id)
+        }
+
+        return {
+            changedEventIds,
+            scoreEventIds,
+            continueCursor: page.continueCursor,
+            isDone: page.isDone,
+        }
     }
-
-    return {
-      changedEventIds,
-      scoreEventIds,
-      continueCursor: page.continueCursor,
-      isDone: page.isDone,
-    };
-  }
 }

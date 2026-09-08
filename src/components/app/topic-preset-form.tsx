@@ -1,334 +1,557 @@
-"use client";
+"use client"
 
-import { useState, useTransition } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Paperclip, Plus, Save, Trash2, Upload } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
-import type { FieldErrors } from "react-hook-form";
-import { toast } from "sonner";
+import { Loader2, Paperclip, Plus, Save, Trash2, Upload } from "lucide-react"
+import { Controller, useFieldArray, useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import type { FieldErrors } from "react-hook-form"
+import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
-import { ExpandableItemCard } from "@/components/app/expandable-item-card";
-import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
-import { HllMapSelector } from "@/components/app/hll-map-selector";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import type { Dictionary } from "@/i18n/dictionaries";
-import { uploadFileToConvex } from "@/lib/client-uploads";
-import { topicPresetSchema, type TopicPresetInput } from "@/lib/validation/topic-preset";
-import type { TopicPreset } from "@/types/domain";
+import {
+    topicPresetSchema,
+    type TopicPresetInput,
+} from "@/lib/validation/topic-preset"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
+import { ExpandableItemCard } from "@/components/app/expandable-item-card"
+import { HllMapSelector } from "@/components/app/hll-map-selector"
+import { uploadFileToConvex } from "@/lib/client-uploads"
+import type { Dictionary } from "@/i18n/dictionaries"
+import { Textarea } from "@/components/ui/textarea"
+import type { TopicPreset } from "@/types/domain"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
-function FieldLabel({ label, required }: { label: string; required?: boolean }) {
-  return (
-    <div className="mb-2 flex items-center gap-1 text-sm font-medium">
-      <span>{label}</span>
-      {required ? <span className="font-bold text-destructive">*</span> : null}
-    </div>
-  );
+function FieldLabel({
+    label,
+    required,
+}: {
+    label: string
+    required?: boolean
+}) {
+    return (
+        <div className="mb-2 flex items-center gap-1 text-sm font-medium">
+            <span>{label}</span>
+            {required ? (
+                <span className="text-destructive font-bold">*</span>
+            ) : null}
+        </div>
+    )
 }
 
 function newTopic(title = "") {
-  return {
-    id: crypto.randomUUID(),
-    title,
-    body: "",
-    attachments: [],
-  };
+    return {
+        id: crypto.randomUUID(),
+        title,
+        body: "",
+        attachments: [],
+    }
 }
 
-function getFirstErrorMessage(errors: FieldErrors<TopicPresetInput>): string | undefined {
-  if (typeof errors.name?.message === "string") return errors.name.message;
-  if (typeof errors.topics?.message === "string") return errors.topics.message;
-  if (typeof errors.topics?.root?.message === "string") return errors.topics.root.message;
+function getFirstErrorMessage(
+    errors: FieldErrors<TopicPresetInput>
+): string | undefined {
+    if (typeof errors.name?.message === "string") return errors.name.message
+    if (typeof errors.topics?.message === "string") return errors.topics.message
+    if (typeof errors.topics?.root?.message === "string")
+        return errors.topics.root.message
 
-  if (Array.isArray(errors.topics)) {
-    for (const topic of errors.topics) {
-      if (typeof topic?.title?.message === "string") return topic.title.message;
-      if (typeof topic?.body?.message === "string") return topic.body.message;
-      if (typeof topic?.attachments?.message === "string") return topic.attachments.message;
-      if (Array.isArray(topic?.attachments)) {
-        for (const attachment of topic.attachments) {
-          if (typeof attachment?.message === "string") return attachment.message;
+    if (Array.isArray(errors.topics)) {
+        for (const topic of errors.topics) {
+            if (typeof topic?.title?.message === "string")
+                return topic.title.message
+            if (typeof topic?.body?.message === "string")
+                return topic.body.message
+            if (typeof topic?.attachments?.message === "string")
+                return topic.attachments.message
+            if (Array.isArray(topic?.attachments)) {
+                for (const attachment of topic.attachments) {
+                    if (typeof attachment?.message === "string")
+                        return attachment.message
+                }
+            }
         }
-      }
     }
-  }
 
-  return undefined;
+    return undefined
 }
 
 export function TopicPresetForm({
-                                  preset,
-                                  serverId,
-                                  locale,
-                                  canEdit,
-                                  dictionary,
-                                  createMode = false,
-                                }: {
-  preset?: TopicPreset;
-  serverId: string;
-  locale: string;
-  canEdit: boolean;
-  dictionary: Dictionary;
-  createMode?: boolean;
+    preset,
+    serverId,
+    locale,
+    canEdit,
+    dictionary,
+    createMode = false,
+}: {
+    preset?: TopicPreset
+    serverId: string
+    locale: string
+    canEdit: boolean
+    dictionary: Dictionary
+    createMode?: boolean
 }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [collapsedTopicIds, setCollapsedTopicIds] = useState<string[]>([]);
+    const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+    const [collapsedTopicIds, setCollapsedTopicIds] = useState<string[]>([])
 
-  const form = useForm<TopicPresetInput>({
-    resolver: zodResolver(topicPresetSchema),
-    defaultValues: {
-      name: preset?.name ?? "",
-      map: preset?.map ?? "",
-      side: preset?.side ?? "",
-      cap: preset?.cap ?? "",
-      notes: preset?.notes ?? "",
-      topics: preset?.topics.length ? preset.topics.map((topic) => ({ ...topic, id: topic.id ?? crypto.randomUUID() })) : [newTopic(dictionary.presets.newTopic)],
-    },
-  });
+    const form = useForm<TopicPresetInput>({
+        resolver: zodResolver(topicPresetSchema),
+        defaultValues: {
+            name: preset?.name ?? "",
+            map: preset?.map ?? "",
+            side: preset?.side ?? "",
+            cap: preset?.cap ?? "",
+            notes: preset?.notes ?? "",
+            topics: preset?.topics.length
+                ? preset.topics.map((topic) => ({
+                      ...topic,
+                      id: topic.id ?? crypto.randomUUID(),
+                  }))
+                : [newTopic(dictionary.presets.newTopic)],
+        },
+    })
 
-  const topics = useFieldArray({
-    control: form.control,
-    name: "topics",
-  });
+    const topics = useFieldArray({
+        control: form.control,
+        name: "topics",
+    })
 
-  function setTopicCollapsed(topicId: string, collapsed: boolean) {
-    setCollapsedTopicIds((current: string[]) =>
-      collapsed ? (current.includes(topicId) ? current : [...current, topicId]) : current.filter((id: string) => id !== topicId),
-    );
-  }
-
-  async function submit(values: TopicPresetInput) {
-    const response = await fetch(
-      createMode ? `/api/servers/${serverId}/topic-presets` : `/api/servers/${serverId}/topic-presets/${preset?.id}`,
-      {
-        method: createMode ? "POST" : "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(values),
-      },
-    );
-
-    const body = await response.json();
-    if (!response.ok) {
-      const message = body.error ?? "Unable to save the topic preset.";
-      form.setError("root", { message });
-      toast.error(message);
-      return;
+    function setTopicCollapsed(topicId: string, collapsed: boolean) {
+        setCollapsedTopicIds((current: string[]) =>
+            collapsed
+                ? current.includes(topicId)
+                    ? current
+                    : [...current, topicId]
+                : current.filter((id: string) => id !== topicId)
+        )
     }
 
-    toast.success(dictionary.common.save);
-    startTransition(() => {
-      router.push(`/${locale}/dashboard/servers/${serverId}/topic-presets/${createMode ? body.presetId : preset?.id}`);
-      router.refresh();
-    });
-  }
+    async function submit(values: TopicPresetInput) {
+        const response = await fetch(
+            createMode
+                ? `/api/servers/${serverId}/topic-presets`
+                : `/api/servers/${serverId}/topic-presets/${preset?.id}`,
+            {
+                method: createMode ? "POST" : "PATCH",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify(values),
+            }
+        )
 
-  async function handleUpload(topicIndex: number, files: FileList | File[] | null) {
-    const imageFiles = Array.from(files ?? []).filter((file) => file.type.startsWith("image/"));
-    if (!imageFiles.length) return;
+        const body = await response.json()
+        if (!response.ok) {
+            const message = body.error ?? "Unable to save the topic preset."
+            form.setError("root", { message })
+            toast.error(message)
+            return
+        }
 
-    try {
-      for (const file of imageFiles) {
-        const upload = await uploadFileToConvex(file);
-        const url = upload.url;
-        const current = form.getValues(`topics.${topicIndex}.attachments`) ?? [];
-        form.setValue(`topics.${topicIndex}.attachments`, [...current, url], {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
-      }
-      toast.success(dictionary.common.save);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.common.error);
+        toast.success(dictionary.common.save)
+        startTransition(() => {
+            router.push(
+                `/${locale}/dashboard/servers/${serverId}/topic-presets/${createMode ? body.presetId : preset?.id}`
+            )
+            router.refresh()
+        })
     }
-  }
 
-  const disabled = !canEdit || isPending || form.formState.isSubmitting;
+    async function handleUpload(
+        topicIndex: number,
+        files: FileList | File[] | null
+    ) {
+        const imageFiles = Array.from(files ?? []).filter((file) =>
+            file.type.startsWith("image/")
+        )
+        if (!imageFiles.length) return
 
-  return (
-    <Card className="rounded-2xl border-border/60">
-      <CardHeader>
-        <CardTitle className="text-2xl">{createMode ? dictionary.presets.createTopicTitle : dictionary.presets.presetDetails}</CardTitle>
-        <p className="text-sm text-muted-foreground">{dictionary.presets.topicPresetPageDescription}</p>
-      </CardHeader>
-      <CardContent>
-        <form
-          className="space-y-6"
-          onSubmit={form.handleSubmit(submit, (errors) => {
-            const message = getFirstErrorMessage(errors) ?? dictionary.common.error;
-            form.setError("root", { message });
-            toast.error(message);
-          })}
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <FieldLabel label={dictionary.presets.fields.name} required />
-              <Input {...form.register("name")} className="rounded-xl" disabled={!canEdit} />
-              {form.formState.errors.name ? <p className="mt-2 text-sm text-destructive">{form.formState.errors.name.message}</p> : null}
-            </div>
-            <div className="space-y-3 md:col-span-2">
-              <FieldLabel label={dictionary.presets.fields.map} />
-              <HllMapSelector
-                mapId={form.watch("map") ?? ""}
-                onMapIdChange={(value) => {
-                  form.setValue("map", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
-                  form.setValue("cap", "", { shouldDirty: true, shouldTouch: true, shouldValidate: true });
-                }}
-                pointValue={form.watch("cap") ?? ""}
-                onPointValueChange={(value) => form.setValue("cap", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
-                sideValue={form.watch("side") ?? ""}
-                onSideValueChange={(value) => form.setValue("side", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
-                includeVariants={false}
-                includePoint={true}
-                includeSide={true}
-                disabled={!canEdit}
-                labels={{
-                  map: dictionary.presets.fields.map,
-                  mapSearch: dictionary.presets.fields.map,
-                  time: dictionary.event.fields.mapVariant,
-                  mode: dictionary.event.fields.mapMode,
-                  point: dictionary.presets.fields.cap,
-                  pointSearch: dictionary.presets.fields.cap,
-                  side: dictionary.presets.fields.side,
-                  optional: dictionary.shared.notSet,
-                  noResults: dictionary.shared.noMatchingResults,
-                }}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <FieldLabel label={dictionary.presets.fields.notes} />
-              <Textarea {...form.register("notes")} className="min-h-24 rounded-xl" disabled={!canEdit} />
-            </div>
-          </div>
+        try {
+            for (const file of imageFiles) {
+                const upload = await uploadFileToConvex(file)
+                const url = upload.url
+                const current =
+                    form.getValues(`topics.${topicIndex}.attachments`) ?? []
+                form.setValue(
+                    `topics.${topicIndex}.attachments`,
+                    [...current, url],
+                    {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                    }
+                )
+            }
+            toast.success(dictionary.common.save)
+        } catch (error) {
+            toast.error(
+                error instanceof Error ? error.message : dictionary.common.error
+            )
+        }
+    }
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold">{dictionary.presets.topics}</h3>
-                <p className="text-sm text-muted-foreground">{dictionary.presets.topicEditorDescription}</p>
-              </div>
-              {canEdit ? (
-                <Button type="button" variant="outline" className="rounded-xl" onClick={() => topics.append(newTopic(dictionary.presets.newTopic))}>
-                  <Plus className="size-4" />
-                  {dictionary.presets.addTopic}
-                </Button>
-              ) : null}
-            </div>
+    const disabled = !canEdit || isPending || form.formState.isSubmitting
 
-            {topics.fields.map((topic, topicIndex) => {
-              const title = form.watch(`topics.${topicIndex}.title`) || dictionary.presets.newTopic;
-              const isOpen = !collapsedTopicIds.includes(topic.id);
-
-              return (
-                <ExpandableItemCard
-                  key={topic.id}
-                  open={isOpen}
-                  onOpenChange={(open) => setTopicCollapsed(topic.id, !open)}
-                  title={title}
-                  subtitle={`ID: ${topic.id}`}
-                  className="bg-muted/10"
-                  actions={canEdit ? (
-                    <Button type="button" variant="ghost" size="icon" className="rounded-lg" onClick={() => topics.remove(topicIndex)} disabled={topics.fields.length <= 1}>
-                      <Trash2 className="size-4" />
-                    </Button>
-                  ) : undefined}
+    return (
+        <Card className="border-border/60 rounded-2xl">
+            <CardHeader>
+                <CardTitle className="text-2xl">
+                    {createMode
+                        ? dictionary.presets.createTopicTitle
+                        : dictionary.presets.presetDetails}
+                </CardTitle>
+                <p className="text-muted-foreground text-sm">
+                    {dictionary.presets.topicPresetPageDescription}
+                </p>
+            </CardHeader>
+            <CardContent>
+                <form
+                    className="space-y-6"
+                    onSubmit={form.handleSubmit(submit, (errors) => {
+                        const message =
+                            getFirstErrorMessage(errors) ??
+                            dictionary.common.error
+                        form.setError("root", { message })
+                        toast.error(message)
+                    })}
                 >
-                  <div className="space-y-3">
-                    <div className="flex-1">
-                      <Input
-                        {...form.register(`topics.${topicIndex}.title`)}
-                        className="h-10 rounded-lg border-border/60 bg-background"
-                        placeholder={dictionary.presets.newTopic}
-                        disabled={!canEdit}
-                      />
-                      {form.formState.errors.topics?.[topicIndex]?.title ? (
-                        <p className="mt-2 text-sm text-destructive">{form.formState.errors.topics[topicIndex]?.title?.message}</p>
-                      ) : null}
-                    </div>
-                    <DiscordMarkdownTextarea
-                      value={form.watch(`topics.${topicIndex}.body`) ?? ""}
-                      onChange={(value) => form.setValue(`topics.${topicIndex}.body`, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
-                      className="rounded-lg border-border/60 bg-background"
-                      placeholder={dictionary.presets.topicEditorDescription}
-                      disabled={!canEdit}
-                      rows={6}
-                      hideToolbar={!canEdit}
-                      preview={canEdit ? "live" : "preview"}
-                    />
-                    <Controller
-                      control={form.control}
-                      name={`topics.${topicIndex}.attachments`}
-                      render={({ field }) => (
-                        <div
-                          className="space-y-2 rounded-lg"
-                          onDragOver={(event) => {
-                            if (canEdit) event.preventDefault();
-                          }}
-                          onDrop={(event) => {
-                            if (!canEdit) return;
-                            event.preventDefault();
-                            void handleUpload(topicIndex, event.dataTransfer.files);
-                          }}
-                        >
-                          <Textarea
-                            value={field.value.join("\n")}
-                            onChange={(event) => field.onChange(event.target.value.split("\n").map((line) => line.trim()).filter(Boolean))}
-                            className="min-h-20 rounded-lg border-border/60 bg-background text-sm"
-                            placeholder={dictionary.presets.attachmentPlaceholder}
-                            disabled={!canEdit}
-                          />
-                          {form.formState.errors.topics?.[topicIndex]?.attachments ? (
-                            <p className="text-sm text-destructive">{form.formState.errors.topics[topicIndex]?.attachments?.message}</p>
-                          ) : null}
-                          <div className="flex flex-wrap items-center gap-2">
-                            {canEdit ? (
-                              <label className="inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border/60 bg-background px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
-                                <Upload className="size-4" />
-                                {dictionary.common.upload}
-                                <input
-                                  type="file"
-                                  multiple
-                                  accept="image/*"
-                                  className="sr-only"
-                                  onChange={(event) => {
-                                    void handleUpload(topicIndex, event.target.files);
-                                    event.target.value = "";
-                                  }}
-                                />
-                              </label>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="md:col-span-2">
+                            <FieldLabel
+                                label={dictionary.presets.fields.name}
+                                required
+                            />
+                            <Input
+                                {...form.register("name")}
+                                className="rounded-xl"
+                                disabled={!canEdit}
+                            />
+                            {form.formState.errors.name ? (
+                                <p className="text-destructive mt-2 text-sm">
+                                    {form.formState.errors.name.message}
+                                </p>
                             ) : null}
-                            {field.value.length ? (
-                              <span className="inline-flex h-8 items-center gap-1 rounded-lg border border-border/60 bg-background px-2.5 text-xs text-muted-foreground">
-                                <Paperclip className="size-3" />
-                                {field.value.length} {dictionary.presets.attachmentCountSuffix}
-                              </span>
-                            ) : null}
-                          </div>
                         </div>
-                      )}
-                    />
-                  </div>
-                </ExpandableItemCard>
-              );
-            })}
-          </div>
+                        <div className="space-y-3 md:col-span-2">
+                            <FieldLabel label={dictionary.presets.fields.map} />
+                            <HllMapSelector
+                                mapId={form.watch("map") ?? ""}
+                                onMapIdChange={(value) => {
+                                    form.setValue("map", value, {
+                                        shouldDirty: true,
+                                        shouldTouch: true,
+                                        shouldValidate: true,
+                                    })
+                                    form.setValue("cap", "", {
+                                        shouldDirty: true,
+                                        shouldTouch: true,
+                                        shouldValidate: true,
+                                    })
+                                }}
+                                pointValue={form.watch("cap") ?? ""}
+                                onPointValueChange={(value) =>
+                                    form.setValue("cap", value, {
+                                        shouldDirty: true,
+                                        shouldTouch: true,
+                                        shouldValidate: true,
+                                    })
+                                }
+                                sideValue={form.watch("side") ?? ""}
+                                onSideValueChange={(value) =>
+                                    form.setValue("side", value, {
+                                        shouldDirty: true,
+                                        shouldTouch: true,
+                                        shouldValidate: true,
+                                    })
+                                }
+                                includeVariants={false}
+                                includePoint={true}
+                                includeSide={true}
+                                disabled={!canEdit}
+                                labels={{
+                                    map: dictionary.presets.fields.map,
+                                    mapSearch: dictionary.presets.fields.map,
+                                    time: dictionary.event.fields.mapVariant,
+                                    mode: dictionary.event.fields.mapMode,
+                                    point: dictionary.presets.fields.cap,
+                                    pointSearch: dictionary.presets.fields.cap,
+                                    side: dictionary.presets.fields.side,
+                                    optional: dictionary.shared.notSet,
+                                    noResults:
+                                        dictionary.shared.noMatchingResults,
+                                }}
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <FieldLabel
+                                label={dictionary.presets.fields.notes}
+                            />
+                            <Textarea
+                                {...form.register("notes")}
+                                className="min-h-24 rounded-xl"
+                                disabled={!canEdit}
+                            />
+                        </div>
+                    </div>
 
-          {form.formState.errors.topics?.root ? <p className="text-sm text-destructive">{form.formState.errors.topics.root.message}</p> : null}
-          {form.formState.errors.root ? <p className="text-sm text-destructive">{form.formState.errors.root.message}</p> : null}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-lg font-semibold">
+                                    {dictionary.presets.topics}
+                                </h3>
+                                <p className="text-muted-foreground text-sm">
+                                    {dictionary.presets.topicEditorDescription}
+                                </p>
+                            </div>
+                            {canEdit ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-xl"
+                                    onClick={() =>
+                                        topics.append(
+                                            newTopic(
+                                                dictionary.presets.newTopic
+                                            )
+                                        )
+                                    }
+                                >
+                                    <Plus className="size-4" />
+                                    {dictionary.presets.addTopic}
+                                </Button>
+                            ) : null}
+                        </div>
 
-          {canEdit ? (
-            <div className="flex flex-wrap gap-3">
-              <Button className="rounded-xl" type="submit" disabled={disabled}>
-                {form.formState.isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
-                {dictionary.common.save}
-              </Button>
-            </div>
-          ) : null}
-        </form>
-      </CardContent>
-    </Card>
-  );
+                        {topics.fields.map((topic, topicIndex) => {
+                            const title =
+                                form.watch(`topics.${topicIndex}.title`) ||
+                                dictionary.presets.newTopic
+                            const isOpen = !collapsedTopicIds.includes(topic.id)
+
+                            return (
+                                <ExpandableItemCard
+                                    key={topic.id}
+                                    open={isOpen}
+                                    onOpenChange={(open) =>
+                                        setTopicCollapsed(topic.id, !open)
+                                    }
+                                    title={title}
+                                    subtitle={`ID: ${topic.id}`}
+                                    className="bg-muted/10"
+                                    actions={
+                                        canEdit ? (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="rounded-lg"
+                                                onClick={() =>
+                                                    topics.remove(topicIndex)
+                                                }
+                                                disabled={
+                                                    topics.fields.length <= 1
+                                                }
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        ) : undefined
+                                    }
+                                >
+                                    <div className="space-y-3">
+                                        <div className="flex-1">
+                                            <Input
+                                                {...form.register(
+                                                    `topics.${topicIndex}.title`
+                                                )}
+                                                className="border-border/60 bg-background h-10 rounded-lg"
+                                                placeholder={
+                                                    dictionary.presets.newTopic
+                                                }
+                                                disabled={!canEdit}
+                                            />
+                                            {form.formState.errors.topics?.[
+                                                topicIndex
+                                            ]?.title ? (
+                                                <p className="text-destructive mt-2 text-sm">
+                                                    {
+                                                        form.formState.errors
+                                                            .topics[topicIndex]
+                                                            ?.title?.message
+                                                    }
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                        <DiscordMarkdownTextarea
+                                            value={
+                                                form.watch(
+                                                    `topics.${topicIndex}.body`
+                                                ) ?? ""
+                                            }
+                                            onChange={(value) =>
+                                                form.setValue(
+                                                    `topics.${topicIndex}.body`,
+                                                    value,
+                                                    {
+                                                        shouldDirty: true,
+                                                        shouldTouch: true,
+                                                        shouldValidate: true,
+                                                    }
+                                                )
+                                            }
+                                            className="border-border/60 bg-background rounded-lg"
+                                            placeholder={
+                                                dictionary.presets
+                                                    .topicEditorDescription
+                                            }
+                                            disabled={!canEdit}
+                                            rows={6}
+                                            hideToolbar={!canEdit}
+                                            preview={
+                                                canEdit ? "live" : "preview"
+                                            }
+                                        />
+                                        <Controller
+                                            control={form.control}
+                                            name={`topics.${topicIndex}.attachments`}
+                                            render={({ field }) => (
+                                                <div
+                                                    className="space-y-2 rounded-lg"
+                                                    onDragOver={(event) => {
+                                                        if (canEdit)
+                                                            event.preventDefault()
+                                                    }}
+                                                    onDrop={(event) => {
+                                                        if (!canEdit) return
+                                                        event.preventDefault()
+                                                        void handleUpload(
+                                                            topicIndex,
+                                                            event.dataTransfer
+                                                                .files
+                                                        )
+                                                    }}
+                                                >
+                                                    <Textarea
+                                                        value={field.value.join(
+                                                            "\n"
+                                                        )}
+                                                        onChange={(event) =>
+                                                            field.onChange(
+                                                                event.target.value
+                                                                    .split("\n")
+                                                                    .map(
+                                                                        (
+                                                                            line
+                                                                        ) =>
+                                                                            line.trim()
+                                                                    )
+                                                                    .filter(
+                                                                        Boolean
+                                                                    )
+                                                            )
+                                                        }
+                                                        className="border-border/60 bg-background min-h-20 rounded-lg text-sm"
+                                                        placeholder={
+                                                            dictionary.presets
+                                                                .attachmentPlaceholder
+                                                        }
+                                                        disabled={!canEdit}
+                                                    />
+                                                    {form.formState.errors
+                                                        .topics?.[topicIndex]
+                                                        ?.attachments ? (
+                                                        <p className="text-destructive text-sm">
+                                                            {
+                                                                form.formState
+                                                                    .errors
+                                                                    .topics[
+                                                                    topicIndex
+                                                                ]?.attachments
+                                                                    ?.message
+                                                            }
+                                                        </p>
+                                                    ) : null}
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        {canEdit ? (
+                                                            <label className="border-border/60 bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 text-xs font-medium transition-colors">
+                                                                <Upload className="size-4" />
+                                                                {
+                                                                    dictionary
+                                                                        .common
+                                                                        .upload
+                                                                }
+                                                                <input
+                                                                    type="file"
+                                                                    multiple
+                                                                    accept="image/*"
+                                                                    className="sr-only"
+                                                                    onChange={(
+                                                                        event
+                                                                    ) => {
+                                                                        void handleUpload(
+                                                                            topicIndex,
+                                                                            event
+                                                                                .target
+                                                                                .files
+                                                                        )
+                                                                        event.target.value =
+                                                                            ""
+                                                                    }}
+                                                                />
+                                                            </label>
+                                                        ) : null}
+                                                        {field.value.length ? (
+                                                            <span className="border-border/60 bg-background text-muted-foreground inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs">
+                                                                <Paperclip className="size-3" />
+                                                                {
+                                                                    field.value
+                                                                        .length
+                                                                }{" "}
+                                                                {
+                                                                    dictionary
+                                                                        .presets
+                                                                        .attachmentCountSuffix
+                                                                }
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        />
+                                    </div>
+                                </ExpandableItemCard>
+                            )
+                        })}
+                    </div>
+
+                    {form.formState.errors.topics?.root ? (
+                        <p className="text-destructive text-sm">
+                            {form.formState.errors.topics.root.message}
+                        </p>
+                    ) : null}
+                    {form.formState.errors.root ? (
+                        <p className="text-destructive text-sm">
+                            {form.formState.errors.root.message}
+                        </p>
+                    ) : null}
+
+                    {canEdit ? (
+                        <div className="flex flex-wrap gap-3">
+                            <Button
+                                className="rounded-xl"
+                                type="submit"
+                                disabled={disabled}
+                            >
+                                {form.formState.isSubmitting ? (
+                                    <Loader2 className="mr-2 size-4 animate-spin" />
+                                ) : (
+                                    <Save className="mr-2 size-4" />
+                                )}
+                                {dictionary.common.save}
+                            </Button>
+                        </div>
+                    ) : null}
+                </form>
+            </CardContent>
+        </Card>
+    )
 }

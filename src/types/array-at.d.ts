@@ -1,3 +1,3 @@
 interface Array<T> {
-  at(index: number): T | undefined;
+    at(index: number): T | undefined
 }

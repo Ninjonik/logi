@@ -1,62 +1,94 @@
-import type { Client } from "discord.js";
+import type { Client } from "discord.js"
 
-import { reportClanDiscordError } from "./error-reporting";
-import { logError, logInfo } from "./log";
-import { processAttendanceReminders } from "./sync/attendance-reminders";
-import { syncPayloadEvents } from "./sync/events";
-import { syncGuildMemberAccess } from "./sync/member-access";
-import { syncCalendarPanel, syncMembershipPanel, syncTicketPanel } from "./sync/panels";
-import type { SyncPayload } from "./types";
-import { withTimeout } from "./utils";
+import {
+    syncCalendarPanel,
+    syncMembershipPanel,
+    syncTicketPanel,
+} from "./sync/panels"
+import { processAttendanceReminders } from "./sync/attendance-reminders"
+import { syncGuildMemberAccess } from "./sync/member-access"
+import { reportClanDiscordError } from "./error-reporting"
+import { syncPayloadEvents } from "./sync/events"
+import type { SyncPayload } from "./types"
+import { logError, logInfo } from "./log"
+import { withTimeout } from "./utils"
 
 export async function syncGuildPayload(
-  client: Client,
-  queuedEventIds: Set<string>,
-  payload: SyncPayload,
-  mode: "full" | "events_only" = "full",
-  attendanceReminderEventIds = new Set<string>(),
+    client: Client,
+    queuedEventIds: Set<string>,
+    payload: SyncPayload,
+    mode: "full" | "events_only" = "full",
+    attendanceReminderEventIds = new Set<string>()
 ) {
-  logInfo("guild-sync", "Syncing guild payload", {
-    guildId: payload.config.guildId,
-    eventCount: payload.events.length,
-    rosterCount: payload.rosters.length,
-    syncStateCount: payload.syncStates.length,
-    mode,
-  });
+    logInfo("guild-sync", "Syncing guild payload", {
+        guildId: payload.config.guildId,
+        eventCount: payload.events.length,
+        rosterCount: payload.rosters.length,
+        syncStateCount: payload.syncStates.length,
+        mode,
+    })
 
-  if (mode === "full") {
-    await runGuildSyncStep(client, "member access sync", payload, () => syncGuildMemberAccess(client, payload));
-    await runGuildSyncStep(client, "ticket panel sync", payload, () => syncTicketPanel(client, payload));
-    await runGuildSyncStep(client, "membership panel sync", payload, () => syncMembershipPanel(client, payload));
-    await runGuildSyncStep(client, "calendar panel sync", payload, () => syncCalendarPanel(client, payload));
-  }
+    if (mode === "full") {
+        await runGuildSyncStep(client, "member access sync", payload, () =>
+            syncGuildMemberAccess(client, payload)
+        )
+        await runGuildSyncStep(client, "ticket panel sync", payload, () =>
+            syncTicketPanel(client, payload)
+        )
+        await runGuildSyncStep(client, "membership panel sync", payload, () =>
+            syncMembershipPanel(client, payload)
+        )
+        await runGuildSyncStep(client, "calendar panel sync", payload, () =>
+            syncCalendarPanel(client, payload)
+        )
+    }
 
-  await syncPayloadEvents(client, queuedEventIds, payload, { syncRoles: mode === "full" });
+    await syncPayloadEvents(client, queuedEventIds, payload, {
+        syncRoles: mode === "full",
+    })
 
-  // Event lifecycle and message changes are user-visible state. Never hold them
-  // behind potentially slow direct-message delivery.
-  if (attendanceReminderEventIds.size > 0) {
-    await runGuildSyncStep(client, "attendance reminder sync", payload, () =>
-      processAttendanceReminders(client, queuedEventIds, payload, attendanceReminderEventIds),
-    );
-  }
+    // Event lifecycle and message changes are user-visible state. Never hold them
+    // behind potentially slow direct-message delivery.
+    if (attendanceReminderEventIds.size > 0) {
+        await runGuildSyncStep(
+            client,
+            "attendance reminder sync",
+            payload,
+            () =>
+                processAttendanceReminders(
+                    client,
+                    queuedEventIds,
+                    payload,
+                    attendanceReminderEventIds
+                )
+        )
+    }
 }
 
-async function runGuildSyncStep(client: Client, step: string, payload: SyncPayload, execute: () => Promise<void>) {
-  try {
-    await withTimeout(execute(), 20_000, `${step} for guild ${payload.config.guildId}`);
-  } catch (error) {
-    logError("guild-sync", `Discord bot ${step} failed`, {
-      guildId: payload.config.guildId,
-      error,
-    });
-    await reportClanDiscordError({
-      client,
-      guildId: payload.config.guildId,
-      error,
-      action: step,
-      location: "Guild sync",
-      scope: "guild-sync",
-    });
-  }
+async function runGuildSyncStep(
+    client: Client,
+    step: string,
+    payload: SyncPayload,
+    execute: () => Promise<void>
+) {
+    try {
+        await withTimeout(
+            execute(),
+            20_000,
+            `${step} for guild ${payload.config.guildId}`
+        )
+    } catch (error) {
+        logError("guild-sync", `Discord bot ${step} failed`, {
+            guildId: payload.config.guildId,
+            error,
+        })
+        await reportClanDiscordError({
+            client,
+            guildId: payload.config.guildId,
+            error,
+            action: step,
+            location: "Guild sync",
+            scope: "guild-sync",
+        })
+    }
 }

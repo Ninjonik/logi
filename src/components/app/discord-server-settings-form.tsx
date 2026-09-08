@@ -1,268 +1,471 @@
-"use client";
+"use client"
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useEffect, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
-import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Dictionary } from "@/i18n/dictionaries";
-import { getDictionary } from "@/i18n/dictionaries";
-import { supportedClanLanguages, type ClanLanguage } from "@/lib/clan-language";
-import { supportedTimezones } from "@/lib/discord-timezones";
-import type { DiscordConfig } from "@/types/domain";
-import { ResyncDashboardAdminsButton } from "@/components/app/resync-dashboard-admins-button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
+    DiscordEntitySelect,
+    type DiscordSelectOption,
+} from "@/components/app/discord-entity-select"
+import { ResyncDashboardAdminsButton } from "@/components/app/resync-dashboard-admins-button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { supportedClanLanguages, type ClanLanguage } from "@/lib/clan-language"
+import { supportedTimezones } from "@/lib/discord-timezones"
+import type { Dictionary } from "@/i18n/dictionaries"
+import { getDictionary } from "@/i18n/dictionaries"
+import type { DiscordConfig } from "@/types/domain"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 
 type DiscordMetadata = {
-  roles: DiscordSelectOption[];
-  channels: Array<DiscordSelectOption & { type: number; parentId?: string }>;
-  emojis: DiscordSelectOption[];
-};
+    roles: DiscordSelectOption[]
+    channels: Array<DiscordSelectOption & { type: number; parentId?: string }>
+    emojis: DiscordSelectOption[]
+}
 
-function remapLocalizedDefaults(config: DiscordConfig | null, nextLanguage: ClanLanguage) {
-  if (!config) {
-    return {
-      ticketSettings: undefined,
-      membershipSettings: undefined,
-    };
-  }
-
-  const previousLanguage = config.defaultLanguage ?? "en";
-  if (previousLanguage === nextLanguage) {
-    return {
-      ticketSettings: config.ticketSettings,
-      membershipSettings: config.membershipSettings,
-    };
-  }
-
-  const previousDictionary = getDictionary(previousLanguage);
-  const nextDictionary = getDictionary(nextLanguage);
-
-  return {
-    ticketSettings: config.ticketSettings
-      ? {
-          ...config.ticketSettings,
-          panelTitle: config.ticketSettings.panelTitle === previousDictionary.ticketSettings.defaultPanelTitle
-            ? nextDictionary.ticketSettings.defaultPanelTitle
-            : config.ticketSettings.panelTitle,
-          panelDescription: config.ticketSettings.panelDescription === previousDictionary.ticketSettings.defaultPanelDescription
-            ? nextDictionary.ticketSettings.defaultPanelDescription
-            : config.ticketSettings.panelDescription,
+function remapLocalizedDefaults(
+    config: DiscordConfig | null,
+    nextLanguage: ClanLanguage
+) {
+    if (!config) {
+        return {
+            ticketSettings: undefined,
+            membershipSettings: undefined,
         }
-      : config.ticketSettings,
-    membershipSettings: config.membershipSettings
-      ? {
-          ...config.membershipSettings,
-          panelTitle: config.membershipSettings.panelTitle === previousDictionary.membershipSettings.defaultPanelTitle
-            ? nextDictionary.membershipSettings.defaultPanelTitle
-            : config.membershipSettings.panelTitle,
-          panelDescription: config.membershipSettings.panelDescription === previousDictionary.membershipSettings.defaultPanelDescription
-            ? nextDictionary.membershipSettings.defaultPanelDescription
-            : config.membershipSettings.panelDescription,
+    }
+
+    const previousLanguage = config.defaultLanguage ?? "en"
+    if (previousLanguage === nextLanguage) {
+        return {
+            ticketSettings: config.ticketSettings,
+            membershipSettings: config.membershipSettings,
         }
-      : config.membershipSettings,
-  };
+    }
+
+    const previousDictionary = getDictionary(previousLanguage)
+    const nextDictionary = getDictionary(nextLanguage)
+
+    return {
+        ticketSettings: config.ticketSettings
+            ? {
+                  ...config.ticketSettings,
+                  panelTitle:
+                      config.ticketSettings.panelTitle ===
+                      previousDictionary.ticketSettings.defaultPanelTitle
+                          ? nextDictionary.ticketSettings.defaultPanelTitle
+                          : config.ticketSettings.panelTitle,
+                  panelDescription:
+                      config.ticketSettings.panelDescription ===
+                      previousDictionary.ticketSettings.defaultPanelDescription
+                          ? nextDictionary.ticketSettings
+                                .defaultPanelDescription
+                          : config.ticketSettings.panelDescription,
+              }
+            : config.ticketSettings,
+        membershipSettings: config.membershipSettings
+            ? {
+                  ...config.membershipSettings,
+                  panelTitle:
+                      config.membershipSettings.panelTitle ===
+                      previousDictionary.membershipSettings.defaultPanelTitle
+                          ? nextDictionary.membershipSettings.defaultPanelTitle
+                          : config.membershipSettings.panelTitle,
+                  panelDescription:
+                      config.membershipSettings.panelDescription ===
+                      previousDictionary.membershipSettings
+                          .defaultPanelDescription
+                          ? nextDictionary.membershipSettings
+                                .defaultPanelDescription
+                          : config.membershipSettings.panelDescription,
+              }
+            : config.membershipSettings,
+    }
 }
 
 export function DiscordServerSettingsForm({
-  serverId,
-  userId,
-  dictionary,
-  config,
+    serverId,
+    userId,
+    dictionary,
+    config,
 }: {
-  serverId: string;
-  userId: string;
-  dictionary: Dictionary;
-  config: DiscordConfig | null;
+    serverId: string
+    userId: string
+    dictionary: Dictionary
+    config: DiscordConfig | null
 }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
-  const [timezone, setTimezone] = useState(config?.timezone ?? "UTC");
-  const [defaultLanguage, setDefaultLanguage] = useState<ClanLanguage>(config?.defaultLanguage ?? "en");
-  const [announcementsChannelId, setAnnouncementsChannelId] = useState<string | undefined>(config?.announcementsChannelId);
-  const [eventInfoChannelId, setEventInfoChannelId] = useState<string | undefined>(config?.eventInfoChannelId);
-  const [errorsChannelId, setErrorsChannelId] = useState<string | undefined>(config?.errorsChannelId);
-  const [calendarChannelId, setCalendarChannelId] = useState<string | undefined>(config?.calendarChannelId);
-  const [forumCategoryId, setForumCategoryId] = useState<string | undefined>(config?.forumCategoryId);
-  const [meetingChannelId, setMeetingChannelId] = useState<string | undefined>(config?.meetingChannelId);
-  const [clanRoleId, setClanRoleId] = useState<string | undefined>(config?.clanRoleId);
-  const [dashboardAdminRoleId, setDashboardAdminRoleId] = useState<string | undefined>(config?.dashboardAdminRoleId);
-  const [playerStatsServers, setPlayerStatsServers] = useState<Array<{ token: string; url: string }>>(config?.playerStatsServers ?? []);
+    const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+    const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
+    const [timezone, setTimezone] = useState(config?.timezone ?? "UTC")
+    const [defaultLanguage, setDefaultLanguage] = useState<ClanLanguage>(
+        config?.defaultLanguage ?? "en"
+    )
+    const [announcementsChannelId, setAnnouncementsChannelId] = useState<
+        string | undefined
+    >(config?.announcementsChannelId)
+    const [eventInfoChannelId, setEventInfoChannelId] = useState<
+        string | undefined
+    >(config?.eventInfoChannelId)
+    const [errorsChannelId, setErrorsChannelId] = useState<string | undefined>(
+        config?.errorsChannelId
+    )
+    const [calendarChannelId, setCalendarChannelId] = useState<
+        string | undefined
+    >(config?.calendarChannelId)
+    const [forumCategoryId, setForumCategoryId] = useState<string | undefined>(
+        config?.forumCategoryId
+    )
+    const [meetingChannelId, setMeetingChannelId] = useState<
+        string | undefined
+    >(config?.meetingChannelId)
+    const [clanRoleId, setClanRoleId] = useState<string | undefined>(
+        config?.clanRoleId
+    )
+    const [dashboardAdminRoleId, setDashboardAdminRoleId] = useState<
+        string | undefined
+    >(config?.dashboardAdminRoleId)
+    const [playerStatsServers, setPlayerStatsServers] = useState<
+        Array<{ token: string; url: string }>
+    >(config?.playerStatsServers ?? [])
 
-  useEffect(() => {
-    fetch(`/api/servers/${serverId}/discord-metadata`)
-      .then(async (response) => {
-        const body = await response.json();
-        if (!response.ok || !body || !Array.isArray(body.channels) || !Array.isArray(body.roles) || !Array.isArray(body.emojis)) {
-          throw new Error("Unable to load Discord metadata.");
+    useEffect(() => {
+        fetch(`/api/servers/${serverId}/discord-metadata`)
+            .then(async (response) => {
+                const body = await response.json()
+                if (
+                    !response.ok ||
+                    !body ||
+                    !Array.isArray(body.channels) ||
+                    !Array.isArray(body.roles) ||
+                    !Array.isArray(body.emojis)
+                ) {
+                    throw new Error("Unable to load Discord metadata.")
+                }
+                setMetadata(body)
+            })
+            .catch(() => setMetadata(null))
+    }, [serverId])
+
+    const announcementChannels =
+        metadata?.channels?.filter(
+            (channel) => channel.type === 0 || channel.type === 5
+        ) ?? []
+    const categoryChannels =
+        metadata?.channels?.filter((channel) => channel.type === 4) ?? []
+    const meetingChannels =
+        metadata?.channels?.filter(
+            (channel) => channel.type === 2 || channel.type === 13
+        ) ?? []
+    const roles = metadata?.roles ?? []
+
+    async function handleSave() {
+        const remappedDefaults = remapLocalizedDefaults(config, defaultLanguage)
+        const response = await fetch(
+            `/api/servers/${serverId}/discord-settings`,
+            {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                    timezone,
+                    defaultLanguage,
+                    announcementsChannelId,
+                    eventInfoChannelId,
+                    errorsChannelId,
+                    calendarChannelId,
+                    forumCategoryId,
+                    meetingChannelId,
+                    clanRoleId,
+                    dashboardAdminRoleId,
+                    playerStatsServers,
+                    ticketSettings: remappedDefaults.ticketSettings,
+                    membershipSettings: remappedDefaults.membershipSettings,
+                }),
+            }
+        )
+        const body = await response.json()
+        if (!response.ok) {
+            toast.error(
+                body.error ?? dictionary.serverSettings.discordSettingsSaveError
+            )
+            return
         }
-        setMetadata(body);
-      })
-      .catch(() => setMetadata(null));
-  }, [serverId]);
 
-  const announcementChannels = metadata?.channels?.filter((channel) => channel.type === 0 || channel.type === 5) ?? [];
-  const categoryChannels = metadata?.channels?.filter((channel) => channel.type === 4) ?? [];
-  const meetingChannels = metadata?.channels?.filter((channel) => channel.type === 2 || channel.type === 13) ?? [];
-  const roles = metadata?.roles ?? [];
-
-  async function handleSave() {
-    const remappedDefaults = remapLocalizedDefaults(config, defaultLanguage);
-    const response = await fetch(`/api/servers/${serverId}/discord-settings`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        timezone,
-        defaultLanguage,
-        announcementsChannelId,
-        eventInfoChannelId,
-        errorsChannelId,
-        calendarChannelId,
-        forumCategoryId,
-        meetingChannelId,
-        clanRoleId,
-        dashboardAdminRoleId,
-        playerStatsServers,
-        ticketSettings: remappedDefaults.ticketSettings,
-        membershipSettings: remappedDefaults.membershipSettings,
-      }),
-    });
-    const body = await response.json();
-    if (!response.ok) {
-      toast.error(body.error ?? dictionary.serverSettings.discordSettingsSaveError);
-      return;
+        toast.success(dictionary.serverSettings.discordSettingsSaved)
+        startTransition(() => router.refresh())
     }
 
-    toast.success(dictionary.serverSettings.discordSettingsSaved);
-    startTransition(() => router.refresh());
-  }
+    return (
+        <Card className="border-border/60 rounded-2xl">
+            <CardHeader>
+                <CardTitle>{dictionary.serverSettings.discordTitle}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2">
+                    <Label>{dictionary.serverSettings.timezone}</Label>
+                    <Select value={timezone} onValueChange={setTimezone}>
+                        <SelectTrigger className="rounded-xl">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {supportedTimezones.map((item) => (
+                                <SelectItem key={item} value={item}>
+                                    {item}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label>{dictionary.serverSettings.defaultLanguage}</Label>
+                    <Select
+                        value={defaultLanguage}
+                        onValueChange={(value) =>
+                            setDefaultLanguage(value as ClanLanguage)
+                        }
+                    >
+                        <SelectTrigger className="rounded-xl">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {supportedClanLanguages.map((item) => (
+                                <SelectItem key={item} value={item}>
+                                    {item === "en"
+                                        ? dictionary.serverSettings
+                                              .languageEnglish
+                                        : dictionary.serverSettings
+                                              .languageCzech}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label>
+                        {dictionary.serverSettings.announcementsChannelId}
+                    </Label>
+                    <DiscordEntitySelect
+                        value={announcementsChannelId}
+                        onChange={setAnnouncementsChannelId}
+                        options={announcementChannels}
+                        placeholder={
+                            dictionary.serverSettings.announcementsChannelId
+                        }
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>
+                        {dictionary.serverSettings.eventInfoChannelId}
+                    </Label>
+                    <DiscordEntitySelect
+                        value={eventInfoChannelId}
+                        onChange={setEventInfoChannelId}
+                        options={announcementChannels}
+                        placeholder={
+                            dictionary.serverSettings.eventInfoChannelId
+                        }
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>{dictionary.serverSettings.errorsChannelId}</Label>
+                    <DiscordEntitySelect
+                        value={errorsChannelId}
+                        onChange={setErrorsChannelId}
+                        options={announcementChannels}
+                        placeholder={dictionary.serverSettings.errorsChannelId}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>{dictionary.serverSettings.calendarChannelId}</Label>
+                    <DiscordEntitySelect
+                        value={calendarChannelId}
+                        onChange={setCalendarChannelId}
+                        options={announcementChannels}
+                        placeholder={
+                            dictionary.serverSettings.calendarChannelId
+                        }
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>{dictionary.serverSettings.forumCategoryId}</Label>
+                    <DiscordEntitySelect
+                        value={forumCategoryId}
+                        onChange={setForumCategoryId}
+                        options={categoryChannels}
+                        placeholder={dictionary.serverSettings.forumCategoryId}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>{dictionary.serverSettings.meetingChannelId}</Label>
+                    <DiscordEntitySelect
+                        value={meetingChannelId}
+                        onChange={setMeetingChannelId}
+                        options={meetingChannels}
+                        placeholder={dictionary.serverSettings.meetingChannelId}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>{dictionary.serverSettings.clanRoleId}</Label>
+                    <DiscordEntitySelect
+                        value={clanRoleId}
+                        onChange={setClanRoleId}
+                        options={roles}
+                        placeholder={dictionary.serverSettings.clanRoleId}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>
+                        {dictionary.serverSettings.dashboardAdminRoleId}
+                    </Label>
+                    <DiscordEntitySelect
+                        value={dashboardAdminRoleId}
+                        onChange={setDashboardAdminRoleId}
+                        options={roles}
+                        placeholder={
+                            dictionary.serverSettings.dashboardAdminRoleId
+                        }
+                    />
+                    <p className="text-muted-foreground text-sm">
+                        Super admins can resync dashboard admin access from the
+                        current dashboard-role membership.
+                    </p>
+                    <ResyncDashboardAdminsButton
+                        serverId={serverId}
+                        userId={userId}
+                    />
+                </div>
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <Label>
+                            {dictionary.serverSettings.playerStatsServersTitle}
+                        </Label>
+                        <p className="text-muted-foreground text-sm">
+                            {
+                                dictionary.serverSettings
+                                    .playerStatsServersDescription
+                            }
+                        </p>
+                    </div>
+                    <div className="space-y-4">
+                        {playerStatsServers.map((server, index) => (
+                            <div
+                                key={`${index}-${server.url}`}
+                                className="border-border/60 space-y-3 rounded-2xl border p-4"
+                            >
+                                <div className="space-y-2">
+                                    <Label>
+                                        {
+                                            dictionary.serverSettings
+                                                .playerStatsServerToken
+                                        }
+                                    </Label>
+                                    <Input
+                                        value={server.token}
+                                        onChange={(event) =>
+                                            setPlayerStatsServers((current) =>
+                                                current.map(
+                                                    (item, itemIndex) =>
+                                                        itemIndex === index
+                                                            ? {
+                                                                  ...item,
+                                                                  token: event
+                                                                      .target
+                                                                      .value,
+                                                              }
+                                                            : item
+                                                )
+                                            )
+                                        }
+                                        placeholder={
+                                            dictionary.serverSettings
+                                                .playerStatsServerTokenPlaceholder
+                                        }
+                                        className="rounded-xl"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>
+                                        {
+                                            dictionary.serverSettings
+                                                .playerStatsServerUrl
+                                        }
+                                    </Label>
+                                    <Input
+                                        value={server.url}
+                                        onChange={(event) =>
+                                            setPlayerStatsServers((current) =>
+                                                current.map(
+                                                    (item, itemIndex) =>
+                                                        itemIndex === index
+                                                            ? {
+                                                                  ...item,
+                                                                  url: event
+                                                                      .target
+                                                                      .value,
+                                                              }
+                                                            : item
+                                                )
+                                            )
+                                        }
+                                        placeholder={
+                                            dictionary.serverSettings
+                                                .playerStatsServerUrlPlaceholder
+                                        }
+                                        className="rounded-xl"
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-xl"
+                                    onClick={() =>
+                                        setPlayerStatsServers((current) =>
+                                            current.filter(
+                                                (_, itemIndex) =>
+                                                    itemIndex !== index
+                                            )
+                                        )
+                                    }
+                                >
+                                    {
+                                        dictionary.serverSettings
+                                            .removePlayerStatsServer
+                                    }
+                                </Button>
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="rounded-xl"
+                            onClick={() =>
+                                setPlayerStatsServers((current) => [
+                                    ...current,
+                                    { token: "", url: "" },
+                                ])
+                            }
+                        >
+                            {dictionary.serverSettings.addPlayerStatsServer}
+                        </Button>
+                    </div>
+                </div>
 
-  return (
-    <Card className="rounded-2xl border-border/60">
-      <CardHeader>
-        <CardTitle>{dictionary.serverSettings.discordTitle}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label>{dictionary.serverSettings.timezone}</Label>
-          <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger className="rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {supportedTimezones.map((item) => (
-                <SelectItem key={item} value={item}>{item}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>{dictionary.serverSettings.defaultLanguage}</Label>
-          <Select value={defaultLanguage} onValueChange={(value) => setDefaultLanguage(value as ClanLanguage)}>
-            <SelectTrigger className="rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {supportedClanLanguages.map((item) => (
-                <SelectItem key={item} value={item}>
-                  {item === "en" ? dictionary.serverSettings.languageEnglish : dictionary.serverSettings.languageCzech}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>{dictionary.serverSettings.announcementsChannelId}</Label>
-          <DiscordEntitySelect value={announcementsChannelId} onChange={setAnnouncementsChannelId} options={announcementChannels} placeholder={dictionary.serverSettings.announcementsChannelId} />
-        </div>
-        <div className="space-y-2">
-          <Label>{dictionary.serverSettings.eventInfoChannelId}</Label>
-          <DiscordEntitySelect value={eventInfoChannelId} onChange={setEventInfoChannelId} options={announcementChannels} placeholder={dictionary.serverSettings.eventInfoChannelId} />
-        </div>
-        <div className="space-y-2">
-          <Label>{dictionary.serverSettings.errorsChannelId}</Label>
-          <DiscordEntitySelect value={errorsChannelId} onChange={setErrorsChannelId} options={announcementChannels} placeholder={dictionary.serverSettings.errorsChannelId} />
-        </div>
-        <div className="space-y-2">
-          <Label>{dictionary.serverSettings.calendarChannelId}</Label>
-          <DiscordEntitySelect value={calendarChannelId} onChange={setCalendarChannelId} options={announcementChannels} placeholder={dictionary.serverSettings.calendarChannelId} />
-        </div>
-        <div className="space-y-2">
-          <Label>{dictionary.serverSettings.forumCategoryId}</Label>
-          <DiscordEntitySelect value={forumCategoryId} onChange={setForumCategoryId} options={categoryChannels} placeholder={dictionary.serverSettings.forumCategoryId} />
-        </div>
-        <div className="space-y-2">
-          <Label>{dictionary.serverSettings.meetingChannelId}</Label>
-          <DiscordEntitySelect value={meetingChannelId} onChange={setMeetingChannelId} options={meetingChannels} placeholder={dictionary.serverSettings.meetingChannelId} />
-        </div>
-        <div className="space-y-2">
-          <Label>{dictionary.serverSettings.clanRoleId}</Label>
-          <DiscordEntitySelect value={clanRoleId} onChange={setClanRoleId} options={roles} placeholder={dictionary.serverSettings.clanRoleId} />
-        </div>
-        <div className="space-y-2">
-          <Label>{dictionary.serverSettings.dashboardAdminRoleId}</Label>
-          <DiscordEntitySelect value={dashboardAdminRoleId} onChange={setDashboardAdminRoleId} options={roles} placeholder={dictionary.serverSettings.dashboardAdminRoleId} />
-          <p className="text-sm text-muted-foreground">
-            Super admins can resync dashboard admin access from the current dashboard-role membership.
-          </p>
-          <ResyncDashboardAdminsButton serverId={serverId} userId={userId} />
-        </div>
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <Label>{dictionary.serverSettings.playerStatsServersTitle}</Label>
-            <p className="text-sm text-muted-foreground">{dictionary.serverSettings.playerStatsServersDescription}</p>
-          </div>
-          <div className="space-y-4">
-            {playerStatsServers.map((server, index) => (
-              <div key={`${index}-${server.url}`} className="rounded-2xl border border-border/60 p-4 space-y-3">
-                <div className="space-y-2">
-                  <Label>{dictionary.serverSettings.playerStatsServerToken}</Label>
-                  <Input
-                    value={server.token}
-                    onChange={(event) => setPlayerStatsServers((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, token: event.target.value } : item))}
-                    placeholder={dictionary.serverSettings.playerStatsServerTokenPlaceholder}
-                    className="rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{dictionary.serverSettings.playerStatsServerUrl}</Label>
-                  <Input
-                    value={server.url}
-                    onChange={(event) => setPlayerStatsServers((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item))}
-                    placeholder={dictionary.serverSettings.playerStatsServerUrlPlaceholder}
-                    className="rounded-xl"
-                  />
-                </div>
                 <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-xl"
-                  onClick={() => setPlayerStatsServers((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                    className="rounded-xl"
+                    onClick={handleSave}
+                    disabled={isPending}
                 >
-                  {dictionary.serverSettings.removePlayerStatsServer}
+                    {dictionary.serverSettings.saveDiscordSettings}
                 </Button>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => setPlayerStatsServers((current) => [...current, { token: "", url: "" }])}
-            >
-              {dictionary.serverSettings.addPlayerStatsServer}
-            </Button>
-          </div>
-        </div>
-
-        <Button className="rounded-xl" onClick={handleSave} disabled={isPending}>
-          {dictionary.serverSettings.saveDiscordSettings}
-        </Button>
-      </CardContent>
-    </Card>
-  );
+            </CardContent>
+        </Card>
+    )
 }

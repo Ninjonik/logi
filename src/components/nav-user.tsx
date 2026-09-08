@@ -1,108 +1,112 @@
 "use client"
 
-import {
-  EllipsisVertical,
-  CircleUser,
-} from "lucide-react"
-import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
+import { EllipsisVertical, CircleUser } from "lucide-react"
+import Link from "next/link"
 
-import { SignOutButton } from "@/components/auth/sign-out-button"
-import { Logo } from "@/components/logo"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar"
-import type { Dictionary } from "@/i18n/dictionaries"
+import { SignOutButton } from "@/components/auth/sign-out-button"
 import { UserAvatar } from "@/components/auth/user-avatar"
+import type { Dictionary } from "@/i18n/dictionaries"
+import { Logo } from "@/components/logo"
 
 export function NavUser({
-  user,
-  locale = "en",
-  dictionary,
+    user,
+    locale = "en",
+    dictionary,
 }: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-  locale?: string
-  dictionary: Dictionary
+    user: {
+        name: string
+        email: string
+        avatar: string
+    }
+    locale?: string
+    dictionary: Dictionary
 }) {
-  const { isMobile } = useSidebar()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const pathWorkspace = pathname?.match(/\/servers\/([^/]+)/)?.[1]
-  const workspace = pathWorkspace ?? searchParams.get("workspace")
-  const settingsHref = workspace
-    ? `/${locale}/dashboard/settings/user?workspace=${encodeURIComponent(workspace)}`
-    : `/${locale}/dashboard/settings/user`
+    const { isMobile } = useSidebar()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+    const pathWorkspace = pathname?.match(/\/servers\/([^/]+)/)?.[1]
+    const workspace = pathWorkspace ?? searchParams.get("workspace")
+    const settingsHref = workspace
+        ? `/${locale}/dashboard/settings/user?workspace=${encodeURIComponent(workspace)}`
+        : `/${locale}/dashboard/settings/user`
 
-  return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="h-10 cursor-pointer gap-2 p-1.5 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground 2xl:h-12 2xl:p-2"
-            >
-              <div className="flex size-7 items-center justify-center rounded-md 2xl:size-8 2xl:rounded-lg">
-                <UserAvatar avatarLink={user.avatar} />
-              </div>
-              <div className="grid flex-1 text-left text-[13px] leading-tight 2xl:text-sm">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="text-muted-foreground truncate text-[10px] 2xl:text-xs">
-                  {user.email}
-                </span>
-              </div>
-              <EllipsisVertical className="ml-auto size-3.5 2xl:size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <div className="h-8 w-8 rounded-lg">
-                  <UserAvatar avatarLink={user.avatar} />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {user.email}
-                  </span>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href={settingsHref}>
-                  <CircleUser />
-                  {dictionary.common.settings}
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <SignOutButton label={dictionary.common.logout} />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  )
+    return (
+        <SidebarMenu>
+            <SidebarMenuItem>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <SidebarMenuButton
+                            size="lg"
+                            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground h-10 cursor-pointer gap-2 p-1.5 2xl:h-12 2xl:p-2"
+                        >
+                            <div className="flex size-7 items-center justify-center rounded-md 2xl:size-8 2xl:rounded-lg">
+                                <UserAvatar avatarLink={user.avatar} />
+                            </div>
+                            <div className="grid flex-1 text-left text-[13px] leading-tight 2xl:text-sm">
+                                <span className="truncate font-medium">
+                                    {user.name}
+                                </span>
+                                <span className="text-muted-foreground truncate text-[10px] 2xl:text-xs">
+                                    {user.email}
+                                </span>
+                            </div>
+                            <EllipsisVertical className="ml-auto size-3.5 2xl:size-4" />
+                        </SidebarMenuButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                        side={isMobile ? "bottom" : "right"}
+                        align="end"
+                        sideOffset={4}
+                    >
+                        <DropdownMenuLabel className="p-0 font-normal">
+                            <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                                <div className="h-8 w-8 rounded-lg">
+                                    <UserAvatar avatarLink={user.avatar} />
+                                </div>
+                                <div className="grid flex-1 text-left text-sm leading-tight">
+                                    <span className="truncate font-medium">
+                                        {user.name}
+                                    </span>
+                                    <span className="text-muted-foreground truncate text-xs">
+                                        {user.email}
+                                    </span>
+                                </div>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem
+                                asChild
+                                className="cursor-pointer"
+                            >
+                                <Link href={settingsHref}>
+                                    <CircleUser />
+                                    {dictionary.common.settings}
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
+                        <SignOutButton label={dictionary.common.logout} />
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </SidebarMenuItem>
+        </SidebarMenu>
+    )
 }

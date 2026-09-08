@@ -1,36 +1,39 @@
-import { z } from "zod";
+import { z } from "zod"
 
 export const userAssignmentSchema = z
-  .object({
-    userId: z.string().min(1, "Pick a player first."),
-    type: z.enum(["member", "reserve_member", "mercenary"]),
-    status: z.enum(["pending", "recruit", "active"]),
-    primaryGroupId: z.string().trim().optional(),
-    secondaryGroupIds: z.array(z.string()),
-    platformIds: z.string().trim().optional(),
-    note: z.string().trim().optional(),
-    paused: z.boolean(),
-    pausedNote: z.string().trim().optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.paused && !value.pausedNote) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["pausedNote"],
-        message: "Add a pause note when membership is paused.",
-      });
-    }
+    .object({
+        userId: z.string().min(1, "Pick a player first."),
+        type: z.enum(["member", "reserve_member", "mercenary"]),
+        status: z.enum(["pending", "recruit", "active"]),
+        primaryGroupId: z.string().trim().optional(),
+        secondaryGroupIds: z.array(z.string()),
+        platformIds: z.string().trim().optional(),
+        note: z.string().trim().optional(),
+        paused: z.boolean(),
+        pausedNote: z.string().trim().optional(),
+    })
+    .superRefine((value, ctx) => {
+        if (value.paused && !value.pausedNote) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["pausedNote"],
+                message: "Add a pause note when membership is paused.",
+            })
+        }
 
-    if ((value.type === "mercenary" || value.type === "reserve_member") && value.status === "recruit") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["status"],
-        message: value.type === "mercenary"
-          ? "Mercenaries cannot use the recruit status."
-          : "Reserve members cannot use the recruit status.",
-      });
-    }
+        if (
+            (value.type === "mercenary" || value.type === "reserve_member") &&
+            value.status === "recruit"
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["status"],
+                message:
+                    value.type === "mercenary"
+                        ? "Mercenaries cannot use the recruit status."
+                        : "Reserve members cannot use the recruit status.",
+            })
+        }
+    })
 
-  });
-
-export type UserAssignmentInput = z.infer<typeof userAssignmentSchema>;
+export type UserAssignmentInput = z.infer<typeof userAssignmentSchema>

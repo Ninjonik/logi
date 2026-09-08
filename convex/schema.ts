@@ -1,775 +1,934 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+import { defineSchema, defineTable } from "convex/server"
+import { v } from "convex/values"
 
 const users = defineTable({
-  discordId: v.optional(v.string()),
-  id: v.optional(v.string()),
-  name: v.string(),
-  note: v.optional(v.string()),
-  nicknames: v.optional(v.record(v.string(), v.string())),
-  platformIds: v.optional(v.array(v.string())),
-  avatar: v.string(),
-  managedGuildIds: v.array(v.string()),
-  guildId: v.optional(v.string()),
-  mercenaryGuildIds: v.array(v.string()),
-  isStreamer: v.boolean(),
-  score: v.optional(v.number()),
-  scores: v.optional(v.record(v.string(), v.number())),
-  performance: v.optional(v.object({
-    matchesPlayed: v.number(),
-    averages: v.object({
-      kills: v.number(),
-      killDeathRatio: v.number(),
-      deaths: v.number(),
-      offense: v.number(),
-      defense: v.number(),
-      support: v.number(),
-    }),
-  })),
-  createdAt: v.string(),
-  updatedAt: v.string(),
-})
-  .index("discordId", ["discordId"])
-  .index("id", ["id"])
-  .searchIndex("name", { searchField: "name" });
-
-const guildMember = v.object({
-  id: v.string(),
-  group: v.optional(v.string()),
-  primaryGroup: v.optional(v.string()),
-  secondaryGroups: v.optional(v.array(v.string())),
-  status: v.optional(v.union(
-    v.literal("pending"),
-    v.literal("recruit"),
-    v.literal("member"),
-    v.literal("reserve_member"),
-    v.literal("mercenary"),
-  )),
-  joinedAt: v.optional(v.string()),
-});
-
-const topic = v.object({
-  id: v.optional(v.string()),
-  title: v.string(),
-  body: v.optional(v.string()),
-  attachments: v.array(v.string()),
-});
-
-const squadRole = v.object({
-  name: v.string(),
-  color: v.string(),
-  icon: v.string(),
-  count: v.number(),
-  note: v.optional(v.string()),
-});
-
-const squadPresetSquad = v.object({
-  name: v.string(),
-  group: v.string(),
-  order: v.number(),
-  color: v.string(),
-  icon: v.string(),
-  roles: v.array(squadRole),
-});
-
-const signUp = v.object({
-  userId: v.string(),
-  group: v.optional(v.union(v.string(), v.null())),
-});
-
-const eventParticipant = v.object({
-  userId: v.string(),
-  status: v.union(v.literal("attending"), v.literal("not_attending")),
-  group: v.optional(v.union(v.string(), v.null())),
-  completed: v.optional(v.union(v.literal("passed"), v.literal("failed"))),
-  updatedAt: v.string(),
-});
-
-const rosterScoreSettings = v.object({
-  noCategory: v.number(),
-  declined: v.number(),
-  rosterPresent: v.number(),
-  reservePresent: v.number(),
-  rosterAbsent: v.number(),
-  reserveAbsent: v.number(),
-  excusedAbsence: v.number(),
-});
-
-const attendanceReminder = v.object({
-  userId: v.string(),
-  offsetHours: v.number(),
-  sentAt: v.string(),
-});
-
-const ticketModalQuestion = v.object({
-  id: v.string(),
-  label: v.string(),
-  placeholder: v.optional(v.string()),
-  style: v.union(v.literal("short"), v.literal("paragraph")),
-  required: v.boolean(),
-});
-
-const ticketCategory = v.object({
-  id: v.string(),
-  emoji: v.optional(v.string()),
-  label: v.optional(v.string()),
-  description: v.optional(v.string()),
-  supportRoleIds: v.array(v.string()),
-  modalQuestions: v.array(ticketModalQuestion),
-});
-
-const membershipCategory = v.object({
-  id: v.string(),
-  emoji: v.optional(v.string()),
-  label: v.optional(v.string()),
-  description: v.optional(v.string()),
-  supportRoleIds: v.array(v.string()),
-  recruitRoleIds: v.array(v.string()),
-  finalRoleIds: v.array(v.string()),
-  modalQuestions: v.array(ticketModalQuestion),
-  assignmentType: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
-});
-
-const eventCategory = v.object({
-  id: v.string(),
-  label: v.string(),
-  color: v.string(),
-  emoji: v.optional(v.string()),
-});
-
-const calendarItemRecurrence = v.object({
-  frequency: v.union(
-    v.literal("weekly"),
-    v.literal("monthly_date"),
-    v.literal("monthly_nth_weekday"),
-    v.literal("yearly"),
-  ),
-  interval: v.number(),
-  until: v.optional(v.string()),
-});
-
-const calendarItem = v.object({
-  guildId: v.string(),
-  title: v.string(),
-  description: v.optional(v.string()),
-  color: v.string(),
-  emoji: v.optional(v.string()),
-  label: v.optional(v.string()),
-  startAt: v.string(),
-  endAt: v.string(),
-  allDay: v.boolean(),
-  recurrence: v.optional(calendarItemRecurrence),
-  createdAt: v.string(),
-  updatedAt: v.string(),
-});
-
-const ticketSettings = v.object({
-  enabled: v.boolean(),
-  submitChannelId: v.optional(v.string()),
-  ticketParentChannelId: v.optional(v.string()),
-  panelTitle: v.string(),
-  panelDescription: v.string(),
-  panelImageUrl: v.optional(v.string()),
-  categories: v.array(ticketCategory),
-});
-
-const membershipSettings = v.object({
-  enabled: v.boolean(),
-  submitChannelId: v.optional(v.string()),
-  applicationParentChannelId: v.optional(v.string()),
-  panelTitle: v.string(),
-  panelDescription: v.string(),
-  panelImageUrl: v.optional(v.string()),
-  autoAssignRecruitOnApply: v.boolean(),
-  rosterScoreSettings: v.optional(rosterScoreSettings),
-  categories: v.array(membershipCategory),
-});
-
-const playerStatsServer = v.object({
-  token: v.string(),
-  url: v.string(),
-});
-
-const eventResult = v.object({
-  sourceUrl: v.string(),
-  mapId: v.string(),
-  mapName: v.optional(v.string()),
-  endedAt: v.optional(v.string()),
-  importedAt: v.string(),
-  sideA: v.string(),
-  sideB: v.string(),
-  outcome: v.union(v.literal("victory"), v.literal("defeat"), v.literal("draw")),
-  score: v.object({
-    sideA: v.number(),
-    sideB: v.number(),
-  }),
-});
-
-const statBreakdown = v.record(v.string(), v.number());
-
-const matchPlayerTeam = v.object({
-  side: v.string(),
-  confidence: v.optional(v.union(v.literal("strong"), v.literal("mixed"))),
-  ratio: v.optional(v.number()),
-});
-
-const matchPlayerSteamInfo = v.object({
-  id: v.number(),
-  created: v.string(),
-  updated: v.union(v.string(), v.null()),
-  profile: v.union(v.string(), v.null()),
-  country: v.union(v.string(), v.null()),
-  bans: v.union(v.number(), v.null()),
-  has_bans: v.boolean(),
-});
-
-const matchPlayerUnit = v.object({
-  ts: v.number(),
-  team: v.number(),
-  squad: v.number(),
-  role: v.number(),
-});
-
-const matchPlayerEncounter = v.object({
-  action: v.string(),
-  player_id: v.string(),
-  player_name: v.string(),
-  ts: v.number(),
-  weapon: v.string(),
-});
-
-const matchPlayerStat = v.object({
-  id: v.number(),
-  player_id: v.string(),
-  player: v.string(),
-  map_id: v.number(),
-  kills: v.number(),
-  kills_by_type: v.optional(statBreakdown),
-  kills_streak: v.number(),
-  deaths: v.number(),
-  deaths_by_type: v.optional(statBreakdown),
-  deaths_without_kill_streak: v.number(),
-  teamkills: v.number(),
-  teamkills_streak: v.number(),
-  deaths_by_tk: v.number(),
-  deaths_by_tk_streak: v.number(),
-  nb_vote_started: v.number(),
-  nb_voted_yes: v.number(),
-  nb_voted_no: v.number(),
-  time_seconds: v.number(),
-  kills_per_minute: v.number(),
-  deaths_per_minute: v.number(),
-  kill_death_ratio: v.number(),
-  longest_life_secs: v.number(),
-  shortest_life_secs: v.number(),
-  combat: v.number(),
-  offense: v.number(),
-  defense: v.number(),
-  support: v.number(),
-  most_killed: v.record(v.string(), v.number()),
-  death_by: v.record(v.string(), v.number()),
-  weapons: v.record(v.string(), v.number()),
-  death_by_weapons: v.record(v.string(), v.number()),
-  team: matchPlayerTeam,
-  level: v.number(),
-  platform: v.optional(v.string()),
-  steaminfo: v.optional(matchPlayerSteamInfo),
-  vehicle_kills: v.optional(v.number()),
-  vehicles_destroyed: v.optional(v.number()),
-  kills_and_assists: v.optional(v.number()),
-  deaths_and_redeploys: v.optional(v.number()),
-  units: v.optional(v.array(matchPlayerUnit)),
-  encounters: v.optional(v.array(matchPlayerEncounter)),
-});
-
-const rawMatch = v.object({
-  id: v.number(),
-  creation_time: v.string(),
-  start: v.string(),
-  end: v.string(),
-  server_number: v.number(),
-  map_name: v.string(),
-  result: v.object({
-    axis: v.number(),
-    allied: v.number(),
-  }),
-  game_layout: v.object({
-    requested: v.array(v.union(v.number(), v.null())),
-    set: v.array(v.string()),
-  }),
-  cap_flips: v.optional(v.array(v.object({
-    allied_score: v.number(),
-    axis_score: v.number(),
-    ts: v.number(),
-  }))),
-  match_time: v.optional(v.number()),
-  player_stats: v.array(matchPlayerStat),
-  map: v.object({
-    id: v.string(),
-    game_mode: v.string(),
-    attackers: v.optional(v.union(v.string(), v.null())),
-    environment: v.string(),
-    pretty_name: v.string(),
-    image_name: v.string(),
-    map: v.object({
-      id: v.string(),
-      name: v.string(),
-      tag: v.string(),
-      pretty_name: v.string(),
-      shortname: v.string(),
-      allies: v.object({
-        name: v.string(),
-        team: v.string(),
-      }),
-      axis: v.object({
-        name: v.string(),
-        team: v.string(),
-      }),
-      orientation: v.string(),
-    }),
-  }),
-});
-
-const rosterPlayer = v.object({
-  id: v.optional(v.string()),
-  customName: v.optional(v.string()),
-  ack: v.boolean(),
-  confirmed: v.optional(v.boolean()),
-  note: v.optional(v.string()),
-  roleName: v.optional(v.string()),
-  roleIcon: v.optional(v.string()),
-});
-
-const reserveAttendance = v.object({
-  userId: v.string(),
-  ack: v.boolean(),
-  confirmed: v.optional(v.boolean()),
-});
-
-const eventNotice = v.object({
-  userId: v.string(),
-  reason: v.string(),
-  createdAt: v.string(),
-});
-
-const rosterSquad = v.object({
-  name: v.string(),
-  group: v.string(),
-  order: v.number(),
-  color: v.string(),
-  icon: v.optional(v.string()),
-  players: v.array(rosterPlayer),
-});
-
-const userAssignments = defineTable({
-  userId: v.string(),
-  serverId: v.string(),
-  type: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
-  status: v.union(v.literal("pending"), v.literal("recruit"), v.literal("active")),
-  membershipCategoryId: v.optional(v.string()),
-  primaryGroupId: v.optional(v.id("groups")),
-  secondaryGroupIds: v.optional(v.array(v.id("groups"))),
-  group: v.optional(v.string()),
-  paused: v.boolean(),
-  pausedNote: v.optional(v.string()),
-  createdAt: v.string(),
-  updatedAt: v.string(),
-})
-  .index("serverId", ["serverId"])
-  .index("userId", ["userId"])
-  .index("serverId_userId", ["serverId", "userId"]);
-
-export default defineSchema({
-  users,
-  guilds: defineTable({
     discordId: v.optional(v.string()),
     id: v.optional(v.string()),
     name: v.string(),
+    note: v.optional(v.string()),
+    nicknames: v.optional(v.record(v.string(), v.string())),
+    platformIds: v.optional(v.array(v.string())),
     avatar: v.string(),
-    description: v.optional(v.string()),
-    eventCategories: v.optional(v.array(eventCategory)),
-    botInside: v.boolean(),
-    adminIds: v.array(v.string()),
-    // Admins explicitly assigned in Logi are kept separate from admins derived
-    // from the Discord dashboard role, so a role resync cannot revoke them.
-    dashboardAdminIds: v.optional(v.array(v.string())),
-    // A manual setting wins over all inherited sources (Discord Administrator,
-    // dashboard role, and guild ownership). Missing means inherit.
-    adminAccessOverrides: v.optional(v.record(v.string(), v.boolean())),
-    memberIds: v.array(v.string()),
-    members: v.array(guildMember),
-    mercenaryIds: v.array(v.string()),
+    managedGuildIds: v.array(v.string()),
+    guildId: v.optional(v.string()),
+    mercenaryGuildIds: v.array(v.string()),
+    isStreamer: v.boolean(),
+    score: v.optional(v.number()),
+    scores: v.optional(v.record(v.string(), v.number())),
+    performance: v.optional(
+        v.object({
+            matchesPlayed: v.number(),
+            averages: v.object({
+                kills: v.number(),
+                killDeathRatio: v.number(),
+                deaths: v.number(),
+                offense: v.number(),
+                defense: v.number(),
+                support: v.number(),
+            }),
+        })
+    ),
     createdAt: v.string(),
     updatedAt: v.string(),
-  })
+})
     .index("discordId", ["discordId"])
-    .index("id", ["id"]),
-  discordConfigs: defineTable({
-    guildId: v.string(),
-    timezone: v.string(),
-    defaultLanguage: v.union(v.literal("en"), v.literal("cs")),
-    announcementsChannelId: v.optional(v.string()),
-    eventInfoChannelId: v.optional(v.string()),
-    errorsChannelId: v.optional(v.string()),
-    calendarChannelId: v.optional(v.string()),
-    calendarCategories: v.optional(v.array(v.string())),
-    calendarMessageChannelId: v.optional(v.string()),
-    calendarMessageId: v.optional(v.string()),
-    calendarMessageLastConfigUpdatedAt: v.optional(v.string()),
-    forumCategoryId: v.optional(v.string()),
-    meetingChannelId: v.optional(v.string()),
-    clanRoleId: v.optional(v.string()),
-    dashboardAdminRoleId: v.optional(v.string()),
-    playerStatsServers: v.optional(v.array(playerStatsServer)),
-    ticketSettings: v.optional(ticketSettings),
-    membershipSettings: v.optional(membershipSettings),
-    ticketPanelMessageId: v.optional(v.string()),
-    ticketPanelLastConfigUpdatedAt: v.optional(v.string()),
-    membershipPanelMessageId: v.optional(v.string()),
-    membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
-    ticketCounter: v.optional(v.number()),
-    membershipApplicationCounter: v.optional(v.number()),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  }).index("guildId", ["guildId"]),
-  calendarItems: defineTable(calendarItem)
-    .index("guildId", ["guildId"]),
-  groups: defineTable({
-    guildId: v.string(),
+    .index("id", ["id"])
+    .searchIndex("name", { searchField: "name" })
+
+const guildMember = v.object({
+    id: v.string(),
+    group: v.optional(v.string()),
+    primaryGroup: v.optional(v.string()),
+    secondaryGroups: v.optional(v.array(v.string())),
+    status: v.optional(
+        v.union(
+            v.literal("pending"),
+            v.literal("recruit"),
+            v.literal("member"),
+            v.literal("reserve_member"),
+            v.literal("mercenary")
+        )
+    ),
+    joinedAt: v.optional(v.string()),
+})
+
+const topic = v.object({
+    id: v.optional(v.string()),
+    title: v.string(),
+    body: v.optional(v.string()),
+    attachments: v.array(v.string()),
+})
+
+const squadRole = v.object({
     name: v.string(),
     color: v.string(),
-    order: v.number(),
-    parentId: v.optional(v.id("groups")),
-    description: v.optional(v.string()),
-    discordRoleId: v.optional(v.string()),
-    discordEmoji: v.optional(v.string()),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  })
-    .index("guildId", ["guildId"])
-    .index("guildId_name", ["guildId", "name"]),
-  events: defineTable({
-    guildId: v.string(),
-    kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
-    matchType: v.optional(v.string()),
-    name: v.string(),
-    description: v.optional(v.string()),
-    thumbnailUrl: v.optional(v.string()),
-    imageUrl: v.optional(v.string()),
-    // Copied from the clan defaults when an event is created.  Keeping these
-    // on the event prevents later setting changes from moving existing bot messages.
-    announcementChannelId: v.optional(v.string()),
-    eventInfoChannelId: v.optional(v.string()),
-    meetingChannelId: v.optional(v.string()),
-    requiredRoleIds: v.optional(v.array(v.string())),
-    rewardRoleIds: v.optional(v.array(v.string())),
-    signupGroupIds: v.optional(v.array(v.string())),
-    allowedSignupStatuses: v.optional(v.array(v.union(
-      v.literal("recruit"),
-      v.literal("member"),
-      v.literal("reserve_member"),
-      v.literal("mercenary"),
-    ))),
-    useGeneralSignup: v.optional(v.boolean()),
-    attendeeRoleId: v.optional(v.string()),
-    reserveRoleId: v.optional(v.string()),
-    server: v.optional(v.string()),
-    serverPassword: v.optional(v.string()),
-    side: v.optional(v.string()),
-    map: v.optional(v.string()),
-    cap: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    registrationEnd: v.string(),
-    meetingStart: v.string(),
-    gameStart: v.string(),
-    gameEnd: v.string(),
-    pingClan: v.boolean(),
-    pingMode: v.optional(v.union(v.literal("none"), v.literal("clan"), v.literal("roles"))),
-    pingRoleIds: v.optional(v.array(v.string())),
-    createForumChannel: v.optional(v.boolean()),
-    topicPresetId: v.optional(v.id("topicPresets")),
-    stratmapIds: v.optional(v.array(v.id("stratmaps"))),
-    status: v.optional(v.union(
-      v.literal("registration"),
-      v.literal("closed"),
-      v.literal("starting"),
-      v.literal("concluded"),
-    )),
-    statusUpdatedAt: v.optional(v.string()),
-    concludedAt: v.optional(v.string()),
-    eventResult: v.optional(eventResult),
-    matchStatsId: v.optional(v.id("matchStats")),
-    competitionFixtureId: v.optional(v.id("competitionFixtures")),
-    attendanceReminderLog: v.optional(v.array(attendanceReminder)),
-    participants: v.optional(v.array(eventParticipant)),
-    signUps: v.optional(v.array(signUp)),
-    scoreAppliedAt: v.optional(v.string()),
-    scoreResolution: v.optional(v.union(v.literal("applied"), v.literal("skipped"))),
-    absenceNotices: v.optional(v.array(eventNotice)),
-    createdAt: v.string(),
-    updatedAt: v.optional(v.string()),
-  }).index("guildId", ["guildId"]),
-  competitions: defineTable({
-    slug: v.string(), name: v.string(), season: v.string(), description: v.optional(v.string()),
-    format: v.object({ kind: v.literal("league_with_playoffs"), standings: v.literal("ecl_cap_score") }),
-    createdAt: v.string(), updatedAt: v.string(),
-  }).index("slug", ["slug"]),
-  competitionDivisions: defineTable({ competitionId: v.id("competitions"), name: v.string(), order: v.number(), createdAt: v.string() }).index("competitionId", ["competitionId"]),
-  competitionTeams: defineTable({ competitionId: v.id("competitions"), guildId: v.id("guilds"), divisionId: v.optional(v.id("competitionDivisions")), withdrawn: v.boolean(), createdAt: v.string(), updatedAt: v.string() }).index("competitionId", ["competitionId"]).index("guildId", ["guildId"]).index("competitionId_guildId", ["competitionId", "guildId"]),
-  competitionFixtures: defineTable({ competitionId: v.id("competitions"), divisionId: v.optional(v.id("competitionDivisions")), phase: v.union(v.literal("league"), v.literal("playoff"), v.literal("relegation")), teamAId: v.id("guilds"), teamBId: v.id("guilds"), scheduledAt: v.optional(v.string()), scoreA: v.optional(v.number()), scoreB: v.optional(v.number()), status: v.union(v.literal("scheduled"), v.literal("final"), v.literal("forfeit")), eventId: v.optional(v.id("events")), createdAt: v.string(), updatedAt: v.string() }).index("competitionId", ["competitionId"]).index("eventId", ["eventId"]),
-  eventScheduleJobs: defineTable({
-    eventId: v.id("events"),
-    kind: v.union(v.literal("close-registration"), v.literal("start-event"), v.literal("conclude-event"), v.literal("attendance-reminder")),
-    dueAt: v.string(),
-    status: v.union(v.literal("pending"), v.literal("processing")),
-    attempts: v.number(),
-    claimedAt: v.optional(v.string()),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  }).index("eventId", ["eventId"]).index("status_dueAt", ["status", "dueAt"]).index("status", ["status"]),
-  stratmaps: defineTable({
-    guildId: v.string(),
-    eventId: v.optional(v.id("events")),
-    title: v.string(),
-    description: v.optional(v.string()),
-    baseMapId: v.string(),
-    side: v.optional(v.string()),
-    strongpointId: v.optional(v.string()),
-    state: v.string(),
-    createdBy: v.string(),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  })
-    .index("guildId", ["guildId"])
-    .index("eventId", ["eventId"]),
-  topicPresets: defineTable({
-    guildId: v.string(),
-    name: v.string(),
-    side: v.optional(v.string()),
-    map: v.optional(v.string()),
-    cap: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    topics: v.array(topic),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  }).index("guildId", ["guildId"]),
-  squadPresets: defineTable({
-    guildId: v.string(),
-    name: v.string(),
-    squads: v.array(squadPresetSquad),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  }).index("guildId", ["guildId"]),
-  rosters: defineTable({
-    eventId: v.id("events"),
-    squadPresetId: v.optional(v.id("squadPresets")),
-    squads: v.array(rosterSquad),
-    reservePlayerIds: v.array(v.string()),
-    reserveAttendances: v.optional(v.array(reserveAttendance)),
-    notAttendingPlayerIds: v.array(v.string()),
-    streamerId: v.optional(v.string()),
-    published: v.boolean(),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  }).index("eventId", ["eventId"]),
-  discordEventSyncs: defineTable({
-    eventId: v.id("events"),
-    guildId: v.string(),
-    announcementChannelId: v.optional(v.string()),
-    announcementMessageId: v.optional(v.string()),
-    rosterUpdateChannelId: v.optional(v.string()),
-    rosterUpdateMessageId: v.optional(v.string()),
-    eventInfoMessageId: v.optional(v.string()),
-    eventInfoMessageRenderVersion: v.optional(v.string()),
-    scheduledEventId: v.optional(v.string()),
-    scheduledEventStatus: v.optional(v.union(
-      v.literal("scheduled"),
-      v.literal("active"),
-      v.literal("completed"),
-      v.literal("canceled"),
-    )),
-    forumChannelId: v.optional(v.string()),
-    forumThreadId: v.optional(v.string()),
-    infoMessageId: v.optional(v.string()),
-    topicMessageIds: v.array(v.string()),
-    lastSyncedAt: v.optional(v.string()),
-    lastEventUpdatedAt: v.optional(v.string()),
-    lastRosterUpdatedAt: v.optional(v.string()),
-    lastConfigUpdatedAt: v.optional(v.string()),
-    lastCalendarSyncVersion: v.optional(v.string()),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  })
-    .index("eventId", ["eventId"])
-    .index("guildId", ["guildId"]),
-  discordMemberAccess: defineTable({
-    guildId: v.string(),
-    userId: v.string(),
-    roleIds: v.array(v.string()),
-    voiceChannelId: v.optional(v.string()),
-    isAdmin: v.boolean(),
-    hasDashboardAccess: v.boolean(),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  })
-    .index("guildId", ["guildId"])
-    .index("userId", ["userId"])
-    .index("guildId_userId", ["guildId", "userId"]),
-  ticketThreads: defineTable({
-    guildId: v.string(),
-    threadId: v.string(),
-    parentChannelId: v.string(),
-    creatorId: v.string(),
-    categoryId: v.string(),
-    categoryLabel: v.string(),
-    ticketNumber: v.number(),
-    status: v.union(v.literal("open"), v.literal("closed")),
-    transcriptMessageId: v.optional(v.string()),
-    answers: v.array(v.object({
-      questionId: v.string(),
-      label: v.string(),
-      value: v.string(),
-    })),
-    openedAt: v.string(),
-    closedAt: v.optional(v.string()),
-    closedByUserId: v.optional(v.string()),
-    closeReason: v.optional(v.string()),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  })
-    .index("guildId", ["guildId"])
-    .index("threadId", ["threadId"])
-    .index("guildId_ticketNumber", ["guildId", "ticketNumber"]),
-  membershipApplicationThreads: defineTable({
-    guildId: v.string(),
-    threadId: v.string(),
-    parentChannelId: v.string(),
-    creatorId: v.string(),
-    categoryId: v.string(),
-    categoryLabel: v.string(),
-    assignmentType: v.union(v.literal("member"), v.literal("reserve_member"), v.literal("mercenary")),
-    applicationNumber: v.number(),
-    assignmentId: v.optional(v.id("userAssignments")),
-    transcriptMessageId: v.optional(v.string()),
-    answers: v.array(v.object({
-      questionId: v.string(),
-      label: v.string(),
-      value: v.string(),
-    })),
-    status: v.union(v.literal("open"), v.literal("closed")),
-    openedAt: v.string(),
-    closedAt: v.optional(v.string()),
-    closedByUserId: v.optional(v.string()),
-    closeReason: v.optional(v.string()),
-    closeOutcome: v.optional(v.union(
-      v.literal("denied"),
-      v.literal("pending"),
-      v.literal("recruit"),
-      v.literal("member"),
-      v.literal("reserve_member"),
-      v.literal("mercenary"),
-    )),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  })
-    .index("guildId", ["guildId"])
-    .index("threadId", ["threadId"])
-    .index("guildId_applicationNumber", ["guildId", "applicationNumber"]),
-  platformIdLinkTokens: defineTable({
-    token: v.string(),
-    guildId: v.string(),
-    userId: v.string(),
-    userName: v.string(),
-    userAvatar: v.optional(v.string()),
-    categoryId: v.optional(v.string()),
-    language: v.union(v.literal("en"), v.literal("cs")),
-    completionMode: v.optional(v.union(
-      v.literal("membership"),
-      v.literal("link"),
-    )),
-    applyMessageUrl: v.optional(v.string()),
-    interactionToken: v.optional(v.string()),
-    interactionApplicationId: v.optional(v.string()),
-    expiresAt: v.string(),
-    consumedAt: v.optional(v.string()),
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  })
-    .index("token", ["token"])
-    .index("userId", ["userId"]),
-  userAssignments,
-  playerStats: defineTable({
-    id: v.string(),
-    userId: v.optional(v.string()),
-    latestName: v.optional(v.string()),
-    updatedAt: v.string(),
-    matches: v.record(v.string(), v.object({
-      sourceUrl: v.string(),
-      importedAt: v.string(),
-      endedAt: v.optional(v.string()),
-      mapId: v.string(),
-      mapName: v.optional(v.string()),
-      playerName: v.string(),
-      userId: v.optional(v.string()),
-      team: v.string(),
-      kills: v.number(),
-      killDeathRatio: v.number(),
-      deaths: v.number(),
-      offense: v.number(),
-      defense: v.number(),
-      support: v.number(),
-    })),
-  })
-    .index("id", ["id"])
-    .index("userId", ["userId"]),
-  // Materialized, bounded read models for the dashboard.  Keeping only ten
-  // snapshots makes the analytics pages cheap even for long-running clans.
-  guildPerformanceHistory: defineTable({
-    guildId: v.string(),
-    matches: v.array(v.object({ eventId: v.string(), playedAt: v.string(), label: v.string(), combat: v.number(), offense: v.optional(v.number()), support: v.number(), kills: v.number(), deaths: v.number(), points: v.optional(v.number()), kd: v.optional(v.number()) })),
-    updatedAt: v.string(),
-  }).index("guildId", ["guildId"]),
-  playerPerformanceHistory: defineTable({
-    guildId: v.string(), userId: v.string(),
-    matches: v.array(v.object({ eventId: v.string(), playedAt: v.string(), label: v.string(), combat: v.number(), offense: v.optional(v.number()), support: v.number(), kills: v.number(), deaths: v.number(), points: v.optional(v.number()), kd: v.optional(v.number()) })),
-    updatedAt: v.string(),
-  }).index("guildId", ["guildId"]).index("guildId_userId", ["guildId", "userId"]),
-  matchStats: defineTable({
-    guildId: v.string(),
-    eventId: v.id("events"),
-    sourceUrl: v.string(),
-    matchId: v.string(),
-    importedAt: v.string(),
-    raw: rawMatch,
-    createdAt: v.string(),
-    updatedAt: v.string(),
-  })
-    .index("guildId", ["guildId"])
-    .index("eventId", ["eventId"]),
-  apiKeys: defineTable({
-    guildId: v.string(),
-    name: v.string(),
-    keyHash: v.string(),
-    keyPrefix: v.string(),
-    createdAt: v.string(),
-    lastUsedAt: v.optional(v.string()),
-    revokedAt: v.optional(v.string()),
-  }).index("guildId", ["guildId"]).index("keyHash", ["keyHash"]),
-  apiRateLimitBuckets: defineTable({
-    bucket: v.string(),
-    resetAt: v.number(),
+    icon: v.string(),
     count: v.number(),
-  }).index("bucket", ["bucket"]),
-  articles: defineTable({
-    guildId: v.string(), title: v.string(), description: v.string(), tags: v.array(v.string()), body: v.string(), attachments: v.array(v.string()), authorId: v.string(), createdAt: v.string(), updatedAt: v.string(),
-  }).index("guildId", ["guildId"]),
-  publicPreviews: defineTable({
-    entityType: v.union(v.literal("player"), v.literal("clan"), v.literal("match")),
-    entityId: v.string(),
-    title: v.string(),
-    description: v.string(),
-    imageVersion: v.string(),
+    note: v.optional(v.string()),
+})
+
+const squadPresetSquad = v.object({
+    name: v.string(),
+    group: v.string(),
+    order: v.number(),
+    color: v.string(),
+    icon: v.string(),
+    roles: v.array(squadRole),
+})
+
+const signUp = v.object({
+    userId: v.string(),
+    group: v.optional(v.union(v.string(), v.null())),
+})
+
+const eventParticipant = v.object({
+    userId: v.string(),
+    status: v.union(v.literal("attending"), v.literal("not_attending")),
+    group: v.optional(v.union(v.string(), v.null())),
+    completed: v.optional(v.union(v.literal("passed"), v.literal("failed"))),
     updatedAt: v.string(),
-    expiresAt: v.string(),
-  }).index("entity", ["entityType", "entityId"]).index("expiresAt", ["expiresAt"]),
-});
+})
+
+const rosterScoreSettings = v.object({
+    noCategory: v.number(),
+    declined: v.number(),
+    rosterPresent: v.number(),
+    reservePresent: v.number(),
+    rosterAbsent: v.number(),
+    reserveAbsent: v.number(),
+    excusedAbsence: v.number(),
+})
+
+const attendanceReminder = v.object({
+    userId: v.string(),
+    offsetHours: v.number(),
+    sentAt: v.string(),
+})
+
+const ticketModalQuestion = v.object({
+    id: v.string(),
+    label: v.string(),
+    placeholder: v.optional(v.string()),
+    style: v.union(v.literal("short"), v.literal("paragraph")),
+    required: v.boolean(),
+})
+
+const ticketCategory = v.object({
+    id: v.string(),
+    emoji: v.optional(v.string()),
+    label: v.optional(v.string()),
+    description: v.optional(v.string()),
+    supportRoleIds: v.array(v.string()),
+    modalQuestions: v.array(ticketModalQuestion),
+})
+
+const membershipCategory = v.object({
+    id: v.string(),
+    emoji: v.optional(v.string()),
+    label: v.optional(v.string()),
+    description: v.optional(v.string()),
+    supportRoleIds: v.array(v.string()),
+    recruitRoleIds: v.array(v.string()),
+    finalRoleIds: v.array(v.string()),
+    modalQuestions: v.array(ticketModalQuestion),
+    assignmentType: v.union(
+        v.literal("member"),
+        v.literal("reserve_member"),
+        v.literal("mercenary")
+    ),
+})
+
+const eventCategory = v.object({
+    id: v.string(),
+    label: v.string(),
+    color: v.string(),
+    emoji: v.optional(v.string()),
+})
+
+const calendarItemRecurrence = v.object({
+    frequency: v.union(
+        v.literal("weekly"),
+        v.literal("monthly_date"),
+        v.literal("monthly_nth_weekday"),
+        v.literal("yearly")
+    ),
+    interval: v.number(),
+    until: v.optional(v.string()),
+})
+
+const calendarItem = v.object({
+    guildId: v.string(),
+    title: v.string(),
+    description: v.optional(v.string()),
+    color: v.string(),
+    emoji: v.optional(v.string()),
+    label: v.optional(v.string()),
+    startAt: v.string(),
+    endAt: v.string(),
+    allDay: v.boolean(),
+    recurrence: v.optional(calendarItemRecurrence),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+})
+
+const ticketSettings = v.object({
+    enabled: v.boolean(),
+    submitChannelId: v.optional(v.string()),
+    ticketParentChannelId: v.optional(v.string()),
+    panelTitle: v.string(),
+    panelDescription: v.string(),
+    panelImageUrl: v.optional(v.string()),
+    categories: v.array(ticketCategory),
+})
+
+const membershipSettings = v.object({
+    enabled: v.boolean(),
+    submitChannelId: v.optional(v.string()),
+    applicationParentChannelId: v.optional(v.string()),
+    panelTitle: v.string(),
+    panelDescription: v.string(),
+    panelImageUrl: v.optional(v.string()),
+    autoAssignRecruitOnApply: v.boolean(),
+    rosterScoreSettings: v.optional(rosterScoreSettings),
+    categories: v.array(membershipCategory),
+})
+
+const playerStatsServer = v.object({
+    token: v.string(),
+    url: v.string(),
+})
+
+const eventResult = v.object({
+    sourceUrl: v.string(),
+    mapId: v.string(),
+    mapName: v.optional(v.string()),
+    endedAt: v.optional(v.string()),
+    importedAt: v.string(),
+    sideA: v.string(),
+    sideB: v.string(),
+    outcome: v.union(
+        v.literal("victory"),
+        v.literal("defeat"),
+        v.literal("draw")
+    ),
+    score: v.object({
+        sideA: v.number(),
+        sideB: v.number(),
+    }),
+})
+
+const statBreakdown = v.record(v.string(), v.number())
+
+const matchPlayerTeam = v.object({
+    side: v.string(),
+    confidence: v.optional(v.union(v.literal("strong"), v.literal("mixed"))),
+    ratio: v.optional(v.number()),
+})
+
+const matchPlayerSteamInfo = v.object({
+    id: v.number(),
+    created: v.string(),
+    updated: v.union(v.string(), v.null()),
+    profile: v.union(v.string(), v.null()),
+    country: v.union(v.string(), v.null()),
+    bans: v.union(v.number(), v.null()),
+    has_bans: v.boolean(),
+})
+
+const matchPlayerUnit = v.object({
+    ts: v.number(),
+    team: v.number(),
+    squad: v.number(),
+    role: v.number(),
+})
+
+const matchPlayerEncounter = v.object({
+    action: v.string(),
+    player_id: v.string(),
+    player_name: v.string(),
+    ts: v.number(),
+    weapon: v.string(),
+})
+
+const matchPlayerStat = v.object({
+    id: v.number(),
+    player_id: v.string(),
+    player: v.string(),
+    map_id: v.number(),
+    kills: v.number(),
+    kills_by_type: v.optional(statBreakdown),
+    kills_streak: v.number(),
+    deaths: v.number(),
+    deaths_by_type: v.optional(statBreakdown),
+    deaths_without_kill_streak: v.number(),
+    teamkills: v.number(),
+    teamkills_streak: v.number(),
+    deaths_by_tk: v.number(),
+    deaths_by_tk_streak: v.number(),
+    nb_vote_started: v.number(),
+    nb_voted_yes: v.number(),
+    nb_voted_no: v.number(),
+    time_seconds: v.number(),
+    kills_per_minute: v.number(),
+    deaths_per_minute: v.number(),
+    kill_death_ratio: v.number(),
+    longest_life_secs: v.number(),
+    shortest_life_secs: v.number(),
+    combat: v.number(),
+    offense: v.number(),
+    defense: v.number(),
+    support: v.number(),
+    most_killed: v.record(v.string(), v.number()),
+    death_by: v.record(v.string(), v.number()),
+    weapons: v.record(v.string(), v.number()),
+    death_by_weapons: v.record(v.string(), v.number()),
+    team: matchPlayerTeam,
+    level: v.number(),
+    platform: v.optional(v.string()),
+    steaminfo: v.optional(matchPlayerSteamInfo),
+    vehicle_kills: v.optional(v.number()),
+    vehicles_destroyed: v.optional(v.number()),
+    kills_and_assists: v.optional(v.number()),
+    deaths_and_redeploys: v.optional(v.number()),
+    units: v.optional(v.array(matchPlayerUnit)),
+    encounters: v.optional(v.array(matchPlayerEncounter)),
+})
+
+const rawMatch = v.object({
+    id: v.number(),
+    creation_time: v.string(),
+    start: v.string(),
+    end: v.string(),
+    server_number: v.number(),
+    map_name: v.string(),
+    result: v.object({
+        axis: v.number(),
+        allied: v.number(),
+    }),
+    game_layout: v.object({
+        requested: v.array(v.union(v.number(), v.null())),
+        set: v.array(v.string()),
+    }),
+    cap_flips: v.optional(
+        v.array(
+            v.object({
+                allied_score: v.number(),
+                axis_score: v.number(),
+                ts: v.number(),
+            })
+        )
+    ),
+    match_time: v.optional(v.number()),
+    player_stats: v.array(matchPlayerStat),
+    map: v.object({
+        id: v.string(),
+        game_mode: v.string(),
+        attackers: v.optional(v.union(v.string(), v.null())),
+        environment: v.string(),
+        pretty_name: v.string(),
+        image_name: v.string(),
+        map: v.object({
+            id: v.string(),
+            name: v.string(),
+            tag: v.string(),
+            pretty_name: v.string(),
+            shortname: v.string(),
+            allies: v.object({
+                name: v.string(),
+                team: v.string(),
+            }),
+            axis: v.object({
+                name: v.string(),
+                team: v.string(),
+            }),
+            orientation: v.string(),
+        }),
+    }),
+})
+
+const rosterPlayer = v.object({
+    id: v.optional(v.string()),
+    customName: v.optional(v.string()),
+    ack: v.boolean(),
+    confirmed: v.optional(v.boolean()),
+    note: v.optional(v.string()),
+    roleName: v.optional(v.string()),
+    roleIcon: v.optional(v.string()),
+})
+
+const reserveAttendance = v.object({
+    userId: v.string(),
+    ack: v.boolean(),
+    confirmed: v.optional(v.boolean()),
+})
+
+const eventNotice = v.object({
+    userId: v.string(),
+    reason: v.string(),
+    createdAt: v.string(),
+})
+
+const rosterSquad = v.object({
+    name: v.string(),
+    group: v.string(),
+    order: v.number(),
+    color: v.string(),
+    icon: v.optional(v.string()),
+    players: v.array(rosterPlayer),
+})
+
+const userAssignments = defineTable({
+    userId: v.string(),
+    serverId: v.string(),
+    type: v.union(
+        v.literal("member"),
+        v.literal("reserve_member"),
+        v.literal("mercenary")
+    ),
+    status: v.union(
+        v.literal("pending"),
+        v.literal("recruit"),
+        v.literal("active")
+    ),
+    membershipCategoryId: v.optional(v.string()),
+    primaryGroupId: v.optional(v.id("groups")),
+    secondaryGroupIds: v.optional(v.array(v.id("groups"))),
+    group: v.optional(v.string()),
+    paused: v.boolean(),
+    pausedNote: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+})
+    .index("serverId", ["serverId"])
+    .index("userId", ["userId"])
+    .index("serverId_userId", ["serverId", "userId"])
+
+export default defineSchema({
+    users,
+    guilds: defineTable({
+        discordId: v.optional(v.string()),
+        id: v.optional(v.string()),
+        name: v.string(),
+        avatar: v.string(),
+        description: v.optional(v.string()),
+        eventCategories: v.optional(v.array(eventCategory)),
+        botInside: v.boolean(),
+        adminIds: v.array(v.string()),
+        // Admins explicitly assigned in Logi are kept separate from admins derived
+        // from the Discord dashboard role, so a role resync cannot revoke them.
+        dashboardAdminIds: v.optional(v.array(v.string())),
+        // A manual setting wins over all inherited sources (Discord Administrator,
+        // dashboard role, and guild ownership). Missing means inherit.
+        adminAccessOverrides: v.optional(v.record(v.string(), v.boolean())),
+        memberIds: v.array(v.string()),
+        members: v.array(guildMember),
+        mercenaryIds: v.array(v.string()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("discordId", ["discordId"])
+        .index("id", ["id"]),
+    discordConfigs: defineTable({
+        guildId: v.string(),
+        timezone: v.string(),
+        defaultLanguage: v.union(v.literal("en"), v.literal("cs")),
+        announcementsChannelId: v.optional(v.string()),
+        eventInfoChannelId: v.optional(v.string()),
+        errorsChannelId: v.optional(v.string()),
+        calendarChannelId: v.optional(v.string()),
+        calendarCategories: v.optional(v.array(v.string())),
+        calendarMessageChannelId: v.optional(v.string()),
+        calendarMessageId: v.optional(v.string()),
+        calendarMessageLastConfigUpdatedAt: v.optional(v.string()),
+        forumCategoryId: v.optional(v.string()),
+        meetingChannelId: v.optional(v.string()),
+        clanRoleId: v.optional(v.string()),
+        dashboardAdminRoleId: v.optional(v.string()),
+        playerStatsServers: v.optional(v.array(playerStatsServer)),
+        ticketSettings: v.optional(ticketSettings),
+        membershipSettings: v.optional(membershipSettings),
+        ticketPanelMessageId: v.optional(v.string()),
+        ticketPanelLastConfigUpdatedAt: v.optional(v.string()),
+        membershipPanelMessageId: v.optional(v.string()),
+        membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
+        ticketCounter: v.optional(v.number()),
+        membershipApplicationCounter: v.optional(v.number()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    }).index("guildId", ["guildId"]),
+    calendarItems: defineTable(calendarItem).index("guildId", ["guildId"]),
+    groups: defineTable({
+        guildId: v.string(),
+        name: v.string(),
+        color: v.string(),
+        order: v.number(),
+        parentId: v.optional(v.id("groups")),
+        description: v.optional(v.string()),
+        discordRoleId: v.optional(v.string()),
+        discordEmoji: v.optional(v.string()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId", ["guildId"])
+        .index("guildId_name", ["guildId", "name"]),
+    events: defineTable({
+        guildId: v.string(),
+        kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
+        matchType: v.optional(v.string()),
+        name: v.string(),
+        description: v.optional(v.string()),
+        thumbnailUrl: v.optional(v.string()),
+        imageUrl: v.optional(v.string()),
+        // Copied from the clan defaults when an event is created.  Keeping these
+        // on the event prevents later setting changes from moving existing bot messages.
+        announcementChannelId: v.optional(v.string()),
+        eventInfoChannelId: v.optional(v.string()),
+        meetingChannelId: v.optional(v.string()),
+        requiredRoleIds: v.optional(v.array(v.string())),
+        rewardRoleIds: v.optional(v.array(v.string())),
+        signupGroupIds: v.optional(v.array(v.string())),
+        allowedSignupStatuses: v.optional(
+            v.array(
+                v.union(
+                    v.literal("recruit"),
+                    v.literal("member"),
+                    v.literal("reserve_member"),
+                    v.literal("mercenary")
+                )
+            )
+        ),
+        useGeneralSignup: v.optional(v.boolean()),
+        recurrence: v.optional(
+            v.object({
+                frequency: v.union(
+                    v.literal("weekly"),
+                    v.literal("monthly_date"),
+                    v.literal("monthly_nth_weekday")
+                ),
+                interval: v.number(),
+                weekdays: v.array(v.number()),
+                monthDay: v.optional(v.number()),
+                nth: v.optional(v.number()),
+                weekday: v.optional(v.number()),
+            })
+        ),
+        attendeeRoleId: v.optional(v.string()),
+        reserveRoleId: v.optional(v.string()),
+        server: v.optional(v.string()),
+        serverPassword: v.optional(v.string()),
+        side: v.optional(v.string()),
+        map: v.optional(v.string()),
+        cap: v.optional(v.string()),
+        notes: v.optional(v.string()),
+        registrationEnd: v.string(),
+        meetingStart: v.string(),
+        gameStart: v.string(),
+        gameEnd: v.string(),
+        pingClan: v.boolean(),
+        pingMode: v.optional(
+            v.union(v.literal("none"), v.literal("clan"), v.literal("roles"))
+        ),
+        pingRoleIds: v.optional(v.array(v.string())),
+        createForumChannel: v.optional(v.boolean()),
+        topicPresetId: v.optional(v.id("topicPresets")),
+        stratmapIds: v.optional(v.array(v.id("stratmaps"))),
+        status: v.optional(
+            v.union(
+                v.literal("registration"),
+                v.literal("closed"),
+                v.literal("starting"),
+                v.literal("concluded")
+            )
+        ),
+        statusUpdatedAt: v.optional(v.string()),
+        concludedAt: v.optional(v.string()),
+        eventResult: v.optional(eventResult),
+        matchStatsId: v.optional(v.id("matchStats")),
+        competitionFixtureId: v.optional(v.id("competitionFixtures")),
+        attendanceReminderLog: v.optional(v.array(attendanceReminder)),
+        participants: v.optional(v.array(eventParticipant)),
+        signUps: v.optional(v.array(signUp)),
+        scoreAppliedAt: v.optional(v.string()),
+        scoreResolution: v.optional(
+            v.union(v.literal("applied"), v.literal("skipped"))
+        ),
+        absenceNotices: v.optional(v.array(eventNotice)),
+        createdAt: v.string(),
+        updatedAt: v.optional(v.string()),
+    }).index("guildId", ["guildId"]),
+    competitions: defineTable({
+        slug: v.string(),
+        name: v.string(),
+        season: v.string(),
+        description: v.optional(v.string()),
+        format: v.object({
+            kind: v.literal("league_with_playoffs"),
+            standings: v.literal("ecl_cap_score"),
+        }),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    }).index("slug", ["slug"]),
+    competitionDivisions: defineTable({
+        competitionId: v.id("competitions"),
+        name: v.string(),
+        order: v.number(),
+        createdAt: v.string(),
+    }).index("competitionId", ["competitionId"]),
+    competitionTeams: defineTable({
+        competitionId: v.id("competitions"),
+        guildId: v.id("guilds"),
+        divisionId: v.optional(v.id("competitionDivisions")),
+        withdrawn: v.boolean(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("competitionId", ["competitionId"])
+        .index("guildId", ["guildId"])
+        .index("competitionId_guildId", ["competitionId", "guildId"]),
+    competitionFixtures: defineTable({
+        competitionId: v.id("competitions"),
+        divisionId: v.optional(v.id("competitionDivisions")),
+        phase: v.union(
+            v.literal("league"),
+            v.literal("playoff"),
+            v.literal("relegation")
+        ),
+        teamAId: v.id("guilds"),
+        teamBId: v.id("guilds"),
+        scheduledAt: v.optional(v.string()),
+        scoreA: v.optional(v.number()),
+        scoreB: v.optional(v.number()),
+        status: v.union(
+            v.literal("scheduled"),
+            v.literal("final"),
+            v.literal("forfeit")
+        ),
+        eventId: v.optional(v.id("events")),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("competitionId", ["competitionId"])
+        .index("eventId", ["eventId"]),
+    eventScheduleJobs: defineTable({
+        eventId: v.id("events"),
+        kind: v.union(
+            v.literal("close-registration"),
+            v.literal("start-event"),
+            v.literal("conclude-event"),
+            v.literal("attendance-reminder")
+        ),
+        dueAt: v.string(),
+        status: v.union(v.literal("pending"), v.literal("processing")),
+        attempts: v.number(),
+        claimedAt: v.optional(v.string()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("eventId", ["eventId"])
+        .index("status_dueAt", ["status", "dueAt"])
+        .index("status", ["status"]),
+    stratmaps: defineTable({
+        guildId: v.string(),
+        eventId: v.optional(v.id("events")),
+        title: v.string(),
+        description: v.optional(v.string()),
+        baseMapId: v.string(),
+        side: v.optional(v.string()),
+        strongpointId: v.optional(v.string()),
+        state: v.string(),
+        createdBy: v.string(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId", ["guildId"])
+        .index("eventId", ["eventId"]),
+    topicPresets: defineTable({
+        guildId: v.string(),
+        name: v.string(),
+        side: v.optional(v.string()),
+        map: v.optional(v.string()),
+        cap: v.optional(v.string()),
+        notes: v.optional(v.string()),
+        topics: v.array(topic),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    }).index("guildId", ["guildId"]),
+    squadPresets: defineTable({
+        guildId: v.string(),
+        name: v.string(),
+        squads: v.array(squadPresetSquad),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    }).index("guildId", ["guildId"]),
+    rosters: defineTable({
+        eventId: v.id("events"),
+        squadPresetId: v.optional(v.id("squadPresets")),
+        squads: v.array(rosterSquad),
+        reservePlayerIds: v.array(v.string()),
+        reserveAttendances: v.optional(v.array(reserveAttendance)),
+        notAttendingPlayerIds: v.array(v.string()),
+        streamerId: v.optional(v.string()),
+        published: v.boolean(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    }).index("eventId", ["eventId"]),
+    discordEventSyncs: defineTable({
+        eventId: v.id("events"),
+        guildId: v.string(),
+        announcementChannelId: v.optional(v.string()),
+        announcementMessageId: v.optional(v.string()),
+        rosterUpdateChannelId: v.optional(v.string()),
+        rosterUpdateMessageId: v.optional(v.string()),
+        eventInfoMessageId: v.optional(v.string()),
+        eventInfoMessageRenderVersion: v.optional(v.string()),
+        scheduledEventId: v.optional(v.string()),
+        scheduledEventStatus: v.optional(
+            v.union(
+                v.literal("scheduled"),
+                v.literal("active"),
+                v.literal("completed"),
+                v.literal("canceled")
+            )
+        ),
+        forumChannelId: v.optional(v.string()),
+        forumThreadId: v.optional(v.string()),
+        infoMessageId: v.optional(v.string()),
+        topicMessageIds: v.array(v.string()),
+        lastSyncedAt: v.optional(v.string()),
+        lastEventUpdatedAt: v.optional(v.string()),
+        lastRosterUpdatedAt: v.optional(v.string()),
+        lastConfigUpdatedAt: v.optional(v.string()),
+        lastCalendarSyncVersion: v.optional(v.string()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("eventId", ["eventId"])
+        .index("guildId", ["guildId"]),
+    discordMemberAccess: defineTable({
+        guildId: v.string(),
+        userId: v.string(),
+        roleIds: v.array(v.string()),
+        voiceChannelId: v.optional(v.string()),
+        isAdmin: v.boolean(),
+        hasDashboardAccess: v.boolean(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId", ["guildId"])
+        .index("userId", ["userId"])
+        .index("guildId_userId", ["guildId", "userId"]),
+    ticketThreads: defineTable({
+        guildId: v.string(),
+        threadId: v.string(),
+        parentChannelId: v.string(),
+        creatorId: v.string(),
+        categoryId: v.string(),
+        categoryLabel: v.string(),
+        ticketNumber: v.number(),
+        status: v.union(v.literal("open"), v.literal("closed")),
+        transcriptMessageId: v.optional(v.string()),
+        answers: v.array(
+            v.object({
+                questionId: v.string(),
+                label: v.string(),
+                value: v.string(),
+            })
+        ),
+        openedAt: v.string(),
+        closedAt: v.optional(v.string()),
+        closedByUserId: v.optional(v.string()),
+        closeReason: v.optional(v.string()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId", ["guildId"])
+        .index("threadId", ["threadId"])
+        .index("guildId_ticketNumber", ["guildId", "ticketNumber"]),
+    membershipApplicationThreads: defineTable({
+        guildId: v.string(),
+        threadId: v.string(),
+        parentChannelId: v.string(),
+        creatorId: v.string(),
+        categoryId: v.string(),
+        categoryLabel: v.string(),
+        assignmentType: v.union(
+            v.literal("member"),
+            v.literal("reserve_member"),
+            v.literal("mercenary")
+        ),
+        applicationNumber: v.number(),
+        assignmentId: v.optional(v.id("userAssignments")),
+        transcriptMessageId: v.optional(v.string()),
+        answers: v.array(
+            v.object({
+                questionId: v.string(),
+                label: v.string(),
+                value: v.string(),
+            })
+        ),
+        status: v.union(v.literal("open"), v.literal("closed")),
+        openedAt: v.string(),
+        closedAt: v.optional(v.string()),
+        closedByUserId: v.optional(v.string()),
+        closeReason: v.optional(v.string()),
+        closeOutcome: v.optional(
+            v.union(
+                v.literal("denied"),
+                v.literal("pending"),
+                v.literal("recruit"),
+                v.literal("member"),
+                v.literal("reserve_member"),
+                v.literal("mercenary")
+            )
+        ),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId", ["guildId"])
+        .index("threadId", ["threadId"])
+        .index("guildId_applicationNumber", ["guildId", "applicationNumber"]),
+    platformIdLinkTokens: defineTable({
+        token: v.string(),
+        guildId: v.string(),
+        userId: v.string(),
+        userName: v.string(),
+        userAvatar: v.optional(v.string()),
+        categoryId: v.optional(v.string()),
+        language: v.union(v.literal("en"), v.literal("cs")),
+        completionMode: v.optional(
+            v.union(v.literal("membership"), v.literal("link"))
+        ),
+        applyMessageUrl: v.optional(v.string()),
+        interactionToken: v.optional(v.string()),
+        interactionApplicationId: v.optional(v.string()),
+        expiresAt: v.string(),
+        consumedAt: v.optional(v.string()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("token", ["token"])
+        .index("userId", ["userId"]),
+    userAssignments,
+    playerStats: defineTable({
+        id: v.string(),
+        userId: v.optional(v.string()),
+        latestName: v.optional(v.string()),
+        updatedAt: v.string(),
+        matches: v.record(
+            v.string(),
+            v.object({
+                sourceUrl: v.string(),
+                importedAt: v.string(),
+                endedAt: v.optional(v.string()),
+                mapId: v.string(),
+                mapName: v.optional(v.string()),
+                playerName: v.string(),
+                userId: v.optional(v.string()),
+                team: v.string(),
+                kills: v.number(),
+                killDeathRatio: v.number(),
+                deaths: v.number(),
+                offense: v.number(),
+                defense: v.number(),
+                support: v.number(),
+            })
+        ),
+    })
+        .index("id", ["id"])
+        .index("userId", ["userId"]),
+    // Materialized, bounded read models for the dashboard.  Keeping only ten
+    // snapshots makes the analytics pages cheap even for long-running clans.
+    guildPerformanceHistory: defineTable({
+        guildId: v.string(),
+        matches: v.array(
+            v.object({
+                eventId: v.string(),
+                playedAt: v.string(),
+                label: v.string(),
+                combat: v.number(),
+                offense: v.optional(v.number()),
+                support: v.number(),
+                kills: v.number(),
+                deaths: v.number(),
+                points: v.optional(v.number()),
+                kd: v.optional(v.number()),
+            })
+        ),
+        updatedAt: v.string(),
+    }).index("guildId", ["guildId"]),
+    playerPerformanceHistory: defineTable({
+        guildId: v.string(),
+        userId: v.string(),
+        matches: v.array(
+            v.object({
+                eventId: v.string(),
+                playedAt: v.string(),
+                label: v.string(),
+                combat: v.number(),
+                offense: v.optional(v.number()),
+                support: v.number(),
+                kills: v.number(),
+                deaths: v.number(),
+                points: v.optional(v.number()),
+                kd: v.optional(v.number()),
+            })
+        ),
+        updatedAt: v.string(),
+    })
+        .index("guildId", ["guildId"])
+        .index("guildId_userId", ["guildId", "userId"]),
+    matchStats: defineTable({
+        guildId: v.string(),
+        eventId: v.id("events"),
+        sourceUrl: v.string(),
+        matchId: v.string(),
+        importedAt: v.string(),
+        raw: rawMatch,
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId", ["guildId"])
+        .index("eventId", ["eventId"]),
+    apiKeys: defineTable({
+        guildId: v.string(),
+        name: v.string(),
+        keyHash: v.string(),
+        keyPrefix: v.string(),
+        createdAt: v.string(),
+        lastUsedAt: v.optional(v.string()),
+        revokedAt: v.optional(v.string()),
+    })
+        .index("guildId", ["guildId"])
+        .index("keyHash", ["keyHash"]),
+    apiRateLimitBuckets: defineTable({
+        bucket: v.string(),
+        resetAt: v.number(),
+        count: v.number(),
+    }).index("bucket", ["bucket"]),
+    articles: defineTable({
+        guildId: v.string(),
+        title: v.string(),
+        description: v.string(),
+        tags: v.array(v.string()),
+        body: v.string(),
+        attachments: v.array(v.string()),
+        authorId: v.string(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    }).index("guildId", ["guildId"]),
+    publicPreviews: defineTable({
+        entityType: v.union(
+            v.literal("player"),
+            v.literal("clan"),
+            v.literal("match")
+        ),
+        entityId: v.string(),
+        title: v.string(),
+        description: v.string(),
+        imageVersion: v.string(),
+        updatedAt: v.string(),
+        expiresAt: v.string(),
+    })
+        .index("entity", ["entityType", "entityId"])
+        .index("expiresAt", ["expiresAt"]),
+})

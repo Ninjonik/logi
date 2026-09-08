@@ -1,42 +1,48 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"
 
-import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
-import { getServerContext } from "@/lib/server-context";
-import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
-import { saveServerGroup } from "@/lib/server-groups";
-import { groupSchema } from "@/lib/validation/group";
+import {
+    getUserSafeErrorMessage,
+    logRouteError,
+} from "@/lib/server-route-errors"
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { getServerContext } from "@/lib/server-context"
+import { saveServerGroup } from "@/lib/server-groups"
+import { groupSchema } from "@/lib/validation/group"
 
 export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ serverId: string }> },
+    request: NextRequest,
+    { params }: { params: Promise<{ serverId: string }> }
 ) {
-  try {
-    const body = groupSchema.parse(await request.json());
-    const { serverId } = await params;
-    const serverContext = await getServerContext(serverId);
-    if (!serverContext?.canAdmin) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+    try {
+        const body = groupSchema.parse(await request.json())
+        const { serverId } = await params
+        const serverContext = await getServerContext(serverId)
+        if (!serverContext?.canAdmin) {
+            return NextResponse.json({ error: "Forbidden." }, { status: 403 })
+        }
+        const groupId = await saveServerGroup({
+            serverId,
+            ...body,
+        })
+
+        revalidateCacheEntries([
+            appCacheTags.serverContext(serverId),
+            appCacheTags.groups(serverId),
+            appCacheTags.group(groupId),
+            appCacheTags.rosterImage(),
+        ])
+
+        return NextResponse.json({ groupId })
+    } catch (error) {
+        logRouteError("groups.create", error)
+        return NextResponse.json(
+            {
+                error: getUserSafeErrorMessage(
+                    error,
+                    "Unable to save the group."
+                ),
+            },
+            { status: 400 }
+        )
     }
-    const groupId = await saveServerGroup({
-      serverId,
-      ...body,
-    });
-
-    revalidateCacheEntries([
-      appCacheTags.serverContext(serverId),
-      appCacheTags.groups(serverId),
-      appCacheTags.group(groupId),
-      appCacheTags.rosterImage(),
-    ]);
-
-    return NextResponse.json({ groupId });
-  } catch (error) {
-    logRouteError("groups.create", error);
-    return NextResponse.json(
-      {
-        error: getUserSafeErrorMessage(error, "Unable to save the group."),
-      },
-      { status: 400 },
-    );
-  }
 }

@@ -1,75 +1,75 @@
-import type { SyncEventLike, SyncScheduledStatus, SyncStateLike } from "./types";
-import { eventInfoMessageRenderVersion } from "./render-version";
+import type { SyncEventLike, SyncScheduledStatus, SyncStateLike } from "./types"
+import { eventInfoMessageRenderVersion } from "./render-version"
 
 export function shouldWriteMinimalConcludedSyncState(input: {
-  event: Pick<SyncEventLike, "id" | "status">;
-  state?: SyncStateLike;
-  queued: boolean;
+    event: Pick<SyncEventLike, "id" | "status">
+    state?: SyncStateLike
+    queued: boolean
 }) {
-  return input.event.status === "concluded" && !input.state && !input.queued;
+    return input.event.status === "concluded" && !input.state && !input.queued
 }
 
 export function shouldSyncEvent(input: {
-  event: Pick<SyncEventLike, "updatedAt">;
-  rosterUpdatedAt?: string;
-  configUpdatedAt: string;
-  state?: SyncStateLike;
-  desiredScheduledEventStatus?: SyncScheduledStatus;
-  meetingChannelConfigured: boolean;
-  eventInfoChannelConfigured?: boolean;
-  eventInfoMessageRequired?: boolean;
-  queued: boolean;
+    event: Pick<SyncEventLike, "updatedAt">
+    rosterUpdatedAt?: string
+    configUpdatedAt: string
+    state?: SyncStateLike
+    desiredScheduledEventStatus?: SyncScheduledStatus
+    meetingChannelConfigured: boolean
+    eventInfoChannelConfigured?: boolean
+    eventInfoMessageRequired?: boolean
+    queued: boolean
 }) {
-  const {
-    event,
-    rosterUpdatedAt,
-    configUpdatedAt,
-    state,
-    desiredScheduledEventStatus,
-    meetingChannelConfigured,
-    eventInfoChannelConfigured,
-    eventInfoMessageRequired,
-    queued,
-  } = input;
+    const {
+        event,
+        rosterUpdatedAt,
+        configUpdatedAt,
+        state,
+        desiredScheduledEventStatus,
+        meetingChannelConfigured,
+        eventInfoChannelConfigured,
+        eventInfoMessageRequired,
+        queued,
+    } = input
 
-  return (
-    !state ||
-    state.lastEventUpdatedAt !== event.updatedAt ||
-    state.lastRosterUpdatedAt !== rosterUpdatedAt ||
-    state.lastConfigUpdatedAt !== configUpdatedAt ||
-    (eventInfoChannelConfigured && (
-      state.eventInfoMessageRenderVersion !== eventInfoMessageRenderVersion ||
-      (eventInfoMessageRequired && !state.eventInfoMessageId)
-    )) ||
-    state.scheduledEventStatus !== desiredScheduledEventStatus ||
-    (
-      meetingChannelConfigured
-        ? !state.scheduledEventId &&
-          desiredScheduledEventStatus !== "completed" &&
-          desiredScheduledEventStatus !== "canceled"
-        : Boolean(state.scheduledEventId)
-    ) ||
-    queued
-  );
+    return (
+        !state ||
+        state.lastEventUpdatedAt !== event.updatedAt ||
+        state.lastRosterUpdatedAt !== rosterUpdatedAt ||
+        state.lastConfigUpdatedAt !== configUpdatedAt ||
+        (eventInfoChannelConfigured &&
+            (state.eventInfoMessageRenderVersion !==
+                eventInfoMessageRenderVersion ||
+                (eventInfoMessageRequired && !state.eventInfoMessageId))) ||
+        state.scheduledEventStatus !== desiredScheduledEventStatus ||
+        (meetingChannelConfigured
+            ? !state.scheduledEventId &&
+              desiredScheduledEventStatus !== "completed" &&
+              desiredScheduledEventStatus !== "canceled"
+            : Boolean(state.scheduledEventId)) ||
+        queued
+    )
 }
 
 export function deriveScheduledEventLifecycle(
-  event: Pick<SyncEventLike, "meetingStart" | "gameEnd" | "status">,
-  now?: Date,
+    event: Pick<SyncEventLike, "meetingStart" | "gameEnd" | "status">,
+    now?: Date
 ): SyncScheduledStatus {
-  const nowValue = now ? now.getTime() : Date.now();
-  const meetingStart = new Date(event.meetingStart).getTime();
-  const gameEnd = new Date(event.gameEnd).getTime();
+    const nowValue = now ? now.getTime() : Date.now()
+    const meetingStart = new Date(event.meetingStart).getTime()
+    const gameEnd = new Date(event.gameEnd).getTime()
 
-  if (event.status === "concluded") {
-    return Number.isFinite(meetingStart) && nowValue < meetingStart ? "canceled" : "completed";
-  }
-  if (Number.isFinite(gameEnd) && nowValue >= gameEnd) {
-    return "completed";
-  }
-  if (Number.isFinite(meetingStart) && nowValue >= meetingStart) {
-    return "active";
-  }
+    if (event.status === "concluded") {
+        return Number.isFinite(meetingStart) && nowValue < meetingStart
+            ? "canceled"
+            : "completed"
+    }
+    if (Number.isFinite(gameEnd) && nowValue >= gameEnd) {
+        return "completed"
+    }
+    if (Number.isFinite(meetingStart) && nowValue >= meetingStart) {
+        return "active"
+    }
 
-  return "scheduled";
+    return "scheduled"
 }

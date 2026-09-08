@@ -1,7 +1,7 @@
 export type Clock = {
-  now(): Date;
-};
+    now(): Date
+}
 
 export const systemClock: Clock = {
-  now: () => new Date(),
-};
+    now: () => new Date(),
+}

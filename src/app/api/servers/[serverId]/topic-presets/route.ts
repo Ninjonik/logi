@@ -1,34 +1,42 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"
 
-import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
-import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
-import { saveTopicPreset } from "@/lib/server-topic-presets";
-import { topicPresetSchema } from "@/lib/validation/topic-preset";
+import {
+    getUserSafeErrorMessage,
+    logRouteError,
+} from "@/lib/server-route-errors"
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { topicPresetSchema } from "@/lib/validation/topic-preset"
+import { saveTopicPreset } from "@/lib/server-topic-presets"
 
 export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ serverId: string }> },
+    request: NextRequest,
+    { params }: { params: Promise<{ serverId: string }> }
 ) {
-  try {
-    const body = topicPresetSchema.parse(await request.json());
-    const { serverId } = await params;
-    const presetId = await saveTopicPreset({
-      serverId,
-      ...body,
-    });
+    try {
+        const body = topicPresetSchema.parse(await request.json())
+        const { serverId } = await params
+        const presetId = await saveTopicPreset({
+            serverId,
+            ...body,
+        })
 
-    revalidateCacheEntries([
-      appCacheTags.serverContext(serverId),
-      appCacheTags.topicPresets(serverId),
-      appCacheTags.topicPreset(presetId),
-    ]);
+        revalidateCacheEntries([
+            appCacheTags.serverContext(serverId),
+            appCacheTags.topicPresets(serverId),
+            appCacheTags.topicPreset(presetId),
+        ])
 
-    return NextResponse.json({ presetId });
-  } catch (error) {
-    logRouteError("topicPresets.create", error);
-    return NextResponse.json(
-      { error: getUserSafeErrorMessage(error, "Unable to save the topic preset.") },
-      { status: 400 },
-    );
-  }
+        return NextResponse.json({ presetId })
+    } catch (error) {
+        logRouteError("topicPresets.create", error)
+        return NextResponse.json(
+            {
+                error: getUserSafeErrorMessage(
+                    error,
+                    "Unable to save the topic preset."
+                ),
+            },
+            { status: 400 }
+        )
+    }
 }

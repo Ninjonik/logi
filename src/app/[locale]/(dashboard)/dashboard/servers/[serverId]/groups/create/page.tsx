@@ -1,32 +1,35 @@
-import { PageHeader } from "@/components/app/page-header";
-import { GroupForm } from "@/components/app/group-form";
-import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale } from "@/i18n/config";
-import { getServerContext } from "@/lib/server-context";
+import { PageHeader } from "@/components/app/page-header"
+import { GroupForm } from "@/components/app/group-form"
+import { getServerContext } from "@/lib/server-context"
+import { getDictionary } from "@/i18n/dictionaries"
+import { isLocale } from "@/i18n/config"
 
 export default async function CreateGroupPage({
-  params,
+    params,
 }: {
-  params: Promise<{ locale: string; serverId: string }>;
+    params: Promise<{ locale: string; serverId: string }>
 }) {
-  const { locale, serverId } = await params;
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const context = await getServerContext(serverId);
-  if (!context?.canAdmin) return null;
+    const { locale, serverId } = await params
+    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
+    const context = await getServerContext(serverId)
+    if (!context?.canAdmin) return null
 
-  return (
-    <>
-      <PageHeader title={dictionary.groups.createTitle} description={dictionary.groups.createDescription} />
-      <div className="px-4 lg:px-6">
-        <GroupForm
-          serverId={serverId}
-          locale={locale}
-          dictionary={dictionary}
-          canEdit={context.canAdmin}
-          createMode
-          availableGroups={context.groups ?? []}
-        />
-      </div>
-    </>
-  );
+    return (
+        <>
+            <PageHeader
+                title={dictionary.groups.createTitle}
+                description={dictionary.groups.createDescription}
+            />
+            <div className="px-4 lg:px-6">
+                <GroupForm
+                    serverId={serverId}
+                    locale={locale}
+                    dictionary={dictionary}
+                    canEdit={context.canAdmin}
+                    createMode
+                    availableGroups={context.groups ?? []}
+                />
+            </div>
+        </>
+    )
 }

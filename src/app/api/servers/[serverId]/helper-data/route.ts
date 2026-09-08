@@ -1,48 +1,54 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 
-import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
-import { initializeDefaultHelperData, resetHelperData } from "@/lib/server-setup";
-import { logNextError, logNextInfo } from "@/lib/system-logs";
+import {
+    initializeDefaultHelperData,
+    resetHelperData,
+} from "@/lib/server-setup"
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { logNextError, logNextInfo } from "@/lib/system-logs"
 
 const helperDataActionSchema = z.object({
-  action: z.enum(["initialize", "reset"]),
-});
+    action: z.enum(["initialize", "reset"]),
+})
 
 export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ serverId: string }> },
+    request: NextRequest,
+    { params }: { params: Promise<{ serverId: string }> }
 ) {
-  try {
-    const body = helperDataActionSchema.parse(await request.json());
-    const { serverId } = await params;
+    try {
+        const body = helperDataActionSchema.parse(await request.json())
+        const { serverId } = await params
 
-    if (body.action === "initialize") {
-      await initializeDefaultHelperData(serverId);
-    } else {
-      await resetHelperData(serverId);
+        if (body.action === "initialize") {
+            await initializeDefaultHelperData(serverId)
+        } else {
+            await resetHelperData(serverId)
+        }
+
+        revalidateCacheEntries([
+            appCacheTags.serverContext(serverId),
+            appCacheTags.groups(serverId),
+            appCacheTags.topicPresets(serverId),
+            appCacheTags.squadPresets(serverId),
+            appCacheTags.rosterImage(),
+        ])
+
+        logNextInfo("helper-data", "Updated helper data", {
+            serverId,
+            action: body.action,
+        })
+        return NextResponse.json({ ok: true })
+    } catch (error) {
+        logNextError("helper-data", "Failed to update helper data", { error })
+        return NextResponse.json(
+            {
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Unable to update helper data.",
+            },
+            { status: 400 }
+        )
     }
-
-    revalidateCacheEntries([
-      appCacheTags.serverContext(serverId),
-      appCacheTags.groups(serverId),
-      appCacheTags.topicPresets(serverId),
-      appCacheTags.squadPresets(serverId),
-      appCacheTags.rosterImage(),
-    ]);
-
-    logNextInfo("helper-data", "Updated helper data", {
-      serverId,
-      action: body.action,
-    });
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    logNextError("helper-data", "Failed to update helper data", { error });
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Unable to update helper data.",
-      },
-      { status: 400 },
-    );
-  }
 }

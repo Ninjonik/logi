@@ -1,67 +1,180 @@
-import { z } from "zod";
+import { z } from "zod"
 
 export const eventSchema = z
-  .object({
-    kind: z.enum(["match", "training"]),
-    matchType: z.string().trim().max(80, "Event category must be 80 characters or fewer.").optional(),
-    name: z.string().trim().min(1, "Event name is required."),
-    description: z.string().trim().optional(),
-    thumbnailUrl: z.string().trim().url("Thumbnail must be a valid URL.").optional().or(z.literal("")),
-    imageUrl: z.string().trim().url("Image must be a valid URL.").optional().or(z.literal("")),
-    announcementChannelId: z.string().trim().optional(),
-    eventInfoChannelId: z.string().trim().optional(),
-    meetingChannelId: z.string().trim().optional(),
-    requiredRoleIds: z.array(z.string().trim()).default([]),
-    rewardRoleIds: z.array(z.string().trim()).default([]),
-    server: z.string().trim().optional(),
-    serverPassword: z.string().trim().optional(),
-    side: z.string().trim().optional(),
-    map: z.string().trim().optional(),
-    cap: z.string().trim().optional(),
-    notes: z.string().trim().optional(),
-    registrationEnd: z.string().min(1, "Registration end is required."),
-    meetingStart: z.string().min(1, "Meeting start is required."),
-    gameStart: z.string().optional(),
-    gameEnd: z.string().optional(),
-    pingClan: z.boolean(),
-    pingMode: z.enum(["none", "clan", "roles"]).default("none"),
-    pingRoleIds: z.array(z.string().trim()).default([]),
-    createForumChannel: z.boolean().default(false),
-    topicPresetId: z.string().trim().optional(),
-    stratmapIds: z.array(z.string().trim()).default([]),
-    signupGroupIds: z.array(z.string().trim()).default([]),
-    allowedSignupStatuses: z.array(z.enum(["recruit", "member", "reserve_member", "mercenary"])).default([]),
-    useGeneralSignup: z.boolean().default(false),
-  })
-  .superRefine((value, ctx) => {
-    const registrationEnd = new Date(value.registrationEnd);
-    const meetingStart = new Date(value.meetingStart);
-    const gameStart = value.gameStart ? new Date(value.gameStart) : null;
-    const gameEnd = value.gameEnd ? new Date(value.gameEnd) : null;
+    .object({
+        kind: z.enum(["match", "training"]),
+        matchType: z
+            .string()
+            .trim()
+            .max(80, "Event category must be 80 characters or fewer.")
+            .optional(),
+        name: z.string().trim().min(1, "Event name is required."),
+        description: z.string().trim().optional(),
+        thumbnailUrl: z
+            .string()
+            .trim()
+            .url("Thumbnail must be a valid URL.")
+            .optional()
+            .or(z.literal("")),
+        imageUrl: z
+            .string()
+            .trim()
+            .url("Image must be a valid URL.")
+            .optional()
+            .or(z.literal("")),
+        announcementChannelId: z.string().trim().optional(),
+        eventInfoChannelId: z.string().trim().optional(),
+        meetingChannelId: z.string().trim().optional(),
+        requiredRoleIds: z.array(z.string().trim()).default([]),
+        rewardRoleIds: z.array(z.string().trim()).default([]),
+        server: z.string().trim().optional(),
+        serverPassword: z.string().trim().optional(),
+        side: z.string().trim().optional(),
+        map: z.string().trim().optional(),
+        cap: z.string().trim().optional(),
+        notes: z.string().trim().optional(),
+        registrationEnd: z.string().min(1, "Registration end is required."),
+        meetingStart: z.string().min(1, "Meeting start is required."),
+        gameStart: z.string().optional(),
+        gameEnd: z.string().optional(),
+        pingClan: z.boolean(),
+        pingMode: z.enum(["none", "clan", "roles"]).default("none"),
+        pingRoleIds: z.array(z.string().trim()).default([]),
+        createForumChannel: z.boolean().default(false),
+        topicPresetId: z.string().trim().optional(),
+        stratmapIds: z.array(z.string().trim()).default([]),
+        signupGroupIds: z.array(z.string().trim()).default([]),
+        allowedSignupStatuses: z
+            .array(z.enum(["recruit", "member", "reserve_member", "mercenary"]))
+            .default([]),
+        useGeneralSignup: z.boolean().default(false),
+        recurrence: z
+            .object({
+                frequency: z.enum([
+                    "weekly",
+                    "monthly_date",
+                    "monthly_nth_weekday",
+                ]),
+                interval: z.coerce.number().int().min(1).max(52).default(1),
+                weekdays: z
+                    .array(z.coerce.number().int().min(0).max(6))
+                    .default([]),
+                monthDay: z.coerce.number().int().min(1).max(31).optional(),
+                nth: z.coerce.number().int().min(1).max(5).optional(),
+                weekday: z.coerce.number().int().min(0).max(6).optional(),
+            })
+            .optional(),
+    })
+    .superRefine((value, ctx) => {
+        const registrationEnd = new Date(value.registrationEnd)
+        const meetingStart = new Date(value.meetingStart)
+        const gameStart = value.gameStart ? new Date(value.gameStart) : null
+        const gameEnd = value.gameEnd ? new Date(value.gameEnd) : null
 
-    if (Number.isNaN(registrationEnd.getTime())) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["registrationEnd"], message: "Registration end must be a valid date and time." });
-    }
-    if (Number.isNaN(meetingStart.getTime())) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["meetingStart"], message: "Meeting start must be a valid date and time." });
-    }
-    if (value.kind === "match" && (!gameStart || Number.isNaN(gameStart.getTime()))) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["gameStart"], message: "Game start must be a valid date and time." });
-    }
-    if (value.kind === "match" && (!gameEnd || Number.isNaN(gameEnd.getTime()))) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["gameEnd"], message: "Game end must be a valid date and time." });
-    }
+        if (Number.isNaN(registrationEnd.getTime())) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["registrationEnd"],
+                message: "Registration end must be a valid date and time.",
+            })
+        }
+        if (Number.isNaN(meetingStart.getTime())) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["meetingStart"],
+                message: "Meeting start must be a valid date and time.",
+            })
+        }
+        if (
+            value.kind === "match" &&
+            (!gameStart || Number.isNaN(gameStart.getTime()))
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["gameStart"],
+                message: "Game start must be a valid date and time.",
+            })
+        }
+        if (
+            value.kind === "match" &&
+            (!gameEnd || Number.isNaN(gameEnd.getTime()))
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["gameEnd"],
+                message: "Game end must be a valid date and time.",
+            })
+        }
 
-    if (!Number.isNaN(registrationEnd.getTime()) && !Number.isNaN(meetingStart.getTime()) && registrationEnd > meetingStart) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["registrationEnd"], message: "Registration end should be before meeting start." });
-    }
-    if (value.kind === "match" && gameStart && !Number.isNaN(meetingStart.getTime()) && !Number.isNaN(gameStart.getTime()) && meetingStart > gameStart) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["meetingStart"], message: "Meeting start should be before game start." });
-    }
-    if (value.kind === "match" && gameStart && gameEnd && !Number.isNaN(gameStart.getTime()) && !Number.isNaN(gameEnd.getTime()) && gameStart > gameEnd) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["gameEnd"], message: "Game end should be after game start." });
-    }
-  });
+        if (
+            !Number.isNaN(registrationEnd.getTime()) &&
+            !Number.isNaN(meetingStart.getTime()) &&
+            registrationEnd > meetingStart
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["registrationEnd"],
+                message: "Registration end should be before meeting start.",
+            })
+        }
+        if (
+            value.kind === "match" &&
+            gameStart &&
+            !Number.isNaN(meetingStart.getTime()) &&
+            !Number.isNaN(gameStart.getTime()) &&
+            meetingStart > gameStart
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["meetingStart"],
+                message: "Meeting start should be before game start.",
+            })
+        }
+        if (
+            value.kind === "match" &&
+            gameStart &&
+            gameEnd &&
+            !Number.isNaN(gameStart.getTime()) &&
+            !Number.isNaN(gameEnd.getTime()) &&
+            gameStart > gameEnd
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["gameEnd"],
+                message: "Game end should be after game start.",
+            })
+        }
+        if (
+            value.recurrence?.frequency === "weekly" &&
+            value.recurrence.weekdays.length === 0
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["recurrence", "weekdays"],
+                message: "Choose at least one weekday.",
+            })
+        }
+        if (
+            value.recurrence?.frequency === "monthly_date" &&
+            !value.recurrence.monthDay
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["recurrence", "monthDay"],
+                message: "Choose a day of the month.",
+            })
+        }
+        if (
+            value.recurrence?.frequency === "monthly_nth_weekday" &&
+            (!value.recurrence.nth || value.recurrence.weekday === undefined)
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["recurrence"],
+                message: "Choose the week and weekday.",
+            })
+        }
+    })
 
-export type EventInput = z.input<typeof eventSchema>;
-export type EventParsedInput = z.infer<typeof eventSchema>;
+export type EventInput = z.input<typeof eventSchema>
+export type EventParsedInput = z.infer<typeof eventSchema>

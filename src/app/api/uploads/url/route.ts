@@ -1,44 +1,52 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 
-import { getSiteUrl } from "@/lib/env";
-import { getConvexFileUrl } from "@/lib/server-uploads";
-import { getUserSafeErrorMessage, logRouteError } from "@/lib/server-route-errors";
+import {
+    getUserSafeErrorMessage,
+    logRouteError,
+} from "@/lib/server-route-errors"
+import { getConvexFileUrl } from "@/lib/server-uploads"
+import { getSiteUrl } from "@/lib/env"
 
 const schema = z.object({
-  storageId: z.string().min(1),
-  filename: z.string().trim().min(1).optional(),
-});
+    storageId: z.string().min(1),
+    filename: z.string().trim().min(1).optional(),
+})
 
 function sanitizeFilename(filename?: string) {
-  if (!filename) return "attachment.bin";
+    if (!filename) return "attachment.bin"
 
-  const sanitized = filename
-    .split(/[\\/]/)
-    .pop()
-    ?.replace(/[^a-zA-Z0-9._-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^\.+/, "");
+    const sanitized = filename
+        .split(/[\\/]/)
+        .pop()
+        ?.replace(/[^a-zA-Z0-9._-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^\.+/, "")
 
-  return sanitized || "attachment.bin";
+    return sanitized || "attachment.bin"
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const { storageId, filename } = schema.parse(await request.json());
-    const url = await getConvexFileUrl(storageId);
-    if (!url) {
-      throw new Error("File URL is not available.");
-    }
+    try {
+        const { storageId, filename } = schema.parse(await request.json())
+        const url = await getConvexFileUrl(storageId)
+        if (!url) {
+            throw new Error("File URL is not available.")
+        }
 
-    return NextResponse.json({
-      url: `${getSiteUrl()}/api/uploads/file/${encodeURIComponent(storageId)}/${encodeURIComponent(sanitizeFilename(filename))}`,
-    });
-  } catch (error) {
-    logRouteError("uploads.url", error);
-    return NextResponse.json(
-      { error: getUserSafeErrorMessage(error, "Unable to read the uploaded file URL.") },
-      { status: 400 },
-    );
-  }
+        return NextResponse.json({
+            url: `${getSiteUrl()}/api/uploads/file/${encodeURIComponent(storageId)}/${encodeURIComponent(sanitizeFilename(filename))}`,
+        })
+    } catch (error) {
+        logRouteError("uploads.url", error)
+        return NextResponse.json(
+            {
+                error: getUserSafeErrorMessage(
+                    error,
+                    "Unable to read the uploaded file URL."
+                ),
+            },
+            { status: 400 }
+        )
+    }
 }

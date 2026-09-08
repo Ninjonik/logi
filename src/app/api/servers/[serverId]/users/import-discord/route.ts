@@ -1,158 +1,208 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server"
 
-import { handleIfNotLoggedIn } from "@/lib/auth";
-import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags";
-import { fetchDiscordGuildMembers, getDiscordAvatarUrl, type DiscordGuildMember } from "@/lib/discord";
-import { getServerContext } from "@/lib/server-context";
-import { logNextError, logNextInfo } from "@/lib/system-logs";
-import { importDiscordMembersForServer, getServerUserAssignments, listUsers } from "@/lib/server-user-management";
+import {
+    importDiscordMembersForServer,
+    getServerUserAssignments,
+    listUsers,
+} from "@/lib/server-user-management"
+import {
+    fetchDiscordGuildMembers,
+    getDiscordAvatarUrl,
+    type DiscordGuildMember,
+} from "@/lib/discord"
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { logNextError, logNextInfo } from "@/lib/system-logs"
+import { getServerContext } from "@/lib/server-context"
+import { handleIfNotLoggedIn } from "@/lib/auth"
 
 function canImportUserAsType(input: {
-  assignmentType: "member" | "mercenary";
-  serverDiscordId: string;
-  user?: Awaited<ReturnType<typeof listUsers>>[number];
-  existingAssignment?: Awaited<ReturnType<typeof getServerUserAssignments>>[number];
+    assignmentType: "member" | "mercenary"
+    serverDiscordId: string
+    user?: Awaited<ReturnType<typeof listUsers>>[number]
+    existingAssignment?: Awaited<
+        ReturnType<typeof getServerUserAssignments>
+    >[number]
 }) {
-  if (input.existingAssignment) {
-    return true;
-  }
+    if (input.existingAssignment) {
+        return true
+    }
 
-  if (input.assignmentType === "member") {
-    return !input.user?.guildId || input.user.guildId === input.serverDiscordId;
-  }
+    if (input.assignmentType === "member") {
+        return (
+            !input.user?.guildId || input.user.guildId === input.serverDiscordId
+        )
+    }
 
-  return true;
+    return true
 }
 
 function getDiscordName(member: DiscordGuildMember) {
-  return member.user?.global_name?.trim() || member.user?.username?.trim() || member.user?.id || "Unknown";
+    return (
+        member.user?.global_name?.trim() ||
+        member.user?.username?.trim() ||
+        member.user?.id ||
+        "Unknown"
+    )
 }
 
 function getGuildNickname(member: DiscordGuildMember) {
-  return member.nick?.trim() || undefined;
+    return member.nick?.trim() || undefined
 }
 
 export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ serverId: string }> },
+    request: Request,
+    { params }: { params: Promise<{ serverId: string }> }
 ) {
-  const { serverId } = await params;
-  await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/users`);
+    const { serverId } = await params
+    await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/users`)
 
-  const context = await getServerContext(serverId);
-  if (!context?.canAdmin) {
-    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-  }
-
-  try {
-    const body = await request.json() as {
-      roleId?: string;
-      assignmentType?: "member" | "mercenary";
-    };
-
-    const roleId = String(body.roleId ?? "").trim();
-    const assignmentType = body.assignmentType === "mercenary" ? "mercenary" : "member";
-
-    if (!roleId) {
-      return NextResponse.json({ error: "Role is required." }, { status: 400 });
+    const context = await getServerContext(serverId)
+    if (!context?.canAdmin) {
+        return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
 
-    const [discordMembers, existingUsers, existingAssignments] = await Promise.all([
-      fetchDiscordGuildMembers(context.server.discordId),
-      listUsers(),
-      getServerUserAssignments(serverId),
-    ]);
+    try {
+        const body = (await request.json()) as {
+            roleId?: string
+            assignmentType?: "member" | "mercenary"
+        }
 
-    const usersById = new Map(existingUsers.map((user) => [user.discordId, user]));
-    const assignmentsByUserId = new Map(existingAssignments.map((assignment) => [assignment.userId, assignment]));
-    const discordMappedGroups = context.groups.filter((group) => group.discordRoleId);
+        const roleId = String(body.roleId ?? "").trim()
+        const assignmentType =
+            body.assignmentType === "mercenary" ? "mercenary" : "member"
 
-    let matchedMembers = 0;
-    let skippedBots = 0;
-    let skippedIneligible = 0;
+        if (!roleId) {
+            return NextResponse.json(
+                { error: "Role is required." },
+                { status: 400 }
+            )
+        }
 
-    const membersToImport = discordMembers.flatMap((member) => {
-      if (!member.user || member.user.bot) {
-        skippedBots += member.user?.bot ? 1 : 0;
-        return [];
-      }
+        const [discordMembers, existingUsers, existingAssignments] =
+            await Promise.all([
+                fetchDiscordGuildMembers(context.server.discordId),
+                listUsers(),
+                getServerUserAssignments(serverId),
+            ])
 
-      if (!member.roles.includes(roleId)) {
-        return [];
-      }
+        const usersById = new Map(
+            existingUsers.map((user) => [user.discordId, user])
+        )
+        const assignmentsByUserId = new Map(
+            existingAssignments.map((assignment) => [
+                assignment.userId,
+                assignment,
+            ])
+        )
+        const discordMappedGroups = context.groups.filter(
+            (group) => group.discordRoleId
+        )
 
-      matchedMembers += 1;
+        let matchedMembers = 0
+        let skippedBots = 0
+        let skippedIneligible = 0
 
-      const existingUser = usersById.get(member.user.id);
-      const existingAssignment = assignmentsByUserId.get(member.user.id);
-      if (!canImportUserAsType({
-        assignmentType,
-        serverDiscordId: context.server.discordId,
-        user: existingUser,
-        existingAssignment,
-      })) {
-        skippedIneligible += 1;
-        return [];
-      }
+        const membersToImport = discordMembers.flatMap((member) => {
+            if (!member.user || member.user.bot) {
+                skippedBots += member.user?.bot ? 1 : 0
+                return []
+            }
 
-      const secondaryGroupIds = discordMappedGroups
-        .filter((group) => group.discordRoleId && member.roles.includes(group.discordRoleId))
-        .map((group) => group.id);
+            if (!member.roles.includes(roleId)) {
+                return []
+            }
 
-      return [{
-        userId: member.user.id,
-        name: getDiscordName(member),
-        nickname: getGuildNickname(member),
-        avatar: getDiscordAvatarUrl({
-          id: member.user.id,
-          username: member.user.username,
-          avatar: member.user.avatar,
-        }),
-        secondaryGroupIds,
-      }];
-    });
+            matchedMembers += 1
 
-    if (membersToImport.length === 0) {
-      return NextResponse.json({
-        importedCount: 0,
-        matchedMembers,
-        skippedBots,
-        skippedIneligible,
-        createdUsers: 0,
-        updatedUsers: 0,
-        createdAssignments: 0,
-        updatedAssignments: 0,
-      });
+            const existingUser = usersById.get(member.user.id)
+            const existingAssignment = assignmentsByUserId.get(member.user.id)
+            if (
+                !canImportUserAsType({
+                    assignmentType,
+                    serverDiscordId: context.server.discordId,
+                    user: existingUser,
+                    existingAssignment,
+                })
+            ) {
+                skippedIneligible += 1
+                return []
+            }
+
+            const secondaryGroupIds = discordMappedGroups
+                .filter(
+                    (group) =>
+                        group.discordRoleId &&
+                        member.roles.includes(group.discordRoleId)
+                )
+                .map((group) => group.id)
+
+            return [
+                {
+                    userId: member.user.id,
+                    name: getDiscordName(member),
+                    nickname: getGuildNickname(member),
+                    avatar: getDiscordAvatarUrl({
+                        id: member.user.id,
+                        username: member.user.username,
+                        avatar: member.user.avatar,
+                    }),
+                    secondaryGroupIds,
+                },
+            ]
+        })
+
+        if (membersToImport.length === 0) {
+            return NextResponse.json({
+                importedCount: 0,
+                matchedMembers,
+                skippedBots,
+                skippedIneligible,
+                createdUsers: 0,
+                updatedUsers: 0,
+                createdAssignments: 0,
+                updatedAssignments: 0,
+            })
+        }
+
+        const result = await importDiscordMembersForServer({
+            serverId,
+            assignmentType,
+            members: membersToImport,
+        })
+
+        revalidateCacheEntries([
+            appCacheTags.serverContext(serverId),
+            appCacheTags.assignments(serverId),
+            appCacheTags.users(),
+            appCacheTags.rosterImage(),
+        ])
+
+        logNextInfo(
+            "import-discord-members",
+            "Imported Discord members into clan",
+            {
+                serverId,
+                userId: context.user.discordId,
+                roleId,
+                assignmentType,
+                importedCount: result.importedCount,
+            }
+        )
+        return NextResponse.json({
+            ...result,
+            matchedMembers,
+            skippedBots,
+            skippedIneligible,
+        })
+    } catch (error) {
+        logNextError(
+            "import-discord-members",
+            "Failed to import Discord members",
+            { serverId, error }
+        )
+        return NextResponse.json(
+            { error: "Unable to import Discord members." },
+            { status: 500 }
+        )
     }
-
-    const result = await importDiscordMembersForServer({
-      serverId,
-      assignmentType,
-      members: membersToImport,
-    });
-
-    revalidateCacheEntries([
-      appCacheTags.serverContext(serverId),
-      appCacheTags.assignments(serverId),
-      appCacheTags.users(),
-      appCacheTags.rosterImage(),
-    ]);
-
-    logNextInfo("import-discord-members", "Imported Discord members into clan", {
-      serverId,
-      userId: context.user.discordId,
-      roleId,
-      assignmentType,
-      importedCount: result.importedCount,
-    });
-    return NextResponse.json({
-      ...result,
-      matchedMembers,
-      skippedBots,
-      skippedIneligible,
-    });
-  } catch (error) {
-    logNextError("import-discord-members", "Failed to import Discord members", { serverId, error });
-    return NextResponse.json({ error: "Unable to import Discord members." }, { status: 500 });
-  }
 }

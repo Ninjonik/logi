@@ -1,90 +1,126 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next"
 
-import { PageHeader } from "@/components/app/page-header";
-import { ResourceTable, StatusBadge } from "@/components/app/resource-table";
-import { TablePageLayout } from "@/components/app/table-page-layout";
-import { Button } from "@/components/ui/button";
-import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale } from "@/i18n/config";
-import { getPaginatedRows } from "@/lib/data-table";
-import { getGuildMetadata } from "@/lib/server-metadata";
-import { getServerContext } from "@/lib/server-context";
+import { ResourceTable, StatusBadge } from "@/components/app/resource-table"
+import { TablePageLayout } from "@/components/app/table-page-layout"
+import { PageHeader } from "@/components/app/page-header"
+import { getGuildMetadata } from "@/lib/server-metadata"
+import { getServerContext } from "@/lib/server-context"
+import { getDictionary } from "@/i18n/dictionaries"
+import { getPaginatedRows } from "@/lib/data-table"
+import { Button } from "@/components/ui/button"
+import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-  title: "Rosters | Logi",
-  description: "Manage event rosters.",
-};
+    title: "Rosters | Logi",
+    description: "Manage event rosters.",
+}
 
 export default async function RostersPage({
-  params,
-  searchParams,
+    params,
+    searchParams,
 }: {
-  params: Promise<{ locale: string; serverId: string }>;
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+    params: Promise<{ locale: string; serverId: string }>
+    searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { locale, serverId } = await params;
-  const resolvedSearchParams = await searchParams;
-  const dictionary = getDictionary(isLocale(locale) ? locale : "en");
-  const context = await getServerContext(serverId);
-  if (!context) return null;
-  const { rosters, events, canAdmin } = context;
-  const eventById = new Map(events.map((event) => [event.id, event]));
-  const sortedRosters = [...rosters].sort((left, right) => {
-    const leftMeetingStart = eventById.get(left.eventId)?.meetingStart;
-    const rightMeetingStart = eventById.get(right.eventId)?.meetingStart;
+    const { locale, serverId } = await params
+    const resolvedSearchParams = await searchParams
+    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
+    const context = await getServerContext(serverId)
+    if (!context) return null
+    const { rosters, events, canAdmin } = context
+    const eventById = new Map(events.map((event) => [event.id, event]))
+    const sortedRosters = [...rosters].sort((left, right) => {
+        const leftMeetingStart = eventById.get(left.eventId)?.meetingStart
+        const rightMeetingStart = eventById.get(right.eventId)?.meetingStart
 
-    if (!leftMeetingStart) return rightMeetingStart ? 1 : 0;
-    if (!rightMeetingStart) return -1;
+        if (!leftMeetingStart) return rightMeetingStart ? 1 : 0
+        if (!rightMeetingStart) return -1
 
-    return new Date(rightMeetingStart).getTime() - new Date(leftMeetingStart).getTime();
-  });
-  const paginated = getPaginatedRows({
-    rows: sortedRosters,
-    searchParams: resolvedSearchParams,
-    getSearchText: (roster) => {
-      const eventName = eventById.get(roster.eventId)?.name;
-      return [eventName, roster.published ? dictionary.common.published : dictionary.tables.hidden].filter(Boolean).join(" ");
-    },
-  });
+        return (
+            new Date(rightMeetingStart).getTime() -
+            new Date(leftMeetingStart).getTime()
+        )
+    })
+    const paginated = getPaginatedRows({
+        rows: sortedRosters,
+        searchParams: resolvedSearchParams,
+        getSearchText: (roster) => {
+            const eventName = eventById.get(roster.eventId)?.name
+            return [
+                eventName,
+                roster.published
+                    ? dictionary.common.published
+                    : dictionary.tables.hidden,
+            ]
+                .filter(Boolean)
+                .join(" ")
+        },
+    })
 
-  return (
-    <TablePageLayout
-        header={
-          <PageHeader
-            title={dictionary.sidebar.rosters}
-            description={dictionary.roster.listDescription}
-            actions={canAdmin ? <Button asChild className="rounded-xl"><a href={`/${locale}/dashboard/servers/${serverId}/rosters/create`}>{dictionary.common.createRoster}</a></Button> : undefined}
-          />
-        }
-      >
-        <ResourceTable
-          className="h-full"
-          dictionary={dictionary}
-          rows={paginated.rows}
-          page={paginated.page}
-          pageSize={paginated.pageSize}
-          pageCount={paginated.pageCount}
-          totalRows={paginated.totalRows}
-          search={paginated.search}
-          searchPlaceholder={dictionary.shared.searchTable}
-          getHref={(roster) => `/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}
-          columns={[
-            {
-              key: "event",
-              title: dictionary.tables.event,
-              render: (roster) => eventById.get(roster.eventId)?.name ?? dictionary.tables.unassigned,
-            },
-            { key: "squads", title: dictionary.tables.squads, render: (roster) => roster.squads.length },
-            { key: "reserves", title: dictionary.tables.reserves, render: (roster) => roster.reservePlayerIds.length },
-            {
-              key: "published",
-              title: dictionary.tables.visibility,
-              render: (roster) => (
-                <StatusBadge active={roster.published} activeLabel={dictionary.common.published} inactiveLabel={dictionary.tables.hidden} />
-              ),
-            },
-          ]}
-        />
-      </TablePageLayout>
-  );
+    return (
+        <TablePageLayout
+            header={
+                <PageHeader
+                    title={dictionary.sidebar.rosters}
+                    description={dictionary.roster.listDescription}
+                    actions={
+                        canAdmin ? (
+                            <Button asChild className="rounded-xl">
+                                <a
+                                    href={`/${locale}/dashboard/servers/${serverId}/rosters/create`}
+                                >
+                                    {dictionary.common.createRoster}
+                                </a>
+                            </Button>
+                        ) : undefined
+                    }
+                />
+            }
+        >
+            <ResourceTable
+                className="h-full"
+                dictionary={dictionary}
+                rows={paginated.rows}
+                page={paginated.page}
+                pageSize={paginated.pageSize}
+                pageCount={paginated.pageCount}
+                totalRows={paginated.totalRows}
+                search={paginated.search}
+                searchPlaceholder={dictionary.shared.searchTable}
+                getHref={(roster) =>
+                    `/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`
+                }
+                columns={[
+                    {
+                        key: "event",
+                        title: dictionary.tables.event,
+                        render: (roster) =>
+                            eventById.get(roster.eventId)?.name ??
+                            dictionary.tables.unassigned,
+                    },
+                    {
+                        key: "squads",
+                        title: dictionary.tables.squads,
+                        render: (roster) => roster.squads.length,
+                    },
+                    {
+                        key: "reserves",
+                        title: dictionary.tables.reserves,
+                        render: (roster) => roster.reservePlayerIds.length,
+                    },
+                    {
+                        key: "published",
+                        title: dictionary.tables.visibility,
+                        render: (roster) => (
+                            <StatusBadge
+                                active={roster.published}
+                                activeLabel={dictionary.common.published}
+                                inactiveLabel={dictionary.tables.hidden}
+                            />
+                        ),
+                    },
+                ]}
+            />
+        </TablePageLayout>
+    )
 }

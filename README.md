@@ -14,6 +14,8 @@ npm run test
 npm run test:domain
 npm run bot:test
 npm run typecheck
+npm run format
+npm run format:check
 ```
 
 ## Current Structure

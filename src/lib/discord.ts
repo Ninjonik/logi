@@ -1,483 +1,544 @@
-import { getDiscordBotToken, getDiscordClientId, getDiscordClientSecret, getDiscordRedirectUri } from "@/lib/env";
-import { getDiscordConfigByGuild } from "@/lib/server-discord-settings";
-import { getServerGroups } from "@/lib/server-groups";
+import {
+    getDiscordBotToken,
+    getDiscordClientId,
+    getDiscordClientSecret,
+    getDiscordRedirectUri,
+} from "@/lib/env"
+import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
+import { getServerGroups } from "@/lib/server-groups"
 
-const ADMINISTRATOR_PERMISSION = BigInt(8);
-const MANAGE_ROLES_PERMISSION = BigInt(1) << BigInt(28);
-const MANAGE_EVENTS_PERMISSION = BigInt(1) << BigInt(33);
+const ADMINISTRATOR_PERMISSION = BigInt(8)
+const MANAGE_ROLES_PERMISSION = BigInt(1) << BigInt(28)
+const MANAGE_EVENTS_PERMISSION = BigInt(1) << BigInt(33)
 const DISCORD_BOT_INVITE_PERMISSIONS =
-  BigInt(326417599504) |
-  MANAGE_ROLES_PERMISSION |
-  MANAGE_EVENTS_PERMISSION;
+    BigInt(326417599504) | MANAGE_ROLES_PERMISSION | MANAGE_EVENTS_PERMISSION
 
 export type DiscordUser = {
-  id: string;
-  username: string;
-  avatar: string | null;
-};
+    id: string
+    username: string
+    avatar: string | null
+}
 
 export type DiscordGuild = {
-  id: string;
-  name: string;
-  icon: string | null;
-  owner: boolean;
-  permissions: string;
-};
+    id: string
+    name: string
+    icon: string | null
+    owner: boolean
+    permissions: string
+}
 
 export type DiscordRole = {
-  id: string;
-  name: string;
-  color: number;
-  position: number;
-  managed: boolean;
-};
+    id: string
+    name: string
+    color: number
+    position: number
+    managed: boolean
+}
 
 export type DiscordChannel = {
-  id: string;
-  name: string;
-  type: number;
-  parent_id?: string | null;
-};
+    id: string
+    name: string
+    type: number
+    parent_id?: string | null
+}
 
 export type DiscordEmoji = {
-  id: string | null;
-  name: string | null;
-  animated?: boolean;
-};
+    id: string | null
+    name: string | null
+    animated?: boolean
+}
 
 export type DiscordGuildMember = {
-  user?: {
-    id: string;
-    username: string;
-    avatar: string | null;
-    bot?: boolean;
-    global_name?: string | null;
-  };
-  nick?: string | null;
-  roles: string[];
-};
+    user?: {
+        id: string
+        username: string
+        avatar: string | null
+        bot?: boolean
+        global_name?: string | null
+    }
+    nick?: string | null
+    roles: string[]
+}
 
 type DiscordDmChannel = {
-  id: string;
-};
+    id: string
+}
 
 type DiscordApiMessage = {
-  id: string;
-  channel_id: string;
-};
+    id: string
+    channel_id: string
+}
 
 export function getDiscordAvatarUrl(user: DiscordUser) {
-  if (!user.avatar) {
-    return "https://cdn.discordapp.com/embed/avatars/0.png";
-  }
+    if (!user.avatar) {
+        return "https://cdn.discordapp.com/embed/avatars/0.png"
+    }
 
-  return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
+    return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`
 }
 
-export function getDiscordGuildIconUrl(guild: Pick<DiscordGuild, "id" | "icon">) {
-  if (!guild.icon) {
-    return "https://cdn.discordapp.com/embed/avatars/0.png";
-  }
+export function getDiscordGuildIconUrl(
+    guild: Pick<DiscordGuild, "id" | "icon">
+) {
+    if (!guild.icon) {
+        return "https://cdn.discordapp.com/embed/avatars/0.png"
+    }
 
-  return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=256`;
+    return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=256`
 }
 
-export function buildDiscordMessageUrl(guildId: string, channelId: string, messageId?: string) {
-  return messageId
-    ? `https://discord.com/channels/${guildId}/${channelId}/${messageId}`
-    : `https://discord.com/channels/${guildId}/${channelId}`;
+export function buildDiscordMessageUrl(
+    guildId: string,
+    channelId: string,
+    messageId?: string
+) {
+    return messageId
+        ? `https://discord.com/channels/${guildId}/${channelId}/${messageId}`
+        : `https://discord.com/channels/${guildId}/${channelId}`
 }
 
 export function buildDiscordAuthorizationUrl(state: string) {
-  const url = new URL("https://discord.com/oauth2/authorize");
-  url.searchParams.set("client_id", getDiscordClientId());
-  url.searchParams.set("redirect_uri", getDiscordRedirectUri());
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", "identify guilds");
-  url.searchParams.set("state", state);
-  return url.toString();
+    const url = new URL("https://discord.com/oauth2/authorize")
+    url.searchParams.set("client_id", getDiscordClientId())
+    url.searchParams.set("redirect_uri", getDiscordRedirectUri())
+    url.searchParams.set("response_type", "code")
+    url.searchParams.set("scope", "identify guilds")
+    url.searchParams.set("state", state)
+    return url.toString()
 }
 
 export function buildDiscordBotInviteUrl(guildId: string) {
-  const url = new URL("https://discord.com/oauth2/authorize");
-  url.searchParams.set("client_id", getDiscordClientId());
-  url.searchParams.set("scope", "bot applications.commands");
-  url.searchParams.set("permissions", DISCORD_BOT_INVITE_PERMISSIONS.toString());
-  url.searchParams.set("guild_id", guildId);
-  url.searchParams.set("disable_guild_select", "true");
-  return url.toString();
+    const url = new URL("https://discord.com/oauth2/authorize")
+    url.searchParams.set("client_id", getDiscordClientId())
+    url.searchParams.set("scope", "bot applications.commands")
+    url.searchParams.set(
+        "permissions",
+        DISCORD_BOT_INVITE_PERMISSIONS.toString()
+    )
+    url.searchParams.set("guild_id", guildId)
+    url.searchParams.set("disable_guild_select", "true")
+    return url.toString()
 }
 
 export async function exchangeDiscordCode(code: string) {
-  const body = new URLSearchParams({
-    client_id: getDiscordClientId(),
-    client_secret: getDiscordClientSecret(),
-    grant_type: "authorization_code",
-    code,
-    redirect_uri: getDiscordRedirectUri(),
-  });
+    const body = new URLSearchParams({
+        client_id: getDiscordClientId(),
+        client_secret: getDiscordClientSecret(),
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: getDiscordRedirectUri(),
+    })
 
-  const response = await fetch("https://discord.com/api/oauth2/token", {
-    method: "POST",
-    headers: {
-      "content-type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
-    cache: "no-store",
-  });
+    const response = await fetch("https://discord.com/api/oauth2/token", {
+        method: "POST",
+        headers: {
+            "content-type": "application/x-www-form-urlencoded",
+        },
+        body: body.toString(),
+        cache: "no-store",
+    })
 
-  if (!response.ok) {
-    throw new Error("Failed to exchange Discord OAuth code.");
-  }
+    if (!response.ok) {
+        throw new Error("Failed to exchange Discord OAuth code.")
+    }
 
-  return (await response.json()) as { access_token: string };
+    return (await response.json()) as { access_token: string }
 }
 
 export async function fetchDiscordUser(accessToken: string) {
-  const response = await fetch("https://discord.com/api/users/@me", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: "no-store",
-  });
+    const response = await fetch("https://discord.com/api/users/@me", {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+        cache: "no-store",
+    })
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch Discord user profile.");
-  }
+    if (!response.ok) {
+        throw new Error("Failed to fetch Discord user profile.")
+    }
 
-  return (await response.json()) as DiscordUser;
+    return (await response.json()) as DiscordUser
 }
 
 export async function fetchDiscordGuilds(accessToken: string) {
-  const response = await fetch("https://discord.com/api/v10/users/@me/guilds", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: "no-store",
-  });
+    const response = await fetch(
+        "https://discord.com/api/v10/users/@me/guilds",
+        {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+            cache: "no-store",
+        }
+    )
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch Discord guilds.");
-  }
+    if (!response.ok) {
+        throw new Error("Failed to fetch Discord guilds.")
+    }
 
-  return (await response.json()) as DiscordGuild[];
+    return (await response.json()) as DiscordGuild[]
 }
 
 export function isDiscordGuildAdmin(guild: DiscordGuild) {
-  if (guild.owner) {
-    return true;
-  }
+    if (guild.owner) {
+        return true
+    }
 
-  const permissions = BigInt(guild.permissions);
-  return (permissions & ADMINISTRATOR_PERMISSION) === ADMINISTRATOR_PERMISSION;
+    const permissions = BigInt(guild.permissions)
+    return (permissions & ADMINISTRATOR_PERMISSION) === ADMINISTRATOR_PERMISSION
 }
 
 export async function isBotInsideDiscordGuild(guildId: string) {
-  const botToken = getDiscordBotToken();
-  if (!botToken) {
-    return false;
-  }
+    const botToken = getDiscordBotToken()
+    if (!botToken) {
+        return false
+    }
 
-  const response = await fetch(`https://discord.com/api/v10/guilds/${guildId}`, {
-    headers: {
-      Authorization: `Bot ${botToken}`,
-    },
-    cache: "no-store",
-  });
+    const response = await fetch(
+        `https://discord.com/api/v10/guilds/${guildId}`,
+        {
+            headers: {
+                Authorization: `Bot ${botToken}`,
+            },
+            cache: "no-store",
+        }
+    )
 
-  return response.ok;
+    return response.ok
 }
 
 async function fetchDiscordBotJson<T>(path: string) {
-  const botToken = getDiscordBotToken();
-  if (!botToken) {
-    throw new Error("Discord bot token is missing.");
-  }
+    const botToken = getDiscordBotToken()
+    if (!botToken) {
+        throw new Error("Discord bot token is missing.")
+    }
 
-  const response = await fetch(`https://discord.com/api/v10${path}`, {
-    headers: {
-      Authorization: `Bot ${botToken}`,
-    },
-    cache: "no-store",
-  });
+    const response = await fetch(`https://discord.com/api/v10${path}`, {
+        headers: {
+            Authorization: `Bot ${botToken}`,
+        },
+        cache: "no-store",
+    })
 
-  if (!response.ok) {
-    throw new Error(`Discord API request failed for ${path}.`);
-  }
+    if (!response.ok) {
+        throw new Error(`Discord API request failed for ${path}.`)
+    }
 
-  return (await response.json()) as T;
+    return (await response.json()) as T
 }
 
 async function fetchDiscordBot(path: string, init?: RequestInit) {
-  const botToken = getDiscordBotToken();
-  if (!botToken) {
-    throw new Error("Discord bot token is missing.");
-  }
+    const botToken = getDiscordBotToken()
+    if (!botToken) {
+        throw new Error("Discord bot token is missing.")
+    }
 
-  const response = await fetch(`https://discord.com/api/v10${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bot ${botToken}`,
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
+    const response = await fetch(`https://discord.com/api/v10${path}`, {
+        ...init,
+        headers: {
+            Authorization: `Bot ${botToken}`,
+            ...(init?.headers ?? {}),
+        },
+        cache: "no-store",
+    })
 
-  if (!response.ok) {
-    throw new Error(`Discord API request failed for ${path}.`);
-  }
+    if (!response.ok) {
+        throw new Error(`Discord API request failed for ${path}.`)
+    }
 
-  return response;
+    return response
 }
 
 export async function sendDiscordBotDm(userId: string, content: string) {
-  const dmChannelResponse = await fetchDiscordBot("/users/@me/channels", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      recipient_id: userId,
-    }),
-  });
-  const dmChannel = await dmChannelResponse.json() as DiscordDmChannel;
+    const dmChannelResponse = await fetchDiscordBot("/users/@me/channels", {
+        method: "POST",
+        headers: {
+            "content-type": "application/json",
+        },
+        body: JSON.stringify({
+            recipient_id: userId,
+        }),
+    })
+    const dmChannel = (await dmChannelResponse.json()) as DiscordDmChannel
 
-  const messageResponse = await fetchDiscordBot(`/channels/${dmChannel.id}/messages`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      content,
-    }),
-  });
-  const message = await messageResponse.json() as DiscordApiMessage;
+    const messageResponse = await fetchDiscordBot(
+        `/channels/${dmChannel.id}/messages`,
+        {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({
+                content,
+            }),
+        }
+    )
+    const message = (await messageResponse.json()) as DiscordApiMessage
 
-  return {
-    channelId: message.channel_id,
-    messageId: message.id,
-    messageUrl: buildDiscordMessageUrl("@me", message.channel_id, message.id),
-  };
+    return {
+        channelId: message.channel_id,
+        messageId: message.id,
+        messageUrl: buildDiscordMessageUrl(
+            "@me",
+            message.channel_id,
+            message.id
+        ),
+    }
 }
 
 export async function editDiscordInteractionOriginalResponse(input: {
-  applicationId: string;
-  interactionToken: string;
-  content: string;
+    applicationId: string
+    interactionToken: string
+    content: string
 }) {
-  const response = await fetch(
-    `https://discord.com/api/v10/webhooks/${input.applicationId}/${input.interactionToken}/messages/@original`,
-    {
-      method: "PATCH",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        content: input.content,
-        components: [],
-      }),
-      cache: "no-store",
-    },
-  );
+    const response = await fetch(
+        `https://discord.com/api/v10/webhooks/${input.applicationId}/${input.interactionToken}/messages/@original`,
+        {
+            method: "PATCH",
+            headers: {
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({
+                content: input.content,
+                components: [],
+            }),
+            cache: "no-store",
+        }
+    )
 
-  if (!response.ok) {
-    throw new Error("Failed to edit original Discord interaction response.");
-  }
+    if (!response.ok) {
+        throw new Error("Failed to edit original Discord interaction response.")
+    }
 }
 
 export async function fetchDiscordGuildRoles(guildId: string) {
-  return await fetchDiscordBotJson<DiscordRole[]>(`/guilds/${guildId}/roles`);
+    return await fetchDiscordBotJson<DiscordRole[]>(`/guilds/${guildId}/roles`)
 }
 
 export async function fetchDiscordGuildChannels(guildId: string) {
-  return await fetchDiscordBotJson<DiscordChannel[]>(`/guilds/${guildId}/channels`);
+    return await fetchDiscordBotJson<DiscordChannel[]>(
+        `/guilds/${guildId}/channels`
+    )
 }
 
 export async function fetchDiscordGuildEmojis(guildId: string) {
-  return await fetchDiscordBotJson<DiscordEmoji[]>(`/guilds/${guildId}/emojis`);
+    return await fetchDiscordBotJson<DiscordEmoji[]>(
+        `/guilds/${guildId}/emojis`
+    )
 }
 
 export async function fetchDiscordGuildMembers(guildId: string) {
-  const members: DiscordGuildMember[] = [];
-  let after = "0";
+    const members: DiscordGuildMember[] = []
+    let after = "0"
 
-  while (true) {
-    const page = await fetchDiscordBotJson<DiscordGuildMember[]>(`/guilds/${guildId}/members?limit=1000&after=${after}`);
-    members.push(...page);
+    while (true) {
+        const page = await fetchDiscordBotJson<DiscordGuildMember[]>(
+            `/guilds/${guildId}/members?limit=1000&after=${after}`
+        )
+        members.push(...page)
 
-    if (page.length < 1000) {
-      break;
+        if (page.length < 1000) {
+            break
+        }
+
+        const lastMemberId = page[page.length - 1]?.user?.id
+        if (!lastMemberId) {
+            break
+        }
+        after = lastMemberId
     }
 
-    const lastMemberId = page[page.length - 1]?.user?.id;
-    if (!lastMemberId) {
-      break;
-    }
-    after = lastMemberId;
-  }
-
-  return members;
+    return members
 }
 
-function buildLinkedRoleIdsByGroupId(groups: Awaited<ReturnType<typeof getServerGroups>>) {
-  return new Map(
-    groups
-      .filter((group) => group.discordRoleId)
-      .map((group) => [group.id, group.discordRoleId!] as const),
-  );
+function buildLinkedRoleIdsByGroupId(
+    groups: Awaited<ReturnType<typeof getServerGroups>>
+) {
+    return new Map(
+        groups
+            .filter((group) => group.discordRoleId)
+            .map((group) => [group.id, group.discordRoleId!] as const)
+    )
 }
 
 export async function syncDiscordRolesForAssignment(input: {
-  serverId: string;
-  discordGuildId: string;
-  userId: string;
-  beforePrimaryGroupId?: string;
-  beforeSecondaryGroupIds?: string[];
-  afterPrimaryGroupId?: string;
-  afterSecondaryGroupIds?: string[];
-  beforeAssignmentType?: "member" | "reserve_member" | "mercenary";
-  beforeMembershipStatus?: "pending" | "recruit" | "active";
-  beforeMembershipCategoryId?: string;
-  afterAssignmentType?: "member" | "reserve_member" | "mercenary";
-  afterMembershipStatus?: "pending" | "recruit" | "active";
-  afterMembershipCategoryId?: string;
+    serverId: string
+    discordGuildId: string
+    userId: string
+    beforePrimaryGroupId?: string
+    beforeSecondaryGroupIds?: string[]
+    afterPrimaryGroupId?: string
+    afterSecondaryGroupIds?: string[]
+    beforeAssignmentType?: "member" | "reserve_member" | "mercenary"
+    beforeMembershipStatus?: "pending" | "recruit" | "active"
+    beforeMembershipCategoryId?: string
+    afterAssignmentType?: "member" | "reserve_member" | "mercenary"
+    afterMembershipStatus?: "pending" | "recruit" | "active"
+    afterMembershipCategoryId?: string
 }) {
-  if (!getDiscordBotToken()) {
-    return { addedRoleIds: [], removedRoleIds: [] };
-  }
+    if (!getDiscordBotToken()) {
+        return { addedRoleIds: [], removedRoleIds: [] }
+    }
 
-  const [groups, config] = await Promise.all([
-    getServerGroups(input.serverId),
-    getDiscordConfigByGuild(input.serverId),
-  ]);
-  const roleIdByGroupId = buildLinkedRoleIdsByGroupId(groups);
+    const [groups, config] = await Promise.all([
+        getServerGroups(input.serverId),
+        getDiscordConfigByGuild(input.serverId),
+    ])
+    const roleIdByGroupId = buildLinkedRoleIdsByGroupId(groups)
 
-  const beforeRoleIds = new Set(
-    [input.beforePrimaryGroupId, ...(input.beforeSecondaryGroupIds ?? [])]
-      .filter((groupId): groupId is string => Boolean(groupId))
-      .map((groupId) => roleIdByGroupId.get(groupId))
-      .filter((roleId): roleId is string => Boolean(roleId)),
-  );
+    const beforeRoleIds = new Set(
+        [input.beforePrimaryGroupId, ...(input.beforeSecondaryGroupIds ?? [])]
+            .filter((groupId): groupId is string => Boolean(groupId))
+            .map((groupId) => roleIdByGroupId.get(groupId))
+            .filter((roleId): roleId is string => Boolean(roleId))
+    )
 
-  const afterRoleIds = new Set(
-    [input.afterPrimaryGroupId, ...(input.afterSecondaryGroupIds ?? [])]
-      .filter((groupId): groupId is string => Boolean(groupId))
-      .map((groupId) => roleIdByGroupId.get(groupId))
-      .filter((roleId): roleId is string => Boolean(roleId)),
-  );
+    const afterRoleIds = new Set(
+        [input.afterPrimaryGroupId, ...(input.afterSecondaryGroupIds ?? [])]
+            .filter((groupId): groupId is string => Boolean(groupId))
+            .map((groupId) => roleIdByGroupId.get(groupId))
+            .filter((roleId): roleId is string => Boolean(roleId))
+    )
 
-  const beforeSpecialRoleIds = [
-    input.beforeAssignmentType && input.beforeMembershipStatus
-      ? getMembershipRoleIds(config, input.beforeAssignmentType, input.beforeMembershipStatus, input.beforeMembershipCategoryId)
-      : [],
-  ].flat();
-  const afterSpecialRoleIds = [
-    input.afterAssignmentType && input.afterMembershipStatus
-      ? getMembershipRoleIds(config, input.afterAssignmentType, input.afterMembershipStatus, input.afterMembershipCategoryId)
-      : [],
-  ].flat();
+    const beforeSpecialRoleIds = [
+        input.beforeAssignmentType && input.beforeMembershipStatus
+            ? getMembershipRoleIds(
+                  config,
+                  input.beforeAssignmentType,
+                  input.beforeMembershipStatus,
+                  input.beforeMembershipCategoryId
+              )
+            : [],
+    ].flat()
+    const afterSpecialRoleIds = [
+        input.afterAssignmentType && input.afterMembershipStatus
+            ? getMembershipRoleIds(
+                  config,
+                  input.afterAssignmentType,
+                  input.afterMembershipStatus,
+                  input.afterMembershipCategoryId
+              )
+            : [],
+    ].flat()
 
-  for (const roleId of beforeSpecialRoleIds) {
-    beforeRoleIds.add(roleId);
-  }
+    for (const roleId of beforeSpecialRoleIds) {
+        beforeRoleIds.add(roleId)
+    }
 
-  for (const roleId of afterSpecialRoleIds) {
-    afterRoleIds.add(roleId);
-  }
+    for (const roleId of afterSpecialRoleIds) {
+        afterRoleIds.add(roleId)
+    }
 
-  const roleIdsToAdd = [...afterRoleIds].filter((roleId) => !beforeRoleIds.has(roleId));
-  const roleIdsToRemove = [...beforeRoleIds].filter((roleId) => !afterRoleIds.has(roleId));
+    const roleIdsToAdd = [...afterRoleIds].filter(
+        (roleId) => !beforeRoleIds.has(roleId)
+    )
+    const roleIdsToRemove = [...beforeRoleIds].filter(
+        (roleId) => !afterRoleIds.has(roleId)
+    )
 
-  if (roleIdsToAdd.length === 0 && roleIdsToRemove.length === 0) {
-    return { addedRoleIds: [], removedRoleIds: [] };
-  }
+    if (roleIdsToAdd.length === 0 && roleIdsToRemove.length === 0) {
+        return { addedRoleIds: [], removedRoleIds: [] }
+    }
 
-  await Promise.all([
-    ...roleIdsToAdd.map((roleId) =>
-      fetchDiscordBot(`/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`, {
-        method: "PUT",
-      }),
-    ),
-    ...roleIdsToRemove.map((roleId) =>
-      fetchDiscordBot(`/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`, {
-        method: "DELETE",
-      }),
-    ),
-  ]);
+    await Promise.all([
+        ...roleIdsToAdd.map((roleId) =>
+            fetchDiscordBot(
+                `/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`,
+                {
+                    method: "PUT",
+                }
+            )
+        ),
+        ...roleIdsToRemove.map((roleId) =>
+            fetchDiscordBot(
+                `/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`,
+                {
+                    method: "DELETE",
+                }
+            )
+        ),
+    ])
 
-  return {
-    addedRoleIds: roleIdsToAdd,
-    removedRoleIds: roleIdsToRemove,
-  };
+    return {
+        addedRoleIds: roleIdsToAdd,
+        removedRoleIds: roleIdsToRemove,
+    }
 }
 
 export async function syncDiscordMemberRoleIds(input: {
-  discordGuildId: string;
-  userId: string;
-  addRoleIds?: string[];
-  removeRoleIds?: string[];
+    discordGuildId: string
+    userId: string
+    addRoleIds?: string[]
+    removeRoleIds?: string[]
 }) {
-  if (!getDiscordBotToken()) {
-    return { addedRoleIds: [], removedRoleIds: [] };
-  }
+    if (!getDiscordBotToken()) {
+        return { addedRoleIds: [], removedRoleIds: [] }
+    }
 
-  const roleIdsToAdd = [...new Set(input.addRoleIds ?? [])];
-  const roleIdsToRemove = [...new Set(input.removeRoleIds ?? [])];
+    const roleIdsToAdd = [...new Set(input.addRoleIds ?? [])]
+    const roleIdsToRemove = [...new Set(input.removeRoleIds ?? [])]
 
-  if (roleIdsToAdd.length === 0 && roleIdsToRemove.length === 0) {
-    return { addedRoleIds: [], removedRoleIds: [] };
-  }
+    if (roleIdsToAdd.length === 0 && roleIdsToRemove.length === 0) {
+        return { addedRoleIds: [], removedRoleIds: [] }
+    }
 
-  await Promise.all([
-    ...roleIdsToAdd.map((roleId) =>
-      fetchDiscordBot(`/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`, {
-        method: "PUT",
-      }),
-    ),
-    ...roleIdsToRemove.map((roleId) =>
-      fetchDiscordBot(`/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`, {
-        method: "DELETE",
-      }),
-    ),
-  ]);
+    await Promise.all([
+        ...roleIdsToAdd.map((roleId) =>
+            fetchDiscordBot(
+                `/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`,
+                {
+                    method: "PUT",
+                }
+            )
+        ),
+        ...roleIdsToRemove.map((roleId) =>
+            fetchDiscordBot(
+                `/guilds/${input.discordGuildId}/members/${input.userId}/roles/${roleId}`,
+                {
+                    method: "DELETE",
+                }
+            )
+        ),
+    ])
 
-  return {
-    addedRoleIds: roleIdsToAdd,
-    removedRoleIds: roleIdsToRemove,
-  };
+    return {
+        addedRoleIds: roleIdsToAdd,
+        removedRoleIds: roleIdsToRemove,
+    }
 }
 
 function getMembershipRoleIds(
-  config: Awaited<ReturnType<typeof getDiscordConfigByGuild>>,
-  type: "member" | "reserve_member" | "mercenary",
-  status: "pending" | "recruit" | "active",
-  membershipCategoryId?: string,
+    config: Awaited<ReturnType<typeof getDiscordConfigByGuild>>,
+    type: "member" | "reserve_member" | "mercenary",
+    status: "pending" | "recruit" | "active",
+    membershipCategoryId?: string
 ) {
-  if (!config) {
-    return [];
-  }
-
-  if (status === "pending") {
-    return [];
-  }
-
-  const roleIds = new Set<string>();
-  const category = membershipCategoryId
-    ? config.membershipSettings?.categories.find((item) => item.id === membershipCategoryId)
-    : undefined;
-  if (config.clanRoleId) {
-    roleIds.add(config.clanRoleId);
-  }
-  if (status === "recruit") {
-    for (const roleId of category?.recruitRoleIds ?? []) {
-      roleIds.add(roleId);
+    if (!config) {
+        return []
     }
-  }
-  if (status === "active") {
-    for (const roleId of category?.finalRoleIds ?? []) {
-      roleIds.add(roleId);
-    }
-  }
 
-  return [...roleIds];
+    if (status === "pending") {
+        return []
+    }
+
+    const roleIds = new Set<string>()
+    const category = membershipCategoryId
+        ? config.membershipSettings?.categories.find(
+              (item) => item.id === membershipCategoryId
+          )
+        : undefined
+    if (config.clanRoleId) {
+        roleIds.add(config.clanRoleId)
+    }
+    if (status === "recruit") {
+        for (const roleId of category?.recruitRoleIds ?? []) {
+            roleIds.add(roleId)
+        }
+    }
+    if (status === "active") {
+        for (const roleId of category?.finalRoleIds ?? []) {
+            roleIds.add(roleId)
+        }
+    }
+
+    return [...roleIds]
 }

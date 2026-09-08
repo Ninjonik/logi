@@ -1,500 +1,888 @@
-"use client";
+"use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { Plus, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
-import { DiscordEntitySelect, type DiscordSelectOption } from "@/components/app/discord-entity-select";
-import { EmojiPickerInput } from "@/components/app/emoji-picker-input";
-import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select";
-import { AvatarPicker } from "@/components/app/avatar-picker";
-import { ConfigNotice } from "@/components/app/config-notice";
-import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown";
-import { ExpandableItemCard } from "@/components/app/expandable-item-card";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import type { Dictionary } from "@/i18n/dictionaries";
-import type { DiscordConfig, TicketCategory, TicketModalQuestion, TicketSettings } from "@/types/domain";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import type {
+    DiscordConfig,
+    TicketCategory,
+    TicketModalQuestion,
+    TicketSettings,
+} from "@/types/domain"
+import {
+    DiscordEntitySelect,
+    type DiscordSelectOption,
+} from "@/components/app/discord-entity-select"
+import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
+import { ExpandableItemCard } from "@/components/app/expandable-item-card"
+import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
+import { ConfigNotice } from "@/components/app/config-notice"
+import { AvatarPicker } from "@/components/app/avatar-picker"
+import type { Dictionary } from "@/i18n/dictionaries"
+import { Switch } from "@/components/ui/switch"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 
 type DiscordMetadata = {
-  roles: DiscordSelectOption[];
-  channels: Array<DiscordSelectOption & { type: number; parentId?: string }>;
-  emojis: DiscordSelectOption[];
-};
+    roles: DiscordSelectOption[]
+    channels: Array<DiscordSelectOption & { type: number; parentId?: string }>
+    emojis: DiscordSelectOption[]
+}
 
-type EditableTicketQuestion = TicketModalQuestion;
-type EditableTicketCategory = TicketCategory;
+type EditableTicketQuestion = TicketModalQuestion
+type EditableTicketCategory = TicketCategory
 
-const MAX_TICKET_CATEGORY_FIELD_LENGTH = 1024;
+const MAX_TICKET_CATEGORY_FIELD_LENGTH = 1024
 
 function makeId(prefix: string) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+    return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function buildDefaultTicketQuestion(): EditableTicketQuestion {
-  return {
-    id: makeId("question"),
-    label: "",
-    placeholder: "",
-    style: "short",
-    required: true,
-  };
+    return {
+        id: makeId("question"),
+        label: "",
+        placeholder: "",
+        style: "short",
+        required: true,
+    }
 }
 
 function buildDefaultTicketCategory(): EditableTicketCategory {
-  return {
-    id: makeId("category"),
-    emoji: "",
-    label: "",
-    description: "",
-    supportRoleIds: [],
-    modalQuestions: [],
-  };
+    return {
+        id: makeId("category"),
+        emoji: "",
+        label: "",
+        description: "",
+        supportRoleIds: [],
+        modalQuestions: [],
+    }
 }
 
-function buildDefaultTicketSettings(dictionary: Dictionary, config?: DiscordConfig | null): TicketSettings {
-  if (config?.ticketSettings) {
-    return {
-      ...config.ticketSettings,
-      panelTitle: config.ticketSettings.panelTitle ?? "",
-      panelDescription: config.ticketSettings.panelDescription ?? "",
-      panelImageUrl: config.ticketSettings.panelImageUrl ?? "",
-      categories: config.ticketSettings.categories.map((category) => ({
-        ...category,
-        emoji: category.emoji ?? "",
-        label: category.label ?? "",
-        description: category.description ?? "",
-        supportRoleIds: [...category.supportRoleIds],
-        modalQuestions: category.modalQuestions.map((question) => ({
-          ...question,
-          placeholder: question.placeholder ?? "",
-        })),
-      })),
-    };
-  }
+function buildDefaultTicketSettings(
+    dictionary: Dictionary,
+    config?: DiscordConfig | null
+): TicketSettings {
+    if (config?.ticketSettings) {
+        return {
+            ...config.ticketSettings,
+            panelTitle: config.ticketSettings.panelTitle ?? "",
+            panelDescription: config.ticketSettings.panelDescription ?? "",
+            panelImageUrl: config.ticketSettings.panelImageUrl ?? "",
+            categories: config.ticketSettings.categories.map((category) => ({
+                ...category,
+                emoji: category.emoji ?? "",
+                label: category.label ?? "",
+                description: category.description ?? "",
+                supportRoleIds: [...category.supportRoleIds],
+                modalQuestions: category.modalQuestions.map((question) => ({
+                    ...question,
+                    placeholder: question.placeholder ?? "",
+                })),
+            })),
+        }
+    }
 
-  return {
-    enabled: false,
-    submitChannelId: "",
-    ticketParentChannelId: "",
-    panelTitle: dictionary.ticketSettings.defaultPanelTitle,
-    panelDescription: dictionary.ticketSettings.defaultPanelDescription,
-    panelImageUrl: "",
-    categories: [],
-  };
+    return {
+        enabled: false,
+        submitChannelId: "",
+        ticketParentChannelId: "",
+        panelTitle: dictionary.ticketSettings.defaultPanelTitle,
+        panelDescription: dictionary.ticketSettings.defaultPanelDescription,
+        panelImageUrl: "",
+        categories: [],
+    }
 }
 
 function buildTicketCategoryFieldPreview(categories: EditableTicketCategory[]) {
-  const lines = categories
-    .map((category) => {
-      const pieces = [category.emoji?.trim(), category.label?.trim()].filter(Boolean);
-      const title = pieces.join(" ") || category.id;
-      const description = category.description?.trim();
-      return description ? `${title}: ${description}` : title;
-    })
-    .filter(Boolean);
+    const lines = categories
+        .map((category) => {
+            const pieces = [
+                category.emoji?.trim(),
+                category.label?.trim(),
+            ].filter(Boolean)
+            const title = pieces.join(" ") || category.id
+            const description = category.description?.trim()
+            return description ? `${title}: ${description}` : title
+        })
+        .filter(Boolean)
 
-  const fullText = lines.join("\n");
-  return {
-    tooLong: fullText.length > MAX_TICKET_CATEGORY_FIELD_LENGTH,
-    length: fullText.length,
-  };
+    const fullText = lines.join("\n")
+    return {
+        tooLong: fullText.length > MAX_TICKET_CATEGORY_FIELD_LENGTH,
+        length: fullText.length,
+    }
 }
 
 export function TicketSettingsForm({
-  serverId,
-  dictionary,
-  config,
+    serverId,
+    dictionary,
+    config,
 }: {
-  serverId: string;
-  dictionary: Dictionary;
-  config: DiscordConfig | null;
+    serverId: string
+    dictionary: Dictionary
+    config: DiscordConfig | null
 }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [metadata, setMetadata] = useState<DiscordMetadata | null>(null);
-  const [ticketSettings, setTicketSettings] = useState<TicketSettings>(buildDefaultTicketSettings(dictionary, config));
-  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<string[]>([]);
+    const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+    const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
+    const [ticketSettings, setTicketSettings] = useState<TicketSettings>(
+        buildDefaultTicketSettings(dictionary, config)
+    )
+    const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<string[]>(
+        []
+    )
 
-  useEffect(() => {
-    fetch(`/api/servers/${serverId}/discord-metadata`)
-      .then(async (response) => {
-        const body = await response.json();
-        if (!response.ok || !body || !Array.isArray(body.channels) || !Array.isArray(body.roles) || !Array.isArray(body.emojis)) {
-          throw new Error("Unable to load Discord metadata.");
-        }
-        setMetadata(body);
-      })
-      .catch(() => setMetadata(null));
-  }, [serverId]);
+    useEffect(() => {
+        fetch(`/api/servers/${serverId}/discord-metadata`)
+            .then(async (response) => {
+                const body = await response.json()
+                if (
+                    !response.ok ||
+                    !body ||
+                    !Array.isArray(body.channels) ||
+                    !Array.isArray(body.roles) ||
+                    !Array.isArray(body.emojis)
+                ) {
+                    throw new Error("Unable to load Discord metadata.")
+                }
+                setMetadata(body)
+            })
+            .catch(() => setMetadata(null))
+    }, [serverId])
 
-  const roles = metadata?.roles ?? [];
-  const textChannels = metadata?.channels?.filter((channel) => channel.type === 0) ?? [];
-  const emojiOptions = metadata?.emojis ?? [];
-  const categoryFieldPreview = useMemo(
-    () => buildTicketCategoryFieldPreview(ticketSettings.categories),
-    [ticketSettings.categories],
-  );
-  const missingTicketParts: string[] = [];
-  if (!ticketSettings.submitChannelId) missingTicketParts.push(dictionary.ticketSettings.submitChannel);
-  if (!ticketSettings.ticketParentChannelId) missingTicketParts.push(dictionary.ticketSettings.parentChannel);
-  if (!ticketSettings.categories.length) missingTicketParts.push(dictionary.ticketSettings.categoriesTitle);
+    const roles = metadata?.roles ?? []
+    const textChannels =
+        metadata?.channels?.filter((channel) => channel.type === 0) ?? []
+    const emojiOptions = metadata?.emojis ?? []
+    const categoryFieldPreview = useMemo(
+        () => buildTicketCategoryFieldPreview(ticketSettings.categories),
+        [ticketSettings.categories]
+    )
+    const missingTicketParts: string[] = []
+    if (!ticketSettings.submitChannelId)
+        missingTicketParts.push(dictionary.ticketSettings.submitChannel)
+    if (!ticketSettings.ticketParentChannelId)
+        missingTicketParts.push(dictionary.ticketSettings.parentChannel)
+    if (!ticketSettings.categories.length)
+        missingTicketParts.push(dictionary.ticketSettings.categoriesTitle)
 
-  function patchTicketSettings(patch: Partial<TicketSettings>) {
-    setTicketSettings((current) => ({ ...current, ...patch }));
-  }
-
-  function patchTicketCategory(categoryId: string, patch: Partial<EditableTicketCategory>) {
-    setTicketSettings((current) => ({
-      ...current,
-      categories: current.categories.map((category) => (
-        category.id === categoryId ? { ...category, ...patch } : category
-      )),
-    }));
-  }
-
-  function patchTicketQuestion(categoryId: string, questionId: string, patch: Partial<EditableTicketQuestion>) {
-    setTicketSettings((current) => ({
-      ...current,
-      categories: current.categories.map((category) => (
-        category.id !== categoryId
-          ? category
-          : {
-            ...category,
-            modalQuestions: category.modalQuestions.map((question) => (
-              question.id === questionId ? { ...question, ...patch } : question
-            )),
-          }
-      )),
-    }));
-  }
-
-  function setCategoryCollapsed(categoryId: string, collapsed: boolean) {
-    setCollapsedCategoryIds((current) =>
-      collapsed ? (current.includes(categoryId) ? current : [...current, categoryId]) : current.filter((id) => id !== categoryId),
-    );
-  }
-
-  async function handleSave() {
-    const normalizedTicketSettings: TicketSettings | undefined = ticketSettings.enabled ? {
-      enabled: true,
-      submitChannelId: ticketSettings.submitChannelId || undefined,
-      ticketParentChannelId: ticketSettings.ticketParentChannelId || undefined,
-      panelTitle: ticketSettings.panelTitle,
-      panelDescription: ticketSettings.panelDescription,
-      panelImageUrl: ticketSettings.panelImageUrl || undefined,
-      categories: ticketSettings.categories.map((category) => ({
-        ...category,
-        emoji: category.emoji?.trim() || undefined,
-        label: category.label?.trim() || undefined,
-        description: category.description?.trim() || undefined,
-        supportRoleIds: category.supportRoleIds,
-        modalQuestions: category.modalQuestions.map((question) => ({
-          ...question,
-          placeholder: question.placeholder?.trim() || undefined,
-        })),
-      })),
-    } : {
-      ...ticketSettings,
-      enabled: false,
-    };
-
-    const response = await fetch(`/api/servers/${serverId}/discord-settings`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        timezone: config?.timezone ?? "UTC",
-        defaultLanguage: config?.defaultLanguage ?? "en",
-        announcementsChannelId: config?.announcementsChannelId,
-        forumCategoryId: config?.forumCategoryId,
-        meetingChannelId: config?.meetingChannelId,
-        clanRoleId: config?.clanRoleId,
-        dashboardAdminRoleId: config?.dashboardAdminRoleId,
-        ticketSettings: normalizedTicketSettings,
-        membershipSettings: config?.membershipSettings,
-      }),
-    });
-    const body = await response.json();
-    if (!response.ok) {
-      toast.error(body.error ?? dictionary.serverSettings.discordSettingsSaveError);
-      return;
+    function patchTicketSettings(patch: Partial<TicketSettings>) {
+        setTicketSettings((current) => ({ ...current, ...patch }))
     }
 
-    toast.success(dictionary.serverSettings.discordSettingsSaved);
-    startTransition(() => router.refresh());
-  }
+    function patchTicketCategory(
+        categoryId: string,
+        patch: Partial<EditableTicketCategory>
+    ) {
+        setTicketSettings((current) => ({
+            ...current,
+            categories: current.categories.map((category) =>
+                category.id === categoryId
+                    ? { ...category, ...patch }
+                    : category
+            ),
+        }))
+    }
 
-  return (
-    <Card className="rounded-2xl border-border/60">
-      <CardHeader>
-        <CardTitle>{dictionary.ticketSettings.title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {ticketSettings.enabled && missingTicketParts.length ? (
-          <ConfigNotice title={dictionary.ticketSettings.incompleteTitle}>
-            {dictionary.ticketSettings.incompleteDescription.replace("{items}", missingTicketParts.join(", "))}
-          </ConfigNotice>
-        ) : null}
-        <ConfigNotice tone="info" title={dictionary.ticketSettings.routingInfoTitle}>
-          {dictionary.ticketSettings.routingInfoDescription}
-        </ConfigNotice>
-        <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/60 p-4">
-          <div className="space-y-1">
-            <h3 className="font-semibold">{dictionary.ticketSettings.enableTitle}</h3>
-            <p className="text-sm text-muted-foreground">{dictionary.ticketSettings.enableDescription}</p>
-          </div>
-          <Switch
-            checked={ticketSettings.enabled}
-            onCheckedChange={(checked) => patchTicketSettings({ enabled: checked })}
-          />
-        </div>
+    function patchTicketQuestion(
+        categoryId: string,
+        questionId: string,
+        patch: Partial<EditableTicketQuestion>
+    ) {
+        setTicketSettings((current) => ({
+            ...current,
+            categories: current.categories.map((category) =>
+                category.id !== categoryId
+                    ? category
+                    : {
+                          ...category,
+                          modalQuestions: category.modalQuestions.map(
+                              (question) =>
+                                  question.id === questionId
+                                      ? { ...question, ...patch }
+                                      : question
+                          ),
+                      }
+            ),
+        }))
+    }
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-2">
-            <Label>{dictionary.ticketSettings.submitChannel}</Label>
-            <DiscordEntitySelect
-              value={ticketSettings.submitChannelId}
-              onChange={(value) => patchTicketSettings({ submitChannelId: value ?? "" })}
-              options={textChannels}
-              placeholder={dictionary.ticketSettings.submitChannel}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>{dictionary.ticketSettings.parentChannel}</Label>
-            <DiscordEntitySelect
-              value={ticketSettings.ticketParentChannelId}
-              onChange={(value) => patchTicketSettings({ ticketParentChannelId: value ?? "" })}
-              options={textChannels}
-              placeholder={dictionary.ticketSettings.parentChannel}
-            />
-          </div>
-        </div>
+    function setCategoryCollapsed(categoryId: string, collapsed: boolean) {
+        setCollapsedCategoryIds((current) =>
+            collapsed
+                ? current.includes(categoryId)
+                    ? current
+                    : [...current, categoryId]
+                : current.filter((id) => id !== categoryId)
+        )
+    }
 
-        <div className="space-y-2">
-          <Label>{dictionary.ticketSettings.panelTitle}</Label>
-          <Input
-            value={ticketSettings.panelTitle}
-            onChange={(event) => patchTicketSettings({ panelTitle: event.target.value })}
-            maxLength={256}
-            placeholder={dictionary.ticketSettings.defaultPanelTitle}
-          />
-          <p className="text-xs text-muted-foreground">{ticketSettings.panelTitle.length}/256</p>
-        </div>
+    async function handleSave() {
+        const normalizedTicketSettings: TicketSettings | undefined =
+            ticketSettings.enabled
+                ? {
+                      enabled: true,
+                      submitChannelId:
+                          ticketSettings.submitChannelId || undefined,
+                      ticketParentChannelId:
+                          ticketSettings.ticketParentChannelId || undefined,
+                      panelTitle: ticketSettings.panelTitle,
+                      panelDescription: ticketSettings.panelDescription,
+                      panelImageUrl: ticketSettings.panelImageUrl || undefined,
+                      categories: ticketSettings.categories.map((category) => ({
+                          ...category,
+                          emoji: category.emoji?.trim() || undefined,
+                          label: category.label?.trim() || undefined,
+                          description:
+                              category.description?.trim() || undefined,
+                          supportRoleIds: category.supportRoleIds,
+                          modalQuestions: category.modalQuestions.map(
+                              (question) => ({
+                                  ...question,
+                                  placeholder:
+                                      question.placeholder?.trim() || undefined,
+                              })
+                          ),
+                      })),
+                  }
+                : {
+                      ...ticketSettings,
+                      enabled: false,
+                  }
 
-        <div className="space-y-2">
-          <Label>{dictionary.ticketSettings.panelDescription}</Label>
-          <DiscordMarkdownTextarea
-            value={ticketSettings.panelDescription}
-            onChange={(value) => patchTicketSettings({ panelDescription: value })}
-            maxLength={4096}
-            rows={4}
-            placeholder={dictionary.ticketSettings.panelDescriptionPlaceholder}
-          />
-          <p className="text-xs text-muted-foreground">{ticketSettings.panelDescription.length}/4096</p>
-        </div>
+        const response = await fetch(
+            `/api/servers/${serverId}/discord-settings`,
+            {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                    timezone: config?.timezone ?? "UTC",
+                    defaultLanguage: config?.defaultLanguage ?? "en",
+                    announcementsChannelId: config?.announcementsChannelId,
+                    forumCategoryId: config?.forumCategoryId,
+                    meetingChannelId: config?.meetingChannelId,
+                    clanRoleId: config?.clanRoleId,
+                    dashboardAdminRoleId: config?.dashboardAdminRoleId,
+                    ticketSettings: normalizedTicketSettings,
+                    membershipSettings: config?.membershipSettings,
+                }),
+            }
+        )
+        const body = await response.json()
+        if (!response.ok) {
+            toast.error(
+                body.error ?? dictionary.serverSettings.discordSettingsSaveError
+            )
+            return
+        }
 
-        <AvatarPicker
-          value={ticketSettings.panelImageUrl ?? ""}
-          onChange={(value) => patchTicketSettings({ panelImageUrl: value })}
-          fallback="TK"
-          label={dictionary.ticketSettings.image}
-          buttonLabel={dictionary.common.upload}
-          disabled={isPending}
-          className="rounded-2xl border border-border/60 p-4"
-        />
+        toast.success(dictionary.serverSettings.discordSettingsSaved)
+        startTransition(() => router.refresh())
+    }
 
-        <div className="rounded-xl bg-muted/40 p-3 text-sm text-muted-foreground">
-          {dictionary.ticketSettings.embedLimitNotice} {categoryFieldPreview.length}/{MAX_TICKET_CATEGORY_FIELD_LENGTH}
-          {categoryFieldPreview.tooLong ? ` ${dictionary.ticketSettings.embedLimitExceeded}` : ""}
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h4 className="font-semibold">{dictionary.ticketSettings.categoriesTitle}</h4>
-              <p className="text-sm text-muted-foreground">{dictionary.ticketSettings.categoriesDescription}</p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => patchTicketSettings({ categories: [...ticketSettings.categories, buildDefaultTicketCategory()] })}
-            >
-              <Plus className="mr-2 size-4" />
-              {dictionary.ticketSettings.addCategory}
-            </Button>
-          </div>
-
-          {ticketSettings.categories.length ? ticketSettings.categories.map((category, categoryIndex) => {
-            const isOpen = !collapsedCategoryIds.includes(category.id);
-            const title = category.label?.trim() || `${dictionary.ticketSettings.categoryLabel} ${categoryIndex + 1}`;
-
-            return (
-              <ExpandableItemCard
-                key={category.id}
-                open={isOpen}
-                onOpenChange={(open) => setCategoryCollapsed(category.id, !open)}
-                title={title}
-                subtitle={`ID: ${category.id}`}
-                actions={(
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => patchTicketSettings({ categories: ticketSettings.categories.filter((item) => item.id !== category.id) })}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                )}
-              >
-
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <div className="space-y-2">
-                  <Label>{dictionary.ticketSettings.buttonText}</Label>
-                  <Input
-                    value={category.label ?? ""}
-                    onChange={(event) => patchTicketCategory(category.id, { label: event.target.value })}
-                    placeholder={dictionary.ticketSettings.buttonTextPlaceholder}
-                    maxLength={80}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{dictionary.ticketSettings.emoji}</Label>
-                  <EmojiPickerInput
-                    value={category.emoji ?? ""}
-                    onChange={(value) => patchTicketCategory(category.id, { emoji: value ?? "" })}
-                    customEmojis={emojiOptions}
-                    placeholder={dictionary.emojiPicker.pickEmoji}
-                    labels={dictionary.emojiPicker}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{dictionary.ticketSettings.categoryDescription}</Label>
-                <DiscordMarkdownTextarea
-                  value={category.description ?? ""}
-                  onChange={(value) => patchTicketCategory(category.id, { description: value })}
-                  placeholder={dictionary.ticketSettings.categoryDescriptionPlaceholder}
-                  maxLength={240}
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{dictionary.ticketSettings.supportRoles}</Label>
-                <DiscordMultiEntitySelect
-                  value={category.supportRoleIds}
-                  onChange={(value) => patchTicketCategory(category.id, { supportRoleIds: value })}
-                  options={roles}
-                  placeholder={dictionary.ticketSettings.supportRoles}
-                />
-              </div>
-
-              <div className="space-y-3 rounded-xl bg-muted/40 p-3">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h6 className="font-medium">{dictionary.ticketSettings.modalQuestions}</h6>
-                    <p className="text-sm text-muted-foreground">{dictionary.ticketSettings.modalQuestionsDescription}</p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-xl"
-                    disabled={category.modalQuestions.length >= 5}
-                    onClick={() => patchTicketCategory(category.id, {
-                      modalQuestions: [...category.modalQuestions, buildDefaultTicketQuestion()],
-                    })}
-                  >
-                    <Plus className="mr-2 size-4" />
-                    {dictionary.ticketSettings.addQuestion}
-                  </Button>
-                </div>
-
-                {category.modalQuestions.length ? category.modalQuestions.map((question, questionIndex) => (
-                  <div key={question.id} className="space-y-3 rounded-xl border border-border/50 bg-background p-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="font-medium">{dictionary.ticketSettings.questionLabel} {questionIndex + 1}</div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => patchTicketCategory(category.id, {
-                          modalQuestions: category.modalQuestions.filter((item) => item.id !== question.id),
-                        })}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+    return (
+        <Card className="border-border/60 rounded-2xl">
+            <CardHeader>
+                <CardTitle>{dictionary.ticketSettings.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                {ticketSettings.enabled && missingTicketParts.length ? (
+                    <ConfigNotice
+                        title={dictionary.ticketSettings.incompleteTitle}
+                    >
+                        {dictionary.ticketSettings.incompleteDescription.replace(
+                            "{items}",
+                            missingTicketParts.join(", ")
+                        )}
+                    </ConfigNotice>
+                ) : null}
+                <ConfigNotice
+                    tone="info"
+                    title={dictionary.ticketSettings.routingInfoTitle}
+                >
+                    {dictionary.ticketSettings.routingInfoDescription}
+                </ConfigNotice>
+                <div className="border-border/60 flex items-center justify-between gap-4 rounded-2xl border p-4">
+                    <div className="space-y-1">
+                        <h3 className="font-semibold">
+                            {dictionary.ticketSettings.enableTitle}
+                        </h3>
+                        <p className="text-muted-foreground text-sm">
+                            {dictionary.ticketSettings.enableDescription}
+                        </p>
                     </div>
+                    <Switch
+                        checked={ticketSettings.enabled}
+                        onCheckedChange={(checked) =>
+                            patchTicketSettings({ enabled: checked })
+                        }
+                    />
+                </div>
 
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>{dictionary.ticketSettings.questionText}</Label>
-                        <Input
-                          value={question.label}
-                          onChange={(event) => patchTicketQuestion(category.id, question.id, { label: event.target.value })}
-                          maxLength={45}
-                          placeholder={dictionary.ticketSettings.questionTextPlaceholder}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{dictionary.ticketSettings.inputStyle}</Label>
-                        <Select
-                          value={question.style}
-                          onValueChange={(value) => patchTicketQuestion(category.id, question.id, { style: value as TicketModalQuestion["style"] })}
-                        >
-                          <SelectTrigger className="rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="short">{dictionary.ticketSettings.shortInput}</SelectItem>
-                            <SelectItem value="paragraph">{dictionary.ticketSettings.paragraphInput}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
+                <div className="grid gap-4 lg:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>{dictionary.ticketSettings.placeholder}</Label>
-                      <Input
-                        value={question.placeholder ?? ""}
-                        onChange={(event) => patchTicketQuestion(category.id, question.id, { placeholder: event.target.value })}
-                        maxLength={100}
-                        placeholder={dictionary.ticketSettings.placeholder}
-                      />
+                        <Label>{dictionary.ticketSettings.submitChannel}</Label>
+                        <DiscordEntitySelect
+                            value={ticketSettings.submitChannelId}
+                            onChange={(value) =>
+                                patchTicketSettings({
+                                    submitChannelId: value ?? "",
+                                })
+                            }
+                            options={textChannels}
+                            placeholder={
+                                dictionary.ticketSettings.submitChannel
+                            }
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>{dictionary.ticketSettings.parentChannel}</Label>
+                        <DiscordEntitySelect
+                            value={ticketSettings.ticketParentChannelId}
+                            onChange={(value) =>
+                                patchTicketSettings({
+                                    ticketParentChannelId: value ?? "",
+                                })
+                            }
+                            options={textChannels}
+                            placeholder={
+                                dictionary.ticketSettings.parentChannel
+                            }
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label>{dictionary.ticketSettings.panelTitle}</Label>
+                    <Input
+                        value={ticketSettings.panelTitle}
+                        onChange={(event) =>
+                            patchTicketSettings({
+                                panelTitle: event.target.value,
+                            })
+                        }
+                        maxLength={256}
+                        placeholder={
+                            dictionary.ticketSettings.defaultPanelTitle
+                        }
+                    />
+                    <p className="text-muted-foreground text-xs">
+                        {ticketSettings.panelTitle.length}/256
+                    </p>
+                </div>
+
+                <div className="space-y-2">
+                    <Label>{dictionary.ticketSettings.panelDescription}</Label>
+                    <DiscordMarkdownTextarea
+                        value={ticketSettings.panelDescription}
+                        onChange={(value) =>
+                            patchTicketSettings({ panelDescription: value })
+                        }
+                        maxLength={4096}
+                        rows={4}
+                        placeholder={
+                            dictionary.ticketSettings
+                                .panelDescriptionPlaceholder
+                        }
+                    />
+                    <p className="text-muted-foreground text-xs">
+                        {ticketSettings.panelDescription.length}/4096
+                    </p>
+                </div>
+
+                <AvatarPicker
+                    value={ticketSettings.panelImageUrl ?? ""}
+                    onChange={(value) =>
+                        patchTicketSettings({ panelImageUrl: value })
+                    }
+                    fallback="TK"
+                    label={dictionary.ticketSettings.image}
+                    buttonLabel={dictionary.common.upload}
+                    disabled={isPending}
+                    className="border-border/60 rounded-2xl border p-4"
+                />
+
+                <div className="bg-muted/40 text-muted-foreground rounded-xl p-3 text-sm">
+                    {dictionary.ticketSettings.embedLimitNotice}{" "}
+                    {categoryFieldPreview.length}/
+                    {MAX_TICKET_CATEGORY_FIELD_LENGTH}
+                    {categoryFieldPreview.tooLong
+                        ? ` ${dictionary.ticketSettings.embedLimitExceeded}`
+                        : ""}
+                </div>
+
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <h4 className="font-semibold">
+                                {dictionary.ticketSettings.categoriesTitle}
+                            </h4>
+                            <p className="text-muted-foreground text-sm">
+                                {
+                                    dictionary.ticketSettings
+                                        .categoriesDescription
+                                }
+                            </p>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="rounded-xl"
+                            onClick={() =>
+                                patchTicketSettings({
+                                    categories: [
+                                        ...ticketSettings.categories,
+                                        buildDefaultTicketCategory(),
+                                    ],
+                                })
+                            }
+                        >
+                            <Plus className="mr-2 size-4" />
+                            {dictionary.ticketSettings.addCategory}
+                        </Button>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-xl border border-border/50 px-3 py-2">
-                      <Label htmlFor={`${category.id}-${question.id}-required`}>{dictionary.ticketSettings.required}</Label>
-                      <Switch
-                        id={`${category.id}-${question.id}-required`}
-                        checked={question.required}
-                        onCheckedChange={(checked) => patchTicketQuestion(category.id, question.id, { required: checked })}
-                      />
-                    </div>
-                  </div>
-                )) : (
-                  <p className="text-sm text-muted-foreground">{dictionary.ticketSettings.noQuestions}</p>
-                )}
-              </div>
-              </ExpandableItemCard>
-            );
-          }) : (
-            <div className="rounded-xl border border-dashed border-border/60 p-4 text-sm text-muted-foreground">
-              {dictionary.ticketSettings.noCategories}
-            </div>
-          )}
-        </div>
+                    {ticketSettings.categories.length ? (
+                        ticketSettings.categories.map(
+                            (category, categoryIndex) => {
+                                const isOpen = !collapsedCategoryIds.includes(
+                                    category.id
+                                )
+                                const title =
+                                    category.label?.trim() ||
+                                    `${dictionary.ticketSettings.categoryLabel} ${categoryIndex + 1}`
 
-        <Button className="rounded-xl" onClick={handleSave} disabled={isPending}>
-          {dictionary.serverSettings.saveDiscordSettings}
-        </Button>
-      </CardContent>
-    </Card>
-  );
+                                return (
+                                    <ExpandableItemCard
+                                        key={category.id}
+                                        open={isOpen}
+                                        onOpenChange={(open) =>
+                                            setCategoryCollapsed(
+                                                category.id,
+                                                !open
+                                            )
+                                        }
+                                        title={title}
+                                        subtitle={`ID: ${category.id}`}
+                                        actions={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() =>
+                                                    patchTicketSettings({
+                                                        categories:
+                                                            ticketSettings.categories.filter(
+                                                                (item) =>
+                                                                    item.id !==
+                                                                    category.id
+                                                            ),
+                                                    })
+                                                }
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        }
+                                    >
+                                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                                            <div className="space-y-2">
+                                                <Label>
+                                                    {
+                                                        dictionary
+                                                            .ticketSettings
+                                                            .buttonText
+                                                    }
+                                                </Label>
+                                                <Input
+                                                    value={category.label ?? ""}
+                                                    onChange={(event) =>
+                                                        patchTicketCategory(
+                                                            category.id,
+                                                            {
+                                                                label: event
+                                                                    .target
+                                                                    .value,
+                                                            }
+                                                        )
+                                                    }
+                                                    placeholder={
+                                                        dictionary
+                                                            .ticketSettings
+                                                            .buttonTextPlaceholder
+                                                    }
+                                                    maxLength={80}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>
+                                                    {
+                                                        dictionary
+                                                            .ticketSettings
+                                                            .emoji
+                                                    }
+                                                </Label>
+                                                <EmojiPickerInput
+                                                    value={category.emoji ?? ""}
+                                                    onChange={(value) =>
+                                                        patchTicketCategory(
+                                                            category.id,
+                                                            {
+                                                                emoji:
+                                                                    value ?? "",
+                                                            }
+                                                        )
+                                                    }
+                                                    customEmojis={emojiOptions}
+                                                    placeholder={
+                                                        dictionary.emojiPicker
+                                                            .pickEmoji
+                                                    }
+                                                    labels={
+                                                        dictionary.emojiPicker
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.ticketSettings
+                                                        .categoryDescription
+                                                }
+                                            </Label>
+                                            <DiscordMarkdownTextarea
+                                                value={
+                                                    category.description ?? ""
+                                                }
+                                                onChange={(value) =>
+                                                    patchTicketCategory(
+                                                        category.id,
+                                                        { description: value }
+                                                    )
+                                                }
+                                                placeholder={
+                                                    dictionary.ticketSettings
+                                                        .categoryDescriptionPlaceholder
+                                                }
+                                                maxLength={240}
+                                                rows={3}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.ticketSettings
+                                                        .supportRoles
+                                                }
+                                            </Label>
+                                            <DiscordMultiEntitySelect
+                                                value={category.supportRoleIds}
+                                                onChange={(value) =>
+                                                    patchTicketCategory(
+                                                        category.id,
+                                                        {
+                                                            supportRoleIds:
+                                                                value,
+                                                        }
+                                                    )
+                                                }
+                                                options={roles}
+                                                placeholder={
+                                                    dictionary.ticketSettings
+                                                        .supportRoles
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="bg-muted/40 space-y-3 rounded-xl p-3">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div>
+                                                    <h6 className="font-medium">
+                                                        {
+                                                            dictionary
+                                                                .ticketSettings
+                                                                .modalQuestions
+                                                        }
+                                                    </h6>
+                                                    <p className="text-muted-foreground text-sm">
+                                                        {
+                                                            dictionary
+                                                                .ticketSettings
+                                                                .modalQuestionsDescription
+                                                        }
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="rounded-xl"
+                                                    disabled={
+                                                        category.modalQuestions
+                                                            .length >= 5
+                                                    }
+                                                    onClick={() =>
+                                                        patchTicketCategory(
+                                                            category.id,
+                                                            {
+                                                                modalQuestions:
+                                                                    [
+                                                                        ...category.modalQuestions,
+                                                                        buildDefaultTicketQuestion(),
+                                                                    ],
+                                                            }
+                                                        )
+                                                    }
+                                                >
+                                                    <Plus className="mr-2 size-4" />
+                                                    {
+                                                        dictionary
+                                                            .ticketSettings
+                                                            .addQuestion
+                                                    }
+                                                </Button>
+                                            </div>
+
+                                            {category.modalQuestions.length ? (
+                                                category.modalQuestions.map(
+                                                    (
+                                                        question,
+                                                        questionIndex
+                                                    ) => (
+                                                        <div
+                                                            key={question.id}
+                                                            className="border-border/50 bg-background space-y-3 rounded-xl border p-3"
+                                                        >
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <div className="font-medium">
+                                                                    {
+                                                                        dictionary
+                                                                            .ticketSettings
+                                                                            .questionLabel
+                                                                    }{" "}
+                                                                    {questionIndex +
+                                                                        1}
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() =>
+                                                                        patchTicketCategory(
+                                                                            category.id,
+                                                                            {
+                                                                                modalQuestions:
+                                                                                    category.modalQuestions.filter(
+                                                                                        (
+                                                                                            item
+                                                                                        ) =>
+                                                                                            item.id !==
+                                                                                            question.id
+                                                                                    ),
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <Trash2 className="size-4" />
+                                                                </Button>
+                                                            </div>
+
+                                                            <div className="grid gap-4 lg:grid-cols-2">
+                                                                <div className="space-y-2">
+                                                                    <Label>
+                                                                        {
+                                                                            dictionary
+                                                                                .ticketSettings
+                                                                                .questionText
+                                                                        }
+                                                                    </Label>
+                                                                    <Input
+                                                                        value={
+                                                                            question.label
+                                                                        }
+                                                                        onChange={(
+                                                                            event
+                                                                        ) =>
+                                                                            patchTicketQuestion(
+                                                                                category.id,
+                                                                                question.id,
+                                                                                {
+                                                                                    label: event
+                                                                                        .target
+                                                                                        .value,
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                        maxLength={
+                                                                            45
+                                                                        }
+                                                                        placeholder={
+                                                                            dictionary
+                                                                                .ticketSettings
+                                                                                .questionTextPlaceholder
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <Label>
+                                                                        {
+                                                                            dictionary
+                                                                                .ticketSettings
+                                                                                .inputStyle
+                                                                        }
+                                                                    </Label>
+                                                                    <Select
+                                                                        value={
+                                                                            question.style
+                                                                        }
+                                                                        onValueChange={(
+                                                                            value
+                                                                        ) =>
+                                                                            patchTicketQuestion(
+                                                                                category.id,
+                                                                                question.id,
+                                                                                {
+                                                                                    style: value as TicketModalQuestion["style"],
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <SelectTrigger className="rounded-xl">
+                                                                            <SelectValue />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="short">
+                                                                                {
+                                                                                    dictionary
+                                                                                        .ticketSettings
+                                                                                        .shortInput
+                                                                                }
+                                                                            </SelectItem>
+                                                                            <SelectItem value="paragraph">
+                                                                                {
+                                                                                    dictionary
+                                                                                        .ticketSettings
+                                                                                        .paragraphInput
+                                                                                }
+                                                                            </SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="space-y-2">
+                                                                <Label>
+                                                                    {
+                                                                        dictionary
+                                                                            .ticketSettings
+                                                                            .placeholder
+                                                                    }
+                                                                </Label>
+                                                                <Input
+                                                                    value={
+                                                                        question.placeholder ??
+                                                                        ""
+                                                                    }
+                                                                    onChange={(
+                                                                        event
+                                                                    ) =>
+                                                                        patchTicketQuestion(
+                                                                            category.id,
+                                                                            question.id,
+                                                                            {
+                                                                                placeholder:
+                                                                                    event
+                                                                                        .target
+                                                                                        .value,
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                    maxLength={
+                                                                        100
+                                                                    }
+                                                                    placeholder={
+                                                                        dictionary
+                                                                            .ticketSettings
+                                                                            .placeholder
+                                                                    }
+                                                                />
+                                                            </div>
+
+                                                            <div className="border-border/50 flex items-center justify-between rounded-xl border px-3 py-2">
+                                                                <Label
+                                                                    htmlFor={`${category.id}-${question.id}-required`}
+                                                                >
+                                                                    {
+                                                                        dictionary
+                                                                            .ticketSettings
+                                                                            .required
+                                                                    }
+                                                                </Label>
+                                                                <Switch
+                                                                    id={`${category.id}-${question.id}-required`}
+                                                                    checked={
+                                                                        question.required
+                                                                    }
+                                                                    onCheckedChange={(
+                                                                        checked
+                                                                    ) =>
+                                                                        patchTicketQuestion(
+                                                                            category.id,
+                                                                            question.id,
+                                                                            {
+                                                                                required:
+                                                                                    checked,
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                )
+                                            ) : (
+                                                <p className="text-muted-foreground text-sm">
+                                                    {
+                                                        dictionary
+                                                            .ticketSettings
+                                                            .noQuestions
+                                                    }
+                                                </p>
+                                            )}
+                                        </div>
+                                    </ExpandableItemCard>
+                                )
+                            }
+                        )
+                    ) : (
+                        <div className="border-border/60 text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
+                            {dictionary.ticketSettings.noCategories}
+                        </div>
+                    )}
+                </div>
+
+                <Button
+                    className="rounded-xl"
+                    onClick={handleSave}
+                    disabled={isPending}
+                >
+                    {dictionary.serverSettings.saveDiscordSettings}
+                </Button>
+            </CardContent>
+        </Card>
+    )
 }
