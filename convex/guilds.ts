@@ -297,7 +297,6 @@ export const setEnabledGames = mutation({
         }
 
         const enabledGames = [...new Set(args.enabledGames)]
-        if (!enabledGames.length) throw new Error("Enable at least one game.")
         await ctx.db.patch(guild._id, {
             enabledGames,
             updatedAt: new Date().toISOString(),

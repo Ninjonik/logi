@@ -18,8 +18,10 @@ export function GameSwitcher({
     const pathname = usePathname()
     const searchParams = useSearchParams()
     const selected = searchParams.get("game") as GameId | "all" | null
-    const games = enabledGames?.length ? enabledGames : [DEFAULT_GAME_ID]
+    const games = enabledGames === undefined ? [DEFAULT_GAME_ID] : enabledGames
     const options: Array<GameId | "all"> = ["all", ...games]
+
+    if (!games.length) return null
 
     function href(game: GameId | "all") {
         const params = new URLSearchParams(searchParams.toString())

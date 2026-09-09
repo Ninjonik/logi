@@ -49,7 +49,7 @@ export function SiteHeader({
                             new Event("logi:restart-onboarding")
                         )
                     }
-                    className="text-muted-foreground hover:text-foreground hidden items-center gap-1.5 text-xs font-medium transition-colors sm:inline-flex"
+                    className="text-muted-foreground hover:text-foreground hidden items-center gap-1.5 text-xs font-medium transition-colors hover:cursor-pointer sm:inline-flex"
                 >
                     <CirclePlay className="size-3.5" />
                     {dictionary.publicNavigation.restartTour}

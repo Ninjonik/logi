@@ -35,7 +35,7 @@ export function GameSettingsForm({
     const setEnabledGames = useMutation(setEnabledGamesReference)
     const [isPending, startTransition] = useTransition()
     const [selected, setSelected] = useState<GameId[]>(
-        enabledGames?.length ? enabledGames : [DEFAULT_GAME_ID]
+        enabledGames === undefined ? [DEFAULT_GAME_ID] : enabledGames
     )
 
     function toggle(gameId: GameId, checked: boolean) {
@@ -72,7 +72,7 @@ export function GameSettingsForm({
                 ))}
                 <Button
                     className="rounded-xl"
-                    disabled={isPending || selected.length === 0}
+                    disabled={isPending}
                     onClick={() =>
                         startTransition(async () => {
                             try {

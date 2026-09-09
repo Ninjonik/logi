@@ -48,6 +48,10 @@ export const deMessages = {
         selectTitle: "Wähle zuerst ein Spiel",
         selectDescription:
             "Dieser Eintrag gehört zu einem Spiel. Wähle das Spiel vor dem Erstellen.",
+        noActiveTitle: "Kein aktives Spiel",
+        noActiveDescription:
+            "Aktiviere mindestens ein Spiel in den Clan-Einstellungen, bevor du spielbezogene Eintrage erstellst.",
+        openSettings: "Clan-Einstellungen offnen",
     },
     publicNavigation: {
         wiki: "Wiki",

@@ -70,6 +70,7 @@ import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import { supportedTimezones } from "@/lib/discord-timezones"
 import { EmojiValue } from "@/components/app/emoji-value"
+import { filterByGameScope } from "@/domain/games/game"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
@@ -547,6 +548,14 @@ export function EventFormPanel({
     const [quickScheduleOpen, setQuickScheduleOpen] = useState(false)
     const [quickScheduleStep, setQuickScheduleStep] = useState(0)
     const [isResyncingTopicThread, setIsResyncingTopicThread] = useState(false)
+    const eventGroups = useMemo(
+        () => filterByGameScope(groups, event.gameId),
+        [event.gameId, groups]
+    )
+    const eventGroupIds = useMemo(
+        () => new Set(eventGroups.map((group) => group.id)),
+        [eventGroups]
+    )
 
     const form = useForm<EventInput>({
         resolver: zodResolver(eventSchema),
@@ -590,8 +599,9 @@ export function EventFormPanel({
             createForumChannel: event.createForumChannel,
             topicPresetId: event.topicPresetId ?? "",
             stratmapIds: event.stratmapIds ?? [],
-            signupGroupIds:
-                event.signupGroupIds ?? groups.map((group) => group.id),
+            signupGroupIds: (
+                event.signupGroupIds ?? eventGroups.map((group) => group.id)
+            ).filter((groupId) => eventGroupIds.has(groupId)),
             allowedSignupStatuses: event.allowedSignupStatuses ?? [],
             useGeneralSignup: event.useGeneralSignup ?? false,
             recurrence: event.recurrence,
@@ -879,7 +889,11 @@ export function EventFormPanel({
             topicPresetId: values.topicPresetId || undefined,
             stratmapIds: values.stratmapIds,
             signupGroupIds:
-                values.kind === "match" ? values.signupGroupIds : [],
+                values.kind === "match"
+                    ? (values.signupGroupIds ?? []).filter((groupId) =>
+                          eventGroupIds.has(groupId)
+                      )
+                    : [],
             allowedSignupStatuses:
                 values.kind === "match" &&
                 (values.allowedSignupStatuses ?? []).length > 0
@@ -2663,52 +2677,58 @@ export function EventFormPanel({
                                                         }
                                                     </p>
                                                     <div className="grid gap-2 md:grid-cols-2">
-                                                        {groups.map((group) => (
-                                                            <label
-                                                                key={group.id}
-                                                                className="border-border/60 flex items-center gap-3 rounded-xl border px-3 py-2"
-                                                            >
-                                                                <Checkbox
-                                                                    checked={selectedIds.has(
+                                                        {eventGroups.map(
+                                                            (group) => (
+                                                                <label
+                                                                    key={
                                                                         group.id
-                                                                    )}
-                                                                    onCheckedChange={(
-                                                                        checked
-                                                                    ) => {
-                                                                        const nextValues =
+                                                                    }
+                                                                    className="border-border/60 flex items-center gap-3 rounded-xl border px-3 py-2"
+                                                                >
+                                                                    <Checkbox
+                                                                        checked={selectedIds.has(
+                                                                            group.id
+                                                                        )}
+                                                                        onCheckedChange={(
                                                                             checked
-                                                                                ? [
-                                                                                      ...selectedIds,
-                                                                                      group.id,
-                                                                                  ]
-                                                                                : [
-                                                                                      ...selectedIds,
-                                                                                  ].filter(
-                                                                                      (
-                                                                                          groupId
-                                                                                      ) =>
-                                                                                          groupId !==
-                                                                                          group.id
-                                                                                  )
-                                                                        field.onChange(
-                                                                            nextValues
-                                                                        )
-                                                                    }}
-                                                                />
-                                                                <span
-                                                                    className="border-border/60 size-3 rounded-full border"
-                                                                    style={{
-                                                                        backgroundColor:
-                                                                            group.color,
-                                                                    }}
-                                                                />
-                                                                <span className="text-sm">
-                                                                    {group.name}
-                                                                </span>
-                                                            </label>
-                                                        ))}
+                                                                        ) => {
+                                                                            const nextValues =
+                                                                                checked
+                                                                                    ? [
+                                                                                          ...selectedIds,
+                                                                                          group.id,
+                                                                                      ]
+                                                                                    : [
+                                                                                          ...selectedIds,
+                                                                                      ].filter(
+                                                                                          (
+                                                                                              groupId
+                                                                                          ) =>
+                                                                                              groupId !==
+                                                                                              group.id
+                                                                                      )
+                                                                            field.onChange(
+                                                                                nextValues
+                                                                            )
+                                                                        }}
+                                                                    />
+                                                                    <span
+                                                                        className="border-border/60 size-3 rounded-full border"
+                                                                        style={{
+                                                                            backgroundColor:
+                                                                                group.color,
+                                                                        }}
+                                                                    />
+                                                                    <span className="text-sm">
+                                                                        {
+                                                                            group.name
+                                                                        }
+                                                                    </span>
+                                                                </label>
+                                                            )
+                                                        )}
                                                     </div>
-                                                    {!groups.length ? (
+                                                    {!eventGroups.length ? (
                                                         <div className="text-muted-foreground text-sm">
                                                             {
                                                                 dictionary
@@ -2727,7 +2747,7 @@ export function EventFormPanel({
                                             form.watch("signupGroupIds") ?? []
                                         ).map(
                                             (id) =>
-                                                groups.find(
+                                                eventGroups.find(
                                                     (group) => group.id === id
                                                 )?.name ?? id
                                         )}

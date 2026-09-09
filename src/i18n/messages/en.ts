@@ -47,6 +47,10 @@ export const enMessages = {
         selectTitle: "Choose a game first",
         selectDescription:
             "This record belongs to one game. Select the game before creating it.",
+        noActiveTitle: "No active game",
+        noActiveDescription:
+            "Enable at least one game in clan settings before creating game-specific records.",
+        openSettings: "Open clan settings",
     },
     publicNavigation: {
         wiki: "Wiki",

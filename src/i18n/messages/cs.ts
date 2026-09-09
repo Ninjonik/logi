@@ -47,6 +47,10 @@ export const csMessages = {
         selectTitle: "Nejprve vyberte hru",
         selectDescription:
             "Tento záznam patří k jedné hře. Před vytvořením vyberte hru.",
+        noActiveTitle: "Zadna aktivni hra",
+        noActiveDescription:
+            "Pred vytvarenim zaznamu pro hru povolte alespon jednu hru v nastaveni klanu.",
+        openSettings: "Otevrit nastaveni klanu",
     },
     publicNavigation: {
         wiki: "Wiki",
