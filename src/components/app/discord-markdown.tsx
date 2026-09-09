@@ -4,11 +4,11 @@ import {
     commands as markdownCommands,
     type MDEditorProps,
 } from "@uiw/react-md-editor"
+import { useEffect, useMemo, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import dynamic from "next/dynamic"
 import remarkGfm from "remark-gfm"
 import rehypeRaw from "rehype-raw"
-import { useMemo } from "react"
 
 import { formatDiscordMarkdown } from "@/lib/discord-markdown"
 import { useTheme } from "@/hooks/use-theme"
@@ -99,9 +99,20 @@ export function DiscordMarkdownTextarea({
     preview = "live",
 }: EditorProps) {
     const { theme } = useTheme()
+    const [systemPrefersDark, setSystemPrefersDark] = useState(false)
+    useEffect(() => {
+        const media = window.matchMedia("(prefers-color-scheme: dark)")
+        const update = () => setSystemPrefersDark(media.matches)
+        update()
+        media.addEventListener("change", update)
+        return () => media.removeEventListener("change", update)
+    }, [])
     const normalizedValue = value ?? ""
     const editorHeight = height ?? Math.max((rows ?? 6) * 24 + 64, 180)
-    const colorMode = theme === "dark" ? "dark" : "light"
+    const colorMode =
+        theme === "dark" || (theme === "system" && systemPrefersDark)
+            ? "dark"
+            : "light"
 
     return (
         <div

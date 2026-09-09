@@ -293,6 +293,23 @@ function TourController({
             window.removeEventListener("logi:restart-onboarding", restartTour)
     }, [canManageSelectedServer, selectedServerId, startNextStep])
 
+    useEffect(() => {
+        function persistCompletedTour(event: Event) {
+            const tour = (event as CustomEvent<string | null>).detail
+            handleComplete(tour)
+        }
+
+        window.addEventListener(
+            "logi:onboarding-complete",
+            persistCompletedTour
+        )
+        return () =>
+            window.removeEventListener(
+                "logi:onboarding-complete",
+                persistCompletedTour
+            )
+    })
+
     async function saveTour(tour: string | null) {
         const kind = tour as TourKind | null
         if (!kind) return
@@ -310,15 +327,6 @@ function TourController({
 
     function handleComplete(tour: string | null) {
         void saveTour(tour)
-        if (tour === "setup" && selectedServerId) {
-            window.setTimeout(
-                () =>
-                    startNextStep(
-                        canManageSelectedServer ? "manager" : "member"
-                    ),
-                250
-            )
-        }
     }
 
     return null
@@ -348,6 +356,20 @@ export function DashboardOnboarding({
                 shadowOpacity="0.78"
                 overlayZIndex={100}
                 scrollToTop={false}
+                onComplete={(tour) =>
+                    window.dispatchEvent(
+                        new CustomEvent("logi:onboarding-complete", {
+                            detail: tour,
+                        })
+                    )
+                }
+                onSkip={(_step, tour) =>
+                    window.dispatchEvent(
+                        new CustomEvent("logi:onboarding-complete", {
+                            detail: tour,
+                        })
+                    )
+                }
             >
                 <TourController {...props} />
                 {children}
