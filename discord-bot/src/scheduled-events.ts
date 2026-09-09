@@ -27,6 +27,21 @@ export function getStoredScheduledEventStatus(status: ScheduledLifecycle) {
     return status
 }
 
+function getScheduledLifecycleFromDiscordStatus(
+    status: GuildScheduledEventStatus
+): ScheduledLifecycle {
+    switch (status) {
+        case GuildScheduledEventStatus.Active:
+            return "active"
+        case GuildScheduledEventStatus.Completed:
+            return "completed"
+        case GuildScheduledEventStatus.Canceled:
+            return "canceled"
+        default:
+            return "scheduled"
+    }
+}
+
 function getDiscordErrorDetails(error: unknown) {
     if (error instanceof DiscordAPIError) {
         return {
@@ -93,6 +108,35 @@ export async function syncScheduledDiscordEvent(input: {
         ? await guild.scheduledEvents.fetch(scheduledEventId).catch(() => null)
         : null
 
+    // Discord does not allow an active/terminal scheduled event to return to
+    // Scheduled or have its schedule edited. Logi events can legitimately be
+    // rescheduled back into registration, so retire that Discord event and
+    // provision a fresh one instead of rejecting the Logi state transition.
+    if (
+        scheduledEvent?.status === GuildScheduledEventStatus.Active &&
+        desiredLifecycle === "scheduled"
+    ) {
+        const retiredEvent = await scheduledEvent
+            .edit({ status: GuildScheduledEventStatus.Completed })
+            .catch(() => null)
+        if (!retiredEvent) {
+            return {
+                scheduledEventId: scheduledEvent.id,
+                scheduledEventStatus: "active" as const,
+            }
+        }
+        scheduledEvent = null
+    }
+    if (
+        scheduledEvent &&
+        desiredLifecycle !== "completed" &&
+        desiredLifecycle !== "canceled" &&
+        (scheduledEvent.status === GuildScheduledEventStatus.Completed ||
+            scheduledEvent.status === GuildScheduledEventStatus.Canceled)
+    ) {
+        scheduledEvent = null
+    }
+
     if (!scheduledEvent) {
         if (
             desiredLifecycle === "completed" ||
@@ -152,10 +196,7 @@ export async function syncScheduledDiscordEvent(input: {
                     : undefined,
             }
         }
-    } else if (
-        scheduledEvent.status !== GuildScheduledEventStatus.Completed &&
-        scheduledEvent.status !== GuildScheduledEventStatus.Canceled
-    ) {
+    } else if (scheduledEvent.status === GuildScheduledEventStatus.Scheduled) {
         scheduledEvent = await scheduledEvent
             .edit({
                 name: event.name.slice(0, 100),
@@ -207,10 +248,18 @@ export async function syncScheduledDiscordEvent(input: {
     }
 
     if (
-        desiredLifecycle !== "scheduled" &&
-        scheduledEvent.status !== GuildScheduledEventStatus.Completed &&
-        scheduledEvent.status !== GuildScheduledEventStatus.Canceled
+        scheduledEvent.status === GuildScheduledEventStatus.Completed ||
+        scheduledEvent.status === GuildScheduledEventStatus.Canceled
     ) {
+        return {
+            scheduledEventId: scheduledEvent.id,
+            scheduledEventStatus: getScheduledLifecycleFromDiscordStatus(
+                scheduledEvent.status
+            ),
+        }
+    }
+
+    if (desiredLifecycle !== "scheduled") {
         const nextDiscordStatus =
             desiredLifecycle === "active"
                 ? GuildScheduledEventStatus.Active

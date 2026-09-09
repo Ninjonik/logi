@@ -1,4 +1,5 @@
 import {
+    AttachmentBuilder,
     ChannelType,
     EmbedBuilder,
     ForumChannel,
@@ -7,6 +8,11 @@ import {
 
 import { getClanDiscordMessages } from "../../src/lib/clan-language"
 
+import {
+    DISCORD_LEVEL_ZERO_ATTACHMENT_MAX_BYTES,
+    DISCORD_MESSAGE_MAX_ATTACHMENTS,
+    DISCORD_MESSAGE_MAX_UPLOAD_BYTES,
+} from "../../src/domain/discord-sync/attachment-limits"
 import {
     buildForumInfoEmbed,
     buildForumInfoV2Message,
@@ -21,6 +27,83 @@ import type {
 import { reportClanDiscordError } from "./error-reporting"
 import { env } from "./environment"
 import { logWarn } from "./log"
+
+type TopicMessage = {
+    body?: string
+    attachments: string[]
+}
+
+function attachmentFilename(url: string, index: number) {
+    try {
+        const filename = decodeURIComponent(
+            new URL(url).pathname.split("/").pop() ?? ""
+        )
+        if (filename) return filename.replace(/[^a-zA-Z0-9._-]/g, "-")
+    } catch {
+        // The URL was validated before it reached the bot. Use a safe fallback.
+    }
+    return `attachment-${index + 1}`
+}
+
+async function buildDiscordAttachments(message: TopicMessage) {
+    if (message.attachments.length > DISCORD_MESSAGE_MAX_ATTACHMENTS) {
+        throw new Error(
+            `A Discord message can have at most ${DISCORD_MESSAGE_MAX_ATTACHMENTS} attachments.`
+        )
+    }
+
+    const files: AttachmentBuilder[] = []
+    let totalSize = 0
+    for (const [index, sourceUrl] of message.attachments.entries()) {
+        const response = await fetch(sourceUrl)
+        if (!response.ok) {
+            throw new Error(
+                `Unable to download attachment (${response.status}).`
+            )
+        }
+        const contentLength = Number(response.headers.get("content-length"))
+        if (
+            Number.isFinite(contentLength) &&
+            contentLength > DISCORD_LEVEL_ZERO_ATTACHMENT_MAX_BYTES
+        ) {
+            throw new Error(
+                "Attachment exceeds Discord's 20 MiB level-0 limit."
+            )
+        }
+
+        const content = Buffer.from(await response.arrayBuffer())
+        if (content.byteLength > DISCORD_LEVEL_ZERO_ATTACHMENT_MAX_BYTES) {
+            throw new Error(
+                "Attachment exceeds Discord's 20 MiB level-0 limit."
+            )
+        }
+        totalSize += content.byteLength
+        if (totalSize > DISCORD_MESSAGE_MAX_UPLOAD_BYTES) {
+            throw new Error(
+                "Attachments exceed Discord's 25 MiB message upload limit."
+            )
+        }
+        files.push(
+            new AttachmentBuilder(content, {
+                name: attachmentFilename(sourceUrl, index),
+                description: attachmentFilename(sourceUrl, index),
+            })
+        )
+    }
+    return files
+}
+
+async function sendForumMessage(
+    thread: import("discord.js").ThreadChannel,
+    message: TopicMessage
+) {
+    // Sends are deliberately sequential. discord.js queues REST routes and
+    // honors Discord's 429 retry headers, preventing a large briefing burst.
+    return await thread.send({
+        content: message.body || undefined,
+        files: await buildDiscordAttachments(message),
+    })
+}
 
 export async function syncForumChannel(input: {
     config: DiscordConfig
@@ -276,7 +359,6 @@ export async function syncForumChannel(input: {
     const syncedTopicMessageIds = await ensureForumTopicPosts(
         forumChannel,
         topicPreset,
-        config.defaultLanguage,
         topicMessageIds
     )
     if (syncedTopicMessageIds.join(",") !== topicMessageIds.join(",")) {
@@ -303,13 +385,22 @@ export async function syncForumChannel(input: {
 export async function ensureForumTopicPosts(
     forumChannel: ForumChannel,
     topicPreset: TopicPreset | undefined,
-    language: ClanLanguage,
     existingTopicMessageIds: string[] = []
 ) {
-    const messages = getClanDiscordMessages(language)
     const topicMessages: string[] = []
 
     for (const [index, topic] of (topicPreset?.topics ?? []).entries()) {
+        const messageBlocks = topic.messages?.length
+            ? topic.messages
+            : [
+                  {
+                      id: topic.id ?? `legacy-${index}`,
+                      body: topic.body,
+                      attachments: topic.attachments,
+                  },
+              ]
+        const firstMessage = messageBlocks[0]
+        if (!firstMessage) continue
         const existingTopicId = existingTopicMessageIds[index]
         const existingThread = existingTopicId
             ? await forumChannel.threads
@@ -324,21 +415,10 @@ export async function ensureForumTopicPosts(
             if (starter) {
                 await starter
                     .edit({
-                        content: topic.attachments.length
-                            ? topic.attachments.join("\n")
-                            : undefined,
-                        embeds: [
-                            new EmbedBuilder()
-                                .setTitle(topic.title)
-                                .setDescription(
-                                    topic.body || messages.forum.noExtraNotes
-                                )
-                                .setFooter({
-                                    text: topic.attachments.length
-                                        ? topic.attachments.join(" | ")
-                                        : messages.forum.noExtraNotes,
-                                }),
-                        ],
+                        content: firstMessage.body || undefined,
+                        attachments: [],
+                        files: await buildDiscordAttachments(firstMessage),
+                        embeds: [],
                     })
                     .catch(() => null)
                 topicMessages.push(starter.id)
@@ -349,21 +429,8 @@ export async function ensureForumTopicPosts(
         const createdPost = await forumChannel.threads.create({
             name: topic.title,
             message: {
-                content: topic.attachments.length
-                    ? topic.attachments.join("\n")
-                    : undefined,
-                embeds: [
-                    new EmbedBuilder()
-                        .setTitle(topic.title)
-                        .setDescription(
-                            topic.body || messages.forum.noExtraNotes
-                        )
-                        .setFooter({
-                            text: topic.attachments.length
-                                ? topic.attachments.join(" | ")
-                                : messages.forum.noExtraNotes,
-                        }),
-                ],
+                content: firstMessage.body || undefined,
+                files: await buildDiscordAttachments(firstMessage),
             },
         })
         const starter = await createdPost
@@ -371,6 +438,9 @@ export async function ensureForumTopicPosts(
             .catch(() => null)
         if (starter) {
             topicMessages.push(starter.id)
+        }
+        for (const message of messageBlocks.slice(1)) {
+            await sendForumMessage(createdPost, message)
         }
     }
 

@@ -63,6 +63,16 @@ const guildMember = v.object({
 const topic = v.object({
     id: v.optional(v.string()),
     title: v.string(),
+    messages: v.optional(
+        v.array(
+            v.object({
+                id: v.string(),
+                body: v.optional(v.string()),
+                attachments: v.array(v.string()),
+            })
+        )
+    ),
+    // Legacy single-message topic fields. New writes use messages instead.
     body: v.optional(v.string()),
     attachments: v.array(v.string()),
 })
@@ -740,6 +750,15 @@ export default defineSchema({
         forumThreadId: v.optional(v.string()),
         infoMessageId: v.optional(v.string()),
         topicMessageIds: v.array(v.string()),
+        topicMessageState: v.optional(
+            v.array(
+                v.object({
+                    topicId: v.string(),
+                    threadId: v.string(),
+                    messageIds: v.array(v.string()),
+                })
+            )
+        ),
         lastSyncedAt: v.optional(v.string()),
         lastEventUpdatedAt: v.optional(v.string()),
         lastRosterUpdatedAt: v.optional(v.string()),

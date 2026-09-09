@@ -1,3 +1,4 @@
+import { DISCORD_MESSAGE_MAX_ATTACHMENTS } from "../src/domain/discord-sync/attachment-limits"
 import { getGuildById, getGuildDiscordId } from "./identity"
 import { mutation } from "./_generated/server"
 import { v } from "convex/values"
@@ -16,6 +17,15 @@ const topic = v.object({
     title: v.string(),
     body: v.optional(v.string()),
     attachments: v.array(v.string()),
+    messages: v.optional(
+        v.array(
+            v.object({
+                id: v.string(),
+                body: v.optional(v.string()),
+                attachments: v.array(v.string()),
+            })
+        )
+    ),
 })
 
 export const upsert = mutation({
@@ -44,17 +54,43 @@ export const upsert = mutation({
             throw new Error("Preset name is required.")
         }
 
-        const topics = args.topics.map((item) => ({
-            id: item.id?.trim() || crypto.randomUUID(),
-            title: item.title.trim(),
-            body: item.body?.trim() || undefined,
-            attachments: item.attachments
+        const topics = args.topics.map((item) => {
+            const body = item.body?.trim() || undefined
+            const attachments = item.attachments
                 .map((attachment) => attachment.trim())
-                .filter(Boolean),
-        }))
+                .filter(Boolean)
+            return {
+                id: item.id?.trim() || crypto.randomUUID(),
+                title: item.title.trim(),
+                body,
+                attachments,
+                messages: item.messages?.map((message) => ({
+                    id: message.id,
+                    body: message.body?.trim() || undefined,
+                    attachments: message.attachments
+                        .map((attachment) => attachment.trim())
+                        .filter(Boolean),
+                })) ?? [{ id: crypto.randomUUID(), body, attachments }],
+            }
+        })
 
         if (!topics.length || topics.some((item) => !item.title)) {
             throw new Error("Every preset needs at least one named topic.")
+        }
+        if (
+            topics.some(
+                (item) =>
+                    item.attachments.length > DISCORD_MESSAGE_MAX_ATTACHMENTS ||
+                    item.messages.some(
+                        (message) =>
+                            message.attachments.length >
+                            DISCORD_MESSAGE_MAX_ATTACHMENTS
+                    )
+            )
+        ) {
+            throw new Error(
+                `A Discord message can have at most ${DISCORD_MESSAGE_MAX_ATTACHMENTS} attachments.`
+            )
         }
 
         const payload = {

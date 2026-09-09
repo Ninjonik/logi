@@ -513,6 +513,12 @@ export type PlayerMatchStats = {
 export type Topic = {
     id?: string
     title: string
+    /** Ordered Discord messages. Legacy topics use body/attachments instead. */
+    messages?: Array<{
+        id: string
+        body?: string
+        attachments: string[]
+    }>
     body?: string
     attachments: string[]
 }
