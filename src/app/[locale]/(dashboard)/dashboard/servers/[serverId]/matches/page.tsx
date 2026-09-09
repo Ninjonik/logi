@@ -14,6 +14,7 @@ import { getDictionary } from "@/i18n/dictionaries"
 import { getPaginatedRows } from "@/lib/data-table"
 import type { EventRecord } from "@/types/domain"
 import { Button } from "@/components/ui/button"
+import { isGameId } from "@/domain/games/game"
 import { formatDateTime } from "@/lib/format"
 import { isLocale } from "@/i18n/config"
 
@@ -63,7 +64,11 @@ export default async function MatchesPage({
     const { locale, serverId } = await params
     const resolvedSearchParams = await searchParams
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const context = await getServerContext(serverId)
+    const game = resolvedSearchParams?.game
+    const context = await getServerContext(
+        serverId,
+        typeof game === "string" && isGameId(game) ? game : "all"
+    )
     if (!context) return null
     const { events, canAdmin, discordConfig } = context
     const matches = events
@@ -101,7 +106,7 @@ export default async function MatchesPage({
                                 <div className="flex flex-wrap gap-2">
                                     <Button asChild className="rounded-xl">
                                         <a
-                                            href={`/${locale}/dashboard/servers/${serverId}/matches/create`}
+                                            href={`/${locale}/dashboard/servers/${serverId}/matches/create${typeof game === "string" && isGameId(game) ? `?game=${game}` : ""}`}
                                         >
                                             {dictionary.common.createEvent}
                                         </a>
@@ -133,6 +138,10 @@ export default async function MatchesPage({
                     totalRows={paginated.totalRows}
                     search={paginated.search}
                     searchPlaceholder={dictionary.shared.searchTable}
+                    gameColumn={{
+                        show: !(typeof game === "string" && isGameId(game)),
+                        getGameId: (event) => event.gameId,
+                    }}
                     getHref={(event) =>
                         `/${locale}/dashboard/servers/${serverId}/matches/${event.id}`
                     }

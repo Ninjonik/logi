@@ -1,7 +1,9 @@
+import { GAME_IDS } from "@/domain/games/game"
 import { z } from "zod"
 
 export const eventSchema = z
     .object({
+        gameId: z.enum(GAME_IDS).optional(),
         kind: z.enum(["match", "training"]),
         matchType: z
             .string()

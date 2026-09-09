@@ -35,6 +35,19 @@ export const enMessages = {
         description:
             "Organize clan events, build rosters, publish briefings, and prepare Discord-connected operations.",
     },
+    games: {
+        filterLabel: "Game filter",
+        column: "Game",
+        all: "All games",
+        title: "Games",
+        description: "Enable the games this clan uses.",
+        save: "Save games",
+        saved: "Enabled games saved.",
+        saveError: "Unable to save enabled games.",
+        selectTitle: "Choose a game first",
+        selectDescription:
+            "This record belongs to one game. Select the game before creating it.",
+    },
     publicNavigation: {
         wiki: "Wiki",
         restartTour: "Restart tour",

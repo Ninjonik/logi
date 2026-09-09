@@ -1,6 +1,8 @@
+import { GAME_IDS } from "@/domain/games/game"
 import { z } from "zod"
 
 export const groupSchema = z.object({
+    gameId: z.enum(GAME_IDS).optional(),
     name: z.string().trim().min(1, "Group name is required."),
     color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Pick a valid color."),
     order: z.coerce.number().int().default(0),

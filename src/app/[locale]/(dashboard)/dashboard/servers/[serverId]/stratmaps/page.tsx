@@ -1,11 +1,13 @@
 import Link from "next/link"
 
-import { getHllStratmapMapById, parseStratmapState } from "@/lib/stratmaps"
 import { ResourceTable } from "@/components/app/resource-table"
 import { PageHeader } from "@/components/app/page-header"
+import { getStratmapMapById } from "@/lib/game-stratmaps"
 import { getServerContext } from "@/lib/server-context"
+import { parseStratmapState } from "@/lib/stratmaps"
 import { getDictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
+import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export default async function StratmapsPage({
@@ -13,17 +15,20 @@ export default async function StratmapsPage({
     searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
-    searchParams?: Promise<{ search?: string; page?: string }>
+    searchParams?: Promise<{ search?: string; page?: string; game?: string }>
 }) {
     const { locale, serverId } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const context = await getServerContext(serverId)
+    const { search = "", page = "1", game } = (await searchParams) ?? {}
+    const context = await getServerContext(
+        serverId,
+        isGameId(game) ? game : "all"
+    )
     if (!context) {
         return null
     }
 
-    const { search = "", page = "1" } = (await searchParams) ?? {}
     const normalizedSearch = search.trim().toLowerCase()
     const rows = context.stratmaps
         .filter(
@@ -61,6 +66,10 @@ export default async function StratmapsPage({
                     search={search}
                     searchPlaceholder={dictionary.stratmaps.searchPlaceholder}
                     rows={rows}
+                    gameColumn={{
+                        show: !isGameId(game),
+                        getGameId: (stratmap) => stratmap.gameId,
+                    }}
                     getHref={(row) =>
                         `/${locale}/dashboard/servers/${serverId}/stratmaps/${row.id}`
                     }
@@ -74,8 +83,8 @@ export default async function StratmapsPage({
                             key: "map",
                             title: dictionary.stratmaps.tableMap,
                             render: (row) =>
-                                getHllStratmapMapById(row.baseMapId)?.name ??
-                                row.baseMapId,
+                                getStratmapMapById(row.baseMapId, row.gameId)
+                                    ?.name ?? row.baseMapId,
                         },
                         {
                             key: "slides",

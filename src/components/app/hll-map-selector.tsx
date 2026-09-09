@@ -18,11 +18,13 @@ import {
 } from "@/components/ui/popover"
 import { getHllModeOptions, getHllTimeOptions } from "@/lib/hll-map-presets"
 import { getHllStratmapMapById, getHllStratmapMaps } from "@/lib/stratmaps"
+import { getStratmapMapById, getStratmapMaps } from "@/lib/game-stratmaps"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-function getDisplayMapName(mapId: string) {
-    const map = getHllStratmapMapById(mapId)
+function getDisplayMapName(mapId: string, gameId?: GameId) {
+    const map = getStratmapMapById(mapId, gameId)
     if (!map) {
         return mapId
     }
@@ -42,13 +44,14 @@ function getDisplayMapName(mapId: string) {
 function resolvePointValue(
     mapId: string,
     value: string | undefined,
-    valueMode: "id" | "label"
+    valueMode: "id" | "label",
+    gameId?: GameId
 ) {
     if (!value) {
         return undefined
     }
 
-    const points = getHllStratmapMapById(mapId)?.strongpoints ?? []
+    const points = getStratmapMapById(mapId, gameId)?.strongpoints ?? []
     return points.find((point) =>
         valueMode === "id"
             ? point.id === value
@@ -195,6 +198,7 @@ function SearchableSelect({
 type SelectorField = "map" | "time" | "mode" | "point" | "side"
 
 export function HllMapSelector({
+    gameId,
     mapId,
     onMapIdChange,
     time,
@@ -213,6 +217,7 @@ export function HllMapSelector({
     disabled,
     labels,
 }: {
+    gameId?: GameId
     mapId: string
     onMapIdChange: (value: string) => void
     time?: string
@@ -242,10 +247,10 @@ export function HllMapSelector({
         reset?: string
     }
 }) {
-    const maps = getHllStratmapMaps()
-    const selectedMap = getHllStratmapMapById(mapId)
+    const maps = getStratmapMaps(gameId)
+    const selectedMap = getStratmapMapById(mapId, gameId)
     const selectedPoint = mapId
-        ? resolvePointValue(mapId, pointValue, pointValueMode)
+        ? resolvePointValue(mapId, pointValue, pointValueMode, gameId)
         : undefined
     const timeOptions = mapId ? getHllTimeOptions(mapId) : []
     const modeOptions = mapId && time ? getHllModeOptions(mapId, time) : []
@@ -359,7 +364,7 @@ export function HllMapSelector({
                     noResults={labels.noResults}
                     options={maps.map((map) => ({
                         value: map.id,
-                        label: getDisplayMapName(map.id),
+                        label: getDisplayMapName(map.id, gameId),
                         searchText: [map.name, map.upstreamName, map.id]
                             .filter(Boolean)
                             .join(" "),
@@ -435,7 +440,8 @@ export function HllMapSelector({
                                 const point = resolvePointValue(
                                     mapId,
                                     value,
-                                    "id"
+                                    "id",
+                                    gameId
                                 )
                                 onPointValueChange?.(
                                     point

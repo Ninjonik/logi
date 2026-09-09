@@ -6,8 +6,6 @@ import {
     getPublicImageVersion,
 } from "@/lib/public-image-version"
 import { DynamicMetadataMarker } from "@/components/public/dynamic-metadata-marker"
-import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
-import { PublicSiteShell } from "@/components/public/public-site-shell"
 import { StratmapEditor } from "@/components/app/stratmap-editor"
 import { getPublicStratmapDetail } from "@/lib/server-stratmaps"
 import { getHllStratmapMapById } from "@/lib/stratmaps"
@@ -86,34 +84,16 @@ export default async function PublicStratmapPage({ params }: Props) {
     }
 
     return (
-        <PublicSiteShell locale={safeLocale}>
-            <main className="flex flex-1 flex-col overflow-hidden px-3 py-4 sm:px-6 sm:py-5 lg:px-8">
-                <div className="flex h-[calc(100dvh-4rem-3.5rem-2rem)] min-h-[560px] flex-col gap-3">
-                    <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
-                        <PublicBreadcrumbs
-                            items={[
-                                {
-                                    label: dictionary.app.name,
-                                    href: `/${safeLocale}`,
-                                },
-                                { label: dictionary.stratmaps.title },
-                                { label: stratmap.title },
-                            ]}
-                        />
-                    </div>
-                    <div className="border-border/70 bg-card/20 min-h-0 flex-1 overflow-hidden rounded-xl border shadow-sm">
-                        <StratmapEditor
-                            locale={safeLocale}
-                            userId="public"
-                            stratmapId={stratmapId}
-                            initialCanAdmin={false}
-                            initialStratmap={stratmap}
-                            dictionary={dictionary}
-                        />
-                    </div>
-                </div>
-            </main>
+        <main className="bg-background h-dvh w-dvw overflow-hidden">
+            <StratmapEditor
+                locale={safeLocale}
+                userId="public"
+                stratmapId={stratmapId}
+                initialCanAdmin={false}
+                initialStratmap={stratmap}
+                dictionary={dictionary}
+            />
             <DynamicMetadataMarker />
-        </PublicSiteShell>
+        </main>
     )
 }

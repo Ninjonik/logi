@@ -8,6 +8,7 @@ import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getPaginatedRows } from "@/lib/data-table"
 import { Button } from "@/components/ui/button"
+import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
@@ -25,7 +26,11 @@ export default async function RostersPage({
     const { locale, serverId } = await params
     const resolvedSearchParams = await searchParams
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const context = await getServerContext(serverId)
+    const game = resolvedSearchParams?.game
+    const context = await getServerContext(
+        serverId,
+        typeof game === "string" && isGameId(game) ? game : "all"
+    )
     if (!context) return null
     const { rosters, events, canAdmin } = context
     const eventById = new Map(events.map((event) => [event.id, event]))
@@ -87,6 +92,11 @@ export default async function RostersPage({
                 totalRows={paginated.totalRows}
                 search={paginated.search}
                 searchPlaceholder={dictionary.shared.searchTable}
+                gameColumn={{
+                    show: !(typeof game === "string" && isGameId(game)),
+                    getGameId: (roster) =>
+                        eventById.get(roster.eventId)?.gameId,
+                }}
                 getHref={(roster) =>
                     `/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`
                 }

@@ -1,4 +1,5 @@
 import { getGuildById, getGuildDiscordId } from "./identity"
+import { matchesGameScope } from "../src/domain/games/game"
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
@@ -21,6 +22,14 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
 export const listForGuild = query({
     args: {
         guildId: v.id("guilds"),
+        gameScope: v.optional(
+            v.union(
+                v.literal("all"),
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
     },
     handler: async (ctx, args) => {
         const guild = await getGuildById(ctx, args.guildId)
@@ -33,7 +42,9 @@ export const listForGuild = query({
                 q.eq("guildId", getGuildDiscordId(guild))
             )
             .collect()
-        return groups.map(normalizeDoc)
+        return groups
+            .filter((group) => matchesGameScope(group.gameId, args.gameScope))
+            .map(normalizeDoc)
     },
 })
 
@@ -52,6 +63,13 @@ export const upsert = mutation({
         secret: v.string(),
         guildId: v.id("guilds"),
         groupId: v.optional(v.id("groups")),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
         name: v.string(),
         color: v.string(),
         order: v.number(),
@@ -73,20 +91,30 @@ export const upsert = mutation({
         }
         const guildDiscordId = getGuildDiscordId(guild)
 
-        const duplicate = await ctx.db
+        const duplicates = await ctx.db
             .query("groups")
             .withIndex("guildId_name", (q) =>
                 q.eq("guildId", guildDiscordId).eq("name", trimmedName)
             )
-            .unique()
+            .collect()
 
-        if (duplicate && duplicate._id !== args.groupId) {
+        const duplicate = duplicates.find(
+            (group) =>
+                matchesGameScope(group.gameId, args.gameId) &&
+                group._id !== args.groupId
+        )
+
+        if (duplicate) {
             throw new Error("A group with this name already exists.")
         }
 
         const now = new Date().toISOString()
 
         if (args.groupId) {
+            const existing = await ctx.db.get(args.groupId)
+            if (!existing || existing.guildId !== guildDiscordId) {
+                throw new Error("Group not found.")
+            }
             await ctx.db.patch(args.groupId, {
                 name: trimmedName,
                 color: args.color,
@@ -102,6 +130,7 @@ export const upsert = mutation({
 
         const groupId = await ctx.db.insert("groups", {
             guildId: guildDiscordId,
+            gameId: args.gameId,
             name: trimmedName,
             color: args.color,
             order: args.order,

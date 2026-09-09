@@ -14,6 +14,7 @@ export type ServerUserAssignmentReadModel = {
     id: string
     userId: string
     serverId: string
+    gameId?: import("@/domain/games/game").GameId
     type: "member" | "reserve_member" | "mercenary"
     status: "pending" | "recruit" | "active"
     membershipCategoryId?: string

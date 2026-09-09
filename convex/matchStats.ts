@@ -309,6 +309,7 @@ export const upsertForEvent = mutation({
 
         if (existing) {
             await ctx.db.patch(existing._id, {
+                gameId: event.gameId,
                 sourceUrl: args.sourceUrl,
                 matchId: String(args.raw.id),
                 importedAt: now,
@@ -329,6 +330,7 @@ export const upsertForEvent = mutation({
 
         const insertedId = await ctx.db.insert("matchStats", {
             guildId: event.guildId,
+            gameId: event.gameId,
             eventId: args.eventId,
             sourceUrl: args.sourceUrl,
             matchId: String(args.raw.id),

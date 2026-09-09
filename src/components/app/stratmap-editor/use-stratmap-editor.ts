@@ -23,11 +23,10 @@ import {
     type StratmapSlide,
     getHllStratmapCatalog,
     getHllStratmapCatalogGroups,
-    getHllStratmapMapById,
-    getHllStratmapMaps,
     parseStratmapState,
     stringifyStratmapState,
 } from "@/lib/stratmaps"
+import { getStratmapMapById, getStratmapMaps } from "@/lib/game-stratmaps"
 import { uploadFileToConvex } from "@/lib/client-uploads"
 
 import {
@@ -182,10 +181,13 @@ export function useStratmapEditor(
     const canAdmin = liveData?.canAdmin ?? initialCanAdmin
     const canEdit = canAdmin && mode === "edit"
     const stratmap = liveData?.stratmap ?? initialStratmap
-    const maps = getHllStratmapMaps()
+    const maps = getStratmapMaps(initialStratmap.gameId)
     const catalogGroups = getHllStratmapCatalogGroups()
     const activeSlide = getActiveSlide(state, selectedSlideId)
-    const selectedMap = getHllStratmapMapById(baseMapId || state.baseMapId)
+    const selectedMap = getStratmapMapById(
+        baseMapId || state.baseMapId,
+        initialStratmap.gameId
+    )
     const overlayStrongpointIds = useMemo(
         () =>
             getOverlayStrongpoints(

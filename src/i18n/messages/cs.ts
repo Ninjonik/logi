@@ -35,6 +35,19 @@ export const csMessages = {
         description:
             "Organizujte klanové akce, stavte soupisky, publikujte briefingy a připravujte operace propojené s Discordem.",
     },
+    games: {
+        filterLabel: "Filtr her",
+        column: "Hra",
+        all: "Všechny hry",
+        title: "Hry",
+        description: "Povolte hry, které tento klan používá.",
+        save: "Uložit hry",
+        saved: "Povolené hry byly uloženy.",
+        saveError: "Povolené hry se nepodařilo uložit.",
+        selectTitle: "Nejprve vyberte hru",
+        selectDescription:
+            "Tento záznam patří k jedné hře. Před vytvořením vyberte hru.",
+    },
     publicNavigation: {
         wiki: "Wiki",
         restartTour: "Spustit průvodce znovu",
@@ -174,7 +187,7 @@ export const csMessages = {
                 wiki: {
                     title: "Wiki komunity",
                     description:
-                        "PraktickÃ© nÃ¡vody pro kaÅ¾dou funkci Logi, od prvnÃ­ho workspace po kaÅ¾dodennÃ­ provoz.",
+                        "Praktické návody pro každou funkci Logi, od prvního workspace po každodenní provoz.",
                 },
             },
             workflowEyebrow: "Od briefingu po vyhodnocení",

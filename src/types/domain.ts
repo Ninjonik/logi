@@ -1,5 +1,8 @@
 export type Timestamp = string
 
+import type { GameId } from "@/domain/games/game"
+export type { GameId, GameScope } from "@/domain/games/game"
+
 export type EventStatus = "registration" | "closed" | "starting" | "concluded"
 
 export type EventOutcome = "victory" | "defeat" | "draw"
@@ -99,6 +102,7 @@ export type Guild = {
     avatar: string
     description?: string
     eventCategories?: EventCategory[]
+    enabledGames?: GameId[]
     calendarItems?: CalendarItem[]
     botInside: boolean
     canAdmin?: boolean
@@ -200,6 +204,7 @@ export type DiscordConfig = {
     clanRoleId?: string
     dashboardAdminRoleId?: string
     playerStatsServers?: PlayerStatsServer[]
+    gameOverrides?: Partial<Record<GameId, GameDiscordOverrides>>
     ticketSettings?: TicketSettings
     membershipSettings?: MembershipSettings
     ticketPanelMessageId?: string
@@ -211,6 +216,16 @@ export type DiscordConfig = {
     createdAt: Timestamp
     updatedAt: Timestamp
 }
+
+export type GameDiscordOverrides = Pick<
+    DiscordConfig,
+    | "announcementsChannelId"
+    | "eventInfoChannelId"
+    | "forumCategoryId"
+    | "meetingChannelId"
+    | "playerStatsServers"
+    | "membershipSettings"
+>
 
 export type MembershipStatus = "pending" | "recruit" | "active"
 export type MembershipCloseOutcome =
@@ -231,6 +246,8 @@ export type DiscordMemberAccess = {
 export type Group = {
     id: string
     guildId: string
+    /** Missing values are legacy Hell Let Loose groups. */
+    gameId?: GameId
     name: string
     color: string
     order: number
@@ -245,6 +262,8 @@ export type Group = {
 export type EventRecord = {
     id: string
     guildId: string
+    /** Missing means the legacy Hell Let Loose game scope. */
+    gameId?: GameId
     kind: EventKind
     matchType?: MatchTypeCategory
     name: string
@@ -328,6 +347,8 @@ export type EventRecord = {
 export type StratmapRecord = {
     id: string
     guildId: string
+    /** Missing means the legacy Hell Let Loose game scope. */
+    gameId?: GameId
     eventId?: string
     title: string
     description?: string
@@ -347,6 +368,8 @@ export type MatchStatBreakdown = Record<string, number>
 export type MatchStatsRecord = {
     id: string
     guildId: string
+    /** Missing means the legacy Hell Let Loose game scope. */
+    gameId?: GameId
     eventId: string
     matchId: string
     sourceUrl: string

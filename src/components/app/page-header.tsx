@@ -4,11 +4,13 @@ export function PageHeader({
     title,
     description,
     badge,
+    badges,
     actions,
 }: {
     title: string
     description?: string
     badge?: string
+    badges?: React.ReactNode
     actions?: React.ReactNode
 }) {
     return (
@@ -23,6 +25,7 @@ export function PageHeader({
                             {badge}
                         </Badge>
                     ) : null}
+                    {badges}
                 </div>
                 {description ? (
                     <p className="text-muted-foreground max-w-3xl text-xs leading-snug 2xl:text-sm">

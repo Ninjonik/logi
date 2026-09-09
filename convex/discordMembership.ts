@@ -4,6 +4,7 @@ import {
     normalizeDoc,
     normalizeUserDoc,
 } from "./discord_shared"
+import { matchesGameScope } from "../src/domain/games/game"
 import { mutation, query } from "./_generated/server"
 import { getUserByDiscordId } from "./identity"
 import { v } from "convex/values"
@@ -48,6 +49,13 @@ export const getMembershipApplicationPrereq = query({
         guildId: v.string(),
         categoryId: v.string(),
         userId: v.string(),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -61,19 +69,23 @@ export const getMembershipApplicationPrereq = query({
         )
         if (!category) return null
 
-        const [user, assignment, openApplications] = await Promise.all([
+        const [user, assignments, openApplications] = await Promise.all([
             getUserByDiscordId(ctx, args.userId),
             ctx.db
                 .query("userAssignments")
                 .withIndex("serverId_userId", (q) =>
                     q.eq("serverId", args.guildId).eq("userId", args.userId)
                 )
-                .unique(),
+                .collect(),
             ctx.db
                 .query("membershipApplicationThreads")
                 .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
                 .collect(),
         ])
+
+        const assignment = assignments.find((candidate) =>
+            matchesGameScope(candidate.gameId, args.gameId)
+        )
 
         return {
             config: normalizeConfigDoc(config),
@@ -158,6 +170,13 @@ export const createMembershipApplicationThread = mutation({
         parentChannelId: v.string(),
         creatorId: v.string(),
         categoryId: v.string(),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
         assignmentType: v.union(
             v.literal("member"),
             v.literal("reserve_member"),
@@ -195,6 +214,7 @@ export const createMembershipApplicationThread = mutation({
             "membershipApplicationThreads",
             {
                 guildId: args.guildId,
+                gameId: args.gameId,
                 threadId: args.threadId,
                 parentChannelId: args.parentChannelId,
                 creatorId: args.creatorId,

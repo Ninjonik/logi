@@ -45,12 +45,15 @@ export class InMemoryAssignmentCommandRepository implements AssignmentCommandRep
 
     async getByServerUser(
         serverDiscordId: string,
-        userId: string
+        userId: string,
+        gameId?: AssignmentRecord["gameId"]
     ): Promise<AssignmentRecord | null> {
         return (
             [...this.assignments.values()].find(
                 (item) =>
-                    item.serverId === serverDiscordId && item.userId === userId
+                    item.serverId === serverDiscordId &&
+                    item.userId === userId &&
+                    item.gameId === gameId
             ) ?? null
         )
     }
@@ -77,6 +80,7 @@ export class InMemoryAssignmentCommandRepository implements AssignmentCommandRep
         assignmentId?: string
         userId: string
         serverId: string
+        gameId?: AssignmentRecord["gameId"]
         type: any
         status: any
         membershipCategoryId?: string
@@ -94,6 +98,7 @@ export class InMemoryAssignmentCommandRepository implements AssignmentCommandRep
             id,
             userId: input.userId,
             serverId: input.serverId,
+            gameId: input.gameId,
             type: input.type,
             status: input.status,
             membershipCategoryId: input.membershipCategoryId,
@@ -123,7 +128,11 @@ export class InMemoryAssignmentCommandRepository implements AssignmentCommandRep
         this.userMembershipPatches.push({ userId, patch })
     }
 
-    async listOpenMatchEventIds(serverDiscordId: string): Promise<string[]> {
+    async listOpenMatchEventIds(
+        serverDiscordId: string,
+        _now: Date,
+        _gameId?: AssignmentRecord["gameId"]
+    ): Promise<string[]> {
         return this.openEventIdsByServer.get(serverDiscordId) ?? []
     }
 

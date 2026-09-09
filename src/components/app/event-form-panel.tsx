@@ -845,6 +845,7 @@ export function EventFormPanel({
 
     async function submit(values: EventInput) {
         const payload = {
+            gameId: event.gameId,
             ...values,
             registrationEnd: fromDateTimeLocalInTimeZone(
                 values.registrationEnd,

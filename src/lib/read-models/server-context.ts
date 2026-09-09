@@ -5,6 +5,7 @@ import type {
     AppUser,
     DiscordConfig,
     EventRecord,
+    GameScope,
     Group,
     Guild,
     Roster,
@@ -42,27 +43,32 @@ export type ServerContextReadModel = {
 
 async function getServerContextSnapshot(
     serverId: string,
-    userId: string
+    userId: string,
+    gameScope?: GameScope
 ): Promise<ServerContextReadModel | null> {
     return (await fetchQuery(getServerContextReference, {
         userId,
         serverId: serverId as never,
+        gameScope,
     })) as ServerContextReadModel | null
 }
 
 async function getServerContextSnapshotInternal(
     serverId: string,
-    userId: string
+    userId: string,
+    gameScope?: GameScope
 ): Promise<ServerContextReadModel | null> {
     return (await fetchQuery(getServerContextInternalReference, {
         secret: getInternalAuthSecret(),
         userId,
         serverId: serverId as never,
+        gameScope,
     })) as ServerContextReadModel | null
 }
 
 export async function getServerContextReadModel(
-    serverId: string
+    serverId: string,
+    gameScope?: GameScope
 ): Promise<ServerContextReadModel | null> {
     const user = await getLoggedInUser()
     if (!user) {
@@ -73,11 +79,16 @@ export async function getServerContextReadModel(
         if (await isSuperadminDiscordId(user.discordId)) {
             return await getServerContextSnapshotInternal(
                 serverId,
-                user.discordId
+                user.discordId,
+                gameScope
             )
         }
 
-        return await getServerContextSnapshot(serverId, user.discordId)
+        return await getServerContextSnapshot(
+            serverId,
+            user.discordId,
+            gameScope
+        )
     } catch {
         return null
     }

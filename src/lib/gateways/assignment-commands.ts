@@ -2,6 +2,7 @@ import { makeFunctionReference } from "convex/server"
 import { fetchMutation } from "convex/nextjs"
 
 import { parsePlatformIdsInput } from "@/lib/platform-ids"
+import type { GameId } from "@/domain/games/game"
 import { getInternalAuthSecret } from "@/lib/env"
 
 const upsertAssignmentReference = makeFunctionReference<"mutation">(
@@ -37,6 +38,7 @@ export async function saveServerUserAssignmentCommand(input: {
     assignmentId?: string
     userId: string
     serverId: string
+    gameId?: GameId
     type: "member" | "reserve_member" | "mercenary"
     status: "pending" | "recruit" | "active"
     membershipCategoryId?: string
@@ -51,6 +53,7 @@ export async function saveServerUserAssignmentCommand(input: {
         assignmentId: input.assignmentId as never,
         userId: input.userId,
         serverId: input.serverId,
+        gameId: input.gameId,
         type: input.type,
         status: input.status,
         membershipCategoryId: input.membershipCategoryId,

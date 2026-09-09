@@ -49,7 +49,7 @@ function OnboardingCard({
     const isLastStep = currentStep === totalSteps - 1
 
     return (
-        <section className="border-border bg-background box-border max-h-[calc(100dvh-2rem)] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border p-5 shadow-2xl">
+        <section className="border-border bg-background box-border max-h-[calc(100dvh-2rem)] w-[min(32rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border p-5 shadow-2xl">
             <div className="flex items-start justify-between gap-3">
                 <p className="text-muted-foreground text-xs font-bold tracking-[0.16em] uppercase">
                     {copy.step

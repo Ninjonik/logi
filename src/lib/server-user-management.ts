@@ -20,6 +20,7 @@ import {
     listUsersReadModelUncached,
 } from "@/lib/read-models/users"
 import type { AppUser, Guild } from "@/types/domain"
+import type { GameId } from "@/domain/games/game"
 
 export type ServerUserAssignment = ServerUserAssignmentReadModel
 
@@ -80,6 +81,7 @@ export async function saveServerUserAssignment(input: {
     assignmentId?: string
     userId: string
     serverId: string
+    gameId?: GameId
     type: "member" | "reserve_member" | "mercenary"
     status: "pending" | "recruit" | "active"
     membershipCategoryId?: string

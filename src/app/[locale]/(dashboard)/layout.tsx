@@ -56,7 +56,7 @@ export default async function DashboardLayout({
                         servers={visibleServers}
                         user={user}
                     />
-                    <div className="flex flex-1 flex-col gap-3 py-3 sm:gap-4 sm:py-4 2xl:gap-6 2xl:py-6">
+                    <div className="relative flex flex-1 flex-col gap-3 py-3 sm:gap-4 sm:py-4 2xl:gap-6 2xl:py-6">
                         {children}
                     </div>
                     <SiteFooter dictionary={dictionary} />

@@ -1,7 +1,7 @@
 "use client"
 
+import { usePathname, useSearchParams } from "next/navigation"
 import { ChevronRight, type LucideIcon } from "lucide-react"
-import { usePathname } from "next/navigation"
 import Link from "next/link"
 
 import {
@@ -39,104 +39,120 @@ function hasActiveDescendant(item: NavItem, pathname: string): boolean {
     )
 }
 
-function renderNavItems(items: NavItem[], pathname: string, depth = 0) {
+function renderNavItems(
+    items: NavItem[],
+    pathname: string,
+    gameQuery: string,
+    depth = 0
+) {
     const isHeavyServerRoute = (url: string) =>
         url.includes("/dashboard/servers/")
 
-    return items.map((item) => (
-        <Collapsible
-            key={`${depth}-${item.title}-${item.url}`}
-            asChild
-            defaultOpen={hasActiveDescendant(item, pathname)}
-            className="group/collapsible"
-        >
-            {depth === 0 ? (
-                <SidebarMenuItem>
-                    {item.items?.length ? (
-                        <>
-                            <CollapsibleTrigger asChild>
-                                <SidebarMenuButton
-                                    tooltip={item.title}
-                                    className="h-7 cursor-pointer px-1.5 text-[13px] 2xl:h-8 2xl:px-2 2xl:text-sm"
-                                    isActive={pathname === item.url}
+    return items.map((item) => {
+        const url =
+            item.url.includes("/dashboard/servers/") && gameQuery
+                ? `${item.url}?${gameQuery}`
+                : item.url
+        return (
+            <Collapsible
+                key={`${depth}-${item.title}-${url}`}
+                asChild
+                defaultOpen={hasActiveDescendant(item, pathname)}
+                className="group/collapsible"
+            >
+                {depth === 0 ? (
+                    <SidebarMenuItem>
+                        {item.items?.length ? (
+                            <>
+                                <CollapsibleTrigger asChild>
+                                    <SidebarMenuButton
+                                        tooltip={item.title}
+                                        className="h-7 cursor-pointer px-1.5 text-[13px] 2xl:h-8 2xl:px-2 2xl:text-sm"
+                                        isActive={pathname === item.url}
+                                    >
+                                        {item.icon && <item.icon />}
+                                        <span>{item.title}</span>
+                                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                    </SidebarMenuButton>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <SidebarMenuSub>
+                                        {renderNavItems(
+                                            item.items,
+                                            pathname,
+                                            gameQuery,
+                                            depth + 1
+                                        )}
+                                    </SidebarMenuSub>
+                                </CollapsibleContent>
+                            </>
+                        ) : (
+                            <SidebarMenuButton
+                                asChild
+                                tooltip={item.title}
+                                className="h-7 cursor-pointer px-1.5 text-[13px] 2xl:h-8 2xl:px-2 2xl:text-sm"
+                                isActive={pathname === item.url}
+                            >
+                                <Link
+                                    href={url}
+                                    prefetch={!isHeavyServerRoute(url)}
                                 >
                                     {item.icon && <item.icon />}
                                     <span>{item.title}</span>
-                                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                </SidebarMenuButton>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <SidebarMenuSub>
-                                    {renderNavItems(
-                                        item.items,
-                                        pathname,
-                                        depth + 1
-                                    )}
-                                </SidebarMenuSub>
-                            </CollapsibleContent>
-                        </>
-                    ) : (
-                        <SidebarMenuButton
-                            asChild
-                            tooltip={item.title}
-                            className="h-7 cursor-pointer px-1.5 text-[13px] 2xl:h-8 2xl:px-2 2xl:text-sm"
-                            isActive={pathname === item.url}
-                        >
-                            <Link
-                                href={item.url}
-                                prefetch={!isHeavyServerRoute(item.url)}
+                                </Link>
+                            </SidebarMenuButton>
+                        )}
+                    </SidebarMenuItem>
+                ) : (
+                    <SidebarMenuSubItem>
+                        {item.items?.length ? (
+                            <>
+                                <CollapsibleTrigger asChild>
+                                    <SidebarMenuSubButton
+                                        className="h-6 cursor-pointer px-1.5 text-xs 2xl:h-7 2xl:px-2 2xl:text-sm"
+                                        isActive={pathname === item.url}
+                                    >
+                                        <span>{item.title}</span>
+                                        <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                    </SidebarMenuSubButton>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <SidebarMenuSub className="mx-1 mt-0.5 2xl:mx-2 2xl:mt-1">
+                                        {renderNavItems(
+                                            item.items,
+                                            pathname,
+                                            gameQuery,
+                                            depth + 1
+                                        )}
+                                    </SidebarMenuSub>
+                                </CollapsibleContent>
+                            </>
+                        ) : (
+                            <SidebarMenuSubButton
+                                asChild
+                                className="h-6 cursor-pointer px-1.5 text-xs 2xl:h-7 2xl:px-2 2xl:text-sm"
+                                isActive={pathname === item.url}
                             >
-                                {item.icon && <item.icon />}
-                                <span>{item.title}</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    )}
-                </SidebarMenuItem>
-            ) : (
-                <SidebarMenuSubItem>
-                    {item.items?.length ? (
-                        <>
-                            <CollapsibleTrigger asChild>
-                                <SidebarMenuSubButton
-                                    className="h-6 cursor-pointer px-1.5 text-xs 2xl:h-7 2xl:px-2 2xl:text-sm"
-                                    isActive={pathname === item.url}
+                                <Link
+                                    href={url}
+                                    prefetch={!isHeavyServerRoute(url)}
                                 >
                                     <span>{item.title}</span>
-                                    <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                </SidebarMenuSubButton>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <SidebarMenuSub className="mx-1 mt-0.5 2xl:mx-2 2xl:mt-1">
-                                    {renderNavItems(
-                                        item.items,
-                                        pathname,
-                                        depth + 1
-                                    )}
-                                </SidebarMenuSub>
-                            </CollapsibleContent>
-                        </>
-                    ) : (
-                        <SidebarMenuSubButton
-                            asChild
-                            className="h-6 cursor-pointer px-1.5 text-xs 2xl:h-7 2xl:px-2 2xl:text-sm"
-                            isActive={pathname === item.url}
-                        >
-                            <Link
-                                href={item.url}
-                                prefetch={!isHeavyServerRoute(item.url)}
-                            >
-                                <span>{item.title}</span>
-                            </Link>
-                        </SidebarMenuSubButton>
-                    )}
-                </SidebarMenuSubItem>
-            )}
-        </Collapsible>
-    ))
+                                </Link>
+                            </SidebarMenuSubButton>
+                        )}
+                    </SidebarMenuSubItem>
+                )}
+            </Collapsible>
+        )
+    })
 }
 
 export function NavMain({ label, items }: { label: string; items: NavItem[] }) {
     const pathname = usePathname()
+    const searchParams = useSearchParams()
+    const game = searchParams.get("game")
+    const gameQuery = game ? `game=${encodeURIComponent(game)}` : ""
 
     return (
         <SidebarGroup className="p-1.5 2xl:p-2">
@@ -144,7 +160,7 @@ export function NavMain({ label, items }: { label: string; items: NavItem[] }) {
                 {label}
             </SidebarGroupLabel>
             <SidebarMenu className="gap-0.5 2xl:gap-1">
-                {renderNavItems(items, pathname)}
+                {renderNavItems(items, pathname, gameQuery)}
             </SidebarMenu>
         </SidebarGroup>
     )

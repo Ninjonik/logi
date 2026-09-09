@@ -1,6 +1,7 @@
 import { SyncRosterMembershipForEventUseCase } from "@/application/rosters/sync-roster-membership.use-case"
 import type { MutationCtx } from "../../../convex/_generated/server"
 import type { Id } from "../../../convex/_generated/dataModel"
+import { matchesGameScope } from "@/domain/games/game"
 import { systemClock } from "@/domain/shared/clock"
 
 import type {
@@ -54,14 +55,18 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
 
     async getByServerUser(
         serverDiscordId: string,
-        userId: string
+        userId: string,
+        gameId?: import("@/domain/games/game").GameId
     ): Promise<AssignmentRecord | null> {
-        const assignment = await this.ctx.db
+        const assignments = await this.ctx.db
             .query("userAssignments")
             .withIndex("serverId_userId", (q) =>
                 q.eq("serverId", serverDiscordId).eq("userId", userId)
             )
-            .unique()
+            .collect()
+        const assignment = assignments.find((item) =>
+            matchesGameScope(item.gameId, gameId)
+        )
         return assignment ? this.normalizeAssignment(assignment) : null
     }
 
@@ -99,7 +104,8 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
         assignmentId?: string
         userId: string
         serverId: string
-        type: "member" | "mercenary"
+        gameId?: import("@/domain/games/game").GameId
+        type: "member" | "reserve_member" | "mercenary"
         status: "pending" | "recruit" | "active"
         membershipCategoryId?: string
         primaryGroupId?: string
@@ -111,6 +117,7 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
         const payload = {
             userId: input.userId,
             serverId: input.serverId,
+            gameId: input.gameId,
             type: input.type,
             status: input.status,
             membershipCategoryId: input.membershipCategoryId,
@@ -203,7 +210,8 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
 
     async listOpenMatchEventIds(
         serverDiscordId: string,
-        now: Date
+        now: Date,
+        gameId?: import("@/domain/games/game").GameId
     ): Promise<string[]> {
         const events = await this.ctx.db
             .query("events")
@@ -217,6 +225,7 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
                 ).getTime()
                 return (
                     (event.kind ?? "match") === "match" &&
+                    matchesGameScope(event.gameId, gameId) &&
                     !(
                         Number.isFinite(registrationEndAt) &&
                         now.getTime() >= registrationEndAt

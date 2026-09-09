@@ -114,3 +114,18 @@ export const playerStatsServerValidator = v.object({
     token: v.string(),
     url: v.string(),
 })
+
+export const gameDiscordOverridesValidator = v.object({
+    announcementsChannelId: v.optional(v.string()),
+    eventInfoChannelId: v.optional(v.string()),
+    forumCategoryId: v.optional(v.string()),
+    meetingChannelId: v.optional(v.string()),
+    playerStatsServers: v.optional(v.array(playerStatsServerValidator)),
+    membershipSettings: v.optional(membershipSettingsValidator),
+})
+
+export const gameOverridesValidator = v.object({
+    hell_let_loose: v.optional(gameDiscordOverridesValidator),
+    hell_let_loose_vietnam: v.optional(gameDiscordOverridesValidator),
+    wardogs: v.optional(gameDiscordOverridesValidator),
+})

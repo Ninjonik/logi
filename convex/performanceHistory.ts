@@ -1,11 +1,24 @@
+import {
+    filterByGameScope,
+    resolveGameScope,
+    type GameId,
+    type GameScope,
+} from "../src/domain/games/game"
 import { action, mutation, query } from "./_generated/server"
 import type { MutationCtx } from "./_generated/server"
 import { api } from "./_generated/api"
 import { v } from "convex/values"
 
+const gameIdValidator = v.union(
+    v.literal("hell_let_loose"),
+    v.literal("hell_let_loose_vietnam"),
+    v.literal("wardogs")
+)
+
 const secret = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 type Snapshot = {
     eventId: string
+    gameId?: GameId
     playedAt: string
     label: string
     combat: number
@@ -15,6 +28,15 @@ type Snapshot = {
     deaths: number
     points: number
     kd: number
+}
+const limitMatchesPerGame = <T extends { gameId?: GameId }>(matches: T[]) => {
+    const counts = new Map<GameId, number>()
+    return matches.filter((match) => {
+        const gameId = resolveGameScope(match.gameId)
+        const count = counts.get(gameId) ?? 0
+        counts.set(gameId, count + 1)
+        return count < 10
+    })
 }
 const number = (value: unknown) =>
     Number.isFinite(Number(value)) ? Number(value) : 0
@@ -66,7 +88,7 @@ export async function rebuildGuildPerformanceHistory(
                 new Date(b.eventResult?.endedAt ?? b.gameEnd).getTime() -
                 new Date(a.eventResult?.endedAt ?? a.gameEnd).getTime()
         )
-    const guildEvents = events.slice(0, 10)
+    const guildEvents = limitMatchesPerGame(events)
     const eventById = new Map(events.map((event) => [String(event._id), event]))
     const assignments = await ctx.db
         .query("userAssignments")
@@ -102,8 +124,14 @@ export async function rebuildGuildPerformanceHistory(
     const guildMatches: Snapshot[] = []
     for (let index = 0; index < guildEvents.length; index++) {
         const event = guildEvents[index]!
+        const eventGameId = resolveGameScope(event.gameId)
+        const eventClanUserIds = new Set(
+            filterByGameScope(assignments, eventGameId).map(
+                (assignment) => assignment.userId
+            )
+        )
         const rows = (stats[index]?.raw.player_stats ?? []).filter((row) =>
-            clanUserIds.has(userByPlatformId.get(row.player_id) ?? "")
+            eventClanUserIds.has(userByPlatformId.get(row.player_id) ?? "")
         )
         if (!rows.length) continue
         const total = rows.reduce(
@@ -118,6 +146,7 @@ export async function rebuildGuildPerformanceHistory(
         )
         guildMatches.push({
             eventId: String(event._id),
+            gameId: event.gameId,
             playedAt: event.eventResult?.endedAt ?? event.gameEnd,
             label: event.name,
             combat: whole(total.combat / rows.length),
@@ -163,6 +192,7 @@ export async function rebuildGuildPerformanceHistory(
                 deaths = number(match.deaths)
             matches.set(eventId, {
                 eventId,
+                gameId: event.gameId,
                 playedAt:
                     event.eventResult?.endedAt ??
                     event.gameEnd ??
@@ -181,13 +211,11 @@ export async function rebuildGuildPerformanceHistory(
         playerMatches.set(doc.userId, matches)
     }
     for (const [userId, matchesByEvent] of playerMatches) {
-        const matches = [...matchesByEvent.values()]
-            .sort(
-                (a, b) =>
-                    new Date(b.playedAt).getTime() -
-                    new Date(a.playedAt).getTime()
-            )
-            .slice(0, 10)
+        const matches = [...matchesByEvent.values()].sort(
+            (a, b) =>
+                new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime()
+        )
+        const limitedMatches = limitMatchesPerGame(matches)
         const existing = await ctx.db
             .query("playerPerformanceHistory")
             .withIndex("guildId_userId", (q) =>
@@ -195,12 +223,15 @@ export async function rebuildGuildPerformanceHistory(
             )
             .unique()
         if (existing)
-            await ctx.db.patch(existing._id, { matches, updatedAt: now })
+            await ctx.db.patch(existing._id, {
+                matches: limitedMatches,
+                updatedAt: now,
+            })
         else
             await ctx.db.insert("playerPerformanceHistory", {
                 guildId,
                 userId,
-                matches,
+                matches: limitedMatches,
                 updatedAt: now,
             })
     }
@@ -269,6 +300,7 @@ export const refreshPlayerForGuild = mutation({
                     deaths = number(match.deaths)
                 matches.set(eventId, {
                     eventId,
+                    gameId: event.gameId,
                     playedAt: event.eventResult?.endedAt ?? event.gameEnd,
                     label: event.name,
                     combat: 0,
@@ -280,13 +312,11 @@ export const refreshPlayerForGuild = mutation({
                     kd: whole((deaths ? kills / deaths : kills) * 100) / 100,
                 })
             }
-        const history = [...matches.values()]
-            .sort(
-                (a, b) =>
-                    new Date(b.playedAt).getTime() -
-                    new Date(a.playedAt).getTime()
-            )
-            .slice(0, 10)
+        const history = [...matches.values()].sort(
+            (a, b) =>
+                new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime()
+        )
+        const limitedHistory = limitMatchesPerGame(history)
         const existing = await ctx.db
             .query("playerPerformanceHistory")
             .withIndex("guildId_userId", (q) =>
@@ -295,15 +325,18 @@ export const refreshPlayerForGuild = mutation({
             .unique()
         const updatedAt = new Date().toISOString()
         if (existing)
-            await ctx.db.patch(existing._id, { matches: history, updatedAt })
+            await ctx.db.patch(existing._id, {
+                matches: limitedHistory,
+                updatedAt,
+            })
         else
             await ctx.db.insert("playerPerformanceHistory", {
                 guildId: args.guildId,
                 userId: args.userId,
-                matches: history,
+                matches: limitedHistory,
                 updatedAt,
             })
-        return { matches: history.length }
+        return { matches: limitedHistory.length }
     },
 })
 export const refreshInBackground = action({
@@ -350,29 +383,54 @@ function normalizeHistory<
     )
 }
 export const getGuild = query({
-    args: { guildId: v.string() },
-    handler: async (ctx, args) =>
-        normalizeHistory(
+    args: {
+        guildId: v.string(),
+        gameScope: v.optional(v.union(v.literal("all"), gameIdValidator)),
+    },
+    handler: async (ctx, args) => {
+        const history = normalizeHistory(
             await ctx.db
                 .query("guildPerformanceHistory")
                 .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
                 .unique()
-        ),
+        )
+        return (
+            history && {
+                ...history,
+                matches: filterByGameScope(history.matches, args.gameScope),
+            }
+        )
+    },
 })
 export const getPlayer = query({
-    args: { guildId: v.string(), userId: v.string() },
-    handler: async (ctx, args) =>
-        normalizeHistory(
+    args: {
+        guildId: v.string(),
+        userId: v.string(),
+        gameScope: v.optional(v.union(v.literal("all"), gameIdValidator)),
+    },
+    handler: async (ctx, args) => {
+        const history = normalizeHistory(
             await ctx.db
                 .query("playerPerformanceHistory")
                 .withIndex("guildId_userId", (q) =>
                     q.eq("guildId", args.guildId).eq("userId", args.userId)
                 )
                 .unique()
-        ),
+        )
+        return (
+            history && {
+                ...history,
+                matches: filterByGameScope(history.matches, args.gameScope),
+            }
+        )
+    },
 })
 export const getPlayers = query({
-    args: { guildId: v.string(), userIds: v.array(v.string()) },
+    args: {
+        guildId: v.string(),
+        userIds: v.array(v.string()),
+        gameScope: v.optional(v.union(v.literal("all"), gameIdValidator)),
+    },
     handler: async (ctx, args) => {
         const rows = await Promise.all(
             [...new Set(args.userIds)].map((userId) =>
@@ -387,7 +445,13 @@ export const getPlayers = query({
         return Object.fromEntries(
             rows
                 .filter((row): row is NonNullable<typeof row> => Boolean(row))
-                .map((row) => [row.userId, normalizeHistory(row)!.matches])
+                .map((row) => [
+                    row.userId,
+                    filterByGameScope(
+                        normalizeHistory(row)!.matches,
+                        args.gameScope
+                    ),
+                ])
         )
     },
 })

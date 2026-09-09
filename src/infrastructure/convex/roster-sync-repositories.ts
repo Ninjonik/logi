@@ -8,6 +8,7 @@ import type { MutationCtx } from "../../../convex/_generated/server"
 import type { Id } from "../../../convex/_generated/dataModel"
 import type { RosterLike } from "@/domain/rosters/types"
 import type { EventLike } from "@/domain/events/types"
+import { matchesGameScope } from "@/domain/games/game"
 
 type ConvexEventRecord = EventLike & {
     _id: Id<"events">
@@ -67,11 +68,16 @@ export class ConvexAssignmentRepository implements AssignmentRepository {
     constructor(private readonly ctx: MutationCtx) {}
 
     async listByServer(
-        serverId: string
+        serverId: string,
+        gameId?: import("@/domain/games/game").GameId
     ): Promise<AssignmentRepositoryRecord[]> {
-        return (await this.ctx.db
-            .query("userAssignments")
-            .withIndex("serverId", (q) => q.eq("serverId", serverId))
-            .collect()) as AssignmentRepositoryRecord[]
+        return (
+            await this.ctx.db
+                .query("userAssignments")
+                .withIndex("serverId", (q) => q.eq("serverId", serverId))
+                .collect()
+        ).filter((assignment) =>
+            matchesGameScope(assignment.gameId, gameId)
+        ) as AssignmentRepositoryRecord[]
     }
 }

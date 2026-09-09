@@ -1,6 +1,7 @@
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 
+import type { GameId, GameScope } from "@/domain/games/game"
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 import { getInternalAuthSecret } from "@/lib/env"
 import type { Group } from "@/types/domain"
@@ -12,9 +13,10 @@ const getGroupByIdReference = makeFunctionReference<"query">("groups:getById")
 const upsertGroupReference = makeFunctionReference<"mutation">("groups:upsert")
 const removeGroupReference = makeFunctionReference<"mutation">("groups:remove")
 
-export async function getServerGroups(serverId: string) {
+export async function getServerGroups(serverId: string, gameScope?: GameScope) {
     return (await fetchQuery(listGroupsReference, {
         guildId: serverId as never,
+        gameScope,
     })) as Group[]
 }
 
@@ -32,6 +34,7 @@ export async function getServerGroup(groupId: string) {
 export async function saveServerGroup(input: {
     serverId: string
     groupId?: string
+    gameId?: GameId
     name: string
     color: string
     order: number
@@ -44,6 +47,7 @@ export async function saveServerGroup(input: {
         secret: getInternalAuthSecret(),
         guildId: input.serverId as never,
         groupId: input.groupId as never,
+        gameId: input.gameId,
         name: input.name,
         color: input.color,
         order: input.order,

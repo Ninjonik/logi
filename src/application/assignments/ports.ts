@@ -7,6 +7,7 @@ export type AssignmentRecord = {
     id: string
     userId: string
     serverId: string
+    gameId?: import("@/domain/games/game").GameId
     type: AssignmentType
     status: AssignmentStatus
     membershipCategoryId?: string
@@ -24,7 +25,8 @@ export interface AssignmentCommandRepository {
     getById(assignmentId: string): Promise<AssignmentRecord | null>
     getByServerUser(
         serverDiscordId: string,
-        userId: string
+        userId: string,
+        gameId?: import("@/domain/games/game").GameId
     ): Promise<AssignmentRecord | null>
     listByServer(serverDiscordId: string): Promise<AssignmentRecord[]>
     listByUser(userId: string): Promise<AssignmentRecord[]>
@@ -35,6 +37,7 @@ export interface AssignmentCommandRepository {
         assignmentId?: string
         userId: string
         serverId: string
+        gameId?: import("@/domain/games/game").GameId
         type: AssignmentType
         status: AssignmentStatus
         membershipCategoryId?: string
@@ -73,7 +76,11 @@ export interface AssignmentCommandRepository {
             updatedAt: string
         }
     ): Promise<void>
-    listOpenMatchEventIds(serverDiscordId: string, now: Date): Promise<string[]>
+    listOpenMatchEventIds(
+        serverDiscordId: string,
+        now: Date,
+        gameId?: import("@/domain/games/game").GameId
+    ): Promise<string[]>
     upsertImportedUser(input: {
         userId: string
         name: string

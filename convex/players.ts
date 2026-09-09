@@ -1,3 +1,4 @@
+import { matchesGameScope } from "../src/domain/games/game"
 import type { MutationCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
@@ -480,14 +481,24 @@ export const getClanPlayerProfile = query({
     args: {
         guildId: v.string(),
         userId: v.string(),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
     },
     handler: async (ctx, args) => {
-        const assignment = await ctx.db
+        const assignments = await ctx.db
             .query("userAssignments")
             .withIndex("serverId_userId", (q) =>
                 q.eq("serverId", args.guildId).eq("userId", args.userId)
             )
-            .unique()
+            .collect()
+        const assignment = assignments.find((candidate) =>
+            matchesGameScope(candidate.gameId, args.gameId)
+        )
         if (!assignment) {
             return null
         }

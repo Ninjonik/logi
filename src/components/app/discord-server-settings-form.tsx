@@ -22,6 +22,7 @@ import { supportedTimezones } from "@/lib/discord-timezones"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { getDictionary } from "@/i18n/dictionaries"
 import type { DiscordConfig } from "@/types/domain"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -96,11 +97,16 @@ export function DiscordServerSettingsForm({
     userId,
     dictionary,
     config,
+    baseConfig,
+    gameId,
 }: {
     serverId: string
     userId: string
     dictionary: Dictionary
     config: DiscordConfig | null
+    /** The clan-wide config, retained while editing a game-specific override. */
+    baseConfig?: DiscordConfig | null
+    gameId?: GameId
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -174,21 +180,40 @@ export function DiscordServerSettingsForm({
             {
                 method: "POST",
                 headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                    timezone,
-                    defaultLanguage,
-                    announcementsChannelId,
-                    eventInfoChannelId,
-                    errorsChannelId,
-                    calendarChannelId,
-                    forumCategoryId,
-                    meetingChannelId,
-                    clanRoleId,
-                    dashboardAdminRoleId,
-                    playerStatsServers,
-                    ticketSettings: remappedDefaults.ticketSettings,
-                    membershipSettings: remappedDefaults.membershipSettings,
-                }),
+                body: JSON.stringify(
+                    gameId && baseConfig
+                        ? {
+                              ...baseConfig,
+                              gameOverrides: {
+                                  ...baseConfig.gameOverrides,
+                                  [gameId]: {
+                                      announcementsChannelId,
+                                      eventInfoChannelId,
+                                      forumCategoryId,
+                                      meetingChannelId,
+                                      playerStatsServers,
+                                      membershipSettings:
+                                          remappedDefaults.membershipSettings,
+                                  },
+                              },
+                          }
+                        : {
+                              timezone,
+                              defaultLanguage,
+                              announcementsChannelId,
+                              eventInfoChannelId,
+                              errorsChannelId,
+                              calendarChannelId,
+                              forumCategoryId,
+                              meetingChannelId,
+                              clanRoleId,
+                              dashboardAdminRoleId,
+                              playerStatsServers,
+                              ticketSettings: remappedDefaults.ticketSettings,
+                              membershipSettings:
+                                  remappedDefaults.membershipSettings,
+                          }
+                ),
             }
         )
         const body = await response.json()

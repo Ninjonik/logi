@@ -7,6 +7,7 @@ import {
     normalizeGuildDoc,
     normalizeUserDoc,
 } from "./discord_shared"
+import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
 import { mutation, query } from "./_generated/server"
 import { getGuildDiscordId } from "./identity"
 import { v } from "convex/values"
@@ -250,20 +251,26 @@ export const getEventSignupContext = query({
         }
 
         return {
-            config: normalizeConfigDoc(config),
+            config: normalizeConfigDoc(
+                withGameOverrides(config, config.gameOverrides, event.gameId)
+            ),
             event: normalizeEventDoc(event),
             groups: groups.map(normalizeDoc),
-            assignments: assignments.map((assignment) => ({
-                userId: assignment.userId,
-                primaryGroupId: assignment.primaryGroupId
-                    ? String(assignment.primaryGroupId)
-                    : undefined,
-                secondaryGroupIds: (assignment.secondaryGroupIds ?? []).map(
-                    (groupId) => String(groupId)
-                ),
-                type: assignment.type,
-                status: assignment.status,
-            })),
+            assignments: assignments
+                .filter((assignment) =>
+                    matchesGameScope(assignment.gameId, event.gameId)
+                )
+                .map((assignment) => ({
+                    userId: assignment.userId,
+                    primaryGroupId: assignment.primaryGroupId
+                        ? String(assignment.primaryGroupId)
+                        : undefined,
+                    secondaryGroupIds: (assignment.secondaryGroupIds ?? []).map(
+                        (groupId) => String(groupId)
+                    ),
+                    type: assignment.type,
+                    status: assignment.status,
+                })),
             roster: roster ? normalizeDoc(roster) : null,
         }
     },
@@ -299,7 +306,9 @@ export const getEventInteractionContext = query({
         }
 
         return {
-            config: normalizeConfigDoc(config),
+            config: normalizeConfigDoc(
+                withGameOverrides(config, config.gameOverrides, event.gameId)
+            ),
             event: normalizeEventDoc(event),
             groups: groups.map(normalizeDoc),
             roster: roster ? normalizeDoc(roster) : null,

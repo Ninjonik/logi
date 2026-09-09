@@ -206,6 +206,30 @@ const playerStatsServer = v.object({
     url: v.string(),
 })
 
+// Optional everywhere so existing Hell Let Loose data remains valid.
+const gameId = v.union(
+    v.literal("hell_let_loose"),
+    v.literal("hell_let_loose_vietnam"),
+    v.literal("wardogs")
+)
+
+const gameDiscordOverrides = v.object({
+    announcementsChannelId: v.optional(v.string()),
+    eventInfoChannelId: v.optional(v.string()),
+    forumCategoryId: v.optional(v.string()),
+    meetingChannelId: v.optional(v.string()),
+    playerStatsServers: v.optional(v.array(playerStatsServer)),
+    membershipSettings: v.optional(membershipSettings),
+})
+
+// Convex records require a free-form string key validator.  These are known,
+// stable games, so model the overrides as explicit optional fields instead.
+const gameOverrides = v.object({
+    hell_let_loose: v.optional(gameDiscordOverrides),
+    hell_let_loose_vietnam: v.optional(gameDiscordOverrides),
+    wardogs: v.optional(gameDiscordOverrides),
+})
+
 const eventResult = v.object({
     sourceUrl: v.string(),
     mapId: v.string(),
@@ -388,6 +412,7 @@ const rosterSquad = v.object({
 const userAssignments = defineTable({
     userId: v.string(),
     serverId: v.string(),
+    gameId: v.optional(gameId),
     type: v.union(
         v.literal("member"),
         v.literal("reserve_member"),
@@ -409,6 +434,8 @@ const userAssignments = defineTable({
 })
     .index("serverId", ["serverId"])
     .index("userId", ["userId"])
+    .index("serverId_gameId", ["serverId", "gameId"])
+    .index("serverId_userId_gameId", ["serverId", "userId", "gameId"])
     .index("serverId_userId", ["serverId", "userId"])
 
 export default defineSchema({
@@ -420,6 +447,7 @@ export default defineSchema({
         avatar: v.string(),
         description: v.optional(v.string()),
         eventCategories: v.optional(v.array(eventCategory)),
+        enabledGames: v.optional(v.array(gameId)),
         botInside: v.boolean(),
         adminIds: v.array(v.string()),
         // Admins explicitly assigned in Logi are kept separate from admins derived
@@ -457,6 +485,7 @@ export default defineSchema({
         clanRoleId: v.optional(v.string()),
         dashboardAdminRoleId: v.optional(v.string()),
         playerStatsServers: v.optional(v.array(playerStatsServer)),
+        gameOverrides: v.optional(gameOverrides),
         ticketSettings: v.optional(ticketSettings),
         membershipSettings: v.optional(membershipSettings),
         ticketPanelMessageId: v.optional(v.string()),
@@ -471,6 +500,8 @@ export default defineSchema({
     calendarItems: defineTable(calendarItem).index("guildId", ["guildId"]),
     groups: defineTable({
         guildId: v.string(),
+        // Missing values are legacy Hell Let Loose groups.
+        gameId: v.optional(gameId),
         name: v.string(),
         color: v.string(),
         order: v.number(),
@@ -482,9 +513,11 @@ export default defineSchema({
         updatedAt: v.string(),
     })
         .index("guildId", ["guildId"])
+        .index("guildId_gameId", ["guildId", "gameId"])
         .index("guildId_name", ["guildId", "name"]),
     events: defineTable({
         guildId: v.string(),
+        gameId: v.optional(gameId),
         kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
         matchType: v.optional(v.string()),
         name: v.string(),
@@ -641,6 +674,7 @@ export default defineSchema({
         .index("status", ["status"]),
     stratmaps: defineTable({
         guildId: v.string(),
+        gameId: v.optional(gameId),
         eventId: v.optional(v.id("events")),
         title: v.string(),
         description: v.optional(v.string()),
@@ -758,6 +792,8 @@ export default defineSchema({
         .index("guildId_ticketNumber", ["guildId", "ticketNumber"]),
     membershipApplicationThreads: defineTable({
         guildId: v.string(),
+        // Missing values are legacy Hell Let Loose applications.
+        gameId: v.optional(gameId),
         threadId: v.string(),
         parentChannelId: v.string(),
         creatorId: v.string(),
@@ -871,6 +907,8 @@ export default defineSchema({
         matches: v.array(
             v.object({
                 eventId: v.string(),
+                // Missing values belong to legacy Hell Let Loose records.
+                gameId: v.optional(gameId),
                 playedAt: v.string(),
                 label: v.string(),
                 combat: v.number(),
@@ -890,6 +928,8 @@ export default defineSchema({
         matches: v.array(
             v.object({
                 eventId: v.string(),
+                // Missing values belong to legacy Hell Let Loose records.
+                gameId: v.optional(gameId),
                 playedAt: v.string(),
                 label: v.string(),
                 combat: v.number(),
@@ -907,6 +947,7 @@ export default defineSchema({
         .index("guildId_userId", ["guildId", "userId"]),
     matchStats: defineTable({
         guildId: v.string(),
+        gameId: v.optional(gameId),
         eventId: v.id("events"),
         sourceUrl: v.string(),
         matchId: v.string(),

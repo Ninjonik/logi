@@ -36,6 +36,19 @@ export const deMessages = {
         description:
             "Organisiere Clan-Events, erstelle Roster, veröffentliche Briefings und bereite Discord-verbundene Operationen vor.",
     },
+    games: {
+        filterLabel: "Spielfilter",
+        column: "Spiel",
+        all: "Alle Spiele",
+        title: "Spiele",
+        description: "Aktiviere die Spiele, die dieser Clan verwendet.",
+        save: "Spiele speichern",
+        saved: "Aktivierte Spiele gespeichert.",
+        saveError: "Aktivierte Spiele konnten nicht gespeichert werden.",
+        selectTitle: "Wähle zuerst ein Spiel",
+        selectDescription:
+            "Dieser Eintrag gehört zu einem Spiel. Wähle das Spiel vor dem Erstellen.",
+    },
     publicNavigation: {
         wiki: "Wiki",
         restartTour: "Tour neu starten",
@@ -175,7 +188,7 @@ export const deMessages = {
                 wiki: {
                     title: "Community-Wiki",
                     description:
-                        "Praktische Anleitungen fÃ¼r jede Logi-Funktion, vom ersten Workspace bis zum tÃ¤glichen Betrieb.",
+                        "Praktische Anleitungen für jede Logi-Funktion, vom ersten Workspace bis zum täglichen Betrieb.",
                 },
             },
             workflowEyebrow: "Vom Briefing zum Debriefing",

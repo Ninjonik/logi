@@ -4,6 +4,7 @@ import type { EventLike } from "@/domain/events/types"
 export type AssignmentRepositoryRecord = {
     userId: string
     serverId: string
+    gameId?: import("@/domain/games/game").GameId
     createdAt: string
 }
 
@@ -17,5 +18,8 @@ export interface RosterRepository<TRoster extends RosterLike = RosterLike> {
 }
 
 export interface AssignmentRepository {
-    listByServer(serverId: string): Promise<AssignmentRepositoryRecord[]>
+    listByServer(
+        serverId: string,
+        gameId?: import("@/domain/games/game").GameId
+    ): Promise<AssignmentRepositoryRecord[]>
 }

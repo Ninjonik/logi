@@ -27,6 +27,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { ServerSwitcher } from "@/components/app/server-switcher"
+import { GameSwitcher } from "@/components/app/game-switcher"
 import { getPrimaryDisplayedScore } from "@/lib/user-scores"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { AppLogo } from "@/components/app/app-logo"
@@ -307,6 +308,12 @@ export function AppSidebar({
                         noMatchingResults: dictionary.shared.noMatchingResults,
                     }}
                 />
+                {resolvedServerId ? (
+                    <GameSwitcher
+                        enabledGames={resolvedServer?.enabledGames}
+                        dictionary={dictionary}
+                    />
+                ) : null}
             </SidebarHeader>
             <SidebarContent>
                 {navGroups.map((group) => {
