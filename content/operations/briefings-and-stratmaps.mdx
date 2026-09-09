@@ -9,11 +9,12 @@ import { Callout } from "nextra/components"
 
 ## Topic presets
 
-Each preset needs a name and at least one named topic. A topic can have body
-text and attachment links. Empty topic titles are rejected; empty optional
-content is simply not stored. The side, map, cap, and notes fields are useful
-default briefing context, not enforcement: selecting a preset does not validate
-that the event has matching map/side/cap values.
+Each preset needs a name and at least one named topic. Each topic contains an
+ordered list of Discord-style messages. A message has body text and can carry
+uploaded attachments; messages can be reordered. Empty topic titles are
+rejected, and empty messages are not useful. The side, map, cap, and notes
+fields are useful default briefing context, not enforcement: selecting a preset
+does not validate that the event has matching map/side/cap values.
 
 Topic presets are reusable briefing structures. They can contain map-aware topics and help managers prepare consistent information for repeated match or event scenarios. Create them in the workspace’s Topic presets section, then choose a suitable one while editing an event.
 
@@ -27,6 +28,8 @@ with that game's maps, events, and memberships. Existing workspaces and their
 existing maps are Hell Let Loose by default. Create Vietnam or Wardogs maps
 only after enabling that game in workspace settings.
 
+Vietnam and Wardogs currently expose placeholder tactical base maps and caps;
+their official map imagery and final coordinates will be added when available.
 Only workspace managers can create or edit a stratmap, including its drawing
 state and metadata. Creating a map without an explicitly saved state starts it
 with the default state for its chosen base map. Assigning a stratmap to an event
@@ -53,7 +56,9 @@ a match, **Create forum channel** must be enabled, a usable forum category must
 be configured, and the bot must have Discord permission to create/edit that
 forum channel and posts. The bot then maintains a match-information post,
 includes links to selected stratmaps, and creates one forum topic post per
-topic-preset topic.
+topic-preset topic. Within a topic, it sends the preset's messages in their
+saved order, using their body and attachments directly rather than adding
+arbitrary embeds.
 
 Editing a topic preset does not rewrite old forum posts by itself. The event's
 topic resync control is available only for a non-concluded event that has both

@@ -48,4 +48,11 @@ Each Discord message in a topic can contain up to 10 attachments. On an
 unboosted server, each uploaded attachment must be 20 MiB or smaller. The
 combined upload payload for one message must also stay within 25 MiB.
 
+Each topic is a sequence of messages, not one combined body. Use the editor to
+add, reorder, or remove messages, then attach files to the individual message
+that should contain them. Logi stores uploaded files so the bot can upload them
+again when it creates or resyncs the Discord topic. Attachment previews in the
+editor are for review only; remove an attachment with its trash action before
+saving if it should not be sent.
+
 > **Screenshot placeholder — presets:** Show the Squad preset editor with two squads and role slots, next to a Topic preset form with map, side, and topic fields.

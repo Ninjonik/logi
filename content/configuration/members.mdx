@@ -23,7 +23,17 @@ The available maintenance actions can include importing Discord members, linking
 
 ### Assignment fields, in plain language
 
-Each person can have at most one assignment for the selected workspace. The assignment type can be **member**, **reserve member**, or **mercenary**; its status can be **pending**, **recruit**, or **active**. A primary group is optional, and secondary groups are optional additional classifications. The same group is not kept twice: if it is primary, Logi removes it from the secondary list.
+Each person can have one assignment **per workspace and game**. The assignment
+type can be **member**, **reserve member**, or **mercenary**; its status can be
+**pending**, **recruit**, or **active**. A primary group is optional, and
+secondary groups are optional additional classifications from the same game.
+The same group is not kept twice: if it is primary, Logi removes it from the
+secondary list.
+
+This means one person may be an active HLL member and a Vietnam recruit (or a
+Wardogs mercenary) at the same time. Choose the intended game before editing an
+assignment. Their Logi profile, Discord account, and linked platform accounts
+remain one shared identity and are linked only once.
 
 An active member or reserve member is counted as a workspace member. A recruit is also counted as a member for this purpose. A pending assignment is not. An active mercenary is recorded separately and does not become the person's primary workspace membership.
 
@@ -67,13 +77,16 @@ career record.
 
 ## Groups
 
-Groups organise people for your community and can have a name, description, and hierarchy. They are also used by member assignments and can be reflected in roster information.
+Groups organise people for one game in your community and can have a name,
+description, and hierarchy. They are used only by assignments and event sign-up
+choices in that same game.
 
 <Steps>
 
 ### Create the group
 
-Open **Groups**, create a group, and use a name that members will recognise.
+Choose the game first, then open **Groups**, create a group, and use a name
+that members will recognise.
 
 ### Describe its purpose
 
@@ -89,7 +102,11 @@ Before renaming or deleting a group, look at the usage count and related member 
 
 The optional **Discord role** on a group is an eligibility and import link, not a role-sync switch. It lets a person holding that Discord role select the group’s configured match sign-up option, and it can populate the group during the Discord-member import. It does not automatically grant or revoke the Discord role when you edit an assignment in Logi.
 
-To use it reliably, select a real role from this same Discord server, keep the bot able to read server members, and ensure that the group is included in the event’s sign-up groups. If an event has no explicit group list, all workspace groups are offered. A group can also have an optional Discord emoji for its sign-up option.
+To use it reliably, select a real role from this same Discord server, keep the
+bot able to read server members, and ensure that the group is included in the
+event's sign-up groups. Only groups from the event's game are available; a
+group from another game is never offered. A group can also have an optional
+Discord emoji for its sign-up option.
 
 When deleting a group, Logi removes that group from affected primary and secondary assignments before deleting the group. It does not delete the Discord role itself.
 

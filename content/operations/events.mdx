@@ -15,7 +15,9 @@ Events are the central schedule for a server. They can represent a general commu
 
 ### Start a new event
 
-Open the workspace **Events** page and choose **Create event**. Enter a descriptive name before adding optional details.
+Open the workspace **Events** page and choose **Create event**. If you started
+from **All games**, first select the intended game in the game-selection panel.
+Enter a descriptive name before adding optional details.
 
 ### Set the schedule
 
@@ -23,7 +25,10 @@ Add the meeting time and, where needed, the game start/end time. These are disti
 
 ### Add operational details
 
-Choose available map, side, mode, capacity, topic preset, stratmaps, and Discord-related options only when they apply to the event.
+Choose available map, side, mode, capacity, topic preset, stratmaps, and
+Discord-related options only when they apply to the event. Maps, caps,
+stratmaps, groups, and eligible membership assignments are limited to the
+event's game.
 
 ### Save and verify
 
@@ -78,8 +83,11 @@ attended.
 
 The dashboard/bot background work reconciles time-based statuses; it is not a
 promise that every visual update happens at the exact second. Editing an event
-also recalculates its status. Creating or editing a concluded event does not
-reopen it merely by changing dates.
+also recalculates its status. Moving an unconcluded event's registration
+deadline back into the future can return it to **Registration**. If its old
+Discord scheduled event cannot be scheduled again because Discord considers it
+active, completed, or cancelled, Logi discards that Discord event and creates a
+new scheduled event instead.
 
 ### Discord behavior per event
 
