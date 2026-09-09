@@ -14,7 +14,7 @@ export default async function WikiLayout({
             navbar={
                 <Navbar
                     logo={<b>Logi Wiki</b>}
-                    projectLink="https://github.com/"
+                    projectLink="https://github.com/Ninjonik/logi/tree/main/src/app/wiki"
                 />
             }
             pageMap={await getPageMap("/wiki")}

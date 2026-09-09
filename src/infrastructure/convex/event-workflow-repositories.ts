@@ -1,5 +1,6 @@
 import { SyncRosterMembershipForUserUseCase } from "@/application/rosters/sync-roster-membership.use-case"
 import type { MutationCtx } from "../../../convex/_generated/server"
+import { matchesGameScope, type GameId } from "@/domain/games/game"
 import type { Id } from "../../../convex/_generated/dataModel"
 import { systemClock } from "@/domain/shared/clock"
 
@@ -27,6 +28,7 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
             id: String(event._id),
             guildId: event.guildId,
             kind: event.kind,
+            gameId: event.gameId,
             signupGroupIds: event.signupGroupIds,
             allowedSignupStatuses: event.allowedSignupStatuses,
             useGeneralSignup: event.useGeneralSignup,
@@ -43,13 +45,22 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
         }
     }
 
-    async getAssignmentForUser(serverId: string, userId: string) {
-        const assignment = await this.ctx.db
+    async getAssignmentForUser(
+        serverId: string,
+        userId: string,
+        gameId?: GameId
+    ) {
+        const assignments = await this.ctx.db
             .query("userAssignments")
             .withIndex("serverId_userId", (q) =>
                 q.eq("serverId", serverId).eq("userId", userId)
             )
-            .unique()
+            .collect()
+        const assignment = assignments
+            .filter((candidate) => matchesGameScope(candidate.gameId, gameId))
+            .sort((left, right) =>
+                right.updatedAt.localeCompare(left.updatedAt)
+            )[0]
 
         return assignment
             ? {

@@ -196,9 +196,15 @@ export type TopicPreset = {
     guildId: string
     name: string
     topics: Array<{
+        id?: string
         title: string
         body?: string
         attachments: string[]
+        messages?: Array<{
+            id: string
+            body?: string
+            attachments: string[]
+        }>
     }>
     updatedAt: string
 }

@@ -216,6 +216,130 @@ test("syncScheduledDiscordEvent edits existing scheduled events and tolerates ed
     })
 })
 
+test("syncScheduledDiscordEvent never edits schedule fields after Discord activates an event", async () => {
+    const edits: unknown[] = []
+    const guild = {
+        id: "guild-1",
+        scheduledEvents: {
+            fetch: async () => ({
+                id: "sched-1",
+                status: GuildScheduledEventStatus.Active,
+                edit: async (input: unknown) => {
+                    edits.push(input)
+                    return {
+                        id: "sched-1",
+                        status: GuildScheduledEventStatus.Active,
+                    }
+                },
+            }),
+        },
+    }
+
+    const result = await syncScheduledDiscordEvent({
+        guild: guild as never,
+        event: { ...baseEvent, updatedAt: "event-v2" },
+        language: "en",
+        meetingChannel: {
+            id: "voice-1",
+            type: ChannelType.GuildVoice,
+        } as never,
+        scheduledEventId: "sched-1",
+        desiredLifecycle: "active",
+    })
+
+    assert.deepEqual(result, {
+        scheduledEventId: "sched-1",
+        scheduledEventStatus: "active",
+    })
+    assert.deepEqual(edits, [])
+})
+
+test("syncScheduledDiscordEvent replaces an active Discord event when Logi is rescheduled", async () => {
+    const edits: unknown[] = []
+    const creates: unknown[] = []
+    const guild = {
+        id: "guild-1",
+        scheduledEvents: {
+            fetch: async () => ({
+                id: "old-scheduled-event",
+                status: GuildScheduledEventStatus.Active,
+                edit: async (input: unknown) => {
+                    edits.push(input)
+                    return {
+                        id: "old-scheduled-event",
+                        status: GuildScheduledEventStatus.Completed,
+                    }
+                },
+            }),
+            create: async (input: unknown) => {
+                creates.push(input)
+                return {
+                    id: "new-scheduled-event",
+                    status: GuildScheduledEventStatus.Scheduled,
+                    edit: async () => {
+                        throw new Error("should not activate")
+                    },
+                }
+            },
+        },
+    }
+
+    const result = await syncScheduledDiscordEvent({
+        guild: guild as never,
+        event: {
+            ...baseEvent,
+            meetingStart: "2026-01-02T10:00:00.000Z",
+            gameEnd: "2026-01-02T12:00:00.000Z",
+        },
+        language: "en",
+        meetingChannel: {
+            id: "voice-1",
+            type: ChannelType.GuildVoice,
+        } as never,
+        scheduledEventId: "old-scheduled-event",
+        desiredLifecycle: "scheduled",
+    })
+
+    assert.deepEqual(edits, [{ status: GuildScheduledEventStatus.Completed }])
+    assert.equal(creates.length, 1)
+    assert.deepEqual(result, {
+        scheduledEventId: "new-scheduled-event",
+        scheduledEventStatus: "scheduled",
+    })
+})
+
+test("syncScheduledDiscordEvent keeps terminal Discord lifecycle when it matches Logi", async () => {
+    const guild = {
+        id: "guild-1",
+        scheduledEvents: {
+            fetch: async () => ({
+                id: "sched-1",
+                status: GuildScheduledEventStatus.Completed,
+                edit: async () => {
+                    throw new Error("should not edit")
+                },
+            }),
+        },
+    }
+
+    const result = await syncScheduledDiscordEvent({
+        guild: guild as never,
+        event: baseEvent,
+        language: "en",
+        meetingChannel: {
+            id: "voice-1",
+            type: ChannelType.GuildVoice,
+        } as never,
+        scheduledEventId: "sched-1",
+        desiredLifecycle: "completed",
+    })
+
+    assert.deepEqual(result, {
+        scheduledEventId: "sched-1",
+        scheduledEventStatus: "completed",
+    })
+})
+
 test("cancelScheduledDiscordEvent returns false when missing and true when already terminal", async () => {
     const missing = await cancelScheduledDiscordEvent(
         {

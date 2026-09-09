@@ -258,6 +258,52 @@ export const getById = query({
     },
 })
 
+export const setEnabledGames = mutation({
+    args: {
+        userId: v.string(),
+        guildId: v.id("guilds"),
+        enabledGames: v.array(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
+    },
+    handler: async (ctx, args) => {
+        const [guild, user] = await Promise.all([
+            ctx.db.get(args.guildId),
+            getUserByDiscordId(ctx, args.userId),
+        ])
+        if (!guild || !user) throw new Error("Server not found.")
+
+        const guildId = getGuildDiscordId(guild)
+        const access = await ctx.db
+            .query("discordMemberAccess")
+            .withIndex("guildId_userId", (q) =>
+                q.eq("guildId", guildId).eq("userId", args.userId)
+            )
+            .unique()
+        if (
+            !canAdminServerContext({
+                serverAdminIds: guild.adminIds,
+                dashboardAdminIds: guild.dashboardAdminIds,
+                adminAccessOverrides: guild.adminAccessOverrides,
+                userId: args.userId,
+                discordAccess: access,
+            })
+        ) {
+            throw new Error("Only admins can change enabled games.")
+        }
+
+        const enabledGames = [...new Set(args.enabledGames)]
+        await ctx.db.patch(guild._id, {
+            enabledGames,
+            updatedAt: new Date().toISOString(),
+        })
+    },
+})
+
 export const getByDiscordId = query({
     args: {
         discordId: v.string(),

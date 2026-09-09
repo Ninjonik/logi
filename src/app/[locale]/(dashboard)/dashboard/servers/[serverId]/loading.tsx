@@ -1,11 +1,5 @@
+import { DashboardPageLoading } from "@/components/app/dashboard-page-loading"
+
 export default function ServerWorkspaceLoading() {
-    return (
-        <div
-            className="flex min-h-[60vh] items-center justify-center"
-            aria-live="polite"
-            aria-label="Loading workspace"
-        >
-            <div className="border-primary/20 border-t-primary size-12 animate-spin rounded-full border-4" />
-        </div>
-    )
+    return <DashboardPageLoading />
 }

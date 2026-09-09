@@ -1,3 +1,4 @@
+import { matchesGameScope } from "../src/domain/games/game"
 import type { MutationCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
@@ -480,14 +481,24 @@ export const getClanPlayerProfile = query({
     args: {
         guildId: v.string(),
         userId: v.string(),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
     },
     handler: async (ctx, args) => {
-        const assignment = await ctx.db
+        const assignments = await ctx.db
             .query("userAssignments")
             .withIndex("serverId_userId", (q) =>
                 q.eq("serverId", args.guildId).eq("userId", args.userId)
             )
-            .unique()
+            .collect()
+        const assignment = assignments.find((candidate) =>
+            matchesGameScope(candidate.gameId, args.gameId)
+        )
         if (!assignment) {
             return null
         }
@@ -602,6 +613,44 @@ export const syncDiscordProfile = mutation({
         })
 
         return args.id
+    },
+})
+
+export const markOnboardingSeen = mutation({
+    args: {
+        secret: v.string(),
+        userId: v.string(),
+        milestone: v.union(
+            v.literal("dashboard_setup"),
+            v.literal("workspace_tour")
+        ),
+        workspaceId: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const user = await getUserByIdentifier(ctx, args.userId)
+        if (!user) throw new Error("Player not found.")
+
+        const now = new Date().toISOString()
+        const current = user.onboarding ?? {}
+        const workspaceTourCompletedAt = {
+            ...(current.workspaceTourCompletedAt ?? {}),
+            ...(args.milestone === "workspace_tour" && args.workspaceId
+                ? { [args.workspaceId]: now }
+                : {}),
+        }
+
+        await ctx.db.patch(user._id, {
+            onboarding: {
+                ...current,
+                ...(args.milestone === "dashboard_setup"
+                    ? { dashboardSetupCompletedAt: now }
+                    : {}),
+                workspaceTourCompletedAt,
+            },
+            updatedAt: now,
+        })
+        return { ok: true }
     },
 })
 

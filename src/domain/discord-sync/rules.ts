@@ -31,7 +31,6 @@ export function shouldSyncEvent(input: {
         eventInfoMessageRequired,
         queued,
     } = input
-
     return (
         !state ||
         state.lastEventUpdatedAt !== event.updatedAt ||

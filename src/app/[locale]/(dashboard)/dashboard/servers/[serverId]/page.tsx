@@ -31,6 +31,7 @@ import { StatCard } from "@/components/app/stat-card"
 import { type Locale, isLocale } from "@/i18n/config"
 import { getDictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
+import { isGameId } from "@/domain/games/game"
 import { Badge } from "@/components/ui/badge"
 import { getLoggedInUser } from "@/lib/auth"
 
@@ -69,13 +70,17 @@ function getWeekDays(timezone?: string) {
 
 export default async function ServerOverviewPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
+    searchParams: Promise<{ game?: string }>
 }) {
     const { locale, serverId } = await params
+    const { game } = await searchParams
     const safeLocale = (isLocale(locale) ? locale : "en") as Locale
     const dictionary = getDictionary(safeLocale)
-    const context = await getServerContext(serverId)
+    const gameScope = isGameId(game) ? game : "all"
+    const context = await getServerContext(serverId, gameScope)
     if (!context) return null
     const recentMatchSummary = await getRecentMatchSummary(serverId)
     const {
@@ -91,7 +96,8 @@ export default async function ServerOverviewPage({
     } = context
     const performanceHistory = await getGuildPerformanceHistory(
         server.discordId,
-        serverId
+        serverId,
+        gameScope
     )
 
     const user = await getLoggedInUser()

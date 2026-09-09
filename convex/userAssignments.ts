@@ -1,3 +1,4 @@
+import { matchesGameScope } from "../src/domain/games/game"
 import type { MutationCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
@@ -102,14 +103,24 @@ export const getForServerUser = query({
     args: {
         serverDiscordId: v.string(),
         userId: v.string(),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
     },
     handler: async (ctx, args) => {
-        const assignment = await ctx.db
+        const assignments = await ctx.db
             .query("userAssignments")
             .withIndex("serverId_userId", (q) =>
                 q.eq("serverId", args.serverDiscordId).eq("userId", args.userId)
             )
-            .unique()
+            .collect()
+        const assignment = assignments.find((candidate) =>
+            matchesGameScope(candidate.gameId, args.gameId)
+        )
 
         return assignment ? normalizeAssignment(assignment) : null
     },
@@ -120,6 +131,13 @@ export const upsert = mutation({
         secret: v.string(),
         serverId: v.id("guilds"),
         assignmentId: v.optional(v.id("userAssignments")),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
         userId: v.string(),
         type: v.union(
             v.literal("member"),
@@ -153,6 +171,7 @@ export const upsert = mutation({
         return await useCase.execute({
             userId: args.userId,
             serverDiscordId,
+            gameId: args.gameId,
             assignmentId: args.assignmentId
                 ? String(args.assignmentId)
                 : undefined,
@@ -176,6 +195,13 @@ export const upsertByServerDiscordId = mutation({
         secret: v.string(),
         serverDiscordId: v.string(),
         assignmentId: v.optional(v.id("userAssignments")),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
         userId: v.string(),
         type: v.union(
             v.literal("member"),
@@ -204,6 +230,7 @@ export const upsertByServerDiscordId = mutation({
         return await useCase.execute({
             userId: args.userId,
             serverDiscordId: args.serverDiscordId,
+            gameId: args.gameId,
             assignmentId: args.assignmentId
                 ? String(args.assignmentId)
                 : undefined,

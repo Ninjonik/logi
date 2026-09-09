@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/card"
 import { importMapsLetLooseJson } from "@/domain/stratmaps/import-maps-let-loose"
 import { HllMapSelector } from "@/components/app/hll-map-selector"
+import { getStratmapMaps } from "@/lib/game-stratmaps"
 import type { Dictionary } from "@/i18n/dictionaries"
-import { getHllStratmapMaps } from "@/lib/stratmaps"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -30,17 +31,19 @@ export function StratmapCreateForm({
     userId,
     dictionary,
     defaultTitle = "",
+    gameId,
 }: {
     locale: string
     serverId: string
     userId: string
     dictionary: Dictionary
     defaultTitle?: string
+    gameId?: GameId
 }) {
     const router = useRouter()
     const createStratmap = useMutation(createStratmapReference)
     const [isPending, startTransition] = useTransition()
-    const maps = getHllStratmapMaps()
+    const maps = getStratmapMaps(gameId)
     const [title, setTitle] = useState(defaultTitle)
     const [baseMapId, setBaseMapId] = useState(maps[0]?.id ?? "carentan")
     const [side, setSide] = useState("")
@@ -84,6 +87,7 @@ export function StratmapCreateForm({
                 const stratmapId = await createStratmap({
                     userId,
                     serverId: serverId as never,
+                    gameId,
                     title: title.trim(),
                     baseMapId,
                     side: side.trim() || undefined,
@@ -142,6 +146,7 @@ export function StratmapCreateForm({
                 <div className="space-y-2">
                     <Label>{dictionary.stratmaps.mapAndPoint}</Label>
                     <HllMapSelector
+                        gameId={gameId}
                         mapId={baseMapId}
                         onMapIdChange={(value) => {
                             setBaseMapId(value)

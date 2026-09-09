@@ -7,10 +7,12 @@ import type {
     SignupMembershipStatus,
 } from "./types"
 import { normalizeParticipants } from "./participants"
+import type { GameId } from "@/domain/games/game"
 import { deriveEventStatus } from "./status"
 
 export type EventUpsertInput = {
     guildId: string
+    gameId?: GameId
     kind?: EventKind
     matchType?: string
     name: string
@@ -60,6 +62,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
 
     return {
         guildId: input.guildId,
+        gameId: input.gameId,
         kind,
         matchType: trimOptional(input.matchType),
         name: input.name.trim(),
@@ -175,6 +178,8 @@ export function buildUpdateEventPatch(
 
     return {
         ...mutableBase,
+        // An edit without a game selector must not move a scoped event back to HLL.
+        gameId: input.gameId ?? existing.gameId,
         announcementChannelId: existing.announcementChannelId,
         eventInfoChannelId: existing.eventInfoChannelId,
         status: derivedStatus,

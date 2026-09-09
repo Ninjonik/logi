@@ -4,17 +4,22 @@ import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
+import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export default async function EventMatchPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string; eventId: string }>
+    searchParams: Promise<{ game?: string }>
 }) {
     const { locale, serverId, eventId } = await params
+    const { game } = await searchParams
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const context = await getServerContext(serverId)
+    const gameId = isGameId(game) ? game : undefined
+    const context = await getServerContext(serverId, gameId ?? "all")
     if (!context) return null
 
     const event = context.events.find((item) => item.id === eventId)
@@ -35,7 +40,7 @@ export default async function EventMatchPage({
                             className="rounded-xl"
                         >
                             <a
-                                href={`/${locale}/dashboard/servers/${serverId}/events/${eventId}`}
+                                href={`/${locale}/dashboard/servers/${serverId}/events/${eventId}${gameId ? `?game=${gameId}` : ""}`}
                             >
                                 {dictionary.common.openAction}
                             </a>

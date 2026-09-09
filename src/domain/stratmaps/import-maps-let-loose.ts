@@ -6,6 +6,7 @@ import {
     type StratmapSlide,
     type StratmapState,
 } from "@/lib/stratmaps"
+import { mapsLetLooseIconColor } from "./maps-let-loose-colors"
 
 type UnknownRecord = Record<string, unknown>
 
@@ -86,7 +87,7 @@ function convertElement(
     const scaleX = numberValue(element.scaleX, 1)
     const scaleY = numberValue(element.scaleY, 1)
     const color =
-        stringValue(element.stroke) || stringValue(element.fill) || "#39ff14"
+        stringValue(element.stroke) || stringValue(element.fill) || "#00ff00"
     const strokeWidth = numberValue(element.strokeWidth, 6)
     const strokeStyle = dashStyle(element.strokeDashArray)
 
@@ -178,7 +179,7 @@ function convertElement(
                   x: 0,
                   y: 0,
                   points,
-                  strokeColor: stringValue(element.stroke) || "#39ff14",
+                  strokeColor: stringValue(element.stroke) || "#00ff00",
                   strokeWidth,
                   strokeStyle,
               }
@@ -195,7 +196,10 @@ function convertElement(
               rotation,
               iconId,
               size: Math.max(24, 50 * Math.max(scaleX, scaleY)),
-              color,
+              // Maps Let Loose stores an icon's allegiance in `type.side` and
+              // applies its blue/red filter at render time; `fill` and `stroke`
+              // are unrelated Fabric properties for these image assets.
+              color: mapsLetLooseIconColor(meta?.side),
           }
         : null
 }

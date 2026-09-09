@@ -96,7 +96,7 @@ Configure only the sections your community will use. Empty optional fields disab
 | Calendar panel                                  | Calendar channel                                                                                  | Confirm the bot creates or refreshes the calendar panel.                                                          |
 | Bot error reporting                             | Errors channel                                                                                    | Confirm the configured channel is appropriate for restricted diagnostics.                                         |
 | Dashboard-admin role sync                       | Dashboard admin role, then use the dashboard's resync control                                     | Add and remove the role on a test account and confirm dashboard access changes after the sync.                    |
-| Group and membership role automation            | Discord roles linked to groups, clan role, and membership settings                                | Use a test member and confirm only the expected roles are added or removed.                                       |
+| Group sign-up eligibility and membership roles  | Group-linked roles for sign-up/import; clan role and membership category roles for role changes   | Test the two behaviors separately; only membership-category roles are added or removed by the bot.                |
 | Ticket panel                                    | Enable ticket settings, submit channel, ticket parent channel, and at least one category          | Confirm the panel appears and a test request creates a ticket in the intended private location.                   |
 | Membership application panel                    | Enable membership settings, submit channel, application parent channel, and at least one category | Confirm the panel appears and a test application reaches the intended private location.                           |
 | Player-stat servers                             | Player-stat token and URL entries                                                                 | Verify against a non-production test if possible. Treat tokens as secrets.                                        |
@@ -131,3 +131,27 @@ Configure only the sections your community will use. Empty optional fields disab
 > **Screenshot placeholder - Discord settings:** Show the Discord settings form with each channel and role selector labelled. Use fictional channel names and redact every token, player-stat credential, and private internal channel.
 
 > **Screenshot placeholder - capability checks:** Show a test event announcement, sign-up buttons, a forum post, and a scheduled event in a Discord test server. Label each item with the matching configuration field from the table above.
+
+## Exactly how Discord roles behave
+
+Logi uses several role mechanisms. They look similar in the settings screen, but their behavior is intentionally different.
+
+| Configuration                                          | When Logi reads or changes it                                                        | Automatic Discord changes                                                                                                                                              |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dashboard admin role                                   | The bot reads each member’s roles on full sync and on Discord member join/update     | None. The role grants dashboard manager access; removing it removes that access on the next sync/update. Discord's Administrator permission also grants access.        |
+| Group-linked role                                      | Checked when a member selects a group for a match; read during Discord-member import | None. It qualifies a group sign-up or imports the group; changing a dashboard group assignment does not grant/revoke it.                                               |
+| Clan role plus membership-category recruit/final roles | A manager closes a membership-application thread with a membership outcome           | The bot adds roles required by the new recruit/active outcome and removes roles that belonged only to the old outcome. Pending receives none.                          |
+| Event Attendees/Reserves roles                         | During event sync while the event is not concluded                                   | The bot creates or reuses temporary roles, then aligns them to confirmed attendees, rostered players, and reserves. It deletes both roles when the event is concluded. |
+
+<Callout type="warning">
+    Every role that the bot must add, remove, create, or delete has to be below
+    the bot’s highest Discord role. A group-linked role used only for checking
+    sign-up eligibility does not need to be manageable, but the bot must still
+    be able to read the member and their roles.
+</Callout>
+
+## Membership applications: the hidden workflow
+
+When membership applications are enabled, the panel needs a submit channel, an application parent channel, and at least one category. A category defines the assignment type to create, staff/support roles, any questions, and optional recruit and final Discord roles.
+
+An applicant can have only one open application in that workspace. Opening one creates a private Discord thread, adds the applicant and configured support members where Discord permits it, and creates a **pending** Logi assignment if one does not already exist. Closing the thread records an outcome. A membership outcome updates the assignment and applies the membership-role transition in the table above; a denial closes the application without creating an active membership role set. Thread creation, permissions, and role updates can fail independently, so inspect the bot error channel and the saved application state after a test.

@@ -28,7 +28,8 @@ export class ToggleSignupUseCase {
         let nextGroup = input.group
         const assignment = await this.events.getAssignmentForUser(
             normalizedEvent.guildId,
-            input.userId
+            input.userId,
+            normalizedEvent.gameId
         )
         const resolvedMembershipStatus =
             assignment?.type && assignment.status

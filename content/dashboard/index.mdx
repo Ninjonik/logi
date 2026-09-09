@@ -28,8 +28,39 @@ Logi deliberately does not show every management action to every user. Members c
     review your access.
 </Callout>
 
+### Why a manager page can be missing
+
+Logi distinguishes workspace visibility from management. A person can see a
+workspace through membership or dashboard access but still be unable to create
+events, change settings, or publish rosters. Manager status comes from an
+explicit Logi manager record, a resynced dashboard-admin role, Discord
+Administrator, or a stored manager override.
+
+The dashboard-admin role is evaluated from Discord by the bot. It needs the
+bot online and able to read members; use the manager resync control after role
+changes to update the workspace's manager list. An event/ticket/forum button
+can still be missing after manager access is correct if that feature has no
+valid Discord configuration.
+
 ## Workspace overview
 
 The overview is the starting point for a selected server. It summarises current information and gives you a path into the calendar, articles, events, and other workspace tools.
+
+## First-time guides
+
+Logi shows a short setup guide the first time a person opens the dashboard. It
+explains workspace selection and, for managers, where to invite the Discord
+bot and refresh its status. After that guide is completed, selecting a
+workspace opens one further short tour for that workspace:
+
+- Members see the navigation areas used to follow events, rosters, briefings,
+  and account setup.
+- Managers see the operational and configuration areas, including the need to
+  configure Discord channels and roles before relying on automation.
+
+Closing or finishing a guide saves the completion to that user's Logi account.
+It will not appear again for that scope, including when they use another
+browser. The member/manager workspace tour is intentionally separate for each
+workspace a person opens.
 
 > **Screenshot placeholder — workspace overview:** Show the server workspace overview with the left navigation, the active server name, and a callout explaining where a manager finds configuration.

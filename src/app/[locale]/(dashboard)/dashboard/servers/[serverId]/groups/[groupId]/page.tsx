@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { PageHeader } from "@/components/app/page-header"
 import { getGroupMetadata } from "@/lib/server-metadata"
 import { GroupForm } from "@/components/app/group-form"
+import { GameBadge } from "@/components/app/game-badge"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
@@ -31,7 +32,13 @@ export default async function GroupDetailPage({
 
     return (
         <>
-            <PageHeader title={group.name} description={group.description} />
+            <PageHeader
+                title={group.name}
+                description={group.description}
+                badges={
+                    <GameBadge gameId={group.gameId} dictionary={dictionary} />
+                }
+            />
             <div className="px-4 lg:px-6">
                 <GroupForm
                     serverId={serverId}
@@ -39,6 +46,7 @@ export default async function GroupDetailPage({
                     dictionary={dictionary}
                     canEdit={context.canAdmin}
                     group={group}
+                    gameId={group.gameId}
                     availableGroups={context.groups ?? []}
                 />
             </div>

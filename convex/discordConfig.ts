@@ -2,6 +2,7 @@ import {
     assertInternalSecret,
     calendarCategoriesValidator,
     membershipSettingsValidator,
+    gameOverridesValidator,
     normalizeConfigDoc,
     playerStatsServerValidator,
     ticketSettingsValidator,
@@ -62,6 +63,7 @@ export const upsertConfig = mutation({
         playerStatsServers: v.optional(v.array(playerStatsServerValidator)),
         ticketSettings: v.optional(ticketSettingsValidator),
         membershipSettings: v.optional(membershipSettingsValidator),
+        gameOverrides: v.optional(gameOverridesValidator),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -97,6 +99,7 @@ export const upsertConfig = mutation({
                 .filter((item) => item.token && item.url),
             ticketSettings: args.ticketSettings,
             membershipSettings: args.membershipSettings,
+            gameOverrides: args.gameOverrides,
             updatedAt: now,
         }
 

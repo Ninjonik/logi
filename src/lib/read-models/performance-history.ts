@@ -1,10 +1,12 @@
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 import { fetchAction, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
+import type { GameScope } from "@/domain/games/game"
 import { getInternalAuthSecret } from "@/lib/env"
 
 export type PerformanceSnapshot = {
     eventId: string
+    gameId?: Exclude<GameScope, "all">
     playedAt: string
     label: string
     combat: number
@@ -26,13 +28,17 @@ const refreshRef = makeFunctionReference<"action">(
 
 export async function getGuildPerformanceHistory(
     guildId: string,
-    cacheServerId = guildId
+    cacheServerId = guildId,
+    gameScope: GameScope = "all"
 ) {
     return cachedRead(
-        ["guild-performance-history:v5", guildId],
+        ["guild-performance-history:v6", guildId, gameScope],
         [appCacheTags.matches(cacheServerId)],
         async () => {
-            const row = (await fetchQuery(guildRef, { guildId })) as {
+            const row = (await fetchQuery(guildRef, {
+                guildId,
+                gameScope,
+            })) as {
                 matches: PerformanceSnapshot[]
             } | null
             return row?.matches ?? []
@@ -43,13 +49,18 @@ export async function getGuildPerformanceHistory(
 export async function getPlayerPerformanceHistory(
     guildId: string,
     userId: string,
-    cacheServerId = guildId
+    cacheServerId = guildId,
+    gameScope: GameScope = "all"
 ) {
     return cachedRead(
-        ["player-performance-history:v5", guildId, userId],
+        ["player-performance-history:v6", guildId, userId, gameScope],
         [appCacheTags.matches(cacheServerId), appCacheTags.playerStats(userId)],
         async () => {
-            const row = (await fetchQuery(playerRef, { guildId, userId })) as {
+            const row = (await fetchQuery(playerRef, {
+                guildId,
+                userId,
+                gameScope,
+            })) as {
                 matches: PerformanceSnapshot[]
             } | null
             return row?.matches ?? []
@@ -60,11 +71,17 @@ export async function getPlayerPerformanceHistory(
 export async function getPlayersPerformanceHistories(
     guildId: string,
     userIds: string[],
-    cacheServerId = guildId
+    cacheServerId = guildId,
+    gameScope: GameScope = "all"
 ) {
     const uniqueIds = [...new Set(userIds)].sort()
     return cachedRead(
-        ["player-performance-histories:v1", guildId, uniqueIds.join(",")],
+        [
+            "player-performance-histories:v2",
+            guildId,
+            uniqueIds.join(","),
+            gameScope,
+        ],
         [
             appCacheTags.matches(cacheServerId),
             ...uniqueIds.map(appCacheTags.playerStats),
@@ -73,6 +90,7 @@ export async function getPlayersPerformanceHistories(
             return (await fetchQuery(playersRef, {
                 guildId,
                 userIds: uniqueIds,
+                gameScope,
             })) as Record<string, PerformanceSnapshot[]>
         },
         3600

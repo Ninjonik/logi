@@ -9,13 +9,36 @@ import { Callout } from "nextra/components"
 
 Open your user settings from the account menu in the dashboard sidebar. This area is for your own account preferences and privacy-related actions, not for changing a server’s membership or settings.
 
+You can change your avatar and platform-ID list there. Your Discord name and
+Discord ID are displayed for reference but are not editable from Logi, and the
+current screen does not change your preferred language or streamer status.
+Platform IDs are normalised when saved; use the exact account IDs that the game
+platform supplies rather than a display name.
+
 ## Keep accounts connected correctly
 
 Use the Discord account that represents you in the community. If a platform ID needs linking, Logi may provide a secure linking flow. Do not share a linking token or a sign-in link with another person.
 
 ## Privacy requests
 
+### Platform-ID links
+
+When the bot starts a platform-ID link, the resulting token is single-use and
+expires after 15 minutes. Starting another link for the same Discord account
+invalidates that account's earlier unused link tokens. Completing it adds the
+trimmed platform ID to the account without duplicating an existing identical
+ID; it may create the basic Logi user record if one does not yet exist.
+
+Platform IDs are a membership-application prerequisite in the Discord flow.
+They are not automatically a membership approval, group assignment, Discord
+role, or proof of identity. Use the membership application process when the
+community requires approval.
+
 Logi provides routes for privacy export and privacy requests. Use your account settings or contact the service operator when you need help understanding your data options.
+
+The export button downloads a ZIP containing a readable report and a
+machine-readable copy of your own stored data. An erasure click creates a
+request; it does not immediately delete the account in the browser session.
 
 <Callout type="warning">
     Deleting or exporting personal data can affect what is available to you

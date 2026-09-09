@@ -31,6 +31,7 @@ import { formatPlatformIds } from "@/lib/platform-ids"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import type { GameId } from "@/domain/games/game"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -99,6 +100,7 @@ export function UserAssignmentForm({
     config,
     canManage = false,
     createMode = false,
+    gameId,
 }: {
     server: Guild
     locale: string
@@ -109,6 +111,7 @@ export function UserAssignmentForm({
     config?: DiscordConfig | null
     canManage?: boolean
     createMode?: boolean
+    gameId?: GameId
 }) {
     const router = useRouter()
     const initialSelectedUser = assignment
@@ -237,6 +240,7 @@ export function UserAssignmentForm({
         setServerError(null)
         const payload = {
             ...values,
+            gameId: gameId ?? assignment?.gameId,
             primaryGroupId: values.primaryGroupId || undefined,
         }
         const url = createMode

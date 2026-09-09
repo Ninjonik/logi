@@ -23,6 +23,7 @@ import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
 import { groupSchema, type GroupInput } from "@/lib/validation/group"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Textarea } from "@/components/ui/textarea"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -41,6 +42,7 @@ export function GroupForm({
     canEdit = false,
     createMode = false,
     availableGroups = [],
+    gameId,
 }: {
     serverId: string
     locale: string
@@ -49,6 +51,7 @@ export function GroupForm({
     canEdit?: boolean
     createMode?: boolean
     availableGroups?: Group[]
+    gameId?: GameId
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -56,6 +59,7 @@ export function GroupForm({
     const form = useForm<z.input<typeof groupSchema>, unknown, GroupInput>({
         resolver: zodResolver(groupSchema),
         defaultValues: {
+            gameId: group?.gameId ?? gameId,
             name: group?.name ?? "",
             color: group?.color ?? "#64748b",
             order: group?.order ?? 0,
@@ -85,6 +89,7 @@ export function GroupForm({
     async function submit(values: GroupInput) {
         const finalValues = {
             ...values,
+            gameId: group?.gameId ?? gameId,
             parentId: values.parentId === "none" ? undefined : values.parentId,
         }
 

@@ -13,6 +13,7 @@ import {
     DiscordMarkdownText,
     DiscordMarkdownTextarea,
 } from "@/components/app/discord-markdown"
+import { MAPS_LET_LOOSE_COLORS } from "@/domain/stratmaps/maps-let-loose-colors"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { cn } from "@/lib/utils"
 
@@ -25,8 +26,6 @@ import {
     EditorTextarea,
     EditorToggle,
 } from "./editor-controls"
-
-const QUICK_COLORS = ["#39ff14", "#2b6ef3", "#ef4444", "#f59e0b", "#ffffff"]
 
 export function SelectionInspector({
     dictionary,
@@ -93,16 +92,18 @@ export function SelectionInspector({
     return null
 }
 
-function ColorSwatches({
+export function ColorSwatches({
     value,
     onChange,
+    disabled = false,
 }: {
     value: string
     onChange: (value: string) => void
+    disabled?: boolean
 }) {
     return (
         <div className="flex flex-wrap gap-1">
-            {QUICK_COLORS.map((color) => (
+            {MAPS_LET_LOOSE_COLORS.map((color) => (
                 <button
                     key={color}
                     type="button"
@@ -113,10 +114,28 @@ function ColorSwatches({
                     )}
                     style={{ backgroundColor: color }}
                     onClick={() => onChange(color)}
+                    disabled={disabled}
                 />
             ))}
+            <label
+                className="border-border/70 relative size-5 cursor-pointer overflow-hidden rounded-[2px] border"
+                title="Custom color"
+            >
+                <span className="sr-only">Custom color</span>
+                <input
+                    type="color"
+                    value={toColorInputValue(value)}
+                    onChange={(event) => onChange(event.target.value)}
+                    disabled={disabled}
+                    className="absolute -inset-1 size-7 cursor-pointer border-0 p-0"
+                />
+            </label>
         </div>
     )
+}
+
+function toColorInputValue(value: string) {
+    return /^#[0-9a-f]{6}$/i.test(value) ? value : "#0080ff"
 }
 
 function SectionCard({

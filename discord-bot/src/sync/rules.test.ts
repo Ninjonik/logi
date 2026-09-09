@@ -163,6 +163,21 @@ test("shouldSyncEvent does not require creating completed or canceled scheduled 
     )
 })
 
+test("shouldSyncEvent retries a terminal Discord event when Logi is rescheduled", () => {
+    assert.equal(
+        shouldSyncEvent({
+            event: { updatedAt: "event-v1" },
+            rosterUpdatedAt: "roster-v1",
+            configUpdatedAt: "config-v1",
+            state: { ...state, scheduledEventStatus: "completed" },
+            desiredScheduledEventStatus: "active",
+            meetingChannelConfigured: true,
+            queued: false,
+        }),
+        true
+    )
+})
+
 test("shouldWriteMinimalConcludedSyncState only applies to unqueued concluded events without state", () => {
     assert.equal(
         shouldWriteMinimalConcludedSyncState({

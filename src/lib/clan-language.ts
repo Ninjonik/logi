@@ -18,6 +18,7 @@ type ClanDiscordMessages = {
         signupServerOnly: string
         registrationClosed: string
         invalidSignupButton: string
+        noCompatibleSignupGroup: string
         unableToResolveMembership: string
         missingRequiredRole: string
         membershipStatusNotAllowed: string
@@ -366,6 +367,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             registrationClosed:
                 "Registration is already closed for this event.",
             invalidSignupButton: "That signup button is no longer valid.",
+            noCompatibleSignupGroup:
+                "No compatible assigned group was found. Choose a signup group manually below.",
             unableToResolveMembership:
                 "Unable to resolve your server membership.",
             missingRequiredRole:
@@ -855,6 +858,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
                 "Tlačítka přihlášení fungují pouze u zprávy akce na serveru.",
             registrationClosed: "Registrace na tuto akci je již uzavřena.",
             invalidSignupButton: "Toto tlačítko přihlášení už není platné.",
+            noCompatibleSignupGroup:
+                "Nenalezena žádná kompatibilní přiřazená skupina. Vyberte si skupinu pro přihlášení ručně níže.",
             unableToResolveMembership:
                 "Nepodařilo se ověřit vaše členství na serveru.",
             missingRequiredRole:
@@ -1170,6 +1175,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             registrationClosed:
                 "Die Anmeldung für dieses Event ist bereits geschlossen.",
             invalidSignupButton: "Dieser Anmelde-Button ist nicht mehr gültig.",
+            noCompatibleSignupGroup:
+                "Keine kompatible zugewiesene Gruppe gefunden. Wählen Sie unten manuell eine Anmeldegruppe.",
             unableToResolveMembership:
                 "Ihre Server-Mitgliedschaft konnte nicht ermittelt werden.",
             missingRequiredRole:

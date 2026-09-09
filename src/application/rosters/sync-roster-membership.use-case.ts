@@ -33,7 +33,8 @@ export class SyncRosterMembershipForEventUseCase {
         }
 
         const assignments = await this.assignments.listByServer(
-            String(event.guildId)
+            String(event.guildId),
+            event.gameId
         )
         const next = mergeRosterWithEventState(
             roster,
@@ -78,7 +79,8 @@ export class SyncRosterMembershipForUserUseCase {
         }
 
         const assignments = await this.assignments.listByServer(
-            String(event.guildId)
+            String(event.guildId),
+            event.gameId
         )
         const next = syncRosterMembershipForUser(
             roster,

@@ -3,6 +3,7 @@ import { makeFunctionReference } from "convex/server"
 
 import type {
     DiscordConfig,
+    GameDiscordOverrides,
     MembershipSettings,
     PlayerStatsServer,
     TicketSettings,
@@ -51,6 +52,9 @@ export async function saveDiscordConfig(input: {
     playerStatsServers?: PlayerStatsServer[]
     ticketSettings?: TicketSettings
     membershipSettings?: MembershipSettings
+    gameOverrides?: Partial<
+        Record<import("@/domain/games/game").GameId, GameDiscordOverrides>
+    >
 }) {
     return await fetchMutation(upsertConfigReference, {
         secret: getInternalAuthSecret(),
@@ -69,6 +73,7 @@ export async function saveDiscordConfig(input: {
         playerStatsServers: input.playerStatsServers,
         ticketSettings: input.ticketSettings,
         membershipSettings: input.membershipSettings,
+        gameOverrides: input.gameOverrides,
     })
 }
 

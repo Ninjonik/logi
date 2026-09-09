@@ -36,7 +36,26 @@ export const deMessages = {
         description:
             "Organisiere Clan-Events, erstelle Roster, veröffentliche Briefings und bereite Discord-verbundene Operationen vor.",
     },
+    games: {
+        filterLabel: "Spielfilter",
+        column: "Spiel",
+        all: "Alle Spiele",
+        title: "Spiele",
+        description: "Aktiviere die Spiele, die dieser Clan verwendet.",
+        save: "Spiele speichern",
+        saved: "Aktivierte Spiele gespeichert.",
+        saveError: "Aktivierte Spiele konnten nicht gespeichert werden.",
+        selectTitle: "Wähle zuerst ein Spiel",
+        selectDescription:
+            "Dieser Eintrag gehört zu einem Spiel. Wähle das Spiel vor dem Erstellen.",
+        noActiveTitle: "Kein aktives Spiel",
+        noActiveDescription:
+            "Aktiviere mindestens ein Spiel in den Clan-Einstellungen, bevor du spielbezogene Eintrage erstellst.",
+        openSettings: "Clan-Einstellungen offnen",
+    },
     publicNavigation: {
+        wiki: "Wiki",
+        restartTour: "Tour neu starten",
         privacy: "Datenschutz",
         gdpr: "DSGVO",
         terms: "AGB",
@@ -169,6 +188,11 @@ export const deMessages = {
                     title: "Öffentliche API & Docs",
                     description:
                         "Umfangreiche API-Referenz und Dokumentation für Server-Admins, Integrationen und Mitwirkende.",
+                },
+                wiki: {
+                    title: "Community-Wiki",
+                    description:
+                        "Praktische Anleitungen für jede Logi-Funktion, vom ersten Workspace bis zum täglichen Betrieb.",
                 },
             },
             workflowEyebrow: "Vom Briefing zum Debriefing",
@@ -1588,6 +1612,67 @@ export const deMessages = {
         color: "Farbe",
         size: "Größe",
         noResults: "Keine Ergebnisse.",
+    },
+    onboarding: {
+        step: "Schritt {current} von {total}",
+        back: "Zurück",
+        next: "Weiter",
+        finish: "Fertig",
+        skip: "Tour überspringen",
+        saveError:
+            "Der Fortschritt konnte nicht gespeichert werden. Bitte versuche es erneut.",
+        setupWelcome: {
+            title: "Willkommen in deiner Einsatzzentrale",
+            description:
+                "Diese kurze Einrichtungshilfe erscheint einmal. Wähle zuerst einen Workspace; danach zeigt Logi die für dich relevanten Menüs.",
+        },
+        setupWorkspace: {
+            title: "Workspace auswählen",
+            description:
+                "Nutze den Workspace-Wechsler in der linken Seitenleiste. Jeder Workspace hat eigene Events, Mitglieder und Discord-Einstellungen.",
+        },
+        setupBot: {
+            title: "Discord-Bot einladen",
+            description:
+                "Wenn du einen Workspace verwaltest und der Bot noch fehlt, nutze auf diesem Dashboard die Schaltfläche zum Einladen. Aktualisiere danach den Bot-Status.",
+        },
+        setupBotNote:
+            "Der Bot benötigt die Berechtigungen der aktivierten Funktionen. Seine Discord-Rolle muss über allen Rollen liegen, die er verwalten soll.",
+        setupNext: {
+            title: "Workspace-Tour öffnen",
+            description:
+                "Nach der Workspace-Auswahl zeigt Logi eine kurze, auf deinen Zugriff zugeschnittene Tour.",
+        },
+        memberWelcome: {
+            title: "Das ist dein Workspace",
+            description:
+                "Die Seitenleiste zeigt die Bereiche dieser Community. Mit dem Workspace-Wechsler wechselst du jederzeit die Community.",
+        },
+        memberOperations: {
+            title: "Einsätze verfolgen",
+            description:
+                "In Events, Matches, Trainings, Rostern und Briefings prüfst du Termine, Meldungen, Aufstellungen und Pläne.",
+        },
+        memberAccount: {
+            title: "Konto bereithalten",
+            description:
+                "Über dein Kontomenü aktualisierst du Avatar und Plattform-IDs. Eine Plattform-ID kann für Mitgliedsanträge erforderlich sein.",
+        },
+        managerWelcome: {
+            title: "Du kannst diesen Workspace verwalten",
+            description:
+                "Deine Seitenleiste enthält Operations- und Konfigurationsbereiche. Änderungen gelten nur für diese Community.",
+        },
+        managerOperations: {
+            title: "Einsätze planen und veröffentlichen",
+            description:
+                "Erstelle Events, Matches, Trainings, Roster, Vorlagen und Stratmaps. Prüfe zuerst die Discord-Konfiguration.",
+        },
+        managerConfiguration: {
+            title: "Vor der Automatisierung konfigurieren",
+            description:
+                "Mitglieder, Anträge, Gruppen, Tickets und Server-Einstellungen bestimmen die Bot-Funktionen. Richte Kanäle und Rollen zuerst ein.",
+        },
     },
     shared: {
         openColumn: "Öffnen",

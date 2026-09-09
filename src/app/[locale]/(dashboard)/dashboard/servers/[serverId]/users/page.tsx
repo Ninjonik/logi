@@ -18,6 +18,7 @@ import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getPaginatedRows } from "@/lib/data-table"
 import { Button } from "@/components/ui/button"
+import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 function getAssignmentStatusLabel(
@@ -54,11 +55,15 @@ export default async function ServerUsersPage({
     const resolvedSearchParams = await searchParams
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const context = await getServerContext(serverId)
+    const game = resolvedSearchParams?.game
+    const context = await getServerContext(
+        serverId,
+        typeof game === "string" && isGameId(game) ? game : "all"
+    )
     if (!context) return null
 
     const { groups, canAdmin } = context
-    const assignments = await getServerUserAssignments(serverId)
+    const assignments = context.assignments
     const groupNameById = new Map(groups.map((group) => [group.id, group.name]))
     const assignmentUsers = await getUsersByIds(
         assignments.map((assignment) => assignment.userId),
@@ -118,7 +123,7 @@ export default async function ServerUsersPage({
                                 />
                                 <Button asChild className="rounded-xl">
                                     <a
-                                        href={`/${locale}/dashboard/servers/${serverId}/users/create`}
+                                        href={`/${locale}/dashboard/servers/${serverId}/users/create${typeof game === "string" && isGameId(game) ? `?game=${game}` : ""}`}
                                     >
                                         {dictionary.userManagement.addPlayer}
                                     </a>
@@ -139,6 +144,10 @@ export default async function ServerUsersPage({
                 totalRows={paginated.totalRows}
                 search={paginated.search}
                 searchPlaceholder={dictionary.userManagement.searchPlaceholder}
+                gameColumn={{
+                    show: !(typeof game === "string" && isGameId(game)),
+                    getGameId: (assignment) => assignment.gameId,
+                }}
                 getHref={(assignment) =>
                     `/${locale}/dashboard/servers/${serverId}/users/${assignment.id}`
                 }

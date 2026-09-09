@@ -3,6 +3,7 @@ import type {
     EventWorkflowRepository,
     EventWorkflowSyncPort,
 } from "@/application/events/ports"
+import type { GameId } from "@/domain/games/game"
 
 export class InMemoryEventWorkflowRepository implements EventWorkflowRepository {
     constructor(
@@ -22,8 +23,16 @@ export class InMemoryEventWorkflowRepository implements EventWorkflowRepository 
         return this.events.get(eventId) ?? null
     }
 
-    async getAssignmentForUser(serverId: string, userId: string) {
-        return this.assignments.get(`${serverId}:${userId}`) ?? null
+    async getAssignmentForUser(
+        serverId: string,
+        userId: string,
+        gameId?: GameId
+    ) {
+        return (
+            this.assignments.get(`${serverId}:${userId}:${gameId ?? ""}`) ??
+            this.assignments.get(`${serverId}:${userId}`) ??
+            null
+        )
     }
 
     async getGroupNameById(groupId: string) {

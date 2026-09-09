@@ -1,7 +1,9 @@
 import * as React from "react"
 
 import { ResourceTableClient } from "@/components/app/resource-table-client"
+import { GameBadge } from "@/components/app/game-badge"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { GameId } from "@/domain/games/game"
 
 type ColumnConfig<T> = {
     key: string
@@ -22,6 +24,7 @@ export function ResourceTable<T extends { id: string }>({
     search,
     searchPlaceholder,
     className,
+    gameColumn,
 }: {
     columns: Array<ColumnConfig<T>>
     rows: T[]
@@ -34,7 +37,24 @@ export function ResourceTable<T extends { id: string }>({
     search: string
     searchPlaceholder?: string
     className?: string
+    gameColumn?: { show: boolean; getGameId: (row: T) => GameId | undefined }
 }) {
+    const resolvedColumns = gameColumn?.show
+        ? [
+              {
+                  key: "game",
+                  title: dictionary.games.column,
+                  className: "w-1",
+                  render: (row: T) => (
+                      <GameBadge
+                          gameId={gameColumn.getGameId(row)}
+                          dictionary={dictionary}
+                      />
+                  ),
+              },
+              ...columns,
+          ]
+        : columns
     return (
         <ResourceTableClient
             dictionary={dictionary}
@@ -45,12 +65,14 @@ export function ResourceTable<T extends { id: string }>({
             search={search}
             searchPlaceholder={searchPlaceholder}
             className={className}
-            columnTitles={columns.map((column) => column.title)}
-            columnClassNames={columns.map((column) => column.className ?? "")}
+            columnTitles={resolvedColumns.map((column) => column.title)}
+            columnClassNames={resolvedColumns.map(
+                (column) => column.className ?? ""
+            )}
             rows={rows.map((row) => ({
                 id: row.id,
                 href: getHref(row),
-                cells: columns.map((column) => (
+                cells: resolvedColumns.map((column) => (
                     <React.Fragment key={column.key}>
                         {column.render(row)}
                     </React.Fragment>

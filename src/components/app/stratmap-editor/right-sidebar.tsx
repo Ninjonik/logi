@@ -33,6 +33,7 @@ type RightSidebarProps = {
     tool: Tool
     canUndo: boolean
     canRedo: boolean
+    strokeColor: string
     strokeWidth: number
     lineStyle: "solid" | "dashed" | "dotted"
     lineStartStyle: StratmapArrowStyle
@@ -50,6 +51,7 @@ type RightSidebarProps = {
     onZoomOut: () => void
     onResetZoom: () => void
     onToolChange: (tool: Tool) => void
+    onStrokeColorChange: (value: string) => void
     onStrokeWidthChange: (value: number) => void
     onLineStyleChange: (value: "solid" | "dashed" | "dotted") => void
     onLineStartStyleChange: (value: StratmapArrowStyle) => void

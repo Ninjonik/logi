@@ -43,3 +43,39 @@ test("UpsertAssignmentUseCase saves assignment, rebuilds membership, and syncs o
     assert.equal(repository.userMembershipPatches.length, 1)
     assert.deepEqual(sync.eventIds, ["event-1", "event-2"])
 })
+
+test("UpsertAssignmentUseCase permits one membership per game", async () => {
+    const repository = new InMemoryAssignmentCommandRepository(
+        new Map(),
+        new Set(["guild-1"]),
+        new Set(["user-1"]),
+        new Map([["guild-1", new Map()]]),
+        new Map()
+    )
+    const useCase = new UpsertAssignmentUseCase(
+        repository,
+        new RecordingAssignmentRosterSyncPort(),
+        new FakeClock(new Date("2026-07-22T12:00:00.000Z"))
+    )
+
+    await useCase.execute({
+        userId: "user-1",
+        serverDiscordId: "guild-1",
+        gameId: "hell_let_loose",
+        type: "member",
+        status: "active",
+        secondaryGroupIds: [],
+        paused: false,
+    })
+    await useCase.execute({
+        userId: "user-1",
+        serverDiscordId: "guild-1",
+        gameId: "hell_let_loose_vietnam",
+        type: "mercenary",
+        status: "active",
+        secondaryGroupIds: [],
+        paused: false,
+    })
+
+    assert.equal(repository.assignments.size, 2)
+})

@@ -11,7 +11,22 @@ import { Callout, Steps } from "nextra/components"
 
 The calendar is a time-based view of scheduled workspace activity. Use it when you know _when_ something happens; use the Events, Matches, or Trainings lists when you need a particular type of activity or management action.
 
-Event times are displayed using the information supplied by the server. Check the meeting time and game time separately when both are shown.
+It combines scheduled events with manual calendar items configured by managers.
+Events use meeting time through game end; manual items can be all-day or timed,
+and can recur weekly, monthly by date, monthly by weekday pattern, or yearly.
+Recurrence keeps the original duration. It does not create separate editable
+events: editing or removing the source manual item changes every future
+occurrence.
+
+The calendar only expands a finite range and caps one recurring item at 512
+occurrences, so an endless recurrence is useful for normal schedules but is not
+an archival record of every historical instance. Event times are displayed in
+the workspace Discord timezone when it is configured. Check the meeting time
+and game time separately when both are shown.
+
+Calendar categories affect presentation (label, colour, emoji) rather than
+eligibility, Discord permissions, or event status. A missing category falls
+back to the normal event presentation; it does not hide the event.
 
 ## Articles
 
@@ -32,6 +47,19 @@ Use a clear title and organise the content around what readers need to know firs
 Open the saved article as a reader would before sharing it.
 
 </Steps>
+
+### What saving an article requires
+
+Title, description, and body are all required. Logi trims title/description,
+keeps at most 20 non-empty tags, and ignores empty attachment values. Articles
+are workspace-scoped and are listed newest-first by their original creation
+time; updating one does not move it to the top. There is no draft or separate
+public/private visibility state in this workflow: save only material that is
+appropriate for everyone who can access that workspace's articles.
+
+Deleting an article removes it rather than archiving it. Existing direct links
+will no longer resolve, and Logi does not automatically remove a copied link
+from Discord, another article, or an external site.
 
 <Callout type="warning">
     Do not put Discord tokens, private channels, personal data, or other

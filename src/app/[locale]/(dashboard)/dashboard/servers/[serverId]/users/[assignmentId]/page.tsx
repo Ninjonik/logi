@@ -20,10 +20,12 @@ import { UserAssignmentForm } from "@/components/app/user-assignment-form"
 import { TablePageLayout } from "@/components/app/table-page-layout"
 import { ResourceTable } from "@/components/app/resource-table"
 import { PageHeader } from "@/components/app/page-header"
+import { GameBadge } from "@/components/app/game-badge"
 import { getServerContext } from "@/lib/server-context"
 import { StatCard } from "@/components/app/stat-card"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getPaginatedRows } from "@/lib/data-table"
+import { isGameId } from "@/domain/games/game"
 import { formatDateTime } from "@/lib/format"
 import { isLocale } from "@/i18n/config"
 
@@ -45,9 +47,12 @@ export default async function ServerUserDetailPage({
 }) {
     const { locale, serverId, assignmentId } = await params
     const resolvedSearchParams = await searchParams
+    const requestedGame = resolvedSearchParams?.game
+    const game = Array.isArray(requestedGame) ? requestedGame[0] : requestedGame
+    const gameScope = isGameId(game) ? game : "all"
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const context = await getServerContext(serverId)
+    const context = await getServerContext(serverId, gameScope)
     if (!context) return null
     const { server, groups = [], assignments } = context
 
@@ -69,7 +74,8 @@ export default async function ServerUserDetailPage({
     const performanceHistory = await getPlayerPerformanceHistory(
         server.discordId,
         user.id,
-        serverId
+        serverId,
+        gameScope
     )
     const paginatedMatches = getPaginatedRows({
         rows: sortedMatches,
@@ -109,6 +115,14 @@ export default async function ServerUserDetailPage({
                         user.platformIds.length
                             ? dictionary.userSettings.platformConnected
                             : dictionary.userManagement.platformNotConnected
+                    }
+                    badges={
+                        gameScope === "all" ? (
+                            <GameBadge
+                                gameId={assignment.gameId}
+                                dictionary={dictionary}
+                            />
+                        ) : undefined
                     }
                     actions={
                         context.canAdmin ? (

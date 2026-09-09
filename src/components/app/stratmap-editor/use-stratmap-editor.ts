@@ -23,11 +23,10 @@ import {
     type StratmapSlide,
     getHllStratmapCatalog,
     getHllStratmapCatalogGroups,
-    getHllStratmapMapById,
-    getHllStratmapMaps,
     parseStratmapState,
     stringifyStratmapState,
 } from "@/lib/stratmaps"
+import { getStratmapMapById, getStratmapMaps } from "@/lib/game-stratmaps"
 import { uploadFileToConvex } from "@/lib/client-uploads"
 
 import {
@@ -110,8 +109,8 @@ export function useStratmapEditor(
     const updateMeta = useMutation(updateStratmapMetaReference)
     const [isPending, startTransition] = useTransition()
     const [tool, setTool] = useState<Tool>("select")
-    const [strokeColor, setStrokeColor] = useState("#39ff14")
-    const [fillColor, setFillColor] = useState("#39ff1433")
+    const [strokeColor, setStrokeColor] = useState("#0080ff")
+    const [fillColor, setFillColor] = useState("#0080ff33")
     const [strokeWidth, setStrokeWidth] = useState(6)
     const [lineStyle, setLineStyle] = useState<"solid" | "dashed" | "dotted">(
         "solid"
@@ -182,10 +181,13 @@ export function useStratmapEditor(
     const canAdmin = liveData?.canAdmin ?? initialCanAdmin
     const canEdit = canAdmin && mode === "edit"
     const stratmap = liveData?.stratmap ?? initialStratmap
-    const maps = getHllStratmapMaps()
+    const maps = getStratmapMaps(initialStratmap.gameId)
     const catalogGroups = getHllStratmapCatalogGroups()
     const activeSlide = getActiveSlide(state, selectedSlideId)
-    const selectedMap = getHllStratmapMapById(baseMapId || state.baseMapId)
+    const selectedMap = getStratmapMapById(
+        baseMapId || state.baseMapId,
+        initialStratmap.gameId
+    )
     const overlayStrongpointIds = useMemo(
         () =>
             getOverlayStrongpoints(

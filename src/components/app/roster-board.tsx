@@ -867,11 +867,13 @@ export function RosterBoard({
                 ...target,
                 roleName: source.roleName,
                 roleIcon: source.roleIcon,
+                note: source.note,
             }
             next.squads[targetSquadIndex].players[targetPlayerIndex] = {
                 ...sourceCopy,
                 roleName: target.roleName,
                 roleIcon: target.roleIcon,
+                note: target.note,
             }
             return next
         })
@@ -1784,7 +1786,11 @@ export function RosterBoard({
                                     <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                                         {groupEntry.squads.map((squad) => (
                                             <SquadCard
-                                                key={`${squad.group}-${squad.name}`}
+                                                // A squad's name and group are editable. Using either as
+                                                // the React key remounts the card on every edit, which made
+                                                // the editor appear to reshuffle its units. `order` is the
+                                                // stable, unique identity for a squad within a roster.
+                                                key={squad.order}
                                                 squad={squad}
                                                 board={board}
                                                 squadIndex={board.squads.indexOf(
@@ -1857,7 +1863,7 @@ export function RosterBoard({
                                             groupEntry.subgroups.map((sub) =>
                                                 sub.squads.map((squad) => (
                                                     <SquadCard
-                                                        key={`${squad.group}-${squad.name}`}
+                                                        key={squad.order}
                                                         squad={squad}
                                                         board={board}
                                                         squadIndex={board.squads.indexOf(

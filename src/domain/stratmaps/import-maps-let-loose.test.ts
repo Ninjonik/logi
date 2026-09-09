@@ -65,7 +65,30 @@ test("imports Maps Let Loose slides, assets, shapes, text and drawings", () => {
         (result.state.slides[0].elements[0] as { iconId: string }).iconId,
         "tank-heavy"
     )
+    assert.equal(
+        (result.state.slides[0].elements[0] as { color: string }).color,
+        "#0080ff"
+    )
     assert.equal(result.skippedElements, 0)
+})
+
+test("uses Maps Let Loose's enemy red for enemy icon assets", () => {
+    const result = importMapsLetLooseJson({
+        name: "Enemy markers",
+        state: {
+            elements: [
+                {
+                    type: { type: "tank", modifier: "heavy", side: "enemy" },
+                },
+            ],
+            drawings: [],
+        },
+    })
+
+    assert.equal(
+        (result.state.slides[0].elements[0] as { color: string }).color,
+        "#ff8080"
+    )
 })
 
 test("keeps slides importable when an upstream asset is unknown", () => {

@@ -374,8 +374,20 @@ export async function handleEventButtonInteraction(
         }
 
         if (!resolved) {
+            const selectionRow =
+                requestedGroupId === SIGNUP_PRIMARY_GROUP
+                    ? buildSignupSelectionRow(
+                          context,
+                          member,
+                          interaction.user.id,
+                          messages
+                      )
+                    : null
             await interaction.reply({
-                content: lastError,
+                content: selectionRow
+                    ? messages.interaction.noCompatibleSignupGroup
+                    : lastError,
+                components: selectionRow ? [selectionRow] : [],
                 ephemeral: true,
             })
             return

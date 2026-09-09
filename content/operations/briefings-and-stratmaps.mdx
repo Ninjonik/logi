@@ -9,13 +9,58 @@ import { Callout } from "nextra/components"
 
 ## Topic presets
 
+Each preset needs a name and at least one named topic. A topic can have body
+text and attachment links. Empty topic titles are rejected; empty optional
+content is simply not stored. The side, map, cap, and notes fields are useful
+default briefing context, not enforcement: selecting a preset does not validate
+that the event has matching map/side/cap values.
+
 Topic presets are reusable briefing structures. They can contain map-aware topics and help managers prepare consistent information for repeated match or event scenarios. Create them in the workspace’s Topic presets section, then choose a suitable one while editing an event.
 
 ## Stratmaps
 
+### Game scope
+
+Every tactical map belongs to a game. In the dashboard, choose **All games** to
+see the whole clan, or choose a game below the workspace switcher to work only
+with that game's maps, events, and memberships. Existing workspaces and their
+existing maps are Hell Let Loose by default. Create Vietnam or Wardogs maps
+only after enabling that game in workspace settings.
+
+Only workspace managers can create or edit a stratmap, including its drawing
+state and metadata. Creating a map without an explicitly saved state starts it
+with the default state for its chosen base map. Assigning a stratmap to an event
+does not make it the only briefing content and does not publish or notify it by
+itself.
+
+<Callout type="warning">
+    The reader-facing stratmap route is publicly resolvable by its direct ID.
+    Treat stratmap titles, descriptions, drawings, and attached event context as
+    shareable with anyone who receives that link; do not place server passwords,
+    private channels, or sensitive operational details inside one.
+</Callout>
+
 Stratmaps are tactical map resources associated with an event or available in the workspace. Use a clear name and organise information so a player can understand the plan quickly. Select only the maps that are relevant to the event; an overloaded briefing is harder to use under time pressure.
 
+Public stratmap links open in a full-screen editor without the usual Logi header or footer. The browser page itself does not scroll; use the map controls and editor panels within that viewport.
+
+The editor includes the Maps Let Loose blue, red, orange, yellow, green, purple, white, and grey palette. Select a swatch for the standard tactical colours, or use the final colour control to choose any custom colour. Imported Maps Let Loose icons retain their friendly blue or enemy red appearance.
+
 ## Match briefing
+
+For Discord forum output, all of the following are required: the event must be
+a match, **Create forum channel** must be enabled, a usable forum category must
+be configured, and the bot must have Discord permission to create/edit that
+forum channel and posts. The bot then maintains a match-information post,
+includes links to selected stratmaps, and creates one forum topic post per
+topic-preset topic.
+
+Editing a topic preset does not rewrite old forum posts by itself. The event's
+topic resync control is available only for a non-concluded event that has both
+a forum channel and topic preset. Resyncing can update topic posts and delete
+old topic posts that no longer exist in the preset, so review the preset before
+using it. When a forum-backed event is concluded, the bot adds a debrief post;
+it does not delete the forum channel.
 
 From a match or event detail page, open the connected briefing resources. A briefing can combine event details, topic presets, and selected stratmaps, but each must be prepared and saved independently.
 

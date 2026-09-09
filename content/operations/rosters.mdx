@@ -31,6 +31,21 @@ Save while planning. Publish only when you are ready for people to rely on the a
 
 </Steps>
 
+There is one persisted roster per event. Saving a roster reconciles it against
+the event: newly tracked attendees become reserves if they are not already in a
+squad, while tracked non-attendees go to **not attending**. People who are no
+longer tracked are removed. Existing squad placements are preserved during a
+normal roster save, but a membership or sign-up change can still refresh an
+open match roster—review it after those changes.
+
+When starting a new roster, Logi tracks people who had an assignment on or
+before the earlier of the current time and the event's registration end, as well
+as anyone already in its participant or sign-up lists. An assignment created
+after registration closed is therefore not automatically added to that roster's
+starting pool. The initial reserve and not-attending lists are sorted by the
+workspace score, then name; that order is a starting point, not an automatic
+team-selection decision.
+
 ## Three roster lists
 
 <Tabs items={["Assigned", "Reserve", "Not attending"]}>
@@ -50,12 +65,35 @@ Save while planning. Publish only when you are ready for people to rely on the a
 
 ## Attendance and late changes
 
-Managers can update attendance status and, where available, confirm attendance from the configured meeting channel. Treat that as evidence for the roster, not as an automatic replacement for human review. When changing a published roster, choose notification options carefully so people receive only the communication they need.
+Each assigned player and reserve has one of three attendance states:
+
+| State        | Meaning                                                               | How it is set                               |
+| ------------ | --------------------------------------------------------------------- | ------------------------------------------- |
+| Pending      | No response recorded                                                  | Default, or a manager resets it             |
+| Acknowledged | The player used Logi's Discord attendance button, or a manager set it | This is not proof of physical attendance    |
+| Confirmed    | Manager-recorded attendance                                           | Used as present attendance in event scoring |
+
+The Discord acknowledgement button works only while the event is **starting**,
+the roster is published, and the person is assigned to a squad or reserve. It
+cannot add someone to the roster. Managers can update attendance status
+directly for a rostered player or reserve.
+
+Managers can also use **Confirm from meeting channel**. It checks only the
+people already assigned to a squad or reserve and marks those currently in the
+configured meeting voice/stage channel as confirmed. It does not inspect other
+voice channels, move people, add anyone to the roster, or prove that a person
+stayed for the event. The action needs a configured meeting channel, a working
+bot token, and Discord access to read those members' voice states; it is
+available to managers even if the roster is not published.
+
+When changing a published roster, choose notification options carefully. The
+dashboard can notify affected players by direct message and can post an update;
+delivery can fail if a recipient has DMs closed, even though the roster save
+succeeds. A published roster is visible to non-managers; a draft is not.
 
 <Callout type="warning">
-    Deleting a draft roster is destructive. Confirm that it has not replaced or
-    been confused with the roster you intend to keep. Published roster changes
-    can affect attendees immediately.
+    Only drafts can be deleted. You must unpublish a published roster before
+    deleting it. Published roster changes can affect attendees immediately.
 </Callout>
 
 > **Screenshot placeholder — roster board:** Show a populated roster board with squad columns, slot assignments, Reserve list, Not attending list, Draft/Published state, and the notification options in the publish dialog.

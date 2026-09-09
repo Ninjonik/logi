@@ -275,6 +275,9 @@ export function SquadCard({
     const isLayoutMode = mode === "layout"
     const isAssignmentMode = mode === "assignment"
     const isViewMode = mode === "view"
+    const filledSlotCount = squad.players.filter((player) =>
+        Boolean(player.id || getCustomPlayerName(player))
+    ).length
     const rankingContext = {
         usersById,
         assignmentsByUserId,
@@ -395,7 +398,7 @@ export function SquadCard({
                                 color: "#08111f",
                             }}
                         >
-                            {squad.players.length} slots
+                            {filledSlotCount} / {squad.players.length}
                         </Badge>
                     </div>
                 )}

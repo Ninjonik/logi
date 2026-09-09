@@ -22,6 +22,7 @@ export class UpsertAssignmentUseCase {
         assignmentId?: string
         userId: string
         serverDiscordId: string
+        gameId?: import("@/domain/games/game").GameId
         type: AssignmentType
         status: AssignmentStatus
         membershipCategoryId?: string
@@ -50,7 +51,8 @@ export class UpsertAssignmentUseCase {
 
         const duplicate = await this.repository.getByServerUser(
             input.serverDiscordId,
-            input.userId
+            input.userId,
+            input.gameId
         )
         if (duplicate && duplicate.id !== input.assignmentId) {
             throw new Error("This user is already assigned to this server.")
@@ -61,6 +63,7 @@ export class UpsertAssignmentUseCase {
             assignmentId: input.assignmentId,
             userId: input.userId,
             serverId: input.serverDiscordId,
+            gameId: input.gameId,
             type: input.type,
             status: input.status,
             membershipCategoryId: input.membershipCategoryId,
@@ -82,7 +85,8 @@ export class UpsertAssignmentUseCase {
 
         const eventIds = await this.repository.listOpenMatchEventIds(
             input.serverDiscordId,
-            now
+            now,
+            input.gameId
         )
         for (const eventId of eventIds) {
             await this.rosterSync.syncEvent(eventId)

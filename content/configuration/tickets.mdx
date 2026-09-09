@@ -1,21 +1,111 @@
 ---
-title: Tickets
-description: Configure membership or support ticket behaviour for a server.
+title: Tickets and membership applications
+description: Configure Discord support tickets and membership applications for a workspace.
 ---
 
-import { Callout } from "nextra/components"
+import { Callout, Steps } from "nextra/components"
 
-# Tickets
+# Tickets and membership applications
 
-The **Tickets** page is a server-manager configuration area for ticket-related workflow. It is not a public help desk by itself; it controls how the selected server’s ticket integration behaves.
+This page configures two Discord workflows for the selected workspace: support
+tickets and membership applications. It is not a public help desk by itself.
+The bot creates and maintains the Discord panels after the configuration is
+complete.
 
-## Before enabling or changing tickets
+## Required configuration
 
-Confirm the community’s process: who receives requests, which Discord channels and roles are appropriate, and what information members should provide. Then use the ticket settings form to reflect that agreed process.
+Both workflows require the bot to be running and the selected submit channel to
+be a normal Discord text channel. An incomplete configuration is simply
+skipped: no panel is posted and no partial fallback panel is created.
+
+| Workflow                | Required settings                                                              | What each category adds                                                             |
+| ----------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| Support tickets         | Enabled, submit channel, ticket parent channel, and at least one category      | Label/emoji, optional description, support roles, and up to five modal questions    |
+| Membership applications | Enabled, submit channel, application parent channel, and at least one category | Assignment type, support roles, recruit/final roles, and up to five modal questions |
+
+The bot posts or updates one panel message in each configured submit channel.
+If its saved panel message is deleted, the next successful sync creates a new
+one. Test after changing channels so staff do not leave an old panel in use.
+
+<Callout type="warning">
+    The parent channel must permit the bot to create private threads and manage
+    their members. Support staff need a configured support role, the dashboard
+    admin role, or Discord's Administrator permission to close a tracked thread.
+    Giving a role visibility of a parent channel alone does not make it a Logi
+    support role.
+</Callout>
+
+## What happens when someone uses a panel
+
+### Support ticket
+
+1. The member chooses a category. If the category has questions, Discord shows
+   a modal; otherwise Logi creates the ticket immediately.
+2. The bot creates a private thread under the configured ticket parent channel,
+   assigns it a sequential workspace ticket number, and adds the requester plus
+   configured support members where Discord permissions allow.
+3. Logi stores the category, answers, creator, thread, and open state. Staff
+   close the tracked thread with `/close_ticket`, optionally providing a reason.
+4. Logi records who closed it and when, posts a closing record, renames the
+   Discord thread to `closed-<number>`, and attempts to DM the requester. A
+   failed DM does not stop the ticket from closing.
+
+### Membership application
+
+1. The person must not already have a workspace assignment or another open
+   application, and must have at least one linked platform ID. If no platform
+   ID exists, the bot sends them through the platform-link flow first.
+2. The bot creates a private application thread and an assignment. It starts as
+   pending unless **auto-assign recruit on apply** is enabled for a member
+   category, in which case it starts as recruit and the configured recruit roles
+   are applied. The category decides whether its assignment is member, reserve
+   member, or mercenary.
+3. Eligible staff close it with `/close_application` and choose **denied**,
+   **pending**, **recruit**, **member**, or **mercenary**. The selected outcome
+   updates the assignment, except denied, which removes the assignment created
+   for the application.
+4. The bot records the closing outcome, posts the result in the thread, renames
+   it, attempts to DM the applicant, and applies/removes the configured
+   membership roles for the status transition.
+
+### Membership role and score settings
+
+The workspace clan role is added for recruit or active membership outcomes.
+The category's **recruit roles** apply only to recruit, and its **final roles**
+apply only to active member/mercenary outcomes. Pending has no managed roles.
+These are transition-based changes: Logi adds roles newly required by the
+outcome and removes roles that belonged only to the previous outcome. It does
+not use group-linked roles for this purpose.
+
+Membership settings also contain the roster-score values used when a concluded
+event resolves player scores. They are per-workspace and determine the numeric
+result for declined, confirmed/absent roster or reserve, excused absence, and
+people with no score category. Change them before the relevant event concludes;
+event scores are only resolved once.
 
 ## Test the complete path
 
-After changing ticket settings, test with a safe account or a controlled example. Confirm that the request reaches the intended place and that no private information is exposed to an unintended audience.
+<Steps>
+
+### Test as a non-staff account
+
+Open each type of request from an account that has no staff role. Check the
+questions, category labels, private-thread location, and the exact people who
+can see it.
+
+### Test staff closure
+
+Use a configured support role to close the test thread. Then test that an
+unrelated member cannot close it. Confirm the close record, renamed thread, and
+optional DM behavior.
+
+### Test a disposable membership role
+
+For an application, use a disposable recruit/final role and a test applicant.
+Confirm the chosen outcome produces the expected assignment and role changes
+before connecting production roles.
+
+</Steps>
 
 <Callout type="warning">
     Ticket configuration can change how private member requests are routed.

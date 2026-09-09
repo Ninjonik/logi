@@ -265,6 +265,55 @@ test("ToggleSignupUseCase enforces allowed match signup statuses", async () => {
     assert.deepEqual(result.signUps, [{ userId: "user-2", group: "INF" }])
 })
 
+test("ToggleSignupUseCase uses the membership for the event's game", async () => {
+    const events = new InMemoryEventWorkflowRepository(
+        new Map([
+            [
+                "event-vietnam",
+                {
+                    id: "event-vietnam",
+                    guildId: "guild-1",
+                    kind: "match" as const,
+                    gameId: "hell_let_loose_vietnam",
+                    allowedSignupStatuses: ["member"],
+                    registrationEnd: "2026-01-01T12:00:00.000Z",
+                    meetingStart: "2026-01-01T13:00:00.000Z",
+                    gameEnd: "2026-01-01T15:00:00.000Z",
+                    status: "registration" as const,
+                    participants: [],
+                    signUps: [],
+                    absenceNotices: [],
+                },
+            ],
+        ]),
+        new Map([
+            [
+                "guild-1:user-1:hell_let_loose",
+                { type: "member", status: "active" },
+            ],
+            [
+                "guild-1:user-1:hell_let_loose_vietnam",
+                { type: "reserve_member", status: "active" },
+            ],
+        ])
+    )
+    const useCase = new ToggleSignupUseCase(
+        events,
+        new NoopEventWorkflowSyncPort(),
+        new FakeClock(new Date("2026-01-01T09:00:00.000Z"))
+    )
+
+    await assert.rejects(
+        () =>
+            useCase.execute({
+                eventId: "event-vietnam",
+                userId: "user-1",
+                group: "INF",
+            }),
+        /membership status is not allowed/i
+    )
+})
+
 test("ToggleSignupUseCase keeps existing signup on repeated clicks", async () => {
     const syncPort = new NoopEventWorkflowSyncPort()
     const events = new InMemoryEventWorkflowRepository(

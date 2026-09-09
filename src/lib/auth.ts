@@ -32,6 +32,9 @@ const updatePlatformIdsReference = makeFunctionReference<"mutation">(
 const clearPlatformIdsReference = makeFunctionReference<"mutation">(
     "players:clearPlatformIds"
 )
+const markOnboardingSeenReference = makeFunctionReference<"mutation">(
+    "players:markOnboardingSeen"
+)
 
 const SESSION_COOKIE_NAME = "token"
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
@@ -369,4 +372,18 @@ export async function updateCurrentPlayerProfile(input: {
     })
 
     return session.sub
+}
+
+export async function markCurrentPlayerOnboardingSeen(input: {
+    milestone: "dashboard_setup" | "workspace_tour"
+    workspaceId?: string
+}) {
+    const session = await getSession()
+    if (!session) throw new Error("You must be signed in.")
+
+    return await fetchMutation(markOnboardingSeenReference, {
+        secret: getInternalAuthSecret(),
+        userId: session.sub,
+        ...input,
+    })
 }

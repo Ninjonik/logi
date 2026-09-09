@@ -1,13 +1,28 @@
 "use client"
 
-import { Loader2, Paperclip, Plus, Save, Trash2, Upload } from "lucide-react"
-import { Controller, useFieldArray, useForm } from "react-hook-form"
+import {
+    ArrowDown,
+    ArrowUp,
+    FileText,
+    Loader2,
+    Paperclip,
+    Plus,
+    Save,
+    Trash2,
+    Upload,
+} from "lucide-react"
+import { useFieldArray, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { FieldErrors } from "react-hook-form"
 import { useState, useTransition } from "react"
+import { PhotoSlider } from "react-photo-view"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import {
+    DISCORD_MESSAGE_MAX_ATTACHMENTS,
+    isDiscordLevelZeroAttachmentSizeValid,
+} from "@/domain/discord-sync/attachment-limits"
 import {
     topicPresetSchema,
     type TopicPresetInput,
@@ -46,6 +61,7 @@ function newTopic(title = "") {
         title,
         body: "",
         attachments: [],
+        messages: [{ id: crypto.randomUUID(), body: "", attachments: [] }],
     }
 }
 
@@ -75,6 +91,139 @@ function getFirstErrorMessage(
     }
 
     return undefined
+}
+
+function attachmentName(url: string, index: number) {
+    try {
+        const name = decodeURIComponent(
+            new URL(url).pathname.split("/").pop() ?? ""
+        )
+        if (name) return name
+    } catch {
+        // Saved uploads are valid URLs. The fallback keeps legacy entries usable.
+    }
+    return `Attachment ${index + 1}`
+}
+
+function isPreviewableImage(url: string) {
+    return /\.(avif|gif|jpe?g|png|svg|webp)(?:$|[?#])/i.test(url)
+}
+
+function TopicMessageAttachments({
+    attachments,
+    canEdit,
+    dictionary,
+    onUpload,
+    onRemove,
+}: {
+    attachments: string[]
+    canEdit: boolean
+    dictionary: Dictionary
+    onUpload: (files: FileList | File[] | null) => void
+    onRemove: (index: number) => void
+}) {
+    const previewAttachments = attachments.filter(isPreviewableImage)
+    const [viewerVisible, setViewerVisible] = useState(false)
+    const [viewerIndex, setViewerIndex] = useState(0)
+
+    return (
+        <div
+            className="border-border/60 bg-background/45 rounded-lg border border-dashed p-2"
+            onDragOver={(event) => {
+                if (canEdit) event.preventDefault()
+            }}
+            onDrop={(event) => {
+                if (!canEdit) return
+                event.preventDefault()
+                onUpload(event.dataTransfer.files)
+            }}
+        >
+            <div className="flex flex-wrap gap-2">
+                {attachments.map((attachment, attachmentIndex) => {
+                    const imageIndex = previewAttachments.indexOf(attachment)
+                    const isImage = imageIndex >= 0
+                    return (
+                        <div
+                            key={`${attachment}-${attachmentIndex}`}
+                            className="border-border/60 bg-card group relative flex h-16 w-28 overflow-hidden rounded-md border"
+                        >
+                            {isImage ? (
+                                <button
+                                    type="button"
+                                    className="size-full cursor-zoom-in"
+                                    onClick={() => {
+                                        setViewerIndex(imageIndex)
+                                        setViewerVisible(true)
+                                    }}
+                                >
+                                    <img
+                                        src={attachment}
+                                        alt={attachmentName(
+                                            attachment,
+                                            attachmentIndex
+                                        )}
+                                        className="size-full object-cover"
+                                    />
+                                </button>
+                            ) : (
+                                <div className="text-muted-foreground flex min-w-0 items-center gap-2 px-2 text-xs">
+                                    <FileText className="size-4 shrink-0" />
+                                    <span className="line-clamp-2 break-all">
+                                        {attachmentName(
+                                            attachment,
+                                            attachmentIndex
+                                        )}
+                                    </span>
+                                </div>
+                            )}
+                            {canEdit ? (
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="destructive"
+                                    className="absolute top-1 right-1 size-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                                    onClick={() => onRemove(attachmentIndex)}
+                                >
+                                    <Trash2 className="size-3.5" />
+                                </Button>
+                            ) : null}
+                        </div>
+                    )
+                })}
+                {canEdit ? (
+                    <label className="border-border/60 text-muted-foreground hover:bg-accent hover:text-accent-foreground flex h-16 w-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed text-xs transition-colors">
+                        <Upload className="size-4" />
+                        {dictionary.common.upload}
+                        <input
+                            type="file"
+                            multiple
+                            className="sr-only"
+                            onChange={(event) => {
+                                onUpload(event.target.files)
+                                event.target.value = ""
+                            }}
+                        />
+                    </label>
+                ) : null}
+            </div>
+            <div className="text-muted-foreground mt-2 flex items-center gap-1 text-xs">
+                <Paperclip className="size-3" />
+                {attachments.length}/{DISCORD_MESSAGE_MAX_ATTACHMENTS}
+            </div>
+            <PhotoSlider
+                images={previewAttachments.map((attachment, index) => ({
+                    key: `${attachment}-${index}`,
+                    src: attachment,
+                }))}
+                index={viewerIndex}
+                visible={viewerVisible}
+                onIndexChange={setViewerIndex}
+                onClose={() => setViewerVisible(false)}
+                loop
+                maskOpacity={0.92}
+            />
+        </div>
+    )
 }
 
 export function TopicPresetForm({
@@ -108,6 +257,15 @@ export function TopicPresetForm({
                 ? preset.topics.map((topic) => ({
                       ...topic,
                       id: topic.id ?? crypto.randomUUID(),
+                      messages: topic.messages?.length
+                          ? topic.messages
+                          : [
+                                {
+                                    id: crypto.randomUUID(),
+                                    body: topic.body ?? "",
+                                    attachments: topic.attachments ?? [],
+                                },
+                            ],
                   }))
                 : [newTopic(dictionary.presets.newTopic)],
         },
@@ -159,27 +317,64 @@ export function TopicPresetForm({
 
     async function handleUpload(
         topicIndex: number,
-        files: FileList | File[] | null
+        files: FileList | File[] | null,
+        messageIndex?: number
     ) {
-        const imageFiles = Array.from(files ?? []).filter((file) =>
-            file.type.startsWith("image/")
+        const uploadedFiles = Array.from(files ?? [])
+        if (!uploadedFiles.length) return
+
+        const current =
+            messageIndex === undefined
+                ? (form.getValues(`topics.${topicIndex}.attachments`) ?? [])
+                : (form.getValues(`topics.${topicIndex}.messages`)?.[
+                      messageIndex
+                  ]?.attachments ?? [])
+        const oversizedFile = uploadedFiles.find(
+            (file) => !isDiscordLevelZeroAttachmentSizeValid(file.size)
         )
-        if (!imageFiles.length) return
+        if (oversizedFile) {
+            toast.error(
+                `“${oversizedFile.name}” exceeds Discord's 20 MiB level-0 upload limit.`
+            )
+            return
+        }
+        if (
+            current.length + uploadedFiles.length >
+            DISCORD_MESSAGE_MAX_ATTACHMENTS
+        ) {
+            toast.error(
+                `A Discord message can have at most ${DISCORD_MESSAGE_MAX_ATTACHMENTS} attachments.`
+            )
+            return
+        }
 
         try {
-            for (const file of imageFiles) {
+            for (const file of uploadedFiles) {
                 const upload = await uploadFileToConvex(file)
                 const url = upload.url
-                const current =
-                    form.getValues(`topics.${topicIndex}.attachments`) ?? []
-                form.setValue(
-                    `topics.${topicIndex}.attachments`,
-                    [...current, url],
-                    {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                    }
-                )
+                if (messageIndex === undefined) {
+                    const latest =
+                        form.getValues(`topics.${topicIndex}.attachments`) ?? []
+                    form.setValue(
+                        `topics.${topicIndex}.attachments`,
+                        [...latest, url],
+                        { shouldDirty: true, shouldValidate: true }
+                    )
+                } else {
+                    updateMessages(topicIndex, (messages) =>
+                        messages.map((message, index) =>
+                            index === messageIndex
+                                ? {
+                                      ...message,
+                                      attachments: [
+                                          ...message.attachments,
+                                          url,
+                                      ],
+                                  }
+                                : message
+                        )
+                    )
+                }
             }
             toast.success(dictionary.common.save)
         } catch (error) {
@@ -187,6 +382,23 @@ export function TopicPresetForm({
                 error instanceof Error ? error.message : dictionary.common.error
             )
         }
+    }
+
+    function updateMessages(
+        topicIndex: number,
+        update: (
+            messages: Array<{
+                id: string
+                body?: string
+                attachments: string[]
+            }>
+        ) => Array<{ id: string; body?: string; attachments: string[] }>
+    ) {
+        const current = form.getValues(`topics.${topicIndex}.messages`) ?? []
+        form.setValue(`topics.${topicIndex}.messages`, update(current), {
+            shouldDirty: true,
+            shouldValidate: true,
+        })
     }
 
     const disabled = !canEdit || isPending || form.formState.isSubmitting
@@ -381,41 +593,44 @@ export function TopicPresetForm({
                                                 </p>
                                             ) : null}
                                         </div>
-                                        <DiscordMarkdownTextarea
-                                            value={
+                                        <div className="border-border/60 space-y-3 rounded-lg border p-3">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className="text-sm font-medium">
+                                                    Discord messages
+                                                </p>
+                                                {canEdit ? (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            updateMessages(
+                                                                topicIndex,
+                                                                (messages) => [
+                                                                    ...messages,
+                                                                    {
+                                                                        id: crypto.randomUUID(),
+                                                                        body: "",
+                                                                        attachments:
+                                                                            [],
+                                                                    },
+                                                                ]
+                                                            )
+                                                        }
+                                                    >
+                                                        <Plus className="size-4" />
+                                                        Add message
+                                                    </Button>
+                                                ) : null}
+                                            </div>
+                                            {(
                                                 form.watch(
-                                                    `topics.${topicIndex}.body`
-                                                ) ?? ""
-                                            }
-                                            onChange={(value) =>
-                                                form.setValue(
-                                                    `topics.${topicIndex}.body`,
-                                                    value,
-                                                    {
-                                                        shouldDirty: true,
-                                                        shouldTouch: true,
-                                                        shouldValidate: true,
-                                                    }
-                                                )
-                                            }
-                                            className="border-border/60 bg-background rounded-lg"
-                                            placeholder={
-                                                dictionary.presets
-                                                    .topicEditorDescription
-                                            }
-                                            disabled={!canEdit}
-                                            rows={6}
-                                            hideToolbar={!canEdit}
-                                            preview={
-                                                canEdit ? "live" : "preview"
-                                            }
-                                        />
-                                        <Controller
-                                            control={form.control}
-                                            name={`topics.${topicIndex}.attachments`}
-                                            render={({ field }) => (
+                                                    `topics.${topicIndex}.messages`
+                                                ) ?? []
+                                            ).map((message, messageIndex) => (
                                                 <div
-                                                    className="space-y-2 rounded-lg"
+                                                    key={message.id}
+                                                    className="bg-muted/30 has-[input:focus]:border-primary/40 space-y-2 rounded-md border border-dashed border-transparent p-3 transition-colors"
                                                     onDragOver={(event) => {
                                                         if (canEdit)
                                                             event.preventDefault()
@@ -426,97 +641,219 @@ export function TopicPresetForm({
                                                         void handleUpload(
                                                             topicIndex,
                                                             event.dataTransfer
-                                                                .files
+                                                                .files,
+                                                            messageIndex
                                                         )
                                                     }}
                                                 >
-                                                    <Textarea
-                                                        value={field.value.join(
-                                                            "\n"
-                                                        )}
-                                                        onChange={(event) =>
-                                                            field.onChange(
-                                                                event.target.value
-                                                                    .split("\n")
-                                                                    .map(
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-muted-foreground text-xs font-medium">
+                                                            Message{" "}
+                                                            {messageIndex + 1}
+                                                        </span>
+                                                        {canEdit ? (
+                                                            <div className="flex gap-1">
+                                                                <Button
+                                                                    type="button"
+                                                                    size="icon"
+                                                                    variant="ghost"
+                                                                    className="size-7"
+                                                                    disabled={
+                                                                        messageIndex ===
+                                                                        0
+                                                                    }
+                                                                    onClick={() =>
+                                                                        updateMessages(
+                                                                            topicIndex,
+                                                                            (
+                                                                                messages
+                                                                            ) => {
+                                                                                const next =
+                                                                                    [
+                                                                                        ...messages,
+                                                                                    ]
+                                                                                ;[
+                                                                                    next[
+                                                                                        messageIndex -
+                                                                                            1
+                                                                                    ],
+                                                                                    next[
+                                                                                        messageIndex
+                                                                                    ],
+                                                                                ] =
+                                                                                    [
+                                                                                        next[
+                                                                                            messageIndex
+                                                                                        ]!,
+                                                                                        next[
+                                                                                            messageIndex -
+                                                                                                1
+                                                                                        ]!,
+                                                                                    ]
+                                                                                return next
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <ArrowUp className="size-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    size="icon"
+                                                                    variant="ghost"
+                                                                    className="size-7"
+                                                                    disabled={
+                                                                        messageIndex ===
+                                                                        (form.getValues(
+                                                                            `topics.${topicIndex}.messages`
+                                                                        )
+                                                                            ?.length ??
+                                                                            1) -
+                                                                            1
+                                                                    }
+                                                                    onClick={() =>
+                                                                        updateMessages(
+                                                                            topicIndex,
+                                                                            (
+                                                                                messages
+                                                                            ) => {
+                                                                                const next =
+                                                                                    [
+                                                                                        ...messages,
+                                                                                    ]
+                                                                                ;[
+                                                                                    next[
+                                                                                        messageIndex
+                                                                                    ],
+                                                                                    next[
+                                                                                        messageIndex +
+                                                                                            1
+                                                                                    ],
+                                                                                ] =
+                                                                                    [
+                                                                                        next[
+                                                                                            messageIndex +
+                                                                                                1
+                                                                                        ]!,
+                                                                                        next[
+                                                                                            messageIndex
+                                                                                        ]!,
+                                                                                    ]
+                                                                                return next
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <ArrowDown className="size-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    size="icon"
+                                                                    variant="ghost"
+                                                                    className="size-7"
+                                                                    disabled={
+                                                                        (form.getValues(
+                                                                            `topics.${topicIndex}.messages`
+                                                                        )
+                                                                            ?.length ??
+                                                                            1) <=
+                                                                        1
+                                                                    }
+                                                                    onClick={() =>
+                                                                        updateMessages(
+                                                                            topicIndex,
+                                                                            (
+                                                                                messages
+                                                                            ) =>
+                                                                                messages.filter(
+                                                                                    (
+                                                                                        _,
+                                                                                        index
+                                                                                    ) =>
+                                                                                        index !==
+                                                                                        messageIndex
+                                                                                )
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <Trash2 className="size-4" />
+                                                                </Button>
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                    <DiscordMarkdownTextarea
+                                                        value={
+                                                            message.body ?? ""
+                                                        }
+                                                        onChange={(body) =>
+                                                            updateMessages(
+                                                                topicIndex,
+                                                                (messages) =>
+                                                                    messages.map(
                                                                         (
-                                                                            line
+                                                                            item,
+                                                                            index
                                                                         ) =>
-                                                                            line.trim()
-                                                                    )
-                                                                    .filter(
-                                                                        Boolean
+                                                                            index ===
+                                                                            messageIndex
+                                                                                ? {
+                                                                                      ...item,
+                                                                                      body,
+                                                                                  }
+                                                                                : item
                                                                     )
                                                             )
                                                         }
-                                                        className="border-border/60 bg-background min-h-20 rounded-lg text-sm"
-                                                        placeholder={
-                                                            dictionary.presets
-                                                                .attachmentPlaceholder
-                                                        }
                                                         disabled={!canEdit}
+                                                        rows={4}
+                                                        hideToolbar={!canEdit}
                                                     />
-                                                    {form.formState.errors
-                                                        .topics?.[topicIndex]
-                                                        ?.attachments ? (
-                                                        <p className="text-destructive text-sm">
-                                                            {
-                                                                form.formState
-                                                                    .errors
-                                                                    .topics[
-                                                                    topicIndex
-                                                                ]?.attachments
-                                                                    ?.message
-                                                            }
-                                                        </p>
-                                                    ) : null}
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        {canEdit ? (
-                                                            <label className="border-border/60 bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 text-xs font-medium transition-colors">
-                                                                <Upload className="size-4" />
-                                                                {
-                                                                    dictionary
-                                                                        .common
-                                                                        .upload
-                                                                }
-                                                                <input
-                                                                    type="file"
-                                                                    multiple
-                                                                    accept="image/*"
-                                                                    className="sr-only"
-                                                                    onChange={(
-                                                                        event
-                                                                    ) => {
-                                                                        void handleUpload(
-                                                                            topicIndex,
-                                                                            event
-                                                                                .target
-                                                                                .files
-                                                                        )
-                                                                        event.target.value =
-                                                                            ""
-                                                                    }}
-                                                                />
-                                                            </label>
-                                                        ) : null}
-                                                        {field.value.length ? (
-                                                            <span className="border-border/60 bg-background text-muted-foreground inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs">
-                                                                <Paperclip className="size-3" />
-                                                                {
-                                                                    field.value
-                                                                        .length
-                                                                }{" "}
-                                                                {
-                                                                    dictionary
-                                                                        .presets
-                                                                        .attachmentCountSuffix
-                                                                }
-                                                            </span>
-                                                        ) : null}
-                                                    </div>
+                                                    <TopicMessageAttachments
+                                                        attachments={
+                                                            message.attachments
+                                                        }
+                                                        canEdit={canEdit}
+                                                        dictionary={dictionary}
+                                                        onUpload={(files) => {
+                                                            void handleUpload(
+                                                                topicIndex,
+                                                                files,
+                                                                messageIndex
+                                                            )
+                                                        }}
+                                                        onRemove={(
+                                                            attachmentIndex
+                                                        ) =>
+                                                            updateMessages(
+                                                                topicIndex,
+                                                                (messages) =>
+                                                                    messages.map(
+                                                                        (
+                                                                            item,
+                                                                            index
+                                                                        ) =>
+                                                                            index ===
+                                                                            messageIndex
+                                                                                ? {
+                                                                                      ...item,
+                                                                                      attachments:
+                                                                                          item.attachments.filter(
+                                                                                              (
+                                                                                                  _,
+                                                                                                  index
+                                                                                              ) =>
+                                                                                                  index !==
+                                                                                                  attachmentIndex
+                                                                                          ),
+                                                                                  }
+                                                                                : item
+                                                                    )
+                                                            )
+                                                        }
+                                                    />
                                                 </div>
-                                            )}
-                                        />
+                                            ))}
+                                        </div>
                                     </div>
                                 </ExpandableItemCard>
                             )

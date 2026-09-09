@@ -141,6 +141,13 @@ export const create = mutation({
     args: {
         userId: v.string(),
         serverId: v.id("guilds"),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
         title: v.string(),
         description: v.optional(v.string()),
         baseMapId: v.string(),
@@ -168,6 +175,7 @@ export const create = mutation({
         const now = new Date().toISOString()
         const stratmapId = await ctx.db.insert("stratmaps", {
             guildId: guildDiscordId,
+            gameId: args.gameId,
             eventId: args.eventId,
             title: args.title.trim(),
             description: args.description?.trim() || undefined,

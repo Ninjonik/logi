@@ -6,6 +6,7 @@ import { getUsersByIds } from "@/lib/server-user-management"
 import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
+import { isGameId } from "@/domain/games/game"
 import { getLoggedInUser } from "@/lib/auth"
 import { isLocale } from "@/i18n/config"
 
@@ -21,12 +22,18 @@ export function generateStaticParams() {
 
 export default async function RosterDetailPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string; rosterId: string }>
+    searchParams: Promise<{ game?: string }>
 }) {
     const { locale, serverId, rosterId } = await params
+    const { game } = await searchParams
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const context = await getServerContext(serverId)
+    const context = await getServerContext(
+        serverId,
+        isGameId(game) ? game : "all"
+    )
     if (!context) return null
     const {
         rosters,

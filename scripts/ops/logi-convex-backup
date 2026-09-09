@@ -1,0 +1,237 @@
+#!/usr/bin/env bash
+# Local backup and restore toolkit for the original Logi Convex deployment.
+# Install with scripts/ops/install-logi-convex-backup-on-vps.sh.
+set -Eeuo pipefail
+
+readonly CONFIG_FILE="/etc/logi/convex-backup.env"
+readonly DEFAULT_BACKUP_DIR="/docker/backups/convex"
+readonly WORK_DIR="/var/lib/logi-convex-backup"
+readonly LOCK_FILE="/run/lock/logi-convex-backup.lock"
+readonly CONVEX_CLI_VERSION="1.45.0"
+
+say() { printf '%s\n' "$*"; }
+fail() { say "Error: $*" >&2; exit 1; }
+
+require_root() {
+  [[ "${EUID}" -eq 0 ]] || fail "Run this toolkit as root."
+}
+
+load_config() {
+  [[ -f "$CONFIG_FILE" ]] || fail "Backups are not configured yet. Run: logi-convex-backup setup"
+  # shellcheck disable=SC1090
+  source "$CONFIG_FILE"
+  : "${CONVEX_SELF_HOSTED_URL:?Missing CONVEX_SELF_HOSTED_URL in $CONFIG_FILE}"
+  : "${CONVEX_SELF_HOSTED_ADMIN_KEY:?Missing CONVEX_SELF_HOSTED_ADMIN_KEY in $CONFIG_FILE}"
+  BACKUP_DIR="${BACKUP_DIR:-$DEFAULT_BACKUP_DIR}"
+}
+
+validate_dependencies() {
+  command -v npx >/dev/null || fail "npx is required but was not found."
+  command -v unzip >/dev/null || fail "unzip is required but was not found."
+  command -v sha256sum >/dev/null || fail "sha256sum is required but was not found."
+  command -v flock >/dev/null || fail "flock is required but was not found."
+}
+
+prepare_cli_workspace() {
+  # Convex CLI intentionally requires package.json even when all deployment
+  # credentials are supplied through the environment. Keep that requirement
+  # contained in a dedicated root-only directory instead of the caller's CWD.
+  install -d -m 700 "$WORK_DIR"
+  if [[ ! -f "$WORK_DIR/package.json" ]]; then
+    printf '{"name":"logi-convex-backup","private":true,"dependencies":{"convex":"%s"}}\n' "$CONVEX_CLI_VERSION" >"$WORK_DIR/package.json"
+    chmod 600 "$WORK_DIR/package.json"
+  fi
+  [[ -x "$WORK_DIR/node_modules/.bin/convex" ]] || fail "The pinned Convex CLI is missing. Re-run the VPS backup installer."
+}
+
+with_lock() {
+  mkdir -p "$(dirname "$LOCK_FILE")"
+  exec 9>"$LOCK_FILE"
+  flock -n 9 || fail "A backup or restore is already running."
+}
+
+write_config() {
+  install -d -m 700 /etc/logi
+  umask 077
+  local temp_file
+  temp_file="$(mktemp /etc/logi/.convex-backup.XXXXXX)"
+  {
+    printf '# Managed by logi-convex-backup. Do not commit this file.\n'
+    printf 'CONVEX_SELF_HOSTED_URL=%q\n' "$1"
+    printf 'CONVEX_SELF_HOSTED_ADMIN_KEY=%q\n' "$2"
+    printf 'BACKUP_DIR=%q\n' "$DEFAULT_BACKUP_DIR"
+  } >"$temp_file"
+  chmod 600 "$temp_file"
+  mv -f "$temp_file" "$CONFIG_FILE"
+}
+
+setup() {
+  require_root
+  local default_url="https://convex.igportals.eu" url admin_key confirmation
+  say "Logi Convex backup setup"
+  say "This configures only the original Convex deployment, never convex2."
+  read -r -p "Convex API URL [$default_url]: " url
+  url="${url:-$default_url}"
+  [[ "$url" =~ ^https?:// ]] || fail "The URL must start with http:// or https://."
+  read -r -s -p "Self-hosted Convex admin key (input hidden): " admin_key
+  printf '\n'
+  [[ -n "$admin_key" ]] || fail "No admin key was entered."
+  read -r -p "Save this root-only configuration for $url? [y/N]: " confirmation
+  [[ "$confirmation" =~ ^[Yy]$ ]] || { say "Nothing changed."; return; }
+  write_config "$url" "$admin_key"
+  unset admin_key
+  say "Configured. Backups will be stored in $DEFAULT_BACKUP_DIR."
+  say "Run 'logi-convex-backup backup' now to create the first backup."
+}
+
+backup() {
+  require_root
+  validate_dependencies
+  load_config
+  with_lock
+  prepare_cli_workspace
+  install -d -m 700 "$BACKUP_DIR"
+  # Interrupted CLI runs can only leave zero-byte temporary files. They are
+  # never considered backups and are removed while holding the exclusive lock.
+  find "$BACKUP_DIR" -maxdepth 1 -type f -name '.convex-*.partial.*' -size 0 -delete
+  find "$BACKUP_DIR" -maxdepth 1 -type d -name '.convex-*.partial.*' -empty -delete
+  local timestamp target temporary temporary_dir checksum_file
+  # Nanoseconds avoid overwriting a backup when two manual runs start in the
+  # same second; lexical order still matches creation order.
+  timestamp="$(date -u +%Y%m%dT%H%M%S%NZ)"
+  target="$BACKUP_DIR/convex-${timestamp}.zip"
+  temporary_dir="$(mktemp -d "$BACKUP_DIR/.convex-${timestamp}.partial.XXXXXX")"
+  temporary="$temporary_dir/snapshot.zip"
+  say "Creating a consistent Convex export with file storage…"
+  if ! (
+    cd "$WORK_DIR"
+    CONVEX_URL="$CONVEX_SELF_HOSTED_URL" \
+      CONVEX_SELF_HOSTED_URL="$CONVEX_SELF_HOSTED_URL" \
+      CONVEX_SELF_HOSTED_ADMIN_KEY="$CONVEX_SELF_HOSTED_ADMIN_KEY" \
+      npx --no-install convex export --include-file-storage --path "$temporary"
+  ); then
+    rm -rf -- "$temporary_dir"
+    fail "Convex export failed."
+  fi
+  if ! unzip -tqq "$temporary"; then
+    rm -rf -- "$temporary_dir"
+    fail "The export ZIP failed integrity validation."
+  fi
+  mv -f "$temporary" "$target"
+  rmdir "$temporary_dir"
+  checksum_file="$target.sha256"
+  sha256sum "$target" >"$checksum_file"
+  chmod 600 "$target" "$checksum_file"
+  say "Backup created: $target"
+  if [[ "${LOGI_CONVEX_BACKUP_SKIP_ROTATION:-0}" != "1" ]]; then
+    rotate_backups
+  fi
+}
+
+rotate_backups() {
+  local -a backups
+  mapfile -t backups < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name 'convex-*.zip' -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2-)
+  local index=0 backup
+  for backup in "${backups[@]}"; do
+    index=$((index + 1))
+    if (( index > 3 )); then
+      say "Removing expired backup: $backup"
+      rm -f -- "$backup" "$backup.sha256"
+    fi
+  done
+}
+
+list_backups() {
+  local -a backups
+  mapfile -t backups < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name 'convex-*.zip' -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2-)
+  ((${#backups[@]})) || fail "No backups were found in $BACKUP_DIR."
+  local index=0 backup
+  for backup in "${backups[@]}"; do
+    index=$((index + 1))
+    printf '%2d) %s (%s)\n' "$index" "$(basename "$backup")" "$(du -h "$backup" | cut -f1)"
+  done
+  printf '%s\n' "${backups[@]}"
+}
+
+restore() {
+  require_root
+  validate_dependencies
+  load_config
+  with_lock
+  prepare_cli_workspace
+  install -d -m 700 "$BACKUP_DIR"
+  local output selected backup confirmation current_backup
+  output="$(list_backups)"
+  # Show only the numbered human-facing lines, retaining absolute paths separately.
+  say "Available backups (newest first):"
+  printf '%s\n' "$output" | sed -n '/^[[:space:]]*[0-9][0-9]*) /p'
+  mapfile -t backup_paths < <(printf '%s\n' "$output" | sed -n '/^\//p')
+  read -r -p "Enter the backup number to restore (or press Enter to cancel): " selected
+  [[ -n "$selected" ]] || { say "Nothing changed."; return; }
+  [[ "$selected" =~ ^[0-9]+$ ]] && (( selected >= 1 && selected <= ${#backup_paths[@]} )) || fail "Invalid backup number."
+  backup="${backup_paths[selected - 1]}"
+  say "WARNING: this replaces data in the original production Convex deployment."
+  say "Selected: $(basename "$backup")"
+  read -r -p "Create a precautionary backup of the current production data first? [Y/n]: " confirmation
+  if [[ ! "$confirmation" =~ ^[Nn]$ ]]; then
+    # Keep the selected restore point while the precautionary backup is created.
+    LOGI_CONVEX_BACKUP_SKIP_ROTATION=1 backup
+    current_backup="$BACKUP_DIR"
+    say "Precautionary backup completed in $current_backup."
+  fi
+  read -r -p "Type RESTORE to permanently replace production data with this backup: " confirmation
+  [[ "$confirmation" == "RESTORE" ]] || { say "Restore cancelled. Nothing was changed."; return; }
+  unzip -tqq "$backup" || fail "Selected ZIP failed integrity validation."
+  (
+    cd "$WORK_DIR"
+    CONVEX_URL="$CONVEX_SELF_HOSTED_URL" \
+      CONVEX_SELF_HOSTED_URL="$CONVEX_SELF_HOSTED_URL" \
+      CONVEX_SELF_HOSTED_ADMIN_KEY="$CONVEX_SELF_HOSTED_ADMIN_KEY" \
+      npx --no-install convex import --replace-all --yes "$backup"
+  )
+  rotate_backups
+  say "Restore completed. Restart or redeploy application code only if your incident requires it; database data is restored now."
+}
+
+verify() {
+  require_root
+  load_config
+  install -d -m 700 "$BACKUP_DIR"
+  local backup checksum expected actual
+  local found=0
+  shopt -s nullglob
+  for backup in "$BACKUP_DIR"/convex-*.zip; do
+    found=1
+    unzip -tqq "$backup" || fail "ZIP validation failed: $backup"
+    checksum="$backup.sha256"
+    [[ -f "$checksum" ]] || fail "Missing checksum: $checksum"
+    expected="$(cut -d' ' -f1 "$checksum")"
+    actual="$(sha256sum "$backup" | cut -d' ' -f1)"
+    [[ "$expected" == "$actual" ]] || fail "Checksum mismatch: $backup"
+    say "Verified: $(basename "$backup")"
+  done
+  ((found)) || fail "No backups were found in $BACKUP_DIR."
+}
+
+menu() {
+  say "Logi Convex backup toolkit (original convex only)"
+  select choice in "Set up or replace credentials" "Create a backup now" "Restore a backup" "Verify existing backups" "Exit"; do
+    case "$REPLY" in
+      1) setup ;;
+      2) backup ;;
+      3) restore ;;
+      4) verify ;;
+      5) return ;;
+      *) say "Choose a listed number." ;;
+    esac
+  done
+}
+
+case "${1:-menu}" in
+  setup) setup ;;
+  backup) backup ;;
+  restore) restore ;;
+  verify) verify ;;
+  menu) menu ;;
+  *) fail "Usage: logi-convex-backup [setup|backup|restore|verify]" ;;
+esac

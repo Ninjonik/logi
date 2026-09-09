@@ -1,6 +1,7 @@
 import { makeFunctionReference } from "convex/server"
 import { fetchMutation } from "convex/nextjs"
 
+import type { GameId } from "@/domain/games/game"
 import { getInternalAuthSecret } from "@/lib/env"
 
 const upsertEventReference = makeFunctionReference<"mutation">("events:upsert")
@@ -21,6 +22,7 @@ const requestForumTopicResyncReference = makeFunctionReference<"mutation">(
 export async function saveServerEventCommand(input: {
     eventId?: string
     serverId: string
+    gameId?: GameId
     kind: "match" | "training"
     matchType?: string
     name: string
@@ -66,6 +68,7 @@ export async function saveServerEventCommand(input: {
         secret: getInternalAuthSecret(),
         eventId: input.eventId as never,
         serverId: input.serverId,
+        gameId: input.gameId,
         kind: input.kind,
         matchType: input.matchType,
         name: input.name,

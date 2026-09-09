@@ -4,21 +4,29 @@ import { ConcludeEventButton } from "@/components/app/conclude-event-button"
 import { listPublicCompetitions } from "@/lib/read-models/competitions"
 import { EventFormPanel } from "@/components/app/event-form-panel"
 import { PageHeader } from "@/components/app/page-header"
+import { GameBadge } from "@/components/app/game-badge"
 import { getServerContext } from "@/lib/server-context"
 import { getEventStatusMeta } from "@/lib/event-status"
 import { getDictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
+import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export default async function MatchDetailPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string; eventId: string }>
+    searchParams: Promise<{ game?: string }>
 }) {
     const { locale, serverId, eventId } = await params
+    const { game } = await searchParams
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const context = await getServerContext(serverId)
+    const context = await getServerContext(
+        serverId,
+        isGameId(game) ? game : "all"
+    )
     if (!context) return null
     const {
         events,
@@ -46,6 +54,14 @@ export default async function MatchDetailPage({
             <PageHeader
                 title={event.name}
                 description={event.description}
+                badges={
+                    !isGameId(game) ? (
+                        <GameBadge
+                            gameId={event.gameId}
+                            dictionary={dictionary}
+                        />
+                    ) : undefined
+                }
                 badge={`${event.cap ? `${event.cap} • ` : ""}${statusMeta?.label}`}
                 actions={
                     <div className="flex flex-wrap gap-2">

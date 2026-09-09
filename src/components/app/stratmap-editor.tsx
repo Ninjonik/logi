@@ -182,6 +182,7 @@ export function StratmapEditor({
                     onModeChange={setMode}
                     canUndo={editor.canUndo}
                     canRedo={editor.canRedo}
+                    strokeColor={editor.strokeColor}
                     strokeWidth={editor.strokeWidth}
                     lineStyle={editor.lineStyle}
                     lineStartStyle={editor.lineStartStyle}
@@ -202,6 +203,7 @@ export function StratmapEditor({
                     onZoomOut={editor.zoomOut}
                     onResetZoom={editor.resetZoom}
                     onToolChange={editor.setTool}
+                    onStrokeColorChange={editor.setStrokeColor}
                     onStrokeWidthChange={editor.setStrokeWidth}
                     onLineStyleChange={editor.setLineStyle}
                     onLineStartStyleChange={editor.setLineStartStyle}

@@ -11,6 +11,8 @@ import { DedupePlayerStatsButton } from "@/components/app/dedupe-player-stats-bu
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ImportEventsButton } from "@/components/app/import-events-button"
 import { HelperDataActions } from "@/components/app/helper-data-actions"
+import { GameSettingsForm } from "@/components/app/game-settings-form"
+import { isGameId, withGameOverrides } from "@/domain/games/game"
 import { ApiKeyManager } from "@/components/app/api-key-manager"
 import { PageHeader } from "@/components/app/page-header"
 import { getGuildMetadata } from "@/lib/server-metadata"
@@ -26,12 +28,16 @@ export const metadata: Metadata = {
 
 export default async function ServerSettingsPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
+    searchParams: Promise<{ game?: string }>
 }) {
     const { locale, serverId } = await params
+    const { game } = await searchParams
+    const gameId = isGameId(game) ? game : undefined
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const context = await getServerContext(serverId)
+    const context = await getServerContext(serverId, gameId ?? "all")
     if (!context) return null
     const { server, canAdmin } = context
     const guildLoginUrl = `${getSiteUrl()}/${locale}/guild-login/${server.discordId}`
@@ -43,6 +49,14 @@ export default async function ServerSettingsPage({
                 description={dictionary.serverSettings.pageDescription}
             />
             <div className="space-y-6 px-4 lg:px-6">
+                {canAdmin ? (
+                    <GameSettingsForm
+                        serverId={serverId}
+                        userId={context.user.discordId}
+                        enabledGames={server.enabledGames}
+                        dictionary={dictionary}
+                    />
+                ) : null}
                 {canAdmin ? (
                     <ServerFrontendSettingsForm
                         server={server}
@@ -65,7 +79,17 @@ export default async function ServerSettingsPage({
                         serverId={serverId}
                         userId={context.user.discordId}
                         dictionary={dictionary}
-                        config={context.discordConfig}
+                        config={
+                            context.discordConfig
+                                ? withGameOverrides(
+                                      context.discordConfig,
+                                      context.discordConfig.gameOverrides,
+                                      gameId
+                                  )
+                                : null
+                        }
+                        baseConfig={context.discordConfig}
+                        gameId={gameId}
                     />
                 ) : null}
                 {canAdmin ? (

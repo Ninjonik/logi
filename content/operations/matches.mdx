@@ -23,7 +23,7 @@ Enter a clear match name, meeting and game schedule, and the map/mode/side infor
 
 ### Prepare the match
 
-Attach topic presets, stratmaps, and a roster as needed. These are separate resources, so check each one rather than assuming that creating a match creates them automatically.
+Attach topic presets, stratmaps, and a roster as needed. These are separate resources, so check each one rather than assuming that creating a match creates them automatically. A match creates a Discord forum post by default when the bot and forum category are configured; disable that event option if you do not want one.
 
 ### Record the outcome
 
@@ -40,5 +40,15 @@ Eligible matches can be connected to competition information. The match must sat
     details, schedule, and competition data are correct. It may simply not be an
     eligible match.
 </Callout>
+
+## Result, conclusion, and scoring are separate
+
+Recording a match result stores the result and can update a linked competition
+fixture. Concluding the match changes its lifecycle, removes its Discord event
+messages, completes or cancels its linked Discord scheduled event, and triggers
+the one-time score calculation. The calculation uses the workspace score
+settings, roster position, manager-confirmed attendance, decline status, and
+absence notices; it does not infer attendance from merely signing up or
+acknowledging a reminder.
 
 > **Screenshot placeholder — match workflow:** Show a match detail page with tabs or links to briefing, roster, match statistics, and result/conclude controls. Use arrows to show the workflow from planning to conclusion.

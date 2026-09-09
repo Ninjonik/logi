@@ -6,9 +6,11 @@ import { AppBreadcrumbs } from "@/components/app/breadcrumbs"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { BookOpen, CirclePlay } from "lucide-react"
 import type { AppUser } from "@/types/domain"
 import type { Guild } from "@/types/domain"
 import type { Locale } from "@/i18n/config"
+import Link from "next/link"
 
 export function SiteHeader({
     locale,
@@ -33,6 +35,25 @@ export function SiteHeader({
                         servers={servers}
                     />
                 </div>
+                <Link
+                    href="/wiki"
+                    className="text-muted-foreground hover:text-foreground hidden items-center gap-1.5 text-xs font-medium transition-colors sm:inline-flex"
+                >
+                    <BookOpen className="size-3.5" />
+                    {dictionary.publicNavigation.wiki}
+                </Link>
+                <button
+                    type="button"
+                    onClick={() =>
+                        window.dispatchEvent(
+                            new Event("logi:restart-onboarding")
+                        )
+                    }
+                    className="text-muted-foreground hover:text-foreground hidden items-center gap-1.5 text-xs font-medium transition-colors hover:cursor-pointer sm:inline-flex"
+                >
+                    <CirclePlay className="size-3.5" />
+                    {dictionary.publicNavigation.restartTour}
+                </button>
                 <ThemeSwitcher />
                 <div className="hidden sm:block">
                     <LocaleSwitcher locale={locale} dictionary={dictionary} />

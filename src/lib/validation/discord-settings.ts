@@ -276,6 +276,15 @@ const membershipSettingsSchema = z
         }
     })
 
+const gameDiscordOverridesSchema = z.object({
+    announcementsChannelId: discordIdField,
+    eventInfoChannelId: discordIdField,
+    forumCategoryId: discordIdField,
+    meetingChannelId: discordIdField,
+    playerStatsServers: z.array(playerStatsServerSchema).max(20).optional(),
+    membershipSettings: membershipSettingsSchema.optional(),
+})
+
 export const discordSettingsSchema = z.object({
     timezone: z.enum(supportedTimezones),
     defaultLanguage: z.enum(supportedClanLanguages),
@@ -297,6 +306,13 @@ export const discordSettingsSchema = z.object({
         .default([]),
     ticketSettings: ticketSettingsSchema.optional(),
     membershipSettings: membershipSettingsSchema.optional(),
+    gameOverrides: z
+        .object({
+            hell_let_loose: gameDiscordOverridesSchema.optional(),
+            hell_let_loose_vietnam: gameDiscordOverridesSchema.optional(),
+            wardogs: gameDiscordOverridesSchema.optional(),
+        })
+        .optional(),
 })
 
 export type DiscordSettingsInput = z.infer<typeof discordSettingsSchema>
