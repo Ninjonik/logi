@@ -19,6 +19,19 @@ Logi uses Discord sign-in. Select **Dashboard**, then continue with Discord. Use
 
 ## Choose a server workspace
 
+### How a workspace becomes visible
+
+Signing in does not automatically create or expose every Discord server. A
+workspace is visible when Logi has a matching membership/mercenary assignment,
+recorded manager relationship, a saved dashboard-admin relationship, or current
+Discord member access for the configured dashboard-admin role. A superadmin
+can see every stored workspace.
+
+If you administer a Discord server and connect it through the dashboard, Logi
+creates/updates its workspace record and a default Discord configuration. This
+does not invite the bot, configure channels, import members, or set up role
+automation; those are separate steps.
+
 <Steps>
 
 ### Open Dashboard
@@ -37,13 +50,43 @@ Open the workspace overview. Logi adapts the navigation to your role and to whet
 
 ## Why can I see something but not edit it?
 
+### Access and management are different
+
+Dashboard access means you may open a workspace. Management access controls
+editing, configuration, and publishing. Management is granted by an explicitly
+recorded Logi manager, a synced dashboard-admin role, Discord Administrator, or
+a manager-set access override. The override wins over inherited role/admin
+sources, so a manager can deliberately grant or deny manager access to a
+specific person.
+
+The manual override is changed from that person's server assignment detail,
+using **Grant/Remove admin access**. It is specific to the selected workspace,
+not a Discord-role change or a global Logi permission. Because it overrides the
+normal sources, removing access can deny management even to someone who has the
+configured dashboard-admin role or Discord Administrator; granting it can allow
+management without either source. Use it only for an intentional exception and
+review it when a person changes responsibilities.
+
+The bot records Discord role changes on member join/update and during full
+sync. When using the dashboard-admin role, run the dashboard's admin resync to
+copy current role holders into the workspace manager list. Until that completes,
+a person may be visible to the workspace but still lack manager controls.
+
 Most server pages are readable by members, but editing is restricted. Managers can see additional controls such as event creation, roster publishing, member configuration, ticket settings, and server settings. A superadmin can also see platform-wide competition and bot tools.
 
-| What you see                                      | Usually means                                                                |
-| ------------------------------------------------- | ---------------------------------------------------------------------------- |
-| An event, roster, or article but no edit controls | You have viewing access only.                                                |
-| No server workspace in the selector               | Your Discord account has no visible server in Logi yet.                      |
-| No management navigation                          | You are not a manager for the selected server.                               |
-| A workspace without operational tools             | The bot may not be present, or the workspace is not enabled for those tools. |
+| What you see                                      | Usually means                                                                    |
+| ------------------------------------------------- | -------------------------------------------------------------------------------- |
+| An event, roster, or article but no edit controls | You have viewing access only.                                                    |
+| No server workspace in the selector               | Your Discord account has no visible server in Logi yet.                          |
+| No management navigation                          | You are not a manager for the selected server.                                   |
+| A workspace without operational tools             | The bot may be absent, unavailable, or the individual feature is not configured. |
+
+<Callout type="info">
+    Discord role updates are not an instant client-side permission switch. The
+    bot must receive the member update or complete a full sync, and the
+    dashboard may need to refresh. If access is still wrong after that, check
+    the selected workspace, configured dashboard-admin role, bot presence, and
+    any manual access override.
+</Callout>
 
 > **Screenshot placeholder — permissions:** Show the same workspace sidebar for a regular member and a manager side by side. Clearly mark which menu groups appear only to managers.

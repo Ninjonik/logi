@@ -24,15 +24,48 @@ This page is for people with elevated Logi access. Superadmin-only pages appear 
 
 ## Bot dashboard and logs
 
+Logs document what the bot attempted or observed; they are not a guarantee that
+Discord completed a requested change. When diagnosing an issue, compare the log
+entry with the affected Discord channel/role and the saved dashboard setting.
+The error channel is optional, so a missing Discord error report does not prove
+that the bot had no error.
+
 The bot dashboard provides operational visibility into bot activity, including timestamp, level, source, scope, message, and context. Use it to investigate a specific issue, not as a place to expose private data. Copy only the minimum useful diagnostic information into a support report.
 
+It is a superadmin-only page, separate from normal server-manager access. It
+reads the application's local system-log database and can filter by free-text
+search, level (INFO/WARN/ERROR), source (Next.js or Discord bot), and known
+scope. A blank or quiet log table is not a live bot-health check, and an entry
+records an application-side attempt or observation rather than a guarantee that
+Discord completed the operation.
+
 ## Competitions
+
+Competition changes can affect public standings immediately. Linking an event
+to a fixture creates or updates the association; saving a match result can mark
+that linked fixture final and copy its two scores. This is not a replacement for
+checking the official competition result, opponent, division, or forfeit rules.
+
+Merging competition clan aliases is especially high impact: it transfers
+competition-team and fixture relationships to the selected primary clan and can
+delete duplicates. Confirm both clans and all current fixtures before doing it.
 
 The dashboard competition area is distinct from the public competition pages. Elevated users may manage platform-side competition information; always verify the selected workspace and source data before modifying fixtures or links.
 
 ## LogiComms
 
+Access to elevated pages is separate from ordinary workspace manager access.
+If an elevated page or action is absent, do not assume a normal Discord role is
+enough; verify the account's platform-level authorisation. Conversely, elevated
+access does not bypass Discord's own channel, thread, or role hierarchy checks.
+
 LogiComms is available from the dashboard navigation. Use it according to your community’s communication process, and keep operational messaging clear about audience, timing, and action required.
+
+LogiComms is a Windows download rather than a dashboard messaging control. The
+dashboard checks the current release manifest when this page loads and shows a
+download button only after it receives a valid HTTPS Windows x86_64 URL. If the
+button is unavailable, Logi has not established that a safe current download
+is available; wait and retry rather than substituting an unverified link.
 
 <Callout type="warning">
     Elevated access is not a reason to bypass normal checks. Before a

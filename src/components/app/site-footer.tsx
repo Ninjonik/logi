@@ -1,4 +1,5 @@
 import type { Dictionary } from "@/i18n/dictionaries"
+import Link from "next/link"
 
 export function SiteFooter({ dictionary }: { dictionary: Dictionary }) {
     return (
@@ -8,6 +9,12 @@ export function SiteFooter({ dictionary }: { dictionary: Dictionary }) {
                     &copy; {dictionary.app.name} {new Date().getFullYear()}
                 </div>
                 <div className="flex items-center gap-3">
+                    <Link
+                        href="/wiki"
+                        className="hover:text-foreground transition-colors"
+                    >
+                        {dictionary.publicNavigation.wiki}
+                    </Link>
                     <span>
                         {process.env.NEXT_PUBLIC_APP_VERSION ?? "1.0.0"}
                     </span>

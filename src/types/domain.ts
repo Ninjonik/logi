@@ -76,6 +76,10 @@ export type AppUser = {
             support: number
         }
     }
+    onboarding?: {
+        dashboardSetupCompletedAt?: string
+        workspaceTourCompletedAt?: Record<string, string>
+    }
     createdAt: Timestamp
     updatedAt: Timestamp
 }

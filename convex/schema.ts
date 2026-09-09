@@ -28,6 +28,14 @@ const users = defineTable({
             }),
         })
     ),
+    onboarding: v.optional(
+        v.object({
+            dashboardSetupCompletedAt: v.optional(v.string()),
+            workspaceTourCompletedAt: v.optional(
+                v.record(v.string(), v.string())
+            ),
+        })
+    ),
     createdAt: v.string(),
     updatedAt: v.string(),
 })

@@ -36,7 +36,37 @@ A **roster** assigns people to squads and slots for one event. It can stay a dra
 
 ## Groups and memberships
 
-A **group** is a server-defined label or structure used to organise members. Membership settings define which Discord roles or conditions are relevant to membership; group assignments can then be used while managing people and rosters.
+A **group** is a server-defined organisational label. A member assignment can have one primary group and any number of secondary groups. Groups are separate from membership category, membership status, and Discord roles, even though they can be connected in a few places.
+
+| Thing                     | What it means                                             | What it controls                                                                  |
+| ------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Group                     | Team, unit, language group, or other local classification | Member organisation and group-specific match sign-up choices                      |
+| Membership type           | Member, reserve member, or mercenary                      | Whether a person belongs to this workspace or is attached as a mercenary          |
+| Membership status         | Pending, recruit, or active                               | Match sign-up eligibility and, when configured, membership-category Discord roles |
+| Linked group Discord role | An optional Discord role stored on a group                | Eligibility for that group’s event sign-up choice and Discord-member imports      |
+
+### What a linked group role does—and does not—do
+
+If a group has a linked Discord role, a Discord member who holds that role can choose that group on an eligible match sign-up. A manager-assigned primary or secondary group also qualifies that person for the matching group sign-up, even if Discord does not currently show the role.
+
+During **Import Discord members**, Logi can use linked group roles to populate the imported member's secondary groups. This is a one-way import at that time.
+
+<Callout type="warning">
+    Linking a Discord role to a group does **not** make Logi continuously add or
+    remove that group role in Discord. Changing a member’s group assignment in
+    the dashboard does not change their Discord group roles, and changing the
+    Discord role does not continuously rewrite their dashboard groups. Keep
+    those two records aligned deliberately, or run the relevant import workflow.
+</Callout>
+
+### Roles the bot does manage
+
+The bot does add and remove two different kinds of roles when they are configured correctly:
+
+- Membership roles: completing a membership application can apply the workspace clan role plus the category’s recruit or final roles. Changing the application outcome removes the roles associated with the previous outcome and adds the roles for the new one. Pending has no automatic membership roles.
+- Event roles: for an active event, the bot maintains temporary **Attendees** and **Reserves** roles from the event’s attendance and roster. It deletes those temporary roles when the event is concluded.
+
+In both cases, Discord still requires the bot to have **Manage Roles** and to sit above every target role in the server role list.
 
 ## Status and visibility
 

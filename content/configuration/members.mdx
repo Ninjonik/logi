@@ -21,6 +21,50 @@ The available maintenance actions can include importing Discord members, linking
     substitute for checking individual data.
 </Callout>
 
+### Assignment fields, in plain language
+
+Each person can have at most one assignment for the selected workspace. The assignment type can be **member**, **reserve member**, or **mercenary**; its status can be **pending**, **recruit**, or **active**. A primary group is optional, and secondary groups are optional additional classifications. The same group is not kept twice: if it is primary, Logi removes it from the secondary list.
+
+An active member or reserve member is counted as a workspace member. A recruit is also counted as a member for this purpose. A pending assignment is not. An active mercenary is recorded separately and does not become the person's primary workspace membership.
+
+Changing or removing an assignment rebuilds the workspace membership summary and refreshes open match rosters. A person who is not otherwise tracked by an open match is removed from its roster; a tracked attendee is placed in reserves, while a tracked non-attendee is placed in **not attending**. Check affected rosters after changing membership.
+
+### Bulk member tools: what they do and do not do
+
+The server **Settings** page contains bulk tools for managers. Treat the selected Discord role as a filter, not as a permanent relationship between Logi and Discord.
+
+| Tool                          | Exact effect                                                                                                                                                                                                                                         | Important limits and checks                                                                                                                                                                                                                                                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Import Discord members**    | Finds non-bot Discord members with the selected role, creates or updates their Logi profile, and creates or updates an assignment as a member or mercenary. It also imports every linked group role the person currently has as a _secondary_ group. | A source role is required. A person can be imported as a member only if they have no primary workspace elsewhere, are already primary here, or already have an assignment here. The tool skips bots and reports ineligible people. It reads the role once; removing or adding the role later does not update the assignment. |
+| **Migrate membership status** | Changes existing assignments for non-bot Discord members with the selected role to recruit, active member, reserve member, or mercenary. It attempts the normal membership-role sync for every changed assignment.                                   | It never creates an assignment. Members who match the role but have no assignment are skipped; already matching assignments are also skipped. Group selections and membership category stay as they were. A Discord role-sync error does not roll back the Logi assignment, so verify both systems afterward.                |
+| **Link missing Discord IDs**  | Attempts to connect imported/statistics-only people to a Discord profile from the selected role. If that Discord profile already exists in Logi, the records can be merged.                                                                          | It considers only server people referenced by this server's event player statistics and only profiles without a Discord link. Matching is based on a normalized display name, so it is not proof of identity. Check every match, especially common names. Bots are ignored.                                                  |
+| **Auto-link platform IDs**    | Reads scoreboards referenced by this server's saved event results, strips the clan tag supplied by the manager, and adds a matching platform ID to an assigned user.                                                                                 | It does nothing if there are no saved result source URLs. A name must identify exactly one assigned user; one user must produce exactly one candidate ID; and that ID must not already belong to another Logi user. The tool reports ambiguous names, conflicts, and unreadable source events instead of guessing.           |
+
+### Merging duplicate people and statistics
+
+**Merge users** keeps the selected primary record and deletes the secondary record. It combines unique platform IDs, management and mercenary workspace lists, score records, and groups. Where both records already have an assignment in the same workspace, the primary assignment wins for type, status, category, and primary group; secondary groups are combined. The merge also rewrites affected event attendance, sign-ups, absence notices, rosters, stratmap authorship, ticket/application records, platform-link tokens, and player statistics so they point to the primary person, removing duplicate entries where possible.
+
+This is a global data operation, not merely a change to the currently open Members table. The selected primary name, avatar, Discord ID, and primary membership normally take precedence when both records have values. There is no undo button; verify the records before confirming.
+
+**Deduplicate player statistics** works only on events belonging to the selected workspace. For a duplicated event entry, it keeps one match record per person/event and recalculates the affected people's performance summaries. It can delete now-empty statistic documents. It does not repair wrong source data or decide which of two conflicting match records is factually correct.
+
+### Player statistics and trends
+
+On a member's assignment detail, the averages for kills, K/D, deaths, offense,
+defense, and support use the ten newest stored match records for that person
+(or fewer when fewer are available). The all-time match count shown nearby is
+not the denominator for those averages. Records with the same scoreboard source
+URL are treated as the same match in the detail view; if no source URL exists,
+Logi falls back to a combination of map, end time, and statistic values to
+avoid showing an obvious duplicate.
+
+The performance charts are separate, per-workspace history snapshots. They are
+built from up to ten recent recorded non-training events that have imported
+match statistics and from players assigned to that workspace at refresh time.
+They can be empty or stale until qualifying result data exists and a history
+refresh has run. They are useful trends, not attendance evidence or a complete
+career record.
+
 ## Groups
 
 Groups organise people for your community and can have a name, description, and hierarchy. They are also used by member assignments and can be reflected in roster information.
@@ -40,5 +84,13 @@ Add a short description explaining who belongs in it or how it is used.
 Before renaming or deleting a group, look at the usage count and related member assignments. Update those relationships first where necessary.
 
 </Steps>
+
+### Link a group to Discord carefully
+
+The optional **Discord role** on a group is an eligibility and import link, not a role-sync switch. It lets a person holding that Discord role select the group’s configured match sign-up option, and it can populate the group during the Discord-member import. It does not automatically grant or revoke the Discord role when you edit an assignment in Logi.
+
+To use it reliably, select a real role from this same Discord server, keep the bot able to read server members, and ensure that the group is included in the event’s sign-up groups. If an event has no explicit group list, all workspace groups are offered. A group can also have an optional Discord emoji for its sign-up option.
+
+When deleting a group, Logi removes that group from affected primary and secondary assignments before deleting the group. It does not delete the Discord role itself.
 
 > **Screenshot placeholder — members and groups:** Show the Members table with a member detail/assignment action and the Groups list with name, usage count, and description columns.

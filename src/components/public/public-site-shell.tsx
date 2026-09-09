@@ -1,4 +1,4 @@
-import { Github } from "lucide-react"
+import { BookOpen, Github } from "lucide-react"
 import Link from "next/link"
 
 import { LocaleSwitcher } from "@/components/app/locale-switcher"
@@ -48,6 +48,12 @@ export function PublicSiteShell({
                         >
                             {dictionary.home.competitions}
                         </Link>
+                        <Link
+                            href="/wiki"
+                            className="hover:text-foreground transition-colors"
+                        >
+                            {dictionary.publicNavigation.wiki}
+                        </Link>
                     </nav>
                     <div className="flex items-center gap-2">
                         <ThemeSwitcher />
@@ -88,6 +94,13 @@ export function PublicSiteShell({
                             className="hover:text-foreground"
                         >
                             {dictionary.publicNavigation.terms}
+                        </Link>
+                        <Link
+                            href="/wiki"
+                            className="hover:text-foreground inline-flex items-center gap-1.5"
+                        >
+                            <BookOpen className="size-3.5" />
+                            {dictionary.publicNavigation.wiki}
                         </Link>
                         <a
                             href={githubHref}

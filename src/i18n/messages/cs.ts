@@ -36,6 +36,8 @@ export const csMessages = {
             "Organizujte klanové akce, stavte soupisky, publikujte briefingy a připravujte operace propojené s Discordem.",
     },
     publicNavigation: {
+        wiki: "Wiki",
+        restartTour: "Spustit průvodce znovu",
         gdpr: "GDPR",
         privacy: "Soukromí",
         terms: "Podmínky",
@@ -168,6 +170,11 @@ export const csMessages = {
                     title: "Veřejné API a dokumentace",
                     description:
                         "Rozsáhlá reference API a dokumentace pro správce serverů, integrace a přispěvatele.",
+                },
+                wiki: {
+                    title: "Wiki komunity",
+                    description:
+                        "PraktickÃ© nÃ¡vody pro kaÅ¾dou funkci Logi, od prvnÃ­ho workspace po kaÅ¾dodennÃ­ provoz.",
                 },
             },
             workflowEyebrow: "Od briefingu po vyhodnocení",
@@ -1571,6 +1578,67 @@ export const csMessages = {
         color: "Barva",
         size: "Velikost",
         noResults: "Žádné výsledky.",
+    },
+    onboarding: {
+        step: "Krok {current} z {total}",
+        back: "Zpět",
+        next: "Další",
+        finish: "Dokončit",
+        skip: "Přeskočit průvodce",
+        saveError:
+            "Postup průvodce se nepodařilo uložit. Zkuste to prosím znovu.",
+        setupWelcome: {
+            title: "Vítejte v operačním centru",
+            description:
+                "Tento krátký průvodce se zobrazí jednou. Nejprve vyberte workspace; Logi pak ukáže nabídky podle vašeho přístupu.",
+        },
+        setupWorkspace: {
+            title: "Vyberte workspace",
+            description:
+                "Použijte přepínač workspace v levém panelu. Každý workspace má vlastní události, členy a Discord nastavení.",
+        },
+        setupBot: {
+            title: "Pozvěte Discord bota",
+            description:
+                "Pokud workspace spravujete a bot zde není, použijte na tomto dashboardu tlačítko pro pozvání. Potom obnovte stav bota.",
+        },
+        setupBotNote:
+            "Bot potřebuje oprávnění pro zapnuté funkce. Jeho Discord role musí být nad každou rolí, kterou má spravovat.",
+        setupNext: {
+            title: "Otevřete průvodce workspace",
+            description:
+                "Po výběru workspace Logi zobrazí krátkého průvodce podle vašeho přístupu.",
+        },
+        memberWelcome: {
+            title: "Toto je váš workspace",
+            description:
+                "Levý panel nyní ukazuje oblasti dostupné v této komunitě. Přepínač workspace můžete použít kdykoliv.",
+        },
+        memberOperations: {
+            title: "Sledujte operace",
+            description:
+                "V událostech, zápasech, trénincích, rostrech a briefinzích kontrolujete termíny, přihlášky, sestavy a plány.",
+        },
+        memberAccount: {
+            title: "Udržujte účet připravený",
+            description:
+                "V nabídce účtu upravíte avatar a platformní ID. Platformní ID může být nutné pro žádost o členství.",
+        },
+        managerWelcome: {
+            title: "Tento workspace můžete spravovat",
+            description:
+                "Váš panel obsahuje oblasti pro operace a konfiguraci. Změny platí pouze pro tuto komunitu.",
+        },
+        managerOperations: {
+            title: "Plánujte a publikujte operace",
+            description:
+                "Vytvářejte události, zápasy, tréninky, rostery, předvolby a stratmapy. Nejdříve ověřte Discord konfiguraci.",
+        },
+        managerConfiguration: {
+            title: "Před automatizací nastavte konfiguraci",
+            description:
+                "Členové, žádosti, skupiny, tickety a nastavení serveru určují funkce bota. Nejdříve nastavte kanály a role.",
+        },
     },
     shared: {
         openColumn: "Otevřít",

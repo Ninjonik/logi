@@ -268,7 +268,7 @@ export function AppSidebar({
     ]
 
     return (
-        <Sidebar {...props}>
+        <Sidebar id="onboarding-sidebar" {...props}>
             <SidebarHeader className="border-sidebar-border/70 gap-2 border-b px-2 py-2 2xl:gap-4 2xl:px-3 2xl:py-4">
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -309,15 +309,24 @@ export function AppSidebar({
                 />
             </SidebarHeader>
             <SidebarContent>
-                {navGroups.map((group) => (
-                    <NavMain
-                        key={group.label}
-                        label={group.label}
-                        items={group.items}
-                    />
-                ))}
+                {navGroups.map((group) => {
+                    const onboardingId =
+                        group.label === dictionary.sidebar.operations
+                            ? "onboarding-sidebar-operations"
+                            : group.label === dictionary.sidebar.configuration
+                              ? "onboarding-sidebar-configuration"
+                              : undefined
+                    return (
+                        <div key={group.label} id={onboardingId}>
+                            <NavMain label={group.label} items={group.items} />
+                        </div>
+                    )
+                })}
             </SidebarContent>
-            <SidebarFooter className="border-sidebar-border/70 border-t p-1.5 2xl:p-2">
+            <SidebarFooter
+                id="onboarding-account-menu"
+                className="border-sidebar-border/70 border-t p-1.5 2xl:p-2"
+            >
                 <NavUser
                     user={{
                         name: user.name,

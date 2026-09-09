@@ -106,6 +106,7 @@ export function ServerSwitcher({
         >
             <PopoverTrigger asChild>
                 <Button
+                    id="onboarding-workspace-switcher"
                     variant="outline"
                     className="h-10 w-full justify-between rounded-lg px-2 2xl:h-12 2xl:rounded-xl 2xl:px-4"
                 >

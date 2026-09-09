@@ -46,9 +46,74 @@ After saving, reopen the event and confirm the time, timezone, sign-up settings,
     </Tabs.Tab>
 </Tabs>
 
+### The exact sign-up rules
+
+Sign-up is available only while the event is in **registration**. For a
+training, registration remains available after it has moved to **starting** if
+the registration deadline has not yet passed. Match sign-ups are more
+restricted: the person must have a non-pending membership status. By default,
+recruits, members, reserve members, and mercenaries may sign up, unless the
+manager narrows the event's allowed membership statuses.
+
+An event can also require one or more Discord roles. Holding _any one_ of its
+required roles is enough. A group-specific match choice is available only when
+the group is visible on the event and the person either holds that group’s
+linked Discord role or has the group assigned in Logi. The optional **general
+signup** avoids choosing a group; when the member has a primary group that is
+visible on the event, Logi records that primary group instead.
+
+Selecting **not attending** records a decline; it does not erase the person's
+participation record. A later response replaces the old one. A sign-up says
+someone is available—it does not place them into a squad or confirm that they
+attended.
+
+## Event timeline and automation
+
+| Status       | When it applies                                                                                  | What changes for members                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Registration | Before the registration deadline                                                                 | Eligible people can sign up.                                                                                                   |
+| Closed       | After registration closes, before the event is starting                                          | New sign-ups are blocked.                                                                                                      |
+| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until game end | Sign-ups are normally blocked; training retains the exception above. Published-roster attendance acknowledgement is available. |
+| Concluded    | When a manager concludes it or when game end is reached during status reconciliation             | Discord event messages are removed, temporary event roles are cleaned up, and event scoring is resolved once.                  |
+
+The dashboard/bot background work reconciles time-based statuses; it is not a
+promise that every visual update happens at the exact second. Editing an event
+also recalculates its status. Creating or editing a concluded event does not
+reopen it merely by changing dates.
+
+### Discord behavior per event
+
+Discord output needs the bot running and the relevant server or event-level
+channel configuration. The event's announcement and event-info channels are
+chosen when the event is created and are kept for later edits; changing those
+fields in the editor does not move existing Discord messages to a new channel.
+For matches, a forum post is enabled by default unless disabled; trainings do
+not create forum posts. A scheduled Discord event exists only when the selected
+meeting channel is a voice or stage channel. If that channel is removed or is
+not a supported type, Logi cancels its linked scheduled event.
+
+The bot creates temporary Attendees and Reserves roles for non-concluded
+events. Attending sign-ups and squad placements feed Attendees; roster reserves
+feed Reserves and are excluded from Attendees. Both are deleted at conclusion.
+
+### Absence notices and reminders
+
+An attendee or roster reserve may submit one absence notice per event before
+game start; saving another replaces their previous notice. People not attending
+and people who are neither an attendee nor a reserve cannot submit one.
+
+For a **published** roster in **starting** status, the bot can direct-message
+unacknowledged squad players and reserves at 24, 18, 12, and 6 hours before the
+meeting time. Direct messages are skipped when unavailable, and each successful
+offset is logged so it is not sent twice. The message's acknowledge button only
+marks the person as acknowledged; a manager must mark them confirmed when that
+is appropriate.
+
 ## Event status and conclusion
 
-An event progresses through its scheduled lifecycle. Managers can conclude an event when it is finished and record relevant results. A completed-looking date does not automatically mean that the operational outcome has been entered.
+Managers can conclude an event when it is finished and record relevant results.
+At conclusion, Logi applies the configured event-score rules once. A match that
+was concluded before its meeting time is treated as cancelled for scoring.
 
 <Callout type="warning">
     Changing core scheduling or capacity information after people have signed up

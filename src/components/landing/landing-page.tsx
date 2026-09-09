@@ -2,6 +2,7 @@
 
 import {
     ArrowRight,
+    BookOpen,
     CalendarDays,
     Check,
     ClipboardList,
@@ -47,6 +48,7 @@ const visuals = [
     [ClipboardList, "assignments", "assignments"],
     [Medal, "matchData", "match-data"],
     [Code2, "api", "api"],
+    [BookOpen, "wiki", "wiki"],
 ] as const
 
 export function LandingPage({ dictionary, locale, signedIn, userName }: Props) {
@@ -73,7 +75,7 @@ export function LandingPage({ dictionary, locale, signedIn, userName }: Props) {
                         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                         className="mx-auto max-w-5xl text-center"
                     >
-                        <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-4 py-2 text-xs font-bold tracking-[.18em] text-amber-200 uppercase">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/60 bg-amber-100/80 px-4 py-2 text-xs font-bold tracking-[.18em] text-amber-800 uppercase dark:border-amber-300/25 dark:bg-amber-300/10 dark:text-amber-200">
                             <span className="relative flex size-2">
                                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-300 opacity-75" />
                                 <span className="relative inline-flex size-2 rounded-full bg-amber-300" />

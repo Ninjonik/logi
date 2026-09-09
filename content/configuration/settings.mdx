@@ -31,10 +31,73 @@ For example, after a scheduling or Discord-related change, inspect an event or t
 
 Some server configuration is exposed through protected dashboard/API routes, including API-key and Discord-metadata management. Treat keys, webhook-like values, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
+Each website API key belongs to the currently selected workspace and can read
+that workspace's public website data. Give it a recognisable name of at most 80
+characters. The full value is displayed once, at creation time; afterward the
+dashboard shows only its prefix, creation date, and whether it has been
+revoked. Revoking a key takes effect for future requests and cannot be undone:
+create and deploy a replacement key before revoking one used by a live site.
+
 <Callout type="warning">
     Do not rotate, delete, or reveal an API key unless you understand every
     integration using it. A broken key can interrupt an external integration
     immediately.
 </Callout>
+
+## Discord settings: what each field actually enables
+
+Saving a channel or role selection does not prove that the bot can use it. The
+bot must still be in this Discord server, be running, and have the channel and
+role permissions required for the relevant action.
+
+| Setting                     | Enables                                                            | If blank, invalid, or inaccessible                                                                                                 |
+| --------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Timezone                    | Dashboard formatting for this workspace and event-entry conversion | Times fall back to the relevant display default; it does not change existing stored timestamps.                                    |
+| Default language            | Bot panel, event, and interaction wording                          | Existing content is not translated; the bot uses its configured fallback where needed.                                             |
+| Announcements channel       | Event announcement messages                                        | No announcement is created there.                                                                                                  |
+| Event information channel   | Separate match information message                                 | The separate message is not created. It is meaningful only alongside announcements.                                                |
+| Errors channel              | Delivery of bot error reports                                      | Errors remain in the bot's logs rather than reaching a staff Discord channel.                                                      |
+| Calendar channel            | One managed calendar-panel message                                 | No Discord calendar panel is maintained. Removing the configured channel clears the stored panel state after cleanup is attempted. |
+| Forum category              | Match forum-post provisioning                                      | A match cannot get a Logi forum post from the workspace default.                                                                   |
+| Meeting voice/stage channel | Discord scheduled event and meeting-channel attendance tools       | No scheduled event is maintained. A text/category channel is not a substitute.                                                     |
+| Clan role                   | Clan pings and membership-role transitions                         | No clan ping/managed clan role is available.                                                                                       |
+| Dashboard admin role        | Dashboard manager access when Discord member access is synced      | The role does not grant access; Discord Administrator remains an independent access path.                                          |
+
+Event-level Discord channel selections can override workspace defaults at event
+creation. Those message locations are then retained for that event; later
+editing an event does not move its existing Discord messages between channels.
+
+### Manual calendar items and categories
+
+The frontend settings area also owns manual calendar items and event-category
+presentation. Saving this form replaces the workspace's manual calendar-item
+set: remove an item there only when you intend to remove it from the calendar.
+Categories supply label, colour, and optional emoji; they are visual grouping,
+not access control or a Discord role mapping.
+
+## Imports, performance, and helper data
+
+The **Imports** section is manager-only operational maintenance. The exact
+member-import and linking safeguards are documented in
+[Members and groups](/wiki/configuration/members). Two other controls are easy
+to misunderstand:
+
+- **Refresh performance history** rebuilds the workspace and player trend
+  snapshots from recorded, non-training events with imported match statistics.
+  The charts retain at most the ten most recent qualifying matches. It does not
+  import a scoreboard, create a match result, or change a member's stored
+  all-time performance summary.
+- **Initialize helper data** first clears helper data, then creates the bundled
+  default group hierarchy and one HLL Standard Lineup squad preset. It does not
+  restore previously customised groups, topic presets, or squad layouts.
+- **Reset helper data** deletes this workspace's groups, squad presets, and
+  topic presets. It also clears group selections from assignments, topic-preset
+  selections from events, and squad-preset selections from rosters. It leaves
+  people, assignments, events, and rosters themselves in place. There is no
+  recovery action in the dashboard.
+
+Use reset only when deliberately starting these helper structures over, and
+check events and rosters afterward because their preset references will have
+been removed.
 
 > **Screenshot placeholder — settings:** Show the server Settings page with the active workspace name, clearly separated settings sections, and a redacted example of any sensitive key field.

@@ -36,6 +36,8 @@ export const enMessages = {
             "Organize clan events, build rosters, publish briefings, and prepare Discord-connected operations.",
     },
     publicNavigation: {
+        wiki: "Wiki",
+        restartTour: "Restart tour",
         privacy: "Privacy",
         gdpr: "GDPR",
         terms: "Terms",
@@ -168,6 +170,11 @@ export const enMessages = {
                     title: "Public API & docs",
                     description:
                         "Extensive API reference and documentation for server admins, integrations, and contributors.",
+                },
+                wiki: {
+                    title: "Community wiki",
+                    description:
+                        "Practical guides for every Logi feature, from your first workspace to daily operations.",
                 },
             },
             workflowEyebrow: "From briefing to debrief",
@@ -1565,6 +1572,66 @@ export const enMessages = {
         color: "Color",
         size: "Size",
         noResults: "No results.",
+    },
+    onboarding: {
+        step: "Step {current} of {total}",
+        back: "Back",
+        next: "Next",
+        finish: "Finish",
+        skip: "Skip tour",
+        saveError: "We could not save your tour progress. Please try again.",
+        setupWelcome: {
+            title: "Welcome to your command center",
+            description:
+                "This short setup guide appears once. Choose a workspace first, then Logi will show the menus that apply to you.",
+        },
+        setupWorkspace: {
+            title: "Choose a workspace",
+            description:
+                "Use the workspace switcher in the left sidebar to open the community you belong to or manage. Each workspace has separate events, members, and Discord settings.",
+        },
+        setupBot: {
+            title: "Invite the Discord bot",
+            description:
+                "If you manage a workspace and the bot is not inside yet, use the Invite bot button on this dashboard. Return here after Discord confirms the invite and refresh the bot status.",
+        },
+        setupBotNote:
+            "The bot needs the permissions required by the features you enable. Place its Discord role above every role it must manage.",
+        setupNext: {
+            title: "Open your workspace tour",
+            description:
+                "After you select a workspace, Logi will show a short tour tailored to your access: a member tour or a manager tour.",
+        },
+        memberWelcome: {
+            title: "This is your workspace",
+            description:
+                "The sidebar now shows the areas available in this community. Use the workspace switcher any time you need to move to another community.",
+        },
+        memberOperations: {
+            title: "Follow operations",
+            description:
+                "Events, matches, trainings, rosters, and briefings are where you check schedules, sign up, see your assignment, and review plans shared by your managers.",
+        },
+        memberAccount: {
+            title: "Keep your account ready",
+            description:
+                "Open your account menu to update your avatar and platform IDs. A platform ID may be required before you can submit a membership application.",
+        },
+        managerWelcome: {
+            title: "You can manage this workspace",
+            description:
+                "Your sidebar includes the operational and configuration areas for this community. Changes here affect this workspace only.",
+        },
+        managerOperations: {
+            title: "Plan and publish operations",
+            description:
+                "Create events, matches, trainings, rosters, topic presets, and stratmaps from Operations. Draft first, then publish only after you have checked the Discord configuration and audience.",
+        },
+        managerConfiguration: {
+            title: "Configure before automating",
+            description:
+                "Members, membership applications, groups, tickets, and Server settings control what the bot can do. Configure channels and roles before enabling Discord-dependent workflows.",
+        },
     },
     shared: {
         openColumn: "Open",

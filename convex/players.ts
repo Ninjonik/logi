@@ -605,6 +605,44 @@ export const syncDiscordProfile = mutation({
     },
 })
 
+export const markOnboardingSeen = mutation({
+    args: {
+        secret: v.string(),
+        userId: v.string(),
+        milestone: v.union(
+            v.literal("dashboard_setup"),
+            v.literal("workspace_tour")
+        ),
+        workspaceId: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const user = await getUserByIdentifier(ctx, args.userId)
+        if (!user) throw new Error("Player not found.")
+
+        const now = new Date().toISOString()
+        const current = user.onboarding ?? {}
+        const workspaceTourCompletedAt = {
+            ...(current.workspaceTourCompletedAt ?? {}),
+            ...(args.milestone === "workspace_tour" && args.workspaceId
+                ? { [args.workspaceId]: now }
+                : {}),
+        }
+
+        await ctx.db.patch(user._id, {
+            onboarding: {
+                ...current,
+                ...(args.milestone === "dashboard_setup"
+                    ? { dashboardSetupCompletedAt: now }
+                    : {}),
+                workspaceTourCompletedAt,
+            },
+            updatedAt: now,
+        })
+        return { ok: true }
+    },
+})
+
 export const updatePlatformIds = mutation({
     args: {
         secret: v.string(),
