@@ -1,5 +1,6 @@
 "use client"
 
+import { MAPS_LET_LOOSE_COLORS } from "@/domain/stratmaps/maps-let-loose-colors"
 import type { StratmapElement, StratmapState } from "@/lib/stratmaps"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { StratmapRecord } from "@/types/domain"
@@ -77,11 +78,5 @@ export type StateUpdate = (current: StratmapState) => StratmapState
 export const PING_DURATION_MS = 550
 export const MAP_SIZE = 1920
 export const MIN_VIEWPORT_SIZE = 640
-export const STROKE_COLOR_OPTIONS = [
-    "#39ff14",
-    "#2563eb",
-    "#dc2626",
-    "#f59e0b",
-    "#ffffff",
-]
+export const STROKE_COLOR_OPTIONS = MAPS_LET_LOOSE_COLORS
 export const PIXELS_PER_100_METERS = 190

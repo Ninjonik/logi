@@ -109,8 +109,8 @@ export function useStratmapEditor(
     const updateMeta = useMutation(updateStratmapMetaReference)
     const [isPending, startTransition] = useTransition()
     const [tool, setTool] = useState<Tool>("select")
-    const [strokeColor, setStrokeColor] = useState("#39ff14")
-    const [fillColor, setFillColor] = useState("#39ff1433")
+    const [strokeColor, setStrokeColor] = useState("#0080ff")
+    const [fillColor, setFillColor] = useState("#0080ff33")
     const [strokeWidth, setStrokeWidth] = useState(6)
     const [lineStyle, setLineStyle] = useState<"solid" | "dashed" | "dotted">(
         "solid"

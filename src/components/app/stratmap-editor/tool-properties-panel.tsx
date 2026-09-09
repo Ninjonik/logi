@@ -14,11 +14,13 @@ import {
     EditorTextarea,
     EditorToggle,
 } from "./editor-controls"
+import { ColorSwatches } from "./selection-inspector"
 import type { Tool } from "./types"
 
 export function ToolPropertiesPanel({
     dictionary,
     tool,
+    strokeColor,
     strokeWidth,
     lineStyle,
     lineStartStyle,
@@ -29,6 +31,7 @@ export function ToolPropertiesPanel({
     iconId,
     catalogGroups,
     onStrokeWidthChange,
+    onStrokeColorChange,
     onLineStyleChange,
     onLineStartStyleChange,
     onLineEndStyleChange,
@@ -39,6 +42,7 @@ export function ToolPropertiesPanel({
 }: {
     dictionary: Dictionary
     tool: Tool
+    strokeColor: string
     strokeWidth: number
     lineStyle: "solid" | "dashed" | "dotted"
     lineStartStyle: StratmapArrowStyle
@@ -49,6 +53,7 @@ export function ToolPropertiesPanel({
     iconId: string
     catalogGroups: Record<string, HllStratmapCatalogItem[]>
     onStrokeWidthChange: (value: number) => void
+    onStrokeColorChange: (value: string) => void
     onLineStyleChange: (value: "solid" | "dashed" | "dotted") => void
     onLineStartStyleChange: (value: StratmapArrowStyle) => void
     onLineEndStyleChange: (value: StratmapArrowStyle) => void
@@ -59,6 +64,12 @@ export function ToolPropertiesPanel({
 }) {
     return (
         <div className="space-y-1.5 overflow-x-hidden">
+            <EditorField label={dictionary.stratmaps.color}>
+                <ColorSwatches
+                    value={strokeColor}
+                    onChange={onStrokeColorChange}
+                />
+            </EditorField>
             <div className="grid grid-cols-2 gap-1">
                 <EditorField label={dictionary.stratmaps.strokeWidth}>
                     <EditorInput
