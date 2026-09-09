@@ -29,6 +29,22 @@ For example, after a scheduling or Discord-related change, inspect an event or t
 
 ## API keys and Discord metadata
 
+## Games
+
+The **Games** section controls which games are active for this workspace:
+**Hell Let Loose**, **Hell Let Loose: Vietnam**, and **Wardogs**. A workspace
+may enable any combination, including none while it is being configured.
+
+Game-specific settings are edited after choosing that game in the dashboard.
+This includes game-specific Discord channels/wording where configured and
+membership-application categories. Shared Discord identity, workspace-level
+settings, and platform links are not duplicated per game.
+
+When no games are active, Logi prevents creation of game-owned records and
+links to this settings section. When exactly one is active, creation pages
+select it automatically. With multiple games active, starting a game-owned
+creation flow from **All games** first asks the manager to choose a game.
+
 Some server configuration is exposed through protected dashboard/API routes, including API-key and Discord-metadata management. Treat keys, webhook-like values, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
 Each website API key belongs to the currently selected workspace and can read
