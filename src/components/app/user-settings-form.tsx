@@ -1,6 +1,12 @@
 "use client"
 
-import { AlertTriangle, CircleHelp, FileDown, Gamepad2 } from "lucide-react"
+import {
+    AlertTriangle,
+    CircleHelp,
+    FileDown,
+    Gamepad2,
+    Mail,
+} from "lucide-react"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -18,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import { formatPlatformIds } from "@/lib/platform-ids"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -45,12 +52,18 @@ export function UserSettingsForm({
     const [platformIds, setPlatformIds] = useState(
         formatPlatformIds(user.platformIds)
     )
+    const [matchRecapNotificationsEnabled, setMatchRecapNotificationsEnabled] =
+        useState(user.matchRecapNotificationsEnabled ?? true)
 
     async function handleSave() {
         const response = await fetch("/api/user/settings", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ avatar, platformIds }),
+            body: JSON.stringify({
+                avatar,
+                platformIds,
+                matchRecapNotificationsEnabled,
+            }),
         })
         const body = await response.json()
         if (!response.ok) {
@@ -218,6 +231,32 @@ export function UserSettingsForm({
                 </CardContent>
             </Card>
             <div className="space-y-6">
+                <Card className="border-border/60 rounded-2xl">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Mail className="size-4" />
+                            {dictionary.userSettings.matchRecapsTitle}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="font-medium">
+                                {dictionary.userSettings.matchRecapsEnabled}
+                            </p>
+                            <p className="text-muted-foreground text-sm">
+                                {dictionary.userSettings.matchRecapsDescription}
+                            </p>
+                        </div>
+                        <Switch
+                            checked={matchRecapNotificationsEnabled}
+                            onCheckedChange={setMatchRecapNotificationsEnabled}
+                            disabled={isPending}
+                            aria-label={
+                                dictionary.userSettings.matchRecapsEnabled
+                            }
+                        />
+                    </CardContent>
+                </Card>
                 <Card className="border-border/60 rounded-2xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">

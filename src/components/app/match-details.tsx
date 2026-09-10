@@ -20,8 +20,9 @@ import {
     TrendingDown,
     TrendingUp,
 } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import type { LucideIcon } from "lucide-react"
-import { useMemo } from "react"
+import Link from "next/link"
 
 import {
     Table,
@@ -576,11 +577,42 @@ export function MatchDetails({
     match,
     dictionary,
     timezone,
+    publicPlayerIds,
+    publicLocale,
 }: {
     match: MatchRecord
     dictionary: Dictionary
     timezone?: string
+    publicPlayerIds?: Record<string, string>
+    publicLocale?: string
 }) {
+    const [resolvedPublicPlayerIds, setResolvedPublicPlayerIds] =
+        useState(publicPlayerIds)
+
+    useEffect(() => {
+        if (!publicLocale) return
+
+        let active = true
+
+        fetch(`/api/v1/public/matches/${match.eventId}`)
+            .then(async (response) => {
+                if (!response.ok) return null
+                return (await response.json()) as {
+                    data?: { linkedPlayerIds?: Record<string, string> }
+                }
+            })
+            .then((response) => {
+                if (active && response?.data?.linkedPlayerIds) {
+                    setResolvedPublicPlayerIds(response.data.linkedPlayerIds)
+                }
+            })
+            .catch(() => undefined)
+
+        return () => {
+            active = false
+        }
+    }, [match.eventId])
+
     const chartStyles = getChartStyles()
     const players = useMemo(
         () =>
@@ -1026,7 +1058,18 @@ export function MatchDetails({
                                                             )}
                                                     </TableCell>
                                                     <TableCell className="font-medium">
-                                                        {player.player}
+                                                        {resolvedPublicPlayerIds?.[
+                                                            player.player_id
+                                                        ] && publicLocale ? (
+                                                            <Link
+                                                                className="text-primary underline"
+                                                                href={`/${publicLocale}/players/${resolvedPublicPlayerIds[player.player_id]}/matches/${match.eventId}`}
+                                                            >
+                                                                {player.player}
+                                                            </Link>
+                                                        ) : (
+                                                            player.player
+                                                        )}
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex min-w-40 flex-wrap gap-1">

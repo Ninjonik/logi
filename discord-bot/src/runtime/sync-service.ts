@@ -8,6 +8,7 @@ import {
 import type { EventSyncContext, EventSyncIndex, SyncPayload } from "../types"
 import { processSignupReminders } from "../sync/signup-reminders"
 import { isHistoricalConcludedEvent } from "../sync/relevance"
+import { processMatchRecaps } from "../sync/match-recaps"
 import { getCalendarSyncVersion } from "../sync/work"
 import { logError, logInfo, logWarn } from "../log"
 import { syncCalendarPanel } from "../sync/panels"
@@ -443,6 +444,7 @@ export class DiscordSyncService {
                 new Set([eventId])
             )
         }
+        await processMatchRecaps(this.client, eventId)
         if (
             context.syncState?.lastCalendarSyncVersion !==
             getCalendarSyncVersion(context.event)

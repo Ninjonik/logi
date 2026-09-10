@@ -2,10 +2,20 @@ import type { EventStatus } from "./types"
 
 const HISTORICAL_EVENT_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
+export function resolveSignupReminderStatuses(
+    statuses: Array<"recruit" | "member" | "reserve_member"> | undefined
+) {
+    // Events created before this preference was introduced have no stored
+    // value. Preserve the documented default for them; an explicit empty
+    // array continues to mean that reminders are disabled.
+    return statuses === undefined ? (["member"] as const) : statuses
+}
+
 export function getSignupReminderDueAt(
     createdAt: string,
     registrationEnd: string,
-    now: Date
+    now: Date,
+    scheduleOverdueImmediately = false
 ): string | null {
     const createdAtMs = new Date(createdAt).getTime()
     const registrationEndMs = new Date(registrationEnd).getTime()
@@ -20,8 +30,8 @@ export function getSignupReminderDueAt(
     if (firstDueAtMs >= registrationEndMs) return null
 
     const dueAtMs =
-        firstDueAtMs > now.getTime()
-            ? firstDueAtMs
+        firstDueAtMs > now.getTime() || scheduleOverdueImmediately
+            ? Math.max(firstDueAtMs, now.getTime())
             : now.getTime() + 24 * 60 * 60 * 1000
     return dueAtMs < registrationEndMs ? new Date(dueAtMs).toISOString() : null
 }

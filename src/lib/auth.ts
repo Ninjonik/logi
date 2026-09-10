@@ -35,6 +35,9 @@ const clearPlatformIdsReference = makeFunctionReference<"mutation">(
 const markOnboardingSeenReference = makeFunctionReference<"mutation">(
     "players:markOnboardingSeen"
 )
+const setMatchRecapNotificationsReference = makeFunctionReference<"mutation">(
+    "players:setMatchRecapNotifications"
+)
 
 const SESSION_COOKIE_NAME = "token"
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
@@ -343,6 +346,7 @@ export async function clearPlatformIdsForCurrentPlayer() {
 export async function updateCurrentPlayerProfile(input: {
     avatar: string
     platformIds?: string | string[]
+    matchRecapNotificationsEnabled?: boolean
 }) {
     const session = await getSession()
     if (!session) {
@@ -355,6 +359,14 @@ export async function updateCurrentPlayerProfile(input: {
         name: session.name,
         avatar: input.avatar,
     })
+
+    if (input.matchRecapNotificationsEnabled !== undefined) {
+        await fetchMutation(setMatchRecapNotificationsReference, {
+            secret: getInternalAuthSecret(),
+            userId: session.sub,
+            enabled: input.matchRecapNotificationsEnabled,
+        })
+    }
 
     const normalizedPlatformIds = parsePlatformIdsInput(input.platformIds)
     if (normalizedPlatformIds.length > 0) {

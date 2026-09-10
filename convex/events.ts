@@ -15,13 +15,14 @@ import {
     DelegatingEventScorePort,
 } from "../src/infrastructure/convex/event-command-repositories"
 import {
+    getAttendanceReminderDueAt,
+    getSignupReminderDueAt,
+    resolveSignupReminderStatuses,
+} from "../src/domain/events/scheduled-job-policy"
+import {
     ConvexEventWorkflowRepository,
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
-import {
-    getAttendanceReminderDueAt,
-    getSignupReminderDueAt,
-} from "../src/domain/events/scheduled-job-policy"
 import { ReconcileEventStatusesUseCase } from "../src/application/events/reconcile-event-statuses.use-case"
 import { CompleteTrainingUseCase } from "../src/application/events/complete-training.use-case"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
@@ -212,19 +213,20 @@ export const upsert = mutation({
                         ? [["attendance-reminder", dueAt] as const]
                         : []
                 }),
-                ...(event.kind === "match" &&
-                (event.signupReminderStatuses ?? []).length > 0
-                    ? [
-                          [
-                              "signup-reminder",
-                              getSignupReminderDueAt(
-                                  event.createdAt,
-                                  event.registrationEnd,
-                                  nowDate
-                              ) ?? event.registrationEnd,
-                          ] as const,
-                      ]
-                    : []),
+                ...(() => {
+                    const dueAt = getSignupReminderDueAt(
+                        event.createdAt,
+                        event.registrationEnd,
+                        nowDate
+                    )
+                    return event.kind === "match" &&
+                        resolveSignupReminderStatuses(
+                            event.signupReminderStatuses
+                        ).length > 0 &&
+                        dueAt
+                        ? [["signup-reminder", dueAt] as const]
+                        : []
+                })(),
             ] as const
             await Promise.all(
                 deadlines

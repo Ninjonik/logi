@@ -6,6 +6,7 @@ import {
     resolveCreateForumChannel,
 } from "./status"
 import { normalizeParticipants, participantsToSignUps } from "./participants"
+import { resolveSignupReminderStatuses } from "./scheduled-job-policy"
 import type { EventLike } from "./types"
 
 export function normalizeEventRecord<T extends EventLike>(
@@ -45,7 +46,9 @@ export function normalizeEventRecord<T extends EventLike>(
         signupReminderStatuses:
             event.kind === "training"
                 ? []
-                : normalizeOptionalArray(event.signupReminderStatuses).filter(
+                : resolveSignupReminderStatuses(
+                      event.signupReminderStatuses
+                  ).filter(
                       (
                           status
                       ): status is "recruit" | "member" | "reserve_member" =>

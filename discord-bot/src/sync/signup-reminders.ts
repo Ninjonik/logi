@@ -1,5 +1,6 @@
 import type { Client } from "discord.js"
 
+import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
 import { buildAnnouncementMessage } from "../message-builders"
 import type { SyncPayload } from "../types"
 import { logInfo } from "../log"
@@ -33,7 +34,9 @@ export async function processSignupReminders(
         ) {
             continue
         }
-        const recipientStatuses = new Set(event.signupReminderStatuses ?? [])
+        const recipientStatuses = new Set(
+            resolveSignupReminderStatuses(event.signupReminderStatuses)
+        )
         if (!recipientStatuses.size) continue
 
         const respondedUserIds = new Set(

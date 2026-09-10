@@ -143,6 +143,49 @@ export const getMatch = query({
                 .unique(),
         ])
         if (!event || !match || event.matchStatsId !== match._id) return null
+        const [stats, users] = await Promise.all([
+            ctx.db.query("playerStats").collect(),
+            ctx.db.query("users").collect(),
+        ])
+        const linkedPlayerIds = new Map(
+            stats.flatMap((stat) =>
+                // The stats document's ID is the persistent in-game platform
+                // ID, so its user link is valid across all of that player's
+                // matches, including older imported results.
+                stat.userId ? [[stat.id, stat.userId] as const] : []
+            )
+        )
+        // A recently linked platform ID may predate the stats import's userId
+        // backfill. Resolve it directly as well, so public match links work
+        // as soon as the player account is linked.
+        const userIdByPlatformId = new Map(
+            users.flatMap((user) =>
+                (user.platformIds ?? []).map((platformId) => [
+                    platformId.trim().toLowerCase(),
+                    getUserStableId(user),
+                ])
+            )
+        )
+        for (const player of match.raw.player_stats) {
+            const userId = userIdByPlatformId.get(
+                player.player_id.trim().toLowerCase()
+            )
+            if (userId) linkedPlayerIds.set(player.player_id, userId)
+        }
+        // Older imports may have retained an obsolete platform-ID format.
+        // Their per-event player name remains an exact, event-scoped link.
+        const userIdByMatchPlayerName = new Map(
+            stats.flatMap((stat) => {
+                const playerMatch = stat.matches[String(args.eventId)]
+                return stat.userId && playerMatch?.playerName
+                    ? [[playerMatch.playerName, stat.userId] as const]
+                    : []
+            })
+        )
+        for (const player of match.raw.player_stats) {
+            const userId = userIdByMatchPlayerName.get(player.player)
+            if (userId) linkedPlayerIds.set(player.player_id, userId)
+        }
         return {
             ...match,
             id: String(match._id),
@@ -157,6 +200,7 @@ export const getMatch = query({
                       opponentScore: event.eventResult.score.sideB,
                   }
                 : undefined,
+            linkedPlayerIds: Object.fromEntries(linkedPlayerIds),
         }
     },
 })

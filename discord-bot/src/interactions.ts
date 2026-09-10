@@ -487,6 +487,34 @@ function buildMembershipApplicationCloseEmbed(input: {
 export function createInteractionHandler(options: InteractionHandlerOptions) {
     return {
         async handleButtonInteraction(interaction: ButtonInteraction) {
+            if (interaction.customId.startsWith("match-recap:")) {
+                const enabled = interaction.customId.endsWith("subscribe")
+                await convex.mutation(references.setMatchRecapNotifications, {
+                    secret: env.internalSecret,
+                    userId: interaction.user.id,
+                    enabled,
+                })
+                await interaction.update({
+                    content: enabled
+                        ? "You are subscribed to match recaps again."
+                        : "You are unsubscribed from match recaps.",
+                    components: [
+                        new ActionRowBuilder<ButtonBuilder>().addComponents(
+                            new ButtonBuilder()
+                                .setStyle(ButtonStyle.Secondary)
+                                .setLabel(
+                                    enabled
+                                        ? "Unsubscribe from recaps"
+                                        : "Subscribe to recaps"
+                                )
+                                .setCustomId(
+                                    `match-recap:${enabled ? "unsubscribe" : "subscribe"}`
+                                )
+                        ),
+                    ],
+                })
+                return
+            }
             if (interaction.customId.startsWith("attendance-late:")) {
                 const eventId = interaction.customId.replace(
                     "attendance-late:",

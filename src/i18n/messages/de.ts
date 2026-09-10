@@ -544,6 +544,10 @@ export const deMessages = {
         streamerMode: "Streamer-Modus",
         enabled: "Aktiviert",
         disabled: "Deaktiviert",
+        matchRecapsTitle: "Match-Zusammenfassungen",
+        matchRecapsEnabled: "Match-Zusammenfassungen erhalten",
+        matchRecapsDescription:
+            "Erhalte nach einem erfassten Match eine Discord-Zusammenfassung, wenn dein Roster-Slot mit den Spielerstatistiken verknüpft ist.",
         platformConnection: "Plattform-Identität",
         platformConnected: "Plattform-ID gesetzt",
         platformDisconnected: "Plattform-ID nicht gesetzt",
