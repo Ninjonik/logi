@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { addDays, format } from "date-fns"
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import {
     Tooltip,
@@ -384,8 +385,9 @@ export default async function ServerOverviewPage({
                                                 recentMatchSummary.topPlayers ??
                                                 []
                                             ).map((player, index) => (
-                                                <div
+                                                <Link
                                                     key={player.id}
+                                                    href={`/${locale}/players/${player.id}`}
                                                     className="border-border/60 rounded-xl border p-3"
                                                 >
                                                     <div className="flex items-center justify-between gap-2">
@@ -435,7 +437,7 @@ export default async function ServerOverviewPage({
                                                             )}
                                                         </div>
                                                     ) : null}
-                                                </div>
+                                                </Link>
                                             ))}
                                         </div>
                                     ) : (

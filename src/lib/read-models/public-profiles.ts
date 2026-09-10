@@ -95,26 +95,23 @@ export async function getPublicPlayerProfile(playerId: string) {
 }
 
 export async function getPublicMatch(eventId: string) {
-    return await cachedRead(
-        ["public-match", eventId],
-        [appCacheTags.publicMatch(eventId), appCacheTags.match(eventId)],
-        async () =>
-            (await fetchQuery(getPublicMatchReference, {
-                eventId: eventId as never,
-            })) as
-                | (MatchRecord & {
-                      eventName: string
-                      thumbnailUrl?: string
-                      clanResult?: {
-                          clanLabel: string
-                          opponentLabel: string
-                          clanScore: number
-                          opponentScore: number
-                      }
-                  })
-                | null,
-        86400
-    )
+    // Player-to-account links can be added after a match is imported. Do not
+    // retain an individual public match payload after those links change.
+    return (await fetchQuery(getPublicMatchReference, {
+        eventId: eventId as never,
+    })) as
+        | (MatchRecord & {
+              eventName: string
+              thumbnailUrl?: string
+              clanResult?: {
+                  clanLabel: string
+                  opponentLabel: string
+                  clanScore: number
+                  opponentScore: number
+              }
+              linkedPlayerIds: Record<string, string>
+          })
+        | null
 }
 
 export async function getPublicClan(guildId: string) {

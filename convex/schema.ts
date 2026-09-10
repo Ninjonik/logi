@@ -13,6 +13,8 @@ const users = defineTable({
     guildId: v.optional(v.string()),
     mercenaryGuildIds: v.array(v.string()),
     isStreamer: v.boolean(),
+    // Global, default-on preference for Discord match-performance recaps.
+    matchRecapNotificationsEnabled: v.optional(v.boolean()),
     score: v.optional(v.number()),
     scores: v.optional(v.record(v.string(), v.number())),
     performance: v.optional(
@@ -758,6 +760,23 @@ export default defineSchema({
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("eventId", ["eventId"]),
+    matchRecaps: defineTable({
+        eventId: v.id("events"),
+        userId: v.string(),
+        status: v.union(v.literal("pending"), v.literal("sent")),
+        previousTen: v.optional(
+            v.object({
+                matches: v.number(),
+                kills: v.number(),
+                deaths: v.number(),
+                kd: v.number(),
+            })
+        ),
+        createdAt: v.string(),
+        sentAt: v.optional(v.string()),
+    })
+        .index("eventId", ["eventId"])
+        .index("eventId_userId", ["eventId", "userId"]),
     discordEventSyncs: defineTable({
         eventId: v.id("events"),
         guildId: v.string(),

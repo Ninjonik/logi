@@ -541,6 +541,10 @@ export const csMessages = {
         streamerMode: "Streamerský režim",
         enabled: "Zapnuto",
         disabled: "Vypnuto",
+        matchRecapsTitle: "Shrnutí zápasů",
+        matchRecapsEnabled: "Dostávat zprávy se shrnutím zápasů",
+        matchRecapsDescription:
+            "Po zaznamenaném zápase dostanete shrnutí na Discordu, pokud je vaše místo v soupisce propojeno se statistikami hráče.",
         platformConnection: "Platformní identita",
         platformConnected: "Platform ID nastaveno",
         platformDisconnected: "Platform ID není nastaveno",

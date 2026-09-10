@@ -11,6 +11,10 @@ import {
     upsertImportedPlayer,
 } from "@/lib/server-user-management"
 import {
+    captureMatchRecapBaselines,
+    queueMatchRecaps,
+} from "@/lib/server-match-recaps"
+import {
     findServerMatchByIdentity,
     saveServerMatch,
 } from "@/lib/server-matches"
@@ -1048,6 +1052,10 @@ export async function importEventMatchResults(input: {
             mapId,
             eventIdForLogs: input.eventId,
         })
+        const recapBaselines = await captureMatchRecapBaselines(
+            input.serverId,
+            preparedImport.importedUserIds
+        )
 
         await savePlayerMatchStats({
             entries: preparedImport.entries.map((entry) => ({
@@ -1092,6 +1100,7 @@ export async function importEventMatchResults(input: {
                     eventId: input.eventId,
                     eventResult,
                 })
+                await queueMatchRecaps(input.eventId, recapBaselines)
                 diagnostics.eventResultSaved = { ok: true }
             } catch (error) {
                 const message = toErrorMessage(

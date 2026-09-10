@@ -796,6 +796,23 @@ export const updateProfile = mutation({
     },
 })
 
+export const setMatchRecapNotifications = mutation({
+    args: {
+        secret: v.string(),
+        userId: v.string(),
+        enabled: v.boolean(),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const user = await getUserByIdentifier(ctx, args.userId)
+        if (!user) throw new Error("Player not found.")
+        await ctx.db.patch(user._id, {
+            matchRecapNotificationsEnabled: args.enabled,
+            updatedAt: new Date().toISOString(),
+        })
+    },
+})
+
 export const updateScore = mutation({
     args: {
         secret: v.string(),

@@ -66,6 +66,8 @@ export type AppUser = {
     guildId?: string
     mercenaryGuildIds: string[]
     isStreamer: boolean
+    /** Missing is the legacy, default-on setting. */
+    matchRecapNotificationsEnabled?: boolean
     score?: number
     scores: Record<string, number>
     performance?: {

@@ -11,6 +11,7 @@ export async function POST(request: Request) {
         const body = (await request.json()) as {
             avatar?: string
             platformIds?: string
+            matchRecapNotificationsEnabled?: boolean
         }
 
         if (!body.avatar?.trim()) {
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
         const userId = await updateCurrentPlayerProfile({
             avatar: body.avatar,
             platformIds: body.platformIds,
+            matchRecapNotificationsEnabled: body.matchRecapNotificationsEnabled,
         })
 
         revalidateCacheEntries([

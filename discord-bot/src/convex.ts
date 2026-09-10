@@ -80,6 +80,15 @@ export const references = {
     getEventSyncContext: makeFunctionReference<"query">(
         "discordSync:getEventSyncContext"
     ),
+    getPendingMatchRecaps: makeFunctionReference<"query">(
+        "matchRecaps:listPendingForEvent"
+    ),
+    markMatchRecapSent: makeFunctionReference<"mutation">(
+        "matchRecaps:markSent"
+    ),
+    setMatchRecapNotifications: makeFunctionReference<"mutation">(
+        "players:setMatchRecapNotifications"
+    ),
     findNoticeTarget: makeFunctionReference<"query">("events:findNoticeTarget"),
     getConfigByDiscordGuildId: makeFunctionReference<"query">(
         "discordConfig:getConfigByDiscordGuildId"

@@ -2,6 +2,7 @@ import {
     getAttendanceReminderDueAt,
     getSignupReminderDueAt,
     isExpiredScheduledJobClaim,
+    resolveSignupReminderStatuses,
     shouldDiscardScheduledJob,
 } from "../src/domain/events/scheduled-job-policy"
 import { mutation } from "./_generated/server"
@@ -82,7 +83,8 @@ export const complete = mutation({
         if (
             !event ||
             event.kind !== "match" ||
-            !(event.signupReminderStatuses ?? []).length ||
+            !resolveSignupReminderStatuses(event.signupReminderStatuses)
+                .length ||
             event.status !== "registration"
         ) {
             return
@@ -175,11 +177,10 @@ export const backfillMissing = mutation({
                 new Date(event.gameEnd).getTime() <
                 Date.now() - 7 * 24 * 60 * 60 * 1000
             if (historical) continue
-            const existing = await ctx.db
+            const existingJobs = await ctx.db
                 .query("eventScheduleJobs")
                 .withIndex("eventId", (q) => q.eq("eventId", event._id))
-                .first()
-            if (existing) continue
+                .collect()
             const startAtMs = Math.max(
                 new Date(event.registrationEnd).getTime(),
                 new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000
@@ -198,21 +199,24 @@ export const backfillMissing = mutation({
                         ? [["attendance-reminder", dueAt] as const]
                         : []
                 }),
-                ...(event.kind === "match" &&
-                (event.signupReminderStatuses ?? []).length > 0
-                    ? [
-                          [
-                              "signup-reminder",
-                              getSignupReminderDueAt(
-                                  event.createdAt,
-                                  event.registrationEnd,
-                                  nowDate
-                              ) ?? event.registrationEnd,
-                          ] as const,
-                      ]
-                    : []),
+                ...(() => {
+                    const dueAt = getSignupReminderDueAt(
+                        event.createdAt,
+                        event.registrationEnd,
+                        nowDate,
+                        true
+                    )
+                    return event.kind === "match" &&
+                        resolveSignupReminderStatuses(
+                            event.signupReminderStatuses
+                        ).length > 0 &&
+                        dueAt
+                        ? [["signup-reminder", dueAt] as const]
+                        : []
+                })(),
             ] as const
             for (const [kind, dueAt] of deadlines) {
+                if (existingJobs.some((job) => job.kind === kind)) continue
                 if (
                     !Number.isFinite(new Date(dueAt).getTime()) ||
                     new Date(dueAt).getTime() < nowDate.getTime()

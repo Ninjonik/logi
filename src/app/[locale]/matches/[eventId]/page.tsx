@@ -54,6 +54,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PublicMatchPage({ params }: Props) {
+    // Player links are derived from current player-account associations. Make
+    // the page render dynamic while retaining the read-model's data cache.
+    await connection()
     const { locale, eventId } = await params
     const resolvedLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(resolvedLocale)
@@ -76,7 +79,12 @@ export default async function PublicMatchPage({ params }: Props) {
                             { label: dictionary.publicProfiles.matches },
                         ]}
                     />
-                    <MatchDetails match={match} dictionary={dictionary} />
+                    <MatchDetails
+                        match={match}
+                        dictionary={dictionary}
+                        publicPlayerIds={match.linkedPlayerIds}
+                        publicLocale={resolvedLocale}
+                    />
                 </div>
             </PublicPage>
             <DynamicMetadataMarker />

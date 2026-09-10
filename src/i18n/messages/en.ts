@@ -540,6 +540,10 @@ export const enMessages = {
         streamerMode: "Streamer mode",
         enabled: "Enabled",
         disabled: "Disabled",
+        matchRecapsTitle: "Match recaps",
+        matchRecapsEnabled: "Receive match recap messages",
+        matchRecapsDescription:
+            "Get a Discord recap after a recorded match when your roster slot is linked to its player stats.",
         platformConnection: "Platform identity",
         platformConnected: "Platform ID set",
         platformDisconnected: "Platform ID not set",
