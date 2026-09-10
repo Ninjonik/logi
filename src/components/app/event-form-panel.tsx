@@ -604,6 +604,7 @@ export function EventFormPanel({
             ).filter((groupId) => eventGroupIds.has(groupId)),
             allowedSignupStatuses: event.allowedSignupStatuses ?? [],
             useGeneralSignup: event.useGeneralSignup ?? false,
+            signupReminderStatuses: event.signupReminderStatuses ?? ["member"],
             recurrence: event.recurrence,
         },
     })
@@ -901,6 +902,10 @@ export function EventFormPanel({
                     : undefined,
             useGeneralSignup:
                 values.kind === "match" ? values.useGeneralSignup : false,
+            signupReminderStatuses:
+                values.kind === "match"
+                    ? (values.signupReminderStatuses ?? [])
+                    : [],
             thumbnailUrl: values.thumbnailUrl || undefined,
             imageUrl: values.imageUrl || undefined,
             announcementChannelId: values.announcementChannelId || undefined,
@@ -2646,6 +2651,100 @@ export function EventFormPanel({
                                             }
                                             emptyLabel={
                                                 dictionary.shared.notSet
+                                            }
+                                        />
+                                    )}
+                                </div>
+                                <div className="md:col-span-2">
+                                    <FieldLabel
+                                        label={
+                                            dictionary.event.fields
+                                                .signupReminderStatuses
+                                        }
+                                    />
+                                    {canEdit ? (
+                                        <Controller
+                                            control={form.control}
+                                            name="signupReminderStatuses"
+                                            render={({ field }) => {
+                                                const selectedStatuses =
+                                                    new Set(field.value ?? [])
+                                                const statusOptions = [
+                                                    "member",
+                                                    "recruit",
+                                                    "reserve_member",
+                                                ] as const
+                                                return (
+                                                    <div className="border-border/60 space-y-3 rounded-xl border p-4">
+                                                        <p className="text-muted-foreground text-sm">
+                                                            {
+                                                                dictionary.event
+                                                                    .signupReminderStatusesDescription
+                                                            }
+                                                        </p>
+                                                        <div className="grid gap-2 md:grid-cols-3">
+                                                            {statusOptions.map(
+                                                                (status) => (
+                                                                    <label
+                                                                        key={
+                                                                            status
+                                                                        }
+                                                                        className="border-border/60 flex items-center gap-3 rounded-xl border px-3 py-2"
+                                                                    >
+                                                                        <Checkbox
+                                                                            checked={selectedStatuses.has(
+                                                                                status
+                                                                            )}
+                                                                            onCheckedChange={(
+                                                                                checked
+                                                                            ) =>
+                                                                                field.onChange(
+                                                                                    checked
+                                                                                        ? [
+                                                                                              ...selectedStatuses,
+                                                                                              status,
+                                                                                          ]
+                                                                                        : [
+                                                                                              ...selectedStatuses,
+                                                                                          ].filter(
+                                                                                              (
+                                                                                                  value
+                                                                                              ) =>
+                                                                                                  value !==
+                                                                                                  status
+                                                                                          )
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <span className="text-sm">
+                                                                            {getAllowedSignupStatusLabel(
+                                                                                status,
+                                                                                dictionary
+                                                                            )}
+                                                                        </span>
+                                                                    </label>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            }}
+                                        />
+                                    ) : (
+                                        <ReadOnlyList
+                                            values={(
+                                                form.watch(
+                                                    "signupReminderStatuses"
+                                                ) ?? []
+                                            ).map((status) =>
+                                                getAllowedSignupStatusLabel(
+                                                    status,
+                                                    dictionary
+                                                )
+                                            )}
+                                            emptyLabel={
+                                                dictionary.event
+                                                    .signupReminderDisabled
                                             }
                                         />
                                     )}

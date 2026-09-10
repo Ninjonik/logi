@@ -371,6 +371,21 @@ export const enMessages = {
         competitions: "Competitions",
         articles: "Articles",
         logiComms: "LogiComms",
+        signupActivity: "Signup activity",
+    },
+    signupActivity: {
+        title: "Signup activity",
+        description:
+            "See who signed up, changed roles, or withdrew from matches and trainings.",
+        empty: "No signup activity yet.",
+        role: "Role",
+        noRole: "No role",
+        actions: {
+            signed_up: "signed up",
+            changed_role: "changed role",
+            unsigned: "withdrew",
+            declined: "declined",
+        },
     },
     competition: {
         title: "Competitions",
@@ -1153,6 +1168,9 @@ export const enMessages = {
         allowedSignupStatusesDescription:
             "Leave this empty to allow any clan member status to sign up. Otherwise only the selected statuses can sign up for this match.",
         allowedSignupStatusesAll: "All clan member statuses",
+        signupReminderStatusesDescription:
+            "Send the full match signup message by DM every 24 hours, starting 24 hours after creation and stopping at registration close. Select no statuses to disable it.",
+        signupReminderDisabled: "Daily signup reminders are disabled.",
         createForumChannelDescription:
             "Create the Discord forum channel and briefing topics for this event.",
         conclude: "Conclude event",
@@ -1277,6 +1295,7 @@ export const enMessages = {
             rewardRoleIds: "Reward role IDs",
             signupGroupIds: "Visible signup groups",
             allowedSignupStatuses: "Allowed signup statuses",
+            signupReminderStatuses: "Daily signup reminder recipients",
             useGeneralSignup: "Enable general signup",
             pingClan: "Ping clan",
             pingMode: "Announcement ping",

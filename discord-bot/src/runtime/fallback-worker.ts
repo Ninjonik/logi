@@ -50,8 +50,10 @@ async function runTick() {
                 | "start-event"
                 | "conclude-event"
                 | "attendance-reminder"
+                | "signup-reminder"
         }>
         const attendanceReminderEventIds = new Set<string>()
+        const signupReminderEventIds = new Set<string>()
 
         if (jobs.length > 0) {
             workerPort.postMessage({
@@ -82,6 +84,8 @@ async function runTick() {
                 })
                 if (job.kind === "attendance-reminder")
                     attendanceReminderEventIds.add(job.eventId)
+                if (job.kind === "signup-reminder")
+                    signupReminderEventIds.add(job.eventId)
             } catch {
                 await convex.mutation(references.releaseScheduledJob, {
                     secret: env.internalSecret,
@@ -107,6 +111,12 @@ async function runTick() {
             workerPort.postMessage({
                 type: "attendanceRemindersDue",
                 eventIds: [...attendanceReminderEventIds],
+            })
+        }
+        if (signupReminderEventIds.size > 0) {
+            workerPort.postMessage({
+                type: "signupRemindersDue",
+                eventIds: [...signupReminderEventIds],
             })
         }
     } catch (error) {

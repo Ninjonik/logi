@@ -1,5 +1,6 @@
 import {
     getAttendanceReminderDueAt,
+    getSignupReminderDueAt,
     isExpiredScheduledJobClaim,
     shouldDiscardScheduledJob,
 } from "../src/domain/events/scheduled-job-policy"
@@ -34,6 +35,7 @@ export const claimDue = mutation({
                 | "start-event"
                 | "conclude-event"
                 | "attendance-reminder"
+                | "signup-reminder"
         }> = []
 
         for (const job of candidates) {
@@ -71,7 +73,38 @@ export const complete = mutation({
     args: { secret: v.string(), jobId: v.id("eventScheduleJobs") },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
+        const job = await ctx.db.get(args.jobId)
         await ctx.db.delete(args.jobId)
+        if (job?.kind !== "signup-reminder") return
+
+        const event = await ctx.db.get(job.eventId)
+        const now = new Date()
+        if (
+            !event ||
+            event.kind !== "match" ||
+            !(event.signupReminderStatuses ?? []).length ||
+            event.status !== "registration"
+        ) {
+            return
+        }
+        const registrationEndMs = new Date(event.registrationEnd).getTime()
+        const dueAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+        if (
+            !Number.isFinite(registrationEndMs) ||
+            dueAt.getTime() >= registrationEndMs
+        ) {
+            return
+        }
+        const nowIso = now.toISOString()
+        await ctx.db.insert("eventScheduleJobs", {
+            eventId: event._id,
+            kind: "signup-reminder",
+            dueAt: dueAt.toISOString(),
+            status: "pending",
+            attempts: 0,
+            createdAt: nowIso,
+            updatedAt: nowIso,
+        })
     },
 })
 
@@ -165,6 +198,19 @@ export const backfillMissing = mutation({
                         ? [["attendance-reminder", dueAt] as const]
                         : []
                 }),
+                ...(event.kind === "match" &&
+                (event.signupReminderStatuses ?? []).length > 0
+                    ? [
+                          [
+                              "signup-reminder",
+                              getSignupReminderDueAt(
+                                  event.createdAt,
+                                  event.registrationEnd,
+                                  nowDate
+                              ) ?? event.registrationEnd,
+                          ] as const,
+                      ]
+                    : []),
             ] as const
             for (const [kind, dueAt] of deadlines) {
                 if (
@@ -178,7 +224,8 @@ export const backfillMissing = mutation({
                         | "close-registration"
                         | "start-event"
                         | "conclude-event"
-                        | "attendance-reminder",
+                        | "attendance-reminder"
+                        | "signup-reminder",
                     dueAt,
                     status: "pending",
                     attempts: 0,

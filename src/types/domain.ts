@@ -294,6 +294,7 @@ export type EventRecord = {
     signupGroupIds?: string[]
     allowedSignupStatuses?: SignupMembershipStatus[]
     useGeneralSignup?: boolean
+    signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     recurrence?: MatchRecurrence
     attendeeRoleId?: string
     reserveRoleId?: string

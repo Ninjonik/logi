@@ -233,6 +233,7 @@ export type SquadPreset = {
 export type EventRecord = {
     id: string
     guildId: string
+    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
     kind: "match" | "training"
     matchType?: string
     name: string
@@ -249,6 +250,7 @@ export type EventRecord = {
         "recruit" | "member" | "reserve_member" | "mercenary"
     >
     useGeneralSignup?: boolean
+    signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     attendeeRoleId?: string
     reserveRoleId?: string
     server?: string
@@ -349,6 +351,12 @@ export type SyncPayload = {
     rosters: Roster[]
     topicPresets: TopicPreset[]
     syncStates: SyncState[]
+    assignments: Array<{
+        userId: string
+        type: "member" | "reserve_member" | "mercenary"
+        status: "pending" | "recruit" | "active"
+        gameId?: EventRecord["gameId"]
+    }>
 }
 
 export type GuildCacheSnapshot = {

@@ -2,6 +2,30 @@ import type { EventStatus } from "./types"
 
 const HISTORICAL_EVENT_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
+export function getSignupReminderDueAt(
+    createdAt: string,
+    registrationEnd: string,
+    now: Date
+): string | null {
+    const createdAtMs = new Date(createdAt).getTime()
+    const registrationEndMs = new Date(registrationEnd).getTime()
+    if (
+        !Number.isFinite(createdAtMs) ||
+        !Number.isFinite(registrationEndMs) ||
+        registrationEndMs <= now.getTime()
+    ) {
+        return null
+    }
+    const firstDueAtMs = createdAtMs + 24 * 60 * 60 * 1000
+    if (firstDueAtMs >= registrationEndMs) return null
+
+    const dueAtMs =
+        firstDueAtMs > now.getTime()
+            ? firstDueAtMs
+            : now.getTime() + 24 * 60 * 60 * 1000
+    return dueAtMs < registrationEndMs ? new Date(dueAtMs).toISOString() : null
+}
+
 export function getAttendanceReminderDueAt(
     meetingStart: string,
     offsetHours: number,

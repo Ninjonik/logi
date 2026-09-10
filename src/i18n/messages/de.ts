@@ -373,6 +373,21 @@ export const deMessages = {
         competitions: "Wettbewerbe",
         articles: "Artikel",
         logiComms: "LogiComms",
+        signupActivity: "Anmeldeverlauf",
+    },
+    signupActivity: {
+        title: "Anmeldeverlauf",
+        description:
+            "Sieh, wer sich für Matches und Trainings angemeldet, Rollen geändert oder abgemeldet hat.",
+        empty: "Noch keine Anmeldeaktivitäten.",
+        role: "Rolle",
+        noRole: "Keine Rolle",
+        actions: {
+            signed_up: "hat sich angemeldet",
+            changed_role: "hat die Rolle geändert",
+            unsigned: "hat sich abgemeldet",
+            declined: "hat abgesagt",
+        },
     },
     competition: {
         title: "Wettbewerbe",
@@ -1168,6 +1183,10 @@ export const deMessages = {
         allowedSignupStatusesDescription:
             "Leer lassen, um jedem Clan-Mitgliedsstatus die Anmeldung zu erlauben. Sonst können sich nur die gewählten Status für dieses Match anmelden.",
         allowedSignupStatusesAll: "Alle Clan-Mitgliedsstatus",
+        signupReminderStatusesDescription:
+            "Sendet die vollständige Match-Anmeldung alle 24 Stunden per DM, beginnend 24 Stunden nach Erstellung bis zum Anmeldeschluss. Keine Auswahl deaktiviert die Erinnerung.",
+        signupReminderDisabled:
+            "Tägliche Anmeldeerinnerungen sind deaktiviert.",
         createForumChannelDescription:
             "Erstelle den Discord-Forums-Channel und Briefing-Themen für dieses Event.",
         conclude: "Event abschließen",
@@ -1295,6 +1314,7 @@ export const deMessages = {
             rewardRoleIds: "Belohnungs-Rollen-IDs",
             signupGroupIds: "Sichtbare Anmeldegruppen",
             allowedSignupStatuses: "Erlaubte Anmeldestatus",
+            signupReminderStatuses: "Empfänger täglicher Anmeldeerinnerungen",
             useGeneralSignup: "Allgemeine Anmeldung aktivieren",
             pingClan: "Clan pingen",
             pingMode: "Ankündigungs-Ping",

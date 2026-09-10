@@ -5,8 +5,8 @@ import {
     InMemoryEventWorkflowRepository,
     NoopEventWorkflowSyncPort,
 } from "@/infrastructure/testing/in-memory-event-workflow"
+import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING } from "@/domain/events/types"
 import { FakeClock } from "@/infrastructure/testing/fake-clock"
-import { SIGNUP_GENERAL } from "@/domain/events/types"
 
 import { ToggleSignupUseCase } from "./toggle-signup.use-case"
 
@@ -19,6 +19,7 @@ test("ToggleSignupUseCase persists signups and triggers roster sync", async () =
                 {
                     id: "event-1",
                     guildId: "guild-1",
+                    name: "Evening match",
                     kind: "match" as const,
                     registrationEnd: "2026-01-01T12:00:00.000Z",
                     meetingStart: "2026-01-01T13:00:00.000Z",
@@ -56,6 +57,19 @@ test("ToggleSignupUseCase persists signups and triggers roster sync", async () =
         events.events.get("event-1")?.participants?.[0]?.status,
         "attending"
     )
+    assert.deepEqual(events.signupActivities, [
+        {
+            guildId: "guild-1",
+            eventId: "event-1",
+            eventName: "Evening match",
+            eventKind: "match",
+            userId: "user-1",
+            action: "signed_up",
+            role: "INF",
+            previousRole: undefined,
+            occurredAt: "2026-01-01T09:00:00.000Z",
+        },
+    ])
 })
 
 test("ToggleSignupUseCase rejects unknown events", async () => {
@@ -73,6 +87,63 @@ test("ToggleSignupUseCase rejects unknown events", async () => {
                 group: "INF",
             }),
         /Event not found/
+    )
+})
+
+test("ToggleSignupUseCase records role changes and withdrawals", async () => {
+    const events = new InMemoryEventWorkflowRepository(
+        new Map([
+            [
+                "event-1",
+                {
+                    id: "event-1",
+                    guildId: "guild-1",
+                    name: "Evening match",
+                    kind: "match" as const,
+                    registrationEnd: "2026-01-01T12:00:00.000Z",
+                    meetingStart: "2026-01-01T13:00:00.000Z",
+                    gameEnd: "2026-01-01T15:00:00.000Z",
+                    status: "registration" as const,
+                    participants: [],
+                    signUps: [],
+                },
+            ],
+        ]),
+        new Map([["guild-1:user-1", { type: "member", status: "active" }]])
+    )
+    const useCase = new ToggleSignupUseCase(
+        events,
+        new NoopEventWorkflowSyncPort(),
+        new FakeClock(new Date("2026-01-01T09:00:00.000Z"))
+    )
+
+    await useCase.execute({
+        eventId: "event-1",
+        userId: "user-1",
+        group: "INF",
+    })
+    await useCase.execute({
+        eventId: "event-1",
+        userId: "user-1",
+        group: "ARM",
+    })
+    await useCase.execute({
+        eventId: "event-1",
+        userId: "user-1",
+        group: SIGNUP_NOT_ATTENDING,
+    })
+
+    assert.deepEqual(
+        events.signupActivities.map(({ action, role, previousRole }) => ({
+            action,
+            role,
+            previousRole,
+        })),
+        [
+            { action: "signed_up", role: "INF", previousRole: undefined },
+            { action: "changed_role", role: "ARM", previousRole: "INF" },
+            { action: "declined", role: null, previousRole: "ARM" },
+        ]
     )
 })
 

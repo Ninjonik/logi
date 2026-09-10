@@ -42,6 +42,17 @@ export function normalizeEventRecord<T extends EventLike>(
                 : normalizeOptionalArray(event.allowedSignupStatuses),
         useGeneralSignup:
             event.kind === "match" ? Boolean(event.useGeneralSignup) : false,
+        signupReminderStatuses:
+            event.kind === "training"
+                ? []
+                : normalizeOptionalArray(event.signupReminderStatuses).filter(
+                      (
+                          status
+                      ): status is "recruit" | "member" | "reserve_member" =>
+                          status === "recruit" ||
+                          status === "member" ||
+                          status === "reserve_member"
+                  ),
         createForumChannel: resolveCreateForumChannel(event),
         status,
         statusUpdatedAt: timestamps.statusUpdatedAt,

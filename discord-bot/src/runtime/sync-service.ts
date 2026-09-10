@@ -6,6 +6,7 @@ import {
     getChangedEventIds,
 } from "../../../src/application/discord-sync/payload-builder"
 import type { EventSyncContext, EventSyncIndex, SyncPayload } from "../types"
+import { processSignupReminders } from "../sync/signup-reminders"
 import { isHistoricalConcludedEvent } from "../sync/relevance"
 import { getCalendarSyncVersion } from "../sync/work"
 import { logError, logInfo, logWarn } from "../log"
@@ -26,6 +27,7 @@ type RosterIndexRecord = EventSyncIndex["rosters"][number]
 export class DiscordSyncService {
     private readonly queuedEventIds = new Set<string>()
     private readonly queuedAttendanceReminderEventIds = new Set<string>()
+    private readonly queuedSignupReminderEventIds = new Set<string>()
     private readonly queuedGuildIds = new Set<string>()
     private readonly guildCache = new GuildCache()
     private readonly eventIndexById = new Map<string, EventIndexRecord>()
@@ -121,6 +123,11 @@ export class DiscordSyncService {
 
     queueAttendanceReminder(eventId: string) {
         this.queuedAttendanceReminderEventIds.add(eventId)
+        this.queueEventSync(eventId)
+    }
+
+    queueSignupReminder(eventId: string) {
+        this.queuedSignupReminderEventIds.add(eventId)
         this.queueEventSync(eventId)
     }
 
@@ -226,6 +233,10 @@ export class DiscordSyncService {
                     this.queuedAttendanceReminderEventIds
                 )
                 this.queuedAttendanceReminderEventIds.clear()
+                const queuedSignupReminderEventIdsForCycle = new Set(
+                    this.queuedSignupReminderEventIds
+                )
+                this.queuedSignupReminderEventIds.clear()
                 const guildIds = [...this.queuedGuildIds]
                 this.queuedGuildIds.clear()
                 if (guildIds.length > 0) {
@@ -263,7 +274,8 @@ export class DiscordSyncService {
                             queuedEventIdsForCycle,
                             queuedAttendanceReminderEventIdsForCycle.has(
                                 eventId
-                            )
+                            ),
+                            queuedSignupReminderEventIdsForCycle.has(eventId)
                         )
                     } catch (error) {
                         logError(
@@ -373,7 +385,8 @@ export class DiscordSyncService {
     private async syncEvent(
         eventId: string,
         queuedEventIds: Set<string>,
-        attendanceReminderDue: boolean
+        attendanceReminderDue: boolean,
+        signupReminderDue: boolean
     ) {
         const context = await this.loadEventSyncContext(eventId)
         if (!context) {
@@ -423,6 +436,13 @@ export class DiscordSyncService {
             "events_only",
             attendanceReminderDue ? new Set([eventId]) : new Set()
         )
+        if (signupReminderDue) {
+            await processSignupReminders(
+                this.client,
+                payload,
+                new Set([eventId])
+            )
+        }
         if (
             context.syncState?.lastCalendarSyncVersion !==
             getCalendarSyncVersion(context.event)

@@ -27,6 +27,7 @@ export const listSyncPayloads = query({
             syncStates,
             rosters,
             users,
+            assignments,
         ] = await Promise.all([
             ctx.db.query("guilds").collect(),
             ctx.db.query("discordConfigs").collect(),
@@ -37,6 +38,7 @@ export const listSyncPayloads = query({
             ctx.db.query("discordEventSyncs").collect(),
             ctx.db.query("rosters").collect(),
             ctx.db.query("users").collect(),
+            ctx.db.query("userAssignments").collect(),
         ])
 
         return configs.map((config) => {
@@ -124,6 +126,16 @@ export const listSyncPayloads = query({
                 rosters: guildRosters,
                 topicPresets: guildTopicPresets,
                 syncStates: guildSyncStates,
+                assignments: assignments
+                    .filter(
+                        (assignment) => assignment.serverId === config.guildId
+                    )
+                    .map((assignment) => ({
+                        userId: assignment.userId,
+                        type: assignment.type,
+                        status: assignment.status,
+                        gameId: assignment.gameId,
+                    })),
             }
         })
     },
