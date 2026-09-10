@@ -36,13 +36,18 @@ export async function processSignupReminders(
         const recipientStatuses = new Set(event.signupReminderStatuses ?? [])
         if (!recipientStatuses.size) continue
 
+        const respondedUserIds = new Set(
+            event.participants.map((participant) => participant.userId)
+        )
+
         const { embed, components } = buildAnnouncementMessage(payload, event)
         const recipients = payload.assignments.filter((assignment) => {
             const status = getRecipientStatus(assignment)
             return (
                 assignment.gameId === event.gameId &&
                 status !== null &&
-                recipientStatuses.has(status)
+                recipientStatuses.has(status) &&
+                !respondedUserIds.has(assignment.userId)
             )
         })
         for (const recipient of recipients) {
