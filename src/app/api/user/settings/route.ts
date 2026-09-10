@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 
-import { handleIfNotLoggedIn, updateCurrentPlayerProfile } from "@/lib/auth"
+import {
+    getVisibleGuildsForLoggedInUser,
+    handleIfNotLoggedIn,
+    updateCurrentPlayerProfile,
+} from "@/lib/auth"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
 
@@ -12,6 +16,7 @@ export async function POST(request: Request) {
             avatar?: string
             platformIds?: string
             matchRecapNotificationsEnabled?: boolean
+            defaultWorkspaceId?: string
         }
 
         if (!body.avatar?.trim()) {
@@ -21,10 +26,26 @@ export async function POST(request: Request) {
             )
         }
 
+        const defaultWorkspaceId = body.defaultWorkspaceId?.trim()
+        if (defaultWorkspaceId) {
+            const visibleWorkspaces = await getVisibleGuildsForLoggedInUser()
+            if (
+                !visibleWorkspaces.some(
+                    (workspace) => workspace.discordId === defaultWorkspaceId
+                )
+            ) {
+                return NextResponse.json(
+                    { error: "Choose a workspace you can access." },
+                    { status: 400 }
+                )
+            }
+        }
+
         const userId = await updateCurrentPlayerProfile({
             avatar: body.avatar,
             platformIds: body.platformIds,
             matchRecapNotificationsEnabled: body.matchRecapNotificationsEnabled,
+            defaultWorkspaceId,
         })
 
         revalidateCacheEntries([

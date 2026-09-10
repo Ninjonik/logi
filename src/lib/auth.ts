@@ -23,6 +23,12 @@ const syncDiscordProfileReference = makeFunctionReference<"mutation">(
 const setPrimaryGuildReference = makeFunctionReference<"mutation">(
     "players:setPrimaryGuild"
 )
+const setDefaultWorkspaceReference = makeFunctionReference<"mutation">(
+    "players:setDefaultWorkspace"
+)
+const resolveDefaultWorkspaceReference = makeFunctionReference<"mutation">(
+    "players:resolveDefaultWorkspace"
+)
 const syncManagedGuildsReference = makeFunctionReference<"mutation">(
     "guilds:syncManagedGuilds"
 )
@@ -318,6 +324,13 @@ export async function setPrimaryGuildForCurrentPlayer(
     })
 }
 
+export async function resolveDefaultWorkspaceForCurrentPlayer(userId: string) {
+    return (await fetchMutation(resolveDefaultWorkspaceReference, {
+        secret: getInternalAuthSecret(),
+        userId,
+    })) as string | null
+}
+
 export async function updatePlatformIdsForCurrentPlayer(platformIds: string[]) {
     const session = await getSession()
     if (!session) {
@@ -347,6 +360,7 @@ export async function updateCurrentPlayerProfile(input: {
     avatar: string
     platformIds?: string | string[]
     matchRecapNotificationsEnabled?: boolean
+    defaultWorkspaceId?: string
 }) {
     const session = await getSession()
     if (!session) {
@@ -365,6 +379,14 @@ export async function updateCurrentPlayerProfile(input: {
             secret: getInternalAuthSecret(),
             userId: session.sub,
             enabled: input.matchRecapNotificationsEnabled,
+        })
+    }
+
+    if (input.defaultWorkspaceId !== undefined) {
+        await fetchMutation(setDefaultWorkspaceReference, {
+            secret: getInternalAuthSecret(),
+            userId: session.sub,
+            workspaceId: input.defaultWorkspaceId || undefined,
         })
     }
 

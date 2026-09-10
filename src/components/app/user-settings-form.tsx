@@ -12,6 +12,13 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
     getDetectedPlatformHint,
     PlatformIdList,
 } from "@/components/app/platform-id-display"
@@ -24,11 +31,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import { formatPlatformIds } from "@/lib/platform-ids"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { AppUser, Guild } from "@/types/domain"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import type { AppUser } from "@/types/domain"
 
 function Field({ label, value }: { label: string; value: string }) {
     return (
@@ -42,9 +49,11 @@ function Field({ label, value }: { label: string; value: string }) {
 export function UserSettingsForm({
     user,
     dictionary,
+    workspaces,
 }: {
     user: AppUser
     dictionary: Dictionary
+    workspaces: Guild[]
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -54,6 +63,9 @@ export function UserSettingsForm({
     )
     const [matchRecapNotificationsEnabled, setMatchRecapNotificationsEnabled] =
         useState(user.matchRecapNotificationsEnabled ?? true)
+    const [defaultWorkspaceId, setDefaultWorkspaceId] = useState(
+        user.defaultWorkspaceId ?? "automatic"
+    )
 
     async function handleSave() {
         const response = await fetch("/api/user/settings", {
@@ -63,6 +75,10 @@ export function UserSettingsForm({
                 avatar,
                 platformIds,
                 matchRecapNotificationsEnabled,
+                defaultWorkspaceId:
+                    defaultWorkspaceId === "automatic"
+                        ? ""
+                        : defaultWorkspaceId,
             }),
         })
         const body = await response.json()
@@ -218,6 +234,39 @@ export function UserSettingsForm({
                                 )}
                             </p>
                         ) : null}
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                        <div className="text-sm font-medium">
+                            {dictionary.userSettings.defaultWorkspace}
+                        </div>
+                        <Select
+                            value={defaultWorkspaceId}
+                            onValueChange={setDefaultWorkspaceId}
+                            disabled={isPending}
+                        >
+                            <SelectTrigger className="w-full rounded-xl">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="automatic">
+                                    {
+                                        dictionary.userSettings
+                                            .defaultWorkspaceAutomatic
+                                    }
+                                </SelectItem>
+                                {workspaces.map((workspace) => (
+                                    <SelectItem
+                                        key={workspace.id}
+                                        value={workspace.discordId}
+                                    >
+                                        {workspace.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-muted-foreground text-sm">
+                            {dictionary.userSettings.defaultWorkspaceHelp}
+                        </p>
                     </div>
                     <div className="md:col-span-2">
                         <Button

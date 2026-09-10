@@ -6,6 +6,7 @@ export function DashboardPageLoading() {
             aria-busy="true"
         >
             <span className="border-primary/25 border-t-primary size-9 animate-spin rounded-full border-2" />
+            <span className="sr-only">Loading workspace</span>
         </div>
     )
 }

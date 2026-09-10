@@ -545,6 +545,10 @@ export const csMessages = {
         matchRecapsEnabled: "Dostávat zprávy se shrnutím zápasů",
         matchRecapsDescription:
             "Po zaznamenaném zápase dostanete shrnutí na Discordu, pokud je vaše místo v soupisce propojeno se statistikami hráče.",
+        defaultWorkspace: "Výchozí workspace",
+        defaultWorkspaceAutomatic: "Automaticky (první plné členství v klanu)",
+        defaultWorkspaceHelp:
+            "Tento workspace se otevře po vstupu do dashboardu. Automatická volba použije první recruit, členský nebo rezervní klan.",
         platformConnection: "Platformní identita",
         platformConnected: "Platform ID nastaveno",
         platformDisconnected: "Platform ID není nastaveno",
