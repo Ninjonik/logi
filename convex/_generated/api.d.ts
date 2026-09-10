@@ -39,6 +39,7 @@ import type * as serverDashboard from "../serverDashboard.js";
 import type * as serverMetadata from "../serverMetadata.js";
 import type * as serverRosters from "../serverRosters.js";
 import type * as serverSetup from "../serverSetup.js";
+import type * as signupActivity from "../signupActivity.js";
 import type * as squadPresets from "../squadPresets.js";
 import type * as stratmaps from "../stratmaps.js";
 import type * as topicPresets from "../topicPresets.js";
@@ -84,6 +85,7 @@ declare const fullApi: ApiFromModules<{
   serverMetadata: typeof serverMetadata;
   serverRosters: typeof serverRosters;
   serverSetup: typeof serverSetup;
+  signupActivity: typeof signupActivity;
   squadPresets: typeof squadPresets;
   stratmaps: typeof stratmaps;
   topicPresets: typeof topicPresets;
