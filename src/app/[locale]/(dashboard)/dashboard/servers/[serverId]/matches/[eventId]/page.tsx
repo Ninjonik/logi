@@ -78,6 +78,17 @@ export default async function MatchDetailPage({
                                 </a>
                             </Button>
                         ) : null}
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="rounded-xl"
+                        >
+                            <a
+                                href={`/${locale}/dashboard/servers/${serverId}/signup-activity?eventId=${event.id}`}
+                            >
+                                {dictionary.signupActivity.title}
+                            </a>
+                        </Button>
                         {event.matchStatsId ? (
                             <Button
                                 asChild

@@ -9,6 +9,7 @@ import type { GameId } from "@/domain/games/game"
 export type EventWorkflowRecord = {
     id: string
     guildId: string
+    name?: string
     kind?: "match" | "training"
     gameId?: GameId
     signupGroupIds?: string[]
@@ -49,6 +50,17 @@ export interface EventWorkflowRepository {
             updatedAt: string
         }
     ): Promise<void>
+    appendSignupActivity(input: {
+        guildId: string
+        eventId: string
+        eventName: string
+        eventKind: "match" | "training"
+        userId: string
+        action: "signed_up" | "changed_role" | "unsigned" | "declined"
+        role?: string | null
+        previousRole?: string | null
+        occurredAt: string
+    }): Promise<void>
     saveAbsenceNotices(
         eventId: string,
         input: {

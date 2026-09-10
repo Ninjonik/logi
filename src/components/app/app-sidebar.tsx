@@ -159,6 +159,12 @@ export function AppSidebar({
                                         url: `${base}/trainings`,
                                         icon: Shield,
                                     },
+                                    {
+                                        title: dictionary.sidebar
+                                            .signupActivity,
+                                        url: `${base}/signup-activity`,
+                                        icon: ListTodo,
+                                    },
                                 ]
                               : [
                                     {
@@ -175,6 +181,12 @@ export function AppSidebar({
                                         title: dictionary.sidebar.trainings,
                                         url: `${base}/trainings`,
                                         icon: Shield,
+                                    },
+                                    {
+                                        title: dictionary.sidebar
+                                            .signupActivity,
+                                        url: `${base}/signup-activity`,
+                                        icon: ListTodo,
                                     },
                                     {
                                         title: dictionary.sidebar.stratmaps,

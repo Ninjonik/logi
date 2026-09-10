@@ -372,6 +372,21 @@ export const csMessages = {
         competitions: "Soutěže",
         articles: "Články",
         logiComms: "LogiComms",
+        signupActivity: "Historie přihlášek",
+    },
+    signupActivity: {
+        title: "Historie přihlášek",
+        description:
+            "Zjistěte, kdo se přihlásil, změnil roli nebo odhlásil ze zápasů a tréninků.",
+        empty: "Zatím žádná aktivita přihlášek.",
+        role: "Role",
+        noRole: "Bez role",
+        actions: {
+            signed_up: "se přihlásil(a)",
+            changed_role: "změnil(a) roli",
+            unsigned: "se odhlásil(a)",
+            declined: "odmítl(a)",
+        },
     },
     competition: {
         title: "Soutěže",
@@ -1155,6 +1170,9 @@ export const csMessages = {
         allowedSignupStatusesDescription:
             "Když to necháte prázdné, přihlásit se může jakýkoliv status člena klanu. Jinak se na tento zápas mohou přihlásit jen vybrané statusy.",
         allowedSignupStatusesAll: "Všechny statusy členů klanu",
+        signupReminderStatusesDescription:
+            "Odešle úplnou přihlášku na zápas do DM každých 24 hodin, od 24 hodin po vytvoření do konce registrace. Žádný vybraný stav připomínky vypne.",
+        signupReminderDisabled: "Denní připomínky přihlášek jsou vypnuté.",
         createForumChannelDescription:
             "Vytvořit pro tuto akci Discord forum kanál a briefingová témata.",
         conclude: "Ukončit akci",
@@ -1275,6 +1293,7 @@ export const csMessages = {
             rewardRoleIds: "Role po dokončení",
             signupGroupIds: "Zobrazené signup skupiny",
             allowedSignupStatuses: "Povolené signup statusy",
+            signupReminderStatuses: "Příjemci denních připomínek přihlášek",
             useGeneralSignup: "Zapnout obecný signup",
             pingClan: "Upozornit klan (Ping)",
             pingMode: "Ping oznámení",

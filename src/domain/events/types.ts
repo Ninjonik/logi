@@ -84,6 +84,7 @@ export type EventLike = {
     signupGroupIds?: string[]
     allowedSignupStatuses?: SignupMembershipStatus[]
     useGeneralSignup?: boolean
+    signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     pingClan?: boolean
     pingMode?: "none" | "clan" | "roles"
     pingRoleIds?: string[]

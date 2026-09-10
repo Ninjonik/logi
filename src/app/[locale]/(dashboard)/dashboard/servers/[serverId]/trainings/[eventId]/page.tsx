@@ -6,6 +6,7 @@ import { GameBadge } from "@/components/app/game-badge"
 import { getServerContext } from "@/lib/server-context"
 import { getEventStatusMeta } from "@/lib/event-status"
 import { getDictionary } from "@/i18n/dictionaries"
+import { Button } from "@/components/ui/button"
 import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
@@ -63,15 +64,28 @@ export default async function TrainingDetailPage({
                 }
                 badge={statusMeta?.label}
                 actions={
-                    canAdmin && event.status !== "concluded" ? (
-                        <CompleteTrainingButton
-                            serverId={serverId}
-                            eventId={event.id}
-                            disabled={false}
-                            dictionary={dictionary}
-                            attendees={attendees}
-                        />
-                    ) : undefined
+                    <div className="flex flex-wrap gap-2">
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="rounded-xl"
+                        >
+                            <a
+                                href={`/${locale}/dashboard/servers/${serverId}/signup-activity?eventId=${event.id}`}
+                            >
+                                {dictionary.signupActivity.title}
+                            </a>
+                        </Button>
+                        {canAdmin && event.status !== "concluded" ? (
+                            <CompleteTrainingButton
+                                serverId={serverId}
+                                eventId={event.id}
+                                disabled={false}
+                                dictionary={dictionary}
+                                attendees={attendees}
+                            />
+                        ) : null}
+                    </div>
                 }
             />
             <div className="px-4 lg:px-6">

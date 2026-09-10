@@ -39,6 +39,7 @@ export async function saveServerEventCommand(input: {
         "recruit" | "member" | "reserve_member" | "mercenary"
     >
     useGeneralSignup?: boolean
+    signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     recurrence?: {
         frequency: "weekly" | "monthly_date" | "monthly_nth_weekday"
         interval: number
@@ -83,6 +84,7 @@ export async function saveServerEventCommand(input: {
         signupGroupIds: input.signupGroupIds,
         allowedSignupStatuses: input.allowedSignupStatuses,
         useGeneralSignup: input.useGeneralSignup,
+        signupReminderStatuses: input.signupReminderStatuses,
         recurrence: input.recurrence,
         server: input.server,
         serverPassword: input.serverPassword,

@@ -6,6 +6,17 @@ import type {
 import type { GameId } from "@/domain/games/game"
 
 export class InMemoryEventWorkflowRepository implements EventWorkflowRepository {
+    public readonly signupActivities: Array<{
+        guildId: string
+        eventId: string
+        eventName: string
+        eventKind: "match" | "training"
+        userId: string
+        action: "signed_up" | "changed_role" | "unsigned" | "declined"
+        role?: string | null
+        previousRole?: string | null
+        occurredAt: string
+    }> = []
     constructor(
         public readonly events: Map<string, EventWorkflowRecord>,
         private readonly assignments = new Map<
@@ -81,6 +92,12 @@ export class InMemoryEventWorkflowRepository implements EventWorkflowRepository 
             absenceNotices: input.absenceNotices,
             updatedAt: input.updatedAt,
         })
+    }
+
+    async appendSignupActivity(
+        input: (typeof this.signupActivities)[number]
+    ): Promise<void> {
+        this.signupActivities.push(input)
     }
 }
 

@@ -18,13 +18,16 @@ import {
     ConvexEventWorkflowRepository,
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
+import {
+    getAttendanceReminderDueAt,
+    getSignupReminderDueAt,
+} from "../src/domain/events/scheduled-job-policy"
 import { ReconcileEventStatusesUseCase } from "../src/application/events/reconcile-event-statuses.use-case"
 import { CompleteTrainingUseCase } from "../src/application/events/complete-training.use-case"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
 import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case"
 import { UpsertNoticeUseCase } from "../src/application/events/upsert-notice.use-case"
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case"
-import { getAttendanceReminderDueAt } from "../src/domain/events/scheduled-job-policy"
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
 import { getGuildById, getGuildDiscordId } from "./identity"
@@ -107,6 +110,15 @@ export const upsert = mutation({
             )
         ),
         useGeneralSignup: v.optional(v.boolean()),
+        signupReminderStatuses: v.optional(
+            v.array(
+                v.union(
+                    v.literal("recruit"),
+                    v.literal("member"),
+                    v.literal("reserve_member")
+                )
+            )
+        ),
         recurrence: v.optional(
             v.object({
                 frequency: v.union(
@@ -200,6 +212,19 @@ export const upsert = mutation({
                         ? [["attendance-reminder", dueAt] as const]
                         : []
                 }),
+                ...(event.kind === "match" &&
+                (event.signupReminderStatuses ?? []).length > 0
+                    ? [
+                          [
+                              "signup-reminder",
+                              getSignupReminderDueAt(
+                                  event.createdAt,
+                                  event.registrationEnd,
+                                  nowDate
+                              ) ?? event.registrationEnd,
+                          ] as const,
+                      ]
+                    : []),
             ] as const
             await Promise.all(
                 deadlines

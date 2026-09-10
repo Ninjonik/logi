@@ -25,6 +25,9 @@ export class ToggleSignupUseCase {
 
         const now = this.clock.now()
         const normalizedEvent = normalizeEventRecord(event, now)
+        const previousParticipant = normalizedEvent.participants.find(
+            (participant) => participant.userId === input.userId
+        )
         let nextGroup = input.group
         const assignment = await this.events.getAssignmentForUser(
             normalizedEvent.guildId,
@@ -69,6 +72,28 @@ export class ToggleSignupUseCase {
             participants: next.participants,
             signUps: next.signUps,
             updatedAt: now.toISOString(),
+        })
+        const nextParticipant = next.participants.find(
+            (participant) => participant.userId === input.userId
+        )
+        const action = next.removed
+            ? "unsigned"
+            : nextParticipant?.status === "not_attending"
+              ? "declined"
+              : previousParticipant?.status === "attending" &&
+                  previousParticipant.group !== nextParticipant?.group
+                ? "changed_role"
+                : "signed_up"
+        await this.events.appendSignupActivity({
+            guildId: normalizedEvent.guildId,
+            eventId: input.eventId,
+            eventName: event.name ?? "Event",
+            eventKind: normalizedEvent.kind ?? "match",
+            userId: input.userId,
+            action,
+            role: nextParticipant?.group,
+            previousRole: previousParticipant?.group,
+            occurredAt: now.toISOString(),
         })
         await this.rosterSync.syncRosterMembershipForUser(
             input.eventId,

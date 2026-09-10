@@ -99,6 +99,23 @@ const signUp = v.object({
     group: v.optional(v.union(v.string(), v.null())),
 })
 
+const signupActivity = v.object({
+    guildId: v.string(),
+    eventId: v.id("events"),
+    eventName: v.string(),
+    eventKind: v.union(v.literal("match"), v.literal("training")),
+    userId: v.string(),
+    action: v.union(
+        v.literal("signed_up"),
+        v.literal("changed_role"),
+        v.literal("unsigned"),
+        v.literal("declined")
+    ),
+    role: v.optional(v.union(v.string(), v.null())),
+    previousRole: v.optional(v.union(v.string(), v.null())),
+    occurredAt: v.string(),
+})
+
 const eventParticipant = v.object({
     userId: v.string(),
     status: v.union(v.literal("attending"), v.literal("not_attending")),
@@ -553,6 +570,15 @@ export default defineSchema({
             )
         ),
         useGeneralSignup: v.optional(v.boolean()),
+        signupReminderStatuses: v.optional(
+            v.array(
+                v.union(
+                    v.literal("recruit"),
+                    v.literal("member"),
+                    v.literal("reserve_member")
+                )
+            )
+        ),
         recurrence: v.optional(
             v.object({
                 frequency: v.union(
@@ -611,6 +637,9 @@ export default defineSchema({
         createdAt: v.string(),
         updatedAt: v.optional(v.string()),
     }).index("guildId", ["guildId"]),
+    signupActivities: defineTable(signupActivity)
+        .index("eventId_occurredAt", ["eventId", "occurredAt"])
+        .index("guildId_occurredAt", ["guildId", "occurredAt"]),
     competitions: defineTable({
         slug: v.string(),
         name: v.string(),
@@ -670,7 +699,8 @@ export default defineSchema({
             v.literal("close-registration"),
             v.literal("start-event"),
             v.literal("conclude-event"),
-            v.literal("attendance-reminder")
+            v.literal("attendance-reminder"),
+            v.literal("signup-reminder")
         ),
         dueAt: v.string(),
         status: v.union(v.literal("pending"), v.literal("processing")),

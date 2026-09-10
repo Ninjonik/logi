@@ -185,6 +185,18 @@ export default async function ServerOverviewPage({
                                         {dictionary.sidebar.calendar}
                                     </a>
                                 </Button>
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    className="rounded-xl"
+                                >
+                                    <a
+                                        href={`/${safeLocale}/dashboard/servers/${serverId}/signup-activity`}
+                                    >
+                                        <ListTodo className="size-4" />
+                                        {dictionary.sidebar.signupActivity}
+                                    </a>
+                                </Button>
                                 {canAdmin ? (
                                     <Button
                                         asChild

@@ -43,6 +43,7 @@ export type EventUpsertInput = {
     signupGroupIds?: string[]
     allowedSignupStatuses?: SignupMembershipStatus[]
     useGeneralSignup?: boolean
+    signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     recurrence?: {
         frequency: "weekly" | "monthly_date" | "monthly_nth_weekday"
         interval: number
@@ -117,6 +118,22 @@ export function buildEventBasePayload(input: EventUpsertInput) {
                   ),
         useGeneralSignup:
             kind === "match" ? Boolean(input.useGeneralSignup) : false,
+        signupReminderStatuses:
+            kind === "match"
+                ? input.signupReminderStatuses === undefined
+                    ? ["member"]
+                    : normalizeOptionalArray(
+                          input.signupReminderStatuses
+                      ).filter(
+                          (
+                              status
+                          ): status is
+                              "recruit" | "member" | "reserve_member" =>
+                              status === "recruit" ||
+                              status === "member" ||
+                              status === "reserve_member"
+                      )
+                : [],
         recurrence: kind === "match" ? input.recurrence : undefined,
     }
 }

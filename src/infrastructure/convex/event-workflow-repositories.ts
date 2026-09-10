@@ -27,6 +27,7 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
         return {
             id: String(event._id),
             guildId: event.guildId,
+            name: event.name,
             kind: event.kind,
             gameId: event.gameId,
             signupGroupIds: event.signupGroupIds,
@@ -101,6 +102,23 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
             participants: input.participants ?? [],
             signUps: input.signUps ?? [],
             updatedAt: input.updatedAt,
+        })
+    }
+
+    async appendSignupActivity(input: {
+        guildId: string
+        eventId: string
+        eventName: string
+        eventKind: "match" | "training"
+        userId: string
+        action: "signed_up" | "changed_role" | "unsigned" | "declined"
+        role?: string | null
+        previousRole?: string | null
+        occurredAt: string
+    }): Promise<void> {
+        await this.ctx.db.insert("signupActivities", {
+            ...input,
+            eventId: input.eventId as Id<"events">,
         })
     }
 

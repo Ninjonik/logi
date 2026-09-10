@@ -1,74 +1,37 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import {
-    getAttendanceReminderDueAt,
-    isExpiredScheduledJobClaim,
-    shouldDiscardScheduledJob,
-} from "./scheduled-job-policy"
+import { getSignupReminderDueAt } from "./scheduled-job-policy"
 
-const now = new Date("2026-08-29T17:00:00.000Z")
-
-test("scheduled jobs for concluded events are always discarded", () => {
+test("schedules the first signup reminder 24 hours after match creation", () => {
     assert.equal(
-        shouldDiscardScheduledJob({
-            eventStatus: "concluded",
-            gameEnd: "2026-08-29T16:00:00.000Z",
-            now,
-        }),
-        true
+        getSignupReminderDueAt(
+            "2026-01-01T10:00:00.000Z",
+            "2026-01-03T10:00:00.000Z",
+            new Date("2026-01-01T11:00:00.000Z")
+        ),
+        "2026-01-02T10:00:00.000Z"
     )
 })
 
-test("scheduled jobs for historical events are discarded even if status reconciliation was missed", () => {
+test("does not schedule a signup reminder after registration ends", () => {
     assert.equal(
-        shouldDiscardScheduledJob({
-            eventStatus: "registration",
-            gameEnd: "2026-08-22T16:59:59.999Z",
-            now,
-        }),
-        true
-    )
-    assert.equal(
-        shouldDiscardScheduledJob({
-            eventStatus: "registration",
-            gameEnd: "2026-08-22T17:00:00.000Z",
-            now,
-        }),
-        false
-    )
-})
-
-test("a job claim is recoverable after five minutes or when its timestamp is missing", () => {
-    assert.equal(
-        isExpiredScheduledJobClaim("2026-08-29T16:55:00.000Z", now),
-        false
-    )
-    assert.equal(
-        isExpiredScheduledJobClaim("2026-08-29T16:54:59.999Z", now),
-        true
-    )
-    assert.equal(isExpiredScheduledJobClaim(undefined, now), true)
-})
-
-test("the 24-hour reminder is due immediately when a future match is rescheduled inside its window", () => {
-    assert.equal(
-        getAttendanceReminderDueAt("2026-08-30T12:00:00.000Z", 24, now),
-        now.toISOString()
-    )
-    assert.equal(
-        getAttendanceReminderDueAt("2026-08-30T12:00:00.000Z", 18, now),
-        "2026-08-29T18:00:00.000Z"
-    )
-})
-
-test("past later reminder windows are not backfilled and past meetings receive no reminder", () => {
-    assert.equal(
-        getAttendanceReminderDueAt("2026-08-29T22:00:00.000Z", 18, now),
+        getSignupReminderDueAt(
+            "2026-01-01T10:00:00.000Z",
+            "2026-01-02T09:00:00.000Z",
+            new Date("2026-01-01T11:00:00.000Z")
+        ),
         null
     )
+})
+
+test("reschedules an edited open match for the next daily reminder", () => {
     assert.equal(
-        getAttendanceReminderDueAt("2026-08-29T16:00:00.000Z", 24, now),
-        null
+        getSignupReminderDueAt(
+            "2026-01-01T10:00:00.000Z",
+            "2026-01-05T10:00:00.000Z",
+            new Date("2026-01-03T10:00:00.000Z")
+        ),
+        "2026-01-04T10:00:00.000Z"
     )
 })

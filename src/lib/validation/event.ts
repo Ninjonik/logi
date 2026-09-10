@@ -50,6 +50,9 @@ export const eventSchema = z
             .array(z.enum(["recruit", "member", "reserve_member", "mercenary"]))
             .default([]),
         useGeneralSignup: z.boolean().default(false),
+        signupReminderStatuses: z
+            .array(z.enum(["recruit", "member", "reserve_member"]))
+            .default(["member"]),
         recurrence: z
             .object({
                 frequency: z.enum([
