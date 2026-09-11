@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
 
+import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth"
 import { UserSettingsForm } from "@/components/app/user-settings-form"
 import { PageHeader } from "@/components/app/page-header"
 import { getDictionary } from "@/i18n/dictionaries"
-import { getCurrentPlayer } from "@/lib/auth"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
@@ -18,7 +18,10 @@ export default async function UserSettingsPage({
 }) {
     const { locale } = await params
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const user = await getCurrentPlayer()
+    const [user, workspaces] = await Promise.all([
+        getCurrentPlayer(),
+        getVisibleGuildsForLoggedInUser(),
+    ])
 
     if (!user) {
         return null
@@ -31,7 +34,11 @@ export default async function UserSettingsPage({
                 description={dictionary.userSettings.description}
             />
             <div className="px-4 lg:px-6">
-                <UserSettingsForm user={user} dictionary={dictionary} />
+                <UserSettingsForm
+                    user={user}
+                    dictionary={dictionary}
+                    workspaces={workspaces}
+                />
             </div>
         </>
     )

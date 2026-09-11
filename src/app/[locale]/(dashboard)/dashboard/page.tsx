@@ -6,10 +6,10 @@ import {
     getCurrentPlayer,
     getVisibleGuildsForLoggedInUser,
     isCurrentUserSuperadmin,
+    resolveDefaultWorkspaceForCurrentPlayer,
 } from "@/lib/auth"
 import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-button"
 import { BotInviteButton } from "@/components/app/bot-invite-button"
-import { getGuildMetadataByDiscordId } from "@/lib/server-metadata"
 import { ServerCard } from "@/components/app/server-card"
 import { PageHeader } from "@/components/app/page-header"
 import { buildDiscordBotInviteUrl } from "@/lib/discord"
@@ -53,29 +53,22 @@ export default async function DashboardHomePage({
     const { locale } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const [user, superadmin, visibleGuilds] = await Promise.all([
-        getCurrentPlayer(),
-        isCurrentUserSuperadmin(),
-        getVisibleGuildsForLoggedInUser(),
-    ])
+    const user = await getCurrentPlayer()
 
     if (!user) {
         return null
     }
 
-    const mainServer = user.guildId
-        ? visibleGuilds.find((guild) => guild.discordId === user.guildId)
-        : undefined
-    if (mainServer) {
-        const persistedMainServer = await getGuildMetadataByDiscordId(
-            mainServer.discordId
-        )
-        if (persistedMainServer) {
-            redirect(
-                `/${safeLocale}/dashboard/servers/${persistedMainServer.id}`
-            )
-        }
+    const defaultWorkspaceId = await resolveDefaultWorkspaceForCurrentPlayer(
+        user.id
+    )
+    if (defaultWorkspaceId) {
+        redirect(`/${safeLocale}/dashboard/servers/${defaultWorkspaceId}`)
     }
+    const [superadmin, visibleGuilds] = await Promise.all([
+        isCurrentUserSuperadmin(),
+        getVisibleGuildsForLoggedInUser(),
+    ])
     const managedServers = superadmin
         ? visibleGuilds
         : visibleGuilds.filter((guild) =>

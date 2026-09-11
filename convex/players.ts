@@ -1,3 +1,4 @@
+import { getDefaultWorkspaceFromMemberships } from "../src/domain/workspaces/default-workspace"
 import { matchesGameScope } from "../src/domain/games/game"
 import type { MutationCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
@@ -348,6 +349,7 @@ function toPlayer(user: {
     avatar: string
     managedGuildIds: string[]
     guildId?: string
+    defaultWorkspaceId?: string
     mercenaryGuildIds: string[]
     isStreamer: boolean
     score?: number
@@ -752,6 +754,70 @@ export const setPrimaryGuild = mutation({
         })
 
         return args.guildId
+    },
+})
+
+export const setDefaultWorkspace = mutation({
+    args: {
+        secret: v.string(),
+        userId: v.string(),
+        workspaceId: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+
+        const user = await getUserByIdentifier(ctx, args.userId)
+        if (!user) throw new Error("Player not found.")
+
+        if (
+            args.workspaceId &&
+            !(await getGuildByDiscordId(ctx, args.workspaceId))
+        ) {
+            throw new Error("Workspace not found.")
+        }
+
+        await ctx.db.patch(user._id, {
+            defaultWorkspaceId: args.workspaceId,
+            updatedAt: new Date().toISOString(),
+        })
+    },
+})
+
+export const resolveDefaultWorkspace = mutation({
+    args: {
+        secret: v.string(),
+        userId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+
+        const user = await getUserByIdentifier(ctx, args.userId)
+        if (!user) return null
+
+        if (user.defaultWorkspaceId) {
+            const workspace = await getGuildByDiscordId(
+                ctx,
+                user.defaultWorkspaceId
+            )
+            if (workspace) return String(workspace._id)
+        }
+
+        const memberships = await ctx.db
+            .query("userAssignments")
+            .withIndex("userId", (q) => q.eq("userId", getUserStableId(user)))
+            .collect()
+        const workspaceDiscordId =
+            getDefaultWorkspaceFromMemberships(memberships)
+        if (!workspaceDiscordId) return null
+
+        const workspace = await getGuildByDiscordId(ctx, workspaceDiscordId)
+        if (!workspace) return null
+
+        await ctx.db.patch(user._id, {
+            defaultWorkspaceId: workspaceDiscordId,
+            updatedAt: new Date().toISOString(),
+        })
+        return String(workspace._id)
     },
 })
 
