@@ -60,6 +60,7 @@ const PLAYER_ROW_GAP = 4
 // a last-resort guard against a clipped final pixel.
 const SAFETY_BUFFER = 32
 const RENDER_HEIGHT_BUFFER = 512
+const MAX_RENDER_ATTEMPTS = 4
 const PIXEL_COMPARISON_THRESHOLD = 8
 
 // Groups with this many squads or fewer are "small" — they get a fixed,
@@ -326,13 +327,24 @@ async function cropToRosterContent(image: Uint8Array) {
         }
     }
 
-    if (lastContentRow < 0) return image
+    if (lastContentRow < 0) {
+        return { image, reachedCanvasBottom: false }
+    }
+
+    const reachedCanvasBottom =
+        lastContentRow >= info.height - OUTER_PADDING - 2
+    if (reachedCanvasBottom) {
+        return { image, reachedCanvasBottom: true }
+    }
 
     const height = Math.min(info.height, lastContentRow + OUTER_PADDING + 1)
-    return await sharp(image)
-        .extract({ left: 0, top: 0, width: info.width, height })
-        .png()
-        .toBuffer()
+    return {
+        image: await sharp(image)
+            .extract({ left: 0, top: 0, width: info.width, height })
+            .png()
+            .toBuffer(),
+        reachedCanvasBottom: false,
+    }
 }
 
 export async function GET(
@@ -985,7 +997,7 @@ export async function GET(
         )
     }
 
-    const renderedImage = new ImageResponse(
+    const imageElement = (
         <div
             style={{
                 display: "flex",
@@ -1395,15 +1407,28 @@ export async function GET(
                     )}
                 </div>
             </div>
-        </div>,
-        {
+        </div>
+    )
+    let renderHeight = Math.round(canvasHeight + RENDER_HEIGHT_BUFFER)
+    let croppedImage: Uint8Array | undefined
+
+    for (let attempt = 0; attempt < MAX_RENDER_ATTEMPTS; attempt += 1) {
+        const renderedImage = new ImageResponse(imageElement, {
             width: CANVAS_WIDTH,
-            height: Math.round(canvasHeight + RENDER_HEIGHT_BUFFER),
-        }
-    )
-    const image = await cropToRosterContent(
-        new Uint8Array(await renderedImage.arrayBuffer())
-    )
+            height: renderHeight,
+        })
+        const cropped = await cropToRosterContent(
+            new Uint8Array(await renderedImage.arrayBuffer())
+        )
+        croppedImage = cropped.image
+        if (!cropped.reachedCanvasBottom) break
+        renderHeight += RENDER_HEIGHT_BUFFER
+    }
+
+    if (!croppedImage) {
+        throw new Error("Roster image rendering did not produce an image.")
+    }
+    const image = croppedImage
     if (imageCacheKey)
         rosterImageCache.set(`${eventId}:${imageCacheKey}`, image)
     return createImageResponse(image)
