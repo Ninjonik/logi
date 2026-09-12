@@ -43,7 +43,7 @@ export async function getGuildPerformanceHistory(
             } | null
             return row?.matches ?? []
         },
-        3600
+        60 * 60 * 24
     )
 }
 export async function getPlayerPerformanceHistory(

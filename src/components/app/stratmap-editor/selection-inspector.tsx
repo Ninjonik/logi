@@ -4,6 +4,10 @@ import { ImagePlus, Trash2 } from "lucide-react"
 import { useState, type ReactNode } from "react"
 import { PhotoSlider } from "react-photo-view"
 
+import {
+    MAPS_LET_LOOSE_COLORS,
+    MAPS_LET_LOOSE_GREEN_COLOR,
+} from "@/domain/stratmaps/maps-let-loose-colors"
 import type {
     StratmapArrowStyle,
     StratmapElement,
@@ -13,7 +17,6 @@ import {
     DiscordMarkdownText,
     DiscordMarkdownTextarea,
 } from "@/components/app/discord-markdown"
-import { MAPS_LET_LOOSE_COLORS } from "@/domain/stratmaps/maps-let-loose-colors"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { cn } from "@/lib/utils"
 
@@ -178,7 +181,7 @@ function IconInspector({
         <SectionCard title={dictionary.stratmaps.selectedIcon}>
             <EditorField label="Color">
                 <ColorSwatches
-                    value={selectedElement.color ?? "#39ff14"}
+                    value={selectedElement.color ?? MAPS_LET_LOOSE_GREEN_COLOR}
                     onChange={(value) =>
                         onElementChange((element) =>
                             element.kind === "icon"
@@ -241,7 +244,7 @@ function ShapeInspector({
         updater: (element: StratmapElement) => StratmapElement
     ) => void
 }) {
-    const stroke = selectedElement.strokeColor ?? "#39ff14"
+    const stroke = selectedElement.strokeColor ?? MAPS_LET_LOOSE_GREEN_COLOR
     const fill = selectedElement.fillColor ?? "rgba(57,255,20,0.2)"
 
     return (
@@ -327,7 +330,7 @@ function TextInspector({
         <SectionCard title={dictionary.stratmaps.selectedElement}>
             <EditorField label="Color">
                 <ColorSwatches
-                    value={selectedElement.color ?? "#39ff14"}
+                    value={selectedElement.color ?? MAPS_LET_LOOSE_GREEN_COLOR}
                     onChange={(value) =>
                         onElementChange((element) =>
                             element.kind === "text"
@@ -451,7 +454,10 @@ function LineInspector({
         <SectionCard title={dictionary.stratmaps.selectedElement}>
             <EditorField label={dictionary.stratmaps.color}>
                 <ColorSwatches
-                    value={selectedElement.strokeColor ?? "#39ff14"}
+                    value={
+                        selectedElement.strokeColor ??
+                        MAPS_LET_LOOSE_GREEN_COLOR
+                    }
                     onChange={(value) =>
                         onElementChange((element) =>
                             element.kind === "line"

@@ -3,6 +3,7 @@ import { makeFunctionReference } from "convex/server"
 import { fetchMutation } from "convex/nextjs"
 import { z } from "zod"
 
+import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { getServerContext } from "@/lib/server-context"
 import { getInternalAuthSecret } from "@/lib/env"
 
@@ -31,5 +32,9 @@ export async function PATCH(
         playerId: body.playerId,
         isAdmin: body.isAdmin,
     })
+    revalidateCacheEntries([
+        appCacheTags.serverContext(serverId),
+        appCacheTags.player(body.playerId),
+    ])
     return NextResponse.json({ isAdmin: body.isAdmin })
 }

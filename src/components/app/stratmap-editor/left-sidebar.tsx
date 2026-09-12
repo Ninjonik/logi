@@ -206,6 +206,7 @@ function SlidesPanel({
                 {slides.map((slide, index) => (
                     <div
                         key={slide.id}
+                        onPointerDown={() => onSelectSlide(slide.id)}
                         className={cn(
                             "group flex h-7 items-center rounded-[3px] border border-transparent px-1",
                             selectedSlideId === slide.id
