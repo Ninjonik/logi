@@ -105,6 +105,33 @@ export function resolveSiteAssetUrl(path?: string) {
     }
 }
 
+function isAnimatedDiscordAvatar(url: URL) {
+    return (
+        (url.hostname === "cdn.discordapp.com" ||
+            url.hostname === "media.discordapp.net") &&
+        /^\/avatars\/[^/]+\/a_[^/]+\.(png|jpe?g|webp|gif)$/i.test(url.pathname)
+    )
+}
+
+// ImageResponse cannot reliably decode Discord's animated avatar assets, even
+// when their URL requests a PNG representation. Use a local, static fallback
+// so one avatar never prevents the entire roster image from rendering.
+export function resolveRosterAvatarUrl(
+    avatar?: string,
+    resolveAssetUrl: (path?: string) => string | undefined = resolveSiteAssetUrl
+) {
+    const resolved = resolveAssetUrl(avatar)
+    if (!resolved) return undefined
+
+    try {
+        return isAnimatedDiscordAvatar(new URL(resolved))
+            ? resolveAssetUrl("/favicon.png")
+            : resolved
+    } catch {
+        return undefined
+    }
+}
+
 export function buildRosterImageUrl(eventId: string, rosterUpdatedAt?: string) {
     const url = new URL(`/api/discord/roster-image/${eventId}`, getSiteUrl())
     url.searchParams.set(

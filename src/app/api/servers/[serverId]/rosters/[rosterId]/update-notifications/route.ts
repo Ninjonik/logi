@@ -26,6 +26,18 @@ type UpdateNotificationBody = {
     notifyPlayers?: boolean
 }
 
+class DiscordChannelMessageError extends Error {
+    constructor(
+        readonly status: number,
+        readonly code?: number,
+        readonly details?: string
+    ) {
+        super(
+            `Unable to post roster update message to Discord (HTTP ${status}${code ? `, code ${code}` : ""}${details ? `: ${details}` : ""}).`
+        )
+    }
+}
+
 async function postDiscordChannelMessage(
     channelId: string,
     content: string,
@@ -59,7 +71,15 @@ async function postDiscordChannelMessage(
     )
 
     if (!response.ok) {
-        throw new Error("Unable to post roster update message to Discord.")
+        const payload = (await response.json().catch(() => null)) as {
+            code?: number
+            message?: string
+        } | null
+        throw new DiscordChannelMessageError(
+            response.status,
+            payload?.code,
+            payload?.message
+        )
     }
     return (await response.json()) as { id: string }
 }
@@ -259,15 +279,34 @@ export async function POST(
             rosterUpdateChannelId
                 ? syncContext.syncState.rosterUpdateMessageId
                 : undefined
-        const digest = await postDiscordChannelMessage(
-            rosterUpdateChannelId,
-            formatAnnouncementMessage({
-                eventName: event.name,
-                messages,
-                summary,
-            }),
-            existingDigestId
-        )
+        const content = formatAnnouncementMessage({
+            eventName: event.name,
+            messages,
+            summary,
+        })
+        let digest: { id: string }
+        try {
+            digest = await postDiscordChannelMessage(
+                rosterUpdateChannelId,
+                content,
+                existingDigestId
+            )
+        } catch (error) {
+            // Discord returns 10008 when the previously stored digest was
+            // deleted. Post a replacement instead of failing the update.
+            if (
+                existingDigestId &&
+                error instanceof DiscordChannelMessageError &&
+                error.code === 10008
+            ) {
+                digest = await postDiscordChannelMessage(
+                    rosterUpdateChannelId,
+                    content
+                )
+            } else {
+                throw error
+            }
+        }
         await fetchMutation(updateRosterUpdateMessageReference, {
             secret: getInternalAuthSecret(),
             eventId: event.id as never,

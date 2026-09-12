@@ -5,6 +5,7 @@ import sharp from "sharp"
 import {
     getRosterImageContext,
     getRosterImageContextCached,
+    resolveRosterAvatarUrl,
     resolveSiteAssetUrl,
 } from "@/lib/roster-image"
 import {
@@ -824,7 +825,7 @@ export async function GET(
                                                                         >
                                                                             {user ? (
                                                                                 <img
-                                                                                    src={resolveAssetUrl(
+                                                                                    src={resolveRosterAvatarUrl(
                                                                                         user.avatar
                                                                                     )}
                                                                                     alt=""
@@ -1205,7 +1206,7 @@ export async function GET(
                             }}
                         >
                             <img
-                                src={resolveAssetUrl(user!.avatar)}
+                                src={resolveRosterAvatarUrl(user!.avatar)}
                                 alt=""
                                 width="22"
                                 height="22"
