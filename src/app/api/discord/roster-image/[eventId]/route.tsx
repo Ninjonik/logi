@@ -54,7 +54,10 @@ const ROLE_SECTION_GAP = 8
 const PLAYER_ROW_HEIGHT = 40
 const PLAYER_ROW_HEIGHT_EMPTY = 32
 const PLAYER_ROW_GAP = 4
-const SAFETY_BUFFER = 24 // tiny cushion so rounding never clips the bottom edge
+// ImageResponse's text metrics can be a few pixels taller than the CSS values
+// used below. Keep a meaningful bottom margin so a new font metric or a long
+// roster cannot turn that small difference into a clipped image.
+const SAFETY_BUFFER = 96
 
 // Groups with this many squads or fewer are "small" — they get a fixed,
 // compact width and pack together in a row. Groups with more squads are
@@ -226,7 +229,12 @@ function estimateSquadHeight(squad: Squad) {
             section.players.reduce(
                 (sum, player) =>
                     sum +
-                    (getFilledPlayerName(player)
+                    // A Discord-backed player usually has no custom name. The
+                    // image still renders that player as a full row after their
+                    // Discord user is resolved, so using only customName here
+                    // underestimates every assigned row by 8px and can crop the
+                    // final group.
+                    (isOccupiedSlot(player)
                         ? PLAYER_ROW_HEIGHT
                         : PLAYER_ROW_HEIGHT_EMPTY),
                 0
@@ -532,6 +540,7 @@ export async function GET(
                         style={{
                             width: "5px",
                             height: "18px",
+                            flexShrink: 0,
                             borderRadius: "999px",
                             background: section.color,
                         }}
@@ -610,26 +619,42 @@ export async function GET(
                                                     style={{
                                                         width: "4px",
                                                         height: "14px",
+                                                        flexShrink: 0,
                                                         borderRadius: "999px",
                                                         background: squad.color,
                                                     }}
                                                 />
                                                 {squad.icon ? (
-                                                    <img
-                                                        src={resolveAssetUrl(
-                                                            squad.icon
-                                                        )}
-                                                        alt=""
-                                                        width="16"
-                                                        height="16"
+                                                    <div
                                                         style={{
                                                             display: "flex",
                                                             width: "16px",
                                                             height: "16px",
-                                                            objectFit:
-                                                                "contain",
+                                                            flexShrink: 0,
+                                                            alignItems:
+                                                                "center",
+                                                            justifyContent:
+                                                                "center",
                                                         }}
-                                                    />
+                                                    >
+                                                        <img
+                                                            src={resolveAssetUrl(
+                                                                squad.icon
+                                                            )}
+                                                            alt=""
+                                                            width="16"
+                                                            height="16"
+                                                            style={{
+                                                                display:
+                                                                    "block",
+                                                                width: "16px",
+                                                                height: "16px",
+                                                                flexShrink: 0,
+                                                                objectFit:
+                                                                    "contain",
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ) : null}
                                                 <div
                                                     style={{
