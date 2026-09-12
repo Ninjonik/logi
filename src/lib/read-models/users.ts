@@ -15,10 +15,10 @@ export async function getUsersReadModelByIds(
 ) {
     return await cachedRead(
         ["users-by-id", guildId ?? "all", [...userIds].sort().join(",")],
-        [
-            appCacheTags.users(),
-            ...userIds.map((userId) => appCacheTags.player(userId)),
-        ],
+        // A large roster can exceed Next's 128-tag cache limit. Every user
+        // mutation also invalidates this aggregate tag, so it keeps this
+        // variable-size read coherent without silently dropping tags.
+        [appCacheTags.users()],
         async () =>
             (await fetchQuery(getUsersByIdsReference, {
                 userIds,
