@@ -42,7 +42,7 @@ const CONTENT_WIDTH =
 const GROUP_GAP = 18 // gap between squad cards, and between group rows
 const GROUP_PADDING_X = 24 // 16px each side, inside a group's box
 const GROUP_PADDING_Y = 12 // 16px each side, inside a group's box
-const HEADER_ROW_HEIGHT = 18 // "Published roster snapshot" row
+const HEADER_ROW_HEIGHT = 33 // total + update timestamp
 const MAIN_COLUMN_GAP = 16 // gap between that header row and the groups area
 const GROUP_HEADER_HEIGHT = 18 // colored bar + group name row
 const GROUP_HEADER_GAP = 8
@@ -52,12 +52,12 @@ const ROLE_LABEL_HEIGHT = 16
 const ROLE_LABEL_GAP = 5
 const ROLE_SECTION_GAP = 8
 const PLAYER_ROW_HEIGHT = 40
-const PLAYER_ROW_HEIGHT_EMPTY = 32
+const PLAYER_ROW_HEIGHT_EMPTY = 36
 const PLAYER_ROW_GAP = 4
-// ImageResponse's text metrics can be a few pixels taller than the CSS values
-// used below. Keep a meaningful bottom margin so a new font metric or a long
-// roster cannot turn that small difference into a clipped image.
-const SAFETY_BUFFER = 96
+// Rounding from ImageResponse can differ by a few pixels from these fixed
+// layout metrics. The outer padding supplies the visual margin; this is only
+// a last-resort guard against a clipped final pixel.
+const SAFETY_BUFFER = 32
 
 // Groups with this many squads or fewer are "small" — they get a fixed,
 // compact width and pack together in a row. Groups with more squads are
@@ -249,13 +249,15 @@ function estimateSquadHeight(squad: Squad) {
 }
 
 function estimateGroupSectionHeight(squads: Squad[], perRow: number) {
-    const maxSquadHeight = squads.reduce(
-        (max, squad) => Math.max(max, estimateSquadHeight(squad)),
-        0
-    )
-    const numRows = Math.max(1, Math.ceil(squads.length / perRow))
+    const squadRows = chunkItems(squads, perRow)
     const squadsAreaHeight =
-        numRows * maxSquadHeight + Math.max(0, numRows - 1) * GROUP_GAP
+        squadRows.reduce(
+            (total, row) =>
+                total +
+                Math.max(...row.map((squad) => estimateSquadHeight(squad))),
+            0
+        ) +
+        Math.max(0, squadRows.length - 1) * GROUP_GAP
     const groupBoxHeight = GROUP_PADDING_Y * 2 + squadsAreaHeight
     return GROUP_HEADER_HEIGHT + GROUP_HEADER_GAP + groupBoxHeight
 }
@@ -276,41 +278,6 @@ function estimateSectionHeight(section: GroupSection) {
 
 // Greedy left-to-right, top-to-bottom row packing — mirrors how flexWrap
 // will actually lay the small-group cards out, so the height estimate matches.
-function packRows<T extends { width: number; height: number }>(
-    items: T[],
-    maxWidth: number,
-    gap: number
-) {
-    const rows: T[][] = []
-    let currentRow: T[] = []
-    let currentWidth = 0
-
-    items.forEach((item) => {
-        const neededWidth =
-            currentRow.length === 0
-                ? item.width
-                : currentWidth + gap + item.width
-        if (currentRow.length > 0 && neededWidth > maxWidth) {
-            rows.push(currentRow)
-            currentRow = [item]
-            currentWidth = item.width
-        } else {
-            currentRow.push(item)
-            currentWidth = neededWidth
-        }
-    })
-    if (currentRow.length) rows.push(currentRow)
-
-    const totalHeight =
-        rows.reduce(
-            (sum, row) => sum + Math.max(...row.map((item) => item.height)),
-            0
-        ) +
-        Math.max(0, rows.length - 1) * gap
-
-    return { rows, totalHeight }
-}
-
 function chunkItems<T>(items: T[], size: number) {
     const rows: T[][] = []
     for (let index = 0; index < items.length; index += size) {
