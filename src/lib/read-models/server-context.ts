@@ -14,9 +14,12 @@ import type {
     TopicPreset,
 } from "@/types/domain"
 import type { ServerUserAssignment } from "@/lib/server-user-management"
+import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 import { isSuperadminDiscordId } from "@/lib/superadmin"
 import { getInternalAuthSecret } from "@/lib/env"
 import { getLoggedInUser } from "@/lib/auth"
+
+const CLAN_DASHBOARD_REVALIDATE_SECONDS = 60 * 60 * 24
 
 const getServerContextReference = makeFunctionReference<"query">(
     "serverContext:getServerContext"
@@ -76,18 +79,33 @@ export async function getServerContextReadModel(
     }
 
     try {
-        if (await isSuperadminDiscordId(user.discordId)) {
-            return await getServerContextSnapshotInternal(
+        const isSuperadmin = await isSuperadminDiscordId(user.discordId)
+
+        return await cachedRead(
+            [
+                "server-context:v1",
                 serverId,
                 user.discordId,
-                gameScope
-            )
-        }
-
-        return await getServerContextSnapshot(
-            serverId,
-            user.discordId,
-            gameScope
+                gameScope ?? "all",
+                isSuperadmin ? "internal" : "standard",
+            ],
+            [
+                appCacheTags.serverContext(serverId),
+                appCacheTags.player(user.id),
+            ],
+            () =>
+                isSuperadmin
+                    ? getServerContextSnapshotInternal(
+                          serverId,
+                          user.discordId,
+                          gameScope
+                      )
+                    : getServerContextSnapshot(
+                          serverId,
+                          user.discordId,
+                          gameScope
+                      ),
+            CLAN_DASHBOARD_REVALIDATE_SECONDS
         )
     } catch {
         return null

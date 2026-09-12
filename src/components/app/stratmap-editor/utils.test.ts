@@ -1,7 +1,17 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { zoomViewport } from "./utils"
+import { resolveEditorCanAdmin, zoomViewport } from "./utils"
+
+test("keeps a server-authorized editor active when the live query lacks a superadmin override", () => {
+    assert.equal(resolveEditorCanAdmin(true, false), true)
+    assert.equal(resolveEditorCanAdmin(true, undefined), true)
+})
+
+test("uses live administration access when the server did not authorize the initial page", () => {
+    assert.equal(resolveEditorCanAdmin(false, true), true)
+    assert.equal(resolveEditorCanAdmin(false, false), false)
+})
 
 test("applies repeated zoom steps to the latest viewport", () => {
     const anchor = { x: 960, y: 960 }

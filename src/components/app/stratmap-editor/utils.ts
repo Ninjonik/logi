@@ -30,6 +30,19 @@ export function getActiveSlide(state: StratmapState, selectedSlideId: string) {
     )
 }
 
+/**
+ * The server-rendered editor permission is authoritative for the initial page
+ * load. A regular live query can be less privileged (for example, it does not
+ * carry the dashboard's superadmin override), so it must never revoke that
+ * already-authorized editor session.
+ */
+export function resolveEditorCanAdmin(
+    initialCanAdmin: boolean,
+    liveCanAdmin: boolean | undefined
+) {
+    return initialCanAdmin || liveCanAdmin === true
+}
+
 export function getCanvasSize(background?: StratmapSlideBackground) {
     if (
         background?.kind === "image" &&

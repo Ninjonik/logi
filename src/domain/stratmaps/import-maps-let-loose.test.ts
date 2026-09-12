@@ -70,6 +70,37 @@ test("imports Maps Let Loose slides, assets, shapes, text and drawings", () => {
         "#0080ff"
     )
     assert.equal(result.skippedElements, 0)
+    assert.equal(
+        (result.state.slides[0].elements[3] as { strokeColor: string })
+            .strokeColor,
+        "#00ff00"
+    )
+})
+
+test("normalizes imported green aliases to the quick-select green", () => {
+    const result = importMapsLetLooseJson({
+        state: {
+            elements: [],
+            drawings: [
+                {
+                    left: 0,
+                    top: 0,
+                    stroke: "green",
+                    type: { type: "drawing" },
+                    path: [
+                        ["M", 0, 0],
+                        ["L", 4, 4],
+                    ],
+                },
+            ],
+        },
+    })
+
+    assert.equal(
+        (result.state.slides[0].elements[0] as { strokeColor: string })
+            .strokeColor,
+        "#00ff00"
+    )
 })
 
 test("uses Maps Let Loose's enemy red for enemy icon assets", () => {

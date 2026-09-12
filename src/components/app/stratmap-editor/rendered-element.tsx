@@ -7,6 +7,7 @@ import {
     type StratmapShapeElement,
     getHllStratmapCatalog,
 } from "@/lib/stratmaps"
+import { MAPS_LET_LOOSE_GREEN_COLOR } from "@/domain/stratmaps/maps-let-loose-colors"
 
 import {
     buildArrowDecoration,
@@ -109,7 +110,7 @@ export function RenderedElement({
                         .map((point) => `${point.x},${point.y}`)
                         .join(" ")}
                     fill={element.fillColor ?? "rgba(57,255,20,0.2)"}
-                    stroke={element.strokeColor ?? "#39ff14"}
+                    stroke={element.strokeColor ?? MAPS_LET_LOOSE_GREEN_COLOR}
                     strokeWidth={element.strokeWidth ?? 6}
                     strokeDasharray={dashArray}
                 />
@@ -117,7 +118,7 @@ export function RenderedElement({
             {element.kind === "freehand" ? (
                 <PathElement
                     d={buildLinePath(element.points)}
-                    stroke={element.strokeColor ?? "#39ff14"}
+                    stroke={element.strokeColor ?? MAPS_LET_LOOSE_GREEN_COLOR}
                     strokeWidth={element.strokeWidth ?? 6}
                     dashArray={dashArray}
                 />
@@ -323,7 +324,7 @@ function LineElement({
     element: Extract<StratmapElement, { kind: "line" }>
     dashArray?: string
 }) {
-    const stroke = element.strokeColor ?? "#39ff14"
+    const stroke = element.strokeColor ?? MAPS_LET_LOOSE_GREEN_COLOR
     const strokeWidth = element.strokeWidth ?? 6
     const labelPoint = getPathLabelPoint(element.points)
     const labelAngle = getPathLabelAngle(element.points)
@@ -470,7 +471,7 @@ function RectangleElement({
                 width={element.width}
                 height={element.height}
                 fill={element.fillColor ?? "rgba(57,255,20,0.2)"}
-                stroke={element.strokeColor ?? "#39ff14"}
+                stroke={element.strokeColor ?? MAPS_LET_LOOSE_GREEN_COLOR}
                 strokeWidth={element.strokeWidth ?? 6}
                 strokeDasharray={dashArray}
             />
@@ -500,7 +501,7 @@ function EllipseElement({
                 rx={element.width / 2}
                 ry={element.height / 2}
                 fill={element.fillColor ?? "rgba(57,255,20,0.2)"}
-                stroke={element.strokeColor ?? "#39ff14"}
+                stroke={element.strokeColor ?? MAPS_LET_LOOSE_GREEN_COLOR}
                 strokeWidth={element.strokeWidth ?? 6}
                 strokeDasharray={dashArray}
             />

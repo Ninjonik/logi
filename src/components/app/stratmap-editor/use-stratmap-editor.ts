@@ -45,6 +45,7 @@ import {
     getOverlayStrongpoints,
     getPointDistance,
     getPointerPoint,
+    resolveEditorCanAdmin,
     getStratmapMetaSignature,
     getSvgViewportMetrics,
     isAreaDrag,
@@ -178,7 +179,7 @@ export function useStratmapEditor(
         canRedo: false,
     })
 
-    const canAdmin = liveData?.canAdmin ?? initialCanAdmin
+    const canAdmin = resolveEditorCanAdmin(initialCanAdmin, liveData?.canAdmin)
     const canEdit = canAdmin && mode === "edit"
     const stratmap = liveData?.stratmap ?? initialStratmap
     const maps = getStratmapMaps(initialStratmap.gameId)

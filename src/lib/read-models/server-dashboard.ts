@@ -41,6 +41,6 @@ export async function getRecentMatchSummary(
                 secret: getInternalAuthSecret(),
                 serverId: serverId as never,
             })) as RecentMatchSummary | null,
-        3600
+        60 * 60 * 24
     )
 }

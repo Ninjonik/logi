@@ -6,7 +6,10 @@ import {
     type StratmapSlide,
     type StratmapState,
 } from "@/lib/stratmaps"
-import { mapsLetLooseIconColor } from "./maps-let-loose-colors"
+import {
+    MAPS_LET_LOOSE_GREEN_COLOR,
+    mapsLetLooseIconColor,
+} from "./maps-let-loose-colors"
 
 type UnknownRecord = Record<string, unknown>
 
@@ -86,8 +89,9 @@ function convertElement(
     const rotation = numberValue(element.angle, 0)
     const scaleX = numberValue(element.scaleX, 1)
     const scaleY = numberValue(element.scaleY, 1)
-    const color =
-        stringValue(element.stroke) || stringValue(element.fill) || "#00ff00"
+    const color = normalizeMapsLetLooseColor(
+        stringValue(element.stroke) || stringValue(element.fill)
+    )
     const strokeWidth = numberValue(element.strokeWidth, 6)
     const strokeStyle = dashStyle(element.strokeDashArray)
 
@@ -101,7 +105,10 @@ function convertElement(
             text: stringValue(element.text) || "Text",
             fontSize: numberValue(element.fontSize, 24),
             width: numberValue(element.width, 380) * scaleX,
-            color: stringValue(element.fill) || "#ffffff",
+            color: normalizeMapsLetLooseColor(
+                stringValue(element.fill),
+                "#ffffff"
+            ),
             backgroundColor:
                 stringValue(element.backgroundColor) || "transparent",
         }
@@ -123,7 +130,10 @@ function convertElement(
                     element.height,
                     numberValue(element.radius, 190) * 2
                 ) * scaleY,
-            fillColor: stringValue(element.fill) || "transparent",
+            fillColor: normalizeMapsLetLooseColor(
+                stringValue(element.fill),
+                "transparent"
+            ),
             fillOpacity: numberValue(element.opacity, 1),
             strokeColor: color,
             strokeWidth,
@@ -140,7 +150,10 @@ function convertElement(
                   y,
                   rotation,
                   points,
-                  fillColor: stringValue(element.fill) || "transparent",
+                  fillColor: normalizeMapsLetLooseColor(
+                      stringValue(element.fill),
+                      "transparent"
+                  ),
                   fillOpacity: numberValue(element.opacity, 1),
                   strokeColor: color,
                   strokeWidth,
@@ -179,7 +192,9 @@ function convertElement(
                   x: 0,
                   y: 0,
                   points,
-                  strokeColor: stringValue(element.stroke) || "#00ff00",
+                  strokeColor: normalizeMapsLetLooseColor(
+                      stringValue(element.stroke)
+                  ),
                   strokeWidth,
                   strokeStyle,
               }
@@ -202,6 +217,26 @@ function convertElement(
               color: mapsLetLooseIconColor(meta?.side),
           }
         : null
+}
+
+function normalizeMapsLetLooseColor(
+    value: string | undefined,
+    fallback: string = MAPS_LET_LOOSE_GREEN_COLOR
+) {
+    const color = value?.trim()
+    if (!color) return fallback
+
+    const normalized = color.toLowerCase().replace(/\s+/g, "")
+    return [
+        "green",
+        "#008000",
+        "#0f0",
+        "#00ff00",
+        "rgb(0,128,0)",
+        "rgb(0,255,0)",
+    ].includes(normalized)
+        ? MAPS_LET_LOOSE_GREEN_COLOR
+        : color
 }
 
 function iconIdFor(type: string, modifier: string, catalogIds: Set<string>) {
