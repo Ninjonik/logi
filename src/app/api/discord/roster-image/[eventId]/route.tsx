@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { ImageResponse } from "next/og"
+import sharp from "sharp"
 
 import {
     getRosterImageContext,
@@ -58,6 +59,8 @@ const PLAYER_ROW_GAP = 4
 // layout metrics. The outer padding supplies the visual margin; this is only
 // a last-resort guard against a clipped final pixel.
 const SAFETY_BUFFER = 32
+const RENDER_HEIGHT_BUFFER = 512
+const PIXEL_COMPARISON_THRESHOLD = 8
 
 // Groups with this many squads or fewer are "small" — they get a fixed,
 // compact width and pack together in a row. Groups with more squads are
@@ -284,6 +287,52 @@ function chunkItems<T>(items: T[], size: number) {
         rows.push(items.slice(index, index + size))
     }
     return rows
+}
+
+async function cropToRosterContent(image: Uint8Array) {
+    const decoded = await sharp(image)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true })
+    const { data, info } = decoded
+    const lastBackgroundPixelX = info.width - 1
+
+    const rowContainsContent = (y: number) => {
+        const backgroundOffset =
+            (y * info.width + lastBackgroundPixelX) * info.channels
+
+        for (let x = OUTER_PADDING; x < info.width - OUTER_PADDING; x += 4) {
+            const offset = (y * info.width + x) * info.channels
+            for (let channel = 0; channel < 3; channel += 1) {
+                if (
+                    Math.abs(
+                        data[offset + channel] -
+                            data[backgroundOffset + channel]
+                    ) > PIXEL_COMPARISON_THRESHOLD
+                ) {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    let lastContentRow = -1
+    for (let y = info.height - OUTER_PADDING - 1; y >= OUTER_PADDING; y -= 1) {
+        if (rowContainsContent(y)) {
+            lastContentRow = y
+            break
+        }
+    }
+
+    if (lastContentRow < 0) return image
+
+    const height = Math.min(info.height, lastContentRow + OUTER_PADDING + 1)
+    return await sharp(image)
+        .extract({ left: 0, top: 0, width: info.width, height })
+        .png()
+        .toBuffer()
 }
 
 export async function GET(
@@ -1347,9 +1396,14 @@ export async function GET(
                 </div>
             </div>
         </div>,
-        { width: CANVAS_WIDTH, height: Math.round(canvasHeight) }
+        {
+            width: CANVAS_WIDTH,
+            height: Math.round(canvasHeight + RENDER_HEIGHT_BUFFER),
+        }
     )
-    const image = new Uint8Array(await renderedImage.arrayBuffer())
+    const image = await cropToRosterContent(
+        new Uint8Array(await renderedImage.arrayBuffer())
+    )
     if (imageCacheKey)
         rosterImageCache.set(`${eventId}:${imageCacheKey}`, image)
     return createImageResponse(image)
