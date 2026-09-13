@@ -290,60 +290,24 @@ function sanitizeRecordKeys(record: Record<string, number> | undefined) {
 }
 
 /**
- * Valkyria used to return a numeric Steam ban count. It now sometimes returns
- * Steam's ban-summary object instead. Match storage deliberately keeps the
- * stable numeric form expected by Convex instead of persisting that external
- * response shape directly.
+ * Keep a complete gameplay record without persisting the provider's volatile,
+ * unused Steam metadata or unit history. Those fields can exceed Convex's 1 MiB
+ * document limit on a full match and are not used by any Logi read model.
  */
-export function normalizeSteamBanInfo(input: {
-    bans: unknown
-    has_bans?: unknown
-}) {
-    const banSummary =
-        input.bans &&
-        typeof input.bans === "object" &&
-        !Array.isArray(input.bans)
-            ? (input.bans as Record<string, unknown>)
-            : undefined
-    const banCount =
-        typeof input.bans === "number" && Number.isFinite(input.bans)
-            ? input.bans
-            : banSummary
-              ? ["NumberOfGameBans", "NumberOfVACBans"].reduce((total, key) => {
-                    const value = banSummary[key]
-                    return typeof value === "number" && Number.isFinite(value)
-                        ? total + value
-                        : total
-                }, 0)
-              : null
-    const hasBanSummaryFlag = Boolean(
-        banSummary?.CommunityBanned ||
-        banSummary?.VACBanned ||
-        (typeof banSummary?.EconomyBan === "string" &&
-            banSummary.EconomyBan !== "none")
-    )
-
-    return {
-        bans: banCount,
-        has_bans:
-            typeof input.has_bans === "boolean"
-                ? input.has_bans
-                : hasBanSummaryFlag || (banCount ?? 0) > 0,
-    }
-}
-
-/**
- * The legacy endpoint supplied the Steam profile URL directly. Its current
- * response embeds the full Steam profile object, from which only the stable
- * public URL belongs in our match-stat record.
- */
-export function normalizeSteamProfileUrl(value: unknown) {
-    if (typeof value === "string") return value
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-        const profileUrl = (value as Record<string, unknown>).profileurl
-        if (typeof profileUrl === "string") return profileUrl
-    }
-    return null
+export function compactStoredMatchPlayer<
+    T extends {
+        steaminfo?: unknown
+        units?: unknown
+        death_by: Record<string, number>
+    },
+>(player: T) {
+    const {
+        steaminfo: _steaminfo,
+        units: _units,
+        death_by: _deathBy,
+        ...storedPlayer
+    } = player
+    return { ...storedPlayer, death_by: {} }
 }
 
 function sanitizeScoreboardResult(
@@ -361,20 +325,10 @@ function sanitizeScoreboardResult(
         },
         player_stats: payload.player_stats.map((player) => {
             return {
-                ...player,
-                steaminfo: player.steaminfo
-                    ? {
-                          ...player.steaminfo,
-                          ...normalizeSteamBanInfo(player.steaminfo),
-                          profile: normalizeSteamProfileUrl(
-                              player.steaminfo.profile
-                          ),
-                      }
-                    : undefined,
+                ...compactStoredMatchPlayer(player),
                 kills_by_type: player.kills_by_type ?? {},
                 deaths_by_type: player.deaths_by_type ?? {},
                 most_killed: sanitizeRecordKeys(player.most_killed),
-                death_by: sanitizeRecordKeys(player.death_by),
                 weapons: sanitizeRecordKeys(player.weapons),
                 death_by_weapons: sanitizeRecordKeys(player.death_by_weapons),
             }
