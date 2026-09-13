@@ -332,6 +332,20 @@ export function normalizeSteamBanInfo(input: {
     }
 }
 
+/**
+ * The legacy endpoint supplied the Steam profile URL directly. Its current
+ * response embeds the full Steam profile object, from which only the stable
+ * public URL belongs in our match-stat record.
+ */
+export function normalizeSteamProfileUrl(value: unknown) {
+    if (typeof value === "string") return value
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+        const profileUrl = (value as Record<string, unknown>).profileurl
+        if (typeof profileUrl === "string") return profileUrl
+    }
+    return null
+}
+
 function sanitizeScoreboardResult(
     payload: ScoreboardResponse["result"]
 ): SanitizedMatchPayload {
@@ -352,6 +366,9 @@ function sanitizeScoreboardResult(
                     ? {
                           ...player.steaminfo,
                           ...normalizeSteamBanInfo(player.steaminfo),
+                          profile: normalizeSteamProfileUrl(
+                              player.steaminfo.profile
+                          ),
                       }
                     : undefined,
                 kills_by_type: player.kills_by_type ?? {},
