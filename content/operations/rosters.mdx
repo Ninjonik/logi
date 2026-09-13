@@ -82,9 +82,11 @@ Managers can also use **Confirm from meeting channel**. It checks only the
 people already assigned to a squad or reserve and marks those currently in the
 configured meeting voice/stage channel as confirmed. It does not inspect other
 voice channels, move people, add anyone to the roster, or prove that a person
-stayed for the event. The action needs a configured meeting channel, a working
-bot token, and Discord access to read those members' voice states; it is
-available to managers even if the roster is not published.
+stayed for the event. The action asks the running bot for the current members
+of that one channel; it does not query every rostered person or track voice
+changes in Logi. The action needs a configured meeting channel and a running
+bot with access to read that channel; it is available to managers even if the
+roster is not published.
 
 When changing a published roster, choose notification options carefully. The
 dashboard can notify affected players by direct message and can post an update;

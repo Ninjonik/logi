@@ -6,6 +6,7 @@ import {
     removeGuildMemberAccess,
     syncGuildMemberAccessMember,
 } from "./sync/member-access"
+import { MeetingAttendanceRequestService } from "./meeting-attendance"
 import { DiscordSyncService } from "./runtime/sync-service"
 import { createInteractionHandler } from "./interactions"
 import { logError, logInfo, logWarn } from "./log"
@@ -13,6 +14,9 @@ import { client } from "./discord-client"
 import { env } from "./environment"
 
 const syncService = new DiscordSyncService(client)
+const meetingAttendanceRequestService = new MeetingAttendanceRequestService(
+    client
+)
 const require = createRequire(import.meta.url)
 
 function getWorkerExecArgv() {
@@ -150,6 +154,7 @@ client.once(Events.ClientReady, async (readyClient) => {
                 })
         }
 
+        await meetingAttendanceRequestService.start()
         await syncService.start()
 
         startFallbackWorker()
