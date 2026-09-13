@@ -116,14 +116,29 @@ async function syncEventMessage(
         !includeSignup &&
         shouldShowPublishedRosterImage(event, roster?.updatedAt)
     ) {
-        const warmed = await warmRosterImage(
-            event.id,
-            getRosterImageVersion(event, roster?.updatedAt)
-        )
-        if (!warmed) {
-            throw new Error(
-                `Roster image warm-up failed for event ${event.id}.`
+        // Warming the image cache is an optimization. The image URL is still
+        // rendered in the announcement and can complete independently, so a
+        // slow warm-up must not turn an otherwise successful event sync into
+        // a Discord error-channel report.
+        try {
+            const warmed = await warmRosterImage(
+                event.id,
+                getRosterImageVersion(event, roster?.updatedAt)
             )
+            if (!warmed) {
+                logWarn("event-sync", "Roster image warm-up was unsuccessful", {
+                    eventId: event.id,
+                    guildId: payload.config.guildId,
+                    status: event.status,
+                })
+            }
+        } catch (error) {
+            logWarn("event-sync", "Roster image warm-up timed out or failed", {
+                eventId: event.id,
+                guildId: payload.config.guildId,
+                status: event.status,
+                error,
+            })
         }
     }
     const displayEvent =
