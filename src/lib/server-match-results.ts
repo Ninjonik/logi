@@ -289,6 +289,49 @@ function sanitizeRecordKeys(record: Record<string, number> | undefined) {
     return Object.fromEntries(sanitized)
 }
 
+/**
+ * Valkyria used to return a numeric Steam ban count. It now sometimes returns
+ * Steam's ban-summary object instead. Match storage deliberately keeps the
+ * stable numeric form expected by Convex instead of persisting that external
+ * response shape directly.
+ */
+export function normalizeSteamBanInfo(input: {
+    bans: unknown
+    has_bans?: unknown
+}) {
+    const banSummary =
+        input.bans &&
+        typeof input.bans === "object" &&
+        !Array.isArray(input.bans)
+            ? (input.bans as Record<string, unknown>)
+            : undefined
+    const banCount =
+        typeof input.bans === "number" && Number.isFinite(input.bans)
+            ? input.bans
+            : banSummary
+              ? ["NumberOfGameBans", "NumberOfVACBans"].reduce((total, key) => {
+                    const value = banSummary[key]
+                    return typeof value === "number" && Number.isFinite(value)
+                        ? total + value
+                        : total
+                }, 0)
+              : null
+    const hasBanSummaryFlag = Boolean(
+        banSummary?.CommunityBanned ||
+        banSummary?.VACBanned ||
+        (typeof banSummary?.EconomyBan === "string" &&
+            banSummary.EconomyBan !== "none")
+    )
+
+    return {
+        bans: banCount,
+        has_bans:
+            typeof input.has_bans === "boolean"
+                ? input.has_bans
+                : hasBanSummaryFlag || (banCount ?? 0) > 0,
+    }
+}
+
 function sanitizeScoreboardResult(
     payload: ScoreboardResponse["result"]
 ): SanitizedMatchPayload {
@@ -305,6 +348,12 @@ function sanitizeScoreboardResult(
         player_stats: payload.player_stats.map((player) => {
             return {
                 ...player,
+                steaminfo: player.steaminfo
+                    ? {
+                          ...player.steaminfo,
+                          ...normalizeSteamBanInfo(player.steaminfo),
+                      }
+                    : undefined,
                 kills_by_type: player.kills_by_type ?? {},
                 deaths_by_type: player.deaths_by_type ?? {},
                 most_killed: sanitizeRecordKeys(player.most_killed),
