@@ -1,6 +1,8 @@
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
+import { calculateMatchRecapBaseline } from "../src/domain/match-results/match-recap-baseline"
+
 const INTERNAL_AUTH_SECRET =
     process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 
@@ -152,35 +154,25 @@ export const markSent = mutation({
 export const captureBaselines = query({
     args: {
         secret: v.string(),
-        guildId: v.string(),
         userIds: v.array(v.string()),
     },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
         return await Promise.all(
             args.userIds.map(async (userId) => {
-                const history = await ctx.db
-                    .query("playerPerformanceHistory")
-                    .withIndex("guildId_userId", (q) =>
-                        q.eq("guildId", args.guildId).eq("userId", userId)
-                    )
-                    .unique()
-                const matches = history?.matches.slice(0, 10) ?? []
-                const count = matches.length || 1
+                // Match recap pages read directly from playerStats. Using the
+                // same source prevents a delayed or missing derived-history
+                // refresh from making the DM claim there is no prior history.
+                const playerStats = await ctx.db
+                    .query("playerStats")
+                    .withIndex("userId", (q) => q.eq("userId", userId))
+                    .collect()
+                const baseline = calculateMatchRecapBaseline(
+                    playerStats.flatMap((stat) => Object.values(stat.matches))
+                )
                 return {
                     userId,
-                    matches: matches.length,
-                    kills:
-                        matches.reduce((sum, match) => sum + match.kills, 0) /
-                        count,
-                    deaths:
-                        matches.reduce((sum, match) => sum + match.deaths, 0) /
-                        count,
-                    kd:
-                        matches.reduce(
-                            (sum, match) => sum + (match.kd ?? 0),
-                            0
-                        ) / count,
+                    ...baseline,
                 }
             })
         )

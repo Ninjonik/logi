@@ -1073,7 +1073,6 @@ export async function importEventMatchResults(input: {
             eventIdForLogs: input.eventId,
         })
         const recapBaselines = await captureMatchRecapBaselines(
-            input.serverId,
             preparedImport.importedUserIds
         )
 

@@ -10,13 +10,9 @@ const captureBaselinesReference = makeFunctionReference<"query">(
     "matchRecaps:captureBaselines"
 )
 
-export async function captureMatchRecapBaselines(
-    guildId: string,
-    userIds: string[]
-) {
+export async function captureMatchRecapBaselines(userIds: string[]) {
     return await fetchQuery(captureBaselinesReference, {
         secret: getInternalAuthSecret(),
-        guildId,
         userIds,
     })
 }
