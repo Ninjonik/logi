@@ -158,6 +158,16 @@ type ClanDiscordMessages = {
         rewardGranted: string
         dmResult: string
     }
+    matchRecap: {
+        title: string
+        fallbackMapName: string
+        stats: string
+        comparisonTitle: string
+        comparisonWithPrevious: string
+        noComparisonAvailable: string
+        viewStats: string
+        unsubscribe: string
+    }
     rosterUpdate: {
         announcementTitle: string
         addedLabel: string
@@ -524,6 +534,17 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             rewardGranted: "Reward roles have been granted in Discord.",
             dmResult:
                 "Hi {name}, your training result for **{event}** is: {result}.{reward}",
+        },
+        matchRecap: {
+            title: "Match recap - {event}",
+            fallbackMapName: "Match",
+            stats: "**{kills}** kills / **{deaths}** deaths / **{kd}** K/D",
+            comparisonTitle: "Compared with previous matches",
+            comparisonWithPrevious:
+                "Previous {matches} matches avg: {kills} kills / {deaths} deaths / {kd} K/D",
+            noComparisonAvailable: "No prior recorded matches to compare yet.",
+            viewStats: "View public match stats",
+            unsubscribe: "Unsubscribe from recaps",
         },
         rosterUpdate: {
             announcementTitle: "Roster update",
@@ -1018,6 +1039,18 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             dmResult:
                 "Ahoj {name}, výsledek tvého trainingu **{event}** je: {result}.{reward}",
         },
+        matchRecap: {
+            title: "Shrnutí zápasu - {event}",
+            fallbackMapName: "Zápas",
+            stats: "**{kills}** zabití / **{deaths}** úmrtí / **{kd}** K/D",
+            comparisonTitle: "Srovnání s předchozími zápasy",
+            comparisonWithPrevious:
+                "Průměr z předchozích {matches} zápasů: {kills} zabití / {deaths} úmrtí / {kd} K/D",
+            noComparisonAvailable:
+                "Zatím nejsou k dispozici žádné předchozí zaznamenané zápasy pro srovnání.",
+            viewStats: "Zobrazit veřejné statistiky zápasu",
+            unsubscribe: "Odhlásit shrnutí",
+        },
         rosterUpdate: {
             announcementTitle: "Aktualizace soupisky",
             addedLabel: "Nově v sestavě",
@@ -1340,6 +1373,18 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             rewardGranted: "Die Belohnungs-Rollen wurden in Discord vergeben.",
             dmResult:
                 "Hallo {name}, Ihr Trainingsergebnis für **{event}** lautet: {result}.{reward}",
+        },
+        matchRecap: {
+            title: "Spielzusammenfassung - {event}",
+            fallbackMapName: "Spiel",
+            stats: "**{kills}** Kills / **{deaths}** Tode / **{kd}** K/D",
+            comparisonTitle: "Vergleich mit früheren Spielen",
+            comparisonWithPrevious:
+                "Durchschnitt der letzten {matches} Spiele: {kills} Kills / {deaths} Tode / {kd} K/D",
+            noComparisonAvailable:
+                "Es sind noch keine früheren gespeicherten Spiele zum Vergleichen vorhanden.",
+            viewStats: "Öffentliche Spielstatistiken anzeigen",
+            unsubscribe: "Zusammenfassungen abbestellen",
         },
         rosterUpdate: {
             announcementTitle: "Roster-Update",
