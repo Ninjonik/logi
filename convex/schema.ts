@@ -834,6 +834,33 @@ export default defineSchema({
         .index("guildId", ["guildId"])
         .index("userId", ["userId"])
         .index("guildId_userId", ["guildId", "userId"]),
+    meetingAttendanceRequests: defineTable({
+        guildId: v.string(),
+        rosterId: v.id("rosters"),
+        meetingChannelId: v.string(),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("completed"),
+            v.literal("failed")
+        ),
+        requestedAt: v.string(),
+        expiresAt: v.string(),
+        claimedAt: v.optional(v.string()),
+        completedAt: v.optional(v.string()),
+        error: v.optional(v.string()),
+        result: v.optional(
+            v.object({
+                matchedVoiceCount: v.number(),
+                rosteredCount: v.number(),
+                reserveCount: v.number(),
+                updatedCount: v.number(),
+                updatedUserIds: v.array(v.string()),
+            })
+        ),
+    })
+        .index("status", ["status"])
+        .index("guildId", ["guildId"]),
     ticketThreads: defineTable({
         guildId: v.string(),
         threadId: v.string(),

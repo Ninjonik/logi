@@ -82,6 +82,14 @@ const confirmRosterAttendanceFromMeetingChannelReference =
         "discordRosters:confirmRosterAttendanceFromMeetingChannel"
     )
 
+const requestMeetingAttendanceConfirmationReference =
+    makeFunctionReference<"mutation">(
+        "meetingAttendance:requestMeetingAttendanceConfirmation"
+    )
+const getMeetingAttendanceRequestReference = makeFunctionReference<"query">(
+    "meetingAttendance:getMeetingAttendanceRequest"
+)
+
 export async function confirmRosterAttendanceFromMeetingChannel(input: {
     guildId: string
     rosterId: string
@@ -101,4 +109,34 @@ export async function confirmRosterAttendanceFromMeetingChannel(input: {
         updatedCount: number
         updatedUserIds: string[]
     }
+}
+
+export async function requestMeetingAttendanceConfirmation(input: {
+    guildId: string
+    rosterId: string
+}) {
+    return String(
+        await fetchMutation(requestMeetingAttendanceConfirmationReference, {
+            secret: getInternalAuthSecret(),
+            guildId: input.guildId,
+            rosterId: input.rosterId as never,
+        })
+    )
+}
+
+export async function getMeetingAttendanceRequest(requestId: string) {
+    return (await fetchQuery(getMeetingAttendanceRequestReference, {
+        secret: getInternalAuthSecret(),
+        requestId: requestId as never,
+    })) as {
+        status: "pending" | "processing" | "completed" | "failed"
+        error?: string
+        result?: {
+            matchedVoiceCount: number
+            rosteredCount: number
+            reserveCount: number
+            updatedCount: number
+            updatedUserIds: string[]
+        }
+    } | null
 }

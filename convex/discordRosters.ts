@@ -78,6 +78,7 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
         guildId: v.string(),
         rosterId: v.id("rosters"),
         memberIdsInMeetingChannel: v.array(v.string()),
+        expectedMeetingChannelId: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -90,6 +91,14 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
         ])
         if (!config?.meetingChannelId)
             throw new Error("Meeting channel is not configured.")
+        if (
+            args.expectedMeetingChannelId &&
+            config.meetingChannelId !== args.expectedMeetingChannelId
+        ) {
+            throw new Error(
+                "Meeting channel configuration changed. Please try again."
+            )
+        }
         if (!roster) throw new Error("Roster not found.")
         const event = await ctx.db.get(roster.eventId)
         if (!event || event.guildId !== args.guildId)

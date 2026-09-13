@@ -56,6 +56,12 @@ export const references = {
     closeTicketThread: makeFunctionReference<"mutation">(
         "discordMembership:closeTicketThread"
     ),
+    claimMeetingAttendanceRequest: makeFunctionReference<"mutation">(
+        "meetingAttendance:claimMeetingAttendanceRequest"
+    ),
+    completeMeetingAttendanceRequest: makeFunctionReference<"mutation">(
+        "meetingAttendance:completeMeetingAttendanceRequest"
+    ),
     closeMembershipApplicationThread: makeFunctionReference<"mutation">(
         "discordMembership:closeMembershipApplicationThread"
     ),
@@ -80,6 +86,9 @@ export const references = {
     getEventSyncContext: makeFunctionReference<"query">(
         "discordSync:getEventSyncContext"
     ),
+    listPendingMeetingAttendanceRequests: makeFunctionReference<"query">(
+        "meetingAttendance:listPendingMeetingAttendanceRequests"
+    ),
     getPendingMatchRecaps: makeFunctionReference<"query">(
         "matchRecaps:listPendingForEvent"
     ),
@@ -90,6 +99,13 @@ export const references = {
         "players:setMatchRecapNotifications"
     ),
     findNoticeTarget: makeFunctionReference<"query">("events:findNoticeTarget"),
+    failMeetingAttendanceRequest: makeFunctionReference<"mutation">(
+        "meetingAttendance:failMeetingAttendanceRequest"
+    ),
+    confirmRosterAttendanceFromMeetingChannel:
+        makeFunctionReference<"mutation">(
+            "discordRosters:confirmRosterAttendanceFromMeetingChannel"
+        ),
     getConfigByDiscordGuildId: makeFunctionReference<"query">(
         "discordConfig:getConfigByDiscordGuildId"
     ),
