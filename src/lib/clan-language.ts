@@ -65,6 +65,7 @@ type ClanDiscordMessages = {
         trainingStart: string
         status: string
         signupCount: string
+        eventForum: string
         managedFooter: string
         nobodyYet: string
         notAttending: string
@@ -430,6 +431,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             trainingStart: "Training Start",
             status: "Status",
             signupCount: "People signed up",
+            eventForum: "Event forum",
             managedFooter: "Managed via Logi • Times adapt to your device",
             nobodyYet: "*Nobody yet*",
             notAttending: "Not Attending",
@@ -930,6 +932,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             matchStart: "Start zápasu",
             trainingStart: "Začátek trainingu",
             status: "Stav",
+            eventForum: "Forum akce",
             managedFooter:
                 "Spravováno přes Logi • Časy se přizpůsobí vašemu zařízení",
             nobodyYet: "*Zatím nikdo*",
@@ -1263,6 +1266,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             trainingStart: "Trainings-Start",
             status: "Status",
             signupCount: "Angemeldete Personen",
+            eventForum: "Event-Forum",
             managedFooter:
                 "Verwaltet via Logi • Zeiten passen sich Ihrem Gerät an",
             nobodyYet: "*Noch niemand*",

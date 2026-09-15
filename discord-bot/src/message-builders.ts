@@ -47,11 +47,16 @@ import {
     TRAINING_ATTEND,
 } from "./constants"
 
+type EventEmbedOptions = {
+    forumChannelId?: string
+    showPublishedRosterImage?: boolean
+}
+
 export function buildAnnouncementMessage(
     payload: SyncPayload,
     event: EventRecord,
     userDisplayNames: Record<string, string> = payload.userDisplayNames,
-    options?: { showPublishedRosterImage?: boolean }
+    options?: EventEmbedOptions
 ) {
     const roster = payload.rosters.find((item) => item.eventId === event.id)
     return {
@@ -77,7 +82,7 @@ export function buildAnnouncementV2Message(
     payload: SyncPayload,
     event: EventRecord,
     userDisplayNames: Record<string, string> = payload.userDisplayNames,
-    options?: { showPublishedRosterImage?: boolean; pingRoleIds?: string[] }
+    options?: EventEmbedOptions & { pingRoleIds?: string[] }
 ) {
     const legacy = buildAnnouncementMessage(
         payload,
@@ -378,7 +383,7 @@ export function buildEventEmbed(
     event: EventRecord,
     roster?: Roster,
     userDisplayNames: Record<string, string> = {},
-    options?: { showPublishedRosterImage?: boolean }
+    options?: EventEmbedOptions
 ) {
     const messages = getClanDiscordMessages(config.defaultLanguage)
     const signupsByGroup = new Map<string, string[]>()
@@ -487,6 +492,11 @@ export function buildEventEmbed(
     descriptionLines.push(
         `**👥 ${messages.embed.signupCount}:** ${signedUpCount}`
     )
+    if (options?.forumChannelId) {
+        descriptionLines.push(
+            `**💬 ${messages.embed.eventForum}:** <#${options.forumChannelId}>`
+        )
+    }
 
     const embed = new EmbedBuilder()
         .setTitle(`📅 ${event.name}`)

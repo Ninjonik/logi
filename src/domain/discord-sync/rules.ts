@@ -36,10 +36,10 @@ export function shouldSyncEvent(input: {
         state.lastEventUpdatedAt !== event.updatedAt ||
         state.lastRosterUpdatedAt !== rosterUpdatedAt ||
         state.lastConfigUpdatedAt !== configUpdatedAt ||
+        state.eventInfoMessageRenderVersion !== eventInfoMessageRenderVersion ||
         (eventInfoChannelConfigured &&
-            (state.eventInfoMessageRenderVersion !==
-                eventInfoMessageRenderVersion ||
-                (eventInfoMessageRequired && !state.eventInfoMessageId))) ||
+            eventInfoMessageRequired &&
+            !state.eventInfoMessageId) ||
         state.scheduledEventStatus !== desiredScheduledEventStatus ||
         (meetingChannelConfigured
             ? !state.scheduledEventId &&

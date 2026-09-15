@@ -215,6 +215,20 @@ test("buildEventEmbed shows the total number of signed-up players", () => {
     assert.match(description ?? "", /People signed up:\*\* 1/)
 })
 
+test("buildEventEmbed links the event-specific forum channel when available", () => {
+    const description = buildEventEmbed(
+        { ...config, defaultLanguage: "en" },
+        groups,
+        eventCategories,
+        createMatchEvent(),
+        undefined,
+        {},
+        { forumChannelId: "forum-123" }
+    ).toJSON().description
+
+    assert.match(description ?? "", /Event forum:\*\* <#forum-123>/)
+})
+
 test("buildCalendarPanelEmbed does not repeat a category emoji when it is the color chip", () => {
     const embed = buildCalendarPanelEmbed(
         { ...config, defaultLanguage: "en" },
