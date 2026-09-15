@@ -96,9 +96,11 @@ channel configuration. The event's announcement and event-info channels are
 chosen when the event is created and are kept for later edits; changing those
 fields in the editor does not move existing Discord messages to a new channel.
 For matches, a forum post is enabled by default unless disabled; trainings do
-not create forum posts. A scheduled Discord event exists only when the selected
-meeting channel is a voice or stage channel. If that channel is removed or is
-not a supported type, Logi cancels its linked scheduled event.
+not create forum posts. When a forum channel exists, the registration and
+event-information embeds link directly to that event's forum channel. A
+scheduled Discord event exists only when the selected meeting channel is a
+voice or stage channel. If that channel is removed or is not a supported type,
+Logi cancels its linked scheduled event.
 
 The bot creates temporary Attendees and Reserves roles for non-concluded
 events. Attending sign-ups and squad placements feed Attendees; roster reserves

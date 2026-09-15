@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import type { SyncState } from "../types"
 
@@ -12,6 +13,7 @@ const state: SyncState = {
     lastEventUpdatedAt: "event-v1",
     lastRosterUpdatedAt: "roster-v1",
     lastConfigUpdatedAt: "config-v1",
+    eventInfoMessageRenderVersion,
     scheduledEventStatus: "scheduled",
     scheduledEventId: "scheduled-1",
 }
@@ -42,6 +44,21 @@ test("shouldSyncEvent skips when timestamps and scheduled state match", () => {
             queued: false,
         }),
         false
+    )
+})
+
+test("shouldSyncEvent refreshes messages after their render version changes", () => {
+    assert.equal(
+        shouldSyncEvent({
+            event: { updatedAt: "event-v1" },
+            rosterUpdatedAt: "roster-v1",
+            configUpdatedAt: "config-v1",
+            state: { ...state, eventInfoMessageRenderVersion: "stale" },
+            desiredScheduledEventStatus: "scheduled",
+            meetingChannelConfigured: true,
+            queued: false,
+        }),
+        true
     )
 })
 

@@ -103,7 +103,8 @@ async function syncEventMessage(
     event: EventRecord,
     roster: Roster | undefined,
     guild: Guild,
-    includeSignup = true
+    includeSignup = true,
+    forumChannelId?: string
 ) {
     const existing = messageId
         ? await channel.messages.fetch(messageId).catch(() => null)
@@ -166,7 +167,10 @@ async function syncEventMessage(
                     displayPayload,
                     displayEvent,
                     names,
-                    { showPublishedRosterImage: !includeSignup }
+                    {
+                        showPublishedRosterImage: !includeSignup,
+                        forumChannelId,
+                    }
                 )
             )
         } else {
@@ -174,7 +178,10 @@ async function syncEventMessage(
                 displayPayload,
                 displayEvent,
                 names,
-                { showPublishedRosterImage: !includeSignup }
+                {
+                    showPublishedRosterImage: !includeSignup,
+                    forumChannelId,
+                }
             )
             await existing.edit({
                 embeds: [embed],
@@ -190,6 +197,7 @@ async function syncEventMessage(
         await channel.send({
             ...buildAnnouncementV2Message(displayPayload, displayEvent, names, {
                 showPublishedRosterImage: !includeSignup,
+                forumChannelId,
                 pingRoleIds,
             }),
             allowedMentions: { roles: pingRoleIds, parse: [] },
@@ -391,6 +399,62 @@ async function syncEvent(
     let infoMessageId = state?.infoMessageId
     let topicMessageIds = state?.topicMessageIds ?? []
 
+    if (
+        event.createForumChannel &&
+        payload.config.forumCategoryId &&
+        !(event.status === "concluded" && !forumChannelId)
+    ) {
+        try {
+            const topicPreset = payload.topicPresets.find(
+                (preset) => preset.id === event.topicPresetId
+            )
+            const forumSyncResult = await syncForumChannel({
+                config: payload.config,
+                event,
+                forumCategoryId: payload.config.forumCategoryId,
+                forumChannelId,
+                guild,
+                existingTopicMessageIds: topicMessageIds,
+                topicPreset,
+                attendeeRoleId: eventRoles.attendeeRoleId,
+                reserveRoleId: eventRoles.reserveRoleId,
+            })
+
+            forumChannelId = forumSyncResult.forumChannelId
+            infoMessageId = forumSyncResult.infoMessageId
+            if (
+                !topicMessageIds.length &&
+                forumSyncResult.topicMessageIds.length
+            ) {
+                topicMessageIds = forumSyncResult.topicMessageIds
+            }
+            logInfo("forum", "Forum sync completed", {
+                eventId: event.id,
+                guildId: payload.config.guildId,
+                forumChannelId,
+                infoMessageId,
+                topicMessageCount: topicMessageIds.length,
+            })
+        } catch (error) {
+            logError("forum", "Discord bot forum sync failed", {
+                eventId: event.id,
+                guildId: payload.config.guildId,
+                forumChannelId,
+                error,
+            })
+        }
+    } else {
+        logInfo("forum", "Skipping forum sync", {
+            eventId: event.id,
+            guildId: payload.config.guildId,
+            reason: !event.createForumChannel
+                ? "event-forum-creation-disabled"
+                : !payload.config.forumCategoryId
+                  ? "forum-category-not-configured"
+                  : "concluded-without-existing-forum",
+        })
+    }
+
     logInfo("event-sync", "Event sync started", {
         eventId: event.id,
         guildId: payload.config.guildId,
@@ -449,7 +513,8 @@ async function syncEvent(
                 event,
                 roster,
                 guild,
-                false
+                false,
+                forumChannelId
             )
         } else if (eventInfoMessageId) {
             const existingInfo = await infoText.messages
@@ -479,7 +544,9 @@ async function syncEvent(
                 payload,
                 event,
                 roster,
-                guild
+                guild,
+                true,
+                forumChannelId
             )
         } else {
             const registrationMessage = announcementMessageId
@@ -550,14 +617,16 @@ async function syncEvent(
                         buildAnnouncementV2Message(
                             payload,
                             event,
-                            userDisplayNames
+                            userDisplayNames,
+                            { forumChannelId }
                         )
                     )
                 } else {
                     const { embed, components } = buildAnnouncementMessage(
                         payload,
                         event,
-                        userDisplayNames
+                        userDisplayNames,
+                        { forumChannelId }
                     )
                     await existingMessage.edit({ embeds: [embed], components })
                 }
@@ -574,7 +643,7 @@ async function syncEvent(
                         payload,
                         event,
                         userDisplayNames,
-                        { pingRoleIds }
+                        { forumChannelId, pingRoleIds }
                     ),
                     allowedMentions: { roles: pingRoleIds, parse: [] },
                     flags: MessageFlags.IsComponentsV2,
@@ -669,62 +738,6 @@ async function syncEvent(
                 guildId: payload.config.guildId,
             }
         )
-    }
-
-    if (
-        event.createForumChannel &&
-        payload.config.forumCategoryId &&
-        !(event.status === "concluded" && !forumChannelId)
-    ) {
-        try {
-            const topicPreset = payload.topicPresets.find(
-                (preset) => preset.id === event.topicPresetId
-            )
-            const forumSyncResult = await syncForumChannel({
-                config: payload.config,
-                event,
-                forumCategoryId: payload.config.forumCategoryId,
-                forumChannelId,
-                guild,
-                existingTopicMessageIds: topicMessageIds,
-                topicPreset,
-                attendeeRoleId: eventRoles.attendeeRoleId,
-                reserveRoleId: eventRoles.reserveRoleId,
-            })
-
-            forumChannelId = forumSyncResult.forumChannelId
-            infoMessageId = forumSyncResult.infoMessageId
-            if (
-                !topicMessageIds.length &&
-                forumSyncResult.topicMessageIds.length
-            ) {
-                topicMessageIds = forumSyncResult.topicMessageIds
-            }
-            logInfo("forum", "Forum sync completed", {
-                eventId: event.id,
-                guildId: payload.config.guildId,
-                forumChannelId,
-                infoMessageId,
-                topicMessageCount: topicMessageIds.length,
-            })
-        } catch (error) {
-            logError("forum", "Discord bot forum sync failed", {
-                eventId: event.id,
-                guildId: payload.config.guildId,
-                forumChannelId,
-                error,
-            })
-        }
-    } else {
-        logInfo("forum", "Skipping forum sync", {
-            eventId: event.id,
-            guildId: payload.config.guildId,
-            reason: !event.createForumChannel
-                ? "event-forum-creation-disabled"
-                : !payload.config.forumCategoryId
-                  ? "forum-category-not-configured"
-                  : "concluded-without-existing-forum",
-        })
     }
 
     await convex.mutation(references.updateEventSyncState, {
