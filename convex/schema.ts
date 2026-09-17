@@ -14,6 +14,9 @@ const users = defineTable({
     // The workspace opened from the dashboard landing page. Unlike guildId,
     // this may be an administrator-selected workspace.
     defaultWorkspaceId: v.optional(v.string()),
+    // Convex record ID for the same workspace, used to open the dashboard
+    // without resolving the Discord ID again.
+    defaultWorkspaceRecordId: v.optional(v.string()),
     mercenaryGuildIds: v.array(v.string()),
     isStreamer: v.boolean(),
     // Global, default-on preference for Discord match-performance recaps.

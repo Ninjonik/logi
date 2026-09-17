@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
 import {
+    createSessionToken,
+    setPrimaryGuildForCurrentPlayer,
+    setSessionToken,
+    syncCurrentPlayerFromDiscord,
+    syncManagedGuildsForCurrentPlayer,
+    resolveDefaultWorkspaceForCurrentPlayer,
+} from "@/lib/auth"
+import {
     exchangeDiscordCode,
     fetchDiscordGuilds,
     fetchDiscordUser,
@@ -10,14 +18,8 @@ import {
     isBotInsideDiscordGuild,
     isDiscordGuildAdmin,
 } from "@/lib/discord"
-import {
-    createSessionToken,
-    setPrimaryGuildForCurrentPlayer,
-    setSessionToken,
-    syncCurrentPlayerFromDiscord,
-    syncManagedGuildsForCurrentPlayer,
-} from "@/lib/auth"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
+import { sanitizeLocalRedirect } from "@/lib/local-redirect"
 import { getSiteUrl } from "@/lib/env"
 
 const STATE_COOKIE = "discord_oauth_state"
@@ -35,8 +37,10 @@ export async function GET(request: NextRequest) {
     const code = request.nextUrl.searchParams.get("code")
     const state = request.nextUrl.searchParams.get("state")
     const expectedState = cookieStore.get(STATE_COOKIE)?.value
-    const redirectTo =
-        cookieStore.get(REDIRECT_COOKIE)?.value ?? "/en/dashboard"
+    const redirectTo = sanitizeLocalRedirect(
+        cookieStore.get(REDIRECT_COOKIE)?.value,
+        "/en/dashboard"
+    )
     const requestedGuildId = cookieStore.get(GUILD_COOKIE)?.value
 
     if (!code || !state || !expectedState || state !== expectedState) {
@@ -86,6 +90,7 @@ export async function GET(request: NextRequest) {
         ) {
             await setPrimaryGuildForCurrentPlayer(userId, requestedGuildId)
         }
+        await resolveDefaultWorkspaceForCurrentPlayer(userId)
         const sessionToken = await createSessionToken(session)
         await setSessionToken(sessionToken)
         cleanOauthCookies(cookieStore)

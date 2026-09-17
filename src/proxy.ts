@@ -26,7 +26,12 @@ export default async function proxy(request: NextRequest) {
     const hasSessionCookie = Boolean(request.cookies.get("token")?.value)
 
     if (isDashboardRoute && !hasSessionCookie) {
-        return Response.redirect(new URL(localizedLogin, request.url))
+        const loginUrl = new URL(localizedLogin, request.url)
+        loginUrl.searchParams.set(
+            "redirectTo",
+            `${request.nextUrl.pathname}${request.nextUrl.search}`
+        )
+        return Response.redirect(loginUrl)
     }
 
     return handleI18nRouting(request)

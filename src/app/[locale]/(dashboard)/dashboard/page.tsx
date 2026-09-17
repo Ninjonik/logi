@@ -59,9 +59,9 @@ export default async function DashboardHomePage({
         return null
     }
 
-    const defaultWorkspaceId = await resolveDefaultWorkspaceForCurrentPlayer(
-        user.id
-    )
+    const defaultWorkspaceId =
+        user.defaultWorkspaceRecordId ??
+        (await resolveDefaultWorkspaceForCurrentPlayer(user.id))
     if (defaultWorkspaceId) {
         redirect(`/${safeLocale}/dashboard/servers/${defaultWorkspaceId}`)
     }

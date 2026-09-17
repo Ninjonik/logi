@@ -1,12 +1,13 @@
-import { getDefaultWorkspaceFromMemberships } from "../src/domain/workspaces/default-workspace"
+import { getDefaultWorkspaceCandidatesFromMemberships } from "../src/domain/workspaces/default-workspace"
 import { matchesGameScope } from "../src/domain/games/game"
 import type { MutationCtx } from "./_generated/server"
+import type { Doc, Id } from "./_generated/dataModel"
 import { mutation, query } from "./_generated/server"
-import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
 import {
     getGuildByDiscordId,
+    getGuildDiscordId,
     getUserByDiscordId,
     getUserDiscordId,
     getUserByIdentifier,
@@ -350,6 +351,7 @@ function toPlayer(user: {
     managedGuildIds: string[]
     guildId?: string
     defaultWorkspaceId?: string
+    defaultWorkspaceRecordId?: string
     mercenaryGuildIds: string[]
     isStreamer: boolean
     score?: number
@@ -776,17 +778,123 @@ export const setDefaultWorkspace = mutation({
             throw new Error("Workspace not found.")
         }
 
-        await ctx.db.patch(user._id, {
-            defaultWorkspaceId: args.workspaceId,
-            updatedAt: new Date().toISOString(),
+        if (args.workspaceId) {
+            const workspace = await getGuildByDiscordId(ctx, args.workspaceId)
+            if (!workspace) throw new Error("Workspace not found.")
+
+            await ctx.db.patch(user._id, {
+                defaultWorkspaceId: args.workspaceId,
+                defaultWorkspaceRecordId: String(workspace._id),
+                updatedAt: new Date().toISOString(),
+            })
+            return
+        }
+
+        await resolveAndPersistDefaultWorkspace(ctx, user, {
+            allowAnyWorkspace: false,
+            useStoredDefault: false,
         })
     },
 })
+
+async function findFirstWorkspace(
+    ctx: MutationCtx,
+    discordIds: Iterable<string | undefined>
+) {
+    for (const discordId of new Set(
+        [...discordIds].filter((id): id is string => Boolean(id))
+    )) {
+        const workspace = await getGuildByDiscordId(ctx, discordId)
+        if (workspace) return workspace
+    }
+
+    return null
+}
+
+async function resolveAndPersistDefaultWorkspace(
+    ctx: MutationCtx,
+    user: Doc<"users">,
+    options: { allowAnyWorkspace: boolean; useStoredDefault: boolean }
+) {
+    if (!user) return null
+
+    if (options.useStoredDefault && user.defaultWorkspaceRecordId) {
+        const workspace = await ctx.db.get(
+            user.defaultWorkspaceRecordId as Id<"guilds">
+        )
+        if (workspace) return String(workspace._id)
+    }
+
+    if (options.useStoredDefault && user.defaultWorkspaceId) {
+        const workspace = await getGuildByDiscordId(
+            ctx,
+            user.defaultWorkspaceId
+        )
+        if (workspace) {
+            await ctx.db.patch(user._id, {
+                defaultWorkspaceRecordId: String(workspace._id),
+                updatedAt: new Date().toISOString(),
+            })
+            return String(workspace._id)
+        }
+    }
+
+    const [memberships, dashboardAccess] = await Promise.all([
+        ctx.db
+            .query("userAssignments")
+            .withIndex("userId", (q) => q.eq("userId", getUserStableId(user)))
+            .collect(),
+        ctx.db
+            .query("discordMemberAccess")
+            .withIndex("userId", (q) => q.eq("userId", getUserDiscordId(user)))
+            .collect(),
+    ])
+    let workspace = await findFirstWorkspace(ctx, [
+        user.guildId,
+        ...getDefaultWorkspaceCandidatesFromMemberships(memberships),
+        ...user.managedGuildIds,
+        ...user.mercenaryGuildIds,
+        ...dashboardAccess
+            .filter((access) => access.hasDashboardAccess)
+            .map((access) => access.guildId),
+    ])
+
+    if (!workspace) {
+        const guilds = await ctx.db.query("guilds").collect()
+        workspace = await findFirstWorkspace(
+            ctx,
+            guilds
+                .filter(
+                    (guild) =>
+                        guild.adminIds.includes(getUserDiscordId(user)) ||
+                        guild.dashboardAdminIds?.includes(
+                            getUserDiscordId(user)
+                        )
+                )
+                .map((guild) => getGuildDiscordId(guild))
+        )
+
+        if (!workspace && options.allowAnyWorkspace) {
+            workspace = guilds[0] ?? null
+        }
+    }
+
+    await ctx.db.patch(user._id, {
+        defaultWorkspaceId: workspace
+            ? getGuildDiscordId(workspace)
+            : undefined,
+        defaultWorkspaceRecordId: workspace ? String(workspace._id) : undefined,
+        updatedAt: new Date().toISOString(),
+    })
+
+    return workspace ? String(workspace._id) : null
+}
 
 export const resolveDefaultWorkspace = mutation({
     args: {
         secret: v.string(),
         userId: v.string(),
+        allowAnyWorkspace: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -794,30 +902,10 @@ export const resolveDefaultWorkspace = mutation({
         const user = await getUserByIdentifier(ctx, args.userId)
         if (!user) return null
 
-        if (user.defaultWorkspaceId) {
-            const workspace = await getGuildByDiscordId(
-                ctx,
-                user.defaultWorkspaceId
-            )
-            if (workspace) return String(workspace._id)
-        }
-
-        const memberships = await ctx.db
-            .query("userAssignments")
-            .withIndex("userId", (q) => q.eq("userId", getUserStableId(user)))
-            .collect()
-        const workspaceDiscordId =
-            getDefaultWorkspaceFromMemberships(memberships)
-        if (!workspaceDiscordId) return null
-
-        const workspace = await getGuildByDiscordId(ctx, workspaceDiscordId)
-        if (!workspace) return null
-
-        await ctx.db.patch(user._id, {
-            defaultWorkspaceId: workspaceDiscordId,
-            updatedAt: new Date().toISOString(),
+        return await resolveAndPersistDefaultWorkspace(ctx, user, {
+            allowAnyWorkspace: args.allowAnyWorkspace ?? false,
+            useStoredDefault: true,
         })
-        return String(workspace._id)
     },
 })
 

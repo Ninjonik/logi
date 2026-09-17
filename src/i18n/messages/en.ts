@@ -545,9 +545,9 @@ export const enMessages = {
         matchRecapsDescription:
             "Get a Discord recap after a recorded match when your roster slot is linked to its player stats.",
         defaultWorkspace: "Default workspace",
-        defaultWorkspaceAutomatic: "Automatic (first full clan membership)",
+        defaultWorkspaceAutomatic: "Automatic (best available workspace)",
         defaultWorkspaceHelp:
-            "This workspace opens when you enter the dashboard. Automatic uses your first recruit, member, or reserve-member clan.",
+            "This workspace opens when you enter the dashboard. Automatic prefers your primary clan, then another workspace you can access.",
         platformConnection: "Platform identity",
         platformConnected: "Platform ID set",
         platformDisconnected: "Platform ID not set",
