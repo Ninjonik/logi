@@ -282,7 +282,7 @@ export const getVisibleGuildsForLoggedInUser = cache(
 export async function handleIfNotLoggedIn(redirectUrl: string) {
     const user = await getLoggedInUser()
     if (!user) {
-        redirect(`/login?redirect=${encodeURIComponent(redirectUrl)}`)
+        redirect(`/en/login?redirectTo=${encodeURIComponent(redirectUrl)}`)
     }
 
     return user
@@ -328,6 +328,7 @@ export async function resolveDefaultWorkspaceForCurrentPlayer(userId: string) {
     return (await fetchMutation(resolveDefaultWorkspaceReference, {
         secret: getInternalAuthSecret(),
         userId,
+        allowAnyWorkspace: await isSuperadminDiscordId(userId),
     })) as string | null
 }
 

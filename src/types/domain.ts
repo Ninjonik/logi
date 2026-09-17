@@ -65,6 +65,7 @@ export type AppUser = {
     managedGuildIds: string[]
     guildId?: string
     defaultWorkspaceId?: string
+    defaultWorkspaceRecordId?: string
     mercenaryGuildIds: string[]
     isStreamer: boolean
     /** Missing is the legacy, default-on setting. */

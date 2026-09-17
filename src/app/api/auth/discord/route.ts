@@ -2,22 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { randomBytes } from "crypto"
 
+import { sanitizeLocalRedirect } from "@/lib/local-redirect"
 import { buildDiscordAuthorizationUrl } from "@/lib/discord"
 
 const STATE_COOKIE = "discord_oauth_state"
 const REDIRECT_COOKIE = "discord_oauth_redirect"
 const GUILD_COOKIE = "discord_oauth_guild"
 
-function sanitizeRedirect(value: string | null) {
-    if (!value || !value.startsWith("/")) {
-        return "/en/dashboard"
-    }
-    return value
-}
-
 export async function GET(request: NextRequest) {
-    const redirectTo = sanitizeRedirect(
-        request.nextUrl.searchParams.get("redirectTo")
+    const redirectTo = sanitizeLocalRedirect(
+        request.nextUrl.searchParams.get("redirectTo"),
+        "/en/dashboard"
     )
     const guildId = request.nextUrl.searchParams.get("guildId")
     const state = randomBytes(24).toString("hex")

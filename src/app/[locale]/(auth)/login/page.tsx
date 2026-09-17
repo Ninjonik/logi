@@ -6,6 +6,7 @@ import {
     PublicSiteShell,
 } from "@/components/public/public-site-shell"
 import { DiscordSignInButton } from "@/components/auth/discord-sign-in-button"
+import { sanitizeLocalRedirect } from "@/lib/local-redirect"
 import { Card, CardContent } from "@/components/ui/card"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getCurrentPlayer } from "@/lib/auth"
@@ -19,14 +20,21 @@ export const metadata: Metadata = {
 
 export default async function LoginPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string }>
+    searchParams: Promise<{ redirectTo?: string }>
 }) {
     const { locale } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
+    const { redirectTo: requestedRedirect } = await searchParams
+    const redirectTo = sanitizeLocalRedirect(
+        requestedRedirect,
+        `/${safeLocale}/dashboard`
+    )
     const dictionary = getDictionary(safeLocale)
     if (await getCurrentPlayer()) {
-        redirect(`/${safeLocale}/dashboard`)
+        redirect(redirectTo)
     }
 
     return (
@@ -42,7 +50,7 @@ export default async function LoginPage({
                                 {dictionary.app.name}
                             </h1>
                             <DiscordSignInButton
-                                redirectTo={`/${safeLocale}/dashboard`}
+                                redirectTo={redirectTo}
                                 label={dictionary.auth.loginButton}
                             />
                         </div>

@@ -549,10 +549,9 @@ export const deMessages = {
         matchRecapsDescription:
             "Erhalte nach einem erfassten Match eine Discord-Zusammenfassung, wenn dein Roster-Slot mit den Spielerstatistiken verknüpft ist.",
         defaultWorkspace: "Standard-Workspace",
-        defaultWorkspaceAutomatic:
-            "Automatisch (erste vollwertige Clan-Mitgliedschaft)",
+        defaultWorkspaceAutomatic: "Automatisch (bester verfügbarer Workspace)",
         defaultWorkspaceHelp:
-            "Dieser Workspace wird beim Öffnen des Dashboards angezeigt. Automatisch verwendet deinen ersten Recruit-, Mitglieds- oder Reserve-Mitglieds-Clan.",
+            "Dieser Workspace wird beim Öffnen des Dashboards angezeigt. Automatisch bevorzugt deinen Hauptclan und danach einen weiteren zugänglichen Workspace.",
         platformConnection: "Plattform-Identität",
         platformConnected: "Plattform-ID gesetzt",
         platformDisconnected: "Plattform-ID nicht gesetzt",
