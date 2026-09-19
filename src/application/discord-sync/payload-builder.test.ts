@@ -15,6 +15,7 @@ test("buildGuildPayload folds contexts into a guild payload", () => {
             groups: [{ id: "group-1" }],
             squadPresets: [],
             topicPresets: [{ id: "topic-1" }],
+            assignments: [{ userId: "user-1" }],
         },
         [
             {
@@ -28,6 +29,7 @@ test("buildGuildPayload folds contexts into a guild payload", () => {
     assert.equal(payload.events.length, 1)
     assert.equal(payload.rosters.length, 1)
     assert.equal(payload.syncStates.length, 1)
+    assert.deepEqual(payload.assignments, [{ userId: "user-1" }])
 })
 
 test("buildEventSignatureMap and getChangedEventIds detect event changes", () => {

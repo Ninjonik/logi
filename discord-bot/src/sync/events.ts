@@ -1,4 +1,5 @@
 import {
+    AttachmentBuilder,
     ChannelType,
     MessageFlags,
     type Client,
@@ -13,12 +14,17 @@ import {
     syncScheduledDiscordEvent,
 } from "../scheduled-events"
 import {
+    buildRosterImageUrl,
+    getRosterImageVersion,
+    warmRosterImage,
+    withTimeout,
+} from "../utils"
+import {
     buildAnnouncementMessage,
     buildAnnouncementV2Message,
 } from "../message-builders"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
-import { getRosterImageVersion, warmRosterImage, withTimeout } from "../utils"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { reportClanDiscordError } from "../error-reporting"
 import { logError, logInfo, logWarn } from "../log"
@@ -32,6 +38,7 @@ import { env } from "../environment"
 // a scheduled Discord event and forum provisioning. Discord rate limits make
 // the previous 20-second aggregate deadline too short for that valid work.
 const EVENT_SYNC_TIMEOUT_MS = 60_000
+const ROSTER_IMAGE_ATTACHMENT_NAME = "published-roster.png"
 
 function shouldShowPublishedRosterImage(
     event: EventRecord,
@@ -41,6 +48,39 @@ function shouldShowPublishedRosterImage(
         rosterUpdatedAt &&
         (event.status === "closed" || event.status === "starting")
     )
+}
+
+async function buildPublishedRosterImageAttachment(
+    event: EventRecord,
+    roster: Roster
+) {
+    const publicUrl = new URL(
+        buildRosterImageUrl(
+            event.id,
+            getRosterImageVersion(event, roster.updatedAt)
+        )
+    )
+    const internalOrigin = new URL(env.internalAppSiteUrl)
+    const imageUrl = new URL(
+        `${publicUrl.pathname}${publicUrl.search}`,
+        internalOrigin
+    )
+    const response = await withTimeout(
+        fetch(imageUrl),
+        45_000,
+        `Roster image attachment for ${event.id}`
+    )
+    if (
+        !response.ok ||
+        !response.headers.get("content-type")?.startsWith("image/png")
+    ) {
+        throw new Error(`Unable to render roster image (${response.status}).`)
+    }
+
+    return new AttachmentBuilder(Buffer.from(await response.arrayBuffer()), {
+        name: ROSTER_IMAGE_ATTACHMENT_NAME,
+        description: `${event.name} roster`,
+    })
 }
 
 export function getAnnouncementPingRoleIds(
@@ -560,25 +600,18 @@ async function syncEvent(
     }
     const shouldUseEventInfoChannel = false
     const displayChannelId = splitChannels ? undefined : announcementChannelId
-    // The regular announcement can now include a published roster beside the
-    // event artwork. Warm its generated PNG before Discord fetches it; unlike
-    // the separate event-info message, this path does not go through
-    // syncEventMessage, which already performs this warm-up.
+    // Discord's media gallery can be unreliable when it has to fetch a
+    // generated image from our public URL. Upload the PNG with the message so
+    // Discord renders an attachment it already owns instead.
+    let rosterImageAttachment: AttachmentBuilder | undefined
     if (!splitChannels && roster?.published && roster.updatedAt) {
         try {
-            const warmed = await warmRosterImage(
-                event.id,
-                getRosterImageVersion(event, roster.updatedAt)
+            rosterImageAttachment = await buildPublishedRosterImageAttachment(
+                event,
+                roster
             )
-            if (!warmed) {
-                logWarn("event-sync", "Roster image warm-up was unsuccessful", {
-                    eventId: event.id,
-                    guildId: payload.config.guildId,
-                    status: event.status,
-                })
-            }
         } catch (error) {
-            logWarn("event-sync", "Roster image warm-up timed out or failed", {
+            logWarn("event-sync", "Roster image attachment failed", {
                 eventId: event.id,
                 guildId: payload.config.guildId,
                 status: event.status,
@@ -639,14 +672,23 @@ async function syncEvent(
                 }
             } else if (existingMessage) {
                 if (existingMessage.flags.has(MessageFlags.IsComponentsV2)) {
-                    await existingMessage.edit(
-                        buildAnnouncementV2Message(
+                    await existingMessage.edit({
+                        ...buildAnnouncementV2Message(
                             payload,
                             event,
                             userDisplayNames,
-                            { forumChannelId }
-                        )
-                    )
+                            {
+                                forumChannelId,
+                                rosterImageUrl: rosterImageAttachment
+                                    ? `attachment://${ROSTER_IMAGE_ATTACHMENT_NAME}`
+                                    : undefined,
+                            }
+                        ),
+                        attachments: [],
+                        files: rosterImageAttachment
+                            ? [rosterImageAttachment]
+                            : [],
+                    })
                 } else {
                     const { embed, components } = buildAnnouncementMessage(
                         payload,
@@ -669,8 +711,15 @@ async function syncEvent(
                         payload,
                         event,
                         userDisplayNames,
-                        { forumChannelId, pingRoleIds }
+                        {
+                            forumChannelId,
+                            pingRoleIds,
+                            rosterImageUrl: rosterImageAttachment
+                                ? `attachment://${ROSTER_IMAGE_ATTACHMENT_NAME}`
+                                : undefined,
+                        }
                     ),
+                    files: rosterImageAttachment ? [rosterImageAttachment] : [],
                     allowedMentions: { roles: pingRoleIds, parse: [] },
                     flags: MessageFlags.IsComponentsV2,
                 })
