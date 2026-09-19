@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    buildAnnouncementV2Message,
     buildCalendarPanelEmbed,
     buildCompactV2FieldText,
     buildEventComponents,
@@ -14,7 +15,9 @@ import type {
     EventRecord,
     Group,
     Roster,
+    SyncPayload,
 } from "./types"
+import { buildRosterImageUrl, getRosterImageVersion } from "./utils"
 
 const config: DiscordConfig = {
     id: "config-1",
@@ -547,5 +550,46 @@ test("published roster keeps signup groups visible while registration is open", 
     assert.equal(
         embed.fields?.some((field) => field.value === "Alpha"),
         true
+    )
+})
+
+test("Components V2 announcements show published roster below event artwork", () => {
+    const event = createMatchEvent({
+        imageUrl: "https://example.com/event-artwork.png",
+    })
+    const roster: Roster = {
+        id: "roster-1",
+        eventId: event.id,
+        published: true,
+        reservePlayerIds: [],
+        updatedAt: "2026-07-29T10:00:00.000Z",
+        squads: [],
+    }
+    const payload = {
+        config,
+        groups,
+        guild: { eventCategories },
+        rosters: [roster],
+        userDisplayNames: {},
+    } as SyncPayload
+
+    const message = buildAnnouncementV2Message(payload, event)
+    const container = message.components?.[0]?.toJSON()
+    const gallery =
+        container && "components" in container
+            ? container.components.find((component) => "items" in component)
+            : undefined
+
+    assert.deepEqual(
+        gallery && "items" in gallery
+            ? gallery.items.map((item) => item.media.url)
+            : [],
+        [
+            "https://example.com/event-artwork.png",
+            buildRosterImageUrl(
+                event.id,
+                getRosterImageVersion(event, roster.updatedAt)
+            ),
+        ]
     )
 })

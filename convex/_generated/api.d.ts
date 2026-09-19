@@ -22,6 +22,7 @@ import type * as guilds from "../guilds.js";
 import type * as identity from "../identity.js";
 import type * as matchRecaps from "../matchRecaps.js";
 import type * as matchStats from "../matchStats.js";
+import type * as meetingAttendance from "../meetingAttendance.js";
 import type * as migrations from "../migrations.js";
 import type * as performanceHistory from "../performanceHistory.js";
 import type * as platformIdLinks from "../platformIdLinks.js";
@@ -69,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   identity: typeof identity;
   matchRecaps: typeof matchRecaps;
   matchStats: typeof matchStats;
+  meetingAttendance: typeof meetingAttendance;
   migrations: typeof migrations;
   performanceHistory: typeof performanceHistory;
   platformIdLinks: typeof platformIdLinks;
