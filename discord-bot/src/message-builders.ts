@@ -149,13 +149,37 @@ export function buildAnnouncementV2Message(
     )
     const messages = getClanDiscordMessages(payload.config.defaultLanguage)
 
-    const imageUrl = embed.image?.url
-    if (imageUrl) {
+    const publishedRosterImageUrl =
+        publishedRoster &&
+        (options?.showPublishedRosterImage ||
+            shouldShowPublishedRosterImage(event, publishedRoster))
+            ? buildRosterImageUrl(
+                  event.id,
+                  getRosterImageVersion(event, publishedRoster.updatedAt)
+              )
+            : undefined
+    // Legacy embeds have only one full-size image slot, which is why the
+    // roster used to replace the event artwork. Components V2 media galleries
+    // support several images, so retain the artwork and append the roster.
+    const galleryImageUrls = [
+        event.kind === "match" ? event.imageUrl : undefined,
+        embed.image?.url,
+        publishedRosterImageUrl,
+    ].filter(
+        (url, index, urls): url is string =>
+            Boolean(url) && urls.indexOf(url) === index
+    )
+    if (galleryImageUrls.length) {
         container.addMediaGalleryComponents(
-            new MediaGalleryBuilder().addItems({
-                media: { url: imageUrl },
-                description: `${event.name} roster`,
-            })
+            new MediaGalleryBuilder().addItems(
+                galleryImageUrls.map((url) => ({
+                    media: { url },
+                    description:
+                        url === publishedRosterImageUrl
+                            ? `${event.name} roster`
+                            : `${event.name} image`,
+                }))
+            )
         )
     }
     const v2Controls =
