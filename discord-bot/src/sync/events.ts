@@ -560,6 +560,32 @@ async function syncEvent(
     }
     const shouldUseEventInfoChannel = false
     const displayChannelId = splitChannels ? undefined : announcementChannelId
+    // The regular announcement can now include a published roster beside the
+    // event artwork. Warm its generated PNG before Discord fetches it; unlike
+    // the separate event-info message, this path does not go through
+    // syncEventMessage, which already performs this warm-up.
+    if (!splitChannels && roster?.published && roster.updatedAt) {
+        try {
+            const warmed = await warmRosterImage(
+                event.id,
+                getRosterImageVersion(event, roster.updatedAt)
+            )
+            if (!warmed) {
+                logWarn("event-sync", "Roster image warm-up was unsuccessful", {
+                    eventId: event.id,
+                    guildId: payload.config.guildId,
+                    status: event.status,
+                })
+            }
+        } catch (error) {
+            logWarn("event-sync", "Roster image warm-up timed out or failed", {
+                eventId: event.id,
+                guildId: payload.config.guildId,
+                status: event.status,
+                error,
+            })
+        }
+    }
     if (
         displayChannelId &&
         !(event.status === "concluded" && !announcementMessageId)
