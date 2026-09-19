@@ -50,6 +50,7 @@ import {
 type EventEmbedOptions = {
     forumChannelId?: string
     showPublishedRosterImage?: boolean
+    rosterImageUrl?: string
 }
 
 export function buildAnnouncementMessage(
@@ -149,21 +150,26 @@ export function buildAnnouncementV2Message(
     )
     const messages = getClanDiscordMessages(payload.config.defaultLanguage)
 
+    const generatedRosterImageUrl = publishedRoster
+        ? buildRosterImageUrl(
+              event.id,
+              getRosterImageVersion(event, publishedRoster.updatedAt)
+          )
+        : undefined
     const publishedRosterImageUrl =
         publishedRoster &&
         (options?.showPublishedRosterImage ||
             shouldShowPublishedRosterImage(event, publishedRoster))
-            ? buildRosterImageUrl(
-                  event.id,
-                  getRosterImageVersion(event, publishedRoster.updatedAt)
-              )
+            ? (options?.rosterImageUrl ?? generatedRosterImageUrl)
             : undefined
     // Legacy embeds have only one full-size image slot, which is why the
     // roster used to replace the event artwork. Components V2 media galleries
     // support several images, so retain the artwork and append the roster.
     const galleryImageUrls = [
         event.kind === "match" ? event.imageUrl : undefined,
-        embed.image?.url,
+        embed.image?.url === generatedRosterImageUrl
+            ? undefined
+            : embed.image?.url,
         publishedRosterImageUrl,
     ].filter(
         (url, index, urls): url is string =>

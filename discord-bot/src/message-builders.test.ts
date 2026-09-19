@@ -17,7 +17,6 @@ import type {
     Roster,
     SyncPayload,
 } from "./types"
-import { buildRosterImageUrl, getRosterImageVersion } from "./utils"
 
 const config: DiscordConfig = {
     id: "config-1",
@@ -573,7 +572,14 @@ test("Components V2 announcements show published roster below event artwork", ()
         userDisplayNames: {},
     } as SyncPayload
 
-    const message = buildAnnouncementV2Message(payload, event)
+    const message = buildAnnouncementV2Message(
+        payload,
+        event,
+        {},
+        {
+            rosterImageUrl: "attachment://published-roster.png",
+        }
+    )
     const container = message.components?.[0]?.toJSON()
     const gallery =
         container && "components" in container
@@ -586,10 +592,7 @@ test("Components V2 announcements show published roster below event artwork", ()
             : [],
         [
             "https://example.com/event-artwork.png",
-            buildRosterImageUrl(
-                event.id,
-                getRosterImageVersion(event, roster.updatedAt)
-            ),
+            "attachment://published-roster.png",
         ]
     )
 })

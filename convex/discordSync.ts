@@ -153,6 +153,7 @@ export const listGuildCacheSnapshot = query({
             calendarItems,
             squadPresets,
             topicPresets,
+            assignments,
         ] = await Promise.all([
             ctx.db.query("guilds").collect(),
             ctx.db.query("discordConfigs").collect(),
@@ -160,6 +161,7 @@ export const listGuildCacheSnapshot = query({
             ctx.db.query("calendarItems").collect(),
             ctx.db.query("squadPresets").collect(),
             ctx.db.query("topicPresets").collect(),
+            ctx.db.query("userAssignments").collect(),
         ])
 
         return {
@@ -169,6 +171,13 @@ export const listGuildCacheSnapshot = query({
             calendarItems: calendarItems.map(normalizeCalendarItemDoc),
             squadPresets: squadPresets.map(normalizeDoc),
             topicPresets: topicPresets.map(normalizeDoc),
+            assignments: assignments.map((assignment) => ({
+                userId: assignment.userId,
+                type: assignment.type,
+                status: assignment.status,
+                gameId: assignment.gameId,
+                serverId: assignment.serverId,
+            })),
         }
     },
 })

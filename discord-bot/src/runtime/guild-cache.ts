@@ -18,6 +18,7 @@ export type GuildRuntimeData = {
     calendarItems: CalendarItem[]
     squadPresets: SquadPreset[]
     topicPresets: TopicPreset[]
+    assignments: GuildCacheSnapshot["assignments"]
 }
 
 type GuildChangeHandler = (guildIds: string[]) => void
@@ -101,6 +102,9 @@ export class GuildCache {
                 ),
                 topicPresets: snapshot.topicPresets.filter(
                     (preset) => preset.guildId === guild.discordId
+                ),
+                assignments: snapshot.assignments.filter(
+                    (assignment) => assignment.serverId === guild.discordId
                 ),
             })
         }

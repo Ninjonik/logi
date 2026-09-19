@@ -11,6 +11,7 @@ export type GuildRuntimeDataLike<
     squadPresets: TSquadPreset[]
     topicPresets: TTopicPreset[]
     calendarItems?: unknown[]
+    assignments?: unknown[]
 }
 
 export type EventSyncContextLike<TEvent, TRoster, TSyncState> = {
@@ -50,6 +51,7 @@ export function buildGuildPayload<
         config: runtime.config,
         groups: runtime.groups,
         calendarItems: runtime.calendarItems ?? [],
+        assignments: runtime.assignments ?? [],
         topicPresets: runtime.topicPresets,
         events: filteredContexts.map((context) => context.event),
         rosters: filteredContexts.flatMap((context) =>

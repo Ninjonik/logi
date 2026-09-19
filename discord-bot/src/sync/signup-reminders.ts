@@ -44,7 +44,9 @@ export async function processSignupReminders(
         )
 
         const { embed, components } = buildAnnouncementMessage(payload, event)
-        const recipients = payload.assignments.filter((assignment) => {
+        // Assignments were not included in older cached payloads. Treat them
+        // as an empty recipient set while a rolling deployment catches up.
+        const recipients = (payload.assignments ?? []).filter((assignment) => {
             const status = getRecipientStatus(assignment)
             return (
                 assignment.gameId === event.gameId &&

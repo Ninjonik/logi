@@ -366,6 +366,7 @@ export type GuildCacheSnapshot = {
     calendarItems: CalendarItem[]
     squadPresets: SquadPreset[]
     topicPresets: TopicPreset[]
+    assignments: SyncPayload["assignments"]
 }
 
 export type EventSyncIndex = {
