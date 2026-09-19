@@ -5,6 +5,7 @@ import type {
     GuildCacheSnapshot,
     GuildRecord,
     SquadPreset,
+    SyncPayload,
     TopicPreset,
 } from "../types"
 import { convex, references } from "../convex"
@@ -18,7 +19,7 @@ export type GuildRuntimeData = {
     calendarItems: CalendarItem[]
     squadPresets: SquadPreset[]
     topicPresets: TopicPreset[]
-    assignments: GuildCacheSnapshot["assignments"]
+    assignments: SyncPayload["assignments"]
 }
 
 type GuildChangeHandler = (guildIds: string[]) => void
@@ -103,9 +104,13 @@ export class GuildCache {
                 topicPresets: snapshot.topicPresets.filter(
                     (preset) => preset.guildId === guild.discordId
                 ),
-                assignments: snapshot.assignments.filter(
-                    (assignment) => assignment.serverId === guild.discordId
-                ),
+                assignments: snapshot.assignments
+                    .filter(
+                        (assignment) => assignment.serverId === guild.discordId
+                    )
+                    .map(
+                        ({ serverId: _serverId, ...assignment }) => assignment
+                    ),
             })
         }
 
