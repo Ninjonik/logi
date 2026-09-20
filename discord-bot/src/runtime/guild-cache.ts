@@ -104,7 +104,10 @@ export class GuildCache {
                 topicPresets: snapshot.topicPresets.filter(
                     (preset) => preset.guildId === guild.discordId
                 ),
-                assignments: snapshot.assignments
+                // The assignment collection was added after this cache query was
+                // introduced. Treat it as empty while a bot deploy temporarily
+                // overlaps an older Convex deployment that does not return it.
+                assignments: (snapshot.assignments ?? [])
                     .filter(
                         (assignment) => assignment.serverId === guild.discordId
                     )
