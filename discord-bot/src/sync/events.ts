@@ -38,7 +38,6 @@ import { env } from "../environment"
 // a scheduled Discord event and forum provisioning. Discord rate limits make
 // the previous 20-second aggregate deadline too short for that valid work.
 const EVENT_SYNC_TIMEOUT_MS = 60_000
-const ROSTER_IMAGE_ATTACHMENT_NAME = "published-roster.png"
 
 function shouldShowPublishedRosterImage(
     event: EventRecord,
@@ -54,6 +53,9 @@ async function buildPublishedRosterImageAttachment(
     event: EventRecord,
     roster: Roster
 ) {
+    const attachmentName = `published-roster-${Buffer.from(
+        `${event.id}:${roster.updatedAt}`
+    ).toString("base64url")}.png`
     const publicUrl = new URL(
         buildRosterImageUrl(
             event.id,
@@ -77,10 +79,16 @@ async function buildPublishedRosterImageAttachment(
         throw new Error(`Unable to render roster image (${response.status}).`)
     }
 
-    return new AttachmentBuilder(Buffer.from(await response.arrayBuffer()), {
-        name: ROSTER_IMAGE_ATTACHMENT_NAME,
-        description: `${event.name} roster`,
-    })
+    return {
+        attachment: new AttachmentBuilder(
+            Buffer.from(await response.arrayBuffer()),
+            {
+                name: attachmentName,
+                description: `${event.name} roster`,
+            }
+        ),
+        mediaUrl: `attachment://${attachmentName}`,
+    }
 }
 
 export function getAnnouncementPingRoleIds(
@@ -603,7 +611,9 @@ async function syncEvent(
     // Discord's media gallery can be unreliable when it has to fetch a
     // generated image from our public URL. Upload the PNG with the message so
     // Discord renders an attachment it already owns instead.
-    let rosterImageAttachment: AttachmentBuilder | undefined
+    let rosterImageAttachment:
+        | Awaited<ReturnType<typeof buildPublishedRosterImageAttachment>>
+        | undefined
     if (!splitChannels && roster?.published && roster.updatedAt) {
         try {
             rosterImageAttachment = await buildPublishedRosterImageAttachment(
@@ -679,14 +689,12 @@ async function syncEvent(
                             userDisplayNames,
                             {
                                 forumChannelId,
-                                rosterImageUrl: rosterImageAttachment
-                                    ? `attachment://${ROSTER_IMAGE_ATTACHMENT_NAME}`
-                                    : undefined,
+                                rosterImageUrl: rosterImageAttachment?.mediaUrl,
                             }
                         ),
                         attachments: [],
                         files: rosterImageAttachment
-                            ? [rosterImageAttachment]
+                            ? [rosterImageAttachment.attachment]
                             : [],
                     })
                 } else {
@@ -714,12 +722,12 @@ async function syncEvent(
                         {
                             forumChannelId,
                             pingRoleIds,
-                            rosterImageUrl: rosterImageAttachment
-                                ? `attachment://${ROSTER_IMAGE_ATTACHMENT_NAME}`
-                                : undefined,
+                            rosterImageUrl: rosterImageAttachment?.mediaUrl,
                         }
                     ),
-                    files: rosterImageAttachment ? [rosterImageAttachment] : [],
+                    files: rosterImageAttachment
+                        ? [rosterImageAttachment.attachment]
+                        : [],
                     allowedMentions: { roles: pingRoleIds, parse: [] },
                     flags: MessageFlags.IsComponentsV2,
                 })
