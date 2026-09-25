@@ -1,16 +1,18 @@
 import { BookOpen, Github } from "lucide-react"
 import Link from "next/link"
 
+import { LogiStatusLink } from "@/components/app/logi-status-link"
 import { LocaleSwitcher } from "@/components/app/locale-switcher"
 import { ThemeSwitcher } from "@/components/app/theme-switcher"
 import { getDictionary } from "@/i18n/dictionaries"
+import { getLogiStatus } from "@/lib/logi-status"
 import { Button } from "@/components/ui/button"
 import type { Locale } from "@/i18n/config"
 import { Logo } from "@/components/logo"
 
 const githubHref = "https://github.com/ninjonik/logi"
 
-export function PublicSiteShell({
+export async function PublicSiteShell({
     children,
     locale,
 }: {
@@ -18,6 +20,7 @@ export function PublicSiteShell({
     locale: Locale
 }) {
     const dictionary = getDictionary(locale)
+    const status = await getLogiStatus()
 
     return (
         <div className="bg-background text-foreground flex min-h-dvh flex-col">
@@ -56,6 +59,7 @@ export function PublicSiteShell({
                         </Link>
                     </nav>
                     <div className="flex items-center gap-2">
+                        <LogiStatusLink status={status} />
                         <ThemeSwitcher />
                         <LocaleSwitcher
                             locale={locale}
@@ -77,6 +81,7 @@ export function PublicSiteShell({
                         &copy; {new Date().getFullYear()} {dictionary.app.name}
                     </span>
                     <div className="flex items-center gap-4">
+                        <LogiStatusLink status={status} />
                         <Link
                             href={`/${locale}/privacy-policy`}
                             className="hover:text-foreground"

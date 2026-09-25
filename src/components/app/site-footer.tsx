@@ -1,7 +1,15 @@
+import { LogiStatusLink } from "@/components/app/logi-status-link"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { LogiStatus } from "@/lib/logi-status"
 import Link from "next/link"
 
-export function SiteFooter({ dictionary }: { dictionary: Dictionary }) {
+export function SiteFooter({
+    dictionary,
+    status,
+}: {
+    dictionary: Dictionary
+    status: LogiStatus
+}) {
     return (
         <footer className="bg-background h-(--footer-height) border-t">
             <div className="text-muted-foreground flex h-full items-center justify-between px-4 text-[11px] lg:px-6 2xl:text-xs">
@@ -9,6 +17,7 @@ export function SiteFooter({ dictionary }: { dictionary: Dictionary }) {
                     &copy; {dictionary.app.name} {new Date().getFullYear()}
                 </div>
                 <div className="flex items-center gap-3">
+                    <LogiStatusLink status={status} />
                     <Link
                         href="/wiki"
                         className="hover:text-foreground transition-colors"
