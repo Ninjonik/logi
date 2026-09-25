@@ -5,6 +5,11 @@ import {
     saveServerUserAssignment,
 } from "@/lib/server-user-management"
 import {
+    DEFAULT_GAME_ID,
+    filterByGameScope,
+    isGameId,
+} from "@/domain/games/game"
+import {
     getUserSafeErrorMessage,
     logRouteError,
 } from "@/lib/server-route-errors"
@@ -40,15 +45,17 @@ export async function POST(
         const { serverId } = await params
         await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/settings`)
 
-        const context = await getServerContext(serverId)
+        const body = (await request.json()) as {
+            roleId?: string
+            target?: MigrationTarget
+            gameId?: string
+        }
+        const gameId = isGameId(body.gameId) ? body.gameId : DEFAULT_GAME_ID
+        const context = await getServerContext(serverId, gameId)
         if (!context?.canAdmin) {
             return NextResponse.json({ error: "Forbidden." }, { status: 403 })
         }
 
-        const body = (await request.json()) as {
-            roleId?: string
-            target?: MigrationTarget
-        }
         const roleId = body.roleId?.trim()
         const target = body.target
         if (!roleId || !target) {
@@ -69,7 +76,10 @@ export async function POST(
                 .map((member) => member.user!.id)
         )
 
-        const assignments = await getServerUserAssignments(serverId)
+        const assignments = filterByGameScope(
+            await getServerUserAssignments(serverId),
+            gameId
+        )
         const assignmentsByUserId = new Map(
             assignments.map((assignment) => [assignment.userId, assignment])
         )
@@ -98,6 +108,7 @@ export async function POST(
                 assignmentId: assignment.id,
                 userId: assignment.userId,
                 serverId,
+                gameId,
                 type: nextAssignment.type,
                 status: nextAssignment.status,
                 membershipCategoryId: assignment.membershipCategoryId,

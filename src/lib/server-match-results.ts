@@ -1167,6 +1167,7 @@ export async function importEventMatchResults(input: {
 
 export async function importServerEventsFromLinks(input: {
     serverId: string
+    gameId: import("@/domain/games/game").GameId
     linksInput: string
     importPlayers?: boolean
     clanTag?: string
@@ -1256,6 +1257,7 @@ export async function importServerEventsFromLinks(input: {
                 (await saveServerEvent({
                     serverId: input.serverId,
                     kind: "match",
+                    gameId: input.gameId,
                     createForumChannel: true,
                     ...buildImportedEventInput({
                         payload: sanitizedPayload,

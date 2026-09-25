@@ -19,7 +19,9 @@ export class ImportDiscordMembersUseCase {
 
     async execute(input: {
         serverDiscordId: string
+        gameId: import("@/domain/games/game").GameId
         assignmentType: "member" | "reserve_member" | "mercenary"
+        status: "recruit" | "active"
         members: Array<{
             userId: string
             name: string
@@ -36,7 +38,8 @@ export class ImportDiscordMembersUseCase {
         }
 
         const groupNameById = await this.repository.listGroupNamesByServer(
-            input.serverDiscordId
+            input.serverDiscordId,
+            input.gameId
         )
         const validGroupIds = new Set(groupNameById.keys())
         const now = this.clock.now()
@@ -69,7 +72,8 @@ export class ImportDiscordMembersUseCase {
 
             const existingAssignment = await this.repository.getByServerUser(
                 input.serverDiscordId,
-                member.userId
+                member.userId,
+                input.gameId
             )
             const primaryGroupId = existingAssignment?.primaryGroupId
             const mergedSecondaryGroupIds = mergeImportedSecondaryGroupIds({
@@ -84,8 +88,9 @@ export class ImportDiscordMembersUseCase {
                     assignmentId: existingAssignment.id,
                     userId: existingAssignment.userId,
                     serverId: input.serverDiscordId,
-                    type: existingAssignment.type ?? input.assignmentType,
-                    status: existingAssignment.status ?? "active",
+                    gameId: input.gameId,
+                    type: input.assignmentType,
+                    status: input.status,
                     membershipCategoryId:
                         existingAssignment.membershipCategoryId,
                     primaryGroupId,
@@ -99,8 +104,9 @@ export class ImportDiscordMembersUseCase {
                 await this.repository.save({
                     userId: member.userId,
                     serverId: input.serverDiscordId,
+                    gameId: input.gameId,
                     type: input.assignmentType,
-                    status: "active",
+                    status: input.status,
                     membershipCategoryId: undefined,
                     primaryGroupId: undefined,
                     secondaryGroupIds: mergedSecondaryGroupIds,
@@ -124,7 +130,8 @@ export class ImportDiscordMembersUseCase {
 
         const eventIds = await this.repository.listOpenMatchEventIds(
             input.serverDiscordId,
-            now
+            now,
+            input.gameId
         )
         for (const eventId of eventIds) {
             await this.rosterSync.syncEvent(eventId)

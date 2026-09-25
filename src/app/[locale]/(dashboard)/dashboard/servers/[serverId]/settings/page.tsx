@@ -2,6 +2,11 @@ import type { Metadata } from "next"
 
 import { RefreshPerformanceHistoryButton } from "@/components/app/refresh-performance-history-button"
 import { MigrateMembershipStatusButton } from "@/components/app/migrate-membership-status-button"
+import {
+    DEFAULT_GAME_ID,
+    isGameId,
+    withGameOverrides,
+} from "@/domain/games/game"
 import { LinkMissingDiscordIdsButton } from "@/components/app/link-missing-discord-ids-button"
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
 import { ImportDiscordMembersButton } from "@/components/app/import-discord-members-button"
@@ -12,7 +17,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ImportEventsButton } from "@/components/app/import-events-button"
 import { HelperDataActions } from "@/components/app/helper-data-actions"
 import { GameSettingsForm } from "@/components/app/game-settings-form"
-import { isGameId, withGameOverrides } from "@/domain/games/game"
 import { ApiKeyManager } from "@/components/app/api-key-manager"
 import { PageHeader } from "@/components/app/page-header"
 import { getGuildMetadata } from "@/lib/server-metadata"
@@ -36,6 +40,7 @@ export default async function ServerSettingsPage({
     const { locale, serverId } = await params
     const { game } = await searchParams
     const gameId = isGameId(game) ? game : undefined
+    const importGameId = gameId ?? DEFAULT_GAME_ID
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
     const context = await getServerContext(serverId, gameId ?? "all")
     if (!context) return null
@@ -107,6 +112,7 @@ export default async function ServerSettingsPage({
                                 <ImportEventsButton
                                     serverId={serverId}
                                     dictionary={dictionary}
+                                    gameId={importGameId}
                                 />
                                 <ImportDiscordMembersButton
                                     serverId={serverId}
@@ -114,10 +120,12 @@ export default async function ServerSettingsPage({
                                     defaultRoleId={
                                         context.discordConfig?.clanRoleId
                                     }
+                                    gameId={importGameId}
                                 />
                                 <AutoLinkPlatformIdsButton
                                     serverId={serverId}
                                     dictionary={dictionary}
+                                    gameId={importGameId}
                                 />
                                 <LinkMissingDiscordIdsButton
                                     serverId={serverId}
@@ -125,6 +133,7 @@ export default async function ServerSettingsPage({
                                     defaultRoleId={
                                         context.discordConfig?.clanRoleId
                                     }
+                                    gameId={importGameId}
                                 />
                                 <MigrateMembershipStatusButton
                                     serverId={serverId}
@@ -132,14 +141,17 @@ export default async function ServerSettingsPage({
                                     defaultRoleId={
                                         context.discordConfig?.clanRoleId
                                     }
+                                    gameId={importGameId}
                                 />
                                 <DedupePlayerStatsButton
                                     serverId={serverId}
                                     dictionary={dictionary}
+                                    gameId={importGameId}
                                 />
                                 <RefreshPerformanceHistoryButton
                                     serverId={serverId}
                                     dictionary={dictionary}
+                                    gameId={importGameId}
                                 />
                             </div>
                         </CardContent>

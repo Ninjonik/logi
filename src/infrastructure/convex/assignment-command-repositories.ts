@@ -91,13 +91,18 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
     }
 
     async listGroupNamesByServer(
-        serverDiscordId: string
+        serverDiscordId: string,
+        gameId?: import("@/domain/games/game").GameId
     ): Promise<Map<string, string>> {
         const groups = await this.ctx.db
             .query("groups")
             .withIndex("guildId", (q) => q.eq("guildId", serverDiscordId))
             .collect()
-        return new Map(groups.map((group) => [String(group._id), group.name]))
+        return new Map(
+            groups
+                .filter((group) => matchesGameScope(group.gameId, gameId))
+                .map((group) => [String(group._id), group.name])
+        )
     }
 
     async save(input: {

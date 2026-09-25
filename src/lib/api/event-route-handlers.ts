@@ -1,3 +1,4 @@
+import { DEFAULT_GAME_ID, isGameId, type GameId } from "@/domain/games/game"
 import { NextResponse } from "next/server"
 import type { ZodType } from "zod"
 import { z } from "zod"
@@ -19,6 +20,7 @@ type EventRouteDeps<TEventInput> = {
     }) => Promise<void>
     importServerEventsFromLinks: (input: {
         serverId: string
+        gameId: GameId
         linksInput: string
         importPlayers?: boolean
         clanTag?: string
@@ -107,6 +109,7 @@ function createImportEventsStream(
     deps: EventRouteDeps<unknown>,
     input: {
         serverId: string
+        gameId: GameId
         linksInput: string
         importPlayers?: boolean
         clanTag?: string
@@ -200,6 +203,12 @@ export function createServerEventsPostHandler<TEventInput>(
                 )
                 const importInput = {
                     serverId,
+                    gameId: isGameId(
+                        (rawBody as { gameId?: string } | null | undefined)
+                            ?.gameId
+                    )
+                        ? (rawBody as { gameId: GameId }).gameId
+                        : DEFAULT_GAME_ID,
                     linksInput: String(
                         (rawBody as { links?: unknown } | null | undefined)
                             ?.links ?? ""

@@ -3,7 +3,7 @@ title: Server settings
 description: Configure the selected workspace without exposing sensitive information.
 ---
 
-import { Callout, Steps } from "nextra/components"
+import { Callout, Steps } from "nextra/components";
 
 # Server settings
 
@@ -55,9 +55,9 @@ revoked. Revoking a key takes effect for future requests and cannot be undone:
 create and deploy a replacement key before revoking one used by a live site.
 
 <Callout type="warning">
-    Do not rotate, delete, or reveal an API key unless you understand every
-    integration using it. A broken key can interrupt an external integration
-    immediately.
+  Do not rotate, delete, or reveal an API key unless you understand every
+  integration using it. A broken key can interrupt an external integration
+  immediately.
 </Callout>
 
 ## Discord settings: what each field actually enables
@@ -93,7 +93,9 @@ not access control or a Discord role mapping.
 
 ## Imports, performance, and helper data
 
-The **Imports** section is manager-only operational maintenance. The exact
+The **Imports** section is manager-only operational maintenance. Each action uses
+the game selected in the dashboard game switcher; when no game is selected, it
+defaults to **Hell Let Loose**. The exact
 member-import and linking safeguards are documented in
 [Members and groups](/wiki/configuration/members). Two other controls are easy
 to misunderstand:

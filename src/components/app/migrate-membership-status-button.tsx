@@ -26,6 +26,7 @@ import {
     type DiscordSelectOption,
 } from "@/components/app/discord-entity-select"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 
@@ -39,10 +40,12 @@ export function MigrateMembershipStatusButton({
     serverId,
     dictionary,
     defaultRoleId,
+    gameId,
 }: {
     serverId: string
     dictionary: Dictionary
     defaultRoleId?: string
+    gameId: GameId
 }) {
     const router = useRouter()
     const [isOpen, setIsOpen] = useState(false)
@@ -85,6 +88,7 @@ export function MigrateMembershipStatusButton({
                     body: JSON.stringify({
                         roleId,
                         target,
+                        gameId,
                     }),
                 }
             )
