@@ -1,20 +1,26 @@
 import { refreshPerformanceHistory } from "@/lib/read-models/performance-history"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
 import { NextResponse } from "next/server"
 
 export async function POST(
-    _request: Request,
+    request: Request,
     { params }: { params: Promise<{ serverId: string }> }
 ) {
     const { serverId } = await params
     await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/settings`)
-    const context = await getServerContext(serverId)
+    const body = (await request.json()) as { gameId?: string }
+    const gameId = isGameId(body.gameId) ? body.gameId : DEFAULT_GAME_ID
+    const context = await getServerContext(serverId, gameId)
     if (!context?.canAdmin)
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     try {
-        const result = await refreshPerformanceHistory(context.server.discordId)
+        const result = await refreshPerformanceHistory(
+            context.server.discordId,
+            gameId
+        )
         revalidateCacheEntries([
             appCacheTags.matches(serverId),
             appCacheTags.serverContext(serverId),

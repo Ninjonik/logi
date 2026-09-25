@@ -18,6 +18,7 @@ import type { Dictionary } from "@/i18n/dictionaries"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { Checkbox } from "@/components/ui/checkbox"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -44,9 +45,11 @@ type ImportProgress = {
 export function ImportEventsButton({
     serverId,
     dictionary,
+    gameId,
 }: {
     serverId: string
     dictionary: Dictionary
+    gameId: GameId
 }) {
     const router = useRouter()
     const [isOpen, setIsOpen] = useState(false)
@@ -78,6 +81,7 @@ export function ImportEventsButton({
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
                     action: "importEvents",
+                    gameId,
                     links: normalizedLinks,
                     importPlayers,
                     clanTag: importPlayers ? normalizedClanTag : undefined,

@@ -1,5 +1,6 @@
 "use client"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { GameId } from "@/domain/games/game"
 import { Loader2, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -9,9 +10,11 @@ import { toast } from "sonner"
 export function RefreshPerformanceHistoryButton({
     serverId,
     dictionary,
+    gameId,
 }: {
     serverId: string
     dictionary: Dictionary
+    gameId: GameId
 }) {
     const router = useRouter()
     const [pending, startTransition] = useTransition()
@@ -24,7 +27,11 @@ export function RefreshPerformanceHistoryButton({
                 startTransition(async () => {
                     const response = await fetch(
                         `/api/servers/${serverId}/performance-history`,
-                        { method: "POST" }
+                        {
+                            method: "POST",
+                            headers: { "content-type": "application/json" },
+                            body: JSON.stringify({ gameId }),
+                        }
                     )
                     if (!response.ok) {
                         toast.error(

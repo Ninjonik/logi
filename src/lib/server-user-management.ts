@@ -149,7 +149,9 @@ export async function linkImportedDiscordProfile(input: {
 
 export async function importDiscordMembersForServer(input: {
     serverId: string
+    gameId: GameId
     assignmentType: "member" | "reserve_member" | "mercenary"
+    status: "recruit" | "active"
     members: Array<{
         userId: string
         name: string

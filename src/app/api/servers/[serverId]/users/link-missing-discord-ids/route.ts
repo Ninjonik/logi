@@ -8,6 +8,7 @@ import {
 import { linkMissingDiscordIdsFromRole } from "@/lib/server-match-results"
 import { getPlayerStatsUserIdsForEvents } from "@/lib/server-player-stats"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
 import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
@@ -29,13 +30,14 @@ export async function POST(
     const { serverId } = await params
     await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/settings`)
 
-    const context = await getServerContext(serverId)
+    const body = (await request.json()) as { roleId?: string; gameId?: string }
+    const gameId = isGameId(body.gameId) ? body.gameId : DEFAULT_GAME_ID
+    const context = await getServerContext(serverId, gameId)
     if (!context?.canAdmin) {
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
 
     try {
-        const body = (await request.json()) as { roleId?: string }
         const roleId = String(body.roleId ?? "").trim()
 
         if (!roleId) {
@@ -91,6 +93,7 @@ export async function POST(
             serverId,
             userId: context.user.discordId,
             roleId,
+            gameId,
             linkedCount: result.linkedUserIds.length,
         })
         return NextResponse.json(result)

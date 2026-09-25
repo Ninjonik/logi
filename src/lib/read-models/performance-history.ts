@@ -96,6 +96,13 @@ export async function getPlayersPerformanceHistories(
         3600
     )
 }
-export async function refreshPerformanceHistory(guildId: string) {
-    return fetchAction(refreshRef, { secret: getInternalAuthSecret(), guildId })
+export async function refreshPerformanceHistory(
+    guildId: string,
+    gameId: Exclude<GameScope, "all">
+) {
+    return fetchAction(refreshRef, {
+        secret: getInternalAuthSecret(),
+        guildId,
+        gameId,
+    })
 }

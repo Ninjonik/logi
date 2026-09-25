@@ -25,6 +25,7 @@ import {
     type DiscordSelectOption,
 } from "@/components/app/discord-entity-select"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 
@@ -36,16 +37,21 @@ export function ImportDiscordMembersButton({
     serverId,
     dictionary,
     defaultRoleId,
+    gameId,
 }: {
     serverId: string
     dictionary: Dictionary
     defaultRoleId?: string
+    gameId: GameId
 }) {
     const [isOpen, setIsOpen] = useState(false)
     const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
     const [roleId, setRoleId] = useState(defaultRoleId ?? "")
-    const [assignmentType, setAssignmentType] = useState<
+    const [membershipKind, setMembershipKind] = useState<
         "member" | "mercenary"
+    >("member")
+    const [memberStatus, setMemberStatus] = useState<
+        "recruit" | "member" | "reserve_member"
     >("member")
     const [isPending, startTransition] = useTransition()
 
@@ -69,7 +75,11 @@ export function ImportDiscordMembersButton({
                     headers: { "content-type": "application/json" },
                     body: JSON.stringify({
                         roleId,
-                        assignmentType,
+                        gameId,
+                        target:
+                            membershipKind === "mercenary"
+                                ? "mercenary"
+                                : memberStatus,
                     }),
                 }
             )
@@ -140,9 +150,9 @@ export function ImportDiscordMembersButton({
                             {dictionary.userManagement.assignmentType}
                         </Label>
                         <Select
-                            value={assignmentType}
+                            value={membershipKind}
                             onValueChange={(value) =>
-                                setAssignmentType(
+                                setMembershipKind(
                                     value as "member" | "mercenary"
                                 )
                             }
@@ -160,6 +170,45 @@ export function ImportDiscordMembersButton({
                             </SelectContent>
                         </Select>
                     </div>
+                    {membershipKind === "member" ? (
+                        <div className="space-y-2">
+                            <Label>
+                                {
+                                    dictionary.userManagement
+                                        .membershipMigrationTarget
+                                }
+                            </Label>
+                            <Select
+                                value={memberStatus}
+                                onValueChange={(value) =>
+                                    setMemberStatus(
+                                        value as
+                                            | "recruit"
+                                            | "member"
+                                            | "reserve_member"
+                                    )
+                                }
+                            >
+                                <SelectTrigger className="rounded-xl">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="recruit">
+                                        {dictionary.userManagement.recruitLabel}
+                                    </SelectItem>
+                                    <SelectItem value="member">
+                                        {dictionary.userManagement.memberLabel}
+                                    </SelectItem>
+                                    <SelectItem value="reserve_member">
+                                        {
+                                            dictionary.userManagement
+                                                .reserveMemberLabel
+                                        }
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    ) : null}
                     <p className="text-muted-foreground text-sm">
                         {dictionary.userManagement.importDiscordMembersHint}
                     </p>

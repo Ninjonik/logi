@@ -10,13 +10,37 @@ import {
     getDiscordAvatarUrl,
     type DiscordGuildMember,
 } from "@/lib/discord"
+import {
+    filterByGameScope,
+    isGameId,
+    DEFAULT_GAME_ID,
+    type GameId,
+} from "@/domain/games/game"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
 import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
 
+type MembershipTarget = "recruit" | "member" | "reserve_member" | "mercenary"
+
+function resolveAssignmentPayload(target: MembershipTarget) {
+    switch (target) {
+        case "recruit":
+            return { type: "member" as const, status: "recruit" as const }
+        case "reserve_member":
+            return {
+                type: "reserve_member" as const,
+                status: "active" as const,
+            }
+        case "mercenary":
+            return { type: "mercenary" as const, status: "active" as const }
+        default:
+            return { type: "member" as const, status: "active" as const }
+    }
+}
+
 function canImportUserAsType(input: {
-    assignmentType: "member" | "mercenary"
+    assignmentType: "member" | "reserve_member" | "mercenary"
     serverDiscordId: string
     user?: Awaited<ReturnType<typeof listUsers>>[number]
     existingAssignment?: Awaited<
@@ -56,20 +80,28 @@ export async function POST(
     const { serverId } = await params
     await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/users`)
 
-    const context = await getServerContext(serverId)
+    const requestBody = (await request.json()) as {
+        roleId?: string
+        target?: MembershipTarget
+        gameId?: string
+    }
+    const gameId: GameId = isGameId(requestBody.gameId)
+        ? requestBody.gameId
+        : DEFAULT_GAME_ID
+    const context = await getServerContext(serverId, gameId)
     if (!context?.canAdmin) {
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
 
     try {
-        const body = (await request.json()) as {
-            roleId?: string
-            assignmentType?: "member" | "mercenary"
-        }
-
-        const roleId = String(body.roleId ?? "").trim()
-        const assignmentType =
-            body.assignmentType === "mercenary" ? "mercenary" : "member"
+        const roleId = String(requestBody.roleId ?? "").trim()
+        const target: MembershipTarget =
+            requestBody.target === "recruit" ||
+            requestBody.target === "reserve_member" ||
+            requestBody.target === "mercenary"
+                ? requestBody.target
+                : "member"
+        const assignment = resolveAssignmentPayload(target)
 
         if (!roleId) {
             return NextResponse.json(
@@ -89,7 +121,7 @@ export async function POST(
             existingUsers.map((user) => [user.discordId, user])
         )
         const assignmentsByUserId = new Map(
-            existingAssignments.map((assignment) => [
+            filterByGameScope(existingAssignments, gameId).map((assignment) => [
                 assignment.userId,
                 assignment,
             ])
@@ -118,7 +150,7 @@ export async function POST(
             const existingAssignment = assignmentsByUserId.get(member.user.id)
             if (
                 !canImportUserAsType({
-                    assignmentType,
+                    assignmentType: assignment.type,
                     serverDiscordId: context.server.discordId,
                     user: existingUser,
                     existingAssignment,
@@ -166,7 +198,9 @@ export async function POST(
 
         const result = await importDiscordMembersForServer({
             serverId,
-            assignmentType,
+            gameId,
+            assignmentType: assignment.type,
+            status: assignment.status,
             members: membersToImport,
         })
 
@@ -184,7 +218,8 @@ export async function POST(
                 serverId,
                 userId: context.user.discordId,
                 roleId,
-                assignmentType,
+                target,
+                gameId,
                 importedCount: result.importedCount,
             }
         )

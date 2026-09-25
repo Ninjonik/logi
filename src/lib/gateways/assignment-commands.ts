@@ -99,7 +99,9 @@ export async function reassignImportedMemberCommand(input: {
 
 export async function importDiscordMembersForServerCommand(input: {
     serverId: string
+    gameId: import("@/domain/games/game").GameId
     assignmentType: "member" | "reserve_member" | "mercenary"
+    status: "recruit" | "active"
     members: Array<{
         userId: string
         name: string
@@ -111,7 +113,9 @@ export async function importDiscordMembersForServerCommand(input: {
     return (await fetchMutation(importDiscordMembersReference, {
         secret: getInternalAuthSecret(),
         serverId: input.serverId,
+        gameId: input.gameId,
         assignmentType: input.assignmentType,
+        status: input.status,
         members: input.members.map((member) => ({
             ...member,
             secondaryGroupIds: member.secondaryGroupIds as never,

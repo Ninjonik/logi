@@ -31,7 +31,8 @@ export interface AssignmentCommandRepository {
     listByServer(serverDiscordId: string): Promise<AssignmentRecord[]>
     listByUser(userId: string): Promise<AssignmentRecord[]>
     listGroupNamesByServer(
-        serverDiscordId: string
+        serverDiscordId: string,
+        gameId?: import("@/domain/games/game").GameId
     ): Promise<Map<string, string>>
     save(input: {
         assignmentId?: string

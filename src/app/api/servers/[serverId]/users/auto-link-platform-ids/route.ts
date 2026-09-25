@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import { autoLinkPlatformIdsFromEventImports } from "@/lib/server-match-results"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
 import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
@@ -13,13 +14,14 @@ export async function POST(
     const { serverId } = await params
     await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/users`)
 
-    const context = await getServerContext(serverId)
+    const body = (await request.json()) as { clanTag?: string; gameId?: string }
+    const gameId = isGameId(body.gameId) ? body.gameId : DEFAULT_GAME_ID
+    const context = await getServerContext(serverId, gameId)
     if (!context?.canAdmin) {
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
 
     try {
-        const body = (await request.json()) as { clanTag?: string }
         const clanTag = String(body.clanTag ?? "").trim()
 
         if (!clanTag) {
@@ -57,6 +59,7 @@ export async function POST(
                 serverId,
                 userId: context.user.discordId,
                 clanTag,
+                gameId,
                 linkedCount: result.linkedUserIds.length,
             }
         )

@@ -15,6 +15,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -22,9 +23,11 @@ import { Input } from "@/components/ui/input"
 export function AutoLinkPlatformIdsButton({
     serverId,
     dictionary,
+    gameId,
 }: {
     serverId: string
     dictionary: Dictionary
+    gameId: GameId
 }) {
     const router = useRouter()
     const [isOpen, setIsOpen] = useState(false)
@@ -42,6 +45,7 @@ export function AutoLinkPlatformIdsButton({
                     headers: { "content-type": "application/json" },
                     body: JSON.stringify({
                         clanTag: normalizedClanTag,
+                        gameId,
                     }),
                 }
             )

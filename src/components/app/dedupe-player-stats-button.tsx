@@ -15,14 +15,17 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 
 export function DedupePlayerStatsButton({
     serverId,
     dictionary,
+    gameId,
 }: {
     serverId: string
     dictionary: Dictionary
+    gameId: GameId
 }) {
     const router = useRouter()
     const [isOpen, setIsOpen] = useState(false)
@@ -34,6 +37,8 @@ export function DedupePlayerStatsButton({
                 `/api/servers/${serverId}/users/dedupe-player-stats`,
                 {
                     method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ gameId }),
                 }
             )
 
