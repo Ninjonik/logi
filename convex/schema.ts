@@ -473,8 +473,20 @@ const userAssignments = defineTable({
     .index("serverId_userId_gameId", ["serverId", "userId", "gameId"])
     .index("serverId_userId", ["serverId", "userId"])
 
+const guildGames = defineTable({
+    guildId: v.string(),
+    // The application registry validates supported games before persistence.
+    // Keep this a string while legacy and current game identifiers coexist.
+    gameId: v.string(),
+    enabled: v.boolean(),
+    settingsVersion: v.number(),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+}).index("guildId_gameId", ["guildId", "gameId"])
+
 export default defineSchema({
     users,
+    guildGames,
     guilds: defineTable({
         discordId: v.optional(v.string()),
         id: v.optional(v.string()),
