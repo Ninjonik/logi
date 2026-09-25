@@ -3,6 +3,7 @@ import type {
     AssignmentRecord,
     AssignmentRosterSyncPort,
 } from "@/application/assignments/ports"
+import { matchesGameScope } from "@/domain/games/game"
 
 export class InMemoryAssignmentCommandRepository implements AssignmentCommandRepository {
     constructor(
@@ -53,7 +54,7 @@ export class InMemoryAssignmentCommandRepository implements AssignmentCommandRep
                 (item) =>
                     item.serverId === serverDiscordId &&
                     item.userId === userId &&
-                    item.gameId === gameId
+                    matchesGameScope(item.gameId, gameId)
             ) ?? null
         )
     }
