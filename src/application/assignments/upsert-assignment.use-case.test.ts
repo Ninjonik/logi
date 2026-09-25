@@ -79,3 +79,47 @@ test("UpsertAssignmentUseCase permits one membership per game", async () => {
 
     assert.equal(repository.assignments.size, 2)
 })
+
+test("UpsertAssignmentUseCase treats legacy memberships as Hell Let Loose", async () => {
+    const repository = new InMemoryAssignmentCommandRepository(
+        new Map([
+            [
+                "assignment-1",
+                {
+                    id: "assignment-1",
+                    userId: "user-1",
+                    serverId: "guild-1",
+                    type: "member",
+                    status: "active",
+                    secondaryGroupIds: [],
+                    paused: false,
+                    createdAt: "2026-07-22T12:00:00.000Z",
+                    updatedAt: "2026-07-22T12:00:00.000Z",
+                },
+            ],
+        ]),
+        new Set(["guild-1"]),
+        new Set(["user-1"]),
+        new Map([["guild-1", new Map()]]),
+        new Map()
+    )
+    const useCase = new UpsertAssignmentUseCase(
+        repository,
+        new RecordingAssignmentRosterSyncPort(),
+        new FakeClock(new Date("2026-07-22T12:00:00.000Z"))
+    )
+
+    await assert.rejects(
+        () =>
+            useCase.execute({
+                userId: "user-1",
+                serverDiscordId: "guild-1",
+                gameId: "hell_let_loose",
+                type: "member",
+                status: "active",
+                secondaryGroupIds: [],
+                paused: false,
+            }),
+        /already assigned/
+    )
+})

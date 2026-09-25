@@ -1,5 +1,6 @@
 import type { Client } from "discord.js"
 
+import { matchesGameScope } from "../../../src/domain/games/game"
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
 import { buildAnnouncementMessage } from "../message-builders"
 import type { SyncPayload } from "../types"
@@ -19,6 +20,23 @@ function getRecipientStatus(input: {
         return "member" as const
     }
     return null
+}
+
+export function isSignupReminderRecipient(input: {
+    assignment: SyncPayload["assignments"][number]
+    eventGameId: SyncPayload["events"][number]["gameId"]
+    recipientStatuses: ReadonlySet<
+        "recruit" | "member" | "reserve_member"
+    >
+    respondedUserIds: ReadonlySet<string>
+}) {
+    const status = getRecipientStatus(input.assignment)
+    return (
+        matchesGameScope(input.assignment.gameId, input.eventGameId) &&
+        status !== null &&
+        input.recipientStatuses.has(status) &&
+        !input.respondedUserIds.has(input.assignment.userId)
+    )
 }
 
 export async function processSignupReminders(
@@ -46,15 +64,14 @@ export async function processSignupReminders(
         const { embed, components } = buildAnnouncementMessage(payload, event)
         // Assignments were not included in older cached payloads. Treat them
         // as an empty recipient set while a rolling deployment catches up.
-        const recipients = (payload.assignments ?? []).filter((assignment) => {
-            const status = getRecipientStatus(assignment)
-            return (
-                assignment.gameId === event.gameId &&
-                status !== null &&
-                recipientStatuses.has(status) &&
-                !respondedUserIds.has(assignment.userId)
-            )
-        })
+        const recipients = (payload.assignments ?? []).filter((assignment) =>
+            isSignupReminderRecipient({
+                assignment,
+                eventGameId: event.gameId,
+                recipientStatuses,
+                respondedUserIds,
+            })
+        )
         for (const recipient of recipients) {
             const user = await client.users
                 .fetch(recipient.userId)
