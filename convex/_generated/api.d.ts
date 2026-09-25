@@ -18,6 +18,7 @@ import type * as discordSync from "../discordSync.js";
 import type * as discord_shared from "../discord_shared.js";
 import type * as events from "../events.js";
 import type * as groups from "../groups.js";
+import type * as guildGames from "../guildGames.js";
 import type * as guilds from "../guilds.js";
 import type * as identity from "../identity.js";
 import type * as matchRecaps from "../matchRecaps.js";
@@ -66,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   discord_shared: typeof discord_shared;
   events: typeof events;
   groups: typeof groups;
+  guildGames: typeof guildGames;
   guilds: typeof guilds;
   identity: typeof identity;
   matchRecaps: typeof matchRecaps;
