@@ -1,7 +1,7 @@
 import type { Client } from "discord.js"
 
-import { matchesGameScope } from "../../../src/domain/games/game"
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
+import { matchesGameScope } from "../../../src/domain/games/game"
 import { buildAnnouncementMessage } from "../message-builders"
 import type { SyncPayload } from "../types"
 import { logInfo } from "../log"
@@ -25,9 +25,7 @@ function getRecipientStatus(input: {
 export function isSignupReminderRecipient(input: {
     assignment: SyncPayload["assignments"][number]
     eventGameId: SyncPayload["events"][number]["gameId"]
-    recipientStatuses: ReadonlySet<
-        "recruit" | "member" | "reserve_member"
-    >
+    recipientStatuses: ReadonlySet<"recruit" | "member" | "reserve_member">
     respondedUserIds: ReadonlySet<string>
 }) {
     const status = getRecipientStatus(input.assignment)
