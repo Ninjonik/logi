@@ -10,6 +10,7 @@ import { SiteHeader } from "@/components/app/site-header"
 import { SiteFooter } from "@/components/app/site-footer"
 import { AppSidebar } from "@/components/app/app-sidebar"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { getLogiStatus } from "@/lib/logi-status"
 import type { AppUser } from "@/types/domain"
 import type { Locale } from "@/i18n/config"
 
@@ -24,9 +25,10 @@ export async function DashboardShell({
     locale: Locale
     user: AppUser
 }) {
-    const [visibleServers, isSuperadmin] = await Promise.all([
+    const [visibleServers, isSuperadmin, status] = await Promise.all([
         getVisibleGuildsForLoggedInUser(),
         isCurrentUserSuperadmin(),
+        getLogiStatus(),
     ])
 
     return (
@@ -56,7 +58,7 @@ export async function DashboardShell({
                     <div className="relative flex flex-1 flex-col gap-3 py-3 sm:gap-4 sm:py-4 2xl:gap-6 2xl:py-6">
                         {children}
                     </div>
-                    <SiteFooter dictionary={dictionary} />
+                    <SiteFooter dictionary={dictionary} status={status} />
                 </SidebarInset>
             </SidebarProvider>
         </DashboardOnboarding>
