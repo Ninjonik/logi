@@ -127,3 +127,45 @@ test("OpenAPI documents beginner-safe API workflows", async () => {
         /Game scope/
     )
 })
+
+test("OpenAPI groups operations by their clan resource", async () => {
+    const document = (await (await GET()).json()) as {
+        tags: Array<{ name: string }>
+        paths: Record<string, Record<string, { tags?: string[] }>>
+    }
+
+    assert.deepEqual(
+        document.tags.map((tag) => tag.name),
+        [
+            "Public API — no key required",
+            "Clan API — Overview",
+            "Clan API — Settings",
+            "Clan API — Articles",
+            "Clan API — Events",
+            "Clan API — Groups",
+            "Clan API — Calendar",
+            "Clan API — Rosters",
+            "Clan API — Assignments",
+            "Clan API — Stratmaps",
+            "Clan API — Topic presets",
+            "Clan API — Squad presets",
+            "Clan API — Matches",
+            "Clan API — Users",
+        ]
+    )
+    assert.deepEqual(document.paths["/public/matches"]?.get?.tags, [
+        "Public API — no key required",
+    ])
+    assert.deepEqual(document.paths["/clan/articles"]?.post?.tags, [
+        "Clan API — Articles",
+    ])
+    assert.deepEqual(document.paths["/clan/events/{id}"]?.patch?.tags, [
+        "Clan API — Events",
+    ])
+    assert.deepEqual(document.paths["/clan/rosters/{id}"]?.delete?.tags, [
+        "Clan API — Rosters",
+    ])
+    assert.deepEqual(document.paths["/clan/settings"]?.patch?.tags, [
+        "Clan API — Settings",
+    ])
+})

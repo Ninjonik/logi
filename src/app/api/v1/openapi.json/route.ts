@@ -64,6 +64,19 @@ const resources = [
     "articles",
     "users",
 ]
+const resourceTags: Record<string, string> = {
+    events: "Clan API — Events",
+    groups: "Clan API — Groups",
+    rosters: "Clan API — Rosters",
+    assignments: "Clan API — Assignments",
+    "calendar-items": "Clan API — Calendar",
+    stratmaps: "Clan API — Stratmaps",
+    "topic-presets": "Clan API — Topic presets",
+    "squad-presets": "Clan API — Squad presets",
+    matches: "Clan API — Matches",
+    articles: "Clan API — Articles",
+    users: "Clan API — Users",
+}
 const responses = {
     "200": {
         description:
@@ -105,10 +118,100 @@ const responses = {
     },
 }
 const paths: Record<string, unknown> = {
+    "/public/matches": {
+        get: {
+            summary: "List public matches",
+            tags: ["Public API — no key required"],
+            description:
+                "Public, rate-limited match feed. No Authorization header is required.",
+            parameters: [
+                {
+                    name: "cursor",
+                    in: "query",
+                    schema: { type: "string", nullable: true },
+                },
+                {
+                    name: "limit",
+                    in: "query",
+                    schema: { type: "integer", minimum: 1, maximum: 100 },
+                },
+            ],
+            responses,
+        },
+    },
+    "/public/matches/{eventId}": {
+        get: {
+            summary: "Get a public match",
+            tags: ["Public API — no key required"],
+            description:
+                "Public, rate-limited match details. Use collection=playerStats for player statistics.",
+            parameters: [
+                {
+                    name: "eventId",
+                    in: "path",
+                    required: true,
+                    schema: { type: "string" },
+                },
+            ],
+            responses,
+        },
+    },
+    "/public/clans/{clanId}": {
+        get: {
+            summary: "Get a public clan profile",
+            tags: ["Public API — no key required"],
+            description:
+                "Public, rate-limited clan profile. Use collection=recentMatches for recent matches.",
+            parameters: [
+                {
+                    name: "clanId",
+                    in: "path",
+                    required: true,
+                    schema: { type: "string" },
+                },
+            ],
+            responses,
+        },
+    },
+    "/public/players/{playerId}": {
+        get: {
+            summary: "Get a public player profile",
+            tags: ["Public API — no key required"],
+            description:
+                "Public, rate-limited player profile. Use collection=clans or collection=recentMatches for related records.",
+            parameters: [
+                {
+                    name: "playerId",
+                    in: "path",
+                    required: true,
+                    schema: { type: "string" },
+                },
+            ],
+            responses,
+        },
+    },
+    "/public/competitions/{slug}": {
+        get: {
+            summary: "Get a public competition",
+            tags: ["Public API — no key required"],
+            description:
+                "Public, rate-limited competition details. Use collection=divisions for divisions.",
+            parameters: [
+                {
+                    name: "slug",
+                    in: "path",
+                    required: true,
+                    schema: { type: "string" },
+                },
+            ],
+            responses,
+        },
+    },
     "/clan/meta": {
         get: {
             summary:
                 "Get authenticated guild identity, enabled games, resource counts, API limits, and server time",
+            tags: ["Clan API — Overview"],
             security: [{ clanApiKey: [] }],
             responses,
         },
@@ -117,6 +220,7 @@ const paths: Record<string, unknown> = {
         get: {
             summary:
                 "Get authenticated clan and Discord configuration without runtime secrets",
+            tags: ["Clan API — Settings"],
             security: [{ clanApiKey: [] }],
             responses,
         },
@@ -125,6 +229,7 @@ const paths: Record<string, unknown> = {
         get: {
             summary:
                 "Get stored clan performance history (up to ten matches per game)",
+            tags: ["Clan API — Matches"],
             security: [{ clanApiKey: [] }],
             parameters: [gameParameter],
             responses,
@@ -143,6 +248,7 @@ for (const resource of resources) {
     paths[`/clan/${resource}`] = {
         get: {
             summary: `List clan ${resource}`,
+            tags: [resourceTags[resource]!],
             security: [{ clanApiKey: [] }],
             parameters: [
                 ...pageParameters,
@@ -162,6 +268,7 @@ for (const resource of resources) {
                 resource === "matches"
                     ? "Get match details for a clan event"
                     : `Get a clan ${resource} record`,
+            tags: [resourceTags[resource]!],
             security: [{ clanApiKey: [] }],
             parameters: [
                 {
@@ -188,6 +295,7 @@ paths["/clan/settings"] = {
     get: (paths["/clan/settings"] as { get: unknown }).get,
     patch: {
         summary: "Patch safe clan and Discord settings",
+        tags: ["Clan API — Settings"],
         description:
             "Only supplied fields change. Runtime secrets, player-stat connections, ticket settings, membership settings, and game overrides cannot be set through this endpoint.",
         security: [{ clanApiKey: [] }],
@@ -202,6 +310,7 @@ paths["/clan/articles"] = {
     get: (paths["/clan/articles"] as { get: unknown }).get,
     post: {
         summary: "Create a clan article",
+        tags: ["Clan API — Articles"],
         security: [{ clanApiKey: [] }],
         parameters: [idempotencyParameter],
         responses: {
@@ -215,6 +324,7 @@ paths["/clan/articles/{id}"] = {
     get: (paths["/clan/articles/{id}"] as { get: unknown }).get,
     patch: {
         summary: "Update a clan article",
+        tags: ["Clan API — Articles"],
         security: [{ clanApiKey: [] }],
         parameters: [
             {
@@ -232,6 +342,7 @@ paths["/clan/articles/{id}"] = {
     },
     delete: {
         summary: "Delete a clan article",
+        tags: ["Clan API — Articles"],
         security: [{ clanApiKey: [] }],
         parameters: [
             {
@@ -252,6 +363,7 @@ paths["/clan/articles/{id}"] = {
 paths["/clan/events/{eventId}/signup"] = {
     post: {
         summary: "Set a clan member's event signup state",
+        tags: ["Clan API — Events"],
         description:
             "Uses the same membership and registration rules as the dashboard. A successful change enqueues roster.updated webhooks.",
         security: [{ clanApiKey: [] }],
@@ -287,6 +399,7 @@ paths["/clan/events/{eventId}/signup"] = {
 }
 
 const eventMutation = {
+    tags: ["Clan API — Events"],
     security: [{ clanApiKey: [] }],
     parameters: [idempotencyParameter],
     requestBody: {
@@ -345,6 +458,7 @@ paths["/clan/events/{id}"] = {
 paths["/clan/events/{eventId}/actions/conclude"] = {
     post: {
         summary: "Conclude a clan event",
+        tags: ["Clan API — Events"],
         description:
             "Applies the dashboard-equivalent conclude and roster scoring workflow.",
         security: [{ clanApiKey: [] }],
@@ -365,6 +479,7 @@ paths["/clan/events/{eventId}/actions/conclude"] = {
 }
 
 const groupMutation = {
+    tags: ["Clan API — Groups"],
     security: [{ clanApiKey: [] }],
     parameters: [idempotencyParameter],
     requestBody: {
@@ -415,6 +530,7 @@ paths["/clan/groups/{id}"] = {
     },
     delete: {
         summary: "Delete a clan group and clear its assignment references",
+        tags: ["Clan API — Groups"],
         security: [{ clanApiKey: [] }],
         parameters: [
             {
@@ -433,6 +549,7 @@ paths["/clan/groups/{id}"] = {
 }
 
 const calendarItemMutation = {
+    tags: ["Clan API — Calendar"],
     security: [{ clanApiKey: [] }],
     parameters: [idempotencyParameter],
     requestBody: {
@@ -499,6 +616,7 @@ paths["/clan/calendar-items/{id}"] = {
     },
     delete: {
         summary: "Delete a calendar item",
+        tags: ["Clan API — Calendar"],
         security: [{ clanApiKey: [] }],
         parameters: [
             {
@@ -517,6 +635,7 @@ paths["/clan/calendar-items/{id}"] = {
 }
 
 const assignmentMutation = {
+    tags: ["Clan API — Assignments"],
     security: [{ clanApiKey: [] }],
     parameters: [idempotencyParameter],
     requestBody: {
@@ -588,6 +707,7 @@ paths["/clan/assignments/{id}"] = {
     delete: {
         summary:
             "Delete a clan assignment and synchronize membership/roster state",
+        tags: ["Clan API — Assignments"],
         security: [{ clanApiKey: [] }],
         parameters: [
             {
@@ -606,6 +726,7 @@ paths["/clan/assignments/{id}"] = {
 }
 
 const rosterMutation = {
+    tags: ["Clan API — Rosters"],
     security: [{ clanApiKey: [] }],
     parameters: [idempotencyParameter],
     requestBody: {
@@ -661,6 +782,7 @@ paths["/clan/rosters/{id}"] = {
     },
     delete: {
         summary: "Delete an unpublished clan roster",
+        tags: ["Clan API — Rosters"],
         security: [{ clanApiKey: [] }],
         parameters: [
             {
@@ -704,6 +826,7 @@ for (const resource of ["stratmaps", "topic-presets", "squad-presets"]) {
         get: (paths[`/clan/${resource}`] as { get: unknown }).get,
         post: {
             summary: `Create a clan ${resource.slice(0, -1)}`,
+            tags: [resourceTags[resource]!],
             ...presetMutation,
         },
     }
@@ -711,6 +834,7 @@ for (const resource of ["stratmaps", "topic-presets", "squad-presets"]) {
         get: (paths[`/clan/${resource}/{id}`] as { get: unknown }).get,
         patch: {
             summary: `Update a clan ${resource.slice(0, -1)}`,
+            tags: [resourceTags[resource]!],
             ...presetMutation,
             parameters: [
                 {
@@ -732,7 +856,7 @@ export async function GET() {
             info: {
                 title: "Logi Clan API",
                 version: "1.0.0",
-                description: `Bounded, tenant-scoped clan data API. A key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId; use game=all only for an intentional cross-game view. Cursors are opaque and valid only for the resource, game, and createdAt ordering that produced them.
+                description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId; use game=all only for an intentional cross-game view. Cursors are opaque and valid only for the resource, game, and createdAt ordering that produced them.
 
 ### Authenticate and read
 
@@ -749,11 +873,67 @@ Send a new \`Idempotency-Key\` for each write, for example \`event-create-42\`. 
 ### Webhooks
 
 
-Subscribed successful writes enqueue JSON \`{ id, type, createdAt, guildId, resource }\`. Verify \`X-Logi-Signature\` as \`sha256=<HMAC_SHA256(X-Logi-Timestamp + "." + rawBody, signingSecret)>\` and reject stale timestamps. Network failures, 408, 429, and 5xx responses retry with bounded backoff; other 4xx responses are final.
+Webhook subscriptions are configured by a System administrator in the dashboard's **System → Webhooks** screen, rather than through this bearer-key API. Subscribed successful writes enqueue JSON \`{ id, type, createdAt, guildId, resource }\`. Verify \`X-Logi-Signature\` as \`sha256=<HMAC_SHA256(X-Logi-Timestamp + "." + rawBody, signingSecret)>\` and reject stale timestamps. Network failures, 408, 429, and 5xx responses retry with bounded backoff; other 4xx responses are final. See the [System settings webhook guide](/wiki/configuration/settings#webhooks) for setup and payload details.
 
 Article, group, calendar-item, roster, assignment, event, signup, stratmap, and preset write operations are documented below. Event, stratmap, topic-preset, and squad-preset deletion is intentionally unsupported because their dependent roster, match, Discord, and scheduled-job data has no safe deletion lifecycle.`,
             },
             servers: [{ url: "/api/v1" }],
+            tags: [
+                {
+                    name: "Public API — no key required",
+                    description:
+                        "Rate-limited public profiles, match data, and competitions. These endpoints never require a bearer key.",
+                },
+                {
+                    name: "Clan API — Overview",
+                    description: "Authenticated clan identity and limits.",
+                },
+                {
+                    name: "Clan API — Settings",
+                    description: "Safe clan and Discord settings.",
+                },
+                {
+                    name: "Clan API — Articles",
+                    description: "Clan knowledge-base articles.",
+                },
+                {
+                    name: "Clan API — Events",
+                    description: "Events, conclusion, and signups.",
+                },
+                {
+                    name: "Clan API — Groups",
+                    description: "Clan membership groups.",
+                },
+                {
+                    name: "Clan API — Calendar",
+                    description: "Manual calendar items.",
+                },
+                { name: "Clan API — Rosters", description: "Event rosters." },
+                {
+                    name: "Clan API — Assignments",
+                    description: "Clan memberships and roles.",
+                },
+                {
+                    name: "Clan API — Stratmaps",
+                    description: "Tactical map presets.",
+                },
+                {
+                    name: "Clan API — Topic presets",
+                    description: "Forum topic templates.",
+                },
+                {
+                    name: "Clan API — Squad presets",
+                    description: "Roster squad templates.",
+                },
+                {
+                    name: "Clan API — Matches",
+                    description: "Stored match results and history.",
+                },
+                {
+                    name: "Clan API — Users",
+                    description: "Tenant-scoped member projections.",
+                },
+            ],
             components: {
                 securitySchemes: {
                     clanApiKey: {
