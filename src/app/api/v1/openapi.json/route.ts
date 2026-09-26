@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 
+import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
+
 const error = {
     type: "object",
     properties: {
@@ -118,6 +120,78 @@ const responses = {
         description: "Rate limited",
         content: { "application/json": { schema: error } },
     },
+}
+const { "200": _genericSuccessResponse, ...nonSuccessResponses } = responses
+type OpenApiOperation = { responses?: Record<string, unknown> }
+
+function resourceSchemaName(resource: string) {
+    return `Clan${resource
+        .replace(
+            /(^|-)([a-z])/g,
+            (_, separator: string, letter: string) =>
+                `${separator}${letter.toUpperCase()}`
+        )
+        .replace(/-/g, "")}Document`
+}
+
+function successResponse(resource: string, isList: boolean) {
+    const document = {
+        $ref: `#/components/schemas/${resourceSchemaName(resource)}`,
+    }
+    return {
+        description: "Success",
+        headers: responses["200"].headers,
+        content: {
+            "application/json": {
+                schema: isList
+                    ? {
+                          type: "object",
+                          required: ["data", "page"],
+                          properties: {
+                              data: { type: "array", items: document },
+                              page: {
+                                  type: "object",
+                                  required: ["nextCursor", "limit"],
+                                  properties: {
+                                      nextCursor: { type: ["string", "null"] },
+                                      limit: { type: "integer" },
+                                  },
+                              },
+                          },
+                      }
+                    : {
+                          type: "object",
+                          required: ["data"],
+                          properties: { data: document },
+                      },
+            },
+        },
+    }
+}
+
+function deletedResponse(resource: string) {
+    return {
+        description: `Deleted ${resource} record`,
+        headers: responses["200"].headers,
+        content: {
+            "application/json": {
+                schema: {
+                    type: "object",
+                    required: ["data"],
+                    properties: {
+                        data: {
+                            type: "object",
+                            required: ["id", "deleted"],
+                            properties: {
+                                id: { type: "string" },
+                                deleted: { const: true },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    }
 }
 const paths: Record<string, unknown> = {
     "/public/matches": {
@@ -856,6 +930,57 @@ for (const resource of ["stratmaps", "topic-presets", "squad-presets"]) {
     }
 }
 
+// The CRUD read models return Convex documents through apiDocument(). Keep the
+// field-level response contract tied to convex/schema.ts rather than a second
+// hand-maintained list in this route.
+for (const resource of resources) {
+    const collection = paths[`/clan/${resource}`] as {
+        get?: OpenApiOperation
+    }
+    if (collection.get)
+        collection.get.responses = {
+            ...responses,
+            "200": successResponse(resource, true),
+        }
+    const itemPath =
+        resource === "matches"
+            ? `/clan/${resource}/{eventId}`
+            : `/clan/${resource}/{id}`
+    const item = paths[itemPath] as { get?: OpenApiOperation }
+    if (item.get)
+        item.get.responses = {
+            ...responses,
+            "200": successResponse(resource, false),
+        }
+
+    const create = paths[`/clan/${resource}`] as {
+        post?: OpenApiOperation
+    }
+    if (create.post) {
+        create.post.responses = {
+            ...nonSuccessResponses,
+            "201": {
+                ...successResponse(resource, false),
+                description: `Created ${resource} record`,
+            },
+        }
+    }
+    const mutation = paths[itemPath] as {
+        patch?: OpenApiOperation
+        delete?: OpenApiOperation
+    }
+    if (mutation.patch)
+        mutation.patch.responses = {
+            ...responses,
+            "200": successResponse(resource, false),
+        }
+    if (mutation.delete)
+        mutation.delete.responses = {
+            ...responses,
+            "200": deletedResponse(resource),
+        }
+}
+
 export async function GET() {
     return NextResponse.json(
         {
@@ -942,6 +1067,7 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                 },
             ],
             components: {
+                schemas: generatedOpenApiSchemas,
                 securitySchemes: {
                     clanApiKey: {
                         type: "http",

@@ -21,6 +21,7 @@
         "lint": "next lint",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
+        "generate:openapi": "tsx scripts/generate-openapi-schemas.ts",
         "convex:deploy": "convex deploy"
     },
     "dependencies": {
