@@ -495,6 +495,7 @@ export const updateFrontendSettings = mutation({
                 })
             )
         ),
+        regenerateCalendarFeedToken: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -524,6 +525,32 @@ export const updateFrontendSettings = mutation({
                 ),
             updatedAt: now,
         })
+
+        if (args.regenerateCalendarFeedToken) {
+            const existingConfig = await ctx.db
+                .query("discordConfigs")
+                .withIndex("guildId", (q) =>
+                    q.eq("guildId", getGuildDiscordId(guild))
+                )
+                .unique()
+            const calendarFeedToken = crypto.randomUUID().replace(/-/g, "")
+
+            if (existingConfig) {
+                await ctx.db.patch(existingConfig._id, {
+                    calendarFeedToken,
+                    updatedAt: now,
+                })
+            } else {
+                await ctx.db.insert("discordConfigs", {
+                    guildId: getGuildDiscordId(guild),
+                    timezone: "UTC",
+                    defaultLanguage: "en",
+                    calendarFeedToken,
+                    createdAt: now,
+                    updatedAt: now,
+                })
+            }
+        }
 
         const existingCalendarItems = await ctx.db
             .query("calendarItems")

@@ -35,6 +35,7 @@ export async function saveGuildFrontendSettings(input: {
             until?: string
         }
     }>
+    regenerateCalendarFeedToken?: boolean
 }) {
     return await fetchMutation(updateFrontendSettingsReference, {
         secret: getInternalAuthSecret(),
@@ -44,5 +45,6 @@ export async function saveGuildFrontendSettings(input: {
         description: input.description,
         eventCategories: input.eventCategories,
         calendarItems: input.calendarItems,
+        regenerateCalendarFeedToken: input.regenerateCalendarFeedToken,
     })
 }

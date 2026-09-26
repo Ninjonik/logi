@@ -524,6 +524,10 @@ export default defineSchema({
         eventInfoChannelId: v.optional(v.string()),
         errorsChannelId: v.optional(v.string()),
         calendarChannelId: v.optional(v.string()),
+        // A random, per-clan capability token used only by the public iCalendar
+        // subscription endpoint. It is intentionally separate from Discord
+        // settings and can be rotated without affecting the bot.
+        calendarFeedToken: v.optional(v.string()),
         calendarCategories: v.optional(v.array(v.string())),
         calendarMessageChannelId: v.optional(v.string()),
         calendarMessageId: v.optional(v.string()),

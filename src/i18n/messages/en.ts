@@ -608,6 +608,15 @@ export const enMessages = {
         guildLoginUrl: "Custom login page",
         copyLoginUrl: "Copy",
         copiedLoginUrl: "Copied",
+        googleCalendarTitle: "Google Calendar sync",
+        googleCalendarDescription:
+            "Create a private subscription link for this clan's full Logi calendar, including scheduled events and manual recurring items.",
+        createCalendarFeed: "Create Google Calendar link",
+        rotateCalendarFeed: "Rotate Google Calendar link",
+        copyCalendarFeed: "Copy calendar link",
+        copiedCalendarFeed: "Copied",
+        googleCalendarInstructions:
+            "In Google Calendar, choose Other calendars → From URL and paste this link. Anyone with the link can read this clan calendar; rotating it disables the old link.",
         eventCategoriesTitle: "Event categories",
         eventCategoriesDescription:
             "Reusable categories for matches and trainings. Their color and emoji are reused across dashboard calendar surfaces.",

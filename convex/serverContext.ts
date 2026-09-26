@@ -157,7 +157,16 @@ async function buildServerContext(
         assignments: scopedAssignments.map((assignment) =>
             normalizeAssignmentDoc(assignment, groupNameById)
         ),
-        discordConfig: discordConfig ? normalizeDoc(discordConfig) : null,
+        // The calendar feed token is a capability URL secret. Members may read
+        // the calendar, but only clan managers may obtain its subscription URL.
+        discordConfig: discordConfig
+            ? {
+                  ...normalizeDoc(discordConfig),
+                  calendarFeedToken: canAdmin
+                      ? discordConfig.calendarFeedToken
+                      : undefined,
+              }
+            : null,
     }
 }
 
