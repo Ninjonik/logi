@@ -15,7 +15,9 @@ export async function GET(
     const context = await getServerContext(serverId)
     if (!context?.canAdmin)
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
-    return NextResponse.json({ keys: await listClanApiKeys(serverId) })
+    return NextResponse.json({
+        keys: await listClanApiKeys(context.server.discordId),
+    })
 }
 
 export async function POST(
@@ -35,7 +37,7 @@ export async function POST(
             { error: "Enter a key name of up to 80 characters." },
             { status: 400 }
         )
-    const key = await createClanApiKey(serverId, name)
+    const key = await createClanApiKey(context.server.discordId, name)
     return NextResponse.json({ key }, { status: 201 })
 }
 
@@ -50,6 +52,6 @@ export async function DELETE(
     const keyId = new URL(request.url).searchParams.get("keyId")
     if (!keyId)
         return NextResponse.json({ error: "Missing keyId." }, { status: 400 })
-    await revokeClanApiKey(serverId, keyId)
+    await revokeClanApiKey(context.server.discordId, keyId)
     return NextResponse.json({ ok: true })
 }
