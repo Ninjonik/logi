@@ -16,11 +16,14 @@ export const enMessages = {
         winRate: "Win rate",
         clans: "Clans",
         findPlayer: "Find a player",
+        findCommunity: "Find a player or clan",
         findPlayerDescription:
             "Search public profiles with at least one recorded match.",
         playerSearchPlaceholder: "Search by player name...",
+        communitySearchPlaceholder: "Search players and clans...",
         search: "Search",
         noPlayersFound: "No public players matched that search.",
+        noClansFound: "No public clans matched that search.",
         platformMatchHistoryDescription:
             "Results from every public clan, shown only after match data has been posted.",
         victory: "Victory",
@@ -1510,6 +1513,32 @@ export const enMessages = {
         webhooksTitle: "Webhooks",
         webhooksBody: "Configure signed notifications for clan changes.",
         webhookDelivery: "Webhook delivery",
+        webhookDocumentation: "Read webhook documentation",
+        webhookPayloadTitle: "Delivery payload and headers",
+        webhookPayloadBody:
+            "Logi sends a POST request. Verify the signature against the unmodified raw JSON bytes before parsing the body.",
+        webhookHeadersBody:
+            'The signature is HMAC-SHA256 of X-Logi-Timestamp + "." + the raw request body, using the webhook signing secret. X-Logi-Delivery identifies the delivery attempt and differs from the body id.',
+        webhookApiReference: "API schema",
+        webhookEventsTitle: "Events your endpoint can receive",
+        webhookEventsBody:
+            "New subscriptions receive every production event below. Use this list to prepare your endpoint before enabling a webhook.",
+        webhookEvents: {
+            "article.created":
+                "An article was created through the Website API.",
+            "article.updated":
+                "An article was updated through the Website API.",
+            "article.deleted":
+                "An article was deleted through the Website API.",
+            "event.created": "An event was created through the Website API.",
+            "event.updated":
+                "An event was updated or concluded through the Website API.",
+            "roster.updated":
+                "A roster changed, including API signups and roster-affecting assignment changes.",
+            "settings.updated":
+                "Safe clan or Discord settings were updated through the Website API.",
+            "webhook.test": "A manager sent a test delivery manually.",
+        },
         webhookUi: {
             copySecret:
                 "Copy this signing secret now; it will not be shown again:",

@@ -3,13 +3,13 @@ import { LinkCompetitionEvent } from "@/components/app/link-competition-event"
 import { ConcludeEventButton } from "@/components/app/conclude-event-button"
 import { listPublicCompetitions } from "@/lib/read-models/competitions"
 import { EventFormPanel } from "@/components/app/event-form-panel"
+import { isGameId, resolveGameScope } from "@/domain/games/game"
 import { PageHeader } from "@/components/app/page-header"
 import { GameBadge } from "@/components/app/game-badge"
 import { getServerContext } from "@/lib/server-context"
 import { getEventStatusMeta } from "@/lib/event-status"
 import { getDictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
-import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export default async function MatchDetailPage({
@@ -46,7 +46,10 @@ export default async function MatchDetailPage({
     const statusMeta = getEventStatusMeta(event.status, dictionary)
     const competitions =
         canAdmin && !event.competitionFixtureId
-            ? await listPublicCompetitions()
+            ? (await listPublicCompetitions()).filter(
+                  (competition) =>
+                      competition.gameId === resolveGameScope(event.gameId)
+              )
             : []
 
     return (

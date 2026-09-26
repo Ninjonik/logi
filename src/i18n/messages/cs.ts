@@ -16,11 +16,14 @@ export const csMessages = {
         winRate: "Úspěšnost",
         clans: "Klany",
         findPlayer: "Najít hráče",
+        findCommunity: "Najít hráče nebo klan",
         findPlayerDescription:
             "Vyhledejte veřejné profily s alespoň jedním zaznamenaným zápasem.",
         playerSearchPlaceholder: "Hledat podle jména hráče...",
+        communitySearchPlaceholder: "Hledat hráče a klany...",
         search: "Hledat",
         noPlayersFound: "Tomuto hledání neodpovídají žádní veřejní hráči.",
+        noClansFound: "Tomuto hledání neodpovídají žádné veřejné klany.",
         platformMatchHistoryDescription:
             "Výsledky všech veřejných klanů, zobrazené až po zveřejnění dat zápasu.",
         victory: "Výhra",
@@ -1515,6 +1518,29 @@ export const csMessages = {
         webhooksTitle: "Webhooky",
         webhooksBody: "Nastavte podepsaná upozornění na změny v klanu.",
         webhookDelivery: "Doručování webhooků",
+        webhookDocumentation: "Přečíst dokumentaci k webhookům",
+        webhookPayloadTitle: "Tělo a hlavičky doručení",
+        webhookPayloadBody:
+            "Logi odesílá požadavek POST. Před zpracováním těla ověřte podpis nad nezměněnými surovými JSON bajty.",
+        webhookHeadersBody:
+            'Podpis je HMAC-SHA256 z X-Logi-Timestamp + "." + surového těla požadavku s použitím podpisového tajemství webhooku. X-Logi-Delivery označuje pokus o doručení a liší se od id v těle.',
+        webhookApiReference: "Schéma API",
+        webhookEventsTitle: "Události, které může endpoint přijmout",
+        webhookEventsBody:
+            "Nové odběry přijímají všechny níže uvedené produkční události. Podle seznamu můžete endpoint připravit ještě před zapnutím webhooku.",
+        webhookEvents: {
+            "article.created": "Článek byl vytvořen pomocí Webového API.",
+            "article.updated": "Článek byl upraven pomocí Webového API.",
+            "article.deleted": "Článek byl smazán pomocí Webového API.",
+            "event.created": "Akce byla vytvořena pomocí Webového API.",
+            "event.updated":
+                "Akce byla upravena nebo uzavřena pomocí Webového API.",
+            "roster.updated":
+                "Soupiska se změnila, včetně přihlášení přes API a změn přiřazení ovlivňujících soupisku.",
+            "settings.updated":
+                "Bezpečná nastavení klanu nebo Discordu byla upravena pomocí Webového API.",
+            "webhook.test": "Správce ručně odeslal testovací doručení.",
+        },
         webhookUi: {
             copySecret:
                 "Toto podpisové tajemství si zkopírujte nyní; znovu se nezobrazí:",

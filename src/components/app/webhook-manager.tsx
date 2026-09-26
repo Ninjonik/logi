@@ -26,7 +26,6 @@ type Delivery = {
 const eventTypes = [
     "event.created",
     "event.updated",
-    "event.deleted",
     "roster.updated",
     "article.created",
     "article.updated",

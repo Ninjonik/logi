@@ -2,6 +2,7 @@ import { makeFunctionReference } from "convex/server"
 import { fetchQuery } from "convex/nextjs"
 
 import type { CollectionFilter } from "@/domain/shared/collection-query"
+import type { GameId, GameSelection } from "@/domain/games/game"
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 import type { MatchRecord } from "@/types/domain"
 
@@ -22,6 +23,9 @@ const listPublicMatchesReference = makeFunctionReference<"query">(
 )
 const searchPublicPlayersReference = makeFunctionReference<"query">(
     "publicProfiles:searchPlayers"
+)
+const searchPublicClansReference = makeFunctionReference<"query">(
+    "publicProfiles:searchClans"
 )
 const getPublicPreviewReference =
     makeFunctionReference<"query">("publicPreviews:get")
@@ -141,9 +145,10 @@ export async function getPublicClan(guildId: string) {
     )
 }
 
-export async function listPublicClans(cursor: string | null) {
+export async function listPublicClans(cursor: string | null, game: GameId) {
     return (await fetchQuery(listPublicClansReference, {
         paginationOpts: { cursor, numItems: 12 },
+        game,
     })) as PublicPage<{
         id: string
         name: string
@@ -158,7 +163,8 @@ type PublicPage<T> = { page: T[]; continueCursor: string; isDone: boolean }
 export async function listPublicMatches(
     cursor: string | null,
     limit = 25,
-    filters: CollectionFilter[] = []
+    filters: CollectionFilter[] = [],
+    game: GameSelection = "all"
 ) {
     return await cachedRead(
         [
@@ -166,14 +172,21 @@ export async function listPublicMatches(
             cursor ?? "start",
             String(limit),
             JSON.stringify(filters),
+            JSON.stringify(game),
         ],
         [appCacheTags.publicDiscovery()],
         async () =>
             (await fetchQuery(listPublicMatchesReference, {
                 paginationOpts: { cursor, numItems: limit },
                 filters,
+                ...(game === "all"
+                    ? { game: "all" as const }
+                    : {
+                          game: Array.isArray(game) ? game : [game],
+                      }),
             })) as PublicPage<{
                 eventId: string
+                gameId: GameId
                 name: string
                 gameEnd: string
                 clan: { id: string; name: string; avatar: string } | null
@@ -186,7 +199,11 @@ export async function listPublicMatches(
     )
 }
 
-export async function searchPublicPlayers(term: string, cursor: string | null) {
+export async function searchPublicPlayers(
+    term: string,
+    cursor: string | null,
+    game: GameId
+) {
     return await cachedRead(
         ["public-player-search", term, cursor ?? "start"],
         [appCacheTags.publicDiscovery()],
@@ -194,7 +211,26 @@ export async function searchPublicPlayers(term: string, cursor: string | null) {
             (await fetchQuery(searchPublicPlayersReference, {
                 term,
                 paginationOpts: { cursor, numItems: 12 },
+                game,
             })) as PublicPage<{ id: string; name: string; avatar: string }>,
         86400
     )
+}
+
+export async function searchPublicClans(
+    term: string,
+    cursor: string | null,
+    game: GameId
+) {
+    return (await fetchQuery(searchPublicClansReference, {
+        term,
+        paginationOpts: { cursor, numItems: 12 },
+        game,
+    })) as PublicPage<{
+        id: string
+        name: string
+        avatar: string
+        description?: string
+        memberCount: number
+    }>
 }

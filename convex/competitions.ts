@@ -2,6 +2,8 @@ import { mutation, query } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
+import { resolveGameScope } from "../src/domain/games/game"
+
 const INTERNAL_AUTH_SECRET =
     process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 const NOW = () => new Date().toISOString()
@@ -80,6 +82,7 @@ export const seedEcl2026 = mutation({
         const now = NOW()
         if (!competition) {
             const id = await ctx.db.insert("competitions", {
+                gameId: "hell_let_loose",
                 slug: "ecl-2026",
                 name: "European Community League",
                 season: "2026",
@@ -94,6 +97,14 @@ export const seedEcl2026 = mutation({
             competition = await ctx.db.get(id)
         }
         if (!competition) throw new Error("Could not create ECL.")
+        if (!competition.gameId) {
+            await ctx.db.patch(competition._id, {
+                gameId: "hell_let_loose",
+                updatedAt: now,
+            })
+            competition = await ctx.db.get(competition._id)
+        }
+        if (!competition) throw new Error("Could not update ECL scope.")
         for (let order = 0; order < ECL_DIVISIONS.length; order++) {
             const [name, teams] = ECL_DIVISIONS[order]
             let division = (
@@ -180,6 +191,7 @@ export const getPublic = query({
         )
         return {
             id: String(competition._id),
+            gameId: resolveGameScope(competition.gameId),
             slug: competition.slug,
             name: competition.name,
             season: competition.season,
@@ -307,6 +319,13 @@ export const linkEvent = mutation({
         const event = await ctx.db.get(args.eventId)
         if (!event || event.kind === "training")
             throw new Error("Only matches can be added to a competition.")
+        const competition = await ctx.db.get(args.competitionId)
+        if (!competition) throw new Error("Competition not found.")
+        if (
+            resolveGameScope(event.gameId) !==
+            resolveGameScope(competition.gameId)
+        )
+            throw new Error("The match and competition must use the same game.")
         const existing = await ctx.db
             .query("competitionFixtures")
             .withIndex("eventId", (q) => q.eq("eventId", args.eventId))

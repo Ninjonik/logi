@@ -31,8 +31,8 @@ import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertCommand } from "../src/application/events/command-ports"
 import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
+import { matchesGameScope, resolveGameScope } from "../src/domain/games/game"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
-import { resolveGameScope } from "../src/domain/games/game"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import { getGuildByDiscordId } from "./identity"
@@ -1830,12 +1830,22 @@ const apiGameScope = v.union(
     v.literal("wardogs"),
     v.literal("all")
 )
+const apiGameSelection = v.union(
+    apiGameScope,
+    v.array(
+        v.union(
+            v.literal("hell_let_loose"),
+            v.literal("hell_let_loose_vietnam"),
+            v.literal("wardogs")
+        )
+    )
+)
 
 export const getClanPerformanceHistory = query({
     args: {
         secret: v.string(),
         keyHash: v.string(),
-        game: apiGameScope,
+        game: apiGameSelection,
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -1851,11 +1861,7 @@ export const getClanPerformanceHistory = query({
         if (!history) return { matches: [], updatedAt: null }
         return {
             matches: history.matches
-                .filter(
-                    (match) =>
-                        args.game === "all" ||
-                        resolveGameScope(match.gameId) === args.game
-                )
+                .filter((match) => matchesGameScope(match.gameId, args.game))
                 .map((match) => ({
                     ...match,
                     gameId: resolveGameScope(match.gameId),
@@ -1926,8 +1932,20 @@ function apiDocument<T extends { _id: unknown; gameId?: unknown }>(
     }
 }
 
-function belongsToGame(document: { gameId?: never }, game: string) {
-    return game === "all" || resolveGameScope(document.gameId) === game
+function apiGameDocument<T extends { _id: unknown; gameId?: unknown }>(
+    document: T
+) {
+    return {
+        ...apiDocument(document),
+        gameId: resolveGameScope(document.gameId as never),
+    }
+}
+
+function belongsToGame(
+    document: { gameId?: never },
+    game: string | readonly string[]
+) {
+    return matchesGameScope(document.gameId as never, game as never)
 }
 
 /**
@@ -1939,7 +1957,7 @@ export const getClanResourcePage = query({
         secret: v.string(),
         keyHash: v.string(),
         resource: apiResource,
-        game: apiGameScope,
+        game: apiGameSelection,
         cursor: v.union(v.string(), v.null()),
         limit: v.number(),
         updatedSince: v.optional(v.string()),
@@ -1964,7 +1982,18 @@ export const getClanResourcePage = query({
             return {
                 items: result.page
                     .filter((item) => belongsToGame(item as never, args.game))
-                    .map((item) => apiDocument(item as never)),
+                    .map((item) =>
+                        [
+                            "events",
+                            "groups",
+                            "rosters",
+                            "assignments",
+                            "stratmaps",
+                            "matches",
+                        ].includes(args.resource)
+                            ? apiGameDocument(item as never)
+                            : apiDocument(item as never)
+                    ),
                 nextCursor: result.isDone ? null : result.continueCursor,
                 limit: args.limit,
             }
@@ -2277,6 +2306,15 @@ export const getClanResource = query({
                 if (!assignment) return null
             } else return null
         }
-        return apiDocument(item)
+        return [
+            "events",
+            "groups",
+            "rosters",
+            "assignments",
+            "stratmaps",
+            "matches",
+        ].includes(args.resource)
+            ? apiGameDocument(item)
+            : apiDocument(item)
     },
 })

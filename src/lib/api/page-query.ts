@@ -1,4 +1,5 @@
-import { isGameId, type GameScope } from "@/domain/games/game"
+import { isApiGameScopeError, parseApiGameScope } from "./game-scope"
+import type { GameSelection } from "@/domain/games/game"
 
 export const API_PAGE_DEFAULT_LIMIT = 25
 export const API_PAGE_MAX_LIMIT = 100
@@ -6,7 +7,7 @@ export const API_PAGE_MAX_LIMIT = 100
 export type ApiPageQuery = {
     limit: number
     cursor: string | null
-    game: GameScope
+    game: GameSelection
     /** The only currently supported list order; Convex cursors use this order. */
     sort: "createdAt"
     updatedSince?: string
@@ -36,13 +37,13 @@ export function parseApiPageQuery(
     if (sort !== null && sort !== "createdAt")
         return { error: "sort must be createdAt." }
 
-    const game = params.get("game")
-    if (game !== null) {
+    const gameValues = params.getAll("game")
+    if (gameValues.length) {
         if (!options.gameOwned)
             return { error: "game is not supported by this resource." }
-        if (game !== "all" && !isGameId(game))
-            return { error: "game must be a supported game ID or all." }
     }
+    const game = parseApiGameScope(request)
+    if (isApiGameScopeError(game)) return game
 
     const updatedSince = params.get("updatedSince")
     if (updatedSince !== null) {
@@ -58,7 +59,7 @@ export function parseApiPageQuery(
         limit,
         cursor,
         sort: "createdAt",
-        game: game === "all" ? "all" : (game ?? "hell_let_loose"),
+        game,
         ...(updatedSince ? { updatedSince } : {}),
     }
 }

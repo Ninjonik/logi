@@ -5,6 +5,12 @@ import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 import {
+    matchesGameScope,
+    resolveGameScope,
+    type GameId,
+    type GameSelection,
+} from "../src/domain/games/game"
+import {
     getGuildByDiscordId,
     getGuildDiscordId,
     getUserByIdentifier,
@@ -14,6 +20,12 @@ import {
     filterCollection,
     paginateCollection,
 } from "../src/domain/shared/collection-query"
+
+const gameIdValidator = v.union(
+    v.literal("hell_let_loose"),
+    v.literal("hell_let_loose_vietnam"),
+    v.literal("wardogs")
+)
 
 function sortedMatches(matches: Array<Record<string, unknown>>) {
     return [...matches].sort(
@@ -293,7 +305,10 @@ export const getClan = query({
 })
 
 export const listClans = query({
-    args: { paginationOpts: paginationOptsValidator },
+    args: {
+        paginationOpts: paginationOptsValidator,
+        game: v.optional(gameIdValidator),
+    },
     handler: async (ctx, args) => {
         // Filter before paging: otherwise recently-created ghost competition teams
         // can fill an entire page and hide eligible real clans behind it.
@@ -303,12 +318,20 @@ export const listClans = query({
         const eligible = (
             await Promise.all(
                 guilds.map(async (guild) => {
-                    const assignments = await ctx.db
-                        .query("userAssignments")
-                        .withIndex("serverId", (q) =>
-                            q.eq("serverId", getGuildDiscordId(guild))
-                        )
-                        .collect()
+                    const [assignments, events] = await Promise.all([
+                        ctx.db
+                            .query("userAssignments")
+                            .withIndex("serverId", (q) =>
+                                q.eq("serverId", getGuildDiscordId(guild))
+                            )
+                            .collect(),
+                        ctx.db
+                            .query("events")
+                            .withIndex("guildId", (q) =>
+                                q.eq("guildId", getGuildDiscordId(guild))
+                            )
+                            .collect(),
+                    ])
                     const memberCount = new Set([
                         ...assignments
                             .filter(
@@ -317,7 +340,13 @@ export const listClans = query({
                             .map((assignment) => assignment.userId),
                         ...guild.memberIds,
                     ]).size
-                    return memberCount >= 1
+                    const hasPublicMatch = events.some(
+                        (event) =>
+                            event.kind !== "training" &&
+                            event.matchStatsId &&
+                            matchesGameScope(event.gameId, args.game)
+                    )
+                    return memberCount >= 1 && hasPublicMatch
                         ? {
                               id: getGuildDiscordId(guild),
                               name: guild.name,
@@ -346,21 +375,87 @@ export const listClans = query({
     },
 })
 
+/** Finds public clans with a result-backed match in the selected game. */
+export const searchClans = query({
+    args: {
+        term: v.string(),
+        paginationOpts: paginationOptsValidator,
+        game: gameIdValidator,
+    },
+    handler: async (ctx, args) => {
+        const term = args.term.trim().toLocaleLowerCase()
+        if (term.length < 2)
+            return { page: [], isDone: true, continueCursor: "" }
+        const result = await ctx.db
+            .query("guilds")
+            .withSearchIndex("name", (q) => q.search("name", term))
+            .paginate(args.paginationOpts)
+        const page = (
+            await Promise.all(
+                result.page.map(async (guild) => {
+                    const [assignments, events] = await Promise.all([
+                        ctx.db
+                            .query("userAssignments")
+                            .withIndex("serverId", (q) =>
+                                q.eq("serverId", getGuildDiscordId(guild))
+                            )
+                            .collect(),
+                        ctx.db
+                            .query("events")
+                            .withIndex("guildId", (q) =>
+                                q.eq("guildId", getGuildDiscordId(guild))
+                            )
+                            .collect(),
+                    ])
+                    const memberCount = new Set([
+                        ...assignments
+                            .filter(
+                                (assignment) => assignment.status === "active"
+                            )
+                            .map((assignment) => assignment.userId),
+                        ...guild.memberIds,
+                    ]).size
+                    const hasPublicMatch = events.some(
+                        (event) =>
+                            event.kind !== "training" &&
+                            event.matchStatsId &&
+                            matchesGameScope(event.gameId, args.game)
+                    )
+                    return memberCount >= 1 && hasPublicMatch
+                        ? {
+                              id: getGuildDiscordId(guild),
+                              name: guild.name,
+                              avatar: guild.avatar,
+                              description: guild.description,
+                              memberCount,
+                          }
+                        : null
+                })
+            )
+        ).filter((guild): guild is NonNullable<typeof guild> => Boolean(guild))
+        return { ...result, page }
+    },
+})
+
 /** Platform-wide public match history. A match is public only after the event
  * points at its imported result; this intentionally excludes planned and
  * partially imported matches. */
 export const listMatches = query({
     args: {
         paginationOpts: paginationOptsValidator,
+        game: v.optional(v.union(v.literal("all"), v.array(gameIdValidator))),
         filters: v.optional(
             v.array(v.object({ path: v.string(), value: v.string() }))
         ),
     },
     handler: async (ctx, args) => {
-        // Preserve database cursor pagination for the common unfiltered request.
-        // A filtered page must be formed after the public projection (which adds
-        // event and clan fields), so it deliberately filters before slicing.
-        const databasePage = args.filters?.length
+        // Game scope is checked against the linked event, so it cannot be
+        // expressed by a matchStats index. Still page matchStats first: loading
+        // the complete history for a selected game exceeds the query timeout.
+        // Arbitrary collection filters retain their existing projection-first
+        // semantics because they can target computed public fields.
+        const requiresProjectionFiltering = Boolean(args.filters?.length)
+        const databasePage = requiresProjectionFiltering
             ? null
             : await ctx.db
                   .query("matchStats")
@@ -380,7 +475,11 @@ export const listMatches = query({
                     if (
                         !event ||
                         event.kind === "training" ||
-                        event.matchStatsId !== match._id
+                        event.matchStatsId !== match._id ||
+                        !matchesGameScope(
+                            event.gameId,
+                            args.game as GameSelection | undefined
+                        )
                     )
                         return null
                     let guild = guilds.get(match.guildId)
@@ -393,6 +492,7 @@ export const listMatches = query({
                     )
                     return {
                         eventId: String(event._id),
+                        gameId: resolveGameScope(event.gameId),
                         name: event.name,
                         gameEnd: event.gameEnd,
                         clan: guild
@@ -430,7 +530,11 @@ export const listMatches = query({
 
 /** Finds only players with at least one result-backed public match. */
 export const searchPlayers = query({
-    args: { term: v.string(), paginationOpts: paginationOptsValidator },
+    args: {
+        term: v.string(),
+        paginationOpts: paginationOptsValidator,
+        game: gameIdValidator,
+    },
     handler: async (ctx, args) => {
         const term = args.term.trim().toLocaleLowerCase()
         if (term.length < 2)
@@ -456,7 +560,8 @@ export const searchPlayers = query({
                             if (
                                 event &&
                                 event.kind !== "training" &&
-                                event.matchStatsId
+                                event.matchStatsId &&
+                                matchesGameScope(event.gameId, args.game)
                             )
                                 return {
                                     id: getUserStableId(user),

@@ -176,9 +176,11 @@ export const enqueueTest = mutation({
             guildId: args.guildId,
             eventType: "webhook.test",
             payload: JSON.stringify({
+                id: crypto.randomUUID(),
                 type: "webhook.test",
-                guildId: args.guildId,
                 createdAt,
+                guildId: args.guildId,
+                resource: { test: true },
             }),
             attempt: 0,
             status: "pending",

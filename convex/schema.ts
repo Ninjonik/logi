@@ -510,7 +510,8 @@ export default defineSchema({
         updatedAt: v.string(),
     })
         .index("discordId", ["discordId"])
-        .index("id", ["id"]),
+        .index("id", ["id"])
+        .searchIndex("name", { searchField: "name" }),
     discordConfigs: defineTable({
         guildId: v.string(),
         timezone: v.string(),
@@ -661,6 +662,9 @@ export default defineSchema({
         .index("eventId_occurredAt", ["eventId", "occurredAt"])
         .index("guildId_occurredAt", ["guildId", "occurredAt"]),
     competitions: defineTable({
+        // Optional so existing ECL records remain valid; missing values are
+        // treated as the legacy Hell Let Loose scope.
+        gameId: v.optional(gameId),
         slug: v.string(),
         name: v.string(),
         season: v.string(),

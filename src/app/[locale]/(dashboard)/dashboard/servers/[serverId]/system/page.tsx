@@ -1,7 +1,7 @@
-import Link from "next/link"
-
+import { SystemMaintenanceSections } from "@/components/app/system-maintenance-sections"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ApiKeyManager } from "@/components/app/api-key-manager"
+import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -9,14 +9,17 @@ import { isLocale } from "@/i18n/config"
 
 export default async function SystemPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
+    searchParams: Promise<{ game?: string }>
 }) {
     const { locale, serverId } = await params
-    const context = await getServerContext(serverId)
+    const { game } = await searchParams
+    const gameId = isGameId(game) ? game : DEFAULT_GAME_ID
+    const context = await getServerContext(serverId, gameId)
     if (!context?.canAdmin) return null
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const base = `/${locale}/dashboard/servers/${serverId}/system`
     return (
         <>
             <PageHeader
@@ -32,26 +35,12 @@ export default async function SystemPage({
                         <ApiKeyManager serverId={serverId} />
                     </CardContent>
                 </Card>
-                <div className="grid gap-4 md:grid-cols-3">
-                    <Link
-                        href={`${base}/imports`}
-                        className="hover:bg-muted/40 rounded-2xl border p-5"
-                    >
-                        {dictionary.clan.importsTitle}
-                    </Link>
-                    <Link
-                        href={`${base}/helper-data`}
-                        className="hover:bg-muted/40 rounded-2xl border p-5"
-                    >
-                        {dictionary.clan.helperDataTitle}
-                    </Link>
-                    <Link
-                        href={`${base}/webhooks`}
-                        className="hover:bg-muted/40 rounded-2xl border p-5"
-                    >
-                        {dictionary.clan.webhooksTitle}
-                    </Link>
-                </div>
+                <SystemMaintenanceSections
+                    serverId={serverId}
+                    gameId={gameId}
+                    defaultRoleId={context.discordConfig?.clanRoleId}
+                    dictionary={dictionary}
+                />
             </div>
         </>
     )

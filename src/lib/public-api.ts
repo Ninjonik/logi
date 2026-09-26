@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 
+import type { GameSelection } from "@/domain/games/game"
 import { getInternalAuthSecret } from "@/lib/env"
 
 const createKeyReference = makeFunctionReference<"mutation">(
@@ -140,7 +141,7 @@ export async function getClanApiResourcePage(
     key: string,
     input: {
         resource: ClanApiResource
-        game: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs" | "all"
+        game: GameSelection
         cursor: string | null
         limit: number
         updatedSince?: string
@@ -207,7 +208,7 @@ export async function mutateClanApiSettings(input: {
 
 export async function getClanApiPerformanceHistory(
     key: string,
-    game: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs" | "all"
+    game: GameSelection
 ) {
     return await fetchQuery(clanPerformanceHistoryReference, {
         secret: getInternalAuthSecret(),

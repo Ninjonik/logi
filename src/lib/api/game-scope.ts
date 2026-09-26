@@ -1,20 +1,34 @@
-import { DEFAULT_GAME_ID, isGameId, type GameScope } from "@/domain/games/game"
+import {
+    DEFAULT_GAME_ID,
+    isGameId,
+    type GameSelection,
+} from "@/domain/games/game"
 
 /** Parses the public API's game selector. Omitting it deliberately retains the
  * application's legacy Hell Let Loose default; `all` is explicit aggregation. */
 export function parseApiGameScope(
     request: Request
-): GameScope | { error: string } {
-    const value = new URL(request.url).searchParams.get("game")
-    if (value === null || value === "") return DEFAULT_GAME_ID
-    if (value === "all" || isGameId(value)) return value
+): GameSelection | { error: string } {
+    const values = new URL(request.url).searchParams
+        .getAll("game")
+        .flatMap((value) => value.split(","))
+        .filter(Boolean)
+    if (!values.length) return DEFAULT_GAME_ID
+    if (values.includes("all"))
+        return values.length === 1
+            ? "all"
+            : { error: "game=all cannot be combined with specific games." }
+    if (values.every(isGameId)) {
+        const games = [...new Set(values)]
+        return games.length === 1 ? games[0]! : games
+    }
     return {
-        error: "game must be hell_let_loose, hell_let_loose_vietnam, wardogs, or all.",
+        error: "game must be a supported game ID or all.",
     }
 }
 
 export function isApiGameScopeError(
-    scope: GameScope | { error: string }
+    scope: GameSelection | { error: string }
 ): scope is { error: string } {
     return typeof scope === "object" && "error" in scope
 }

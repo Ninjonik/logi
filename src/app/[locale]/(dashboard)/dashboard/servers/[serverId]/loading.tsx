@@ -1,5 +1,5 @@
-import { DashboardPageLoading } from "@/components/app/dashboard-page-loading"
+import { ServerOverviewSkeleton } from "@/components/app/server-overview-skeleton"
 
 export default function ServerWorkspaceLoading() {
-    return <DashboardPageLoading />
+    return <ServerOverviewSkeleton />
 }

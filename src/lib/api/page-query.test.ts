@@ -84,3 +84,20 @@ test("page query rejects unsupported limits and games", () => {
         { error: "game must be a supported game ID or all." }
     )
 })
+
+test("page query accepts any explicit combination of supported games", () => {
+    assert.deepEqual(
+        parseApiPageQuery(
+            new Request(
+                "https://logi.test/api?game=hell_let_loose&game=wardogs"
+            ),
+            options
+        ),
+        {
+            limit: 25,
+            cursor: null,
+            sort: "createdAt",
+            game: ["hell_let_loose", "wardogs"],
+        }
+    )
+})

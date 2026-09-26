@@ -8,6 +8,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
 import { getPublicCompetition } from "@/lib/read-models/competitions"
+import { GameBadge } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
 
@@ -58,10 +59,16 @@ export default async function CompetitionsPage({
                                         {ecl.name} {ecl.season}
                                     </CardTitle>
                                     <p className="text-muted-foreground mt-1 text-sm">
-                                        {labels.divisions.replace(
-                                            "{count}",
-                                            String(ecl.divisions.length)
-                                        )}
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <GameBadge
+                                                gameId={ecl.gameId}
+                                                dictionary={dictionary}
+                                            />
+                                            {labels.divisions.replace(
+                                                "{count}",
+                                                String(ecl.divisions.length)
+                                            )}
+                                        </span>
                                     </p>
                                 </div>
                             </CardHeader>

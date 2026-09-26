@@ -37,12 +37,14 @@ const gameParameter = {
     name: "game",
     in: "query",
     description:
-        "Game scope for game-owned records. Omit for Hell Let Loose; use all only when intentionally combining games.",
+        "Game scope for game-owned records. Omit for legacy Hell Let Loose records, use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for any explicit combination.",
     schema: {
         type: "string",
         enum: ["hell_let_loose", "hell_let_loose_vietnam", "wardogs", "all"],
         default: "hell_let_loose",
     },
+    style: "form",
+    explode: true,
 }
 const updatedSinceParameter = {
     name: "updatedSince",
@@ -123,8 +125,13 @@ const paths: Record<string, unknown> = {
             summary: "List public matches",
             tags: ["Public API — no key required"],
             description:
-                "Public, rate-limited match feed. No Authorization header is required.",
+                "Public, rate-limited match feed. No Authorization header is required. Omit game or use game=all for every game; repeat game for a combination.",
             parameters: [
+                {
+                    ...gameParameter,
+                    description:
+                        "Optional public game filter. Omit or use game=all for every game; repeat game to select a combination.",
+                },
                 {
                     name: "cursor",
                     in: "query",
@@ -195,7 +202,7 @@ const paths: Record<string, unknown> = {
             summary: "Get a public competition",
             tags: ["Public API — no key required"],
             description:
-                "Public, rate-limited competition details. Use collection=divisions for divisions.",
+                "Public, rate-limited competition details. Each competition includes its gameId. Use collection=divisions for divisions.",
             parameters: [
                 {
                     name: "slug",
@@ -856,7 +863,7 @@ export async function GET() {
             info: {
                 title: "Logi Clan API",
                 version: "1.0.0",
-                description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId; use game=all only for an intentional cross-game view. Cursors are opaque and valid only for the resource, game, and createdAt ordering that produced them.
+                description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read
 
@@ -873,7 +880,7 @@ Send a new \`Idempotency-Key\` for each write, for example \`event-create-42\`. 
 ### Webhooks
 
 
-Webhook subscriptions are configured by a System administrator in the dashboard's **System → Webhooks** screen, rather than through this bearer-key API. Subscribed successful writes enqueue JSON \`{ id, type, createdAt, guildId, resource }\`. Verify \`X-Logi-Signature\` as \`sha256=<HMAC_SHA256(X-Logi-Timestamp + "." + rawBody, signingSecret)>\` and reject stale timestamps. Network failures, 408, 429, and 5xx responses retry with bounded backoff; other 4xx responses are final. See the [System settings webhook guide](/wiki/configuration/settings#webhooks) for setup and payload details.
+Webhook subscriptions are configured by a System administrator in the dashboard's **System** page Webhooks section, rather than through this bearer-key API. Each delivery is an HTTP POST with JSON \`{ id, type, createdAt, guildId, resource }\`, plus \`X-Logi-Event\`, \`X-Logi-Delivery\`, \`X-Logi-Timestamp\`, and \`X-Logi-Signature\` headers. Verify \`X-Logi-Signature\` as \`sha256=<HMAC_SHA256(X-Logi-Timestamp + "." + rawBody, signingSecret)>\` before parsing the raw body, and reject stale timestamps. Network failures, 408, 429, and 5xx responses retry with bounded backoff; other 4xx responses are final. See the [System settings webhook guide](/wiki/configuration/settings#webhooks) for every event's trigger and resource shape.
 
 Article, group, calendar-item, roster, assignment, event, signup, stratmap, and preset write operations are documented below. Event, stratmap, topic-preset, and squad-preset deletion is intentionally unsupported because their dependent roster, match, Discord, and scheduled-job data has no safe deletion lifecycle.`,
             },

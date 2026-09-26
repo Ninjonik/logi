@@ -7,6 +7,8 @@ export const GAME_IDS = [
 
 export type GameId = (typeof GAME_IDS)[number]
 export type GameScope = GameId | "all"
+/** A read scope may select one game, every game, or an explicit set of games. */
+export type GameSelection = GameScope | readonly GameId[]
 
 export const DEFAULT_GAME_ID: GameId = "hell_let_loose"
 
@@ -26,15 +28,19 @@ export function resolveGameScope(gameId?: GameId): GameId {
 
 export function matchesGameScope(
     gameId: GameId | undefined,
-    scope?: GameScope
+    scope?: GameSelection
 ) {
-    return !scope || scope === "all" || resolveGameScope(gameId) === scope
+    if (!scope || scope === "all") return true
+    const resolvedGameId = resolveGameScope(gameId)
+    return Array.isArray(scope)
+        ? scope.includes(resolvedGameId)
+        : resolvedGameId === scope
 }
 
 /** Filters game-owned records while treating missing legacy values as HLL. */
 export function filterByGameScope<T extends { gameId?: GameId }>(
     records: readonly T[],
-    scope?: GameScope
+    scope?: GameSelection
 ) {
     return records.filter((record) => matchesGameScope(record.gameId, scope))
 }

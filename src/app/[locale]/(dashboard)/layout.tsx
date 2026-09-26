@@ -1,11 +1,9 @@
-import { DashboardPageLoading } from "@/components/app/dashboard-page-loading"
 import { DashboardShell } from "@/components/app/dashboard-shell"
 import { isLocale, type Locale } from "@/i18n/config"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getCurrentPlayer } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { connection } from "next/server"
-import { Suspense } from "react"
 
 export default async function DashboardLayout({
     children,
@@ -24,14 +22,8 @@ export default async function DashboardLayout({
         redirect(`/${safeLocale}/login`)
     }
     return (
-        <Suspense fallback={<DashboardPageLoading />}>
-            <DashboardShell
-                dictionary={dictionary}
-                locale={safeLocale}
-                user={user}
-            >
-                {children}
-            </DashboardShell>
-        </Suspense>
+        <DashboardShell dictionary={dictionary} locale={safeLocale} user={user}>
+            {children}
+        </DashboardShell>
     )
 }

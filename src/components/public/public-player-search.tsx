@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 
 type Props = { initialQuery: string; label: string; placeholder: string }
 
-/** Keeps the public player finder immediate without issuing a request for every keystroke. */
+/** Keeps the public directory finder immediate without issuing a request for every keystroke. */
 export function PublicPlayerSearch({
     initialQuery,
     label,
@@ -22,6 +22,7 @@ export function PublicPlayerSearch({
         const timeout = window.setTimeout(() => {
             const next = new URLSearchParams(searchParams.toString())
             next.delete("playersCursor")
+            next.delete("clansCursor")
             if (trimmed.length >= 2) next.set("q", trimmed)
             else next.delete("q")
             const query = next.toString()
