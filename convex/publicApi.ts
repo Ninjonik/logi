@@ -1,6 +1,6 @@
 import type { MutationCtx } from "./_generated/server"
+import type { Doc, Id } from "./_generated/dataModel"
 import { mutation, query } from "./_generated/server"
-import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
 import {
@@ -139,66 +139,82 @@ export const checkRateLimit = mutation({
     },
 })
 
-/** Atomically returns a replay, conflict, or reservation for a clan API write. */
-export const reserveIdempotencyKey = mutation({
-    args: {
-        secret: v.string(),
-        guildId: v.string(),
-        key: v.string(),
-        methodPath: v.string(),
-        bodyHash: v.string(),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const existing = await ctx.db
-            .query("apiIdempotencyKeys")
-            .withIndex("guildId_key", (q) =>
-                q.eq("guildId", args.guildId).eq("key", args.key)
-            )
-            .unique()
-        if (existing && existing.expiresAt > Date.now()) {
-            if (
-                existing.methodPath !== args.methodPath ||
-                existing.bodyHash !== args.bodyHash
-            )
-                return { kind: "conflict" as const }
-            return {
-                kind: "replay" as const,
-                status: existing.status,
-                body: existing.responseBody,
-            }
-        }
-        if (existing) await ctx.db.delete(existing._id)
-        const createdAt = new Date().toISOString()
-        const id = await ctx.db.insert("apiIdempotencyKeys", {
-            guildId: args.guildId,
-            key: args.key,
-            methodPath: args.methodPath,
-            bodyHash: args.bodyHash,
-            status: 0,
-            responseBody: "",
-            createdAt,
-            expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
-        })
-        return { kind: "reserved" as const, id: String(id) }
-    },
-})
+type IdempotentMutationInput = {
+    keyHash: string
+    idempotencyKey: string
+    bodyHash: string
+    methodPath: string
+}
 
-export const completeIdempotencyKey = mutation({
-    args: {
-        secret: v.string(),
-        id: v.id("apiIdempotencyKeys"),
-        status: v.number(),
-        body: v.string(),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        await ctx.db.patch(args.id, {
-            status: args.status,
-            responseBody: args.body,
-        })
-    },
-})
+type IdempotentMutationStart =
+    | { kind: "unauthorized" }
+    | { kind: "complete"; result: { status: number; body: string } }
+    | {
+          kind: "started"
+          key: Doc<"apiKeys">
+          idempotencyId: Id<"apiIdempotencyKeys">
+          createdAt: string
+      }
+
+/**
+ * Starts an API-key mutation in the same Convex transaction as its resource
+ * write and response recording. Keeping this local prevents a retry from
+ * observing a reservation without its corresponding resource result.
+ */
+async function startIdempotentMutation(
+    ctx: MutationCtx,
+    args: IdempotentMutationInput
+): Promise<IdempotentMutationStart> {
+    const key = await ctx.db
+        .query("apiKeys")
+        .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
+        .unique()
+    if (!key || key.revokedAt) return { kind: "unauthorized" }
+
+    const existing = await ctx.db
+        .query("apiIdempotencyKeys")
+        .withIndex("guildId_key", (q) =>
+            q.eq("guildId", key.guildId).eq("key", args.idempotencyKey)
+        )
+        .unique()
+    if (existing && existing.expiresAt > Date.now()) {
+        if (
+            existing.methodPath !== args.methodPath ||
+            existing.bodyHash !== args.bodyHash
+        )
+            return {
+                kind: "complete",
+                result: {
+                    status: 409,
+                    body: JSON.stringify({
+                        error: {
+                            code: "idempotency_conflict",
+                            message:
+                                "This Idempotency-Key was used for a different request.",
+                        },
+                    }),
+                },
+            }
+        return {
+            kind: "complete",
+            result: { status: existing.status, body: existing.responseBody },
+        }
+    }
+    if (existing) await ctx.db.delete(existing._id)
+
+    const createdAt = new Date().toISOString()
+    const idempotencyId = await ctx.db.insert("apiIdempotencyKeys", {
+        guildId: key.guildId,
+        key: args.idempotencyKey,
+        methodPath: args.methodPath,
+        bodyHash: args.bodyHash,
+        status: 500,
+        responseBody: "",
+        createdAt,
+        expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
+    })
+    return { kind: "started", key, idempotencyId, createdAt }
+}
 
 export const mutateClanArticle = mutation({
     args: {
@@ -221,46 +237,10 @@ export const mutateClanArticle = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const existing = await ctx.db
-            .query("apiIdempotencyKeys")
-            .withIndex("guildId_key", (q) =>
-                q.eq("guildId", key.guildId).eq("key", args.idempotencyKey)
-            )
-            .unique()
-        if (existing && existing.expiresAt > Date.now()) {
-            if (
-                existing.methodPath !== args.methodPath ||
-                existing.bodyHash !== args.bodyHash
-            )
-                return {
-                    status: 409,
-                    body: JSON.stringify({
-                        error: {
-                            code: "idempotency_conflict",
-                            message:
-                                "This Idempotency-Key was used for a different request.",
-                        },
-                    }),
-                }
-            return { status: existing.status, body: existing.responseBody }
-        }
-        if (existing) await ctx.db.delete(existing._id)
-        const createdAt = new Date().toISOString()
-        const idempotencyId = await ctx.db.insert("apiIdempotencyKeys", {
-            guildId: key.guildId,
-            key: args.idempotencyKey,
-            methodPath: args.methodPath,
-            bodyHash: args.bodyHash,
-            status: 500,
-            responseBody: "",
-            createdAt,
-            expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
-        })
+        const idempotency = await startIdempotentMutation(ctx, args)
+        if (idempotency.kind === "unauthorized") return null
+        if (idempotency.kind === "complete") return idempotency.result
+        const { key, idempotencyId, createdAt } = idempotency
         let status = 200
         let response!: Record<string, unknown>
         let eventType: string
@@ -352,31 +332,13 @@ export const mutateClanArticle = mutation({
                 }
             }
         }
-        if (eventType) {
-            const payload = JSON.stringify({
-                id: crypto.randomUUID(),
-                type: eventType,
-                createdAt,
+        if (eventType)
+            await enqueueClanWebhook(ctx, {
                 guildId: key.guildId,
+                eventType,
+                createdAt,
                 resource: response.data,
             })
-            const hooks = await ctx.db
-                .query("webhookSubscriptions")
-                .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
-                .collect()
-            for (const hook of hooks)
-                if (hook.enabled && hook.eventTypes.includes(eventType))
-                    await ctx.db.insert("webhookDeliveries", {
-                        webhookId: hook._id,
-                        guildId: key.guildId,
-                        eventType,
-                        payload,
-                        attempt: 0,
-                        status: "pending",
-                        nextAttemptAt: Date.now(),
-                        createdAt,
-                    })
-        }
         const responseBody = JSON.stringify(response)
         await ctx.db.patch(idempotencyId, { status, responseBody })
         return { status, body: responseBody }
@@ -388,9 +350,9 @@ async function enqueueClanWebhook(
     ctx: MutationCtx,
     input: {
         guildId: string
-        eventType: "event.created" | "event.updated" | "roster.updated"
+        eventType: string
         createdAt: string
-        resource: Record<string, unknown>
+        resource: unknown
     }
 ) {
     const payload = JSON.stringify({
@@ -444,46 +406,10 @@ export const mutateClanEvent = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const existing = await ctx.db
-            .query("apiIdempotencyKeys")
-            .withIndex("guildId_key", (q) =>
-                q.eq("guildId", key.guildId).eq("key", args.idempotencyKey)
-            )
-            .unique()
-        if (existing && existing.expiresAt > Date.now()) {
-            if (
-                existing.methodPath !== args.methodPath ||
-                existing.bodyHash !== args.bodyHash
-            )
-                return {
-                    status: 409,
-                    body: JSON.stringify({
-                        error: {
-                            code: "idempotency_conflict",
-                            message:
-                                "This Idempotency-Key was used for a different request.",
-                        },
-                    }),
-                }
-            return { status: existing.status, body: existing.responseBody }
-        }
-        if (existing) await ctx.db.delete(existing._id)
-        const createdAt = new Date().toISOString()
-        const idempotencyId = await ctx.db.insert("apiIdempotencyKeys", {
-            guildId: key.guildId,
-            key: args.idempotencyKey,
-            methodPath: args.methodPath,
-            bodyHash: args.bodyHash,
-            status: 500,
-            responseBody: "",
-            createdAt,
-            expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
-        })
+        const idempotency = await startIdempotentMutation(ctx, args)
+        if (idempotency.kind === "unauthorized") return null
+        if (idempotency.kind === "complete") return idempotency.result
+        const { key, idempotencyId, createdAt } = idempotency
         let status = args.operation === "create" ? 201 : 200
         let response: Record<string, unknown>
         let eventType: "event.created" | "event.updated" | null = null
@@ -605,46 +531,10 @@ export const mutateClanEventSignup = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const existing = await ctx.db
-            .query("apiIdempotencyKeys")
-            .withIndex("guildId_key", (q) =>
-                q.eq("guildId", key.guildId).eq("key", args.idempotencyKey)
-            )
-            .unique()
-        if (existing && existing.expiresAt > Date.now()) {
-            if (
-                existing.methodPath !== args.methodPath ||
-                existing.bodyHash !== args.bodyHash
-            )
-                return {
-                    status: 409,
-                    body: JSON.stringify({
-                        error: {
-                            code: "idempotency_conflict",
-                            message:
-                                "This Idempotency-Key was used for a different request.",
-                        },
-                    }),
-                }
-            return { status: existing.status, body: existing.responseBody }
-        }
-        if (existing) await ctx.db.delete(existing._id)
-        const createdAt = new Date().toISOString()
-        const idempotencyId = await ctx.db.insert("apiIdempotencyKeys", {
-            guildId: key.guildId,
-            key: args.idempotencyKey,
-            methodPath: args.methodPath,
-            bodyHash: args.bodyHash,
-            status: 500,
-            responseBody: "",
-            createdAt,
-            expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
-        })
+        const idempotency = await startIdempotentMutation(ctx, args)
+        if (idempotency.kind === "unauthorized") return null
+        if (idempotency.kind === "complete") return idempotency.result
+        const { key, idempotencyId, createdAt } = idempotency
         const event = await ctx.db.get(args.eventId)
         let status = 200
         let response!: Record<string, unknown>
@@ -679,32 +569,12 @@ export const mutateClanEventSignup = mutation({
                         ...result,
                     },
                 }
-                const payload = JSON.stringify({
-                    id: crypto.randomUUID(),
-                    type: "roster.updated",
-                    createdAt,
+                await enqueueClanWebhook(ctx, {
                     guildId: key.guildId,
+                    eventType: "roster.updated",
+                    createdAt,
                     resource: response.data,
                 })
-                const hooks = await ctx.db
-                    .query("webhookSubscriptions")
-                    .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
-                    .collect()
-                for (const hook of hooks)
-                    if (
-                        hook.enabled &&
-                        hook.eventTypes.includes("roster.updated")
-                    )
-                        await ctx.db.insert("webhookDeliveries", {
-                            webhookId: hook._id,
-                            guildId: key.guildId,
-                            eventType: "roster.updated",
-                            payload,
-                            attempt: 0,
-                            status: "pending",
-                            nextAttemptAt: Date.now(),
-                            createdAt,
-                        })
             } catch (error) {
                 status = 400
                 response = {
@@ -754,46 +624,10 @@ export const mutateClanGroup = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const existing = await ctx.db
-            .query("apiIdempotencyKeys")
-            .withIndex("guildId_key", (q) =>
-                q.eq("guildId", key.guildId).eq("key", args.idempotencyKey)
-            )
-            .unique()
-        if (existing && existing.expiresAt > Date.now()) {
-            if (
-                existing.methodPath !== args.methodPath ||
-                existing.bodyHash !== args.bodyHash
-            )
-                return {
-                    status: 409,
-                    body: JSON.stringify({
-                        error: {
-                            code: "idempotency_conflict",
-                            message:
-                                "This Idempotency-Key was used for a different request.",
-                        },
-                    }),
-                }
-            return { status: existing.status, body: existing.responseBody }
-        }
-        if (existing) await ctx.db.delete(existing._id)
-        const createdAt = new Date().toISOString()
-        const idempotencyId = await ctx.db.insert("apiIdempotencyKeys", {
-            guildId: key.guildId,
-            key: args.idempotencyKey,
-            methodPath: args.methodPath,
-            bodyHash: args.bodyHash,
-            status: 500,
-            responseBody: "",
-            createdAt,
-            expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
-        })
+        const idempotency = await startIdempotentMutation(ctx, args)
+        if (idempotency.kind === "unauthorized") return null
+        if (idempotency.kind === "complete") return idempotency.result
+        const { key, idempotencyId, createdAt } = idempotency
         let status = 200
         let response: Record<string, unknown>
         const group = args.groupId ? await ctx.db.get(args.groupId) : null
@@ -1001,46 +835,10 @@ export const mutateClanPreset = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const existing = await ctx.db
-            .query("apiIdempotencyKeys")
-            .withIndex("guildId_key", (q) =>
-                q.eq("guildId", key.guildId).eq("key", args.idempotencyKey)
-            )
-            .unique()
-        if (existing && existing.expiresAt > Date.now()) {
-            if (
-                existing.methodPath !== args.methodPath ||
-                existing.bodyHash !== args.bodyHash
-            )
-                return {
-                    status: 409,
-                    body: JSON.stringify({
-                        error: {
-                            code: "idempotency_conflict",
-                            message:
-                                "This Idempotency-Key was used for a different request.",
-                        },
-                    }),
-                }
-            return { status: existing.status, body: existing.responseBody }
-        }
-        if (existing) await ctx.db.delete(existing._id)
-        const createdAt = new Date().toISOString()
-        const idempotencyId = await ctx.db.insert("apiIdempotencyKeys", {
-            guildId: key.guildId,
-            key: args.idempotencyKey,
-            methodPath: args.methodPath,
-            bodyHash: args.bodyHash,
-            status: 500,
-            responseBody: "",
-            createdAt,
-            expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
-        })
+        const idempotency = await startIdempotentMutation(ctx, args)
+        if (idempotency.kind === "unauthorized") return null
+        if (idempotency.kind === "complete") return idempotency.result
+        const { key, idempotencyId, createdAt } = idempotency
         const table =
             args.resource === "stratmaps"
                 ? "stratmaps"
@@ -1313,46 +1111,10 @@ export const mutateClanRoster = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const existing = await ctx.db
-            .query("apiIdempotencyKeys")
-            .withIndex("guildId_key", (q) =>
-                q.eq("guildId", key.guildId).eq("key", args.idempotencyKey)
-            )
-            .unique()
-        if (existing && existing.expiresAt > Date.now()) {
-            if (
-                existing.methodPath !== args.methodPath ||
-                existing.bodyHash !== args.bodyHash
-            )
-                return {
-                    status: 409,
-                    body: JSON.stringify({
-                        error: {
-                            code: "idempotency_conflict",
-                            message:
-                                "This Idempotency-Key was used for a different request.",
-                        },
-                    }),
-                }
-            return { status: existing.status, body: existing.responseBody }
-        }
-        if (existing) await ctx.db.delete(existing._id)
-        const createdAt = new Date().toISOString()
-        const idempotencyId = await ctx.db.insert("apiIdempotencyKeys", {
-            guildId: key.guildId,
-            key: args.idempotencyKey,
-            methodPath: args.methodPath,
-            bodyHash: args.bodyHash,
-            status: 500,
-            responseBody: "",
-            createdAt,
-            expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
-        })
+        const idempotency = await startIdempotentMutation(ctx, args)
+        if (idempotency.kind === "unauthorized") return null
+        if (idempotency.kind === "complete") return idempotency.result
+        const { key, idempotencyId, createdAt } = idempotency
         const roster = await ctx.db.get(args.rosterId)
         const event = roster ? await ctx.db.get(roster.eventId) : null
         let status = 200
@@ -1461,46 +1223,10 @@ export const mutateClanAssignment = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const existing = await ctx.db
-            .query("apiIdempotencyKeys")
-            .withIndex("guildId_key", (q) =>
-                q.eq("guildId", key.guildId).eq("key", args.idempotencyKey)
-            )
-            .unique()
-        if (existing && existing.expiresAt > Date.now()) {
-            if (
-                existing.methodPath !== args.methodPath ||
-                existing.bodyHash !== args.bodyHash
-            )
-                return {
-                    status: 409,
-                    body: JSON.stringify({
-                        error: {
-                            code: "idempotency_conflict",
-                            message:
-                                "This Idempotency-Key was used for a different request.",
-                        },
-                    }),
-                }
-            return { status: existing.status, body: existing.responseBody }
-        }
-        if (existing) await ctx.db.delete(existing._id)
-        const createdAt = new Date().toISOString()
-        const idempotencyId = await ctx.db.insert("apiIdempotencyKeys", {
-            guildId: key.guildId,
-            key: args.idempotencyKey,
-            methodPath: args.methodPath,
-            bodyHash: args.bodyHash,
-            status: 500,
-            responseBody: "",
-            createdAt,
-            expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
-        })
+        const idempotency = await startIdempotentMutation(ctx, args)
+        if (idempotency.kind === "unauthorized") return null
+        if (idempotency.kind === "complete") return idempotency.result
+        const { key, idempotencyId, createdAt } = idempotency
         const current = args.assignmentId
             ? await ctx.db.get(args.assignmentId)
             : null
@@ -1642,46 +1368,10 @@ export const mutateClanCalendarItem = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const existing = await ctx.db
-            .query("apiIdempotencyKeys")
-            .withIndex("guildId_key", (q) =>
-                q.eq("guildId", key.guildId).eq("key", args.idempotencyKey)
-            )
-            .unique()
-        if (existing && existing.expiresAt > Date.now()) {
-            if (
-                existing.methodPath !== args.methodPath ||
-                existing.bodyHash !== args.bodyHash
-            )
-                return {
-                    status: 409,
-                    body: JSON.stringify({
-                        error: {
-                            code: "idempotency_conflict",
-                            message:
-                                "This Idempotency-Key was used for a different request.",
-                        },
-                    }),
-                }
-            return { status: existing.status, body: existing.responseBody }
-        }
-        if (existing) await ctx.db.delete(existing._id)
-        const createdAt = new Date().toISOString()
-        const idempotencyId = await ctx.db.insert("apiIdempotencyKeys", {
-            guildId: key.guildId,
-            key: args.idempotencyKey,
-            methodPath: args.methodPath,
-            bodyHash: args.bodyHash,
-            status: 500,
-            responseBody: "",
-            createdAt,
-            expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
-        })
+        const idempotency = await startIdempotentMutation(ctx, args)
+        if (idempotency.kind === "unauthorized") return null
+        if (idempotency.kind === "complete") return idempotency.result
+        const { key, idempotencyId, createdAt } = idempotency
         const item = args.calendarItemId
             ? await ctx.db.get(args.calendarItemId)
             : null
@@ -1985,46 +1675,10 @@ export const mutateClanSettings = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const existing = await ctx.db
-            .query("apiIdempotencyKeys")
-            .withIndex("guildId_key", (q) =>
-                q.eq("guildId", key.guildId).eq("key", args.idempotencyKey)
-            )
-            .unique()
-        if (existing && existing.expiresAt > Date.now()) {
-            if (
-                existing.methodPath !== args.methodPath ||
-                existing.bodyHash !== args.bodyHash
-            )
-                return {
-                    status: 409,
-                    body: JSON.stringify({
-                        error: {
-                            code: "idempotency_conflict",
-                            message:
-                                "This Idempotency-Key was used for a different request.",
-                        },
-                    }),
-                }
-            return { status: existing.status, body: existing.responseBody }
-        }
-        if (existing) await ctx.db.delete(existing._id)
-        const now = new Date().toISOString()
-        const idempotencyId = await ctx.db.insert("apiIdempotencyKeys", {
-            guildId: key.guildId,
-            key: args.idempotencyKey,
-            methodPath: args.methodPath,
-            bodyHash: args.bodyHash,
-            status: 500,
-            responseBody: "",
-            createdAt: now,
-            expiresAt: Date.now() + IDEMPOTENCY_RETENTION_MS,
-        })
+        const idempotency = await startIdempotentMutation(ctx, args)
+        if (idempotency.kind === "unauthorized") return null
+        if (idempotency.kind === "complete") return idempotency.result
+        const { key, idempotencyId, createdAt: now } = idempotency
         const guild = await getGuildByDiscordId(ctx, key.guildId)
         let status = 200
         let response: Record<string, unknown> | undefined
@@ -2141,32 +1795,12 @@ export const mutateClanSettings = mutation({
                         discordConfig: safeDiscordConfig,
                     },
                 }
-                const hooks = await ctx.db
-                    .query("webhookSubscriptions")
-                    .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
-                    .collect()
-                const payload = JSON.stringify({
-                    id: crypto.randomUUID(),
-                    type: "settings.updated",
-                    createdAt: now,
+                await enqueueClanWebhook(ctx, {
                     guildId: key.guildId,
+                    eventType: "settings.updated",
+                    createdAt: now,
                     resource: response.data,
                 })
-                for (const hook of hooks)
-                    if (
-                        hook.enabled &&
-                        hook.eventTypes.includes("settings.updated")
-                    )
-                        await ctx.db.insert("webhookDeliveries", {
-                            webhookId: hook._id,
-                            guildId: key.guildId,
-                            eventType: "settings.updated",
-                            payload,
-                            attempt: 0,
-                            status: "pending",
-                            nextAttemptAt: Date.now(),
-                            createdAt: now,
-                        })
             }
         }
         if (!response)

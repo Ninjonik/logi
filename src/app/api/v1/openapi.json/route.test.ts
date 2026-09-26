@@ -46,12 +46,17 @@ test("OpenAPI requires idempotency for clan writes", async () => {
     const paths = [
         ["/clan/articles", "post"],
         ["/clan/articles/{id}", "patch"],
+        ["/clan/articles/{id}", "delete"],
         ["/clan/events/{eventId}/signup", "post"],
         ["/clan/events", "post"],
         ["/clan/events/{id}", "patch"],
         ["/clan/events/{eventId}/actions/conclude", "post"],
         ["/clan/groups", "post"],
+        ["/clan/groups/{id}", "patch"],
+        ["/clan/groups/{id}", "delete"],
         ["/clan/calendar-items", "post"],
+        ["/clan/calendar-items/{id}", "patch"],
+        ["/clan/calendar-items/{id}", "delete"],
         ["/clan/settings", "patch"],
         ["/clan/assignments", "post"],
         ["/clan/assignments/{id}", "patch"],
@@ -71,4 +76,54 @@ test("OpenAPI requires idempotency for clan writes", async () => {
                 (parameter) => parameter.name === "Idempotency-Key"
             )
         )
+})
+
+test("OpenAPI documents beginner-safe API workflows", async () => {
+    const document = (await (await GET()).json()) as {
+        info: { description: string }
+        components: {
+            securitySchemes: Record<string, { description?: string }>
+        }
+        paths: Record<
+            string,
+            Record<
+                string,
+                {
+                    parameters?: Array<{
+                        name?: string
+                        description?: string
+                    }>
+                }
+            >
+        >
+    }
+
+    assert.match(
+        document.info.description,
+        /Authorization: Bearer YOUR_API_KEY/
+    )
+    assert.match(document.info.description, /page\.nextCursor/)
+    assert.match(document.info.description, /updatedSince/)
+    assert.match(document.info.description, /409 idempotency_conflict/)
+    assert.match(document.info.description, /X-Logi-Signature/)
+    assert.match(
+        document.info.description,
+        /deletion is intentionally unsupported/
+    )
+    assert.match(
+        document.components.securitySchemes.clanApiKey?.description ?? "",
+        /scoped to one clan/
+    )
+
+    const eventList = document.paths["/clan/events"]?.get
+    assert.match(
+        eventList?.parameters?.find((parameter) => parameter.name === "cursor")
+            ?.description ?? "",
+        /Opaque/
+    )
+    assert.match(
+        eventList?.parameters?.find((parameter) => parameter.name === "game")
+            ?.description ?? "",
+        /Game scope/
+    )
 })

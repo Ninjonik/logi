@@ -64,6 +64,37 @@ website can safely cache and combine data from more than one game. The live,
 machine-readable contract is available at `/api/v1/openapi.json` and the
 interactive reference at `/api/v1/docs`.
 
+Start with the API key in an `Authorization` header; never put it in a URL or
+client-side bundle. The key is tenant-scoped: it can read and write only the
+workspace that created it. A record ID from another workspace is not usable.
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://YOUR_LOGI_HOST/api/v1/clan/events?game=wardogs&limit=25&updatedSince=2026-01-01T00:00:00Z"
+```
+
+List responses contain `data` and `page.nextCursor`. Treat that cursor as an
+opaque value: send it only to the same resource with the same `game` and
+`sort=createdAt` selection. To retrieve one known record, use
+`GET /api/v1/clan/events/{id}`. `updatedSince` accepts an ISO timestamp and is
+useful for incremental synchronization; it includes records updated at or
+after that time.
+
+For a write, generate one new visible idempotency key and retain it until the
+request is resolved. If a network timeout leaves the result unknown, repeat
+the exact method, URL, body, and key to receive the original result. Reusing a
+key for changed content returns `409 idempotency_conflict`, so changed work
+needs a new key. Invalid inputs return `400` with
+`{ "error": { "code": "validation_error", "message": "..." } }`.
+
+```bash
+curl -X POST "https://YOUR_LOGI_HOST/api/v1/clan/events" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: event-create-42" \
+  --data '{"kind":"training","name":"Training","registrationEnd":"2030-01-01T18:00:00Z","meetingStart":"2030-01-01T19:00:00Z","pingClan":false}'
+```
+
 Roster and member synchronization can use `updatedSince` on their respective
 list endpoints. Member pages contain one record per workspace member even when
 that person has assignments in multiple games.
@@ -126,6 +157,27 @@ deletion; event creation and updates; and roster updates caused by API event-sig
 4xx responses do not retry except `408` and `429`. Delivery history records
 successful, failed, and retried attempts; deleting or disabling a subscription
 prevents queued deliveries from being sent.
+
+Each delivery body is JSON with a stable envelope. `resource` is the successful
+API response data for the event, so consumers should use `type` to select the
+expected resource shape:
+
+```json
+{
+    "id": "delivery-event-id",
+    "type": "event.updated",
+    "createdAt": "2026-09-26T10:00:00.000Z",
+    "guildId": "your-discord-guild-id",
+    "resource": { "id": "event-id", "name": "Operation Example" }
+}
+```
+
+Verify a delivery before parsing or acting on it: calculate HMAC-SHA256 over
+the exact `X-Logi-Timestamp`, a dot, and the raw request body with the signing
+secret, then compare it to `X-Logi-Signature` and reject timestamps outside
+your allowed replay window. Settings updates and roster-affecting assignment
+changes may also emit subscribed events. A disabled or deleted subscription
+stops pending deliveries from being sent.
 
 ## Discord settings: what each field actually enables
 

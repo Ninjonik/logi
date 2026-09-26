@@ -18,7 +18,13 @@ const pageParameters = [
         in: "query",
         schema: { type: "integer", minimum: 1, maximum: 100, default: 25 },
     },
-    { name: "cursor", in: "query", schema: { type: "string", nullable: true } },
+    {
+        name: "cursor",
+        in: "query",
+        description:
+            "Opaque value returned by the previous page. Reuse it only with the same resource, game scope, and createdAt sort.",
+        schema: { type: "string", nullable: true },
+    },
     {
         name: "sort",
         in: "query",
@@ -30,6 +36,8 @@ const pageParameters = [
 const gameParameter = {
     name: "game",
     in: "query",
+    description:
+        "Game scope for game-owned records. Omit for Hell Let Loose; use all only when intentionally combining games.",
     schema: {
         type: "string",
         enum: ["hell_let_loose", "hell_let_loose_vietnam", "wardogs", "all"],
@@ -39,7 +47,8 @@ const gameParameter = {
 const updatedSinceParameter = {
     name: "updatedSince",
     in: "query",
-    description: "Only records updated at or after this ISO-8601 timestamp.",
+    description:
+        "Only records updated at or after this ISO-8601 timestamp, for incremental synchronization.",
     schema: { type: "string", format: "date-time" },
 }
 const resources = [
@@ -70,7 +79,17 @@ const responses = {
     },
     "400": {
         description: "Invalid request",
-        content: { "application/json": { schema: error } },
+        content: {
+            "application/json": {
+                schema: error,
+                example: {
+                    error: {
+                        code: "validation_error",
+                        message: "name is required.",
+                    },
+                },
+            },
+        },
     },
     "401": {
         description: "Invalid API key",
@@ -161,7 +180,9 @@ const idempotencyParameter = {
     name: "Idempotency-Key",
     in: "header",
     required: true,
-    schema: { type: "string", maxLength: 200 },
+    description:
+        "Use one new visible key for each write, for example `event-create-42`. Retrying the identical method, path, and body with that key replays the original status and body for 24 hours. Reusing it with a different request returns `409 idempotency_conflict`; generate a new key for that request.",
+    schema: { type: "string", maxLength: 200, example: "event-create-42" },
 }
 paths["/clan/settings"] = {
     get: (paths["/clan/settings"] as { get: unknown }).get,
@@ -711,8 +732,26 @@ export async function GET() {
             info: {
                 title: "Logi Clan API",
                 version: "1.0.0",
-                description:
-                    "Bounded clan-owned data API. Game-owned records default to hell_let_loose, including legacy records without gameId; game=all is the explicit cross-game scope. List cursors are opaque and only valid with their original resource, game and creation-order sort. Article, group, calendar-item, event, event-signup, roster, assignment, stratmap, and preset writes require Idempotency-Key; an identical retry replays the original response for 24 hours and a changed request returns 409. Successful article writes, event create/update actions, event-signup changes, and roster-affecting roster/assignment writes enqueue subscribed webhook events signed as sha256=<HMAC_SHA256(timestamp + '.' + rawBody, secret)> in X-Logi-Signature, with X-Logi-Timestamp in Unix seconds. Webhook deliveries retry transient network, 408, 429, and 5xx failures with bounded backoff; other 4xx responses are final.",
+                description: `Bounded, tenant-scoped clan data API. A key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId; use game=all only for an intentional cross-game view. Cursors are opaque and valid only for the resource, game, and createdAt ordering that produced them.
+
+### Authenticate and read
+
+
+\`curl -H "Authorization: Bearer YOUR_API_KEY" "https://YOUR_LOGI_HOST/api/v1/clan/events?game=wardogs&limit=25&updatedSince=2026-01-01T00:00:00Z"\`
+
+Use \`page.nextCursor\` from that response as \`cursor\` for the next request. Fetch one record with \`GET /clan/events/{id}\`.
+
+### Make retry-safe writes
+
+
+Send a new \`Idempotency-Key\` for each write, for example \`event-create-42\`. If a timeout occurs, retry the identical method, path, body, and key; Logi replays the original status and body for 24 hours. Changing the request while reusing the key returns \`409 idempotency_conflict\`; use a new key instead. Invalid input returns a \`400\` body shaped as \`{ error: { code, message } }\`.
+
+### Webhooks
+
+
+Subscribed successful writes enqueue JSON \`{ id, type, createdAt, guildId, resource }\`. Verify \`X-Logi-Signature\` as \`sha256=<HMAC_SHA256(X-Logi-Timestamp + "." + rawBody, signingSecret)>\` and reject stale timestamps. Network failures, 408, 429, and 5xx responses retry with bounded backoff; other 4xx responses are final.
+
+Article, group, calendar-item, roster, assignment, event, signup, stratmap, and preset write operations are documented below. Event, stratmap, topic-preset, and squad-preset deletion is intentionally unsupported because their dependent roster, match, Discord, and scheduled-job data has no safe deletion lifecycle.`,
             },
             servers: [{ url: "/api/v1" }],
             components: {
@@ -721,6 +760,8 @@ export async function GET() {
                         type: "http",
                         scheme: "bearer",
                         bearerFormat: "logi API key",
+                        description:
+                            "Send `Authorization: Bearer YOUR_API_KEY`. API keys are scoped to one clan and revoked keys are rejected.",
                     },
                 },
             },

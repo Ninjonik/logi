@@ -146,6 +146,11 @@ function request(overrides: Record<string, unknown> = {}) {
     }
 }
 
+function deliveryPayload(db: FakeDb) {
+    const delivery = [...db.tables.webhookDeliveries.values()][0]
+    return JSON.parse(delivery?.payload as string) as Record<string, unknown>
+}
+
 test("event API rejects cross-guild references without creating an event", async () => {
     const db = new FakeDb()
     const result = await handler(publicApi.mutateClanEvent)(
@@ -167,6 +172,108 @@ test("event API replays an idempotent create once and queues one webhook", async
     assert.deepEqual(replay, first)
     assert.equal(db.tables.events.size, 1)
     assert.equal(db.tables.webhookDeliveries.size, 1)
+    assert.deepEqual(Object.keys(deliveryPayload(db)).sort(), [
+        "createdAt",
+        "guildId",
+        "id",
+        "resource",
+        "type",
+    ])
+})
+
+test("article API queues only subscriptions for its event type", async () => {
+    const db = new FakeDb()
+    const input = {
+        secret: "dev-internal-auth-secret",
+        keyHash: "key",
+        idempotencyKey: "article-key",
+        bodyHash: "article-body",
+        methodPath: "POST /clan/articles",
+        operation: "create",
+        title: "Update",
+        description: "A clan update",
+        body: "Published article body",
+    }
+
+    const unsubscribed = await handler(publicApi.mutateClanArticle)(
+        { db },
+        input
+    )
+    assert.equal(unsubscribed?.status, 201)
+    assert.equal(db.tables.webhookDeliveries.size, 0)
+
+    db.tables.webhookSubscriptions.get("hook-1")!.eventTypes = [
+        "article.created",
+    ]
+    const subscribed = await handler(publicApi.mutateClanArticle)(
+        { db },
+        { ...input, idempotencyKey: "article-key-2" }
+    )
+    assert.equal(subscribed?.status, 201)
+    assert.equal(db.tables.webhookDeliveries.size, 1)
+    assert.equal(deliveryPayload(db).type, "article.created")
+})
+
+test("settings API queues the documented settings payload", async () => {
+    const db = new FakeDb()
+    db.tables.webhookSubscriptions.get("hook-1")!.eventTypes = [
+        "settings.updated",
+    ]
+
+    const result = await handler(publicApi.mutateClanSettings)(
+        { db },
+        {
+            secret: "dev-internal-auth-secret",
+            keyHash: "key",
+            idempotencyKey: "settings-key",
+            bodyHash: "settings-body",
+            methodPath: "PATCH /clan/settings",
+            name: "Updated Guild",
+        }
+    )
+
+    assert.equal(result?.status, 200)
+    assert.equal(db.tables.webhookDeliveries.size, 1)
+    const payload = deliveryPayload(db)
+    assert.equal(payload.type, "settings.updated")
+    assert.equal(payload.guildId, "guild-a")
+    assert.ok(payload.id)
+    assert.ok(payload.createdAt)
+})
+
+test("event signup queues a roster update through the shared queue", async () => {
+    const db = new FakeDb()
+    db.tables.webhookSubscriptions.get("hook-1")!.eventTypes = [
+        "roster.updated",
+    ]
+    db.tables.events.set("event-signup", {
+        _id: "event-signup",
+        guildId: "guild-a",
+        ...event({ kind: "training" }),
+        participants: [],
+        signUps: [],
+        absenceNotices: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+    })
+
+    const result = await handler(publicApi.mutateClanEventSignup)(
+        { db },
+        {
+            secret: "dev-internal-auth-secret",
+            keyHash: "key",
+            eventId: "event-signup",
+            idempotencyKey: "signup-key",
+            bodyHash: "signup-body",
+            methodPath: "POST /clan/events/{eventId}/signup",
+            userId: "user-a",
+            group: null,
+        }
+    )
+
+    assert.equal(result?.status, 200)
+    assert.equal(db.tables.webhookDeliveries.size, 1)
+    assert.equal(deliveryPayload(db).type, "roster.updated")
 })
 
 test("event API rejects a reused idempotency key for another event request", async () => {
@@ -180,6 +287,38 @@ test("event API rejects a reused idempotency key for another event request", asy
     assert.equal(conflict?.status, 409)
     assert.match(conflict?.body ?? "", /idempotency_conflict/)
     assert.equal(db.tables.events.size, 1)
+})
+
+test("event API replaces an expired idempotency record", async () => {
+    const db = new FakeDb()
+    db.tables.apiIdempotencyKeys.set("expired-key", {
+        _id: "expired-key",
+        guildId: "guild-a",
+        key: "event-key",
+        methodPath: "POST /clan/events",
+        bodyHash: "old-body",
+        status: 201,
+        responseBody: '{"data":{"id":"old"}}',
+        createdAt: "2020-01-01T00:00:00.000Z",
+        expiresAt: 0,
+    })
+
+    const result = await handler(publicApi.mutateClanEvent)({ db }, request())
+
+    assert.equal(result?.status, 201)
+    assert.equal(db.tables.events.size, 1)
+    assert.equal(db.tables.apiIdempotencyKeys.size, 1)
+})
+
+test("event API rejects a revoked API key before reserving idempotency", async () => {
+    const db = new FakeDb()
+    db.tables.apiKeys.get("key-1")!.revokedAt = "2026-01-01T00:00:00.000Z"
+
+    const result = await handler(publicApi.mutateClanEvent)({ db }, request())
+
+    assert.equal(result, null)
+    assert.equal(db.tables.events.size, 0)
+    assert.equal(db.tables.apiIdempotencyKeys.size, 0)
 })
 
 function presetRequest(overrides: Record<string, unknown> = {}) {
@@ -321,6 +460,43 @@ test("assignment API preserves membership rebuilding and replays a write once", 
     assert.deepEqual(db.tables.guilds.get("guild-a-record")?.memberIds, [
         "user-a",
     ])
+})
+
+test("assignment API queues a roster update when an open roster is affected", async () => {
+    const db = new FakeDb()
+    db.tables.users.set("user-a-record", {
+        _id: "user-a-record",
+        discordId: "user-a",
+        id: "user-a",
+        managedGuildIds: [],
+        mercenaryGuildIds: [],
+    })
+    db.tables.events.set("event-a", {
+        _id: "event-a",
+        guildId: "guild-a",
+        ...event(),
+        participants: [],
+        signUps: [],
+        absenceNotices: [],
+    })
+    db.tables.rosters.set("roster-a", {
+        _id: "roster-a",
+        eventId: "event-a",
+        squads: [],
+        reservePlayerIds: [],
+        reserveAttendances: [],
+        notAttendingPlayerIds: [],
+        published: false,
+    })
+
+    const result = await handler(publicApi.mutateClanAssignment)(
+        { db },
+        assignmentRequest({ idempotencyKey: "assignment-roster-key" })
+    )
+
+    assert.equal(result?.status, 201)
+    assert.equal(db.tables.webhookDeliveries.size, 1)
+    assert.equal(deliveryPayload(db).type, "roster.updated")
 })
 
 test("assignment API rejects a cross-guild assignment ID", async () => {
