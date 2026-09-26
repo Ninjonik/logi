@@ -37,8 +37,18 @@ export function ApiKeyManager({ serverId }: { serverId: string }) {
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({ name }),
             })
-            const body = await response.json()
-            if (!response.ok) throw new Error(body.error)
+            const body = (await response.json().catch(() => null)) as {
+                error?: unknown
+                key?: unknown
+            } | null
+            if (!response.ok)
+                throw new Error(
+                    typeof body?.error === "string"
+                        ? body.error
+                        : "Unable to create API key."
+                )
+            if (typeof body?.key !== "string")
+                throw new Error("The server returned an invalid API key.")
             setNewKey(body.key)
             setName("")
             await load()

@@ -9,6 +9,7 @@
  */
 
 import type * as articles from "../articles.js";
+import type * as calendarFeed from "../calendarFeed.js";
 import type * as competitions from "../competitions.js";
 import type * as crons from "../crons.js";
 import type * as discordConfig from "../discordConfig.js";
@@ -60,6 +61,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   articles: typeof articles;
+  calendarFeed: typeof calendarFeed;
   competitions: typeof competitions;
   crons: typeof crons;
   discordConfig: typeof discordConfig;
