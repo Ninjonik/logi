@@ -11,4 +11,11 @@ crons.daily(
     {}
 )
 
+crons.interval(
+    "deliver pending webhooks",
+    { minutes: 1 },
+    internal.webhookDispatcher.deliverDue,
+    {}
+)
+
 export default crons

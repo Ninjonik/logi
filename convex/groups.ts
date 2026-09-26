@@ -1,5 +1,5 @@
+import { matchesGameScope, resolveGameScope } from "../src/domain/games/game"
 import { getGuildById, getGuildDiscordId } from "./identity"
-import { matchesGameScope } from "../src/domain/games/game"
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
@@ -91,6 +91,18 @@ export const upsert = mutation({
         }
         const guildDiscordId = getGuildDiscordId(guild)
 
+        if (args.parentId) {
+            const parent = await ctx.db.get(args.parentId)
+            if (
+                !parent ||
+                parent.guildId !== guildDiscordId ||
+                resolveGameScope(parent.gameId) !==
+                    resolveGameScope(args.gameId)
+            ) {
+                throw new Error("Parent group not found.")
+            }
+        }
+
         const duplicates = await ctx.db
             .query("groups")
             .withIndex("guildId_name", (q) =>
@@ -149,13 +161,18 @@ export const upsert = mutation({
 export const remove = mutation({
     args: {
         secret: v.string(),
+        guildId: v.id("guilds"),
         groupId: v.id("groups"),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
 
+        const guild = await getGuildById(ctx, args.guildId)
+        if (!guild) {
+            throw new Error("Server not found.")
+        }
         const group = await ctx.db.get(args.groupId)
-        if (!group) {
+        if (!group || group.guildId !== getGuildDiscordId(guild)) {
             throw new Error("Group not found.")
         }
 

@@ -166,6 +166,7 @@ export function normalizeEventDoc<
         registrationEnd: string
         meetingStart: string
         gameEnd: string
+        gameId?: import("@/domain/games/game").GameId
         kind?: "match" | "training"
         matchType?: string
         thumbnailUrl?: string

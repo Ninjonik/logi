@@ -54,7 +54,9 @@ export class ConvexRosterRepository implements RosterRepository<ConvexRosterReco
             return
         }
 
+        const event = await this.ctx.db.get(eventId as Id<"events">)
         await this.ctx.db.patch(existing._id, {
+            ...(event ? { guildId: event.guildId } : {}),
             squads: roster.squads,
             reservePlayerIds: roster.reservePlayerIds,
             reserveAttendances: roster.reserveAttendances ?? [],

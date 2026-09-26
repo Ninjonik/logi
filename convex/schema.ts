@@ -767,6 +767,8 @@ export default defineSchema({
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),
     rosters: defineTable({
+        // Optional while legacy rosters are backfilled from their parent event.
+        guildId: v.optional(v.string()),
         eventId: v.id("events"),
         squadPresetId: v.optional(v.id("squadPresets")),
         squads: v.array(rosterSquad),
@@ -777,7 +779,16 @@ export default defineSchema({
         published: v.boolean(),
         createdAt: v.string(),
         updatedAt: v.string(),
-    }).index("eventId", ["eventId"]),
+    })
+        .index("eventId", ["eventId"])
+        .index("guildId_updatedAt", ["guildId", "updatedAt"]),
+    clanApiUserProjections: defineTable({
+        guildId: v.string(),
+        userId: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId_userId", ["guildId", "userId"])
+        .index("guildId_updatedAt", ["guildId", "updatedAt"]),
     matchRecaps: defineTable({
         eventId: v.id("events"),
         userId: v.string(),
@@ -1087,6 +1098,52 @@ export default defineSchema({
         resetAt: v.number(),
         count: v.number(),
     }).index("bucket", ["bucket"]),
+    apiIdempotencyKeys: defineTable({
+        guildId: v.string(),
+        key: v.string(),
+        methodPath: v.string(),
+        bodyHash: v.string(),
+        status: v.number(),
+        responseBody: v.string(),
+        expiresAt: v.number(),
+        createdAt: v.string(),
+    })
+        .index("guildId_key", ["guildId", "key"])
+        .index("expiresAt", ["expiresAt"]),
+    webhookSubscriptions: defineTable({
+        guildId: v.string(),
+        url: v.string(),
+        eventTypes: v.array(v.string()),
+        secret: v.string(),
+        enabled: v.boolean(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+        lastDeliveredAt: v.optional(v.string()),
+        lastFailureAt: v.optional(v.string()),
+    }).index("guildId", ["guildId"]),
+    webhookDeliveries: defineTable({
+        webhookId: v.id("webhookSubscriptions"),
+        guildId: v.string(),
+        eventType: v.string(),
+        payload: v.string(),
+        attempt: v.number(),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("delivered"),
+            v.literal("failed")
+        ),
+        processingStartedAt: v.optional(v.number()),
+        nextAttemptAt: v.number(),
+        responseStatus: v.optional(v.number()),
+        lastError: v.optional(v.string()),
+        createdAt: v.string(),
+        deliveredAt: v.optional(v.string()),
+    })
+        .index("guildId", ["guildId"])
+        .index("webhookId", ["webhookId"])
+        .index("status_nextAttemptAt", ["status", "nextAttemptAt"])
+        .index("status_processingStartedAt", ["status", "processingStartedAt"]),
     articles: defineTable({
         guildId: v.string(),
         title: v.string(),

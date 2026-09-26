@@ -142,6 +142,11 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
                 input.assignmentId as Id<"userAssignments">,
                 payload
             )
+            await this.touchClanApiUserProjection(
+                input.serverId,
+                input.userId,
+                input.nowIso
+            )
             return input.assignmentId
         }
 
@@ -149,11 +154,45 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
             ...payload,
             createdAt: input.nowIso,
         })
+        await this.touchClanApiUserProjection(
+            input.serverId,
+            input.userId,
+            input.nowIso
+        )
         return String(assignmentId)
     }
 
     async remove(assignmentId: string): Promise<void> {
+        const assignment = await this.ctx.db.get(
+            assignmentId as Id<"userAssignments">
+        )
         await this.ctx.db.delete(assignmentId as Id<"userAssignments">)
+        if (!assignment) return
+        const remaining = await this.ctx.db
+            .query("userAssignments")
+            .withIndex("serverId_userId", (q) =>
+                q
+                    .eq("serverId", assignment.serverId)
+                    .eq("userId", assignment.userId)
+            )
+            .first()
+        const projection = await this.ctx.db
+            .query("clanApiUserProjections")
+            .withIndex("guildId_userId", (q) =>
+                q
+                    .eq("guildId", assignment.serverId)
+                    .eq("userId", assignment.userId)
+            )
+            .unique()
+        if (!remaining) {
+            if (projection) await this.ctx.db.delete(projection._id)
+            return
+        }
+        await this.touchClanApiUserProjection(
+            assignment.serverId,
+            assignment.userId,
+            new Date().toISOString()
+        )
     }
 
     async updateServerMembership(
@@ -310,6 +349,26 @@ export class ConvexAssignmentCommandRepository implements AssignmentCommandRepos
                   )
                 : [],
         }
+    }
+
+    private async touchClanApiUserProjection(
+        guildId: string,
+        userId: string,
+        updatedAt: string
+    ) {
+        const existing = await this.ctx.db
+            .query("clanApiUserProjections")
+            .withIndex("guildId_userId", (q) =>
+                q.eq("guildId", guildId).eq("userId", userId)
+            )
+            .unique()
+        if (existing) await this.ctx.db.patch(existing._id, { updatedAt })
+        else
+            await this.ctx.db.insert("clanApiUserProjections", {
+                guildId,
+                userId,
+                updatedAt,
+            })
     }
 }
 

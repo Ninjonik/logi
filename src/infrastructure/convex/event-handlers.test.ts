@@ -34,6 +34,7 @@ test("handleUpsertEvent rejects unknown guilds and maps guild identity for the u
                 },
                 getGuildById: async () => null,
                 getGuildDiscordId: () => "discord-1",
+                getEventById: async () => null,
                 createUseCase: () => ({ execute: async () => "event-1" }),
             }),
         /Server not found/
@@ -57,6 +58,7 @@ test("handleUpsertEvent rejects unknown guilds and maps guild identity for the u
         },
         getGuildById: async () => ({ discordId: "discord-1" }),
         getGuildDiscordId: (guild) => guild.discordId ?? "",
+        getEventById: async () => ({ guildId: "discord-1" }),
         createUseCase: () => ({
             execute: async (input) => {
                 calls.push(input as Record<string, unknown>)
@@ -68,6 +70,32 @@ test("handleUpsertEvent rejects unknown guilds and maps guild identity for the u
     assert.equal(result, "event-1")
     assert.equal(calls[0]?.guildId, "discord-1")
     assert.equal(calls[0]?.topicPresetId, "preset-1")
+})
+
+test("handleUpsertEvent rejects updates to an event from another guild", async () => {
+    await assert.rejects(
+        () =>
+            handleUpsertEvent({
+                secret: "secret",
+                expectedSecret: "secret",
+                args: {
+                    secret: "secret",
+                    serverId: "guild-1",
+                    eventId: "event-owned-by-guild-2",
+                    name: "Event",
+                    registrationEnd: "2026-07-23T10:00:00.000Z",
+                    meetingStart: "2026-07-23T11:00:00.000Z",
+                    gameStart: "2026-07-23T12:00:00.000Z",
+                    gameEnd: "2026-07-23T14:00:00.000Z",
+                    pingClan: false,
+                },
+                getGuildById: async () => ({ discordId: "guild-1" }),
+                getGuildDiscordId: (guild) => guild.discordId ?? "",
+                getEventById: async () => ({ guildId: "guild-2" }),
+                createUseCase: () => ({ execute: async () => "unexpected" }),
+            }),
+        /Event not found/
+    )
 })
 
 test("handleToggleSignup, handleConcludeEvent, and handleUpsertNotice delegate after auth", async () => {

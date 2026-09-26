@@ -25,6 +25,7 @@ export async function handleUpsertEvent(input: {
         serverId: string
     ) => Promise<{ discordId?: string; id?: string } | null>
     getGuildDiscordId: (guild: { discordId?: string; id?: string }) => string
+    getEventById: (eventId: string) => Promise<{ guildId?: string } | null>
     createUseCase: () => ExecuteUseCase<any, unknown>
 }) {
     assertInternalSecret(input.secret, input.expectedSecret)
@@ -34,11 +35,21 @@ export async function handleUpsertEvent(input: {
         throw new Error("Server not found.")
     }
 
+    const guildId = input.getGuildDiscordId(guild)
+    if (input.args.eventId) {
+        const event = await input.getEventById(input.args.eventId)
+        if (!event || event.guildId !== guildId) {
+            // Do not allow a caller that can name another guild's event ID to
+            // update it merely by supplying a server they do control.
+            throw new Error("Event not found.")
+        }
+    }
+
     const { secret: _secret, serverId: _serverId, ...command } = input.args
 
     return await input.createUseCase().execute({
         ...command,
-        guildId: input.getGuildDiscordId(guild),
+        guildId,
         topicPresetId: input.args.topicPresetId
             ? String(input.args.topicPresetId)
             : undefined,

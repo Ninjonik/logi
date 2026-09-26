@@ -3,7 +3,7 @@ title: Server settings
 description: Configure the selected workspace without exposing sensitive information.
 ---
 
-import { Callout, Steps } from "nextra/components";
+import { Callout, Steps } from "nextra/components"
 
 # Server settings
 
@@ -27,7 +27,7 @@ For example, after a scheduling or Discord-related change, inspect an event or t
 
 </Steps>
 
-## API keys and Discord metadata
+## System area, API keys, and Discord metadata
 
 ## Games
 
@@ -45,20 +45,87 @@ links to this settings section. When exactly one is active, creation pages
 select it automatically. With multiple games active, starting a game-owned
 creation flow from **All games** first asks the manager to choose a game.
 
-Some server configuration is exposed through protected dashboard/API routes, including API-key and Discord-metadata management. Treat keys, webhook-like values, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
+The manager-only **System** area contains Website API keys, Imports, Helper data, and Webhooks. Normal Clan settings now contains only game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
 Each website API key belongs to the currently selected workspace and can read
-that workspace's public website data. Give it a recognisable name of at most 80
+that workspace's clan-owned data. Give it a recognisable name of at most 80
 characters. The full value is displayed once, at creation time; afterward the
 dashboard shows only its prefix, creation date, and whether it has been
 revoked. Revoking a key takes effect for future requests and cannot be undone:
 create and deploy a replacement key before revoking one used by a live site.
 
+Website integrations use the versioned API at `/api/v1`. Clan API requests
+use `Authorization: Bearer <API key>`. Game-owned clan data uses **Hell Let
+Loose** when no `game` query parameter is supplied, including legacy records;
+use `game=hell_let_loose_vietnam`, `game=wardogs`, or `game=all` to select
+another scope. List requests are cursor-paginated, default to 25 records, and
+are capped at 100 records. Every game-owned returned record has an explicit `gameId`, so a
+website can safely cache and combine data from more than one game. The live,
+machine-readable contract is available at `/api/v1/openapi.json` and the
+interactive reference at `/api/v1/docs`.
+
+Roster and member synchronization can use `updatedSince` on their respective
+list endpoints. Member pages contain one record per workspace member even when
+that person has assignments in multiple games.
+
+The API currently supports article writes, group create/update/delete, event
+create/update, stratmap create/update, topic-preset create/update, squad-preset
+create/update, roster update/delete, assignment create/update/delete, the named
+event conclude action, and event signup changes. Event
+deletion is intentionally unsupported because its roster, match, Discord, and
+scheduled-job dependencies have no safe deletion lifecycle. Every write requires an `Idempotency-Key`; repeating the
+same request with the same key replays its original result for 24 hours. Group
+deletion also clears that group's references from workspace assignments. An
+event signup request uses
+`POST /api/v1/clan/events/{eventId}/signup` with a JSON `userId` and `group`
+(a group string or `null`). It applies the same signup eligibility and
+registration-window rules as the dashboard.
+
+Event creation and updates use `POST /api/v1/clan/events` and
+`PATCH /api/v1/clan/events/{eventId}` with the same complete event form used by
+the dashboard. Referenced signup groups, stratmaps, and topic presets must
+belong to the authenticated workspace. Successful creates emit `event.created`;
+updates and `POST /api/v1/clan/events/{eventId}/actions/conclude` emit
+`event.updated`.
+
+Stratmaps and presets use `POST /api/v1/clan/stratmaps`,
+`POST /api/v1/clan/topic-presets`, and `POST /api/v1/clan/squad-presets`, with
+the corresponding `PATCH /{id}` paths for complete dashboard-equivalent
+updates. These resources are intentionally non-deletable: existing event,
+roster, and Discord-forum references do not have a safe cleanup lifecycle. A
+stratmap's referenced event must belong to the authenticated workspace and use
+the same game. Topic preset attachment limits are the same as the dashboard.
+
+Roster updates use `PATCH /api/v1/clan/rosters/{rosterId}` and must include the
+complete roster form for that same event. Only unpublished rosters can be
+deleted. Assignment changes use `/api/v1/clan/assignments`; they rebuild the
+workspace and user membership state and synchronize open matching-game rosters.
+An assignment cannot be moved to another user or game through `PATCH`. Logi emits one
+`roster.updated` webhook after a roster write, or after an assignment change
+that updates at least one open roster.
+
+`PATCH /api/v1/clan/settings` changes only explicitly supplied safe workspace
+and Discord fields. It cannot write runtime credentials, player-stat tokens,
+ticket or membership workflows, or game overrides; omitted settings remain
+unchanged.
+
 <Callout type="warning">
-  Do not rotate, delete, or reveal an API key unless you understand every
-  integration using it. A broken key can interrupt an external integration
-  immediately.
+    Do not rotate, delete, or reveal an API key unless you understand every
+    integration using it. A broken key can interrupt an external integration
+    immediately.
 </Callout>
+
+### Webhooks
+
+System administrators can add an HTTPS webhook endpoint and send a test event.
+Logi signs the exact JSON payload using `X-Logi-Signature` as
+`sha256=<HMAC_SHA256(timestamp + "." + rawBody)>`; use `X-Logi-Timestamp` to
+reject stale requests. The signing secret is revealed only when a subscription
+is created or rotated. Current mutation events include article creation, update, and
+deletion; event creation and updates; and roster updates caused by API event-signup changes. Failed transient deliveries retry with bounded backoff; permanent
+4xx responses do not retry except `408` and `429`. Delivery history records
+successful, failed, and retried attempts; deleting or disabling a subscription
+prevents queued deliveries from being sent.
 
 ## Discord settings: what each field actually enables
 
