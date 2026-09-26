@@ -3,7 +3,7 @@ title: Server settings
 description: Configure the selected workspace without exposing sensitive information.
 ---
 
-import { Callout, Steps } from "nextra/components";
+import { Callout, Steps } from "nextra/components"
 
 # Server settings
 
@@ -27,7 +27,7 @@ For example, after a scheduling or Discord-related change, inspect an event or t
 
 </Steps>
 
-## API keys and Discord metadata
+## System area, API keys, and Discord metadata
 
 ## Games
 
@@ -45,20 +45,163 @@ links to this settings section. When exactly one is active, creation pages
 select it automatically. With multiple games active, starting a game-owned
 creation flow from **All games** first asks the manager to choose a game.
 
-Some server configuration is exposed through protected dashboard/API routes, including API-key and Discord-metadata management. Treat keys, webhook-like values, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
+The manager-only **System** area contains Website API keys and expandable Imports, Helper data, and Webhooks sections on one page. Normal Clan settings now contains only game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
 Each website API key belongs to the currently selected workspace and can read
-that workspace's public website data. Give it a recognisable name of at most 80
+that workspace's clan-owned data. Give it a recognisable name of at most 80
 characters. The full value is displayed once, at creation time; afterward the
 dashboard shows only its prefix, creation date, and whether it has been
 revoked. Revoking a key takes effect for future requests and cannot be undone:
 create and deploy a replacement key before revoking one used by a live site.
 
+Website integrations use the versioned API at `/api/v1`. Clan API requests
+use `Authorization: Bearer <API key>`. Game-owned clan data uses **Hell Let
+Loose** when no `game` query parameter is supplied, including legacy records;
+use `game=hell_let_loose_vietnam`, `game=wardogs`, or `game=all` to select
+another scope. List requests are cursor-paginated, default to 25 records, and
+are capped at 100 records. Every game-owned returned record has an explicit `gameId`, so a
+website can safely cache and combine data from more than one game. The live,
+machine-readable contract is available at `/api/v1/openapi.json` and the
+interactive reference at `/api/v1/docs`.
+
+Start with the API key in an `Authorization` header; never put it in a URL or
+client-side bundle. The key is tenant-scoped: it can read and write only the
+workspace that created it. A record ID from another workspace is not usable.
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://YOUR_LOGI_HOST/api/v1/clan/events?game=wardogs&limit=25&updatedSince=2026-01-01T00:00:00Z"
+```
+
+List responses contain `data` and `page.nextCursor`. Treat that cursor as an
+opaque value: send it only to the same resource with the same `game` and
+`sort=createdAt` selection. To retrieve one known record, use
+`GET /api/v1/clan/events/{id}`. `updatedSince` accepts an ISO timestamp and is
+useful for incremental synchronization; it includes records updated at or
+after that time.
+
+For a write, generate one new visible idempotency key and retain it until the
+request is resolved. If a network timeout leaves the result unknown, repeat
+the exact method, URL, body, and key to receive the original result. Reusing a
+key for changed content returns `409 idempotency_conflict`, so changed work
+needs a new key. Invalid inputs return `400` with
+`{ "error": { "code": "validation_error", "message": "..." } }`.
+
+```bash
+curl -X POST "https://YOUR_LOGI_HOST/api/v1/clan/events" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: event-create-42" \
+  --data '{"kind":"training","name":"Training","registrationEnd":"2030-01-01T18:00:00Z","meetingStart":"2030-01-01T19:00:00Z","pingClan":false}'
+```
+
+Roster and member synchronization can use `updatedSince` on their respective
+list endpoints. Member pages contain one record per workspace member even when
+that person has assignments in multiple games.
+
+The API currently supports article writes, group create/update/delete, event
+create/update, stratmap create/update, topic-preset create/update, squad-preset
+create/update, roster update/delete, assignment create/update/delete, the named
+event conclude action, and event signup changes. Event
+deletion is intentionally unsupported because its roster, match, Discord, and
+scheduled-job dependencies have no safe deletion lifecycle. Every write requires an `Idempotency-Key`; repeating the
+same request with the same key replays its original result for 24 hours. Group
+deletion also clears that group's references from workspace assignments. An
+event signup request uses
+`POST /api/v1/clan/events/{eventId}/signup` with a JSON `userId` and `group`
+(a group string or `null`). It applies the same signup eligibility and
+registration-window rules as the dashboard.
+
+Event creation and updates use `POST /api/v1/clan/events` and
+`PATCH /api/v1/clan/events/{eventId}` with the same complete event form used by
+the dashboard. Referenced signup groups, stratmaps, and topic presets must
+belong to the authenticated workspace. Successful creates emit `event.created`;
+updates and `POST /api/v1/clan/events/{eventId}/actions/conclude` emit
+`event.updated`.
+
+Stratmaps and presets use `POST /api/v1/clan/stratmaps`,
+`POST /api/v1/clan/topic-presets`, and `POST /api/v1/clan/squad-presets`, with
+the corresponding `PATCH /{id}` paths for complete dashboard-equivalent
+updates. These resources are intentionally non-deletable: existing event,
+roster, and Discord-forum references do not have a safe cleanup lifecycle. A
+stratmap's referenced event must belong to the authenticated workspace and use
+the same game. Topic preset attachment limits are the same as the dashboard.
+
+Roster updates use `PATCH /api/v1/clan/rosters/{rosterId}` and must include the
+complete roster form for that same event. Only unpublished rosters can be
+deleted. Assignment changes use `/api/v1/clan/assignments`; they rebuild the
+workspace and user membership state and synchronize open matching-game rosters.
+An assignment cannot be moved to another user or game through `PATCH`. Logi emits one
+`roster.updated` webhook after a roster write, or after an assignment change
+that updates at least one open roster.
+
+`PATCH /api/v1/clan/settings` changes only explicitly supplied safe workspace
+and Discord fields. It cannot write runtime credentials, player-stat tokens,
+ticket or membership workflows, or game overrides; omitted settings remain
+unchanged.
+
 <Callout type="warning">
-  Do not rotate, delete, or reveal an API key unless you understand every
-  integration using it. A broken key can interrupt an external integration
-  immediately.
+    Do not rotate, delete, or reveal an API key unless you understand every
+    integration using it. A broken key can interrupt an external integration
+    immediately.
 </Callout>
+
+### Webhooks
+
+System administrators can add an HTTPS webhook endpoint and send a test event.
+Logi signs the exact JSON payload using `X-Logi-Signature` as
+`sha256=<HMAC_SHA256(timestamp + "." + rawBody)>`; use `X-Logi-Timestamp` to
+reject stale requests. The signing secret is revealed only when a subscription
+is created or rotated. Current mutation events include article creation, update, and
+deletion; event creation and updates; and roster updates caused by API event-signup changes. Failed transient deliveries retry with bounded backoff; permanent
+4xx responses do not retry except `408` and `429`. Delivery history records
+successful, failed, and retried attempts; deleting or disabling a subscription
+prevents queued deliveries from being sent.
+
+Each delivery is an HTTP `POST` with `Content-Type: application/json` and
+`User-Agent: Logi-Webhooks/1.0`. The body has this exact JSON envelope. The
+`id` is a UUID identifying the event; `X-Logi-Delivery` is the persisted
+delivery-attempt ID and is intentionally different.
+
+```json
+{
+    "id": "UUID event ID",
+    "type": "event.updated",
+    "createdAt": "2026-09-26T10:00:00.000Z",
+    "guildId": "your-discord-guild-id",
+    "resource": { "type-specific API response data" }
+}
+```
+
+The request also includes `X-Logi-Event` (the same value as body `type`),
+`X-Logi-Delivery`, `X-Logi-Timestamp` (Unix seconds), and
+`X-Logi-Signature`. Verify a delivery before parsing or acting on it:
+calculate HMAC-SHA256 over the exact `X-Logi-Timestamp`, a dot, and the raw
+request body with the signing secret, then compare it to
+`X-Logi-Signature` and reject timestamps outside your allowed replay window.
+The signature is formatted as `sha256=<hex digest>`. A disabled or deleted
+subscription stops pending deliveries from being sent.
+
+### Event types
+
+New webhook subscriptions receive all production event types below. Configure
+your endpoint to accept them before enabling the subscription:
+
+| Event type         | Exact trigger                                                                                        | `resource` shape                                                                                                                                                                                                                                                 |
+| ------------------ | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `article.created`  | Successful `POST /api/v1/clan/articles`                                                              | Created [article API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Articles).                                                                                                                                                                                      |
+| `article.updated`  | Successful `PATCH /api/v1/clan/articles/{id}`                                                        | Updated [article API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Articles).                                                                                                                                                                                      |
+| `article.deleted`  | Successful `DELETE /api/v1/clan/articles/{id}`                                                       | `{ "id": "article-id", "deleted": true }`.                                                                                                                                                                                                                       |
+| `event.created`    | Successful `POST /api/v1/clan/events`                                                                | Created [event API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Events).                                                                                                                                                                                          |
+| `event.updated`    | Successful `PATCH /api/v1/clan/events/{id}` or `POST /api/v1/clan/events/{id}/actions/conclude`      | Updated [event API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Events).                                                                                                                                                                                          |
+| `roster.updated`   | Successful roster update/delete, event signup write, or assignment write that affects an open roster | [Roster API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Rosters) or `{ id, deleted: true }`; signup result from [Events](/api/v1/docs#tag/Clan-API-%E2%80%94-Events); or [assignment API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Assignments), respectively. |
+| `settings.updated` | Successful `PATCH /api/v1/clan/settings`                                                             | `{ guild, discordConfig }`, with sensitive Discord data removed; see [Settings](/api/v1/docs#tag/Clan-API-%E2%80%94-Settings).                                                                                                                                   |
+| `webhook.test`     | A manager presses **Send test**                                                                      | `{ "test": true }`; sent only to that selected webhook, regardless of its subscribed types.                                                                                                                                                                      |
+
+The article, event, roster, and assignment API object schemas are the same as
+the successful response `data` for the named `/api/v1` endpoint. Consult the
+interactive API reference at `/api/v1/docs` for their complete field-level
+schemas. Only successful writes enqueue production webhook events.
 
 ## Discord settings: what each field actually enables
 

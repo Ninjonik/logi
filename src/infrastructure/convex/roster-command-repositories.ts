@@ -35,8 +35,11 @@ export class ConvexRosterCommandRepository implements RosterCommandRepository {
 
     async createRoster(roster: any) {
         const now = new Date().toISOString()
+        const event = await this.getEvent(roster.eventId)
+        if (!event) throw new Error("Event not found.")
         const id = await this.ctx.db.insert("rosters", {
             ...roster,
+            guildId: event.guildId,
             createdAt: now,
             updatedAt: now,
         })
@@ -44,8 +47,11 @@ export class ConvexRosterCommandRepository implements RosterCommandRepository {
     }
 
     async updateRoster(rosterId: string, roster: any) {
+        const event = await this.getEvent(roster.eventId)
+        if (!event) throw new Error("Event not found.")
         await this.ctx.db.patch(rosterId as Id<"rosters">, {
             ...roster,
+            guildId: event.guildId,
             updatedAt: new Date().toISOString(),
         })
     }

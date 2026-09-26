@@ -1,6 +1,7 @@
 import { cachedRead, appCacheTags } from "@/lib/cache-tags"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
+import type { GameId } from "@/domain/games/game"
 import { getInternalAuthSecret } from "@/lib/env"
 
 const getPublicReference = makeFunctionReference<"query">(
@@ -26,6 +27,7 @@ const listPublicSlugsReference = makeFunctionReference<"query">(
 )
 export type PublicCompetition = {
     id: string
+    gameId: GameId
     slug: string
     name: string
     season: string

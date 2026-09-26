@@ -2,7 +2,7 @@ import { DEFAULT_GAME_ID, GAME_LABELS, type GameId } from "@/domain/games/game"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { cn } from "@/lib/utils"
 
-const GAME_ICON_SOURCES: Record<GameId, string> = {
+export const GAME_ICON_SOURCES: Record<GameId, string> = {
     hell_let_loose: "/img/games/hll.jpg",
     // hllv.pdn is a Paint.NET project and cannot be displayed by browsers.
     // Keep a functional HLL fallback until its exported web image is supplied.

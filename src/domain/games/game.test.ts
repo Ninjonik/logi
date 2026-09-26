@@ -18,6 +18,13 @@ test("the general scope includes every game", () => {
     assert.equal(matchesGameScope("wardogs", "all"), true)
 })
 
+test("an explicit multi-game scope includes selected games and legacy HLL only when selected", () => {
+    const scope = ["hell_let_loose", "wardogs"] as const
+    assert.equal(matchesGameScope(undefined, scope), true)
+    assert.equal(matchesGameScope("wardogs", scope), true)
+    assert.equal(matchesGameScope("hell_let_loose_vietnam", scope), false)
+})
+
 test("game-scoped read models keep legacy HLL records and exclude other games", () => {
     const records = [
         { id: "legacy" },

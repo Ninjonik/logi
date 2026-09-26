@@ -11,7 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
 import { deriveDivisionStandings } from "@/domain/competitions/standings"
 import { getPublicCompetition } from "@/lib/read-models/competitions"
+import { GameBadge } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
+import { GAME_LABELS } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 type Props = { params: Promise<{ locale: string; slug: string }> }
@@ -70,8 +72,14 @@ export default async function CompetitionPage({ params }: Props) {
                                         {competition.name}
                                     </h1>
                                     <p className="text-muted-foreground mt-1">
-                                        {competition.season} season · standings
-                                        and results tracked by Logi
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <GameBadge
+                                                gameId={competition.gameId}
+                                                dictionary={dictionary}
+                                            />
+                                            {GAME_LABELS[competition.gameId]} ·{" "}
+                                            {competition.season} season
+                                        </span>
                                     </p>
                                 </div>
                             </div>

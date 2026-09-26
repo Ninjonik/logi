@@ -13,6 +13,7 @@ import {
     Bot,
     Radio,
     Trophy,
+    ServerCog,
 } from "lucide-react"
 import { usePathname, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -242,6 +243,11 @@ export function AppSidebar({
                                             .serverSettings,
                                         url: `${base}/settings`,
                                         icon: Settings,
+                                    },
+                                    {
+                                        title: dictionary.sidebar.system,
+                                        url: `${base}/system`,
+                                        icon: ServerCog,
                                     },
                                 ],
                             },

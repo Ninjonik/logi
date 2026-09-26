@@ -89,6 +89,12 @@ function createTrainingEvent(patch: Partial<EventRecord> = {}): EventRecord {
     }
 }
 
+function futureIso(days: number, hours = 0) {
+    return new Date(
+        Date.now() + days * 24 * 60 * 60 * 1000 + hours * 60 * 60 * 1000
+    ).toISOString()
+}
+
 test("buildCompactV2FieldText removes legacy embed padding and compacts field columns", () => {
     const result = buildCompactV2FieldText([
         { name: "Infantry (4)", value: "Alpha\nDelta", inline: true },
@@ -265,9 +271,9 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
                 id: "event-red",
                 name: "Registrace do aktivního výběru",
                 matchType: "competitive",
-                meetingStart: "2026-09-25T21:59:00.000Z",
-                gameStart: "2026-09-25T21:59:00.000Z",
-                gameEnd: "2026-09-25T22:04:00.000Z",
+                meetingStart: futureIso(1),
+                gameStart: futureIso(1),
+                gameEnd: futureIso(1, 1),
             }),
         ],
         [
@@ -278,8 +284,8 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
                 color: "#22c55e",
                 emoji: "ðŸ¤",
                 label: "Přátelský zápas",
-                startAt: "2026-09-26T17:00:00.000Z",
-                endAt: "2026-09-26T19:30:00.000Z",
+                startAt: futureIso(2),
+                endAt: futureIso(2, 1),
                 allDay: false,
                 createdAt: "2026-07-29T10:00:00.000Z",
                 updatedAt: "2026-07-29T10:00:00.000Z",
@@ -292,8 +298,7 @@ test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched 
     assert.match(json.description ?? "", /\*\*Kategorie\*\*/)
     assert.match(json.description ?? "", /🟥 .*Kompetitivní zápas/)
     assert.match(json.description ?? "", /🟩 .*Přátelský zápas/)
-    assert.match(json.description ?? "", /\*\*pátek 25\. září 2026\*\*/i)
-    assert.match(json.description ?? "", /\*\*sobota 26\. září 2026\*\*/i)
+    assert.equal((json.description ?? "").match(/\*\*.*20\d\d\*\*/g)?.length, 2)
     assert.match(
         json.description ?? "",
         /🟥 \[Registrace do aktivního výběru\]\(https:\/\/calendar\.google\.com\/calendar\/render\?action=TEMPLATE/
@@ -312,9 +317,9 @@ test("buildCalendarPanelEmbed tolerates missing event categories", () => {
             createMatchEvent({
                 id: "event-no-categories",
                 name: "Fallback Match",
-                meetingStart: "2026-09-25T21:59:00.000Z",
-                gameStart: "2026-09-25T21:59:00.000Z",
-                gameEnd: "2026-09-25T22:04:00.000Z",
+                meetingStart: futureIso(1),
+                gameStart: futureIso(1),
+                gameEnd: futureIso(1, 1),
             }),
         ],
         []

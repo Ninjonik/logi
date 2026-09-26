@@ -16,11 +16,14 @@ export const deMessages = {
         winRate: "Siegquote",
         clans: "Clans",
         findPlayer: "Spieler finden",
+        findCommunity: "Spieler oder Clan finden",
         findPlayerDescription:
             "Durchsuche öffentliche Profile mit mindestens einem erfassten Match.",
         playerSearchPlaceholder: "Nach Spielernamen suchen...",
+        communitySearchPlaceholder: "Spieler und Clans suchen...",
         search: "Suchen",
         noPlayersFound: "Keine öffentlichen Spieler für diese Suche gefunden.",
+        noClansFound: "Keine öffentlichen Clans für diese Suche gefunden.",
         platformMatchHistoryDescription:
             "Ergebnisse aller öffentlichen Clans, erst sichtbar, nachdem Match-Daten veröffentlicht wurden.",
         victory: "Sieg",
@@ -362,6 +365,7 @@ export const deMessages = {
         members: "Mitglieder",
         users: "Spieler",
         serverSettings: "Clan-Einstellungen",
+        system: "System",
         memberships: "Mitgliedschaftseinstellungen",
         tickets: "Tickets",
         userSettings: "Benutzereinstellungen",
@@ -1526,6 +1530,66 @@ export const deMessages = {
         helperDataTitle: "Hilfsdaten",
         helperDataBody:
             "Gruppen, Squad-Presets und Themen-Presets dienen nur als Kopiervorlagen. Das Zurücksetzen überschreibt niemals alte Events oder Roster.",
+        systemTitle: "System",
+        systemBody: "Clan-API-Schlüssel und Wartungswerkzeuge.",
+        websiteApi: "Website-API",
+        webhooksTitle: "Webhooks",
+        webhooksBody:
+            "Konfiguriere signierte Benachrichtigungen für Clan-Änderungen.",
+        webhookDelivery: "Webhook-Zustellung",
+        webhookDocumentation: "Webhook-Dokumentation lesen",
+        webhookPayloadTitle: "Zustellungs-Payload und Header",
+        webhookPayloadBody:
+            "Logi sendet eine POST-Anfrage. Prüfe die Signatur über die unveränderten JSON-Bytes, bevor du den Body auswertest.",
+        webhookHeadersBody:
+            'Die Signatur ist HMAC-SHA256 aus X-Logi-Timestamp + "." + dem rohen Request-Body mit dem Webhook-Signaturgeheimnis. X-Logi-Delivery kennzeichnet den Zustellversuch und unterscheidet sich von der Body-ID.',
+        webhookApiReference: "API-Schema",
+        webhookEventsTitle: "Ereignisse, die dein Endpoint empfangen kann",
+        webhookEventsBody:
+            "Neue Abonnements erhalten alle unten aufgeführten Produktionsereignisse. Nutze diese Liste, um deinen Endpoint vor dem Aktivieren eines Webhooks vorzubereiten.",
+        webhookEvents: {
+            "article.created":
+                "Ein Artikel wurde über die Website-API erstellt.",
+            "article.updated":
+                "Ein Artikel wurde über die Website-API aktualisiert.",
+            "article.deleted":
+                "Ein Artikel wurde über die Website-API gelöscht.",
+            "event.created": "Ein Event wurde über die Website-API erstellt.",
+            "event.updated":
+                "Ein Event wurde über die Website-API aktualisiert oder abgeschlossen.",
+            "roster.updated":
+                "Ein Roster wurde geändert, einschließlich API-Anmeldungen und rosterrelevanter Zuweisungsänderungen.",
+            "settings.updated":
+                "Sichere Clan- oder Discord-Einstellungen wurden über die Website-API aktualisiert.",
+            "webhook.test":
+                "Ein Manager hat eine Testzustellung manuell gesendet.",
+        },
+        webhookUi: {
+            copySecret:
+                "Kopiere dieses Signaturgeheimnis jetzt; es wird nicht erneut angezeigt:",
+            url: "Webhook-URL",
+            add: "Webhook hinzufügen",
+            loading: "Webhooks werden geladen…",
+            enabled: "Aktiv",
+            disabled: "Deaktiviert",
+            eventTypes: "Ereignistypen",
+            lastDelivery: "Letzte Zustellung",
+            lastFailure: "Letzter Fehler",
+            never: "nie",
+            enable: "Aktivieren",
+            disable: "Deaktivieren",
+            sendTest: "Test senden",
+            rotate: "Geheimnis rotieren",
+            history: "Verlauf",
+            delete: "Löschen",
+            historyTitle: "Zustellverlauf",
+            noHistory: "Noch keine Zustellungen.",
+            status: "Status",
+            attempt: "Versuch",
+            response: "Antwort",
+            created: "Erstellt",
+            error: "Fehler",
+        },
     },
     stratmaps: {
         title: "Stratmaps",

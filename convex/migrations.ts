@@ -229,3 +229,69 @@ export const migrateMembershipCategoryRoleArrays = mutation({
         }
     },
 })
+
+/**
+ * Backfills API read projections in bounded pages. Run explicitly after the
+ * schema is deployed; it never changes roster contents or membership records.
+ */
+export const backfillClanApiReadProjections = mutation({
+    args: {
+        secret: v.string(),
+        kind: v.union(v.literal("rosters"), v.literal("users")),
+        cursor: v.union(v.string(), v.null()),
+        limit: v.number(),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const options = {
+            cursor: args.cursor,
+            numItems: Math.min(Math.max(Math.trunc(args.limit), 1), 100),
+        }
+        if (args.kind === "rosters") {
+            const page = await ctx.db.query("rosters").paginate(options)
+            let updated = 0
+            for (const roster of page.page) {
+                if (roster.guildId) continue
+                const event = await ctx.db.get(roster.eventId)
+                if (!event) continue
+                await ctx.db.patch(roster._id, { guildId: event.guildId })
+                updated += 1
+            }
+            return {
+                scanned: page.page.length,
+                updated,
+                nextCursor: page.isDone ? null : page.continueCursor,
+            }
+        }
+        const page = await ctx.db.query("userAssignments").paginate(options)
+        let updated = 0
+        for (const assignment of page.page) {
+            const existing = await ctx.db
+                .query("clanApiUserProjections")
+                .withIndex("guildId_userId", (q) =>
+                    q
+                        .eq("guildId", assignment.serverId)
+                        .eq("userId", assignment.userId)
+                )
+                .unique()
+            if (!existing) {
+                await ctx.db.insert("clanApiUserProjections", {
+                    guildId: assignment.serverId,
+                    userId: assignment.userId,
+                    updatedAt: assignment.updatedAt,
+                })
+                updated += 1
+            } else if (existing.updatedAt < assignment.updatedAt) {
+                await ctx.db.patch(existing._id, {
+                    updatedAt: assignment.updatedAt,
+                })
+                updated += 1
+            }
+        }
+        return {
+            scanned: page.page.length,
+            updated,
+            nextCursor: page.isDone ? null : page.continueCursor,
+        }
+    },
+})

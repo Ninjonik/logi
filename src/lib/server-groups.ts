@@ -58,9 +58,13 @@ export async function saveServerGroup(input: {
     })
 }
 
-export async function deleteServerGroup(groupId: string) {
+export async function deleteServerGroup(input: {
+    serverId: string
+    groupId: string
+}) {
     return await fetchMutation(removeGroupReference, {
         secret: getInternalAuthSecret(),
-        groupId: groupId as never,
+        guildId: input.serverId as never,
+        groupId: input.groupId as never,
     })
 }

@@ -123,6 +123,12 @@ While editing:
 - add or update tests for normal, invalid, edge, and regression behavior when business logic changes
 - update documentation when commands, architecture, environment requirements, or user-visible behavior materially change
 - when an application feature, screen, permission, workflow, condition, or user-visible wording changes, update the matching public wiki page under `content/` in the same change; add a page when the feature has no suitable coverage
+- keep product features and the authenticated `/api/v1` surface in parity: when a
+  feature's behavior, data, or supported action changes, update both the feature
+  implementation and its corresponding `/api/v1` endpoint, contract, tests, and
+  OpenAPI documentation in the same change. An exception is allowed only when an
+  API operation would be unsafe or has no dashboard-equivalent lifecycle; record
+  that deliberate exclusion in the relevant API documentation or handoff plan.
 
 Do not opportunistically reformat, rename, or refactor unrelated code. Do not overwrite or discard changes you did not create.
 

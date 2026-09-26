@@ -58,7 +58,7 @@ export async function DELETE(
         if (!serverContext?.canAdmin) {
             return NextResponse.json({ error: "Forbidden." }, { status: 403 })
         }
-        await deleteServerGroup(groupId)
+        await deleteServerGroup({ serverId, groupId })
         revalidateCacheEntries([
             appCacheTags.serverContext(serverId),
             appCacheTags.groups(serverId),

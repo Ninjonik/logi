@@ -1,7 +1,7 @@
 export function DashboardPageLoading() {
     return (
         <div
-            className="flex min-h-[calc(100dvh-var(--header-height)-var(--footer-height))] flex-1 items-center justify-center"
+            className="flex min-h-[calc(100dvh-var(--header-height,0px)-var(--footer-height,0px))] flex-1 items-center justify-center"
             aria-live="polite"
             aria-busy="true"
         >

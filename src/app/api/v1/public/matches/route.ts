@@ -4,6 +4,7 @@ import {
     isCollectionQueryError,
     parseCollectionQuery,
 } from "@/lib/api/collection-query"
+import { isApiGameScopeError, parseApiGameScope } from "@/lib/api/game-scope"
 import { listPublicMatches } from "@/lib/read-models/public-profiles"
 import { checkPublicApiRateLimit } from "@/lib/public-api"
 
@@ -33,11 +34,24 @@ export async function GET(request: Request) {
             { error: { code: "invalid_query", message: query.error } },
             { status: 400 }
         )
+    const game = parseApiGameScope(request)
+    if (isApiGameScopeError(game))
+        return NextResponse.json(
+            { error: { code: "invalid_query", message: game.error } },
+            { status: 400 }
+        )
     const cursor =
         new URL(request.url).searchParams.get("cursor") ??
         (query.offset ? String(query.offset) : null)
     return NextResponse.json(
-        { data: await listPublicMatches(cursor, query.limit, query.filters) },
+        {
+            data: await listPublicMatches(
+                cursor,
+                query.limit,
+                query.filters,
+                new URL(request.url).searchParams.has("game") ? game : "all"
+            ),
+        },
         { headers: { "Cache-Control": "public, max-age=60" } }
     )
 }

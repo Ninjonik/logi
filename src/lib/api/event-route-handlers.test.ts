@@ -192,6 +192,7 @@ test("server events POST imports events and revalidates imported entity tags", a
     assert.equal(calls.importedEventLinks.length, 1)
     assert.deepEqual(calls.importedEventLinks[0], {
         serverId: "guild-1",
+        gameId: "hell_let_loose",
         linksInput: "https://example.com/games/123",
         importPlayers: false,
         clanTag: undefined,

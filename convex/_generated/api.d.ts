@@ -49,6 +49,8 @@ import type * as topicPresets from "../topicPresets.js";
 import type * as uploads from "../uploads.js";
 import type * as userAssignments from "../userAssignments.js";
 import type * as users from "../users.js";
+import type * as webhookDispatcher from "../webhookDispatcher.js";
+import type * as webhooks from "../webhooks.js";
 
 import type {
   ApiFromModules,
@@ -98,6 +100,8 @@ declare const fullApi: ApiFromModules<{
   uploads: typeof uploads;
   userAssignments: typeof userAssignments;
   users: typeof users;
+  webhookDispatcher: typeof webhookDispatcher;
+  webhooks: typeof webhooks;
 }>;
 
 /**
