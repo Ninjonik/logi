@@ -169,3 +169,63 @@ test("OpenAPI groups operations by their clan resource", async () => {
         "Clan API — Settings",
     ])
 })
+
+test("OpenAPI derives concrete Convex-backed success bodies", async () => {
+    const document = (await (await GET()).json()) as {
+        components: {
+            schemas: Record<
+                string,
+                {
+                    properties?: Record<string, unknown>
+                    example?: Record<string, unknown>
+                }
+            >
+        }
+        paths: Record<
+            string,
+            Record<
+                string,
+                {
+                    responses?: Record<
+                        string,
+                        {
+                            content?: {
+                                "application/json"?: {
+                                    schema?: Record<string, unknown>
+                                }
+                            }
+                        }
+                    >
+                }
+            >
+        >
+    }
+
+    const event = document.components.schemas.ClanEventsDocument
+    assert.ok(event?.properties?.participants)
+    assert.ok(event?.properties?.signUps)
+    assert.equal(event?.example?.id, "string")
+
+    const listSchema =
+        document.paths["/clan/events"]?.get?.responses?.["200"]?.content?.[
+            "application/json"
+        ]?.schema
+    assert.deepEqual(
+        (
+            listSchema?.properties as Record<
+                string,
+                { items?: { $ref?: string } }
+            >
+        ).data?.items?.$ref,
+        "#/components/schemas/ClanEventsDocument"
+    )
+    const createSchema =
+        document.paths["/clan/events"]?.post?.responses?.["201"]?.content?.[
+            "application/json"
+        ]?.schema
+    assert.deepEqual(
+        (createSchema?.properties as Record<string, { $ref?: string }>).data
+            ?.$ref,
+        "#/components/schemas/ClanEventsDocument"
+    )
+})
