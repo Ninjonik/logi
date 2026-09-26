@@ -610,6 +610,15 @@ export const csMessages = {
         guildLoginUrl: "Vlastní přihlašovací stránka",
         copyLoginUrl: "Kopírovat",
         copiedLoginUrl: "Zkopírováno",
+        googleCalendarTitle: "Synchronizace s Kalendářem Google",
+        googleCalendarDescription:
+            "Vytvořte soukromý odkaz k odběru celého kalendáře Logi tohoto klanu včetně naplánovaných akcí a opakovaných ručních položek.",
+        createCalendarFeed: "Vytvořit odkaz pro Kalendář Google",
+        rotateCalendarFeed: "Obnovit odkaz pro Kalendář Google",
+        copyCalendarFeed: "Kopírovat odkaz kalendáře",
+        copiedCalendarFeed: "Zkopírováno",
+        googleCalendarInstructions:
+            "V Kalendáři Google vyberte Další kalendáře → Z adresy URL a vložte tento odkaz. Kdokoli s odkazem může kalendář klanu číst; obnovení zneplatní starý odkaz.",
         eventCategoriesTitle: "Kategorie akcí",
         eventCategoriesDescription:
             "Znovupoužitelné kategorie pro zápasy i tréninky. Jejich barva a emoji se pak zobrazí napříč kalendářem v dashboardu.",

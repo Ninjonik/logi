@@ -613,6 +613,15 @@ export const deMessages = {
         guildLoginUrl: "Eigene Login-Seite",
         copyLoginUrl: "Kopieren",
         copiedLoginUrl: "Kopiert",
+        googleCalendarTitle: "Google-Kalender-Synchronisierung",
+        googleCalendarDescription:
+            "Erstelle einen privaten Abonnement-Link für den vollständigen Logi-Kalender dieses Clans, einschließlich geplanter Events und wiederkehrender manueller Einträge.",
+        createCalendarFeed: "Google-Kalender-Link erstellen",
+        rotateCalendarFeed: "Google-Kalender-Link erneuern",
+        copyCalendarFeed: "Kalender-Link kopieren",
+        copiedCalendarFeed: "Kopiert",
+        googleCalendarInstructions:
+            "Wähle in Google Kalender Weitere Kalender → Per URL und füge diesen Link ein. Jede Person mit dem Link kann den Clan-Kalender lesen; durch Erneuern wird der alte Link deaktiviert.",
         eventCategoriesTitle: "Event-Kategorien",
         eventCategoriesDescription:
             "Wiederverwendbare Kategorien für Matches und Trainings. Farbe und Emoji werden auf allen Dashboard-Kalenderflächen wiederverwendet.",

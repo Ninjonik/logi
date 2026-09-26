@@ -49,6 +49,7 @@ export async function POST(
                     until?: string
                 }
             }>
+            regenerateCalendarFeedToken?: boolean
         }
 
         if (!body.name?.trim() || !body.avatar?.trim()) {
@@ -104,6 +105,9 @@ export async function POST(
                         item.startAt &&
                         item.endAt
                 ),
+            regenerateCalendarFeedToken: Boolean(
+                body.regenerateCalendarFeedToken
+            ),
         })
 
         revalidateCacheEntries([

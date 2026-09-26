@@ -199,6 +199,8 @@ export type DiscordConfig = {
     eventInfoChannelId?: string
     errorsChannelId?: string
     calendarChannelId?: string
+    /** Opaque capability token for this clan's Google Calendar subscription. */
+    calendarFeedToken?: string
     calendarCategories: MatchTypeCategory[]
     calendarMessageChannelId?: string
     calendarMessageId?: string

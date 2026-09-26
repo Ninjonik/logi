@@ -176,14 +176,17 @@ export function ServerFrontendSettingsForm({
     server,
     dictionary,
     guildLoginUrl,
+    calendarFeedToken,
 }: {
     server: Guild
     dictionary: Dictionary
     guildLoginUrl: string
+    calendarFeedToken?: string
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [copied, setCopied] = useState(false)
+    const [calendarFeedCopied, setCalendarFeedCopied] = useState(false)
     const [name, setName] = useState(server.name)
     const [avatar, setAvatar] = useState(server.avatar)
     const [description, setDescription] = useState(server.description ?? "")
@@ -194,6 +197,12 @@ export function ServerFrontendSettingsForm({
         toEditableCalendarItems(server.calendarItems)
     )
     const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
+    const calendarFeedUrl = calendarFeedToken
+        ? new URL(
+              `/api/calendar/${server.id}?token=${calendarFeedToken}`,
+              guildLoginUrl
+          ).toString()
+        : null
 
     useEffect(() => {
         fetch(`/api/servers/${server.id}/discord-metadata`)
@@ -231,7 +240,7 @@ export function ServerFrontendSettingsForm({
         )
     }
 
-    async function handleSave() {
+    async function handleSave(regenerateCalendarFeedToken = false) {
         const response = await fetch(
             `/api/servers/${server.id}/frontend-settings`,
             {
@@ -261,6 +270,7 @@ export function ServerFrontendSettingsForm({
                             recurrence: item.recurrence,
                         })
                     ),
+                    regenerateCalendarFeedToken,
                 }),
             }
         )
@@ -278,6 +288,13 @@ export function ServerFrontendSettingsForm({
         await navigator.clipboard.writeText(guildLoginUrl)
         setCopied(true)
         window.setTimeout(() => setCopied(false), 1600)
+    }
+
+    async function handleCopyCalendarFeedUrl() {
+        if (!calendarFeedUrl) return
+        await navigator.clipboard.writeText(calendarFeedUrl)
+        setCalendarFeedCopied(true)
+        window.setTimeout(() => setCalendarFeedCopied(false), 1600)
     }
 
     return (
@@ -849,9 +866,62 @@ export function ServerFrontendSettingsForm({
                         </Button>
                     </div>
                 </div>
+                <div className="border-border/60 space-y-3 rounded-2xl border p-4">
+                    <div>
+                        <h3 className="font-semibold">
+                            {dictionary.serverSettings.googleCalendarTitle}
+                        </h3>
+                        <p className="text-muted-foreground text-sm">
+                            {
+                                dictionary.serverSettings
+                                    .googleCalendarDescription
+                            }
+                        </p>
+                    </div>
+                    {calendarFeedToken ? (
+                        <div className="flex gap-2">
+                            <Input
+                                value={calendarFeedUrl ?? ""}
+                                readOnly
+                                className="rounded-xl"
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="shrink-0 rounded-xl"
+                                onClick={handleCopyCalendarFeedUrl}
+                            >
+                                {calendarFeedCopied ? (
+                                    <Check className="size-4" />
+                                ) : (
+                                    <Copy className="size-4" />
+                                )}
+                                {calendarFeedCopied
+                                    ? dictionary.serverSettings
+                                          .copiedCalendarFeed
+                                    : dictionary.serverSettings
+                                          .copyCalendarFeed}
+                            </Button>
+                        </div>
+                    ) : null}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={() => handleSave(true)}
+                        disabled={isPending}
+                    >
+                        {calendarFeedToken
+                            ? dictionary.serverSettings.rotateCalendarFeed
+                            : dictionary.serverSettings.createCalendarFeed}
+                    </Button>
+                    <p className="text-muted-foreground text-xs">
+                        {dictionary.serverSettings.googleCalendarInstructions}
+                    </p>
+                </div>
                 <Button
                     className="rounded-xl"
-                    onClick={handleSave}
+                    onClick={() => handleSave()}
                     disabled={isPending}
                 >
                     {dictionary.common.save}

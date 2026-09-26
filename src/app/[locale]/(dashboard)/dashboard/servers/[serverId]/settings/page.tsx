@@ -52,6 +52,9 @@ export default async function ServerSettingsPage({
                         server={server}
                         dictionary={dictionary}
                         guildLoginUrl={guildLoginUrl}
+                        calendarFeedToken={
+                            context.discordConfig?.calendarFeedToken
+                        }
                     />
                 ) : null}
                 {canAdmin ? (
