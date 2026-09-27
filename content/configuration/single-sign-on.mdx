@@ -1,0 +1,26 @@
+# Single sign-on
+
+Logi can act as the Discord-backed identity provider for websites owned by a clan. Each application belongs to one clan and any clan administrator can create credentials in **Clan settings → Single sign-on applications**.
+
+## Create an application
+
+Enter an application name, its HTTPS website URL, and every exact HTTPS callback URL. Copy the client secret at creation time: it is never shown again. The clan language is used when Logi must sign the user in; otherwise Logi uses the user's locale.
+
+## Website integration
+
+Logi implements OpenID Connect authorization-code flow with required PKCE (`S256`).
+
+| Setting       | Value                                                     |
+| ------------- | --------------------------------------------------------- |
+| Discovery     | `https://YOUR-LOGI-HOST/.well-known/openid-configuration` |
+| Authorization | `/api/sso/authorize`                                      |
+| Token         | `/api/sso/token`                                          |
+| Userinfo      | `/api/sso/userinfo`                                       |
+
+Send `response_type=code`, `client_id`, one registered `redirect_uri`, a random `state`, `code_challenge`, and `code_challenge_method=S256` to authorization. Verify `state`. Exchange the returned code using `client_secret_post` and the original `code_verifier`. A website may pass `ui_locales` (for example `cs` or `de`) to choose its login language; otherwise Logi uses the clan's configured default language.
+
+Userinfo returns Logi's API-equivalent user record, `sub` (Discord ID), `guild_id`, and `sso.membership`. It is `member` for people in the application's clan and `guest` otherwise; the website decides what guests can do.
+
+## Logout
+
+Local logout is owned by the connected website. `POST /api/sso/logout` ends the Logi session and revokes every issued SSO access token. Connected websites should validate userinfo on each authenticated request, or at a short cache interval, so global logout is honored across domains. Never put a client secret in browser code or accept unregistered redirect URLs.

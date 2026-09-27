@@ -608,6 +608,15 @@ export const enMessages = {
         guildLoginUrl: "Custom login page",
         copyLoginUrl: "Copy",
         copiedLoginUrl: "Copied",
+        ssoTitle: "Single sign-on applications",
+        ssoDescription:
+            "Connected websites use Logi as their Discord-backed identity provider. Client secrets are shown only once.",
+        ssoSecret: "Copy this client secret now:",
+        ssoName: "Application name",
+        ssoWebsiteUrl: "Website URL",
+        ssoRedirectUris: "Redirect URL (one per line)",
+        ssoCreate: "Create application",
+        ssoRemove: "Remove application",
         googleCalendarTitle: "Google Calendar sync",
         googleCalendarDescription:
             "Create a private subscription link for this clan's full Logi calendar, including scheduled events and manual recurring items.",

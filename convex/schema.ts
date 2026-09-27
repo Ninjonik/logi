@@ -487,6 +487,36 @@ const guildGames = defineTable({
 export default defineSchema({
     users,
     guildGames,
+    ssoApplications: defineTable({
+        guildId: v.string(),
+        clientId: v.string(),
+        clientSecretHash: v.string(),
+        name: v.string(),
+        websiteUrl: v.string(),
+        redirectUris: v.array(v.string()),
+        backchannelLogoutUri: v.optional(v.string()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("clientId", ["clientId"])
+        .index("guildId", ["guildId"]),
+    ssoAuthorizationCodes: defineTable({
+        codeHash: v.string(),
+        clientId: v.string(),
+        redirectUri: v.string(),
+        userId: v.string(),
+        codeChallenge: v.string(),
+        codeChallengeMethod: v.string(),
+        expiresAt: v.number(),
+        usedAt: v.optional(v.number()),
+    }).index("codeHash", ["codeHash"]),
+    ssoAccessTokens: defineTable({
+        tokenHash: v.string(),
+        clientId: v.string(),
+        userId: v.string(),
+        expiresAt: v.number(),
+        revokedAt: v.optional(v.number()),
+    }).index("tokenHash", ["tokenHash"]),
     guilds: defineTable({
         discordId: v.optional(v.string()),
         id: v.optional(v.string()),
