@@ -175,6 +175,9 @@ export const generatedOpenApiSchemas = {
             "notes": {
                 "type": "string"
             },
+            "registrationStart": {
+                "type": "string"
+            },
             "registrationEnd": {
                 "type": "string"
             },
@@ -514,6 +517,7 @@ export const generatedOpenApiSchemas = {
             "map": "string",
             "cap": "string",
             "notes": "string",
+            "registrationStart": "string",
             "registrationEnd": "string",
             "meetingStart": "string",
             "gameStart": "string",

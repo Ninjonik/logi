@@ -1315,6 +1315,7 @@ export const enMessages = {
             mapPresetCode: "Map preset code",
             side: "Side",
             capMode: "Middle Cap Point",
+            registrationStart: "Registration announcement start",
             registrationEnd: "Registration end",
             meetingStart: "Meeting start",
             gameStart: "Game start",

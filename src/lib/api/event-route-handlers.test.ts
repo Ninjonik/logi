@@ -174,6 +174,44 @@ test("server events POST saves validated events and revalidates cache tags", asy
     ])
 })
 
+test("server events POST preserves an optional registration announcement start", async () => {
+    const { deps, calls } = createDeps()
+    const handler = createServerEventsPostHandler(deps)
+
+    const response = await handler(
+        {
+            json: async () =>
+                createEventBody({
+                    registrationStart: "2026-07-22T10:00:00.000Z",
+                }),
+        },
+        { params: Promise.resolve({ serverId: "guild-1" }) }
+    )
+
+    assert.equal(response.status, 200)
+    assert.equal(
+        calls.savedEvents[0]?.registrationStart,
+        "2026-07-22T10:00:00.000Z"
+    )
+})
+
+test("server events POST rejects a registration announcement start after registration end", async () => {
+    const { deps } = createDeps()
+    const handler = createServerEventsPostHandler(deps)
+
+    const response = await handler(
+        {
+            json: async () =>
+                createEventBody({
+                    registrationStart: "2026-07-24T10:00:00.000Z",
+                }),
+        },
+        { params: Promise.resolve({ serverId: "guild-1" }) }
+    )
+
+    assert.equal(response.status, 400)
+})
+
 test("server events POST imports events and revalidates imported entity tags", async () => {
     const { deps, calls } = createDeps()
     const handler = createServerEventsPostHandler(deps)

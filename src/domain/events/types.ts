@@ -54,6 +54,7 @@ export type AttendanceReminder = {
 export type EventLike = {
     gameId?: import("@/domain/games/game").GameId
     registrationEnd: string
+    registrationStart?: string
     meetingStart: string
     gameStart?: string
     gameEnd: string

@@ -30,6 +30,9 @@ export async function refreshEventSchedule(
         new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000
     )
     const deadlines = [
+        ...(event.registrationStart
+            ? [["registration-start", event.registrationStart] as const]
+            : []),
         ["close-registration", event.registrationEnd],
         ["start-event", new Date(startAtMs).toISOString()],
         ["conclude-event", event.gameEnd],

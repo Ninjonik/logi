@@ -1313,6 +1313,7 @@ export const csMessages = {
             mapPresetCode: "Kód mapového presetu",
             side: "Strana",
             capMode: "Střední bod",
+            registrationStart: "Začátek oznámení registrace",
             registrationEnd: "Konec registrace",
             meetingStart: "Začátek srazu",
             gameStart: "Start zápasu",

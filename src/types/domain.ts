@@ -287,6 +287,7 @@ export type EventRecord = {
     map?: string
     cap?: string
     notes?: string
+    registrationStart?: Timestamp
     registrationEnd: Timestamp
     meetingStart: Timestamp
     gameStart: Timestamp

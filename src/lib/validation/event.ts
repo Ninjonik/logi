@@ -35,6 +35,7 @@ export const eventSchema = z
         map: z.string().trim().optional(),
         cap: z.string().trim().optional(),
         notes: z.string().trim().optional(),
+        registrationStart: z.string().trim().optional(),
         registrationEnd: z.string().min(1, "Registration end is required."),
         meetingStart: z.string().min(1, "Meeting start is required."),
         gameStart: z.string().optional(),
@@ -72,6 +73,9 @@ export const eventSchema = z
     })
     .superRefine((value, ctx) => {
         const registrationEnd = new Date(value.registrationEnd)
+        const registrationStart = value.registrationStart
+            ? new Date(value.registrationStart)
+            : null
         const meetingStart = new Date(value.meetingStart)
         const gameStart = value.gameStart ? new Date(value.gameStart) : null
         const gameEnd = value.gameEnd ? new Date(value.gameEnd) : null
@@ -81,6 +85,26 @@ export const eventSchema = z
                 code: z.ZodIssueCode.custom,
                 path: ["registrationEnd"],
                 message: "Registration end must be a valid date and time.",
+            })
+        }
+        if (registrationStart && Number.isNaN(registrationStart.getTime())) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["registrationStart"],
+                message: "Registration start must be a valid date and time.",
+            })
+        }
+        if (
+            registrationStart &&
+            !Number.isNaN(registrationStart.getTime()) &&
+            !Number.isNaN(registrationEnd.getTime()) &&
+            registrationStart > registrationEnd
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["registrationStart"],
+                message:
+                    "Registration start should be before registration end.",
             })
         }
         if (Number.isNaN(meetingStart.getTime())) {

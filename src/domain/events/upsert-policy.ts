@@ -30,6 +30,7 @@ export type EventUpsertInput = {
     map?: string
     cap?: string
     notes?: string
+    registrationStart?: string
     registrationEnd: string
     meetingStart: string
     gameStart: string
@@ -88,6 +89,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
         map: trimOptional(input.map),
         cap: trimOptional(input.cap),
         notes: trimOptional(input.notes),
+        registrationStart: trimOptional(input.registrationStart),
         registrationEnd: input.registrationEnd,
         meetingStart: input.meetingStart,
         gameStart: input.gameStart,

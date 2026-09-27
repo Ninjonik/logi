@@ -47,6 +47,7 @@ async function runTick() {
             eventId: string
             kind:
                 | "close-registration"
+                | "registration-start"
                 | "start-event"
                 | "conclude-event"
                 | "attendance-reminder"

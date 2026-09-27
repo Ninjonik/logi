@@ -136,6 +136,7 @@ export const upsert = mutation({
         map: v.optional(v.string()),
         cap: v.optional(v.string()),
         notes: v.optional(v.string()),
+        registrationStart: v.optional(v.string()),
         registrationEnd: v.string(),
         meetingStart: v.string(),
         gameStart: v.string(),
