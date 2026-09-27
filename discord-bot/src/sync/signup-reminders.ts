@@ -1,5 +1,6 @@
 import type { Client } from "discord.js"
 
+import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
 import { matchesGameScope } from "../../../src/domain/games/game"
 import { buildAnnouncementMessage } from "../message-builders"
@@ -46,7 +47,8 @@ export async function processSignupReminders(
         if (
             !dueEventIds.has(event.id) ||
             event.kind !== "match" ||
-            event.status !== "registration"
+            event.status !== "registration" ||
+            !isRegistrationAnnouncementDue(event)
         ) {
             continue
         }

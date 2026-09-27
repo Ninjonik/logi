@@ -656,6 +656,8 @@ export default defineSchema({
         map: v.optional(v.string()),
         cap: v.optional(v.string()),
         notes: v.optional(v.string()),
+        // Missing means announce registration immediately, preserving legacy events.
+        registrationStart: v.optional(v.string()),
         registrationEnd: v.string(),
         meetingStart: v.string(),
         gameStart: v.string(),
@@ -754,6 +756,7 @@ export default defineSchema({
     eventScheduleJobs: defineTable({
         eventId: v.id("events"),
         kind: v.union(
+            v.literal("registration-start"),
             v.literal("close-registration"),
             v.literal("start-event"),
             v.literal("conclude-event"),

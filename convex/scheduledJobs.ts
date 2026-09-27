@@ -33,6 +33,7 @@ export const claimDue = mutation({
             eventId: string
             kind:
                 | "close-registration"
+                | "registration-start"
                 | "start-event"
                 | "conclude-event"
                 | "attendance-reminder"
@@ -186,6 +187,9 @@ export const backfillMissing = mutation({
                 new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000
             )
             const deadlines = [
+                ...(event.registrationStart
+                    ? [["registration-start", event.registrationStart] as const]
+                    : []),
                 ["close-registration", event.registrationEnd],
                 ["start-event", new Date(startAtMs).toISOString()],
                 ["conclude-event", event.gameEnd],
@@ -226,6 +230,7 @@ export const backfillMissing = mutation({
                     eventId: event._id,
                     kind: kind as
                         | "close-registration"
+                        | "registration-start"
                         | "start-event"
                         | "conclude-event"
                         | "attendance-reminder"

@@ -583,6 +583,9 @@ export function EventFormPanel({
             map: event.map ?? "",
             cap: event.cap ?? "",
             notes: event.notes ?? "",
+            registrationStart: event.registrationStart
+                ? toDateTimeLocalInTimeZone(event.registrationStart, timezone)
+                : "",
             registrationEnd: toDateTimeLocalInTimeZone(
                 event.registrationEnd,
                 timezone
@@ -862,6 +865,12 @@ export function EventFormPanel({
                 values.registrationEnd,
                 timezone
             ),
+            registrationStart: values.registrationStart
+                ? fromDateTimeLocalInTimeZone(
+                      values.registrationStart,
+                      timezone
+                  )
+                : undefined,
             meetingStart: fromDateTimeLocalInTimeZone(
                 values.meetingStart,
                 timezone
@@ -1396,6 +1405,40 @@ export function EventFormPanel({
                                         </Button>
                                     </div>
                                 ) : null}
+                                <div className="md:col-span-2">
+                                    <FieldLabel
+                                        label={
+                                            dictionary.event.fields
+                                                .registrationStart
+                                        }
+                                    />
+                                    {canEdit ? (
+                                        <Input
+                                            type="datetime-local"
+                                            {...form.register(
+                                                "registrationStart"
+                                            )}
+                                            className="max-w-sm rounded-xl"
+                                        />
+                                    ) : (
+                                        <ReadOnlyValue
+                                            value={form.watch(
+                                                "registrationStart"
+                                            )}
+                                            emptyLabel={
+                                                dictionary.shared.notSet
+                                            }
+                                        />
+                                    )}
+                                    {form.formState.errors.registrationStart ? (
+                                        <p className="text-destructive mt-2 text-sm">
+                                            {
+                                                form.formState.errors
+                                                    .registrationStart.message
+                                            }
+                                        </p>
+                                    ) : null}
+                                </div>
                                 {createMode && canEdit ? (
                                     <div className="border-border/60 space-y-4 rounded-2xl border p-4 md:col-span-2">
                                         <div className="flex items-center gap-3 md:flex-row">
@@ -2346,6 +2389,40 @@ export function EventFormPanel({
                         </div>
                         {eventKind === "training" ? (
                             <>
+                                <div>
+                                    <FieldLabel
+                                        label={
+                                            dictionary.event.fields
+                                                .registrationStart
+                                        }
+                                    />
+                                    {canEdit ? (
+                                        <Input
+                                            type="datetime-local"
+                                            {...form.register(
+                                                "registrationStart"
+                                            )}
+                                            className="rounded-xl"
+                                        />
+                                    ) : (
+                                        <ReadOnlyValue
+                                            value={form.watch(
+                                                "registrationStart"
+                                            )}
+                                            emptyLabel={
+                                                dictionary.shared.notSet
+                                            }
+                                        />
+                                    )}
+                                    {form.formState.errors.registrationStart ? (
+                                        <p className="text-destructive mt-2 text-sm">
+                                            {
+                                                form.formState.errors
+                                                    .registrationStart.message
+                                            }
+                                        </p>
+                                    ) : null}
+                                </div>
                                 <div>
                                     <FieldLabel
                                         label={

@@ -500,6 +500,12 @@ const eventMutation = {
                         gameId: gameParameter.schema,
                         kind: { type: "string", enum: ["match", "training"] },
                         name: { type: "string", minLength: 1 },
+                        registrationStart: {
+                            type: "string",
+                            format: "date-time",
+                            description:
+                                "Optional time to publish Discord registration announcements. Omit for immediate publishing.",
+                        },
                         registrationEnd: {
                             type: "string",
                             format: "date-time",

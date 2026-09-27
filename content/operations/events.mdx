@@ -21,7 +21,7 @@ Enter a descriptive name before adding optional details.
 
 ### Set the schedule
 
-Add the meeting time and, where needed, the game start/end time. These are distinct: meeting time is when people gather; game time is when the activity is expected to run.
+Add the meeting time and, where needed, the game start/end time. These are distinct: meeting time is when people gather; game time is when the activity is expected to run. Optionally set **Registration announcement start** to delay Discord registration messages and match forum posts; the event remains visible in Logi and Discord calendars until that time. Leave it empty to publish immediately.
 
 ### Add operational details
 
@@ -101,6 +101,10 @@ event-information embeds link directly to that event's forum channel. A
 scheduled Discord event exists only when the selected meeting channel is a
 voice or stage channel. If that channel is removed or is not a supported type,
 Logi cancels its linked scheduled event.
+An optional registration announcement start delays Discord registration messages,
+event announcements, and match forum posts, without delaying calendar entries or
+Discord scheduled events. Events created before this option was added have no
+start time and continue to announce immediately.
 
 The bot creates temporary Attendees and Reserves roles for non-concluded
 events. Attending sign-ups and squad placements feed Attendees; roster reserves

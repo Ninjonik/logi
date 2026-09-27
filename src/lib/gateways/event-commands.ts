@@ -54,6 +54,7 @@ export async function saveServerEventCommand(input: {
     map?: string
     cap?: string
     notes?: string
+    registrationStart?: string
     registrationEnd: string
     meetingStart: string
     gameStart?: string
@@ -92,6 +93,7 @@ export async function saveServerEventCommand(input: {
         map: input.map,
         cap: input.cap,
         notes: input.notes,
+        registrationStart: input.registrationStart,
         registrationEnd: input.registrationEnd,
         meetingStart: input.meetingStart,
         gameStart: input.gameStart ?? input.meetingStart,

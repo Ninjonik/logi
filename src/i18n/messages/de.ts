@@ -1334,6 +1334,7 @@ export const deMessages = {
             mapPresetCode: "Map-Preset-Code",
             side: "Seite",
             capMode: "Mittlerer Cap-Point",
+            registrationStart: "Start der Anmeldeankündigung",
             registrationEnd: "Anmeldeschluss",
             meetingStart: "Meeting-Beginn",
             gameStart: "Spielbeginn",

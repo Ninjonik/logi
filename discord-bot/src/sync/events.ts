@@ -19,6 +19,7 @@ import {
     warmRosterImage,
     withTimeout,
 } from "../utils"
+import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import {
     buildAnnouncementMessage,
     buildAnnouncementV2Message,
@@ -447,7 +448,10 @@ async function syncEvent(
     let infoMessageId = state?.infoMessageId
     let topicMessageIds = state?.topicMessageIds ?? []
 
+    const registrationAnnouncementDue = isRegistrationAnnouncementDue(event)
+
     if (
+        registrationAnnouncementDue &&
         event.createForumChannel &&
         payload.config.forumCategoryId &&
         !(event.status === "concluded" && !forumChannelId)
@@ -538,8 +542,25 @@ async function syncEvent(
         splitChannels && eventInfoChannelId
             ? await guild.channels.fetch(eventInfoChannelId).catch(() => null)
             : null
+    if (!registrationAnnouncementDue) {
+        if (registrationChannel?.isTextBased() && announcementMessageId) {
+            await registrationChannel.messages
+                .fetch(announcementMessageId)
+                .then((message) => message.delete())
+                .catch(() => null)
+            announcementMessageId = undefined
+        }
+        if (infoChannel?.isTextBased() && eventInfoMessageId) {
+            await infoChannel.messages
+                .fetch(eventInfoMessageId)
+                .then((message) => message.delete())
+                .catch(() => null)
+            eventInfoMessageId = undefined
+        }
+    }
     if (
         splitChannels &&
+        registrationAnnouncementDue &&
         registrationChannel?.isTextBased() &&
         infoChannel?.isTextBased() &&
         registrationChannel.type !== ChannelType.GuildVoice &&
@@ -631,6 +652,7 @@ async function syncEvent(
     }
     if (
         displayChannelId &&
+        registrationAnnouncementDue &&
         !(event.status === "concluded" && !announcementMessageId)
     ) {
         const channel = await guild.channels
