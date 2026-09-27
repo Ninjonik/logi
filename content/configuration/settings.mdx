@@ -45,7 +45,7 @@ links to this settings section. When exactly one is active, creation pages
 select it automatically. With multiple games active, starting a game-owned
 creation flow from **All games** first asks the manager to choose a game.
 
-The manager-only **System** area contains Website API keys and expandable Imports, Helper data, and Webhooks sections on one page. Normal Clan settings now contains only game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
+The manager-only **System** area groups Website API keys, Google Calendar sync, single sign-on applications, Imports, Helper data, and Webhooks into collapsed sections. Normal Clan settings contains game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
 Each website API key belongs to the currently selected workspace and can read
 that workspace's clan-owned data. Give it a recognisable name of at most 80
@@ -228,16 +228,17 @@ editing an event does not move its existing Discord messages between channels.
 
 ### Manual calendar items and categories
 
-The frontend settings area also owns manual calendar items and event-category
-presentation. Saving this form replaces the workspace's manual calendar-item
-set: remove an item there only when you intend to remove it from the calendar.
+Create manual calendar items from the Calendar page. Open an item to review its
+details; managers can remove it there. Categories remain part of the workspace
+configuration and supply label, colour, and optional emoji; they are visual
+grouping, not access control or a Discord role mapping.
 Categories supply label, colour, and optional emoji; they are visual grouping,
 not access control or a Discord role mapping.
 
 ### Google Calendar sync
 
-Clan managers can create a separate private iCalendar subscription link in clan
-settings. Add it in Google Calendar through **Other calendars → From URL**.
+Clan managers can create a separate private iCalendar subscription link in the
+manager-only **System** area. Add it in Google Calendar through **Other calendars → From URL**.
 The subscription includes every scheduled Logi event and every manual calendar
 item, including recurring items. The URL is a secret capability: anyone who has
 it can read that clan's calendar. Rotate the link to immediately disable an old

@@ -3,7 +3,6 @@ import type { Metadata } from "next"
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
 import { DiscordServerSettingsForm } from "@/components/app/discord-server-settings-form"
 import { GameSettingsForm } from "@/components/app/game-settings-form"
-import { SsoApplications } from "@/components/app/sso-applications"
 import { isGameId, withGameOverrides } from "@/domain/games/game"
 import { PageHeader } from "@/components/app/page-header"
 import { getGuildMetadata } from "@/lib/server-metadata"
@@ -53,15 +52,7 @@ export default async function ServerSettingsPage({
                         server={server}
                         dictionary={dictionary}
                         guildLoginUrl={guildLoginUrl}
-                        calendarFeedToken={
-                            context.discordConfig?.calendarFeedToken
-                        }
-                    />
-                ) : null}
-                {canAdmin ? (
-                    <SsoApplications
-                        serverId={serverId}
-                        dictionary={dictionary}
+                        showLoginLink={false}
                     />
                 ) : null}
                 {canAdmin ? (
@@ -80,6 +71,7 @@ export default async function ServerSettingsPage({
                         }
                         baseConfig={context.discordConfig}
                         gameId={gameId}
+                        showSystemOperations={false}
                     />
                 ) : null}
             </div>

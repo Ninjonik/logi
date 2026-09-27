@@ -34,7 +34,7 @@ export const csMessages = {
     },
     app: {
         name: "Logi",
-        tagline: "Organizátor akcí pro Hell Let Loose",
+        tagline: "Organizátor akcí pro kompetetivní hry",
         description:
             "Organizujte klanové akce, stavte soupisky, publikujte briefingy a připravujte operace propojené s Discordem.",
     },
@@ -117,7 +117,7 @@ export const csMessages = {
             heroLineAccent: "Každá operace.",
             heroLineThree: "V sestavě.",
             heroDescription:
-                "Logi proměňuje krásný chaos vedení Hell Let Loose komunity v jedno živé velitelské centrum.",
+                "Logi proměňuje krásný chaos vedení kompetetivní komunity v jedno živé velitelské centrum.",
             deployCommunity: "Spusťte svou komunitu",
             seeEverything: "Prohlédnout všechny funkce",
             playersConfirmed: "31 hráčů potvrzeno",
@@ -265,7 +265,7 @@ export const csMessages = {
         loginDescription:
             "Přihlaste se přes Discord a spravujte klany, publikujte soupisky a mějte všechny briefingy na jednom místě.",
         loginButton: "Pokračovat přes Discord",
-        heroSubtitle: "Správa Hell Let Loose týmu bez zbytečné složitosti.",
+        heroSubtitle: "Správa kompetetivního týmu bez zbytečné složitosti.",
         contributeButton: "Přispět",
         featureRosterManagement: "Správa soupisek",
         featurePlayerPerformance: "Agregace výkonu hráčů",
@@ -638,7 +638,7 @@ export const csMessages = {
         calendarItemsTitle: "Položky kalendáře",
         calendarItemsDescription:
             "Přidejte ruční položky pouze do kalendáře, například letní pauzu, klanovou poradu nebo opakované připomínky.",
-        addCalendarItem: "Přidat položku",
+        addCalendarItem: "Přidat vlastní událost",
         calendarItemLabel: "Položka kalendáře",
         calendarItemTitle: "Název",
         calendarItemLabelName: "Popisek v legendě",
@@ -1028,7 +1028,7 @@ export const csMessages = {
             idLabel: "Xbox gamertag / account ID",
             placeholder: "Xbox gamertag nebo account ID",
             guideLabel: "Otevřít Xbox návod",
-            help: "Použijte Xbox identitu, pod kterou hrajete Hell Let Loose. Ve většině případů je to váš gamertag.",
+            help: "Použijte Xbox identitu, pod kterou hrajete hru. Ve většině případů je to váš gamertag.",
             steps: [
                 "Otevřete návod níže.",
                 "Otevřete svůj Xbox profil.",
@@ -1055,6 +1055,8 @@ export const csMessages = {
         monthView: "Měsíční přehled operací",
         moreEvents: "další akce",
         allDay: "Celý den",
+        manualItemAdminHint:
+            "Správci mohou tuto položku kalendáře odstranit nebo upravit v jejích detailech kalendáře.",
     },
     calendarCards: {
         eventCalendar: "Kalendář akcí",
@@ -1163,6 +1165,10 @@ export const csMessages = {
             "Soupiska byla uložena, ale jednomu nebo více hráčům se nepodařilo doručit DM.",
     },
     event: {
+        signupStatusSignedUpAs: "Jste přihlášeni jako: {type}.",
+        signupStatusGeneral: "obecný účastník",
+        signupStatusDeclined: "Označili jste, že se nezúčastníte.",
+        signupStatusNotSignedUp: "Na tuto akci zatím nejste přihlášeni.",
         infoTitle: "Informace o akci",
         infoDescription:
             "Tato stránka zůstává pro běžné uživatele pouze ke čtení. Admini ji mohou přepnout do režimu úprav bez nutnosti měnit adresu URL.",
@@ -1591,7 +1597,7 @@ export const csMessages = {
         title: "Stratmapy",
         createTitle: "Vytvořit Stratmapu",
         pageDescription:
-            "Uložené realtime taktické mapy pro plánování Hell Let Loose zápasů.",
+            "Uložené realtime taktické mapy pro plánování kompetetivních zápasů.",
         createDescription:
             "Vytvořte uložený realtime taktický náčrt, který půjde později připojit k match briefingu.",
         detailDescription:

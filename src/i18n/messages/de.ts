@@ -35,7 +35,7 @@ export const deMessages = {
     },
     app: {
         name: "Logi",
-        tagline: "Hell Let Loose Event-Organisator",
+        tagline: "Event-Organisator",
         description:
             "Organisiere Clan-Events, erstelle Roster, veröffentliche Briefings und bereite Discord-verbundene Operationen vor.",
     },
@@ -118,7 +118,7 @@ export const deMessages = {
             heroLineAccent: "Jede Operation.",
             heroLineThree: "In Formation.",
             heroDescription:
-                "Logi verwandelt das schöne Chaos der Hell Let Loose-Community-Verwaltung in eine lebendige Leitzentrale.",
+                "Logi verwandelt das schöne Chaos der Community-Verwaltung in eine lebendige Leitzentrale.",
             deployCommunity: "Starte deine Community",
             seeEverything: "Sieh dir alles an",
             playersConfirmed: "31 Spieler bestätigt",
@@ -266,7 +266,7 @@ export const deMessages = {
         loginDescription:
             "Melde dich mit Discord an, um Clans zu verwalten, Roster zu veröffentlichen und jedes Briefing an einem Ort zu halten.",
         loginButton: "Mit Discord fortfahren",
-        heroSubtitle: "Hell Let Loose Team-Management leicht gemacht.",
+        heroSubtitle: "Team-Management leicht gemacht.",
         contributeButton: "Mitwirken",
         featureRosterManagement: "Roster-Verwaltung",
         featurePlayerPerformance: "Spielerleistungs-Aggregation",
@@ -1040,7 +1040,7 @@ export const deMessages = {
             idLabel: "Xbox-Gamertag / Account-ID",
             placeholder: "Xbox-Gamertag oder Account-ID",
             guideLabel: "Xbox-Anleitung öffnen",
-            help: "Nutze die Xbox-Identität, mit der du Hell Let Loose spielst. Meist ist das dein Gamertag.",
+            help: "Nutze die Xbox-Identität, mit der du Spiel spielst. Meist ist das dein Gamertag.",
             steps: [
                 "Öffne die Anleitung unten.",
                 "Öffne dein Xbox-Profil.",
@@ -1067,6 +1067,8 @@ export const deMessages = {
         monthView: "Monatliche Operations-Ansicht",
         moreEvents: "weitere Events",
         allDay: "Ganztägig",
+        manualItemAdminHint:
+            "Manager können diesen Kalendereintrag in seinen Kalenderdetails bearbeiten oder entfernen.",
     },
     calendarCards: {
         eventCalendar: "Event-Kalender",
@@ -1177,6 +1179,11 @@ export const deMessages = {
             "Roster gespeichert, aber eine oder mehrere Spieler-DMs konnten nicht zugestellt werden.",
     },
     event: {
+        signupStatusSignedUpAs: "Du bist angemeldet als: {type}.",
+        signupStatusGeneral: "allgemeiner Teilnehmer",
+        signupStatusDeclined: "Du hast angegeben, dass du nicht teilnimmst.",
+        signupStatusNotSignedUp:
+            "Du hast dich noch nicht für dieses Event angemeldet.",
         infoTitle: "Event-Informationen",
         infoDescription:
             "Diese Seite bleibt für alle ansichtsorientiert, und Admins können sie in den Bearbeitungsmodus schalten, ohne Routen zu wechseln.",
@@ -1614,7 +1621,7 @@ export const deMessages = {
         title: "Stratmaps",
         createTitle: "Stratmap erstellen",
         pageDescription:
-            "Gespeicherte Echtzeit-Taktikkarten für die Hell Let Loose-Matchplanung.",
+            "Gespeicherte Echtzeit-Taktikkarten für die Spiel-Matchplanung.",
         createDescription:
             "Erstelle eine gespeicherte Echtzeit-Taktikskizze, die später an Match-Briefings angehängt werden kann.",
         detailDescription:

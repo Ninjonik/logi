@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { getClanDiscordMessages } from "@/lib/clan-language"
 import { buildEventSignupActions } from "@/lib/event-signup"
+import { EmojiValue } from "@/components/app/emoji-value"
 import type { EventRecord, Group } from "@/types/domain"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -77,7 +78,7 @@ export function EventSignupActions({
                 >
                     {action.kind === "general" ? <span>✅</span> : null}
                     {"emoji" in action && action.emoji ? (
-                        <span>{action.emoji}</span>
+                        <EmojiValue value={action.emoji} />
                     ) : null}
                     {action.label}
                 </Button>

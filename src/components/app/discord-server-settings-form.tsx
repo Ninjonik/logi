@@ -99,6 +99,7 @@ export function DiscordServerSettingsForm({
     config,
     baseConfig,
     gameId,
+    showSystemOperations = true,
 }: {
     serverId: string
     userId: string
@@ -107,6 +108,7 @@ export function DiscordServerSettingsForm({
     /** The clan-wide config, retained while editing a game-specific override. */
     baseConfig?: DiscordConfig | null
     gameId?: GameId
+    showSystemOperations?: boolean
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -349,142 +351,165 @@ export function DiscordServerSettingsForm({
                         placeholder={dictionary.serverSettings.clanRoleId}
                     />
                 </div>
-                <div className="space-y-2">
-                    <Label>
-                        {dictionary.serverSettings.dashboardAdminRoleId}
-                    </Label>
-                    <DiscordEntitySelect
-                        value={dashboardAdminRoleId}
-                        onChange={setDashboardAdminRoleId}
-                        options={roles}
-                        placeholder={
-                            dictionary.serverSettings.dashboardAdminRoleId
-                        }
-                    />
-                    <p className="text-muted-foreground text-sm">
-                        Super admins can resync dashboard admin access from the
-                        current dashboard-role membership.
-                    </p>
-                    <ResyncDashboardAdminsButton
-                        serverId={serverId}
-                        userId={userId}
-                    />
-                </div>
-                <div className="space-y-4">
-                    <div className="space-y-1">
-                        <Label>
-                            {dictionary.serverSettings.playerStatsServersTitle}
-                        </Label>
-                        <p className="text-muted-foreground text-sm">
-                            {
-                                dictionary.serverSettings
-                                    .playerStatsServersDescription
-                            }
-                        </p>
-                    </div>
-                    <div className="space-y-4">
-                        {playerStatsServers.map((server, index) => (
-                            <div
-                                key={`${index}-${server.url}`}
-                                className="border-border/60 space-y-3 rounded-2xl border p-4"
-                            >
-                                <div className="space-y-2">
-                                    <Label>
-                                        {
-                                            dictionary.serverSettings
-                                                .playerStatsServerToken
-                                        }
-                                    </Label>
-                                    <Input
-                                        value={server.token}
-                                        onChange={(event) =>
-                                            setPlayerStatsServers((current) =>
-                                                current.map(
-                                                    (item, itemIndex) =>
-                                                        itemIndex === index
-                                                            ? {
-                                                                  ...item,
-                                                                  token: event
-                                                                      .target
-                                                                      .value,
-                                                              }
-                                                            : item
+                {showSystemOperations ? (
+                    <>
+                        <div className="space-y-2">
+                            <Label>
+                                {dictionary.serverSettings.dashboardAdminRoleId}
+                            </Label>
+                            <DiscordEntitySelect
+                                value={dashboardAdminRoleId}
+                                onChange={setDashboardAdminRoleId}
+                                options={roles}
+                                placeholder={
+                                    dictionary.serverSettings
+                                        .dashboardAdminRoleId
+                                }
+                            />
+                            <p className="text-muted-foreground text-sm">
+                                Super admins can resync dashboard admin access
+                                from the current dashboard-role membership.
+                            </p>
+                            <ResyncDashboardAdminsButton
+                                serverId={serverId}
+                                userId={userId}
+                            />
+                        </div>
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <Label>
+                                    {
+                                        dictionary.serverSettings
+                                            .playerStatsServersTitle
+                                    }
+                                </Label>
+                                <p className="text-muted-foreground text-sm">
+                                    {
+                                        dictionary.serverSettings
+                                            .playerStatsServersDescription
+                                    }
+                                </p>
+                            </div>
+                            <div className="space-y-4">
+                                {playerStatsServers.map((server, index) => (
+                                    <div
+                                        key={`${index}-${server.url}`}
+                                        className="border-border/60 space-y-3 rounded-2xl border p-4"
+                                    >
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.serverSettings
+                                                        .playerStatsServerToken
+                                                }
+                                            </Label>
+                                            <Input
+                                                value={server.token}
+                                                onChange={(event) =>
+                                                    setPlayerStatsServers(
+                                                        (current) =>
+                                                            current.map(
+                                                                (
+                                                                    item,
+                                                                    itemIndex
+                                                                ) =>
+                                                                    itemIndex ===
+                                                                    index
+                                                                        ? {
+                                                                              ...item,
+                                                                              token: event
+                                                                                  .target
+                                                                                  .value,
+                                                                          }
+                                                                        : item
+                                                            )
+                                                    )
+                                                }
+                                                placeholder={
+                                                    dictionary.serverSettings
+                                                        .playerStatsServerTokenPlaceholder
+                                                }
+                                                className="rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.serverSettings
+                                                        .playerStatsServerUrl
+                                                }
+                                            </Label>
+                                            <Input
+                                                value={server.url}
+                                                onChange={(event) =>
+                                                    setPlayerStatsServers(
+                                                        (current) =>
+                                                            current.map(
+                                                                (
+                                                                    item,
+                                                                    itemIndex
+                                                                ) =>
+                                                                    itemIndex ===
+                                                                    index
+                                                                        ? {
+                                                                              ...item,
+                                                                              url: event
+                                                                                  .target
+                                                                                  .value,
+                                                                          }
+                                                                        : item
+                                                            )
+                                                    )
+                                                }
+                                                placeholder={
+                                                    dictionary.serverSettings
+                                                        .playerStatsServerUrlPlaceholder
+                                                }
+                                                className="rounded-xl"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="rounded-xl"
+                                            onClick={() =>
+                                                setPlayerStatsServers(
+                                                    (current) =>
+                                                        current.filter(
+                                                            (_, itemIndex) =>
+                                                                itemIndex !==
+                                                                index
+                                                        )
                                                 )
-                                            )
-                                        }
-                                        placeholder={
-                                            dictionary.serverSettings
-                                                .playerStatsServerTokenPlaceholder
-                                        }
-                                        className="rounded-xl"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>
-                                        {
-                                            dictionary.serverSettings
-                                                .playerStatsServerUrl
-                                        }
-                                    </Label>
-                                    <Input
-                                        value={server.url}
-                                        onChange={(event) =>
-                                            setPlayerStatsServers((current) =>
-                                                current.map(
-                                                    (item, itemIndex) =>
-                                                        itemIndex === index
-                                                            ? {
-                                                                  ...item,
-                                                                  url: event
-                                                                      .target
-                                                                      .value,
-                                                              }
-                                                            : item
-                                                )
-                                            )
-                                        }
-                                        placeholder={
-                                            dictionary.serverSettings
-                                                .playerStatsServerUrlPlaceholder
-                                        }
-                                        className="rounded-xl"
-                                    />
-                                </div>
+                                            }
+                                        >
+                                            {
+                                                dictionary.serverSettings
+                                                    .removePlayerStatsServer
+                                            }
+                                        </Button>
+                                    </div>
+                                ))}
                                 <Button
                                     type="button"
                                     variant="outline"
                                     className="rounded-xl"
                                     onClick={() =>
-                                        setPlayerStatsServers((current) =>
-                                            current.filter(
-                                                (_, itemIndex) =>
-                                                    itemIndex !== index
-                                            )
-                                        )
+                                        setPlayerStatsServers((current) => [
+                                            ...current,
+                                            { token: "", url: "" },
+                                        ])
                                     }
                                 >
                                     {
                                         dictionary.serverSettings
-                                            .removePlayerStatsServer
+                                            .addPlayerStatsServer
                                     }
                                 </Button>
                             </div>
-                        ))}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="rounded-xl"
-                            onClick={() =>
-                                setPlayerStatsServers((current) => [
-                                    ...current,
-                                    { token: "", url: "" },
-                                ])
-                            }
-                        >
-                            {dictionary.serverSettings.addPlayerStatsServer}
-                        </Button>
-                    </div>
-                </div>
+                        </div>
+                    </>
+                ) : null}
 
                 <Button
                     className="rounded-xl"

@@ -4,9 +4,7 @@ import { cn } from "@/lib/utils"
 
 export const GAME_ICON_SOURCES: Record<GameId, string> = {
     hell_let_loose: "/img/games/hll.jpg",
-    // hllv.pdn is a Paint.NET project and cannot be displayed by browsers.
-    // Keep a functional HLL fallback until its exported web image is supplied.
-    hell_let_loose_vietnam: "/img/games/hll.jpg",
+    hell_let_loose_vietnam: "/img/games/hllv.png",
     wardogs: "/img/games/wardogs.jpg",
 }
 
