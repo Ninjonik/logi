@@ -2,6 +2,7 @@ import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { NextRequest, NextResponse } from "next/server"
 import { makeFunctionReference } from "convex/server"
 
+import { resolveRosterUpdateChannelIds } from "@/domain/rosters/roster-update-channel"
 import { getEventMetadata, getGuildMetadata } from "@/lib/server-metadata"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
 import { summarizeRosterUpdates } from "@/lib/roster-update-summary"
@@ -211,6 +212,12 @@ export async function POST(
     }
 
     const messages = getClanDiscordMessages(discordConfig?.defaultLanguage)
+    const channelIds = resolveRosterUpdateChannelIds({
+        eventAnnouncementChannelId: event.announcementChannelId,
+        eventInfoChannelId: event.eventInfoChannelId,
+        configuredAnnouncementChannelId: discordConfig?.announcementsChannelId,
+        configuredEventInfoChannelId: discordConfig?.eventInfoChannelId,
+    })
     // The roster link is useful context, but a temporary Convex read failure must
     // never prevent the actual DM notification from being sent.
     const syncContext = (await fetchQuery(getEventSyncContextReference, {
@@ -228,8 +235,8 @@ export async function POST(
         syncContext?.syncState?.eventInfoMessageId ??
         syncContext?.syncState?.announcementMessageId
     const rosterChannelId = syncContext?.syncState?.eventInfoMessageId
-        ? discordConfig?.eventInfoChannelId
-        : discordConfig?.announcementsChannelId
+        ? channelIds.eventInfoChannelId
+        : channelIds.announcementChannelId
     const rosterUrl =
         rosterChannelId && rosterMessageId
             ? `https://discord.com/channels/${guild.discordId}/${rosterChannelId}/${rosterMessageId}`
@@ -270,9 +277,7 @@ export async function POST(
             })
         )
 
-    const rosterUpdateChannelId =
-        discordConfig?.eventInfoChannelId ??
-        discordConfig?.announcementsChannelId
+    const rosterUpdateChannelId = channelIds.rosterUpdateChannelId
     if (body.postAnnouncement && rosterUpdateChannelId) {
         const existingDigestId =
             syncContext?.syncState?.rosterUpdateChannelId ===
