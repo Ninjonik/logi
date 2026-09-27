@@ -35,6 +35,7 @@ type Props = {
     locale: string
     signedIn: boolean
     userName?: string
+    dashboardHref?: string
 }
 const visuals = [
     [LayoutDashboard, "dashboard", "dashboard"],
@@ -51,10 +52,18 @@ const visuals = [
     [BookOpen, "wiki", "wiki"],
 ] as const
 
-export function LandingPage({ dictionary, locale, signedIn, userName }: Props) {
+export function LandingPage({
+    dictionary,
+    locale,
+    signedIn,
+    userName,
+    dashboardHref,
+}: Props) {
     const reduce = useReducedMotion(),
         landing = dictionary.home.landing,
-        action = `/${locale}/${signedIn ? "dashboard" : "login"}`,
+        action = signedIn
+            ? (dashboardHref ?? `/${locale}/dashboard`)
+            : `/${locale}/login`,
         hero = useRef<HTMLElement>(null)
     const { scrollYProgress } = useScroll({
             target: hero,
