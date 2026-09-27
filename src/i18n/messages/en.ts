@@ -1057,6 +1057,12 @@ export const enMessages = {
         manualItemAdminHint:
             "Managers can remove or edit this calendar item from its calendar details.",
     },
+    configurationScope: {
+        clanWide: "Clan-wide configuration",
+        clanWideDescription: "Changes apply to every active game in this clan.",
+        singleGame: "Game-specific configuration",
+        singleGameDescription: "Changes apply only to the selected game.",
+    },
     calendarCards: {
         eventCalendar: "Event calendar",
         registrationEnds: "Registration ends",

@@ -527,11 +527,11 @@ export default defineSchema({
         enabledGames: v.optional(v.array(gameId)),
         botInside: v.boolean(),
         adminIds: v.array(v.string()),
-        // Admins explicitly assigned in Logi are kept separate from admins derived
-        // from the Discord dashboard role, so a role resync cannot revoke them.
+        // Legacy role-derived dashboard admins. New authorization uses the current
+        // Discord member access record and adminAccessOverrides instead.
         dashboardAdminIds: v.optional(v.array(v.string())),
-        // A manual setting wins over all inherited sources (Discord Administrator,
-        // dashboard role, and guild ownership). Missing means inherit.
+        // A manual setting controls the dashboard role and its derived access.
+        // Discord Administrator remains an unconditional bootstrap path.
         adminAccessOverrides: v.optional(v.record(v.string(), v.boolean())),
         memberIds: v.array(v.string()),
         members: v.array(guildMember),

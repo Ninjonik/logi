@@ -1058,6 +1058,13 @@ export const csMessages = {
         manualItemAdminHint:
             "Správci mohou tuto položku kalendáře odstranit nebo upravit v jejích detailech kalendáře.",
     },
+    configurationScope: {
+        clanWide: "Nastavení pro celý klan",
+        clanWideDescription:
+            "Změny platí pro všechny aktivní hry tohoto klanu.",
+        singleGame: "Nastavení pro konkrétní hru",
+        singleGameDescription: "Změny platí pouze pro vybranou hru.",
+    },
     calendarCards: {
         eventCalendar: "Kalendář akcí",
         registrationEnds: "Konec registrace",

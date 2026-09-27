@@ -123,6 +123,7 @@ export type GuildRecord = {
     calendarItems: CalendarItem[]
     botInside: boolean
     adminIds: string[]
+    adminAccessOverrides?: Record<string, boolean>
     memberIds: string[]
     mercenaryIds: string[]
     updatedAt: string

@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { ConfigurationScopeIndicator } from "@/components/app/configuration-scope-indicator"
 import { TicketSettingsForm } from "@/components/app/ticket-settings-form"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
 import { PageHeader } from "@/components/app/page-header"
@@ -31,6 +32,10 @@ export default async function ServerTicketsPage({
                 description={dictionary.ticketSettings.pageDescription}
             />
             <div className="space-y-6 px-4 lg:px-6">
+                <ConfigurationScopeIndicator
+                    enabledGames={context.server.enabledGames}
+                    dictionary={dictionary}
+                />
                 <TicketSettingsForm
                     serverId={serverId}
                     dictionary={dictionary}

@@ -347,12 +347,30 @@ export const resyncDashboardAdmins = mutation({
             .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
             .collect()
 
+        const config = await ctx.db
+            .query("discordConfigs")
+            .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+            .unique()
+        const dashboardAdminRoleId = config?.dashboardAdminRoleId
+        if (!dashboardAdminRoleId) {
+            throw new Error("Configure a dashboard admin role first.")
+        }
+
         const dashboardAdminIds = accessRows
-            .filter((access) => access.hasDashboardAccess)
+            .filter((access) => access.roleIds.includes(dashboardAdminRoleId))
             .map((access) => access.userId)
 
+        const adminAccessOverrides = { ...guild.adminAccessOverrides }
+        const dashboardAdminIdSet = new Set(dashboardAdminIds)
+        for (const userId of Object.keys(adminAccessOverrides)) {
+            adminAccessOverrides[userId] = dashboardAdminIdSet.has(userId)
+        }
+        for (const userId of dashboardAdminIdSet) {
+            adminAccessOverrides[userId] = true
+        }
+
         await ctx.db.patch(guild._id, {
-            dashboardAdminIds,
+            adminAccessOverrides,
             updatedAt: new Date().toISOString(),
         })
 
@@ -387,12 +405,23 @@ export const setPlayerAdminAccess = mutation({
             )
             .unique()
 
-        const canManage =
-            guild.adminIds.includes(args.userId) ||
-            guild.dashboardAdminIds?.includes(args.userId) ||
-            actorAccess?.isAdmin
+        const canManage = canAdminServerContext({
+            serverAdminIds: guild.adminIds,
+            dashboardAdminIds: guild.dashboardAdminIds,
+            adminAccessOverrides: guild.adminAccessOverrides,
+            userId: args.userId,
+            discordAccess: actorAccess,
+        })
         if (!canManage) {
             throw new Error("Unauthorized.")
+        }
+
+        const config = await ctx.db
+            .query("discordConfigs")
+            .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+            .unique()
+        if (!config?.dashboardAdminRoleId) {
+            throw new Error("Configure a dashboard admin role first.")
         }
 
         const adminAccessOverrides = {
@@ -422,6 +451,16 @@ export const setPlayerAdminAccessInternal = mutation({
         ])
         if (!guild || !player) {
             throw new Error("Player or server not found.")
+        }
+
+        const config = await ctx.db
+            .query("discordConfigs")
+            .withIndex("guildId", (q) =>
+                q.eq("guildId", getGuildDiscordId(guild))
+            )
+            .unique()
+        if (!config?.dashboardAdminRoleId) {
+            throw new Error("Configure a dashboard admin role first.")
         }
 
         const adminAccessOverrides = {

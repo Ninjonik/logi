@@ -1,3 +1,4 @@
+import { ConfigurationScopeIndicator } from "@/components/app/configuration-scope-indicator"
 import { SystemMaintenanceSections } from "@/components/app/system-maintenance-sections"
 import { DiscordOperationsSettings } from "@/components/app/discord-operations-settings"
 import { CalendarFeedSettings } from "@/components/app/calendar-feed-settings"
@@ -32,6 +33,11 @@ export default async function SystemPage({
                 description={dictionary.clan.systemBody}
             />
             <div className="space-y-6 px-4 lg:px-6">
+                <ConfigurationScopeIndicator
+                    enabledGames={context.server.enabledGames}
+                    gameId={isGameId(game) ? game : undefined}
+                    dictionary={dictionary}
+                />
                 <SystemMaintenanceSections
                     serverId={serverId}
                     gameId={gameId}

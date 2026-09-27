@@ -301,9 +301,6 @@ export function canAccessServerContext(input: {
         user.managedGuildIds.includes(serverDiscordId) ||
         user.mercenaryGuildIds.includes(serverDiscordId) ||
         Boolean(input.userId && input.serverAdminIds?.includes(input.userId)) ||
-        Boolean(
-            input.userId && input.dashboardAdminIds?.includes(input.userId)
-        ) ||
         Boolean(discordAccess?.hasDashboardAccess)
     )
 }
@@ -315,8 +312,16 @@ export function canAdminServerContext(input: {
     userId: string
     discordAccess?: {
         isAdmin?: boolean
+        hasDashboardAccess?: boolean
     } | null
 }) {
+    // Discord's Administrator permission is the bootstrap path: it must remain
+    // effective even if a Logi administrator has explicitly revoked the
+    // dashboard role for that account.
+    if (input.discordAccess?.isAdmin) {
+        return true
+    }
+
     const override = input.adminAccessOverrides?.[input.userId]
     if (override !== undefined) {
         return override
@@ -324,7 +329,6 @@ export function canAdminServerContext(input: {
 
     return (
         input.serverAdminIds.includes(input.userId) ||
-        input.dashboardAdminIds?.includes(input.userId) ||
-        Boolean(input.discordAccess?.isAdmin)
+        Boolean(input.discordAccess?.hasDashboardAccess)
     )
 }

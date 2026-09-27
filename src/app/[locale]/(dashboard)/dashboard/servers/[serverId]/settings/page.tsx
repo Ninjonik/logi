@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { ConfigurationScopeIndicator } from "@/components/app/configuration-scope-indicator"
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
 import { DiscordServerSettingsForm } from "@/components/app/discord-server-settings-form"
 import { GameSettingsForm } from "@/components/app/game-settings-form"
@@ -39,6 +40,11 @@ export default async function ServerSettingsPage({
                 description={dictionary.serverSettings.pageDescription}
             />
             <div className="space-y-6 px-4 lg:px-6">
+                <ConfigurationScopeIndicator
+                    enabledGames={server.enabledGames}
+                    gameId={gameId}
+                    dictionary={dictionary}
+                />
                 {canAdmin ? (
                     <GameSettingsForm
                         serverId={serverId}

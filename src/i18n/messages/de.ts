@@ -1070,6 +1070,14 @@ export const deMessages = {
         manualItemAdminHint:
             "Manager können diesen Kalendereintrag in seinen Kalenderdetails bearbeiten oder entfernen.",
     },
+    configurationScope: {
+        clanWide: "Clanweite Konfiguration",
+        clanWideDescription:
+            "Änderungen gelten für alle aktiven Spiele dieses Clans.",
+        singleGame: "Spielspezifische Konfiguration",
+        singleGameDescription:
+            "Änderungen gelten nur für das ausgewählte Spiel.",
+    },
     calendarCards: {
         eventCalendar: "Event-Kalender",
         registrationEnds: "Anmeldeschluss",
