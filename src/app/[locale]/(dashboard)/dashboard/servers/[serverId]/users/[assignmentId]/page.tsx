@@ -132,13 +132,7 @@ export default async function ServerUserDetailPage({
                                 initialIsAdmin={
                                     server.adminAccessOverrides?.[
                                         user.discordId
-                                    ] ??
-                                    (server.adminIds.includes(user.discordId) ||
-                                        Boolean(
-                                            server.dashboardAdminIds?.includes(
-                                                user.discordId
-                                            )
-                                        ))
+                                    ] ?? false
                                 }
                                 dictionary={dictionary}
                             />

@@ -30,7 +30,6 @@ import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import type { Dictionary } from "@/i18n/dictionaries"
-import type { GameId } from "@/domain/games/game"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -163,13 +162,11 @@ export function MembershipSettingsForm({
     serverId,
     config,
     baseConfig,
-    gameId,
     dictionary,
 }: {
     serverId: string
     config: DiscordConfig | null
     baseConfig?: DiscordConfig | null
-    gameId?: GameId
     dictionary: Dictionary
 }) {
     const router = useRouter()
@@ -279,9 +276,6 @@ export function MembershipSettingsForm({
     }
 
     async function handleSave() {
-        // In a game scope, only membership settings are being changed. Keep
-        // every shared setting on the clan default rather than promoting a
-        // game-specific channel override into the default configuration.
         const sharedConfig = baseConfig ?? config
         const membershipSettings = settings.enabled
             ? {
@@ -335,17 +329,6 @@ export function MembershipSettingsForm({
                     dashboardAdminRoleId: sharedConfig?.dashboardAdminRoleId,
                     ticketSettings: sharedConfig?.ticketSettings,
                     membershipSettings,
-                    ...(gameId && baseConfig
-                        ? {
-                              gameOverrides: {
-                                  ...baseConfig.gameOverrides,
-                                  [gameId]: {
-                                      ...baseConfig.gameOverrides?.[gameId],
-                                      membershipSettings,
-                                  },
-                              },
-                          }
-                        : {}),
                 }),
             }
         )

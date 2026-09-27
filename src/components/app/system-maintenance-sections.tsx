@@ -20,6 +20,7 @@ import { HelperDataActions } from "@/components/app/helper-data-actions"
 import { WebhookManager } from "@/components/app/webhook-manager"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { GameId } from "@/domain/games/game"
+import type { ReactNode } from "react"
 
 const sectionIds = ["imports", "helper-data", "webhooks"] as const
 
@@ -28,11 +29,18 @@ export function SystemMaintenanceSections({
     gameId,
     defaultRoleId,
     dictionary,
+    additionalSections = [],
 }: {
     serverId: string
     gameId: GameId
     defaultRoleId?: string
     dictionary: Dictionary
+    additionalSections?: Array<{
+        id: string
+        title: string
+        description: string
+        content: ReactNode
+    }>
 }) {
     const [openSections, setOpenSections] = useState<string[]>([])
 
@@ -169,6 +177,28 @@ export function SystemMaintenanceSections({
                     />
                 </AccordionContent>
             </AccordionItem>
+            {additionalSections.map((section) => (
+                <AccordionItem
+                    key={section.id}
+                    id={section.id}
+                    value={section.id}
+                    className="border-border/60 scroll-mt-6 rounded-2xl border px-5"
+                >
+                    <AccordionTrigger className="hover:no-underline">
+                        <span>
+                            <span className="block text-base font-semibold">
+                                {section.title}
+                            </span>
+                            <span className="text-muted-foreground mt-1 block text-sm font-normal">
+                                {section.description}
+                            </span>
+                        </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-3">
+                        {section.content}
+                    </AccordionContent>
+                </AccordionItem>
+            ))}
         </Accordion>
     )
 }

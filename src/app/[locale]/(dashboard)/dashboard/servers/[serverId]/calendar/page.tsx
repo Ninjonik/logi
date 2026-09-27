@@ -48,6 +48,8 @@ export default async function ServerCalendarPage({
                     timezone={discordConfig?.timezone}
                     dictionary={dictionary}
                     signupLanguage={discordConfig?.defaultLanguage ?? "en"}
+                    currentUserId={context.user.discordId}
+                    canAdmin={context.canAdmin}
                 />
             </div>
         </>

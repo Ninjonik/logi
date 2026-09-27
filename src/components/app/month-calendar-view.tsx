@@ -36,6 +36,8 @@ export function MonthCalendarView({
     timezone,
     dictionary,
     signupLanguage,
+    currentUserId,
+    canAdmin,
 }: {
     locale: Locale
     serverId: string
@@ -44,6 +46,8 @@ export function MonthCalendarView({
     timezone?: string
     dictionary: Dictionary
     signupLanguage: "en" | "cs" | "de"
+    currentUserId?: string
+    canAdmin?: boolean
 }) {
     const [currentMonth, setCurrentMonth] = useState(() =>
         startOfMonth(new Date())
@@ -164,6 +168,8 @@ export function MonthCalendarView({
                                             timezone={timezone}
                                             dictionary={dictionary}
                                             signupLanguage={signupLanguage}
+                                            currentUserId={currentUserId}
+                                            canAdmin={canAdmin}
                                             trigger={
                                                 <button
                                                     type="button"

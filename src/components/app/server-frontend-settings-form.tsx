@@ -176,17 +176,16 @@ export function ServerFrontendSettingsForm({
     server,
     dictionary,
     guildLoginUrl,
-    calendarFeedToken,
+    showLoginLink = true,
 }: {
     server: Guild
     dictionary: Dictionary
     guildLoginUrl: string
-    calendarFeedToken?: string
+    showLoginLink?: boolean
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [copied, setCopied] = useState(false)
-    const [calendarFeedCopied, setCalendarFeedCopied] = useState(false)
     const [name, setName] = useState(server.name)
     const [avatar, setAvatar] = useState(server.avatar)
     const [description, setDescription] = useState(server.description ?? "")
@@ -197,12 +196,6 @@ export function ServerFrontendSettingsForm({
         toEditableCalendarItems(server.calendarItems)
     )
     const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
-    const calendarFeedUrl = calendarFeedToken
-        ? new URL(
-              `/api/calendar/${server.id}?token=${calendarFeedToken}`,
-              guildLoginUrl
-          ).toString()
-        : null
 
     useEffect(() => {
         fetch(`/api/servers/${server.id}/discord-metadata`)
@@ -288,13 +281,6 @@ export function ServerFrontendSettingsForm({
         await navigator.clipboard.writeText(guildLoginUrl)
         setCopied(true)
         window.setTimeout(() => setCopied(false), 1600)
-    }
-
-    async function handleCopyCalendarFeedUrl() {
-        if (!calendarFeedUrl) return
-        await navigator.clipboard.writeText(calendarFeedUrl)
-        setCalendarFeedCopied(true)
-        window.setTimeout(() => setCalendarFeedCopied(false), 1600)
     }
 
     return (
@@ -469,456 +455,437 @@ export function ServerFrontendSettingsForm({
                     )}
                 </div>
 
-                <div className="border-border/60 space-y-4 rounded-2xl border p-4">
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <h3 className="font-semibold">
-                                {dictionary.serverSettings.calendarItemsTitle}
-                            </h3>
-                            <p className="text-muted-foreground text-sm">
-                                {
-                                    dictionary.serverSettings
-                                        .calendarItemsDescription
+                {false ? (
+                    <div className="border-border/60 space-y-4 rounded-2xl border p-4">
+                        <div className="flex items-center justify-between gap-4">
+                            <div>
+                                <h3 className="font-semibold">
+                                    {
+                                        dictionary.serverSettings
+                                            .calendarItemsTitle
+                                    }
+                                </h3>
+                                <p className="text-muted-foreground text-sm">
+                                    {
+                                        dictionary.serverSettings
+                                            .calendarItemsDescription
+                                    }
+                                </p>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="rounded-xl"
+                                onClick={() =>
+                                    setCalendarItems((current) => [
+                                        ...current,
+                                        buildDefaultCalendarItem(),
+                                    ])
                                 }
-                            </p>
-                        </div>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="rounded-xl"
-                            onClick={() =>
-                                setCalendarItems((current) => [
-                                    ...current,
-                                    buildDefaultCalendarItem(),
-                                ])
-                            }
-                        >
-                            <Plus className="mr-2 size-4" />
-                            {dictionary.serverSettings.addCalendarItem}
-                        </Button>
-                    </div>
-
-                    {calendarItems.length ? (
-                        calendarItems.map((item, index) => (
-                            <div
-                                key={item.id}
-                                className="border-border/60 space-y-4 rounded-2xl border p-4"
                             >
-                                <div className="flex items-center justify-between gap-4">
-                                    <h4 className="font-medium">
-                                        {
-                                            dictionary.serverSettings
-                                                .calendarItemLabel
-                                        }{" "}
-                                        {index + 1}
-                                    </h4>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="rounded-xl"
-                                        onClick={() =>
-                                            setCalendarItems((current) =>
-                                                current.filter(
-                                                    (entry) =>
-                                                        entry.id !== item.id
+                                <Plus className="mr-2 size-4" />
+                                {dictionary.serverSettings.addCalendarItem}
+                            </Button>
+                        </div>
+
+                        {calendarItems.length ? (
+                            calendarItems.map((item, index) => (
+                                <div
+                                    key={item.id}
+                                    className="border-border/60 space-y-4 rounded-2xl border p-4"
+                                >
+                                    <div className="flex items-center justify-between gap-4">
+                                        <h4 className="font-medium">
+                                            {
+                                                dictionary.serverSettings
+                                                    .calendarItemLabel
+                                            }{" "}
+                                            {index + 1}
+                                        </h4>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="rounded-xl"
+                                            onClick={() =>
+                                                setCalendarItems((current) =>
+                                                    current.filter(
+                                                        (entry) =>
+                                                            entry.id !== item.id
+                                                    )
                                                 )
-                                            )
-                                        }
-                                    >
-                                        <Trash2 className="size-4" />
-                                    </Button>
-                                </div>
-
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {
-                                                dictionary.serverSettings
-                                                    .calendarItemTitle
-                                            }
-                                        </Label>
-                                        <Input
-                                            value={item.title}
-                                            onChange={(event) =>
-                                                patchCalendarItem(item.id, {
-                                                    title: event.target.value,
-                                                })
-                                            }
-                                            className="rounded-xl"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {
-                                                dictionary.serverSettings
-                                                    .calendarItemLabelName
-                                            }
-                                        </Label>
-                                        <Input
-                                            value={item.label}
-                                            onChange={(event) =>
-                                                patchCalendarItem(item.id, {
-                                                    label: event.target.value,
-                                                })
-                                            }
-                                            className="rounded-xl"
-                                        />
-                                    </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                        <Label>
-                                            {
-                                                dictionary.event.fields
-                                                    .description
-                                            }
-                                        </Label>
-                                        <Textarea
-                                            value={item.description}
-                                            onChange={(event) =>
-                                                patchCalendarItem(item.id, {
-                                                    description:
-                                                        event.target.value,
-                                                })
-                                            }
-                                            className="min-h-24 rounded-xl"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {dictionary.ticketSettings.emoji}
-                                        </Label>
-                                        <EmojiPickerInput
-                                            value={item.emoji}
-                                            onChange={(value) =>
-                                                patchCalendarItem(item.id, {
-                                                    emoji: value ?? "",
-                                                })
-                                            }
-                                            customEmojis={
-                                                metadata?.emojis ?? []
-                                            }
-                                            placeholder={
-                                                dictionary.emojiPicker.pickEmoji
-                                            }
-                                            labels={dictionary.emojiPicker}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>{dictionary.groups.color}</Label>
-                                        <div className="flex items-center gap-3">
-                                            <Input
-                                                type="color"
-                                                value={item.color}
-                                                onChange={(event) =>
-                                                    patchCalendarItem(item.id, {
-                                                        color: event.target
-                                                            .value,
-                                                    })
-                                                }
-                                                className="h-11 w-16 rounded-xl p-1"
-                                            />
-                                            <Input
-                                                value={item.color}
-                                                onChange={(event) =>
-                                                    patchCalendarItem(item.id, {
-                                                        color: event.target
-                                                            .value,
-                                                    })
-                                                }
-                                                className="rounded-xl"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <label className="flex items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        checked={item.allDay}
-                                        onChange={(event) =>
-                                            patchCalendarItem(item.id, {
-                                                allDay: event.target.checked,
-                                            })
-                                        }
-                                    />
-                                    <span>
-                                        {
-                                            dictionary.serverSettings
-                                                .calendarItemAllDay
-                                        }
-                                    </span>
-                                </label>
-
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {
-                                                dictionary.serverSettings
-                                                    .calendarItemStart
-                                            }
-                                        </Label>
-                                        <div className="grid gap-2 md:grid-cols-2">
-                                            <Input
-                                                type="date"
-                                                value={item.startDate}
-                                                onChange={(event) =>
-                                                    patchCalendarItem(item.id, {
-                                                        startDate:
-                                                            event.target.value,
-                                                    })
-                                                }
-                                                className="rounded-xl"
-                                            />
-                                            {!item.allDay ? (
-                                                <Input
-                                                    type="time"
-                                                    value={item.startTime}
-                                                    onChange={(event) =>
-                                                        patchCalendarItem(
-                                                            item.id,
-                                                            {
-                                                                startTime:
-                                                                    event.target
-                                                                        .value,
-                                                            }
-                                                        )
-                                                    }
-                                                    className="rounded-xl"
-                                                />
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {
-                                                dictionary.serverSettings
-                                                    .calendarItemEnd
-                                            }
-                                        </Label>
-                                        <div className="grid gap-2 md:grid-cols-2">
-                                            <Input
-                                                type="date"
-                                                value={item.endDate}
-                                                onChange={(event) =>
-                                                    patchCalendarItem(item.id, {
-                                                        endDate:
-                                                            event.target.value,
-                                                    })
-                                                }
-                                                className="rounded-xl"
-                                            />
-                                            {!item.allDay ? (
-                                                <Input
-                                                    type="time"
-                                                    value={item.endTime}
-                                                    onChange={(event) =>
-                                                        patchCalendarItem(
-                                                            item.id,
-                                                            {
-                                                                endTime:
-                                                                    event.target
-                                                                        .value,
-                                                            }
-                                                        )
-                                                    }
-                                                    className="rounded-xl"
-                                                />
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-4 md:grid-cols-3">
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {
-                                                dictionary.serverSettings
-                                                    .calendarItemRecurrence
-                                            }
-                                        </Label>
-                                        <Select
-                                            value={item.recurrenceFrequency}
-                                            onValueChange={(value) =>
-                                                patchCalendarItem(item.id, {
-                                                    recurrenceFrequency:
-                                                        value as EditableCalendarItem["recurrenceFrequency"],
-                                                })
                                             }
                                         >
-                                            <SelectTrigger className="rounded-xl">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">
-                                                    {
-                                                        dictionary
-                                                            .serverSettings
-                                                            .recurrenceNone
-                                                    }
-                                                </SelectItem>
-                                                <SelectItem value="weekly">
-                                                    {
-                                                        dictionary
-                                                            .serverSettings
-                                                            .recurrenceWeekly
-                                                    }
-                                                </SelectItem>
-                                                <SelectItem value="monthly_date">
-                                                    {
-                                                        dictionary
-                                                            .serverSettings
-                                                            .recurrenceMonthlyDate
-                                                    }
-                                                </SelectItem>
-                                                <SelectItem value="monthly_nth_weekday">
-                                                    {
-                                                        dictionary
-                                                            .serverSettings
-                                                            .recurrenceMonthlyNthWeekday
-                                                    }
-                                                </SelectItem>
-                                                <SelectItem value="yearly">
-                                                    {
-                                                        dictionary
-                                                            .serverSettings
-                                                            .recurrenceYearly
-                                                    }
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                            <Trash2 className="size-4" />
+                                        </Button>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {
-                                                dictionary.serverSettings
-                                                    .calendarItemRecurrenceInterval
-                                            }
-                                        </Label>
-                                        <Input
-                                            type="number"
-                                            min="1"
-                                            value={item.recurrenceInterval}
+
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.serverSettings
+                                                        .calendarItemTitle
+                                                }
+                                            </Label>
+                                            <Input
+                                                value={item.title}
+                                                onChange={(event) =>
+                                                    patchCalendarItem(item.id, {
+                                                        title: event.target
+                                                            .value,
+                                                    })
+                                                }
+                                                className="rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.serverSettings
+                                                        .calendarItemLabelName
+                                                }
+                                            </Label>
+                                            <Input
+                                                value={item.label}
+                                                onChange={(event) =>
+                                                    patchCalendarItem(item.id, {
+                                                        label: event.target
+                                                            .value,
+                                                    })
+                                                }
+                                                className="rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-2 md:col-span-2">
+                                            <Label>
+                                                {
+                                                    dictionary.event.fields
+                                                        .description
+                                                }
+                                            </Label>
+                                            <Textarea
+                                                value={item.description}
+                                                onChange={(event) =>
+                                                    patchCalendarItem(item.id, {
+                                                        description:
+                                                            event.target.value,
+                                                    })
+                                                }
+                                                className="min-h-24 rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.ticketSettings
+                                                        .emoji
+                                                }
+                                            </Label>
+                                            <EmojiPickerInput
+                                                value={item.emoji}
+                                                onChange={(value) =>
+                                                    patchCalendarItem(item.id, {
+                                                        emoji: value ?? "",
+                                                    })
+                                                }
+                                                customEmojis={
+                                                    metadata?.emojis ?? []
+                                                }
+                                                placeholder={
+                                                    dictionary.emojiPicker
+                                                        .pickEmoji
+                                                }
+                                                labels={dictionary.emojiPicker}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {dictionary.groups.color}
+                                            </Label>
+                                            <div className="flex items-center gap-3">
+                                                <Input
+                                                    type="color"
+                                                    value={item.color}
+                                                    onChange={(event) =>
+                                                        patchCalendarItem(
+                                                            item.id,
+                                                            {
+                                                                color: event
+                                                                    .target
+                                                                    .value,
+                                                            }
+                                                        )
+                                                    }
+                                                    className="h-11 w-16 rounded-xl p-1"
+                                                />
+                                                <Input
+                                                    value={item.color}
+                                                    onChange={(event) =>
+                                                        patchCalendarItem(
+                                                            item.id,
+                                                            {
+                                                                color: event
+                                                                    .target
+                                                                    .value,
+                                                            }
+                                                        )
+                                                    }
+                                                    className="rounded-xl"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={item.allDay}
                                             onChange={(event) =>
                                                 patchCalendarItem(item.id, {
-                                                    recurrenceInterval:
-                                                        event.target.value,
+                                                    allDay: event.target
+                                                        .checked,
                                                 })
                                             }
-                                            className="rounded-xl"
                                         />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>
+                                        <span>
                                             {
                                                 dictionary.serverSettings
-                                                    .calendarItemRecurrenceUntil
+                                                    .calendarItemAllDay
                                             }
-                                        </Label>
-                                        <Input
-                                            type="date"
-                                            value={item.recurrenceUntil}
-                                            onChange={(event) =>
-                                                patchCalendarItem(item.id, {
-                                                    recurrenceUntil:
-                                                        event.target.value,
-                                                })
-                                            }
-                                            className="rounded-xl"
-                                            disabled={
-                                                item.recurrenceFrequency ===
-                                                "none"
-                                            }
-                                        />
+                                        </span>
+                                    </label>
+
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.serverSettings
+                                                        .calendarItemStart
+                                                }
+                                            </Label>
+                                            <div className="grid gap-2 md:grid-cols-2">
+                                                <Input
+                                                    type="date"
+                                                    value={item.startDate}
+                                                    onChange={(event) =>
+                                                        patchCalendarItem(
+                                                            item.id,
+                                                            {
+                                                                startDate:
+                                                                    event.target
+                                                                        .value,
+                                                            }
+                                                        )
+                                                    }
+                                                    className="rounded-xl"
+                                                />
+                                                {!item.allDay ? (
+                                                    <Input
+                                                        type="time"
+                                                        value={item.startTime}
+                                                        onChange={(event) =>
+                                                            patchCalendarItem(
+                                                                item.id,
+                                                                {
+                                                                    startTime:
+                                                                        event
+                                                                            .target
+                                                                            .value,
+                                                                }
+                                                            )
+                                                        }
+                                                        className="rounded-xl"
+                                                    />
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.serverSettings
+                                                        .calendarItemEnd
+                                                }
+                                            </Label>
+                                            <div className="grid gap-2 md:grid-cols-2">
+                                                <Input
+                                                    type="date"
+                                                    value={item.endDate}
+                                                    onChange={(event) =>
+                                                        patchCalendarItem(
+                                                            item.id,
+                                                            {
+                                                                endDate:
+                                                                    event.target
+                                                                        .value,
+                                                            }
+                                                        )
+                                                    }
+                                                    className="rounded-xl"
+                                                />
+                                                {!item.allDay ? (
+                                                    <Input
+                                                        type="time"
+                                                        value={item.endTime}
+                                                        onChange={(event) =>
+                                                            patchCalendarItem(
+                                                                item.id,
+                                                                {
+                                                                    endTime:
+                                                                        event
+                                                                            .target
+                                                                            .value,
+                                                                }
+                                                            )
+                                                        }
+                                                        className="rounded-xl"
+                                                    />
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-4 md:grid-cols-3">
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.serverSettings
+                                                        .calendarItemRecurrence
+                                                }
+                                            </Label>
+                                            <Select
+                                                value={item.recurrenceFrequency}
+                                                onValueChange={(value) =>
+                                                    patchCalendarItem(item.id, {
+                                                        recurrenceFrequency:
+                                                            value as EditableCalendarItem["recurrenceFrequency"],
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger className="rounded-xl">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">
+                                                        {
+                                                            dictionary
+                                                                .serverSettings
+                                                                .recurrenceNone
+                                                        }
+                                                    </SelectItem>
+                                                    <SelectItem value="weekly">
+                                                        {
+                                                            dictionary
+                                                                .serverSettings
+                                                                .recurrenceWeekly
+                                                        }
+                                                    </SelectItem>
+                                                    <SelectItem value="monthly_date">
+                                                        {
+                                                            dictionary
+                                                                .serverSettings
+                                                                .recurrenceMonthlyDate
+                                                        }
+                                                    </SelectItem>
+                                                    <SelectItem value="monthly_nth_weekday">
+                                                        {
+                                                            dictionary
+                                                                .serverSettings
+                                                                .recurrenceMonthlyNthWeekday
+                                                        }
+                                                    </SelectItem>
+                                                    <SelectItem value="yearly">
+                                                        {
+                                                            dictionary
+                                                                .serverSettings
+                                                                .recurrenceYearly
+                                                        }
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.serverSettings
+                                                        .calendarItemRecurrenceInterval
+                                                }
+                                            </Label>
+                                            <Input
+                                                type="number"
+                                                min="1"
+                                                value={item.recurrenceInterval}
+                                                onChange={(event) =>
+                                                    patchCalendarItem(item.id, {
+                                                        recurrenceInterval:
+                                                            event.target.value,
+                                                    })
+                                                }
+                                                className="rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.serverSettings
+                                                        .calendarItemRecurrenceUntil
+                                                }
+                                            </Label>
+                                            <Input
+                                                type="date"
+                                                value={item.recurrenceUntil}
+                                                onChange={(event) =>
+                                                    patchCalendarItem(item.id, {
+                                                        recurrenceUntil:
+                                                            event.target.value,
+                                                    })
+                                                }
+                                                className="rounded-xl"
+                                                disabled={
+                                                    item.recurrenceFrequency ===
+                                                    "none"
+                                                }
+                                            />
+                                        </div>
                                     </div>
                                 </div>
+                            ))
+                        ) : (
+                            <div className="border-border/60 text-muted-foreground rounded-xl border border-dashed px-4 py-5 text-sm">
+                                {dictionary.serverSettings.noCalendarItems}
                             </div>
-                        ))
-                    ) : (
-                        <div className="border-border/60 text-muted-foreground rounded-xl border border-dashed px-4 py-5 text-sm">
-                            {dictionary.serverSettings.noCalendarItems}
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                ) : null}
 
-                <div className="space-y-2">
-                    <Label>{dictionary.serverSettings.guildLoginUrl}</Label>
-                    <div className="flex gap-2">
-                        <Input
-                            value={guildLoginUrl}
-                            readOnly
-                            disabled
-                            className="rounded-xl disabled:cursor-text disabled:opacity-100"
-                        />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="shrink-0 rounded-xl"
-                            onClick={handleCopyLoginUrl}
-                        >
-                            {copied ? (
-                                <Check className="size-4" />
-                            ) : (
-                                <Copy className="size-4" />
-                            )}
-                            {copied
-                                ? dictionary.serverSettings.copiedLoginUrl
-                                : dictionary.serverSettings.copyLoginUrl}
-                        </Button>
-                    </div>
-                </div>
-                <div className="border-border/60 space-y-3 rounded-2xl border p-4">
-                    <div>
-                        <h3 className="font-semibold">
-                            {dictionary.serverSettings.googleCalendarTitle}
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                            {
-                                dictionary.serverSettings
-                                    .googleCalendarDescription
-                            }
-                        </p>
-                    </div>
-                    {calendarFeedToken ? (
+                {showLoginLink ? (
+                    <div className="space-y-2">
+                        <Label>{dictionary.serverSettings.guildLoginUrl}</Label>
                         <div className="flex gap-2">
                             <Input
-                                value={calendarFeedUrl ?? ""}
+                                value={guildLoginUrl}
                                 readOnly
-                                className="rounded-xl"
+                                disabled
+                                className="rounded-xl disabled:cursor-text disabled:opacity-100"
                             />
                             <Button
                                 type="button"
                                 variant="outline"
                                 className="shrink-0 rounded-xl"
-                                onClick={handleCopyCalendarFeedUrl}
+                                onClick={handleCopyLoginUrl}
                             >
-                                {calendarFeedCopied ? (
+                                {copied ? (
                                     <Check className="size-4" />
                                 ) : (
                                     <Copy className="size-4" />
                                 )}
-                                {calendarFeedCopied
-                                    ? dictionary.serverSettings
-                                          .copiedCalendarFeed
-                                    : dictionary.serverSettings
-                                          .copyCalendarFeed}
+                                {copied
+                                    ? dictionary.serverSettings.copiedLoginUrl
+                                    : dictionary.serverSettings.copyLoginUrl}
                             </Button>
                         </div>
-                    ) : null}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="rounded-xl"
-                        onClick={() => handleSave(true)}
-                        disabled={isPending}
-                    >
-                        {calendarFeedToken
-                            ? dictionary.serverSettings.rotateCalendarFeed
-                            : dictionary.serverSettings.createCalendarFeed}
-                    </Button>
-                    <p className="text-muted-foreground text-xs">
-                        {dictionary.serverSettings.googleCalendarInstructions}
-                    </p>
-                </div>
+                    </div>
+                ) : null}
                 <Button
                     className="rounded-xl"
                     onClick={() => handleSave()}

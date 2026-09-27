@@ -62,8 +62,8 @@ test("canAdminServerContext allows explicit, dashboard-role, and Discord admins"
     assert.equal(
         canAdminServerContext({
             serverAdminIds: [],
-            dashboardAdminIds: ["user-2"],
             userId: "user-2",
+            discordAccess: { hasDashboardAccess: true },
         }),
         true
     )
@@ -73,6 +73,15 @@ test("canAdminServerContext allows explicit, dashboard-role, and Discord admins"
             serverAdminIds: [],
             userId: "user-2",
             discordAccess: { isAdmin: true },
+        }),
+        true
+    )
+
+    assert.equal(
+        canAdminServerContext({
+            serverAdminIds: [],
+            userId: "user-3",
+            discordAccess: { hasDashboardAccess: true },
         }),
         true
     )
@@ -145,7 +154,7 @@ test("normalizeDoc, normalizeGuildDoc, and normalizeUserDoc normalize identifier
     assert.equal(userWithGuildNickname.name, "Server display name")
 })
 
-test("canAdminServerContext lets a manual override win over inherited access", () => {
+test("canAdminServerContext lets a manual override win except over Discord Administrator", () => {
     assert.equal(
         canAdminServerContext({
             serverAdminIds: ["user-1"],
@@ -154,7 +163,17 @@ test("canAdminServerContext lets a manual override win over inherited access", (
             userId: "user-1",
             discordAccess: { isAdmin: true },
         }),
-        false
+        true
+    )
+
+    assert.equal(
+        canAdminServerContext({
+            serverAdminIds: [],
+            adminAccessOverrides: { "user-1": false },
+            userId: "user-1",
+            discordAccess: { isAdmin: true },
+        }),
+        true
     )
 
     assert.equal(

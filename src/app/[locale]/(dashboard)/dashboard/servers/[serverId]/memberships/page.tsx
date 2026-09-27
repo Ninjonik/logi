@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 
+import { ConfigurationScopeIndicator } from "@/components/app/configuration-scope-indicator"
 import { MembershipSettingsForm } from "@/components/app/membership-settings-form"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
-import { isGameId, withGameOverrides } from "@/domain/games/game"
 import { PageHeader } from "@/components/app/page-header"
 import { getGuildMetadata } from "@/lib/server-metadata"
 import { getServerContext } from "@/lib/server-context"
@@ -22,10 +22,9 @@ export default async function ServerMembershipsPage({
     searchParams: Promise<{ game?: string }>
 }) {
     const { locale, serverId } = await params
-    const { game } = await searchParams
-    const gameId = isGameId(game) ? game : undefined
+    await searchParams
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const context = await getServerContext(serverId, gameId ?? "all")
+    const context = await getServerContext(serverId, "all")
     if (!context?.canAdmin) return null
     const discordConfig = await getDiscordConfigByGuild(serverId)
 
@@ -36,19 +35,14 @@ export default async function ServerMembershipsPage({
                 description={dictionary.membershipSettings.pageDescription}
             />
             <div className="space-y-6 px-4 lg:px-6">
+                <ConfigurationScopeIndicator
+                    enabledGames={context.server.enabledGames}
+                    dictionary={dictionary}
+                />
                 <MembershipSettingsForm
                     serverId={serverId}
-                    config={
-                        discordConfig
-                            ? withGameOverrides(
-                                  discordConfig,
-                                  discordConfig.gameOverrides,
-                                  gameId
-                              )
-                            : null
-                    }
+                    config={discordConfig}
                     baseConfig={discordConfig}
-                    gameId={gameId}
                     dictionary={dictionary}
                 />
             </div>

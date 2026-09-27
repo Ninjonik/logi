@@ -11,15 +11,15 @@ import "./globals.css"
 export const metadata: Metadata = {
     metadataBase: new URL(getSiteUrl()),
     title: {
-        default: "Logi | Hell Let Loose event organizer",
+        default: "Logi | Competetive event organizer",
         template: "%s | Logi",
     },
     description:
-        "Free open-source admin tool for Hell Let Loose clans, rosters, events, briefings, and Discord coordination.",
+        "Free open-source admin tool for competetive clans, rosters, events, briefings, and Discord coordination.",
     openGraph: {
         title: "Logi",
         description:
-            "Plan Hell Let Loose clan events, build rosters, prepare briefings, and coordinate through Discord.",
+            "Plan competetive clan events, build rosters, prepare briefings, and coordinate through Discord.",
         siteName: "Logi",
         type: "website",
     },

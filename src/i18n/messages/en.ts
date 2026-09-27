@@ -34,7 +34,7 @@ export const enMessages = {
     },
     app: {
         name: "Logi",
-        tagline: "Hell Let Loose event organizer",
+        tagline: "Competetive event organizer",
         description:
             "Organize clan events, build rosters, publish briefings, and prepare Discord-connected operations.",
     },
@@ -117,7 +117,7 @@ export const enMessages = {
             heroLineAccent: "Every operation.",
             heroLineThree: "In formation.",
             heroDescription:
-                "Logi turns the beautiful chaos of running a Hell Let Loose community into one living, breathing command center.",
+                "Logi turns the beautiful chaos of running a competetive community into one living, breathing command center.",
             deployCommunity: "Deploy your community",
             seeEverything: "See everything it does",
             playersConfirmed: "31 players confirmed",
@@ -264,7 +264,7 @@ export const enMessages = {
         loginDescription:
             "Sign in with Discord to manage clans, publish rosters, and keep every briefing in one place.",
         loginButton: "Continue with Discord",
-        heroSubtitle: "Hell Let Loose Team Management made simple.",
+        heroSubtitle: "Competetive Team Management made simple.",
         contributeButton: "Contribute",
         featureRosterManagement: "Roster management",
         featurePlayerPerformance: "Player performance aggregation",
@@ -636,7 +636,7 @@ export const enMessages = {
         calendarItemsTitle: "Calendar items",
         calendarItemsDescription:
             "Add manual calendar-only entries such as summer breaks, clan meetings, or other recurring reminders.",
-        addCalendarItem: "Add calendar item",
+        addCalendarItem: "Add custom event",
         calendarItemLabel: "Calendar item",
         calendarItemTitle: "Title",
         calendarItemLabelName: "Legend label",
@@ -1027,7 +1027,7 @@ export const enMessages = {
             idLabel: "Xbox gamertag / account ID",
             placeholder: "Xbox gamertag or account ID",
             guideLabel: "Open Xbox guide",
-            help: "Use the Xbox identity you play Hell Let Loose with. In most cases this is your gamertag.",
+            help: "Use the Xbox identity you play the game with. In most cases this is your gamertag.",
             steps: [
                 "Open the guide below.",
                 "Open your Xbox profile.",
@@ -1054,6 +1054,14 @@ export const enMessages = {
         monthView: "Monthly operations view",
         moreEvents: "more events",
         allDay: "All day",
+        manualItemAdminHint:
+            "Managers can remove or edit this calendar item from its calendar details.",
+    },
+    configurationScope: {
+        clanWide: "Clan-wide configuration",
+        clanWideDescription: "Changes apply to every active game in this clan.",
+        singleGame: "Game-specific configuration",
+        singleGameDescription: "Changes apply only to the selected game.",
     },
     calendarCards: {
         eventCalendar: "Event calendar",
@@ -1162,6 +1170,10 @@ export const enMessages = {
             "Roster saved, but one or more player DMs could not be delivered.",
     },
     event: {
+        signupStatusSignedUpAs: "You are signed up as: {type}.",
+        signupStatusGeneral: "general attendee",
+        signupStatusDeclined: "You marked yourself as not attending.",
+        signupStatusNotSignedUp: "You have not signed up for this event yet.",
         infoTitle: "Event information",
         infoDescription:
             "This page stays view-first for everyone, and admins can toggle it into edit mode without changing routes.",
@@ -1589,7 +1601,7 @@ export const enMessages = {
         title: "Stratmaps",
         createTitle: "Create Stratmap",
         pageDescription:
-            "Saved realtime tactical maps for Hell Let Loose match planning.",
+            "Saved realtime tactical maps for competetive match planning.",
         createDescription:
             "Create a saved realtime tactical sketch that can later be attached to match briefings.",
         detailDescription:

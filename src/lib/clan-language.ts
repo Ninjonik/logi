@@ -522,7 +522,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
         platformLink: {
             button: "Submit platform ID",
             dmIntro:
-                "Before we can continue, we need a platform ID we can match to Hell Let Loose.",
+                "Before we can continue, we need a platform ID we can match to the game.",
             dmInstruction:
                 "Use the button below to open the one-time submission page. When it says successful, you can close it.",
             readyDm: "Your platform ID has been linked successfully.",
@@ -816,7 +816,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
                 "Application closed as {outcome}. Reason: {reason}",
             platformIdButton: "Submit platform ID",
             platformIdDmIntro:
-                "Before we can continue your clan application, we need a platform ID we can match to Hell Let Loose.",
+                "Before we can continue your clan application, we need a platform ID we can match to the game.",
             platformIdDmInstruction:
                 "Use the button below to open the one-time submission page. When it says successful, close it and click the application button again in Discord.",
             platformIdReadyDm:
@@ -1027,7 +1027,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
         platformLink: {
             button: "Zadat platform ID",
             dmIntro:
-                "Než budeme moci pokračovat, potřebujeme platform ID, které můžeme spárovat s Hell Let Loose.",
+                "Než budeme moci pokračovat, potřebujeme platform ID, které můžeme spárovat s hrou.",
             dmInstruction:
                 "Použijte tlačítko níže pro otevření jednorázové stránky pro odeslání. Až uvidíte úspěšné potvrzení, můžete ji zavřít.",
             readyDm: "Vaše platform ID bylo úspěšně propojeno.",
@@ -1148,7 +1148,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
                 "Přihláška uzavřena jako {outcome}. Důvod: {reason}",
             platformIdButton: "Zadat platform ID",
             platformIdDmIntro:
-                "Než budeme moci pokračovat s vaší klanovou přihláškou, potřebujeme platform ID, které můžeme spárovat s Hell Let Loose.",
+                "Než budeme moci pokračovat s vaší klanovou přihláškou, potřebujeme platform ID, které můžeme spárovat s hrou.",
             platformIdDmInstruction:
                 "Použijte tlačítko níže pro otevření jednorázové stránky pro odeslání. Až uvidíte úspěšné potvrzení, zavřete ji a v Discordu znovu klikněte na tlačítko přihlášky.",
             platformIdReadyDm:
@@ -1363,7 +1363,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
         platformLink: {
             button: "Platform ID einreichen",
             dmIntro:
-                "Bevor wir fortfahren können, benötigen wir eine Platform ID, die wir Hell Let Loose zuordnen können.",
+                "Bevor wir fortfahren können, benötigen wir eine Platform ID, die wir Spiel zuordnen können.",
             dmInstruction:
                 "Nutzen Sie den Button unten, um die einmalige Einreichungsseite zu öffnen. Wenn dort erfolgreich steht, können Sie sie schließen.",
             readyDm: "Ihre Platform ID wurde erfolgreich verknüpft.",
@@ -1584,7 +1584,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
                 "Bewerbung geschlossen als {outcome}. Grund: {reason}",
             platformIdButton: "Platform ID einreichen",
             platformIdDmIntro:
-                "Bevor wir mit Ihrer Clan-Bewerbung fortfahren können, benötigen wir eine Platform ID, die wir Hell Let Loose zuordnen können.",
+                "Bevor wir mit Ihrer Clan-Bewerbung fortfahren können, benötigen wir eine Platform ID, die wir Spiel zuordnen können.",
             platformIdDmInstruction:
                 "Nutzen Sie den Button unten, um die einmalige Einreichungsseite zu öffnen. Wenn dort erfolgreich steht, schließen Sie sie und klicken Sie in Discord erneut auf den Bewerbungs-Button.",
             platformIdReadyDm:

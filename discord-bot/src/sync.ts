@@ -5,8 +5,11 @@ import {
     syncMembershipPanel,
     syncTicketPanel,
 } from "./sync/panels"
+import {
+    syncDashboardAdminRoles,
+    syncGuildMemberAccess,
+} from "./sync/member-access"
 import { processAttendanceReminders } from "./sync/attendance-reminders"
-import { syncGuildMemberAccess } from "./sync/member-access"
 import { reportClanDiscordError } from "./error-reporting"
 import { syncPayloadEvents } from "./sync/events"
 import type { SyncPayload } from "./types"
@@ -29,6 +32,12 @@ export async function syncGuildPayload(
     })
 
     if (mode === "full") {
+        await runGuildSyncStep(
+            client,
+            "dashboard admin role sync",
+            payload,
+            () => syncDashboardAdminRoles(client, payload)
+        )
         await runGuildSyncStep(client, "member access sync", payload, () =>
             syncGuildMemberAccess(client, payload)
         )

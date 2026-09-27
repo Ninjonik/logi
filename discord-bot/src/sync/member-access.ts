@@ -6,6 +6,61 @@ import type { SyncPayload } from "../types"
 import { logInfo, logWarn } from "../log"
 import { env } from "../environment"
 
+/** Keeps explicit Logi admin assignments reflected in Discord's configured role. */
+export async function syncDashboardAdminRoles(
+    client: Client,
+    payload: SyncPayload
+) {
+    const roleId = payload.config.dashboardAdminRoleId
+    if (!roleId) return
+
+    const guild = await client.guilds
+        .fetch(payload.config.guildId)
+        .catch(() => null)
+    if (!guild) return
+
+    const role = await guild.roles.fetch(roleId).catch(() => null)
+    if (!role) {
+        logWarn("member-access", "Dashboard admin role could not be fetched", {
+            guildId: guild.id,
+            roleId,
+        })
+        return
+    }
+
+    const overrides = payload.guild.adminAccessOverrides ?? {}
+    await Promise.all(
+        Object.entries(overrides).map(async ([userId, isAdmin]) => {
+            const member = await guild.members.fetch(userId).catch(() => null)
+            if (!member || member.roles.cache.has(roleId) === isAdmin) return
+
+            await (
+                isAdmin
+                    ? member.roles.add(
+                          role,
+                          "Synced from Logi dashboard admin access"
+                      )
+                    : member.roles.remove(
+                          role,
+                          "Synced from Logi dashboard admin access"
+                      )
+            ).catch((error) => {
+                logWarn(
+                    "member-access",
+                    "Failed to sync dashboard admin role",
+                    {
+                        guildId: guild.id,
+                        userId,
+                        roleId,
+                        isAdmin,
+                        error,
+                    }
+                )
+            })
+        })
+    )
+}
+
 export async function syncGuildMemberAccess(
     client: Client,
     payload: SyncPayload

@@ -1,6 +1,9 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import type { ReactNode } from "react"
+import { Trash2 } from "lucide-react"
+import { toast } from "sonner"
 import Link from "next/link"
 
 import {
@@ -14,6 +17,8 @@ import {
 import { EventSignupActions } from "@/components/app/event-signup-actions"
 import type { CalendarDisplayEntry } from "@/lib/calendar-entries"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
+import { getClanDiscordMessages } from "@/lib/clan-language"
+import { getSignupDisplayLabel } from "@/lib/event-signup"
 import { EmojiValue } from "@/components/app/emoji-value"
 import { formatDateTime, formatTime } from "@/lib/format"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -30,6 +35,8 @@ export function CalendarEntryDialog({
     timezone,
     dictionary,
     signupLanguage,
+    currentUserId,
+    canAdmin = false,
 }: {
     trigger: ReactNode
     locale: Locale
@@ -39,7 +46,17 @@ export function CalendarEntryDialog({
     timezone?: string
     dictionary: Dictionary
     signupLanguage: "en" | "cs" | "de"
+    currentUserId?: string
+    canAdmin?: boolean
 }) {
+    const router = useRouter()
+    const currentSignup =
+        entry.kind === "event"
+            ? entry.event.signUps.find(
+                  (signup) => signup.userId === currentUserId
+              )
+            : undefined
+    const signupMessages = getClanDiscordMessages(signupLanguage)
     const detailPath =
         entry.kind === "event"
             ? `/${locale}/dashboard/servers/${serverId}/${entry.event.kind === "training" ? "trainings" : "matches"}/${entry.event.id}`
@@ -140,12 +157,63 @@ export function CalendarEntryDialog({
                         <div className="text-sm font-medium">
                             {dictionary.common.actions}
                         </div>
+                        {currentSignup ? (
+                            <p className="text-muted-foreground text-sm">
+                                {dictionary.event.signupStatusSignedUpAs.replace(
+                                    "{type}",
+                                    currentSignup.group
+                                        ? getSignupDisplayLabel(
+                                              currentSignup.group,
+                                              signupMessages.buttons
+                                          )
+                                        : dictionary.event.signupStatusGeneral
+                                )}
+                            </p>
+                        ) : entry.event.participants.some(
+                              (participant) =>
+                                  participant.userId === currentUserId &&
+                                  participant.status === "not_attending"
+                          ) ? (
+                            <p className="text-muted-foreground text-sm">
+                                {dictionary.event.signupStatusDeclined}
+                            </p>
+                        ) : (
+                            <p className="text-muted-foreground text-sm">
+                                {dictionary.event.signupStatusNotSignedUp}
+                            </p>
+                        )}
                         <EventSignupActions
                             serverId={serverId}
                             event={entry.event}
                             groups={groups}
                             signupLanguage={signupLanguage}
                         />
+                    </div>
+                ) : canAdmin ? (
+                    <div className="flex items-center justify-between gap-3 rounded-xl border p-3">
+                        <p className="text-muted-foreground text-sm">
+                            {dictionary.calendarPage.manualItemAdminHint}
+                        </p>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="shrink-0 rounded-xl"
+                            onClick={async () => {
+                                const response = await fetch(
+                                    `/api/servers/${serverId}/calendar-items/${entry.item.id}`,
+                                    { method: "DELETE" }
+                                )
+                                if (!response.ok) {
+                                    toast.error(dictionary.common.error)
+                                    return
+                                }
+                                toast.success(dictionary.common.save)
+                                router.refresh()
+                            }}
+                        >
+                            <Trash2 className="size-4" />
+                            {dictionary.serverSettings.ssoRemove}
+                        </Button>
                     </div>
                 ) : null}
             </DialogContent>

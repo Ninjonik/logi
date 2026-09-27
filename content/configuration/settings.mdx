@@ -9,6 +9,11 @@ import { Callout, Steps } from "nextra/components"
 
 Server settings belong to the active workspace. Only managers should change them, and changes can affect how the dashboard, Discord coordination, events, and membership features behave.
 
+Every configuration screen shows its scope above the editor. One game icon means
+the change applies only to that selected game; a row of active game icons means
+the change is clan-wide. Confirm that scope before saving settings, ticket
+panels, membership workflows, or System operations.
+
 ## Change settings carefully
 
 <Steps>
@@ -45,7 +50,7 @@ links to this settings section. When exactly one is active, creation pages
 select it automatically. With multiple games active, starting a game-owned
 creation flow from **All games** first asks the manager to choose a game.
 
-The manager-only **System** area contains Website API keys and expandable Imports, Helper data, and Webhooks sections on one page. Normal Clan settings now contains only game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
+The manager-only **System** area groups Website API keys, Google Calendar sync, single sign-on applications, Imports, Helper data, and Webhooks into collapsed sections. Normal Clan settings contains game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
 Each website API key belongs to the currently selected workspace and can read
 that workspace's clan-owned data. Give it a recognisable name of at most 80
@@ -220,7 +225,7 @@ role permissions required for the relevant action.
 | Forum category              | Match forum-post provisioning                                      | A match cannot get a Logi forum post from the workspace default.                                                                   |
 | Meeting voice/stage channel | Discord scheduled event and meeting-channel attendance tools       | No scheduled event is maintained. A text/category channel is not a substitute.                                                     |
 | Clan role                   | Clan pings and membership-role transitions                         | No clan ping/managed clan role is available.                                                                                       |
-| Dashboard admin role        | Dashboard manager access when Discord member access is synced      | The role does not grant access; Discord Administrator remains an independent access path.                                          |
+| Dashboard admin role        | Dashboard manager access; Player-page admin changes add or remove this role | A configured, manageable role is required for Logi to mirror Player-page admin changes. Discord Administrator remains an independent bootstrap access path. |
 
 Event-level Discord channel selections can override workspace defaults at event
 creation. Those message locations are then retained for that event; later
@@ -228,16 +233,17 @@ editing an event does not move its existing Discord messages between channels.
 
 ### Manual calendar items and categories
 
-The frontend settings area also owns manual calendar items and event-category
-presentation. Saving this form replaces the workspace's manual calendar-item
-set: remove an item there only when you intend to remove it from the calendar.
+Create manual calendar items from the Calendar page. Open an item to review its
+details; managers can remove it there. Categories remain part of the workspace
+configuration and supply label, colour, and optional emoji; they are visual
+grouping, not access control or a Discord role mapping.
 Categories supply label, colour, and optional emoji; they are visual grouping,
 not access control or a Discord role mapping.
 
 ### Google Calendar sync
 
-Clan managers can create a separate private iCalendar subscription link in clan
-settings. Add it in Google Calendar through **Other calendars → From URL**.
+Clan managers can create a separate private iCalendar subscription link in the
+manager-only **System** area. Add it in Google Calendar through **Other calendars → From URL**.
 The subscription includes every scheduled Logi event and every manual calendar
 item, including recurring items. The URL is a secret capability: anyone who has
 it can read that clan's calendar. Rotate the link to immediately disable an old

@@ -9,6 +9,7 @@ import type {
     Group,
     Roster,
 } from "@/types/domain"
+import { CalendarItemCreateDialog } from "@/components/app/calendar-item-create-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MonthCalendarView } from "@/components/app/month-calendar-view"
 import { buildCalendarDisplayEntries } from "@/lib/calendar-entries"
@@ -31,6 +32,8 @@ export function CalendarView({
     timezone,
     dictionary,
     signupLanguage,
+    currentUserId,
+    canAdmin,
 }: {
     locale: Locale
     serverId: string
@@ -42,6 +45,8 @@ export function CalendarView({
     timezone?: string
     dictionary: Dictionary
     signupLanguage: "en" | "cs" | "de"
+    currentUserId?: string
+    canAdmin?: boolean
 }) {
     const now = new Date()
     const displayEntries = buildCalendarDisplayEntries({
@@ -57,6 +62,14 @@ export function CalendarView({
 
     return (
         <div className="space-y-6">
+            {canAdmin ? (
+                <div className="flex justify-end">
+                    <CalendarItemCreateDialog
+                        serverId={serverId}
+                        dictionary={dictionary}
+                    />
+                </div>
+            ) : null}
             <MonthCalendarView
                 locale={locale}
                 serverId={serverId}
@@ -65,6 +78,8 @@ export function CalendarView({
                 timezone={timezone}
                 dictionary={dictionary}
                 signupLanguage={signupLanguage}
+                currentUserId={currentUserId}
+                canAdmin={canAdmin}
             />
             <div className="grid gap-4 xl:grid-cols-3">
                 {highlightedEntries.map((entry) => {
