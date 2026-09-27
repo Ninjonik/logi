@@ -613,6 +613,15 @@ export const deMessages = {
         guildLoginUrl: "Eigene Login-Seite",
         copyLoginUrl: "Kopieren",
         copiedLoginUrl: "Kopiert",
+        ssoTitle: "Single-Sign-on-Anwendungen",
+        ssoDescription:
+            "Verbundene Websites verwenden Logi als Discord-basierten Identitätsanbieter. Client-Geheimnisse werden nur einmal angezeigt.",
+        ssoSecret: "Dieses Client-Geheimnis jetzt kopieren:",
+        ssoName: "Anwendungsname",
+        ssoWebsiteUrl: "Website-URL",
+        ssoRedirectUris: "Weiterleitungs-URL (eine pro Zeile)",
+        ssoCreate: "Anwendung erstellen",
+        ssoRemove: "Anwendung entfernen",
         googleCalendarTitle: "Google-Kalender-Synchronisierung",
         googleCalendarDescription:
             "Erstelle einen privaten Abonnement-Link für den vollständigen Logi-Kalender dieses Clans, einschließlich geplanter Events und wiederkehrender manueller Einträge.",

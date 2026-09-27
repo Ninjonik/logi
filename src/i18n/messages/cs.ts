@@ -610,6 +610,15 @@ export const csMessages = {
         guildLoginUrl: "Vlastní přihlašovací stránka",
         copyLoginUrl: "Kopírovat",
         copiedLoginUrl: "Zkopírováno",
+        ssoTitle: "Aplikace jednotného přihlášení",
+        ssoDescription:
+            "Připojené weby používají Logi jako poskytovatele identity přes Discord. Tajný klíč klienta se zobrazí jen jednou.",
+        ssoSecret: "Nyní zkopírujte tajný klíč klienta:",
+        ssoName: "Název aplikace",
+        ssoWebsiteUrl: "URL webu",
+        ssoRedirectUris: "URL pro přesměrování (jedna na řádek)",
+        ssoCreate: "Vytvořit aplikaci",
+        ssoRemove: "Odstranit aplikaci",
         googleCalendarTitle: "Synchronizace s Kalendářem Google",
         googleCalendarDescription:
             "Vytvořte soukromý odkaz k odběru celého kalendáře Logi tohoto klanu včetně naplánovaných akcí a opakovaných ručních položek.",

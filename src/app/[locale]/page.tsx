@@ -13,14 +13,18 @@ export default async function LocaleHomePage({
     const resolvedLocale = isLocale(locale) ? locale : defaultLocale
     const dictionary = getDictionary(resolvedLocale)
     const user = await getCurrentPlayer()
+    const dashboardHref = user?.defaultWorkspaceRecordId
+        ? `/${resolvedLocale}/dashboard/servers/${user.defaultWorkspaceRecordId}`
+        : undefined
 
     return (
-        <PublicSiteShell locale={resolvedLocale}>
+        <PublicSiteShell locale={resolvedLocale} dashboardHref={dashboardHref}>
             <LandingPage
                 dictionary={dictionary}
                 locale={resolvedLocale}
                 signedIn={Boolean(user)}
                 userName={user?.name}
+                dashboardHref={dashboardHref}
             />
         </PublicSiteShell>
     )

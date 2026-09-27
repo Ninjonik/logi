@@ -15,9 +15,11 @@ const githubHref = "https://github.com/ninjonik/logi"
 export async function PublicSiteShell({
     children,
     locale,
+    dashboardHref,
 }: {
     children: React.ReactNode
     locale: Locale
+    dashboardHref?: string
 }) {
     const dictionary = getDictionary(locale)
     const status = await getLogiStatus()
@@ -67,7 +69,9 @@ export async function PublicSiteShell({
                             compact
                         />
                         <Button asChild size="sm">
-                            <Link href={`/${locale}/dashboard`}>
+                            <Link
+                                href={dashboardHref ?? `/${locale}/dashboard`}
+                            >
                                 {dictionary.home.openApp}
                             </Link>
                         </Button>
