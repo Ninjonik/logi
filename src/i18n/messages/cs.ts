@@ -57,6 +57,7 @@ export const csMessages = {
     },
     publicNavigation: {
         wiki: "Wiki",
+        discordSupport: "Podpora na Discordu",
         restartTour: "Spustit průvodce znovu",
         gdpr: "GDPR",
         privacy: "Soukromí",

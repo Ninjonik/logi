@@ -20,6 +20,10 @@ export function getSiteUrl() {
     return process.env.SITE_URL ?? "http://localhost:3000"
 }
 
+export function getDiscordSupportUrl() {
+    return process.env.DISCORD_SUPPORT_URL ?? "https://discord.gg/BnNHtc4zNs"
+}
+
 export function getDiscordClientId() {
     return (
         getFirstEnv("DISCORD_CLIENT_ID", "AUTH_DISCORD_ID") ??
