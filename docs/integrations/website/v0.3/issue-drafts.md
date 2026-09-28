@@ -5,6 +5,13 @@ not run for that reason; the open-PR list was empty at baseline. Search again
 before publishing these drafts. None is an allocated issue or closure claim.
 Private provider-review findings are deliberately excluded.
 
+The [dated integration roadmap](../roadmap/README.md) expands these drafts into
+thirteen proposed implementation tasks with owners, interfaces and acceptance
+tests. D1–D4 cover collection/results, W1–W4 cover website synchronization and
+publication, and I1–I5 cover membership, managed roles and identity. These local
+task IDs are not allocated upstream issues. Implemented key UI remains separate
+from this future-work backlog.
+
 ## Publish consent-aware website projections
 
 **Partial delivery:** [Handoff 0.4.0](../v0.4/README.md) implements independently

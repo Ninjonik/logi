@@ -168,3 +168,8 @@ durable website synchronization and game-server snapshots. Restricted-key UI is
 implemented in this milestone; production workspace acceptance remains separate.
 SSO remains subject to separate private provider acceptance. Hosted readiness,
 website consumer behavior and real provider/Discord behavior are unverified.
+
+The [integration roadmap](../roadmap/README.md) records the subsequent research,
+proposed architecture and separately owned implementation tasks for HLL/WDG
+collection, website synchronization, Discord membership and authentication.
+It does not change this delivered wire contract.

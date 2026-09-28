@@ -31,6 +31,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — contribution workflow, placement rules, and expected validation
 - [discord-bot/README.md](./discord-bot/README.md) — bot runtime, required environment variables, responsibilities, and source layout
 - [Website integration handoff](./docs/integrations/website/v0.4/README.md) — scoped read-only keys, minimal event/match summaries, synthetic fixtures, and consumer acceptance
+- [Integration roadmap](./docs/integrations/website/roadmap/README.md) — proposed HLL/Wardogs collection, website synchronization, Discord membership and identity plans
 
 ### User-facing and legal Markdown
 
