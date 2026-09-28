@@ -68,7 +68,10 @@ export async function PublicSiteShell({
                             rel="noreferrer"
                             className="hover:text-foreground inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
                         >
-                            <SiDiscord className="size-3.5" />
+                            <SiDiscord
+                                aria-hidden="true"
+                                className="size-3.5"
+                            />
                             {dictionary.publicNavigation.discordSupport}
                         </a>
                     </nav>
@@ -104,7 +107,10 @@ export async function PublicSiteShell({
                             rel="noreferrer"
                             className="hover:text-foreground inline-flex items-center gap-1.5"
                         >
-                            <SiDiscord className="size-3.5" />
+                            <SiDiscord
+                                aria-hidden="true"
+                                className="size-3.5"
+                            />
                             {dictionary.publicNavigation.discordSupport}
                         </a>
                         <Link

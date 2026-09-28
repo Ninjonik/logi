@@ -27,10 +27,15 @@ import {
     useTransform,
 } from "framer-motion"
 import type { getDictionary } from "@/i18n/dictionaries"
-import { PhotoSlider } from "react-photo-view"
 import { useRef, useState } from "react"
+import dynamic from "next/dynamic"
 import Image from "next/image"
 import Link from "next/link"
+
+const PhotoSlider = dynamic(
+    () => import("react-photo-view").then(({ PhotoSlider }) => PhotoSlider),
+    { ssr: false }
+)
 
 type Dictionary = ReturnType<typeof getDictionary>
 type Props = {
@@ -320,23 +325,19 @@ export function LandingPage({
                     </MovingButton>
                 </div>
             </section>
-            <PhotoSlider
-                images={
-                    viewerImage
-                        ? [{ key: viewerImage.src, src: viewerImage.src }]
-                        : []
-                }
-                visible={viewerImage !== null}
-                onClose={() => setViewerImage(null)}
-                maskOpacity={0.92}
-                overlayRender={() =>
-                    viewerImage ? (
+            {viewerImage ? (
+                <PhotoSlider
+                    images={[{ key: viewerImage.src, src: viewerImage.src }]}
+                    visible
+                    onClose={() => setViewerImage(null)}
+                    maskOpacity={0.92}
+                    overlayRender={() => (
                         <p className="absolute right-6 bottom-6 left-6 text-center text-sm font-medium text-white">
                             {viewerImage.title}
                         </p>
-                    ) : null
-                }
-            />
+                    )}
+                />
+            ) : null}
         </main>
     )
 }
@@ -351,7 +352,7 @@ function Heading({
 }) {
     return (
         <div className="mx-auto max-w-3xl text-center">
-            <p className="text-xs font-bold tracking-[.25em] text-amber-300 uppercase">
+            <p className="text-xs font-bold tracking-[.25em] text-amber-700 uppercase dark:text-amber-300">
                 {eyebrow}
             </p>
             <h2 className="mt-5 text-4xl font-semibold tracking-[-.055em] text-balance sm:text-6xl">
@@ -481,7 +482,7 @@ function Spotlight({
             className="group relative min-h-[430px] overflow-hidden rounded-t-[1.75rem] bg-white p-6 [transform-style:preserve-3d] dark:bg-white/[.035]"
         >
             <div className="relative z-10">
-                <div className="flex size-11 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10 text-amber-200">
+                <div className="flex size-11 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10 text-amber-700 dark:text-amber-200">
                     <Icon className="size-5" />
                 </div>
                 <h3 className="mt-5 text-xl font-semibold tracking-[-.03em]">
@@ -525,7 +526,7 @@ function Value({
             className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-b from-white to-amber-50 p-7 shadow-sm dark:border-white/10 dark:from-white/[.07] dark:to-white/[.02] dark:shadow-none"
         >
             <div className="absolute -top-12 -right-12 size-36 rounded-full bg-amber-300/10 blur-2xl transition-transform duration-500 group-hover:scale-150" />
-            <Icon className="relative size-6 text-amber-200" />
+            <Icon className="relative size-6 text-amber-700 dark:text-amber-200" />
             <h3 className="relative mt-10 text-xl font-semibold tracking-[-.035em]">
                 {title}
             </h3>

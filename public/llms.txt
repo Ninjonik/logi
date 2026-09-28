@@ -1,0 +1,18 @@
+# Logi
+
+Logi is an open-source community-management platform for Hell Let Loose communities. It helps Discord community managers plan events, build rosters, publish match results, and coordinate operations with a companion bot.
+
+## Public resources
+
+- [Logi home](https://logibot.tech/en): Product overview and sign-in entry point.
+- [Logi Wiki](https://logibot.tech/wiki): Product documentation and setup guides.
+- [Getting started](https://logibot.tech/wiki/getting-started): Introductory guide for community managers.
+- [Discord bot setup](https://logibot.tech/wiki/discord-bot-setup): Bot installation and configuration guide.
+- [API reference](https://logibot.tech/api/v1/docs): Authenticated API documentation.
+- [OpenAPI document](https://logibot.tech/api/v1/openapi.json): Machine-readable API contract.
+- [Privacy policy](https://logibot.tech/en/privacy-policy): Personal-data processing information.
+- [Terms of service](https://logibot.tech/en/tos): Service terms.
+
+## Crawling guidance
+
+Public marketing pages and the wiki may be indexed. Dashboard, sign-in, account-linking, and API routes require authentication or are not intended for crawling; follow [robots.txt](https://logibot.tech/robots.txt) for the authoritative crawl rules.
