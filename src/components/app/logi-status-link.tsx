@@ -17,7 +17,13 @@ const statusDetails = {
     },
 } as const
 
-export function LogiStatusLink({ status }: { status: LogiStatus }) {
+export function LogiStatusLink({
+    status,
+    showLabel = true,
+}: {
+    status: LogiStatus
+    showLabel?: boolean
+}) {
     const details = statusDetails[status]
     const href = process.env.NEXT_PUBLIC_LOGI_STATUS_URL
 
@@ -27,9 +33,11 @@ export function LogiStatusLink({ status }: { status: LogiStatus }) {
         <a
             href={href}
             className={`${details.className} inline-flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-80`}
+            aria-label={details.label}
+            title={details.label}
         >
             <Circle className="size-2.5 fill-current" aria-hidden="true" />
-            <span>{details.label}</span>
+            {showLabel ? <span>{details.label}</span> : null}
         </a>
     )
 }

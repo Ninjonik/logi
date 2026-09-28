@@ -1,4 +1,4 @@
-import { BookOpen, Github } from "lucide-react"
+import { BookOpen, Github, MessageCircle } from "lucide-react"
 import Link from "next/link"
 
 import { LogiStatusLink } from "@/components/app/logi-status-link"
@@ -6,6 +6,7 @@ import { LocaleSwitcher } from "@/components/app/locale-switcher"
 import { ThemeSwitcher } from "@/components/app/theme-switcher"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getLogiStatus } from "@/lib/logi-status"
+import { getDiscordSupportUrl } from "@/lib/env"
 import { Button } from "@/components/ui/button"
 import type { Locale } from "@/i18n/config"
 import { Logo } from "@/components/logo"
@@ -23,6 +24,7 @@ export async function PublicSiteShell({
 }) {
     const dictionary = getDictionary(locale)
     const status = await getLogiStatus()
+    const discordSupportUrl = getDiscordSupportUrl()
 
     return (
         <div className="bg-background text-foreground flex min-h-dvh flex-col">
@@ -61,7 +63,7 @@ export async function PublicSiteShell({
                         </Link>
                     </nav>
                     <div className="flex items-center gap-2">
-                        <LogiStatusLink status={status} />
+                        <LogiStatusLink status={status} showLabel={false} />
                         <ThemeSwitcher />
                         <LocaleSwitcher
                             locale={locale}
@@ -75,6 +77,21 @@ export async function PublicSiteShell({
                                 {dictionary.home.openApp}
                             </Link>
                         </Button>
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="hidden md:inline-flex"
+                        >
+                            <a
+                                href={discordSupportUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <MessageCircle className="size-3.5" />
+                                {dictionary.publicNavigation.discordSupport}
+                            </a>
+                        </Button>
                     </div>
                 </div>
             </header>
@@ -86,6 +103,15 @@ export async function PublicSiteShell({
                     </span>
                     <div className="flex items-center gap-4">
                         <LogiStatusLink status={status} />
+                        <a
+                            href={discordSupportUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hover:text-foreground inline-flex items-center gap-1.5"
+                        >
+                            <MessageCircle className="size-3.5" />
+                            {dictionary.publicNavigation.discordSupport}
+                        </a>
                         <Link
                             href={`/${locale}/privacy-policy`}
                             className="hover:text-foreground"

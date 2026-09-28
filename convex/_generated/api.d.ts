@@ -28,6 +28,7 @@ import type * as meetingAttendance from "../meetingAttendance.js";
 import type * as migrations from "../migrations.js";
 import type * as performanceHistory from "../performanceHistory.js";
 import type * as platformIdLinks from "../platformIdLinks.js";
+import type * as platformSettings from "../platformSettings.js";
 import type * as playerStats from "../playerStats.js";
 import type * as players from "../players.js";
 import type * as privacy from "../privacy.js";
@@ -81,6 +82,7 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   performanceHistory: typeof performanceHistory;
   platformIdLinks: typeof platformIdLinks;
+  platformSettings: typeof platformSettings;
   playerStats: typeof playerStats;
   players: typeof players;
   privacy: typeof privacy;

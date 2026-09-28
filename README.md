@@ -67,6 +67,7 @@ Create a private `.env.local` file at the repository root. Do not commit it. The
 | `JWT_SECRET`                                 | Dashboard session signing                                       |
 | `INTERNAL_AUTH_SECRET`                       | Shared secret for trusted dashboard/bot-to-Convex operations    |
 | `DISCORD_BOT_TOKEN`                          | Required when running the Discord bot                           |
+| `DISCORD_SUPPORT_URL`                         | Public Discord support-server invite shown in Logi navigation   |
 
 Start the dashboard:
 

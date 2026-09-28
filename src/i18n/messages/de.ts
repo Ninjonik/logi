@@ -58,6 +58,7 @@ export const deMessages = {
     },
     publicNavigation: {
         wiki: "Wiki",
+        discordSupport: "Discord-Support",
         restartTour: "Tour neu starten",
         privacy: "Datenschutz",
         gdpr: "DSGVO",

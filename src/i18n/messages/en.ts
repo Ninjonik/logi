@@ -57,6 +57,7 @@ export const enMessages = {
     },
     publicNavigation: {
         wiki: "Wiki",
+        discordSupport: "Discord support server",
         restartTour: "Restart tour",
         privacy: "Privacy",
         gdpr: "GDPR",
