@@ -310,11 +310,20 @@ export function compactStoredMatchPlayer<
     return { ...storedPlayer, death_by: {} }
 }
 
-function sanitizeScoreboardResult(
+export function sanitizeScoreboardResult(
     payload: ScoreboardResponse["result"]
 ): SanitizedMatchPayload {
     return {
-        ...payload,
+        id: payload.id,
+        creation_time: payload.creation_time,
+        start: payload.start,
+        end: payload.end,
+        server_number: payload.server_number,
+        map_name: payload.map_name,
+        result: {
+            axis: payload.result.axis,
+            allied: payload.result.allied,
+        },
         game_layout: {
             requested: Array.isArray(payload.game_layout?.requested)
                 ? payload.game_layout.requested
@@ -323,14 +332,113 @@ function sanitizeScoreboardResult(
                 ? payload.game_layout.set
                 : [],
         },
+        ...(payload.cap_flips
+            ? {
+                  cap_flips: payload.cap_flips.map((flip) => ({
+                      allied_score: flip.allied_score,
+                      axis_score: flip.axis_score,
+                      ts: flip.ts,
+                  })),
+              }
+            : {}),
+        ...(payload.match_time === undefined
+            ? {}
+            : { match_time: payload.match_time }),
+        map: {
+            id: payload.map.id,
+            pretty_name: payload.map.pretty_name,
+            game_mode: payload.map.game_mode,
+            attackers: payload.map.attackers ?? null,
+            environment: payload.map.environment,
+            image_name: payload.map.image_name,
+            map: {
+                id: payload.map.map.id,
+                name: payload.map.map.name,
+                tag: payload.map.map.tag,
+                pretty_name: payload.map.map.pretty_name,
+                shortname: payload.map.map.shortname,
+                orientation: payload.map.map.orientation,
+                allies: {
+                    name: payload.map.map.allies.name,
+                    team: payload.map.map.allies.team,
+                },
+                axis: {
+                    name: payload.map.map.axis.name,
+                    team: payload.map.map.axis.team,
+                },
+            },
+        },
         player_stats: payload.player_stats.map((player) => {
+            const compacted = compactStoredMatchPlayer(player)
             return {
-                ...compactStoredMatchPlayer(player),
+                id: compacted.id,
+                player_id: compacted.player_id,
+                player: compacted.player,
+                map_id: compacted.map_id,
+                kills: compacted.kills,
                 kills_by_type: player.kills_by_type ?? {},
+                kills_streak: compacted.kills_streak,
+                deaths: compacted.deaths,
                 deaths_by_type: player.deaths_by_type ?? {},
+                deaths_without_kill_streak:
+                    compacted.deaths_without_kill_streak,
+                teamkills: compacted.teamkills,
+                teamkills_streak: compacted.teamkills_streak,
+                deaths_by_tk: compacted.deaths_by_tk,
+                deaths_by_tk_streak: compacted.deaths_by_tk_streak,
+                nb_vote_started: compacted.nb_vote_started,
+                nb_voted_yes: compacted.nb_voted_yes,
+                nb_voted_no: compacted.nb_voted_no,
+                time_seconds: compacted.time_seconds,
+                kills_per_minute: compacted.kills_per_minute,
+                deaths_per_minute: compacted.deaths_per_minute,
+                kill_death_ratio: compacted.kill_death_ratio,
+                longest_life_secs: compacted.longest_life_secs,
+                shortest_life_secs: compacted.shortest_life_secs,
+                combat: compacted.combat,
+                offense: compacted.offense,
+                defense: compacted.defense,
+                support: compacted.support,
                 most_killed: sanitizeRecordKeys(player.most_killed),
+                death_by: {},
                 weapons: sanitizeRecordKeys(player.weapons),
                 death_by_weapons: sanitizeRecordKeys(player.death_by_weapons),
+                team: {
+                    side: compacted.team.side,
+                    ...(compacted.team.confidence
+                        ? { confidence: compacted.team.confidence }
+                        : {}),
+                    ...(compacted.team.ratio === undefined
+                        ? {}
+                        : { ratio: compacted.team.ratio }),
+                },
+                level: compacted.level,
+                ...(compacted.platform === undefined
+                    ? {}
+                    : { platform: compacted.platform }),
+                ...(compacted.vehicle_kills === undefined
+                    ? {}
+                    : { vehicle_kills: compacted.vehicle_kills }),
+                ...(compacted.vehicles_destroyed === undefined
+                    ? {}
+                    : { vehicles_destroyed: compacted.vehicles_destroyed }),
+                ...(compacted.kills_and_assists === undefined
+                    ? {}
+                    : { kills_and_assists: compacted.kills_and_assists }),
+                ...(compacted.deaths_and_redeploys === undefined
+                    ? {}
+                    : { deaths_and_redeploys: compacted.deaths_and_redeploys }),
+                ...(compacted.encounters
+                    ? {
+                          encounters: compacted.encounters.map((encounter) => ({
+                              action: encounter.action,
+                              player_id: encounter.player_id,
+                              player_name: encounter.player_name,
+                              ts: encounter.ts,
+                              weapon: encounter.weapon,
+                          })),
+                      }
+                    : {}),
             }
         }),
     }
