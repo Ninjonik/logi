@@ -83,6 +83,8 @@ class Database {
             field: (field: string) => field,
             eq: (field: string, value: unknown) => (doc: Document) =>
                 doc[field] === value,
+            gte: (field: string, value: string) => (doc: Document) =>
+                typeof doc[field] === "string" && doc[field] >= value,
         }
         const query = {
             withIndex: (
@@ -126,6 +128,9 @@ class Database {
                 .find((doc) => doc._id === id) ?? null
         )
     }
+    normalizeId(table: string, id: string) {
+        return this.tables[table]?.some((doc) => doc._id === id) ? id : null
+    }
     async patch(id: string, value: Record<string, unknown>) {
         this.writes++
         Object.assign((await this.get(id))!, value)
@@ -142,6 +147,284 @@ class Database {
             this.tables[table] = rows.filter((doc) => doc._id !== id)
     }
 }
+
+function summaryDatabase() {
+    const db = new Database()
+    db.tables.apiKeys[0].readAccess = {
+        resources: ["event-summaries", "match-summaries"],
+        gameIds: ["wardogs"],
+    }
+    Object.assign(db.tables.events[1], {
+        kind: "match",
+        status: "concluded",
+        gameStart: "2030-01-01T01:15:00.000Z",
+        updatedAt: "2026-09-28T10:00:00.000Z",
+        serverPassword: "PRIVATE",
+        description: "Private tactics",
+        notes: "Private notes",
+        signUps: [{ userId: "private-user" }],
+        participants: [{ userId: "private-user", status: "attending" }],
+        futurePrivateField: "Never automatically expose a new persisted field",
+    })
+    return db
+}
+
+test("summary-only credentials can be provisioned without granting raw records or writes", async () => {
+    const db = summaryDatabase()
+    await assert.doesNotReject(
+        invoke(publicApi.createKey, db, {
+            guildId: "guild-a",
+            name: "Summary reader",
+            keyPrefix: "fixture",
+            readAccess: db.tables.apiKeys[0].readAccess,
+        })
+    )
+    for (const resource of ["events", "matches", "users", "assignments"]) {
+        assert.equal(
+            await invoke(publicApi.getClanResourcePage, db, {
+                resource,
+                game: "wardogs",
+                limit: 25,
+                cursor: null,
+            }),
+            null
+        )
+    }
+    const denied = (await invoke(publicApi.mutateClanEvent, db, {
+        idempotencyKey: "replay",
+        methodPath: "cached-path",
+        bodyHash: "body",
+    })) as { status: number }
+    assert.equal(denied.status, 403)
+})
+
+test("each summary resource requires its own grant, independent of raw resource grants", async () => {
+    const db = summaryDatabase()
+    for (const granted of [
+        "events",
+        "matches",
+        "event-summaries",
+        "match-summaries",
+    ]) {
+        db.tables.apiKeys[0].readAccess = {
+            resources: [granted],
+            gameIds: ["wardogs"],
+        }
+        for (const resource of ["event-summaries", "match-summaries"]) {
+            const page = await invoke(publicApi.getClanResourcePage, db, {
+                resource,
+                game: "wardogs",
+                limit: 25,
+                cursor: null,
+            })
+            const detail = await invoke(publicApi.getClanResource, db, {
+                resource,
+                id: "wardogs",
+            })
+            if (granted === resource) {
+                assert.ok(page)
+                assert.ok(detail)
+            } else {
+                assert.equal(page, null)
+                assert.equal(detail, null)
+            }
+        }
+    }
+})
+
+test("event summary pages preserve empty cursors and return only allowlisted fields", async () => {
+    const db = summaryDatabase()
+    const args = {
+        resource: "event-summaries",
+        game: "wardogs",
+        limit: 1,
+        cursor: null,
+    }
+    const first = (await invoke(publicApi.getClanResourcePage, db, args)) as {
+        items: unknown[]
+        nextCursor: string
+    }
+    assert.deepEqual(first, { items: [], nextCursor: "1", limit: 1 })
+    const second = await invoke(publicApi.getClanResourcePage, db, {
+        ...args,
+        cursor: first.nextCursor,
+    })
+    assert.deepEqual(second, {
+        items: [
+            {
+                id: "wardogs",
+                guildId: "guild-a",
+                gameId: "wardogs",
+                title: "wardogs",
+                kind: "match",
+                status: "concluded",
+                startsAt: "2030-01-01T01:15:00.000Z",
+                endsAt: "2030-01-01T02:00:00.000Z",
+                updatedAt: "2026-09-28T10:00:00.000Z",
+            },
+        ],
+        nextCursor: null,
+        limit: 1,
+    })
+})
+
+test("summary detail checks tenant, game, document type and current revocation", async () => {
+    const db = summaryDatabase()
+    for (const id of ["hll", "other", "roster", "match", "missing"]) {
+        assert.equal(
+            await invoke(publicApi.getClanResource, db, {
+                resource: "event-summaries",
+                id,
+            }),
+            null
+        )
+    }
+    const result = (await invoke(publicApi.getClanResource, db, {
+        resource: "event-summaries",
+        id: "wardogs",
+    })) as Record<string, unknown>
+    assert.ok(result, "a granted event summary must be returned")
+    assert.equal(result.id, "wardogs")
+    assert.equal("serverPassword" in result, false)
+    assert.ok(await invoke(publicApi.authenticateKey, db))
+    await invoke(publicApi.revokeKey, db, { guildId: "guild-a", keyId: "key" })
+    assert.equal(
+        await invoke(publicApi.getClanResource, db, {
+            resource: "event-summaries",
+            id: "wardogs",
+        }),
+        null
+    )
+})
+
+test("summary incremental pages include timestamp ties and retain tenant/game filters", async () => {
+    const db = summaryDatabase()
+    db.tables.events.push({ ...db.tables.events[1], _id: "tied" })
+    const args = {
+        resource: "event-summaries",
+        game: "wardogs",
+        updatedSince: "2026-09-28T10:00:00.000Z",
+        limit: 1,
+        cursor: null,
+    }
+    const first = (await invoke(publicApi.getClanResourcePage, db, args)) as {
+        items: Array<{ id: string }>
+        nextCursor: string
+    }
+    assert.ok(first, "a granted incremental summary page must be returned")
+    assert.deepEqual(
+        first.items.map((item) => item.id),
+        ["wardogs"]
+    )
+    const second = (await invoke(publicApi.getClanResourcePage, db, {
+        ...args,
+        cursor: first.nextCursor,
+    })) as { items: Array<{ id: string }>; nextCursor: null }
+    assert.deepEqual(
+        second.items.map((item) => item.id),
+        ["tied"]
+    )
+    assert.equal(second.nextCursor, null)
+})
+
+test("match summaries preserve unknown results despite raw telemetry and concluded status", async () => {
+    const db = summaryDatabase()
+    assert.deepEqual(
+        await invoke(publicApi.getClanResource, db, {
+            resource: "match-summaries",
+            id: "wardogs",
+        }),
+        {
+            id: "wardogs",
+            eventId: "wardogs",
+            guildId: "guild-a",
+            gameId: "wardogs",
+            title: "wardogs",
+            updatedAt: "2026-09-28T10:00:00.000Z",
+            resultState: "unknown",
+            result: null,
+        }
+    )
+})
+
+test("match summaries expose imported scores as provisional without source URLs or player data", async () => {
+    const db = summaryDatabase()
+    db.tables.events[1].eventResult = {
+        sourceUrl: "https://private.example.invalid/import?credential=private",
+        mapId: "fixture-map",
+        mapName: "Fixture map",
+        sideA: "Allies",
+        sideB: "Axis",
+        score: { sideA: 0, sideB: 5 },
+        outcome: "defeat",
+        importedAt: "2026-09-28T09:59:00.000Z",
+        privateFutureResult: "not for the API",
+    }
+    assert.deepEqual(
+        await invoke(publicApi.getClanResource, db, {
+            resource: "match-summaries",
+            id: "wardogs",
+        }),
+        {
+            id: "wardogs",
+            eventId: "wardogs",
+            guildId: "guild-a",
+            gameId: "wardogs",
+            title: "wardogs",
+            updatedAt: "2026-09-28T10:00:00.000Z",
+            resultState: "provisional",
+            result: {
+                mapId: "fixture-map",
+                mapName: "Fixture map",
+                sideA: "Allies",
+                sideB: "Axis",
+                score: { sideA: 0, sideB: 5 },
+                outcome: "defeat",
+                endedAt: null,
+                provenance: {
+                    type: "event_result_import",
+                    importedAt: "2026-09-28T09:59:00.000Z",
+                },
+            },
+        }
+    )
+})
+
+test("match summary pages skip training events without losing continuation", async () => {
+    const db = summaryDatabase()
+    db.tables.events[1].kind = "training"
+    db.tables.events.push({
+        ...db.tables.events[1],
+        _id: "later-match",
+        kind: "match",
+    })
+    assert.equal(
+        await invoke(publicApi.getClanResource, db, {
+            resource: "match-summaries",
+            id: "wardogs",
+        }),
+        null
+    )
+    const page = (await invoke(publicApi.getClanResourcePage, db, {
+        resource: "match-summaries",
+        game: "wardogs",
+        limit: 2,
+        cursor: null,
+    })) as { items: unknown[]; nextCursor: string }
+    assert.ok(page, "a filtered match summary page must retain its cursor")
+    assert.deepEqual(page.items, [])
+    assert.equal(page.nextCursor, "2")
+    const next = (await invoke(publicApi.getClanResourcePage, db, {
+        resource: "match-summaries",
+        game: "wardogs",
+        limit: 2,
+        cursor: page.nextCursor,
+    })) as { items: Array<{ id: string }> }
+    assert.deepEqual(
+        next.items.map((item) => item.id),
+        ["later-match"]
+    )
+})
 
 function invoke(
     value: unknown,

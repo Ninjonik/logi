@@ -67,16 +67,17 @@ object alongside `name`:
 
 ```json
 {
-  "name": "Website event reader",
+  "name": "Website summary reader",
   "readAccess": {
-    "resources": ["events", "matches"],
+    "resources": ["event-summaries", "match-summaries"],
     "gameIds": ["hell_let_loose", "wardogs"]
   }
 }
 ```
 
 Both arrays must be nonempty and contain no duplicates. Resources can be
-`events`, `groups`, `rosters`, `assignments`, `stratmaps` or `matches`; game IDs
+`event-summaries`, `match-summaries`, `events`, `groups`, `rosters`,
+`assignments`, `stratmaps` or `matches`; game IDs
 can be `hell_let_loose`, `hell_let_loose_vietnam` or `wardogs`. Each collection
 request must select explicit permitted games. Missing `game`, `game=all`,
 ungranted resources and all writes return `403 insufficient_scope`. Detail
@@ -92,11 +93,24 @@ administrator session.
 
 Restricted keys do not grant metadata, settings, raw users, calendar items,
 presets or performance history in this first release. Read-only records still
-contain private operational fields: never publish raw API responses. The
-[versioned website handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.3/README.md)
+require publication review: never publish raw API responses. The
+[versioned website handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.4/README.md)
 describes field allowlists, safe synchronization, fixtures and rollout order.
 Deploy the compatible backend before using these new policies; an older backend
 does not enforce them.
+
+For website event and result listings, use `GET /api/v1/clan/event-summaries`
+and `GET /api/v1/clan/match-summaries`, with an explicit game. These return
+only identity, title, schedule/status or a minimized imported result. They
+exclude passwords, notes, signup/player identities, source URLs and raw
+telemetry. Each summary resource requires its own grant; it does not grant
+access to the raw `events` or `matches` resource, or vice versa.
+
+Both summary detail routes use the Logi event ID. Match summaries exclude
+training events. No stored event result means `resultState: "unknown"` and
+`result: null`; an imported event result is `provisional`, including for
+concluded events. The website still approves publication and translations.
+These routes do not provide human result confirmation or public-member consent.
 
 Website integrations use the versioned API at `/api/v1`. Clan API requests
 use `Authorization: Bearer <API key>`. Game-owned clan data uses **Hell Let

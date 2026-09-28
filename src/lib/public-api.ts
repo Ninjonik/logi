@@ -70,6 +70,8 @@ const clanUserReference = makeFunctionReference<"query">(
 )
 
 export const clanApiResources = [
+    "event-summaries",
+    "match-summaries",
     "events",
     "groups",
     "rosters",

@@ -3,6 +3,42 @@ import test from "node:test"
 
 import { GET } from "./route"
 
+test("OpenAPI exposes read-only summary routes with closed minimal response schemas", async () => {
+    const document = await (await GET()).json()
+    for (const [resource, schemaName, field] of [
+        ["event-summaries", "ClanEventSummariesDocument", "startsAt"],
+        ["match-summaries", "ClanMatchSummariesDocument", "resultState"],
+    ]) {
+        const operations = document.paths[`/clan/${resource}`]
+        assert.ok(operations?.get, `${resource} list is documented`)
+        assert.deepEqual(Object.keys(operations), ["get"])
+        assert.ok(
+            operations.get.parameters.some(
+                (parameter: { name: string }) => parameter.name === "game"
+            )
+        )
+        assert.equal(
+            operations.get.responses["200"].content["application/json"].schema
+                .properties.data.items.$ref,
+            `#/components/schemas/${schemaName}`
+        )
+        const schema = document.components.schemas[schemaName]
+        assert.ok(schema.properties[field])
+        assert.equal(schema.additionalProperties, false)
+        for (const excluded of [
+            "notes",
+            "serverPassword",
+            "participants",
+            "signUps",
+            "raw",
+            "sourceUrl",
+        ])
+            assert.equal(excluded in schema.properties, false)
+    }
+    assert.ok(document.paths["/clan/match-summaries/{eventId}"]?.get)
+    assert.ok(document.paths["/clan/event-summaries/{id}"]?.get)
+})
+
 test("every clan operation documents runtime scope denial and its read-access resource", async () => {
     const document = await (await GET()).json()
     for (const [path, operations] of Object.entries(document.paths)) {
@@ -30,6 +66,8 @@ test("every clan operation documents runtime scope denial and its read-access re
                     "assignments",
                     "stratmaps",
                     "matches",
+                    "event-summaries",
+                    "match-summaries",
                 ].includes(resource)
             assert.deepEqual(
                 operation["x-logi-read-access"],

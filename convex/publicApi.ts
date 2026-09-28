@@ -1,3 +1,7 @@
+import {
+    projectEventSummary,
+    projectMatchSummary,
+} from "../src/domain/api/event-summaries"
 import type { MutationCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
 import { mutation, query } from "./_generated/server"
@@ -1852,6 +1856,8 @@ export const mutateClanSettings = mutation({
 })
 
 const apiResource = v.union(
+    v.literal("event-summaries"),
+    v.literal("match-summaries"),
     v.literal("events"),
     v.literal("groups"),
     v.literal("rosters"),
@@ -2063,6 +2069,35 @@ export const getClanResourcePage = query({
             }
         }
         switch (args.resource) {
+            case "event-summaries":
+            case "match-summaries": {
+                const events = ctx.db
+                    .query("events")
+                    .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                const result = await (
+                    args.updatedSince
+                        ? events.filter((q) =>
+                              q.gte(q.field("updatedAt"), args.updatedSince!)
+                          )
+                        : events
+                ).paginate(options)
+                return {
+                    items: result.page
+                        .filter(
+                            (event) =>
+                                matchesGameScope(event.gameId, args.game) &&
+                                (args.resource === "event-summaries" ||
+                                    (event.kind ?? "match") === "match")
+                        )
+                        .map((event) =>
+                            args.resource === "event-summaries"
+                                ? projectEventSummary(event)
+                                : projectMatchSummary(event)
+                        ),
+                    nextCursor: result.isDone ? null : result.continueCursor,
+                    limit: args.limit,
+                }
+            }
             case "events":
                 return await pageFor(
                     args.updatedSince
@@ -2340,6 +2375,29 @@ export const getClanResource = query({
             .unique()
         if (!key || key.revokedAt) return null
         if (!allowsApiKeyRead(key.readAccess, args.resource)) return null
+        if (
+            args.resource === "event-summaries" ||
+            args.resource === "match-summaries"
+        ) {
+            const eventId = ctx.db.normalizeId("events", args.id)
+            if (!eventId) return null
+            const event = await ctx.db.get(eventId)
+            if (
+                !event ||
+                event.guildId !== key.guildId ||
+                !allowsApiKeyRead(
+                    key.readAccess,
+                    args.resource,
+                    resolveGameScope(event.gameId)
+                ) ||
+                (args.resource === "match-summaries" &&
+                    (event.kind ?? "match") !== "match")
+            )
+                return null
+            return args.resource === "event-summaries"
+                ? projectEventSummary(event)
+                : projectMatchSummary(event)
+        }
         const item = (await ctx.db.get(args.id as never)) as
             (Record<string, unknown> & { _id: unknown }) | null
         if (!item) return null

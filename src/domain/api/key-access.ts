@@ -8,6 +8,8 @@ export const API_KEY_READ_RESOURCES = [
     "assignments",
     "stratmaps",
     "matches",
+    "event-summaries",
+    "match-summaries",
 ] as const
 
 export type ApiKeyReadAccess = {

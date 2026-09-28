@@ -1,7 +1,17 @@
+import {
+    clanEventSummarySchema,
+    clanMatchSummarySchema,
+} from "@/domain/api/event-summaries"
+import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { NextResponse } from "next/server"
+import { z } from "zod"
 
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
-import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
+
+const summaryResponseSchemas = {
+    ClanEventSummariesDocument: z.toJSONSchema(clanEventSummarySchema),
+    ClanMatchSummariesDocument: z.toJSONSchema(clanMatchSummarySchema),
+}
 
 const error = {
     type: "object",
@@ -57,6 +67,8 @@ const updatedSinceParameter = {
     schema: { type: "string", format: "date-time" },
 }
 const resources = [
+    "event-summaries",
+    "match-summaries",
     "events",
     "groups",
     "rosters",
@@ -70,6 +82,8 @@ const resources = [
     "users",
 ]
 const resourceTags: Record<string, string> = {
+    "event-summaries": "Clan API — Events",
+    "match-summaries": "Clan API — Matches",
     events: "Clan API — Events",
     groups: "Clan API — Groups",
     rosters: "Clan API — Rosters",
@@ -325,6 +339,8 @@ const paths: Record<string, unknown> = {
 }
 for (const resource of resources) {
     const isGameOwned = [
+        "event-summaries",
+        "match-summaries",
         "events",
         "groups",
         "rosters",
@@ -335,6 +351,12 @@ for (const resource of resources) {
     paths[`/clan/${resource}`] = {
         get: {
             summary: `List clan ${resource}`,
+            ...(resource.endsWith("-summaries")
+                ? {
+                      description:
+                          "Allowlisted operational summaries. A separate matching readAccess resource grant is required for restricted keys. Website publication still requires its own approval. Match summaries use event IDs, exclude training events and report imported results as provisional; absent results remain unknown.",
+                  }
+                : {}),
             tags: [resourceTags[resource]!],
             security: [{ clanApiKey: [] }],
             parameters: [
@@ -346,20 +368,23 @@ for (const resource of resources) {
         },
     }
     const itemPath =
-        resource === "matches"
+        resource === "matches" || resource === "match-summaries"
             ? `/clan/${resource}/{eventId}`
             : `/clan/${resource}/{id}`
     paths[itemPath] = {
         get: {
             summary:
-                resource === "matches"
+                resource === "matches" || resource === "match-summaries"
                     ? "Get match details for a clan event"
                     : `Get a clan ${resource} record`,
             tags: [resourceTags[resource]!],
             security: [{ clanApiKey: [] }],
             parameters: [
                 {
-                    name: resource === "matches" ? "eventId" : "id",
+                    name:
+                        resource === "matches" || resource === "match-summaries"
+                            ? "eventId"
+                            : "id",
                     in: "path",
                     required: true,
                     schema: { type: "string" },
@@ -943,8 +968,8 @@ for (const resource of ["stratmaps", "topic-presets", "squad-presets"]) {
 }
 
 // The CRUD read models return Convex documents through apiDocument(). Keep the
-// field-level response contract tied to convex/schema.ts rather than a second
-// hand-maintained list in this route.
+// field-level response contract tied to convex/schema.ts and the explicit
+// domain DTO schemas rather than a second hand-maintained list in this route.
 for (const resource of resources) {
     const collection = paths[`/clan/${resource}`] as {
         get?: OpenApiOperation
@@ -955,7 +980,7 @@ for (const resource of resources) {
             "200": successResponse(resource, true),
         }
     const itemPath =
-        resource === "matches"
+        resource === "matches" || resource === "match-summaries"
             ? `/clan/${resource}/{eventId}`
             : `/clan/${resource}/{id}`
     const item = paths[itemPath] as { get?: OpenApiOperation }
@@ -1019,12 +1044,14 @@ export async function GET() {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.1.0",
+                version: "1.2.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read
 
-Keys with a \`readAccess\` policy can only read their explicitly granted resources and games. Collections require explicit \`game\` values; \`game=all\`, writes, metadata, settings, users, calendar, presets and performance-history return \`403 insufficient_scope\`. Detail reads enforce the persisted record's game and return \`404\` outside it. Revoked keys return \`401\`. Legacy keys without this policy retain their existing access. A manager can issue restricted keys through the session-authenticated \`POST /api/servers/{serverId}/api-keys\` endpoint; bearer keys cannot issue or escalate keys. See the [read-only integration handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.3/README.md) for provisioning, compatibility and safe publication rules.
+For minimized website reads, grant event-summaries and/or match-summaries and use their matching clan endpoints. Each grant is independent of raw events/matches access. Summary DTOs exclude passwords, notes, player identities, source URLs and raw telemetry. They remain private operational content requiring website publication review. Match summaries identify Logi events and expose unknown or provisional results, never automatic confirmation.
+
+Keys with a \`readAccess\` policy can only read their explicitly granted resources and games. Collections require explicit \`game\` values; \`game=all\`, writes, metadata, settings, users, calendar, presets and performance-history return \`403 insufficient_scope\`. Detail reads enforce the persisted record's game and return \`404\` outside it. Revoked keys return \`401\`. Legacy keys without this policy retain their existing access. A manager can issue restricted keys through the session-authenticated \`POST /api/servers/{serverId}/api-keys\` endpoint; bearer keys cannot issue or escalate keys. See the [read-only integration handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.4/README.md) for provisioning, compatibility and safe publication rules.
 
 
 \`curl -H "Authorization: Bearer YOUR_API_KEY" "https://YOUR_LOGI_HOST/api/v1/clan/events?game=wardogs&limit=25&updatedSince=2026-01-01T00:00:00Z"\`
@@ -1101,7 +1128,10 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                 },
             ],
             components: {
-                schemas: generatedOpenApiSchemas,
+                schemas: {
+                    ...generatedOpenApiSchemas,
+                    ...summaryResponseSchemas,
+                },
                 securitySchemes: {
                     clanApiKey: {
                         type: "http",

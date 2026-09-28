@@ -1,5 +1,9 @@
 # Read-only website integration handoff 0.3.0
 
+The additive [handoff 0.4.0](../v0.4/README.md) adds minimized event/match
+HTTP summaries and independent grants. Prefer those resources for new website
+readers. This version retains the underlying ownership and synchronization contract.
+
 Proposed 2026-09-28. This is the first integration milestone, built on API
 version 1.1.0. It adds backend-enforced read-only keys and a synthetic consumer
 acceptance pack. It does **not** add a production website synchronizer or claim

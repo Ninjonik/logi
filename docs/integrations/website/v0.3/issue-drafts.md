@@ -7,6 +7,11 @@ Private provider-review findings are deliberately excluded.
 
 ## Publish consent-aware website projections
 
+**Partial delivery:** [Handoff 0.4.0](../v0.4/README.md) implements independently
+scoped, minimized event/match reads with unknown/provisional result semantics.
+Confirmed-result provenance and the member-consent contract remain open; this
+draft is not complete or ready for closure.
+
 **Problem:** Clan records are operational documents. Read-only authorization
 does not minimize their fields or establish public-member consent.
 

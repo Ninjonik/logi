@@ -37,6 +37,8 @@ import { eventSchema } from "@/lib/validation/event"
 export const runtime = "nodejs"
 
 const gameOwned = new Set<ClanApiResource>([
+    "event-summaries",
+    "match-summaries",
     "events",
     "groups",
     "rosters",
