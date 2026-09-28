@@ -111,3 +111,18 @@ export async function getServerContextReadModel(
         return null
     }
 }
+
+// Management writes must not rely on the dashboard's 24-hour read cache.
+export async function getServerContextUncached(
+    serverId: string
+): Promise<ServerContextReadModel | null> {
+    const user = await getLoggedInUser()
+    if (!user) return null
+    try {
+        return await ((await isSuperadminDiscordId(user.discordId))
+            ? getServerContextSnapshotInternal(serverId, user.discordId)
+            : getServerContextSnapshot(serverId, user.discordId))
+    } catch {
+        return null
+    }
+}

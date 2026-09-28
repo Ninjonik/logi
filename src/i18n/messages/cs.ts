@@ -1,4 +1,46 @@
 export const csMessages = {
+    gameData: {
+        collectedSessions: "Načtené zápasy",
+        historyObserved: "Poslední import historie",
+        historyError: "Sběr historie",
+        title: "Data herních serverů",
+        description:
+            "Logi sbírá data serverů a vybrané údaje poskytuje vašemu webu. Připojení nejdříve připraví provozovatel Logi.",
+        loading: "Načítání…",
+        refresh: "Obnovit",
+        saving: "Ukládání…",
+        enable: "Zapnout / pokračovat",
+        disable: "Vypnout",
+        disabled: "Vypnuto",
+        error: "Připojení se nepodařilo načíst nebo uložit. Zkuste to znovu nebo kontaktujte provozovatele.",
+        empty: "Pro tento prostor zatím nejsou nastavené zdroje dat.",
+        state: "Stav dat",
+        players: "Hráči",
+        map: "Mapa",
+        observed: "Poslední pozorování",
+        unknown: "Neznámé",
+        never: "Zatím nenačteno",
+        unconfirmed: "průběžné skóre, nepotvrzené",
+        historySupported:
+            "Zdroj podporuje sběr historie zápasů. Importovaná data vyžadují kontrolu před potvrzením výsledku.",
+        historyUnsupported: "Tento zdroj neposkytuje sběr historie zápasů.",
+        freshness: {
+            fresh: "Aktuální",
+            stale: "Zastaralá",
+            unavailable: "Nedostupná",
+        },
+        errors: {
+            not_listed: "Server není ve výpisu zdroje; jeho stav není známý.",
+            timeout: "Zdroj neodpověděl včas.",
+            network: "Zdroj není dostupný.",
+            rate_limited: "Čeká se na uvolnění limitu požadavků.",
+            unauthorized: "Sběr pozastaven: zdroj odmítl přístup.",
+            invalid_response: "Zdroj vrátil nepodporovanou odpověď.",
+            unsupported: "Sběr pozastaven: požadovaná funkce není dostupná.",
+            configuration:
+                "Sběr pozastaven: provozovatel musí zkontrolovat nastavení zdroje.",
+        },
+    },
     apiKeys: {
         description:
             "Vytvořte klíč pro integraci a uchovávejte ho na svém serveru. Vyberte jen potřebná data a hry.",
@@ -43,6 +85,8 @@ export const csMessages = {
         empty: "Zatím nebyly vytvořeny žádné API klíče.",
         invalidPolicy: "Nerozpoznaná omezení; backend přístup zamítne.",
         resourceLabels: {
+            "server-snapshots": "Stav herních serverů",
+            "integration-health": "Stav sběru dat",
             "event-summaries": "Souhrny událostí",
             "match-summaries": "Souhrny zápasů",
             events: "Události (úplné záznamy)",

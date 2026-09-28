@@ -37,6 +37,8 @@ import { eventSchema } from "@/lib/validation/event"
 export const runtime = "nodejs"
 
 const gameOwned = new Set<ClanApiResource>([
+    "server-snapshots",
+    "integration-health",
     "event-summaries",
     "match-summaries",
     "events",
@@ -798,6 +800,10 @@ export async function GET(
     const [resource, id] = path
     if (!resource || !isResource(resource) || path.length > 2)
         return error("not_found", "Resource not found.", 404, auth.headers)
+    const resourceHeaders =
+        resource === "server-snapshots" || resource === "integration-health"
+            ? { ...auth.headers, "Cache-Control": "no-store" }
+            : auth.headers
     if (id) {
         if (resource === "users") {
             const data = await getClanApiUser(auth.key, id)
@@ -824,7 +830,7 @@ export async function GET(
         const data = await getClanApiResource(auth.key, resource, id)
         if (!data)
             return error("not_found", "Record not found.", 404, auth.headers)
-        return NextResponse.json({ data }, { headers: auth.headers })
+        return NextResponse.json({ data }, { headers: resourceHeaders })
     }
     const query = parseApiPageQuery(request, {
         gameOwned: gameOwned.has(resource),
@@ -857,6 +863,11 @@ export async function GET(
             data: data.items,
             page: { nextCursor: data.nextCursor, limit: data.limit },
         },
-        { headers: { "Cache-Control": "private, max-age=30", ...auth.headers } }
+        {
+            headers: {
+                "Cache-Control": "private, max-age=30",
+                ...resourceHeaders,
+            },
+        }
     )
 }

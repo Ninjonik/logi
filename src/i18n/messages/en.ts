@@ -1,4 +1,48 @@
 export const enMessages = {
+    gameData: {
+        collectedSessions: "Collected sessions",
+        historyObserved: "Last history import",
+        historyError: "History collection",
+        title: "Game server data",
+        description:
+            "Collect server data in Logi and share selected fields with your website. Connections must first be configured by the Logi operator.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        saving: "Saving…",
+        enable: "Enable / resume",
+        disable: "Disable",
+        disabled: "Disabled",
+        error: "Unable to load or save connections. Retry or contact the operator.",
+        empty: "No data sources are configured for this workspace.",
+        state: "Data status",
+        players: "Players",
+        map: "Map",
+        observed: "Last observation",
+        unknown: "Unknown",
+        never: "Not collected",
+        unconfirmed: "live scores, unconfirmed",
+        historySupported:
+            "Match history collection supported. Imported data requires review before result confirmation.",
+        historyUnsupported:
+            "No historical match collection is available from this source.",
+        freshness: {
+            fresh: "Fresh",
+            stale: "Stale",
+            unavailable: "Unavailable",
+        },
+        errors: {
+            not_listed: "The server is not listed; its state is unknown.",
+            timeout: "The provider did not respond in time.",
+            network: "The provider is unreachable.",
+            rate_limited: "Waiting for the provider rate limit.",
+            unauthorized: "Collection paused: provider access was denied.",
+            invalid_response: "The provider returned an unsupported response.",
+            unsupported:
+                "Collection paused: the required capability is unavailable.",
+            configuration:
+                "Collection paused: the operator must review this source.",
+        },
+    },
     apiKeys: {
         description:
             "Create an integration key and keep it on your server. Choose only the data and games the integration needs.",
@@ -43,6 +87,8 @@ export const enMessages = {
         empty: "No API keys have been created.",
         invalidPolicy: "Unrecognized restrictions; backend access is denied.",
         resourceLabels: {
+            "server-snapshots": "Game server snapshots",
+            "integration-health": "Collection health",
             "event-summaries": "Event summaries",
             "match-summaries": "Match summaries",
             events: "Events (complete records)",

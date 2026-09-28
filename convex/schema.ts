@@ -1,3 +1,9 @@
+import {
+    gameDataError,
+    gameDataObservation,
+    gameDataHistoryProgress,
+    gameDataSession,
+} from "./gameDataValidators"
 import { defineSchema, defineTable } from "convex/server"
 import { apiKeyReadAccess } from "./apiKeyValidators"
 import { v } from "convex/values"
@@ -1134,6 +1140,67 @@ export default defineSchema({
     })
         .index("guildId", ["guildId"])
         .index("eventId", ["eventId"]),
+    gameDataConnections: defineTable({
+        sourceRef: v.string(),
+        guildId: v.string(),
+        gameId: v.union(v.literal("hell_let_loose"), v.literal("wardogs")),
+        pollAfterMs: v.number(),
+        provider: v.union(
+            v.literal("hll_crcon"),
+            v.literal("wardogs_rcon"),
+            v.literal("wardogs_public_directory")
+        ),
+        providerServerId: v.string(),
+        sourceFingerprint: v.string(),
+        enabled: v.boolean(),
+        generation: v.number(),
+        fence: v.number(),
+        leaseUntil: v.number(),
+        attempt: v.number(),
+        nextAttemptAt: v.union(v.number(), v.null()),
+        lastAttemptAt: v.union(v.string(), v.null()),
+        errorCategory: v.union(gameDataError, v.null()),
+        observation: v.union(gameDataObservation, v.null()),
+        etag: v.union(v.string(), v.null()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+        historyCount: v.optional(v.number()),
+        historyLastSuccessAt: v.optional(v.string()),
+        historyErrorCategory: v.optional(v.union(gameDataError, v.null())),
+    })
+        .index("guildId", ["guildId"])
+        .index("sourceRef", ["sourceRef"])
+        .index("nextAttemptAt", ["nextAttemptAt"]),
+    gameDataHistoryRuns: defineTable({
+        connectionId: v.id("gameDataConnections"),
+        progress: gameDataHistoryProgress,
+        fence: v.number(),
+        leaseUntil: v.number(),
+        attempt: v.number(),
+        nextAttemptAt: v.union(v.number(), v.null()),
+        errorCategory: v.union(gameDataError, v.null()),
+        lastSuccessAt: v.union(v.string(), v.null()),
+        lastCompletedAt: v.union(v.string(), v.null()),
+        lastWasRevisit: v.boolean(),
+    })
+        .index("connectionId", ["connectionId"])
+        .index("nextAttemptAt", ["nextAttemptAt"]),
+    gameSessions: defineTable({
+        connectionId: v.id("gameDataConnections"),
+        guildId: v.string(),
+        gameId: v.literal("hell_let_loose"),
+        externalId: v.string(),
+        session: gameDataSession,
+        complete: v.boolean(),
+        fetchedAt: v.number(),
+        updatedAt: v.string(),
+    })
+        .index("connection_external", ["connectionId", "externalId"])
+        .index("connection_complete_fetched", [
+            "connectionId",
+            "complete",
+            "fetchedAt",
+        ]),
     apiKeys: defineTable({
         guildId: v.string(),
         name: v.string(),

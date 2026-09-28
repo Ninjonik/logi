@@ -1,4 +1,50 @@
 export const deMessages = {
+    gameData: {
+        collectedSessions: "Erfasste Spiele",
+        historyObserved: "Letzter Verlaufimport",
+        historyError: "Verlauferfassung",
+        title: "Spielserver-Daten",
+        description:
+            "Logi sammelt Serverdaten und stellt ausgewählte Felder Ihrer Website bereit. Der Logi-Betreiber muss die Verbindungen zuerst konfigurieren.",
+        loading: "Wird geladen…",
+        refresh: "Aktualisieren",
+        saving: "Wird gespeichert…",
+        enable: "Aktivieren / fortsetzen",
+        disable: "Deaktivieren",
+        disabled: "Deaktiviert",
+        error: "Verbindungen konnten nicht geladen oder gespeichert werden. Erneut versuchen oder den Betreiber kontaktieren.",
+        empty: "Für diesen Arbeitsbereich sind keine Datenquellen konfiguriert.",
+        state: "Datenstatus",
+        players: "Spieler",
+        map: "Karte",
+        observed: "Letzte Beobachtung",
+        unknown: "Unbekannt",
+        never: "Noch nicht erfasst",
+        unconfirmed: "laufender Spielstand, unbestätigt",
+        historySupported:
+            "Die Quelle unterstützt Spielhistorie. Importierte Daten müssen vor der Ergebnisbestätigung geprüft werden.",
+        historyUnsupported:
+            "Diese Quelle bietet keine Erfassung der Spielhistorie.",
+        freshness: {
+            fresh: "Aktuell",
+            stale: "Veraltet",
+            unavailable: "Nicht verfügbar",
+        },
+        errors: {
+            not_listed:
+                "Der Server ist nicht gelistet; sein Zustand ist unbekannt.",
+            timeout: "Die Quelle hat nicht rechtzeitig geantwortet.",
+            network: "Die Quelle ist nicht erreichbar.",
+            rate_limited: "Warten auf das Anfragelimit der Quelle.",
+            unauthorized: "Erfassung pausiert: Zugriff verweigert.",
+            invalid_response:
+                "Die Quelle hat eine nicht unterstützte Antwort geliefert.",
+            unsupported:
+                "Erfassung pausiert: Die erforderliche Funktion ist nicht verfügbar.",
+            configuration:
+                "Erfassung pausiert: Der Betreiber muss die Quelle prüfen.",
+        },
+    },
     apiKeys: {
         description:
             "Erstelle einen Integrationsschlüssel und bewahre ihn auf deinem Server auf. Wähle nur die benötigten Daten und Spiele.",
@@ -46,6 +92,8 @@ export const deMessages = {
         invalidPolicy:
             "Unbekannte Einschränkungen; der Backend-Zugriff wird verweigert.",
         resourceLabels: {
+            "server-snapshots": "Spielserver-Status",
+            "integration-health": "Erfassungsstatus",
             "event-summaries": "Ereignisübersichten",
             "match-summaries": "Match-Übersichten",
             events: "Ereignisse (vollständige Datensätze)",

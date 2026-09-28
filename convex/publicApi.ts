@@ -2,6 +2,7 @@ import {
     projectEventSummary,
     projectMatchSummary,
 } from "../src/domain/api/event-summaries"
+import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
 import type { MutationCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
 import { mutation, query } from "./_generated/server"
@@ -1856,6 +1857,8 @@ export const mutateClanSettings = mutation({
 })
 
 const apiResource = v.union(
+    v.literal("server-snapshots"),
+    v.literal("integration-health"),
     v.literal("event-summaries"),
     v.literal("match-summaries"),
     v.literal("events"),
@@ -2041,6 +2044,35 @@ export const getClanResourcePage = query({
             return null
         const guildId = key.guildId
         const options = { cursor: args.cursor, numItems: args.limit }
+        if (
+            args.resource === "server-snapshots" ||
+            args.resource === "integration-health"
+        ) {
+            const page = await ctx.db
+                .query("gameDataConnections")
+                .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                .paginate(options)
+            return {
+                items: page.page
+                    .filter(
+                        (row) =>
+                            matchesGameScope(row.gameId, args.game) &&
+                            (!args.updatedSince ||
+                                Date.parse(row.updatedAt) >=
+                                    Date.parse(args.updatedSince))
+                    )
+                    .map((row) =>
+                        (args.resource === "server-snapshots"
+                            ? projectSnapshot
+                            : projectHealth)(
+                            { ...row, id: String(row._id) },
+                            Date.now()
+                        )
+                    ),
+                nextCursor: page.isDone ? null : page.continueCursor,
+                limit: args.limit,
+            }
+        }
         const pageFor = async (query: {
             paginate: (value: typeof options) => Promise<{
                 page: Array<Record<string, unknown>>
@@ -2375,6 +2407,24 @@ export const getClanResource = query({
             .unique()
         if (!key || key.revokedAt) return null
         if (!allowsApiKeyRead(key.readAccess, args.resource)) return null
+        if (
+            args.resource === "server-snapshots" ||
+            args.resource === "integration-health"
+        ) {
+            const id = ctx.db.normalizeId("gameDataConnections", args.id)
+            const row = id ? await ctx.db.get(id) : null
+            if (
+                !row ||
+                row.guildId !== key.guildId ||
+                !allowsApiKeyRead(key.readAccess, args.resource, row.gameId)
+            )
+                return null
+            return (
+                args.resource === "server-snapshots"
+                    ? projectSnapshot
+                    : projectHealth
+            )({ ...row, id: String(row._id) }, Date.now())
+        }
         if (
             args.resource === "event-summaries" ||
             args.resource === "match-summaries"

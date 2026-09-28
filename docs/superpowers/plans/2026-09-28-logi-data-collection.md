@@ -16,6 +16,12 @@ Discord runtime. Native fetch; no new database, broker or provider library requi
 **Spec:** [Proposed integration design](../../integrations/website/roadmap/design.md)
 and [pinned research](../../integrations/website/roadmap/research.md).
 
+## Implementation record — 2026-09-28
+
+D1–D3 are implemented together in [handoff 0.5](../../integrations/website/v0.5/README.md). The checkboxes record local implementation and offline evidence, not hosted acceptance. D4 remains pending. The PR pins the tested SHA.
+
+Adjustments after provider research: use Node HTTPS with DNS destination pinning instead of native fetch in production; omit lease renewal because the 30-second work budget is shorter than the 60-second lease; use resumable full HLL sweeps because offset pagination is not a durable cursor. Pending IDs commit with each session, and unfinished IDs are revisited independently. Interfaces were narrowed to snapshot and history use-cases rather than a generic provider framework. Three coupled tasks ship in one coherent commit. Private player identities remain unresolved until I5/D4.
+
 ## Global Constraints
 
 - Logi owns operational events, signups, rosters, results and provider observations.
@@ -81,10 +87,10 @@ and scoped `server-snapshots` / `integration-health` reads. `RunOutcome` is
 Session-only configuration supports enable/disable and operator secret references;
 bearer keys cannot create connections or broaden their own grants.
 
-- [ ] Write `disabled generation rejects late success`, `timeout preserves last success and unknown state`, `zero players is preserved`, `cross-game key cannot read snapshot`, and `redirect cannot forward credentials` tests. Assert 180-second stale and 15-minute unavailable thresholds with an injected clock. Run the new test files with `node --import tsx --test`; confirm failure before implementation.
-- [ ] Implement the contracts, repository ports and bounded HTTP adapter. Persist 60-second leases with renewal, 10-second request deadlines, three-attempt maximum and 30-second work budgets. Implement snapshot reads from storage, never provider calls from public GETs. Use fake providers until D2/D3.
-- [ ] Add the administrator configuration form, nullable health display and explicit unsupported state; never echo secret values. Run the focused tests plus `npm run typecheck`, all affected HTTP/OpenAPI tests and direct ESLint/Prettier. Capture actual EN/CS and narrow-layout screenshots against simulated providers. Verify permission denial and connection disable during an in-flight run.
-- [ ] Update runtime schemas, OpenAPI, wiki and a new versioned fixture handoff. Explicitly stage task files and commit `feat(integrations): add provider connections and scoped snapshots`.
+- [x] Write `disabled generation rejects late success`, `timeout preserves last success and unknown state`, `zero players is preserved`, `cross-game key cannot read snapshot`, and `redirect cannot forward credentials` tests. Assert 180-second stale and 15-minute unavailable thresholds with an injected clock. Run the new test files with `node --import tsx --test`; confirm failure before implementation.
+- [x] Implement the contracts, repository ports and bounded HTTP adapter. Persist 60-second leases without renewal for bounded actions, 10-second request deadlines, three attempts per retry cycle with a cooldown, and 30-second work budgets. Implement snapshot reads from storage, never provider calls from public GETs. Use fake providers until D2/D3.
+- [x] Add the administrator configuration form, nullable health display and explicit unsupported state; never echo secret values. Run the focused tests plus `npm run typecheck`, all affected HTTP/OpenAPI tests and direct ESLint/Prettier. Capture actual EN/CS and narrow-layout screenshots against simulated providers. Verify permission denial and connection disable during an in-flight run.
+- [x] Update runtime schemas, OpenAPI, wiki and a new versioned fixture handoff. Explicitly stage task files and commit the coherent D1–D3 milestone as `feat(integrations): collect HLL and Wardogs data for websites`.
 
 ### D2 — HLL CRCON snapshot and completed-session collector
 
@@ -102,10 +108,10 @@ calling its legacy name/nickname linking path.
 `collectSessions(connection, ports): Promise<RunOutcome>` commits pages and
 checkpoints through D1's repository. Player attribution uses verified platform links.
 
-- [ ] Write tests `CRCON map envelope failure is not an empty server`, `same session reimport is idempotent`, `new head page does not skip finished sessions`, `unfinished session is provisional`, and `nickname collision never links`. Assert two identical external IDs on different connections remain separate. Run the two new test files and observe the expected failures.
-- [ ] Implement the pinned provider contract: `get_public_info`, `get_scoreboard_maps` with explicit server/page/limit, and `get_map_scoreboard` by opaque external ID. Validate body envelopes; retain only required private facts. Poll status at 60 seconds and session discovery at five minutes, with overlapping discovery pages and idempotent upserts. Revisit stored unfinished session IDs independently of the discovery watermark. A persisted page number is a hint, not a stable provider cursor after restart.
-- [ ] Run both new files and the existing summary/Convex scope tests; inject timeout, 429, invalid JSON, reordered pages and a crash between provider response and database commit. Prove restart replays safely. Run typecheck and task-file lint/format checks; no live CRCON calls.
-- [ ] Add synthetic HLL wire-to-domain fixtures and documented permission/version requirements. Commit `feat(integrations): collect HLL CRCON snapshots and sessions` with explicit staging.
+- [x] Write tests `CRCON map envelope failure is not an empty server`, `same session reimport is idempotent`, `new head page does not skip finished sessions`, `unfinished session is provisional`, and `nickname collision never links`. Assert two identical external IDs on different connections remain separate. Run the two new test files and observe the expected failures.
+- [x] Implement the pinned provider contract: `get_public_info`, `get_scoreboard_maps` with explicit server/page/limit, and `get_map_scoreboard` by opaque external ID. Validate body envelopes; retain only required private facts. Poll status at 60 seconds. Run bounded full discovery sweeps with a five-minute pause after completion, replay/rewind of page hints and idempotent upserts. Revisit stored unfinished session IDs independently of the discovery watermark. A persisted page number is a hint, not a stable provider cursor after restart.
+- [x] Run both new files and the existing summary/Convex scope tests; inject timeout, 429, invalid JSON, reordered pages and a crash between provider response and database commit. Prove restart replays safely. Run typecheck and task-file lint/format checks; no live CRCON calls.
+- [x] Add synthetic HLL wire-to-domain fixtures and documented permission/version requirements. Include D2 in the explicitly staged collector milestone commit.
 
 ### D3 — Wardogs capability-aware reads and optional directory fallback
 
@@ -122,10 +128,10 @@ implementing `GameDataProvider`. Direct live reads do not advertise historical
 sessions without verified history support. Warcon remains an optional later
 adapter to an existing instance, not a dependency to install/deploy here.
 
-- [ ] Write tests `capability absent remains unsupported`, `three faction scores survive normalization`, `server restart changes instance not identity`, `directory 304 keeps provider observation time`, `missing region/server is unknown`, and `read adapter never sends mutation methods`. Include timeout/403 and malformed success bodies. Run both new test files and observe failure.
-- [ ] Implement only allowed reads of the direct console protocol and preserve capability provenance. For the optional directory adapter, use its [OpenAPI](https://api.wardogservers.com/openapi.json), explicit stable server/join ID, ETag and `meta` freshness; discard unneeded fields. Respect the provider's refresh interval. Never silently switch provider trust levels or forward RCON passwords to a directory.
-- [ ] Verify direct transport refuses public plaintext secrets and redirects; provider generation changes reject pending responses. Run tests, typecheck, lint and formatting. Capture any changed configuration/status presentation with synthetic data. Keep live provider behavior marked unverified.
-- [ ] Document provider selection, public-data attribution and unsupported player/history/controls states. Commit `feat(integrations): add scoped Wardogs provider reads`.
+- [x] Write tests `capability absent remains unsupported`, `three faction scores survive normalization`, `server restart changes instance not identity`, `directory 304 keeps provider observation time`, `missing region/server is unknown`, and `read adapter never sends mutation methods`. Include timeout/403 and malformed success bodies. Run both new test files and observe failure.
+- [x] Implement only allowed reads of the direct console protocol and preserve capability provenance. For the optional directory adapter, use its [OpenAPI](https://api.wardogservers.com/openapi.json), explicit stable server/join ID, ETag and `meta` freshness; discard unneeded fields. Respect the provider's refresh interval. Never silently switch provider trust levels or forward RCON passwords to a directory.
+- [x] Verify direct transport refuses public plaintext secrets and redirects; provider generation changes reject pending responses. Run tests, typecheck, lint and formatting. Capture any changed configuration/status presentation with synthetic data. Keep live provider behavior marked unverified.
+- [x] Document provider selection, public-data attribution and unsupported player/history/controls states. Include D3 in the explicitly staged collector milestone commit.
 
 ### D4 — Verified player links and reviewed result revisions
 

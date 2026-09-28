@@ -14,6 +14,7 @@ Our goal is to make running a community less manual: give players a clear place 
 - Publish community, clan, player, match, and competition information for visitors.
 - Support Hell Let Loose, Hell Let Loose: Vietnam, and Wardogs in a shared community workspace.
 - Provide an authenticated `/api/v1` integration surface, OpenAPI documentation, API keys, idempotent writes, and webhooks.
+- Collect configured HLL CRCON and Wardogs server data for scoped website reads; see the [collector handoff](./docs/integrations/website/v0.5/README.md) for setup and verification limits.
 
 The [wiki](./content/index.mdx) has practical guides for players, managers, events, rosters, settings, and [Discord bot setup](./content/discord-bot-setup.mdx).
 
@@ -68,6 +69,8 @@ Create a private `.env.local` file at the repository root. Do not commit it. The
 | `INTERNAL_AUTH_SECRET`                       | Shared secret for trusted dashboard/bot-to-Convex operations    |
 | `DISCORD_BOT_TOKEN`                          | Required when running the Discord bot                           |
 | `DISCORD_SUPPORT_URL`                         | Public Discord support-server invite shown in Logi navigation   |
+| `LOGI_GAME_DATA_SOURCES`                      | Optional operator-owned provider catalog in Convex; defaults to no sources |
+| `LOGI_GAME_DATA_<NAME>_TOKEN`                 | Provider token in Convex, referenced by catalog name only |
 
 Start the dashboard:
 

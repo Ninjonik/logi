@@ -8,6 +8,11 @@
  * @module
  */
 
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
 import type * as articles from "../articles.js";
 import type * as calendarFeed from "../calendarFeed.js";
 import type * as competitions from "../competitions.js";
@@ -18,6 +23,9 @@ import type * as discordRosters from "../discordRosters.js";
 import type * as discordSync from "../discordSync.js";
 import type * as discord_shared from "../discord_shared.js";
 import type * as events from "../events.js";
+import type * as gameData from "../gameData.js";
+import type * as gameDataCollector from "../gameDataCollector.js";
+import type * as gameDataHistory from "../gameDataHistory.js";
 import type * as groups from "../groups.js";
 import type * as guildGames from "../guildGames.js";
 import type * as guilds from "../guilds.js";
@@ -55,12 +63,14 @@ import type * as users from "../users.js";
 import type * as webhookDispatcher from "../webhookDispatcher.js";
 import type * as webhooks from "../webhooks.js";
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
-
+/**
+ * A utility for referencing Convex functions in your app's API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 declare const fullApi: ApiFromModules<{
   articles: typeof articles;
   calendarFeed: typeof calendarFeed;
@@ -72,6 +82,9 @@ declare const fullApi: ApiFromModules<{
   discordSync: typeof discordSync;
   discord_shared: typeof discord_shared;
   events: typeof events;
+  gameData: typeof gameData;
+  gameDataCollector: typeof gameDataCollector;
+  gameDataHistory: typeof gameDataHistory;
   groups: typeof groups;
   guildGames: typeof guildGames;
   guilds: typeof guilds;
@@ -109,28 +122,10 @@ declare const fullApi: ApiFromModules<{
   webhookDispatcher: typeof webhookDispatcher;
   webhooks: typeof webhooks;
 }>;
-
-/**
- * A utility for referencing Convex functions in your app's public API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
 export declare const api: FilterApi<
   typeof fullApi,
   FunctionReference<any, "public">
 >;
-
-/**
- * A utility for referencing Convex functions in your app's internal API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = internal.myModule.myFunction;
- * ```
- */
 export declare const internal: FilterApi<
   typeof fullApi,
   FunctionReference<any, "internal">

@@ -2,6 +2,10 @@ import {
     clanEventSummarySchema,
     clanMatchSummarySchema,
 } from "@/domain/api/event-summaries"
+import {
+    serverSnapshotSchema,
+    integrationHealthSchema,
+} from "@/domain/game-data/contracts"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { NextResponse } from "next/server"
 import { z } from "zod"
@@ -9,6 +13,8 @@ import { z } from "zod"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
 const summaryResponseSchemas = {
+    ClanServerSnapshotsDocument: z.toJSONSchema(serverSnapshotSchema),
+    ClanIntegrationHealthDocument: z.toJSONSchema(integrationHealthSchema),
     ClanEventSummariesDocument: z.toJSONSchema(clanEventSummarySchema),
     ClanMatchSummariesDocument: z.toJSONSchema(clanMatchSummarySchema),
 }
@@ -67,6 +73,8 @@ const updatedSinceParameter = {
     schema: { type: "string", format: "date-time" },
 }
 const resources = [
+    "server-snapshots",
+    "integration-health",
     "event-summaries",
     "match-summaries",
     "events",
@@ -82,6 +90,8 @@ const resources = [
     "users",
 ]
 const resourceTags: Record<string, string> = {
+    "server-snapshots": "Clan API — Game data",
+    "integration-health": "Clan API — Game data",
     "event-summaries": "Clan API — Events",
     "match-summaries": "Clan API — Matches",
     events: "Clan API — Events",
@@ -338,7 +348,15 @@ const paths: Record<string, unknown> = {
     },
 }
 for (const resource of resources) {
+    const gameDataDescription = [
+        "server-snapshots",
+        "integration-health",
+    ].includes(resource)
+        ? "Stored game-provider observations and sanitized collection health. Requires the matching resource grant and permitted game. No provider calls or controls are performed by these reads. IDs identify Logi connections. Unknown fields are null and zero is preserved. Stale at 180 seconds, unavailable at 900 seconds; errors can make data stale earlier. Freshness can change with time without a new updatedSince record. Live scores and imported sessions are not confirmed results. Source addresses, credentials and player identities are excluded."
+        : undefined
     const isGameOwned = [
+        "server-snapshots",
+        "integration-health",
         "event-summaries",
         "match-summaries",
         "events",
@@ -351,6 +369,9 @@ for (const resource of resources) {
     paths[`/clan/${resource}`] = {
         get: {
             summary: `List clan ${resource}`,
+            ...(gameDataDescription
+                ? { description: gameDataDescription }
+                : {}),
             ...(resource.endsWith("-summaries")
                 ? {
                       description:
@@ -377,6 +398,9 @@ for (const resource of resources) {
                 resource === "matches" || resource === "match-summaries"
                     ? "Get match details for a clan event"
                     : `Get a clan ${resource} record`,
+            ...(gameDataDescription
+                ? { description: gameDataDescription }
+                : {}),
             tags: [resourceTags[resource]!],
             security: [{ clanApiKey: [] }],
             parameters: [
@@ -1044,7 +1068,7 @@ export async function GET() {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.2.0",
+                version: "1.3.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read

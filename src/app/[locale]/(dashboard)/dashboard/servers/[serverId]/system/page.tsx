@@ -2,6 +2,7 @@ import { ConfigurationScopeIndicator } from "@/components/app/configuration-scop
 import { SystemMaintenanceSections } from "@/components/app/system-maintenance-sections"
 import { DiscordOperationsSettings } from "@/components/app/discord-operations-settings"
 import { CalendarFeedSettings } from "@/components/app/calendar-feed-settings"
+import { GameDataConnections } from "@/components/app/game-data-connections"
 import { CustomLoginLink } from "@/components/app/custom-login-link"
 import { SsoApplications } from "@/components/app/sso-applications"
 import { ApiKeyManager } from "@/components/app/api-key-manager"
@@ -44,6 +45,17 @@ export default async function SystemPage({
                     defaultRoleId={context.discordConfig?.clanRoleId}
                     dictionary={dictionary}
                     additionalSections={[
+                        {
+                            id: "game-data",
+                            title: dictionary.gameData.title,
+                            description: "",
+                            content: (
+                                <GameDataConnections
+                                    serverId={serverId}
+                                    dictionary={dictionary}
+                                />
+                            ),
+                        },
                         {
                             id: "website-api",
                             title: dictionary.clan.websiteApi,

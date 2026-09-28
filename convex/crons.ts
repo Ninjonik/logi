@@ -3,6 +3,18 @@ import { cronJobs } from "convex/server"
 import { internal } from "./_generated/api"
 
 const crons = cronJobs()
+crons.interval(
+    "collect game server data",
+    { minutes: 1 },
+    internal.gameDataCollector.collectDue,
+    {}
+)
+crons.interval(
+    "collect HLL history",
+    { minutes: 1 },
+    internal.gameDataCollector.collectHistoryDue,
+    {}
+)
 
 crons.daily(
     "remove expired public previews",

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { projectHealth, projectSnapshot } from "@/domain/game-data/policy"
 import { GET } from "@/app/api/v1/clan/[[...path]]/route"
 
 test("summary HTTP routes preserve page filters, detail identity and no-store", async (t) => {
@@ -149,5 +150,117 @@ test("clan route rejects missing and malformed credentials through HTTP", async 
                 message: "Use Authorization: Bearer <API key>.",
             },
         })
+    }
+})
+
+test("stored game data reaches the real HTTP route with scoped filters and nullable values", async (t) => {
+    const previous = process.env.NEXT_PUBLIC_CONVEX_URL
+    process.env.NEXT_PUBLIC_CONVEX_URL = "https://offline-test.convex.cloud"
+    t.after(() => {
+        if (previous === undefined) delete process.env.NEXT_PUBLIC_CONVEX_URL
+        else process.env.NEXT_PUBLIC_CONVEX_URL = previous
+    })
+    const stored = {
+        id: "connection",
+        guildId: "guild-a",
+        gameId: "wardogs",
+        provider: "wardogs_rcon",
+        enabled: true,
+        generation: 1,
+        fence: 0,
+        leaseUntil: 0,
+        lastAttemptAt: null,
+        errorCategory: null,
+        observation: null,
+    }
+    const values = {
+        "server-snapshots": projectSnapshot(stored, Date.now()),
+        "integration-health": projectHealth(stored, Date.now()),
+    }
+    let reads = 0
+    let restricted = true
+    t.mock.method(
+        globalThis,
+        "fetch",
+        async (_input: unknown, init?: RequestInit) => {
+            const request = JSON.parse(String(init?.body)) as {
+                path: string
+                args: Array<Record<string, unknown>>
+            }
+            let value: unknown
+            if (request.path === "publicApi:checkRateLimit")
+                value = { allowed: true, remaining: 200, resetAt: 0 }
+            else if (request.path === "publicApi:authenticateKey")
+                value = {
+                    guildId: "guild-a",
+                    readAccess: restricted
+                        ? {
+                              resources: Object.keys(values),
+                              gameIds: ["wardogs"],
+                          }
+                        : undefined,
+                }
+            else if (request.path === "publicApi:getClanResourcePage") {
+                assert.equal(request.args[0].game, "wardogs")
+                const resource = request.args[0].resource as keyof typeof values
+                assert.ok(resource in values)
+                reads++
+                value = {
+                    items: [values[resource]],
+                    nextCursor: null,
+                    limit: 25,
+                }
+            } else if (request.path === "publicApi:getClanResource") {
+                assert.equal(request.args[0].id, "connection")
+                value = values[request.args[0].resource as keyof typeof values]
+            } else assert.fail(`Unexpected external call: ${request.path}`)
+            return Response.json({ status: "success", value })
+        }
+    )
+    for (const resource of Object.keys(values) as Array<keyof typeof values>) {
+        const response = await GET(
+            new Request(
+                `https://logi.test/api/v1/clan/${resource}?game=wardogs`,
+                { headers: { authorization: "Bearer fixture" } }
+            ),
+            { params: Promise.resolve({ path: [resource] }) }
+        )
+        assert.equal(response.status, 200)
+        assert.equal(response.headers.get("cache-control"), "no-store")
+        assert.deepEqual(await response.json(), {
+            data: [values[resource]],
+            page: { nextCursor: null, limit: 25 },
+        })
+    }
+    const forbidden = await GET(
+        new Request(
+            "https://logi.test/api/v1/clan/server-snapshots?game=hell_let_loose",
+            { headers: { authorization: "Bearer fixture" } }
+        ),
+        { params: Promise.resolve({ path: ["server-snapshots"] }) }
+    )
+    assert.equal(forbidden.status, 403)
+    assert.equal(reads, 2, "wrong-game reads never reach the database")
+    restricted = false
+    for (const resource of Object.keys(values)) {
+        for (const detail of [false, true]) {
+            const response = await GET(
+                new Request(
+                    `https://logi.test/api/v1/clan/${resource}${detail ? "/connection" : "?game=wardogs"}`,
+                    { headers: { authorization: "Bearer legacy-fixture" } }
+                ),
+                {
+                    params: Promise.resolve({
+                        path: detail ? [resource, "connection"] : [resource],
+                    }),
+                }
+            )
+            assert.equal(response.status, 200)
+            assert.equal(
+                response.headers.get("cache-control"),
+                "no-store",
+                "provider health never uses the legacy 30-second HTTP cache"
+            )
+        }
     }
 })

@@ -89,7 +89,7 @@ object alongside `name`:
 ```
 
 Both arrays must be nonempty and contain no duplicates. Resources can be
-`event-summaries`, `match-summaries`, `events`, `groups`, `rosters`,
+`server-snapshots`, `integration-health`, `event-summaries`, `match-summaries`, `events`, `groups`, `rosters`,
 `assignments`, `stratmaps` or `matches`; game IDs
 can be `hell_let_loose`, `hell_let_loose_vietnam` or `wardogs`. Each collection
 request must select explicit permitted games. Missing `game`, `game=all`,
@@ -107,7 +107,7 @@ administrator session.
 Restricted keys do not grant metadata, settings, raw users, calendar items,
 presets or performance history in this first release. Read-only records still
 require publication review: never publish raw API responses. The
-[versioned website handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.4/README.md)
+[versioned website handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.5/README.md)
 describes field allowlists, safe synchronization, fixtures and rollout order.
 Deploy the compatible backend before using these new policies; an older backend
 does not enforce them.
@@ -315,6 +315,38 @@ The subscription includes every scheduled Logi event and every manual calendar
 item, including recurring items. The URL is a secret capability: anyone who has
 it can read that clan's calendar. Rotate the link to immediately disable an old
 subscription; add the newly generated URL in Google Calendar afterward.
+
+## Game server data
+
+In **System → Game server data**, managers can enable, disable and resume sources
+prepared by the Logi operator for this workspace. With no configured sources,
+the section shows an empty state. The form never asks for a server password.
+The operator supplies the provider address and token privately before activation.
+
+HLL CRCON supports current server data and historical match collection. Wardogs
+RCON supports current server data after checking its available functions. An
+optional Wardog Servers directory source provides public status with attribution.
+Select one source for a server; Logi does not silently replace it with another.
+
+Cards show players, map, last observation, data freshness and any provider error.
+HLL also shows the number of collected sessions and last successful history
+import. Zero players is a known value; unknown is different. Old counts remain
+visible with their timestamp when a source fails. Data becomes stale after three
+minutes and unavailable after fifteen; disabling a source makes it unavailable
+immediately. A missing directory entry does not prove that the server is offline.
+
+**Disable** stops collection and rejects in-flight results from older runs.
+If access or configuration is rejected, ask the operator to fix it and use
+**Enable / resume**. **Refresh** reloads Logi's stored status; it does not contact
+the game server. A history-import error is displayed separately from current data.
+
+Website keys need the **Server snapshots** and/or **Integration health** grants
+and an explicit game. Read `/api/v1/clan/server-snapshots?game=wardogs` or
+`/api/v1/clan/integration-health?game=hell_let_loose`; details use the Logi
+connection ID. These are read-only resources. Provider credentials, addresses
+and private player identities are excluded. Live scores and imported sessions
+remain unconfirmed; they do not create a verified player link or approved match
+result. No game-server controls are provided by this screen or these API routes.
 
 ## Imports, performance, and helper data
 

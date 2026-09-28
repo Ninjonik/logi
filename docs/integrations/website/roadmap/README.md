@@ -1,8 +1,9 @@
 # Data, website and identity integration roadmap
 
-**Status: Proposed design and implementation backlog, 2026-09-28.** This is not a
-deployed capability announcement. The current delivered contract remains
-[handoff 0.4.0](../v0.4/README.md). Task IDs below are local plan references,
+**Status: D1–D3 implemented for review, 2026-09-28; other tasks remain planned.**
+The collector milestone is [handoff 0.5.0](../v0.5/README.md), with offline
+validation and explicit live-acceptance limits. It is not a deployment announcement.
+Task IDs below are local plan references,
 not GitHub issue numbers. Upstream Issues remain disabled.
 
 Logi is the operational data backend for HLL and Wardogs. The website keeps its
@@ -21,6 +22,11 @@ models. Extend the existing Logi dashboard, Convex backend and Discord bot.
     - [I1–I5: Discord membership, authorization and OAuth/OIDC/Steam linking](../../../superpowers/plans/2026-09-28-logi-identity-membership.md)
 
 ## Prioritized delivery
+
+The user's continuation prioritizes D1–D3 for the existing HLL setup and one
+Wardogs server. These now include persistence, adapters, scoped reads and manager
+UI. Next Logi work is W2/I1, followed by reviewed results and verified identity.
+The broader dependency ordering below still applies to website-owned work.
 
 | Order | Tasks          | Reviewable outcome                                                                                    | Owner / dependency                                                           |
 | ----- | -------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -84,10 +90,8 @@ Until that contract is reviewed, the website links to Logi operational workflows
 
 ## Plan verification
 
-This planning-only revision checks 45 relative documentation links across nine
-files, 13 unique task IDs, 52 unchecked steps, required plan sections and balanced
-code fences. The six new documents pass the existing Prettier formatter; the
-complete patch passes `git diff --check`. Diagrams were source-reviewed, not
-rendered. No application tests or live provider flows were rerun for this
-documentation change. Runtime validation remains pinned to `cd69579` in handoff
-0.4; the checkboxes above are future acceptance work, not passed test claims.
+The original planning-only revision checked 45 relative links across nine files,
+13 unique task IDs, 52 unchecked steps, plan structure, formatting and code fences.
+Its runtime baseline was `cd69579` in handoff 0.4. Current collector evidence and
+plan adjustments are recorded in [0.5 validation](../v0.5/validation.md);
+unchanged W/I/D4 checkboxes remain future work.

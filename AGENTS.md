@@ -30,7 +30,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — dependency direction, layer responsibilities, migration guidance, and testing strategy
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — contribution workflow, placement rules, and expected validation
 - [discord-bot/README.md](./discord-bot/README.md) — bot runtime, required environment variables, responsibilities, and source layout
-- [Website integration handoff](./docs/integrations/website/v0.4/README.md) — scoped read-only keys, minimal event/match summaries, synthetic fixtures, and consumer acceptance
+- [Website integration handoff](./docs/integrations/website/v0.5/README.md) — HLL/Wardogs collectors, scoped snapshots/health, operator setup and verification; inherits scoped keys and event/match summaries from 0.4
 - [Integration roadmap](./docs/integrations/website/roadmap/README.md) — proposed HLL/Wardogs collection, website synchronization, Discord membership and identity plans
 
 ### User-facing and legal Markdown

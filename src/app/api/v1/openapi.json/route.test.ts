@@ -6,6 +6,12 @@ import { GET } from "./route"
 test("OpenAPI exposes read-only summary routes with closed minimal response schemas", async () => {
     const document = await (await GET()).json()
     for (const [resource, schemaName, field] of [
+        ["server-snapshots", "ClanServerSnapshotsDocument", "freshness"],
+        [
+            "integration-health",
+            "ClanIntegrationHealthDocument",
+            "lastSuccessAt",
+        ],
         ["event-summaries", "ClanEventSummariesDocument", "startsAt"],
         ["match-summaries", "ClanMatchSummariesDocument", "resultState"],
     ]) {
@@ -60,6 +66,8 @@ test("every clan operation documents runtime scope denial and its read-access re
             const allowed =
                 method === "get" &&
                 [
+                    "server-snapshots",
+                    "integration-health",
                     "events",
                     "groups",
                     "rosters",
