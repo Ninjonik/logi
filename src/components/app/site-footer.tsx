@@ -26,7 +26,7 @@ export function SiteFooter({
                         rel="noreferrer"
                         className="hover:text-foreground inline-flex items-center gap-1"
                     >
-                        <SiDiscord className="size-3" />
+                        <SiDiscord aria-hidden="true" className="size-3" />
                         {dictionary.publicNavigation.discordSupport}
                     </a>
                     <Link

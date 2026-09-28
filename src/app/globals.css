@@ -213,40 +213,20 @@ html {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: landing-gradient 7s linear infinite;
 }
 
 .landing-moving-border {
     background: conic-gradient(
-        from var(--landing-angle, 0deg),
+        from 0deg,
         transparent 30%,
         #fbbf24 45%,
         #fb7185 55%,
         transparent 70%
     );
-    animation: landing-spin 4s linear infinite;
-}
-
-@keyframes landing-gradient {
-    to {
-        background-position: 230% center;
-    }
-}
-@keyframes landing-spin {
-    to {
-        --landing-angle: 360deg;
-    }
-}
-
-@property --landing-angle {
-    syntax: "<angle>";
-    initial-value: 0deg;
-    inherits: false;
 }
 
 @media (prefers-reduced-motion: reduce) {
     .landing-gradient-text,
-    .landing-moving-border,
     .landing-marquee-track,
     .animate-\[marquee_26s_linear_infinite\] {
         animation: none !important;
