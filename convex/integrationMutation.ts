@@ -12,9 +12,9 @@ import type { SyncResource } from "../src/domain/integrations/change"
 import { appendIntegrationChange } from "./integrationChangeLog"
 import type { Doc, Id } from "./_generated/dataModel"
 
-const tables = ["events", "gameDataConnections"] as const
+const tables = ["events", "gameDataConnections", "userAssignments"] as const
 type TrackedTable = (typeof tables)[number]
-type Row = Doc<"events"> | Doc<"gameDataConnections">
+type Row = Doc<"events"> | Doc<"gameDataConnections"> | Doc<"userAssignments">
 export function projectIntegrationRow(
     table: TrackedTable,
     row: Row | null,
@@ -24,6 +24,7 @@ export function projectIntegrationRow(
     data: { id: string; guildId: string; gameId: string }
 }> {
     if (!row) return []
+    if (table === "userAssignments") return [] // Per-key membership projection is read separately.
     if (table === "events") {
         const event = row as Doc<"events">
         return [
@@ -114,6 +115,39 @@ export async function withIntegrationChanges<T>(
     })
     const result = await execute({ ...ctx, db })
     for (const [id, { table, before }] of touched) {
+        if (table === "userAssignments") {
+            const after = await ctx.db.get(id as Id<"userAssignments">)
+            const previous = before as Doc<"userAssignments"> | null
+            const identity = (row: Doc<"userAssignments">) => ({
+                guildId: row.serverId,
+                gameId: row.gameId ?? "hell_let_loose",
+                resource: "membership-summaries" as const,
+                id: row.userId,
+                operation: "upsert" as const,
+            })
+            const fingerprint = (row: Doc<"userAssignments"> | null) =>
+                row
+                    ? JSON.stringify([
+                          row.serverId,
+                          row.gameId ?? "hell_let_loose",
+                          row.userId,
+                          row.type,
+                          row.status,
+                      ])
+                    : null
+            if (fingerprint(previous) !== fingerprint(after)) {
+                if (previous)
+                    await appendIntegrationChange(ctx, identity(previous))
+                if (
+                    after &&
+                    (!previous ||
+                        JSON.stringify(identity(previous)) !==
+                            JSON.stringify(identity(after)))
+                )
+                    await appendIntegrationChange(ctx, identity(after))
+            }
+            continue
+        }
         // Old migration input can predate the current DTO schema. Compare source
         // fields without parsing it; wire validation belongs to the read path.
         const fingerprints = (row: Row | null) => {
@@ -156,7 +190,7 @@ export async function withIntegrationChanges<T>(
                 resource,
                 data: {
                     id,
-                    guildId: row.guildId,
+                    guildId: "guildId" in row ? row.guildId : row.serverId,
                     gameId: row.gameId ?? "hell_let_loose",
                     fingerprint,
                 },

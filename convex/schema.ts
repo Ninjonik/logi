@@ -1230,6 +1230,76 @@ export default defineSchema({
     })
         .index("guildId_key", ["guildId", "key"])
         .index("expiresAt", ["expiresAt"]),
+    membershipIntegrationPolicies: defineTable({
+        apiKeyId: v.id("apiKeys"),
+        guildId: v.string(),
+        enabled: v.boolean(),
+        version: v.string(),
+        games: v.array(
+            v.object({ gameId: v.string(), roleIds: v.array(v.string()) })
+        ),
+        updatedAt: v.string(),
+    })
+        .index("apiKeyId", ["apiKeyId"])
+        .index("guildId", ["guildId"]),
+    membershipGuilds: defineTable({
+        guildId: v.string(),
+        epoch: v.string(),
+        revision: v.string(),
+        epochRevision: v.string(),
+        refreshWindowAt: v.number(),
+        refreshCount: v.number(),
+    }).index("guildId", ["guildId"]),
+    memberObservations: defineTable({
+        guildId: v.string(),
+        discordUserId: v.string(),
+        state: v.union(
+            v.literal("present"),
+            v.literal("left"),
+            v.literal("unknown")
+        ),
+        roleIds: v.array(v.string()),
+        observedAt: v.union(v.string(), v.null()),
+        receivedAt: v.string(),
+        epoch: v.string(),
+        revision: v.string(),
+        unavailable: v.boolean(),
+        refreshFence: v.number(),
+        refreshUntil: v.number(),
+        nextRefreshAt: v.number(),
+        seenRunId: v.optional(v.id("membershipSyncRuns")),
+    })
+        .index("guildId", ["guildId"])
+        .index("guildId_discordUserId", ["guildId", "discordUserId"]),
+    membershipSyncRuns: defineTable({
+        guildId: v.string(),
+        epoch: v.string(),
+        startedRevision: v.string(),
+        observedAt: v.string(),
+        expectedCount: v.optional(v.number()),
+        seenCount: v.number(),
+        nextBatch: v.number(),
+        status: v.union(
+            v.literal("collecting"),
+            v.literal("sweeping"),
+            v.literal("complete"),
+            v.literal("superseded")
+        ),
+        cursor: v.union(v.string(), v.null()),
+        expiresAt: v.number(),
+    })
+        .index("guildId", ["guildId"])
+        .index("expiresAt", ["expiresAt"]),
+    membershipSyncSubjects: defineTable({
+        runId: v.id("membershipSyncRuns"),
+        discordUserId: v.string(),
+    })
+        .index("runId_discordUserId", ["runId", "discordUserId"])
+        .index("runId", ["runId"]),
+    membershipRefreshLimits: defineTable({
+        name: v.string(),
+        until: v.number(),
+    }).index("name", ["name"]),
     integrationHeads: defineTable({
         guildId: v.string(),
         revision: v.string(),

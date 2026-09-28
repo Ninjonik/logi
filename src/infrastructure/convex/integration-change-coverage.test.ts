@@ -108,6 +108,9 @@ test("registered authoritative writers keep transaction tracking at their Convex
         "competitions",
         "gameData",
         "gameDataHistory",
+        "discordSync",
+        "userAssignments",
+        "groups",
     ]) {
         const source = readFileSync(`convex/${writer}.ts`, "utf8")
         assert.match(
@@ -121,4 +124,37 @@ test("registered authoritative writers keep transaction tracking at their Convex
             writer
         )
     }
+})
+test("assignment create and removal advance the exact membership projection", async () => {
+    process.env.INTERNAL_AUTH_SECRET = "synthetic-sync-secret"
+    const assignments = await import("../../../convex/userAssignments")
+    const ctx = testContext()
+    ctx.db.seed("guilds", { _id: "guilds:one", discordId: "guild-a" })
+    ctx.db.seed("users", { _id: "users:one", discordId: "member-a" })
+    await invoke(assignments.upsertByServerDiscordId, ctx, {
+        secret: "synthetic-sync-secret",
+        serverDiscordId: "guild-a",
+        gameId: "wardogs",
+        userId: "member-a",
+        type: "member",
+        status: "active",
+        secondaryGroupIds: [],
+        paused: false,
+    })
+    assert.deepEqual(
+        ctx.db.tables.integrationChanges.map((row) => [
+            row.guildId,
+            row.gameId,
+            row.resource,
+            row.id,
+            row.operation,
+        ]),
+        [["guild-a", "wardogs", "membership-summaries", "member-a", "upsert"]]
+    )
+    await invoke(assignments.remove, ctx, {
+        secret: "synthetic-sync-secret",
+        assignmentId: ctx.db.tables.userAssignments[0]._id,
+    })
+    assert.equal(ctx.db.tables.integrationChanges.length, 2)
+    assert.equal(ctx.db.tables.integrationChanges[1].operation, "upsert")
 })

@@ -395,3 +395,18 @@ honors Retry-After and recovers expired worker leases. Receivers must deduplicat
 the change feed remains the recovery source. See `/api/v1/docs` for the contract.
 
 > **Screenshot placeholder — settings:** Show the server Settings page with the active workspace name, clearly separated settings sections, and a redacted example of any sensitive key field.
+
+## Discord membership integrations
+
+Create a read-only key with the Discord membership resource and selected games in
+Website API. Open Discord membership integrations, refresh, enter the allowed role
+IDs per game, enable the policy and save. Blank role lists share only presence and
+Logi assignment. Policy administration requires your signed-in server administrator
+session; API keys cannot change these permissions.
+
+Membership reads return an explicit unknown state when fresh Discord evidence is
+unavailable. They never expose all roles or grant website administration. Policy
+changes and reconnects invalidate cached authority. Membership feed consumers must
+specify one Discord subject and handle a scope reset; membership webhooks require an
+explicit `membership.changed` subscription. Existing summary keys and webhook
+subscriptions do not gain member access automatically.

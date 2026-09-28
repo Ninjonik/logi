@@ -63,6 +63,15 @@ test("every clan operation documents runtime scope denial and its read-access re
                 `${method} ${path} must document insufficient_scope`
             )
             const resource = path.split("/")[2]
+            if (resource === "membership-summaries") {
+                assert.deepEqual(operation["x-logi-read-access"], {
+                    resource,
+                    gameSelection: "one-explicit-game",
+                    policy: "enabled-per-key-role-allowlist",
+                    subject: "exact-discord-user-id",
+                })
+                continue
+            }
             if (["changes", "sync-records"].includes(resource)) {
                 assert.deepEqual(operation["x-logi-read-access"], {
                     resources: "underlying-explicit-grants",
@@ -98,6 +107,31 @@ test("every clan operation documents runtime scope denial and its read-access re
             )
         }
     }
+})
+test("membership OpenAPI exposes only exact-subject reads and required policy/freshness rules", async () => {
+    const document = await (await GET()).json()
+    assert.equal(document.paths["/clan/membership-summaries"], undefined)
+    const operation =
+        document.paths["/clan/membership-summaries/{discordUserId}"]?.get
+    assert.ok(operation)
+    assert.ok(
+        operation.parameters.some(
+            (value: { name: string; required?: boolean }) =>
+                value.name === "game" && value.required
+        )
+    )
+    assert.ok(
+        operation.parameters.some(
+            (value: { name: string; schema: { maximum?: number } }) =>
+                value.name === "maxAgeMs" && value.schema.maximum === 300000
+        )
+    )
+    assert.ok(document.components.schemas.MembershipObservation)
+    assert.ok(
+        document.paths["/clan/changes"].get.parameters.some(
+            (value: { name: string }) => value.name === "subject"
+        )
+    )
 })
 
 test("OpenAPI advertises every implemented clan write endpoint", async () => {

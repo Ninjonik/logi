@@ -5,6 +5,11 @@ import {
     type SyncResource,
 } from "../src/domain/integrations/change"
 import {
+    authorizeMembership,
+    membershipGuild,
+    readMembershipRecord,
+} from "./membership_shared"
+import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
@@ -54,10 +59,28 @@ export const readChanges = query({
         startNow: v.optional(v.boolean()),
         afterRevision: v.optional(v.string()),
         issuedAt: v.optional(v.number()),
+        discordUserId: v.optional(v.string()),
+        membershipScopeVersion: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const key = await authorize(ctx, args, args.resources)
         if (!key) return null
+        let membershipScopeVersion: string | undefined
+        if (args.resources.includes("membership-summaries")) {
+            if (!args.discordUserId) return null
+            const grant = await authorizeMembership(ctx, {
+                ...args,
+                guildId: key.guildId,
+            })
+            if (!grant) return null
+            const guild = await membershipGuild(ctx, key.guildId)
+            membershipScopeVersion = `${grant.policy.version}:${guild?.epoch ?? "0"}`
+            if (
+                !args.startNow &&
+                args.membershipScopeVersion !== membershipScopeVersion
+            )
+                return { resetRequired: true }
+        }
         if (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 100)
             throw new Error("Invalid limit.")
         const head = await ctx.db
@@ -66,7 +89,13 @@ export const readChanges = query({
             .unique()
         const revision = head?.revision ?? "0"
         if (args.startNow)
-            return { items: [], revision, hasMore: false, resetRequired: false }
+            return {
+                items: [],
+                revision,
+                hasMore: false,
+                resetRequired: false,
+                ...(membershipScopeVersion ? { membershipScopeVersion } : {}),
+            }
         const after = args.afterRevision
         if (
             after === undefined ||
@@ -93,7 +122,9 @@ export const readChanges = query({
                 .filter(
                     (row) =>
                         row.gameId === args.gameId &&
-                        args.resources.includes(row.resource)
+                        args.resources.includes(row.resource) &&
+                        (row.resource !== "membership-summaries" ||
+                            row.id === args.discordUserId)
                 )
                 .map(
                     ({
@@ -113,6 +144,7 @@ export const readChanges = query({
                     })
                 ),
             revision: rows.at(-1)?.revision ?? after,
+            ...(membershipScopeVersion ? { membershipScopeVersion } : {}),
             hasMore: rows.length === args.limit,
             resetRequired: false,
         }
@@ -124,6 +156,32 @@ export const readSyncRecord = query({
         const key = await authorize(ctx, args, [args.resource])
         if (!key) return null
         const resource = args.resource as SyncResource
+        if (resource === "membership-summaries") {
+            const grant = await authorizeMembership(ctx, {
+                ...args,
+                guildId: key.guildId,
+            })
+            if (!grant) return null
+            const data = await readMembershipRecord(
+                ctx,
+                {
+                    guildId: key.guildId,
+                    gameId: args.gameId,
+                    discordUserId: args.id,
+                },
+                grant,
+                60_000
+            )
+            return {
+                guildId: key.guildId,
+                gameId: args.gameId,
+                resource,
+                id: args.id,
+                revision: data.revision,
+                operation: "upsert" as const,
+                data,
+            }
+        }
         const identity = {
             guildId: key.guildId,
             gameId: args.gameId,

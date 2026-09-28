@@ -1,4 +1,21 @@
 export const enMessages = {
+    membershipIntegration: {
+        title: "Discord membership integrations",
+        description:
+            "Choose which Discord roles each integration may read. Access also requires a read-only key with the Discord membership grant. The website decides how to use these observations.",
+        enabled: "Allow membership lookups with this key",
+        roles: "Allowed role IDs",
+        rolesHelp:
+            "Enter one role ID per line. An empty list shares presence and Logi assignment only. Save to apply changes.",
+        empty: "Create a read-only API key with the Discord membership grant, then refresh this list.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        saving: "Saving…",
+        save: "Save policy",
+        saved: "Membership policy saved.",
+        error: "Unable to load or save membership policies. Refresh and retry.",
+        invalid: "Use valid Discord role IDs, with at most 100 roles per game.",
+    },
     gameData: {
         collectedSessions: "Collected sessions",
         historyObserved: "Last history import",
@@ -87,6 +104,8 @@ export const enMessages = {
         empty: "No API keys have been created.",
         invalidPolicy: "Unrecognized restrictions; backend access is denied.",
         resourceLabels: {
+            "membership-summaries":
+                "Discord membership (separate policy required)",
             "server-snapshots": "Game server snapshots",
             "integration-health": "Collection health",
             "event-summaries": "Event summaries",

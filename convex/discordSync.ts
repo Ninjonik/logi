@@ -8,51 +8,12 @@ import {
     normalizeUserDoc,
 } from "./discord_shared"
 import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
-import type { MutationCtx } from "./_generated/server"
+import { syncDashboardAdminOverrides } from "./discordMemberAccessStore"
+import { applyGatewayObservation } from "./memberObservations"
 import { mutation } from "./integrationMutation"
 import { getGuildDiscordId } from "./identity"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
-
-async function syncDashboardAdminOverrides(
-    ctx: MutationCtx,
-    guildId: string,
-    members: Array<{ userId: string; roleIds: string[] }>
-) {
-    const [guild, config] = await Promise.all([
-        ctx.db
-            .query("guilds")
-            .withIndex("discordId", (q) => q.eq("discordId", guildId))
-            .unique(),
-        ctx.db
-            .query("discordConfigs")
-            .withIndex("guildId", (q) => q.eq("guildId", guildId))
-            .unique(),
-    ])
-    const dashboardAdminRoleId = config?.dashboardAdminRoleId
-    if (!guild || !dashboardAdminRoleId) return
-
-    const overrides = { ...guild.adminAccessOverrides }
-    let changed = false
-    for (const member of members) {
-        const hasRole = member.roleIds.includes(dashboardAdminRoleId)
-        // Do not create false entries for every ordinary member. A false value is
-        // only needed to remember an explicit Logi revocation.
-        if (hasRole && overrides[member.userId] !== true) {
-            overrides[member.userId] = true
-            changed = true
-        } else if (!hasRole && overrides[member.userId] !== undefined) {
-            overrides[member.userId] = false
-            changed = true
-        }
-    }
-    if (changed) {
-        await ctx.db.patch(guild._id, {
-            adminAccessOverrides: overrides,
-            updatedAt: new Date().toISOString(),
-        })
-    }
-}
 
 export const listSyncPayloads = query({
     args: { secret: v.string() },
@@ -579,9 +540,23 @@ export const upsertMemberAccess = mutation({
         roleIds: v.array(v.string()),
         isAdmin: v.boolean(),
         hasDashboardAccess: v.boolean(),
+        observation: v.optional(
+            v.object({ epoch: v.string(), observedAt: v.string() })
+        ),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
+        if (
+            args.observation &&
+            !(await applyGatewayObservation(ctx, {
+                guildId: args.guildId,
+                discordUserId: args.userId,
+                state: "present",
+                roleIds: args.roleIds,
+                ...args.observation,
+            }))
+        )
+            return null
         const now = new Date().toISOString()
         const existing = await ctx.db
             .query("discordMemberAccess")
@@ -615,9 +590,27 @@ export const upsertMemberAccess = mutation({
 })
 
 export const removeMemberAccess = mutation({
-    args: { secret: v.string(), guildId: v.string(), userId: v.string() },
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        userId: v.string(),
+        observation: v.optional(
+            v.object({ epoch: v.string(), observedAt: v.string() })
+        ),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
+        if (
+            args.observation &&
+            !(await applyGatewayObservation(ctx, {
+                guildId: args.guildId,
+                discordUserId: args.userId,
+                state: "left",
+                roleIds: [],
+                ...args.observation,
+            }))
+        )
+            return
         const existing = await ctx.db
             .query("discordMemberAccess")
             .withIndex("guildId_userId", (q) =>

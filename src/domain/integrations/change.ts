@@ -1,4 +1,5 @@
 export const SYNC_RESOURCES = [
+    "membership-summaries",
     "event-summaries",
     "match-summaries",
     "server-snapshots",
@@ -36,6 +37,7 @@ export const syncRecordSchema = z.union([
             clanMatchSummarySchema,
             serverSnapshotSchema,
             integrationHealthSchema,
+            membershipObservationSchema,
         ]),
     }),
 ])
@@ -59,5 +61,6 @@ import {
     serverSnapshotSchema,
     integrationHealthSchema,
 } from "../game-data/contracts"
+import { membershipObservationSchema } from "../membership/observation"
 import { GAME_IDS } from "../games/game"
 import { z } from "zod"

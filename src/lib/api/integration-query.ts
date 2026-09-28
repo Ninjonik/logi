@@ -21,6 +21,8 @@ export function parseIntegrationQuery(request: Request) {
             !path[2] ||
             !path[3] ||
             !(SYNC_RESOURCES as readonly string[]).includes(path[2]) ||
+            (path[2] === "membership-summaries" &&
+                !/^\d{17,20}$/.test(path[3])) ||
             [...params.keys()].some((key) => key !== "game")
         )
             return null
@@ -36,9 +38,16 @@ export function parseIntegrationQuery(request: Request) {
         params.getAll("resources").length !== 1 ||
         [...params.keys()].some(
             (key) =>
-                !["game", "resources", "cursor", "start", "limit"].includes(key)
+                ![
+                    "game",
+                    "resources",
+                    "cursor",
+                    "start",
+                    "limit",
+                    "subject",
+                ].includes(key)
         ) ||
-        ["cursor", "start", "limit"].some(
+        ["cursor", "start", "limit", "subject"].some(
             (key) => params.getAll(key).length > 1
         )
     )
@@ -57,6 +66,13 @@ export function parseIntegrationQuery(request: Request) {
     const limitText = params.get("limit") ?? "25",
         limit = Number(limitText)
     if (!/^\d{1,3}$/.test(limitText) || limit < 1 || limit > 100) return null
+    const discordUserId = params.get("subject")
+    if (
+        resources.includes("membership-summaries")
+            ? !discordUserId || !/^\d{17,20}$/.test(discordUserId)
+            : !!discordUserId
+    )
+        return null
     const startNow = params.get("start") === "now",
         cursor = params.get("cursor")
     if (
@@ -72,5 +88,6 @@ export function parseIntegrationQuery(request: Request) {
         limit,
         startNow,
         cursor,
+        discordUserId,
     }
 }

@@ -5,6 +5,14 @@ import { internal } from "./_generated/api"
 
 const crons = cronJobs()
 crons.interval(
+    "prune membership reconciliation metadata",
+    { minutes: 1 },
+    makeFunctionReference<"mutation">(
+        "memberObservations:pruneReconciliations"
+    ),
+    {}
+)
+crons.interval(
     "prune integration change retention",
     { hours: 1 },
     makeFunctionReference<"mutation">("integrationChanges:prune"),

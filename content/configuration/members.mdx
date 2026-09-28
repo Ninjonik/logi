@@ -111,3 +111,17 @@ Discord emoji for its sign-up option.
 When deleting a group, Logi removes that group from affected primary and secondary assignments before deleting the group. It does not delete the Discord role itself.
 
 > **Screenshot placeholder — members and groups:** Show the Members table with a member detail/assignment action and the Groups list with name, usage count, and description columns.
+
+## Sharing membership with a website
+
+System → Discord membership integrations lets an administrator allow an integration
+to read one member's current presence, selected Discord role IDs and Logi assignment.
+Create a read-only API key with the Discord membership grant first, then enable its
+policy and enter the allowed roles for each game. Empty role lists share no roles.
+No integration gains access until both gates are configured.
+
+Unavailable or stale Discord data is explicitly unknown. The website must enforce
+freshness and its own permissions; successful OAuth login, Logi assignment or guild
+presence alone does not grant website administration. Disabling the policy or revoking
+the key denies subsequent reads. See the [membership handoff](https://github.com/Ninjonik/logi/blob/feat/valkyria-integration/docs/integrations/website/v0.7/README.md)
+for the exact-subject API, freshness windows and consumer responsibilities.

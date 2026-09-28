@@ -1,6 +1,7 @@
 import { matchesGameScope } from "../src/domain/games/game";
 import type { MutationCtx } from "./_generated/server";
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
+import { mutation } from "./integrationMutation";
 import { v } from "convex/values";
 
 import {

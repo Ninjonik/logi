@@ -1,4 +1,21 @@
 export const csMessages = {
+    membershipIntegration: {
+        title: "Integrace členství Discordu",
+        description:
+            "Vyberte, které role Discordu smí jednotlivé integrace číst. Přístup vyžaduje také klíč pouze pro čtení s oprávněním ke členství Discordu. O využití těchto údajů rozhoduje web.",
+        enabled: "Povolit tomuto klíči ověřování členství",
+        roles: "Povolená ID rolí",
+        rolesHelp:
+            "Zadejte jedno ID role na řádek. Prázdný seznam zpřístupní jen přítomnost a zařazení v Logi. Změny použijete uložením.",
+        empty: "Vytvořte API klíč pouze pro čtení s oprávněním ke členství Discordu a obnovte seznam.",
+        loading: "Načítání…",
+        refresh: "Obnovit",
+        saving: "Ukládání…",
+        save: "Uložit pravidla",
+        saved: "Pravidla přístupu ke členství byla uložena.",
+        error: "Pravidla členství nelze načíst nebo uložit. Obnovte seznam a zkuste to znovu.",
+        invalid: "Použijte platná ID rolí Discordu, nejvýše 100 rolí na hru.",
+    },
     gameData: {
         collectedSessions: "Načtené zápasy",
         historyObserved: "Poslední import historie",
@@ -85,6 +102,8 @@ export const csMessages = {
         empty: "Zatím nebyly vytvořeny žádné API klíče.",
         invalidPolicy: "Nerozpoznaná omezení; backend přístup zamítne.",
         resourceLabels: {
+            "membership-summaries":
+                "Členství Discordu (vyžaduje samostatná pravidla)",
             "server-snapshots": "Stav herních serverů",
             "integration-health": "Stav sběru dat",
             "event-summaries": "Souhrny událostí",

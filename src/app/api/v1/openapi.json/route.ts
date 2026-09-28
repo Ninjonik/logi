@@ -11,6 +11,7 @@ import {
     serverSnapshotSchema,
     integrationHealthSchema,
 } from "@/domain/game-data/contracts"
+import { membershipObservationSchema } from "@/domain/membership/observation"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { NextResponse } from "next/server"
 import { z } from "zod"
@@ -18,6 +19,7 @@ import { z } from "zod"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
 const summaryResponseSchemas = {
+    MembershipObservation: z.toJSONSchema(membershipObservationSchema),
     IntegrationChange: z.toJSONSchema(integrationChangeSchema),
     IntegrationSyncRecord: z.toJSONSchema(syncRecordSchema),
     ClanServerSnapshotsDocument: z.toJSONSchema(serverSnapshotSchema),
@@ -1071,6 +1073,13 @@ paths["/clan/changes"] = {
         parameters: [
             ...syncParameters,
             {
+                name: "subject",
+                in: "query",
+                description:
+                    "Required exactly once when resources includes membership-summaries; forbidden otherwise. One Discord user ID. Requires an enabled per-key role policy. The signed cursor binds this subject and resets after policy or guild epoch changes; no membership enumeration.",
+                schema: { type: "string", pattern: "^[0-9]{17,20}$" },
+            },
+            {
                 name: "resources",
                 in: "query",
                 required: true,
@@ -1184,6 +1193,61 @@ paths["/clan/sync-records/{resource}/{id}"] = {
     },
 }
 
+paths["/clan/membership-summaries/{discordUserId}"] = {
+    get: {
+        tags: ["Clan API — Membership"],
+        security: [{ clanApiKey: [] }],
+        summary: "Observe one member with explicit game and role permissions",
+        description:
+            "Requires an explicit membership-summaries read grant AND enabled per-key role policy configured by a signed-in server administrator. Legacy full-access keys are denied. No collection endpoint exists. Returns only allowlisted role IDs and an independent Logi assignment. Default maximum observation age is 60 seconds (configurable 1–300 seconds); receivedAt does not confer freshness. Stale, unavailable, rate-limited or invalidated observations have state=unknown, completeness=unavailable and no roles. Only Discord Unknown Member proves absence. Direct refresh rechecks stored key and policy after the network wait. Always no-store; consumers must enforce observedAt age at authorization time. This endpoint never grants website privileges. Policy management deliberately has no bearer-key write API.",
+        parameters: [
+            ...syncParameters,
+            {
+                name: "discordUserId",
+                in: "path",
+                required: true,
+                schema: { type: "string", pattern: "^[0-9]{17,20}$" },
+            },
+            {
+                name: "maxAgeMs",
+                in: "query",
+                schema: {
+                    type: "integer",
+                    minimum: 1000,
+                    maximum: 300000,
+                    default: 60000,
+                },
+            },
+        ],
+        responses: {
+            ...responses,
+            "503": {
+                description:
+                    "Membership storage unavailable; deny protected access",
+                content: { "application/json": { schema: error } },
+            },
+            "200": {
+                description:
+                    "Exact scoped observation; unavailable is an explicit state",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            additionalProperties: false,
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/MembershipObservation",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
+
 // Document every endpoint's effective permission boundary, including legacy-only reads.
 for (const [path, operations] of Object.entries(paths)) {
     if (!path.startsWith("/clan/")) continue
@@ -1192,22 +1256,30 @@ for (const [path, operations] of Object.entries(paths)) {
     )) {
         const resource = path.split("/")[2]
         operation["x-logi-read-access"] =
-            method === "get" && ["changes", "sync-records"].includes(resource)
+            resource === "membership-summaries" && method === "get"
                 ? {
-                      resources: "underlying-explicit-grants",
+                      resource,
                       gameSelection: "one-explicit-game",
+                      policy: "enabled-per-key-role-allowlist",
+                      subject: "exact-discord-user-id",
                   }
                 : method === "get" &&
-                    (API_KEY_READ_RESOURCES as readonly string[]).includes(
-                        resource
-                    )
+                    ["changes", "sync-records"].includes(resource)
                   ? {
-                        resource,
-                        gameSelection: path.includes("{")
-                            ? "persisted-record"
-                            : "explicit-permitted-games",
+                        resources: "underlying-explicit-grants",
+                        gameSelection: "one-explicit-game",
                     }
-                  : null
+                  : method === "get" &&
+                      (API_KEY_READ_RESOURCES as readonly string[]).includes(
+                          resource
+                      )
+                    ? {
+                          resource,
+                          gameSelection: path.includes("{")
+                              ? "persisted-record"
+                              : "explicit-permitted-games",
+                      }
+                    : null
     }
 }
 
@@ -1217,7 +1289,7 @@ export async function GET() {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.4.0",
+                version: "1.5.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read

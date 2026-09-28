@@ -1,3 +1,4 @@
+import { MembershipIntegrationSettings } from "@/components/app/membership-integration-settings"
 import { ConfigurationScopeIndicator } from "@/components/app/configuration-scope-indicator"
 import { SystemMaintenanceSections } from "@/components/app/system-maintenance-sections"
 import { DiscordOperationsSettings } from "@/components/app/discord-operations-settings"
@@ -66,6 +67,17 @@ export default async function SystemPage({
                                     dictionary={dictionary}
                                 />
                             ),
+                        },
+                        {
+                            title: dictionary.membershipIntegration.title,
+                            description: "",
+                            content: (
+                                <MembershipIntegrationSettings
+                                    serverId={serverId}
+                                    dictionary={dictionary}
+                                />
+                            ),
+                            id: "membership-integrations",
                         },
                         {
                             id: "google-calendar",

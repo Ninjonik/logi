@@ -2,6 +2,7 @@ import { isGameId, type GameId, type GameSelection } from "../games/game"
 
 /** Only resources with a backend-enforced game ownership boundary. */
 export const API_KEY_READ_RESOURCES = [
+    "membership-summaries",
     "server-snapshots",
     "integration-health",
     "events",

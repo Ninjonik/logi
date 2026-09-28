@@ -55,12 +55,14 @@ export async function handleIntegrationRead(
         auth.guildId,
         input.gameId,
         input.resources,
+        ...(input.discordUserId ? [input.discordUserId] : []),
     ])
     const sign = (body: string) =>
         createHmac("sha256", secret)
             .update(`logi-changes-v1:${binding}:${body}`)
             .digest()
     let afterRevision: string | undefined, issuedAt: number | undefined
+    let membershipScopeVersion: string | undefined
     if (input.cursor) {
         try {
             const parts = input.cursor.split(".")
@@ -79,6 +81,8 @@ export async function handleIntegrationRead(
             if (!Number.isSafeInteger(cursor.issuedAt)) throw new Error()
             afterRevision = cursor.revision
             issuedAt = cursor.issuedAt
+            if (typeof cursor.membershipScopeVersion === "string")
+                membershipScopeVersion = cursor.membershipScopeVersion
         } catch {
             return error("invalid_cursor", 400)
         }
@@ -90,6 +94,10 @@ export async function handleIntegrationRead(
             resources: input.resources,
             limit: input.limit,
             startNow: input.startNow,
+            ...(input.discordUserId
+                ? { discordUserId: input.discordUserId }
+                : {}),
+            ...(membershipScopeVersion ? { membershipScopeVersion } : {}),
             ...(afterRevision !== undefined ? { afterRevision, issuedAt } : {}),
         }
     )
@@ -102,12 +110,20 @@ export async function handleIntegrationRead(
             (item) =>
                 item.guildId !== auth.guildId ||
                 item.gameId !== input.gameId ||
-                !input.resources.includes(item.resource)
+                !input.resources.includes(item.resource) ||
+                (item.resource === "membership-summaries" &&
+                    item.id !== input.discordUserId)
         )
     )
         throw new Error("Invalid integration response scope.")
     const body = Buffer.from(
-        JSON.stringify({ revision: value.revision, issuedAt: Date.now() })
+        JSON.stringify({
+            revision: value.revision,
+            issuedAt: Date.now(),
+            ...(value.membershipScopeVersion
+                ? { membershipScopeVersion: value.membershipScopeVersion }
+                : {}),
+        })
     ).toString("base64url")
     return NextResponse.json(
         {

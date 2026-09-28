@@ -1,4 +1,22 @@
 export const deMessages = {
+    membershipIntegration: {
+        title: "Integrationen für Discord-Mitgliedschaft",
+        description:
+            "Wähle die Discord-Rollen, die jede Integration lesen darf. Zusätzlich ist ein schreibgeschützter Schlüssel mit der Freigabe für Discord-Mitgliedschaft erforderlich. Die Website entscheidet über die Nutzung dieser Angaben.",
+        enabled: "Mitgliedschaftsabfragen mit diesem Schlüssel erlauben",
+        roles: "Erlaubte Rollen-IDs",
+        rolesHelp:
+            "Eine Rollen-ID pro Zeile. Eine leere Liste gibt nur Anwesenheit und Logi-Zuordnung frei. Änderungen werden beim Speichern wirksam.",
+        empty: "Erstelle einen schreibgeschützten API-Schlüssel mit der Freigabe für Discord-Mitgliedschaft und aktualisiere die Liste.",
+        loading: "Wird geladen…",
+        refresh: "Aktualisieren",
+        saving: "Wird gespeichert…",
+        save: "Freigabe speichern",
+        saved: "Freigabe für Mitgliedschaft gespeichert.",
+        error: "Die Freigaben konnten nicht geladen oder gespeichert werden. Bitte aktualisieren und erneut versuchen.",
+        invalid:
+            "Verwende gültige Discord-Rollen-IDs, höchstens 100 Rollen pro Spiel.",
+    },
     gameData: {
         collectedSessions: "Erfasste Spiele",
         historyObserved: "Letzter Verlaufimport",
@@ -92,6 +110,8 @@ export const deMessages = {
         invalidPolicy:
             "Unbekannte Einschränkungen; der Backend-Zugriff wird verweigert.",
         resourceLabels: {
+            "membership-summaries":
+                "Discord-Mitgliedschaft (separate Freigabe erforderlich)",
             "server-snapshots": "Spielserver-Status",
             "integration-health": "Erfassungsstatus",
             "event-summaries": "Ereignisübersichten",

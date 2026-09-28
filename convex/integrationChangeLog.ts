@@ -24,24 +24,32 @@ export function integrationRecord(
         .unique()
 }
 
+export async function allocateIntegrationRevision(
+    ctx: MutationCtx,
+    guildId: string
+): Promise<string> {
+    const head = await ctx.db
+        .query("integrationHeads")
+        .withIndex("guildId", (q) => q.eq("guildId", guildId))
+        .unique()
+    const revision = nextRevision(head?.revision ?? "0")
+    if (head) await ctx.db.patch(head._id, { revision })
+    else
+        await ctx.db.insert("integrationHeads", {
+            guildId,
+            revision,
+            floor: "0",
+        })
+    return revision
+}
+
 /** Called only inside the authoritative writer's transaction; never an action. */
 export async function appendIntegrationChange(
     ctx: MutationCtx,
     change: Omit<IntegrationChange, "revision">
 ): Promise<string> {
-    const head = await ctx.db
-        .query("integrationHeads")
-        .withIndex("guildId", (q) => q.eq("guildId", change.guildId))
-        .unique()
-    const revision = nextRevision(head?.revision ?? "0"),
+    const revision = await allocateIntegrationRevision(ctx, change.guildId),
         expiresAt = Date.now() + CHANGE_RETENTION_MS
-    if (head) await ctx.db.patch(head._id, { revision })
-    else
-        await ctx.db.insert("integrationHeads", {
-            guildId: change.guildId,
-            revision,
-            floor: "0",
-        })
     await ctx.db.insert("integrationChanges", {
         ...change,
         revision,
@@ -61,16 +69,19 @@ export async function appendIntegrationChange(
         .withIndex("guildId", (q) => q.eq("guildId", change.guildId))
         .collect()
     let enqueued = false
+    const eventType =
+        change.resource === "membership-summaries"
+            ? "membership.changed"
+            : "integration.changed"
     for (const hook of hooks) {
-        if (!hook.enabled || !hook.eventTypes.includes("integration.changed"))
-            continue
+        if (!hook.enabled || !hook.eventTypes.includes(eventType)) continue
         const createdAt = new Date().toISOString()
         await ctx.db.insert("webhookDeliveries", {
             webhookId: hook._id,
             guildId: change.guildId,
-            eventType: "integration.changed",
+            eventType,
             payload: JSON.stringify({
-                type: "integration.changed",
+                type: eventType,
                 guildId: change.guildId,
                 createdAt,
                 resource: { ...change, revision },

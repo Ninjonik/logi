@@ -94,3 +94,71 @@ test("change HTTP bootstrap, signed cursor, atomic detail and explicit reset", a
     assert.equal(expired.status, 410)
     assert.equal((await expired.json()).error.code, "reset_required")
 })
+test("membership feed HTTP binds its cursor to one subject and carries policy reset state", async (t) => {
+    process.env.NEXT_PUBLIC_CONVEX_URL = "https://offline-test.convex.cloud"
+    process.env.INTERNAL_AUTH_SECRET = "synthetic-change-secret"
+    const subject = "222222222222222222"
+    let reset = false,
+        reads = 0
+    t.mock.method(
+        globalThis,
+        "fetch",
+        async (_url: unknown, init?: RequestInit) => {
+            const request = JSON.parse(String(init?.body)),
+                args = request.args[0]
+            let value: unknown
+            if (request.path === "publicApi:checkRateLimit")
+                value = { allowed: true, remaining: 299, resetAt: 0 }
+            else if (request.path === "publicApi:authenticateKey")
+                value = {
+                    guildId: "guild-a",
+                    readAccess: {
+                        resources: ["membership-summaries"],
+                        gameIds: ["wardogs"],
+                    },
+                }
+            else if (request.path === "integrationChanges:readChanges") {
+                reads++
+                assert.equal(args.discordUserId, subject)
+                if (!args.startNow)
+                    assert.equal(args.membershipScopeVersion, "1:2")
+                value = reset
+                    ? { resetRequired: true }
+                    : {
+                          items: [],
+                          revision: "9",
+                          membershipScopeVersion: "1:2",
+                          hasMore: false,
+                      }
+            } else throw new Error("Unexpected offline call")
+            return Response.json({ status: "success", value })
+        }
+    )
+    const call = (query: string) =>
+        GET(
+            new Request(
+                `https://logi.test/api/v1/clan/changes?game=wardogs&resources=membership-summaries&${query}`,
+                { headers: { Authorization: "Bearer synthetic" } }
+            ),
+            { params: Promise.resolve({ path: ["changes"] }) }
+        )
+    assert.equal((await call("start=now")).status, 400)
+    const bootstrap = await call(`start=now&subject=${subject}`),
+        cursor = (await bootstrap.json()).page.nextCursor
+    assert.equal(bootstrap.status, 200)
+    assert.equal(
+        (await call(`subject=${subject}&cursor=${cursor}`)).status,
+        200
+    )
+    const before = reads
+    assert.equal(
+        (await call(`subject=333333333333333333&cursor=${cursor}`)).status,
+        400
+    )
+    assert.equal(reads, before)
+    reset = true
+    assert.equal(
+        (await call(`subject=${subject}&cursor=${cursor}`)).status,
+        410
+    )
+})

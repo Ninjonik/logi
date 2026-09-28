@@ -5,6 +5,7 @@ import {
 import { parseApiGameScope, isApiGameScopeError } from "./game-scope"
 import { isApiKeyReadAccess } from "@/domain/api/key-access"
 import { parseIntegrationQuery } from "./integration-query"
+import { parseMembershipQuery } from "./membership-query"
 import { NextResponse } from "next/server"
 
 import {
@@ -95,6 +96,43 @@ export async function authenticateClanRequestWith(
             },
             { status: 401, headers }
         )
+    if (
+        /^\/api\/v1\/clan\/membership-summaries(\/|$)/.test(
+            new URL(request.url).pathname
+        )
+    ) {
+        headers["Cache-Control"] = "no-store"
+        const input = parseMembershipQuery(request)
+        if (!input)
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "invalid_query",
+                        message:
+                            "An exact member, one game and a bounded observation age are required.",
+                    },
+                },
+                { status: 400, headers }
+            )
+        if (
+            request.method !== "GET" ||
+            !isApiKeyReadAccess(authenticated.readAccess) ||
+            !allowsApiKeyRead(
+                authenticated.readAccess,
+                "membership-summaries",
+                input.gameId
+            )
+        )
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "insufficient_scope",
+                        message: "This API key does not allow this operation.",
+                    },
+                },
+                { status: 403, headers }
+            )
+    }
     if (
         /^\/api\/v1\/clan\/(changes|sync-records)(\/|$)/.test(
             new URL(request.url).pathname
