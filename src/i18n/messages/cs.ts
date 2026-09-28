@@ -197,6 +197,37 @@ export const csMessages = {
                         "Praktické návody pro každou funkci Logi, od prvního workspace po každodenní provoz.",
                 },
             },
+            botEyebrow: "Discord v obraze",
+            botTitle: "Bot přenáší operaci přímo na váš server.",
+            botDescription:
+                "Dejte členům potřebné akce, aniž by se Discord stal místem, kde se ztrácejí informace.",
+            botFeatures: {
+                clanRegistration: {
+                    title: "Přihlášky do klanu",
+                    description:
+                        "Nechte rekruty zvolit typ přihlášky a zahájit strukturovanou žádost o členství přímo z Discordu.",
+                },
+                eventInfo: {
+                    title: "Informace o akci",
+                    description:
+                        "Zveřejněte harmonogram, briefing, soupisku, údaje o serveru i přidání do kalendáře v jednom příspěvku.",
+                },
+                matchSignup: {
+                    title: "Přihlášky na zápas",
+                    description:
+                        "Ukažte volné sloty v soupisce a nechte hráče se během pár sekund přihlásit, odmítnout nebo ověřit stav.",
+                },
+                attendance: {
+                    title: "Potvrzení účasti",
+                    description:
+                        "Požádejte potvrzené hráče o opětovné potvrzení před schůzkou a dejte jim jasný způsob, jak nahlásit zpoždění.",
+                },
+                tickets: {
+                    title: "Podpůrné tickety",
+                    description:
+                        "Proměňte Discord panel ve vedený soukromý ticket s údaji, které tým podpory potřebuje hned od začátku.",
+                },
+            },
             workflowEyebrow: "Od briefingu po vyhodnocení",
             workflowTitle: "Práce plyne. Vaše nástroje by měly taky.",
             workflowDescription:
@@ -329,6 +360,15 @@ export const csMessages = {
         botTitle: "Operace bota",
         botDescription:
             "Globální stav bota, strukturované logy a filtrovaný přehled napříč dashboardem a Discord botem.",
+        platformSettingsTitle: "Nastavení platformy",
+        platformSettingsDescription:
+            "Vyberte workspace Logi a Discord kanál pro celoplatformní stav služeb.",
+        platformWorkspace: "Superadmin workspace",
+        platformStatusChannel: "ID kanálu stavu",
+        platformStatusChannelHint:
+            "Bot zde udržuje status embed a vytvoří vlákno Aktualizace stavu pro výpadky a obnovení.",
+        platformSave: "Uložit nastavení platformy",
+        platformSaved: "Nastavení platformy bylo uloženo.",
         totalLogs: "Celkem logů",
         totalErrors: "Celkem chyb",
         errorsToday: "Chyby dnes",
@@ -378,6 +418,7 @@ export const csMessages = {
         operations: "Operace",
         configuration: "Konfigurace",
         bot: "Bot",
+        platformSettings: "Nastavení platformy",
         competitions: "Soutěže",
         articles: "Články",
         logiComms: "LogiComms",

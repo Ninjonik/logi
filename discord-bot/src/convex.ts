@@ -44,6 +44,10 @@ export async function closeConvexClient() {
 }
 
 export const references = {
+    getPlatformSettings: makeFunctionReference<"query">("platformSettings:get"),
+    updatePlatformStatusState: makeFunctionReference<"mutation">(
+        "platformSettings:updateBotState"
+    ),
     acknowledgeAttendance: makeFunctionReference<"mutation">(
         "rosters:acknowledgeAttendance"
     ),

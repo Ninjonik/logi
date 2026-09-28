@@ -270,6 +270,11 @@ export function AppSidebar({
                               url: `/${locale}/dashboard/bot${superadminWorkspaceQuery}`,
                               icon: Bot,
                           },
+                          {
+                              title: dictionary.sidebar.platformSettings,
+                              url: `/${locale}/dashboard/platform-settings${superadminWorkspaceQuery}`,
+                              icon: Settings,
+                          },
                       ],
                   },
               ]

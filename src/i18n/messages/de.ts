@@ -198,6 +198,37 @@ export const deMessages = {
                         "Praktische Anleitungen für jede Logi-Funktion, vom ersten Workspace bis zum täglichen Betrieb.",
                 },
             },
+            botEyebrow: "Discord im Ablauf",
+            botTitle: "Der Bot bringt die Operation auf deinen Server.",
+            botDescription:
+                "Gib Mitgliedern die Aktionen, die sie brauchen, ohne dass Discord zum Ort wird, an dem Informationen verloren gehen.",
+            botFeatures: {
+                clanRegistration: {
+                    title: "Clan-Bewerbungen",
+                    description:
+                        "Lass Rekruten einen Bewerbungstyp wählen und direkt in Discord eine strukturierte Mitgliedschaftsanfrage starten.",
+                },
+                eventInfo: {
+                    title: "Event-Informationen",
+                    description:
+                        "Veröffentliche Zeitplan, Briefing, Roster, Server-Details und Kalenderaktion in einem Event-Beitrag.",
+                },
+                matchSignup: {
+                    title: "Match-Anmeldungen",
+                    description:
+                        "Zeige freie Roster-Slots und lass Spieler sich in Sekunden anmelden, absagen oder ihren Status prüfen.",
+                },
+                attendance: {
+                    title: "Teilnahmebestätigungen",
+                    description:
+                        "Bitte bestätigte Spieler vor einem Treffen um eine erneute Zusage und gib ihnen eine klare Möglichkeit, Verspätung zu melden.",
+                },
+                tickets: {
+                    title: "Support-Tickets",
+                    description:
+                        "Mache aus einem Discord-Panel ein geführtes privates Ticket mit allen Angaben, die das Team von Anfang an braucht.",
+                },
+            },
             workflowEyebrow: "Vom Briefing zum Debriefing",
             workflowTitle: "Die Arbeit fließt. Deine Tools auch.",
             workflowDescription:
@@ -330,6 +361,15 @@ export const deMessages = {
         botTitle: "Bot-Operationen",
         botDescription:
             "Globaler Bot-Status, strukturierte Logs und eine gefilterte Sicht über Dashboard-App und Discord-Bot.",
+        platformSettingsTitle: "Plattform-Einstellungen",
+        platformSettingsDescription:
+            "Wähle den Logi-Workspace und Discord-Kanal für den plattformweiten Servicestatus.",
+        platformWorkspace: "Superadmin-Workspace",
+        platformStatusChannel: "Status-Channel-ID",
+        platformStatusChannelHint:
+            "Der Bot hält hier ein Status-Embed aktuell und erstellt einen Thread für Ausfälle und Wiederherstellungen.",
+        platformSave: "Plattform-Einstellungen speichern",
+        platformSaved: "Plattform-Einstellungen gespeichert.",
         totalLogs: "Logs gesamt",
         totalErrors: "Fehler gesamt",
         errorsToday: "Fehler heute",
@@ -379,6 +419,7 @@ export const deMessages = {
         operations: "Operationen",
         configuration: "Konfiguration",
         bot: "Bot",
+        platformSettings: "Plattform-Einstellungen",
         competitions: "Wettbewerbe",
         articles: "Artikel",
         logiComms: "LogiComms",

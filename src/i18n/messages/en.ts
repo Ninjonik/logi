@@ -197,6 +197,37 @@ export const enMessages = {
                         "Practical guides for every Logi feature, from your first workspace to daily operations.",
                 },
             },
+            botEyebrow: "Discord, in the loop",
+            botTitle: "The bot brings the operation to your server.",
+            botDescription:
+                "Give members the actions they need without making Discord the place where information gets lost.",
+            botFeatures: {
+                clanRegistration: {
+                    title: "Clan applications",
+                    description:
+                        "Let recruits choose an application type and start a structured membership request from Discord.",
+                },
+                eventInfo: {
+                    title: "Event information",
+                    description:
+                        "Publish the schedule, briefing, roster, server details and calendar action in one event post.",
+                },
+                matchSignup: {
+                    title: "Match sign-ups",
+                    description:
+                        "Show available roster slots and let players sign up, decline or check their status in seconds.",
+                },
+                attendance: {
+                    title: "Attendance acknowledgements",
+                    description:
+                        "Ask confirmed players to reconfirm before a meeting and give them a clear way to report a delay.",
+                },
+                tickets: {
+                    title: "Support tickets",
+                    description:
+                        "Turn a Discord panel into a guided private ticket, with the details staff need from the start.",
+                },
+            },
             workflowEyebrow: "From briefing to debrief",
             workflowTitle: "The work flows. So should your tools.",
             workflowDescription:
@@ -328,6 +359,15 @@ export const enMessages = {
         botTitle: "Bot operations",
         botDescription:
             "Global bot health, structured logs, and a filtered view across the dashboard app and Discord bot.",
+        platformSettingsTitle: "Platform settings",
+        platformSettingsDescription:
+            "Choose the Logi workspace and Discord channel used for platform-wide service status.",
+        platformWorkspace: "Superadmin workspace",
+        platformStatusChannel: "Status channel ID",
+        platformStatusChannelHint:
+            "The bot keeps a status embed here and creates a Status updates thread for outages and recoveries.",
+        platformSave: "Save platform settings",
+        platformSaved: "Platform settings saved.",
         totalLogs: "Total logs",
         totalErrors: "Total errors",
         errorsToday: "Errors today",
@@ -377,6 +417,7 @@ export const enMessages = {
         operations: "Operations",
         configuration: "Configuration",
         bot: "Bot",
+        platformSettings: "Platform settings",
         competitions: "Competitions",
         articles: "Articles",
         logiComms: "LogiComms",

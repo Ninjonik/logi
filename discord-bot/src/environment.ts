@@ -33,4 +33,6 @@ export const env = {
     botToken,
     convexUrl,
     internalSecret,
+    statusApiUrl:
+        process.env.LOGI_STATUS_API_URL ?? "http://127.0.0.1:8303/api/services",
 }
