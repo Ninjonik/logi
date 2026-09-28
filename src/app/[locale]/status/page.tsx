@@ -1,5 +1,11 @@
 import { LogiStatusLink } from "@/components/app/logi-status-link"
 import { getLogiServices, getLogiStatus } from "@/lib/logi-status"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+    title: "Service status | Logi",
+    robots: { index: false, follow: false },
+}
 
 export default async function StatusPage() {
     const [status, services] = await Promise.all([

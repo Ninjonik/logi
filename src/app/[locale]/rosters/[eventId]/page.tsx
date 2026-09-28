@@ -1,3 +1,10 @@
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+    title: "Published roster | Logi",
+    robots: { index: false, follow: false },
+}
+
 export default async function PublicRosterPage({
     params,
 }: {

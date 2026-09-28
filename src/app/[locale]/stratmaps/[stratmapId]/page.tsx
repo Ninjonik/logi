@@ -10,6 +10,7 @@ import { StratmapEditor } from "@/components/app/stratmap-editor"
 import { getPublicStratmapDetail } from "@/lib/server-stratmaps"
 import { getHllStratmapMapById } from "@/lib/stratmaps"
 import { getDictionary } from "@/i18n/dictionaries"
+import { getLocalizedCanonical } from "@/lib/seo"
 import { isLocale } from "@/i18n/config"
 
 type Props = {
@@ -26,6 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         return {
             title: `${dictionary.stratmaps.title} | ${dictionary.app.name}`,
             description: dictionary.stratmaps.pageDescription,
+            robots: { index: false, follow: false },
         }
     }
 
@@ -53,6 +55,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title,
         description,
+        alternates: getLocalizedCanonical(
+            safeLocale,
+            `/stratmaps/${stratmapId}`
+        ),
         openGraph: {
             title,
             description,

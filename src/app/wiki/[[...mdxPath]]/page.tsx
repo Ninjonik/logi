@@ -1,5 +1,7 @@
 import { useMDXComponents as getMDXComponents } from "../../../../mdx-components"
 import { generateStaticParamsFor, importPage } from "nextra/pages"
+import { getPublicUrl } from "@/lib/seo"
+import type { Metadata } from "next"
 
 export const generateStaticParams = generateStaticParamsFor("mdxPath")
 
@@ -10,7 +12,11 @@ export async function generateMetadata({
 }) {
     const { mdxPath = [] } = await params
     const { metadata } = await importPage(mdxPath)
-    return metadata
+    const pathname = `/wiki${mdxPath.length ? `/${mdxPath.join("/")}` : ""}`
+    return {
+        ...(metadata as Metadata),
+        alternates: { canonical: getPublicUrl(pathname) },
+    }
 }
 
 const Wrapper = getMDXComponents().wrapper

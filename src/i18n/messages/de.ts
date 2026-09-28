@@ -322,6 +322,11 @@ export const deMessages = {
         refreshingBotStatus: "Bot-Status wird aktualisiert...",
         botStatusRefreshed: "Bot-Status aktualisiert.",
         botStatusRefreshError: "Bot-Status konnte nicht aktualisiert werden.",
+        botMissingWorkspaceTitle: "Der Logi-Bot fehlt auf {workspace}",
+        botMissingWorkspaceDescription:
+            "Die meisten Workspace-Funktionen funktionieren erst, wenn du den Discord-Bot einlädst. Installiere ihn auf diesem Server, bestätige die angeforderten Berechtigungen und aktualisiere danach hier seinen Status.",
+        botMissingWorkspacePermissions:
+            "Der Bot benötigt die von Discord angeforderten Berechtigungen und muss über jeder Rolle stehen, die er verwalten soll.",
         botTitle: "Bot-Operationen",
         botDescription:
             "Globaler Bot-Status, strukturierte Logs und eine gefilterte Sicht über Dashboard-App und Discord-Bot.",
@@ -992,6 +997,8 @@ export const deMessages = {
         activeWorkspace: "Aktiver Workspace",
         noWorkspaceSelected: "Kein Workspace gewählt",
         searchWorkspace: "Workspaces suchen...",
+        missingWorkspaceHelp:
+            "Fehlt ein Workspace? Stelle sicher, dass du auf diesem Discord-Server bist oder dort Administratorzugriff hast.",
     },
     languageSwitcher: {
         selectLanguage: "Sprache wählen",
@@ -1582,21 +1589,27 @@ export const deMessages = {
         webhookEventsBody:
             "Neue Abonnements erhalten alle unten aufgeführten Produktionsereignisse. Nutze diese Liste, um deinen Endpoint vor dem Aktivieren eines Webhooks vorzubereiten.",
         webhookEvents: {
-            "article.created":
-                "Ein Artikel wurde über die Website-API erstellt.",
-            "article.updated":
-                "Ein Artikel wurde über die Website-API aktualisiert.",
-            "article.deleted":
-                "Ein Artikel wurde über die Website-API gelöscht.",
-            "event.created": "Ein Event wurde über die Website-API erstellt.",
-            "event.updated":
-                "Ein Event wurde über die Website-API aktualisiert oder abgeschlossen.",
-            "roster.updated":
-                "Ein Roster wurde geändert, einschließlich API-Anmeldungen und rosterrelevanter Zuweisungsänderungen.",
-            "settings.updated":
-                "Sichere Clan- oder Discord-Einstellungen wurden über die Website-API aktualisiert.",
-            "webhook.test":
-                "Ein Manager hat eine Testzustellung manuell gesendet.",
+            article: {
+                created: "Ein Artikel wurde über die Website-API erstellt.",
+                updated: "Ein Artikel wurde über die Website-API aktualisiert.",
+                deleted: "Ein Artikel wurde über die Website-API gelöscht.",
+            },
+            event: {
+                created: "Ein Event wurde über die Website-API erstellt.",
+                updated:
+                    "Ein Event wurde über die Website-API aktualisiert oder abgeschlossen.",
+            },
+            roster: {
+                updated:
+                    "Ein Roster wurde geändert, einschließlich API-Anmeldungen und rosterrelevanter Zuweisungsänderungen.",
+            },
+            settings: {
+                updated:
+                    "Sichere Clan- oder Discord-Einstellungen wurden über die Website-API aktualisiert.",
+            },
+            webhook: {
+                test: "Ein Manager hat eine Testzustellung manuell gesendet.",
+            },
         },
         webhookUi: {
             copySecret:

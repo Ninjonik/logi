@@ -14,13 +14,15 @@ import { getPublicCompetition } from "@/lib/read-models/competitions"
 import { GameBadge } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
 import { GAME_LABELS } from "@/domain/games/game"
+import { getLocalizedCanonical } from "@/lib/seo"
 import { isLocale } from "@/i18n/config"
 
 type Props = { params: Promise<{ locale: string; slug: string }> }
 const ECL_LOGO = "https://hll-ecl.eu/static/assets/ecl_logo_web_2025.png"
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { slug } = await params
+    const { locale, slug } = await params
+    const safeLocale = isLocale(locale) ? locale : "en"
     const competition = await getPublicCompetition(slug)
     return {
         title: competition
@@ -29,6 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description: competition
             ? `${competition.name} standings and match results.`
             : "Competition standings.",
+        alternates: getLocalizedCanonical(safeLocale, `/competitions/${slug}`),
     }
 }
 

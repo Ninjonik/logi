@@ -6,13 +6,15 @@ import type { Metadata } from "next"
 import { isLocale, type Locale } from "@/i18n/config"
 import { getDictionary } from "@/i18n/dictionaries"
 
-export const metadata: Metadata = {
-    title: "Logi",
-    description: "Server and community management for Discord.",
-    openGraph: {
-        title: "Logi",
-        description: "Server and community management for Discord.",
-    },
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+    const { locale } = await params
+    if (!isLocale(locale)) return {}
+
+    return { openGraph: { locale } }
 }
 
 export default async function LocaleLayout({

@@ -10,7 +10,24 @@ import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
 import { getPublicCompetition } from "@/lib/read-models/competitions"
 import { GameBadge } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
+import { getLocalizedCanonical } from "@/lib/seo"
 import { isLocale } from "@/i18n/config"
+import type { Metadata } from "next"
+
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+    const { locale } = (await params) ?? { locale: "en" }
+    const safeLocale = isLocale(locale) ? locale : "en"
+    return {
+        title: "Hell Let Loose competitions and standings",
+        description:
+            "Follow Hell Let Loose competition standings, teams, fixtures, and match results.",
+        alternates: getLocalizedCanonical(safeLocale, "/competitions"),
+    }
+}
 
 export default async function CompetitionsPage({
     params,

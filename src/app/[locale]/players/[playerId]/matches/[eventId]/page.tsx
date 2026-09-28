@@ -14,6 +14,7 @@ import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
 import { getPublicPlayerProfile } from "@/lib/read-models/public-profiles"
 import { PublicStat } from "@/components/public/public-stat"
 import { getDictionary } from "@/i18n/dictionaries"
+import { getLocalizedCanonical } from "@/lib/seo"
 import { isLocale } from "@/i18n/config"
 
 type Props = {
@@ -21,9 +22,14 @@ type Props = {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { playerId, eventId } = await params
+    const { locale, playerId, eventId } = await params
+    const safeLocale = isLocale(locale) ? locale : "en"
     const image = `/api/og/player-match/${playerId}/${eventId}`
     return {
+        alternates: getLocalizedCanonical(
+            safeLocale,
+            `/players/${playerId}/matches/${eventId}`
+        ),
         openGraph: { images: [image] },
         twitter: { card: "summary_large_image", images: [image] },
     }
