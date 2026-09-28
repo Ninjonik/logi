@@ -4,7 +4,7 @@ Logi can act as the Discord-backed identity provider for websites owned by a cla
 
 ## Create an application
 
-Enter an application name, its HTTPS website URL, and every exact HTTPS callback URL. Copy the client secret at creation time: it is never shown again. The clan language is used when Logi must sign the user in; otherwise Logi uses the user's locale.
+Enter an application name, its HTTPS website URL, and every exact HTTPS callback URL. Copy the client secret at creation time: it is never shown again. When a user has no Logi session, authorization starts Discord sign-in immediately and then creates a normal Logi session before returning to the website.
 
 ## Website integration
 
@@ -17,7 +17,7 @@ Logi implements OpenID Connect authorization-code flow with required PKCE (`S256
 | Token         | `/api/sso/token`                                          |
 | Userinfo      | `/api/sso/userinfo`                                       |
 
-Send `response_type=code`, `client_id`, one registered `redirect_uri`, a random `state`, `code_challenge`, and `code_challenge_method=S256` to authorization. Verify `state`. Exchange the returned code using `client_secret_post` and the original `code_verifier`. A website may pass `ui_locales` (for example `cs` or `de`) to choose its login language; otherwise Logi uses the clan's configured default language.
+Send `response_type=code`, `client_id`, one registered `redirect_uri`, a random `state`, `code_challenge`, and `code_challenge_method=S256` to authorization. Verify `state`. Exchange the returned code using `client_secret_post` and the original `code_verifier`.
 
 Userinfo returns Logi's API-equivalent user record, `sub` (Discord ID), `guild_id`, and `sso.membership`. It is `member` for people in the application's clan and `guest` otherwise; the website decides what guests can do.
 

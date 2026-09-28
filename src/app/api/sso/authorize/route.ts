@@ -8,7 +8,6 @@ import {
     isExactHttpsUrl,
     SSO_CODE_TTL_MS,
 } from "@/lib/sso"
-import { isLocale } from "@/i18n/config"
 import { getSession } from "@/lib/auth"
 import { getSiteUrl } from "@/lib/env"
 
@@ -38,24 +37,15 @@ export async function GET(request: NextRequest) {
         return fail("invalid_request")
     const client = (await fetchQuery(clientReference, { clientId })) as {
         redirectUris: string[]
-        defaultLanguage: string
     } | null
     if (!client || !client.redirectUris.includes(redirectUri))
         return fail("invalid_client")
     const session = await getSession()
     if (!session) {
         const resume = `${request.nextUrl.pathname}${request.nextUrl.search}`
-        const requestedLocale = request.nextUrl.searchParams
-            .get("ui_locales")
-            ?.split(/\s+/)
-            .find(isLocale)
-        const locale = requestedLocale ?? client.defaultLanguage
-        return NextResponse.redirect(
-            new URL(
-                `/${locale}/login?redirectTo=${encodeURIComponent(resume)}`,
-                getSiteUrl()
-            )
-        )
+        const discordLoginUrl = new URL("/api/auth/discord", getSiteUrl())
+        discordLoginUrl.searchParams.set("redirectTo", resume)
+        return NextResponse.redirect(discordLoginUrl)
     }
     const code = createSsoSecret(32)
     await fetchMutation(codeReference, {
