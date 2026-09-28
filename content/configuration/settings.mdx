@@ -59,9 +59,48 @@ dashboard shows only its prefix, creation date, and whether it has been
 revoked. Revoking a key takes effect for future requests and cannot be undone:
 create and deploy a replacement key before revoking one used by a live site.
 
+#### Read-only integration keys
+
+Administrators can issue a restricted key through the existing authenticated
+`POST /api/servers/{serverId}/api-keys` endpoint by including a `readAccess`
+object alongside `name`:
+
+```json
+{
+  "name": "Website event reader",
+  "readAccess": {
+    "resources": ["events", "matches"],
+    "gameIds": ["hell_let_loose", "wardogs"]
+  }
+}
+```
+
+Both arrays must be nonempty and contain no duplicates. Resources can be
+`events`, `groups`, `rosters`, `assignments`, `stratmaps` or `matches`; game IDs
+can be `hell_let_loose`, `hell_let_loose_vietnam` or `wardogs`. Each collection
+request must select explicit permitted games. Missing `game`, `game=all`,
+ungranted resources and all writes return `403 insufficient_scope`. Detail
+reads check the stored tenant and game. Revocation is checked on every backend
+operation, and restricted reads are not cached by HTTP clients.
+
+The dashboard's existing creation form and requests without `readAccess` still
+create full-access legacy keys. Existing keys are not automatically restricted.
+Use a newly issued restricted key for a read-only website and revoke the old
+credential after switching it. The management list endpoint includes the stored
+policy. A bearer key cannot create or broaden keys; that requires a dashboard
+administrator session.
+
+Restricted keys do not grant metadata, settings, raw users, calendar items,
+presets or performance history in this first release. Read-only records still
+contain private operational fields: never publish raw API responses. The
+[versioned website handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.3/README.md)
+describes field allowlists, safe synchronization, fixtures and rollout order.
+Deploy the compatible backend before using these new policies; an older backend
+does not enforce them.
+
 Website integrations use the versioned API at `/api/v1`. Clan API requests
 use `Authorization: Bearer <API key>`. Game-owned clan data uses **Hell Let
-Loose** when no `game` query parameter is supplied, including legacy records;
+Loose** for legacy keys when no `game` query parameter is supplied, including legacy records;
 use `game=hell_let_loose_vietnam`, `game=wardogs`, or `game=all` to select
 another scope. List requests are cursor-paginated, default to 25 records, and
 are capped at 100 records. Every game-owned returned record has an explicit `gameId`, so a
@@ -70,8 +109,9 @@ machine-readable contract is available at `/api/v1/openapi.json` and the
 interactive reference at `/api/v1/docs`.
 
 Start with the API key in an `Authorization` header; never put it in a URL or
-client-side bundle. The key is tenant-scoped: it can read and write only the
-workspace that created it. A record ID from another workspace is not usable.
+client-side bundle. The key is tenant-scoped: it can access only the workspace
+that created it and only operations permitted by its policy. A record ID from
+another workspace is not usable. Writes below require a legacy full-access key.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \

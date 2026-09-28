@@ -17,6 +17,11 @@ import {
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories"
+import {
+    isGameId,
+    matchesGameScope,
+    resolveGameScope,
+} from "../src/domain/games/game"
 import { UpsertAssignmentUseCase } from "../src/application/assignments/upsert-assignment.use-case"
 import { RemoveAssignmentUseCase } from "../src/application/assignments/remove-assignment.use-case"
 import {
@@ -24,6 +29,10 @@ import {
     stringifyStratmapState,
 } from "../src/lib/stratmaps"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
+import {
+    allowsApiKeyRead,
+    isApiKeyReadAccess,
+} from "../src/domain/api/key-access"
 import { UpsertRosterUseCase } from "../src/application/rosters/roster-commands.use-case"
 import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case"
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case"
@@ -31,10 +40,10 @@ import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertCommand } from "../src/application/events/command-ports"
 import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
-import { matchesGameScope, resolveGameScope } from "../src/domain/games/game"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
+import { apiKeyReadAccess } from "./apiKeyValidators"
 import { getGuildByDiscordId } from "./identity"
 
 const INTERNAL_AUTH_SECRET =
@@ -50,9 +59,15 @@ export const createKey = mutation({
         name: v.string(),
         keyHash: v.string(),
         keyPrefix: v.string(),
+        readAccess: v.optional(apiKeyReadAccess),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
+        if (
+            args.readAccess !== undefined &&
+            !isApiKeyReadAccess(args.readAccess)
+        )
+            throw new Error("Invalid API key read access.")
         if (!(await getGuildByDiscordId(ctx, args.guildId)))
             throw new Error("Clan not found.")
         return await ctx.db.insert("apiKeys", {
@@ -60,6 +75,9 @@ export const createKey = mutation({
             name: args.name.trim().slice(0, 80) || "Website",
             keyHash: args.keyHash,
             keyPrefix: args.keyPrefix,
+            ...(args.readAccess !== undefined
+                ? { readAccess: args.readAccess }
+                : {}),
             createdAt: new Date().toISOString(),
         })
     },
@@ -81,6 +99,9 @@ export const listKeys = query({
             createdAt: key.createdAt,
             lastUsedAt: key.lastUsedAt,
             revokedAt: key.revokedAt,
+            ...(key.readAccess !== undefined
+                ? { readAccess: key.readAccess }
+                : {}),
         }))
     },
 })
@@ -170,6 +191,20 @@ async function startIdempotentMutation(
         .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
         .unique()
     if (!key || key.revokedAt) return { kind: "unauthorized" }
+    // Enforce before reading cached responses, reserving idempotency or writing.
+    if (key.readAccess !== undefined)
+        return {
+            kind: "complete",
+            result: {
+                status: 403,
+                body: JSON.stringify({
+                    error: {
+                        code: "insufficient_scope",
+                        message: "This API key does not allow this operation.",
+                    },
+                }),
+            },
+        }
 
     const existing = await ctx.db
         .query("apiIdempotencyKeys")
@@ -1490,6 +1525,9 @@ export const authenticateKey = mutation({
         await ctx.db.patch(key._id, { lastUsedAt: new Date().toISOString() })
         return {
             guildId: key.guildId,
+            ...(key.readAccess !== undefined
+                ? { readAccess: key.readAccess }
+                : {}),
         }
     },
 })
@@ -1504,6 +1542,7 @@ export const getClanMeta = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, "meta")) return null
         const guild = await getGuildByDiscordId(ctx, key.guildId)
         if (!guild) return null
         const guildId = key.guildId
@@ -1606,6 +1645,7 @@ export const getClanSettings = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, "settings")) return null
         const [guild, discordConfig] = await Promise.all([
             getGuildByDiscordId(ctx, key.guildId),
             ctx.db
@@ -1854,6 +1894,8 @@ export const getClanPerformanceHistory = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, "performance-history", args.game))
+            return null
         const history = await ctx.db
             .query("guildPerformanceHistory")
             .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
@@ -1880,12 +1922,31 @@ export const getClanMatchByEvent = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, "matches")) return null
         const event = await ctx.db.get(args.eventId)
         if (!event || event.guildId !== key.guildId) return null
+        if (
+            !allowsApiKeyRead(
+                key.readAccess,
+                "matches",
+                resolveGameScope(event.gameId)
+            )
+        )
+            return null
         const match = await ctx.db
             .query("matchStats")
             .withIndex("eventId", (q) => q.eq("eventId", event._id))
             .unique()
+        if (
+            match &&
+            (match.guildId !== key.guildId ||
+                !allowsApiKeyRead(
+                    key.readAccess,
+                    "matches",
+                    resolveGameScope(match.gameId)
+                ))
+        )
+            return null
         return match
             ? {
                   ...apiDocument(match),
@@ -1905,6 +1966,7 @@ export const getClanUser = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, "users")) return null
         const assignment = await ctx.db
             .query("userAssignments")
             .withIndex("serverId_userId", (q) =>
@@ -1969,6 +2031,8 @@ export const getClanResourcePage = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, args.resource, args.game))
+            return null
         const guildId = key.guildId
         const options = { cursor: args.cursor, numItems: args.limit }
         const pageFor = async (query: {
@@ -2201,7 +2265,11 @@ export const getClanResourcePage = query({
                 return {
                     items: rosterPage.page.flatMap((roster, index) => {
                         const event = events[index]
-                        if (!event || !belongsToGame(event as never, args.game))
+                        if (
+                            !event ||
+                            event.guildId !== guildId ||
+                            !belongsToGame(event as never, args.game)
+                        )
                             return []
                         return [
                             {
@@ -2271,11 +2339,46 @@ export const getClanResource = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, args.resource)) return null
         const item = (await ctx.db.get(args.id as never)) as
             (Record<string, unknown> & { _id: unknown }) | null
         if (!item) return null
         if (!isClanApiResourceDocument(args.resource, item)) return null
         const guildId = key.guildId
+        // Rosters inherit game ownership from their event, including records
+        // whose own guildId was populated by the read-projection migration.
+        if (args.resource === "rosters") {
+            const event = await ctx.db.get(item.eventId as Id<"events">)
+            if (
+                !event ||
+                event.guildId !== guildId ||
+                (item.guildId !== undefined && item.guildId !== guildId) ||
+                !allowsApiKeyRead(
+                    key.readAccess,
+                    args.resource,
+                    resolveGameScope(event.gameId)
+                )
+            )
+                return null
+            return {
+                ...apiDocument(item),
+                gameId: resolveGameScope(event.gameId),
+            }
+        }
+        const itemGame = item.gameId
+        if (
+            itemGame !== undefined &&
+            (typeof itemGame !== "string" || !isGameId(itemGame))
+        )
+            return null
+        if (
+            !allowsApiKeyRead(
+                key.readAccess,
+                args.resource,
+                resolveGameScope(itemGame)
+            )
+        )
+            return null
         const directGuildId =
             typeof item.guildId === "string"
                 ? item.guildId
@@ -2283,14 +2386,6 @@ export const getClanResource = query({
                   ? item.serverId
                   : undefined
         if (directGuildId !== guildId) {
-            if (args.resource === "rosters") {
-                const event = await ctx.db.get(item.eventId as Id<"events">)
-                if (!event || event.guildId !== guildId) return null
-                return {
-                    ...apiDocument(item),
-                    gameId: resolveGameScope(event.gameId),
-                }
-            }
             if (args.resource === "users") {
                 const userId =
                     typeof item.discordId === "string"

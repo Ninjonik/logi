@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 
+import type { ApiKeyReadAccess } from "@/domain/api/key-access"
 import type { GameSelection } from "@/domain/games/game"
 import { getInternalAuthSecret } from "@/lib/env"
 
@@ -87,7 +88,11 @@ export function hashApiKey(value: string) {
     return createHash("sha256").update(value).digest("hex")
 }
 
-export async function createClanApiKey(guildId: string, name: string) {
+export async function createClanApiKey(
+    guildId: string,
+    name: string,
+    readAccess?: ApiKeyReadAccess
+) {
     const value = `logi_${randomBytes(32).toString("base64url")}`
     await fetchMutation(createKeyReference, {
         secret: getInternalAuthSecret(),
@@ -95,6 +100,7 @@ export async function createClanApiKey(guildId: string, name: string) {
         name,
         keyHash: hashApiKey(value),
         keyPrefix: value.slice(0, 13),
+        ...(readAccess !== undefined ? { readAccess } : {}),
     })
     return value
 }
@@ -110,6 +116,7 @@ export async function listClanApiKeys(guildId: string) {
         createdAt: string
         lastUsedAt?: string
         revokedAt?: string
+        readAccess?: ApiKeyReadAccess
     }>
 }
 
@@ -134,7 +141,7 @@ export async function authenticateClanApiKey(key: string) {
     return (await fetchMutation(authenticateKeyReference, {
         secret: getInternalAuthSecret(),
         keyHash: hashApiKey(key),
-    })) as { guildId: string } | null
+    })) as { guildId: string; readAccess?: ApiKeyReadAccess } | null
 }
 
 export async function getClanApiResourcePage(

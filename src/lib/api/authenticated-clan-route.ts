@@ -1,3 +1,8 @@
+import {
+    allowsApiKeyRead,
+    type ApiKeyReadAccess,
+} from "@/domain/api/key-access"
+import { parseApiGameScope, isApiGameScopeError } from "./game-scope"
 import { NextResponse } from "next/server"
 
 import {
@@ -36,7 +41,9 @@ export async function authenticateClanRequestWith(
             bucket: string,
             limit: number
         ) => Promise<{ allowed: boolean; remaining: number; resetAt: number }>
-        authenticateKey: (key: string) => Promise<{ guildId: string } | null>
+        authenticateKey: (
+            key: string
+        ) => Promise<{ guildId: string; readAccess?: ApiKeyReadAccess } | null>
         rateLimitHeaders: (result: {
             remaining: number
             resetAt: number
@@ -86,6 +93,33 @@ export async function authenticateClanRequestWith(
             },
             { status: 401, headers }
         )
+    if (authenticated.readAccess !== undefined) {
+        headers["Cache-Control"] = "no-store"
+        const url = new URL(request.url)
+        const path = url.pathname.match(
+            /^\/api\/v1\/clan\/([^/]+)(?:\/([^/]+))?\/?$/
+        )
+        const game = path?.[2] ? undefined : parseApiGameScope(request)
+        const hasExplicitGame = url.searchParams
+            .getAll("game")
+            .some((value) => value.split(",").some(Boolean))
+        if (
+            (request.method !== "GET" && request.method !== "HEAD") ||
+            !path ||
+            (!path[2] && !hasExplicitGame) ||
+            (game !== undefined && isApiGameScopeError(game)) ||
+            !allowsApiKeyRead(authenticated.readAccess, path[1], game)
+        )
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "insufficient_scope",
+                        message: "This API key does not allow this operation.",
+                    },
+                },
+                { status: 403, headers }
+            )
+    }
     return { key, guildId: authenticated.guildId, headers }
 }
 

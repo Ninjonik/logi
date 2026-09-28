@@ -1,6 +1,86 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+test("scoped HLL readers cannot use empty game tokens as an implicit default", async () => {
+    for (const query of ["", "?game=", "?game=,"]) {
+        const response = await authenticateClanRequestWith(
+            new Request(`https://logi.test/api/v1/clan/events${query}`, {
+                headers: { authorization: "Bearer fixture" },
+            }),
+            createDependencies({
+                authenticateKey: async () => ({
+                    guildId: "guild-1",
+                    readAccess: {
+                        resources: ["events"],
+                        gameIds: ["hell_let_loose"],
+                    },
+                }),
+            })
+        )
+        assert.ok(isAuthError(response), query)
+        assert.equal(response.status, 403)
+    }
+})
+
+test("scoped collection and detail reads are allowed without cache retention", async () => {
+    for (const path of [
+        "events?game=wardogs",
+        "events/opaque-id",
+        "events?game=wardogs&game=hell_let_loose",
+    ]) {
+        const result = await authenticateClanRequestWith(
+            new Request(`https://logi.test/api/v1/clan/${path}`, {
+                headers: { authorization: "Bearer fixture" },
+            }),
+            createDependencies({
+                authenticateKey: async () => ({
+                    guildId: "guild-1",
+                    readAccess: {
+                        resources: ["events"],
+                        gameIds: ["wardogs", "hell_let_loose"],
+                    },
+                }),
+            })
+        )
+        assert.equal(isAuthError(result), false)
+        if (!isAuthError(result))
+            assert.equal(result.headers["Cache-Control"], "no-store")
+    }
+})
+
+test("HTTP authentication rejects scoped writes, global resources and implicit or broader game selection", async () => {
+    for (const [method, path] of [
+        ["POST", "events"],
+        ["PATCH", "rosters/fixture"],
+        ["DELETE", "groups/fixture"],
+        ["GET", "settings"],
+        ["GET", "meta"],
+        ["GET", "users"],
+        ["GET", "events"],
+        ["GET", "events?game=all"],
+        ["GET", "events?game=hell_let_loose"],
+    ]) {
+        const result = await authenticateClanRequestWith(
+            new Request(`https://logi.test/api/v1/clan/${path}`, {
+                method,
+                headers: { authorization: "Bearer fixture" },
+            }),
+            createDependencies({
+                authenticateKey: async () => ({
+                    guildId: "guild-1",
+                    readAccess: {
+                        resources: ["events", "rosters"],
+                        gameIds: ["wardogs"],
+                    },
+                }),
+            })
+        )
+        assert.ok(isAuthError(result), `${method} ${path}`)
+        assert.equal(result.status, 403)
+        assert.equal((await result.json()).error.code, "insufficient_scope")
+    }
+})
+
 import {
     authenticateClanRequestWith,
     isAuthError,

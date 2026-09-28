@@ -3,6 +3,50 @@ import test from "node:test"
 
 import { GET } from "./route"
 
+test("every clan operation documents runtime scope denial and its read-access resource", async () => {
+    const document = await (await GET()).json()
+    for (const [path, operations] of Object.entries(document.paths)) {
+        if (!path.startsWith("/clan/")) continue
+        for (const [method, operation] of Object.entries(
+            operations as Record<
+                string,
+                {
+                    responses: Record<string, unknown>
+                    "x-logi-read-access"?: unknown
+                }
+            >
+        )) {
+            assert.ok(
+                operation.responses["403"],
+                `${method} ${path} must document insufficient_scope`
+            )
+            const resource = path.split("/")[2]
+            const allowed =
+                method === "get" &&
+                [
+                    "events",
+                    "groups",
+                    "rosters",
+                    "assignments",
+                    "stratmaps",
+                    "matches",
+                ].includes(resource)
+            assert.deepEqual(
+                operation["x-logi-read-access"],
+                allowed
+                    ? {
+                          resource,
+                          gameSelection: path.includes("{")
+                              ? "persisted-record"
+                              : "explicit-permitted-games",
+                      }
+                    : null,
+                `${method} ${path}`
+            )
+        }
+    }
+})
+
 test("OpenAPI advertises every implemented clan write endpoint", async () => {
     const response = await GET()
     const document = (await response.json()) as {

@@ -5,6 +5,7 @@ import {
     listClanApiKeys,
     revokeClanApiKey,
 } from "@/lib/public-api"
+import { isApiKeyReadAccess } from "@/domain/api/key-access"
 import { getServerContext } from "@/lib/server-context"
 
 export async function GET(
@@ -30,6 +31,7 @@ export async function POST(
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     const body = (await request.json().catch(() => null)) as {
         name?: unknown
+        readAccess?: unknown
     } | null
     const name = typeof body?.name === "string" ? body.name.trim() : ""
     if (!name || name.length > 80)
@@ -37,7 +39,16 @@ export async function POST(
             { error: "Enter a key name of up to 80 characters." },
             { status: 400 }
         )
-    const key = await createClanApiKey(context.server.discordId, name)
+    if (body?.readAccess !== undefined && !isApiKeyReadAccess(body.readAccess))
+        return NextResponse.json(
+            { error: "Invalid API key read access." },
+            { status: 400 }
+        )
+    const key = await createClanApiKey(
+        context.server.discordId,
+        name,
+        body?.readAccess
+    )
     return NextResponse.json({ key }, { status: 201 })
 }
 

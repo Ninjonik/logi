@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
+import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 
 const error = {
     type: "object",
@@ -39,7 +40,7 @@ const gameParameter = {
     name: "game",
     in: "query",
     description:
-        "Game scope for game-owned records. Omit for legacy Hell Let Loose records, use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for any explicit combination.",
+        "Game scope for game-owned records. Legacy keys may omit it for Hell Let Loose or use game=all. Keys with readAccess require an explicit permitted game or combination and cannot use all. Repeat game (for example game=hell_let_loose&game=wardogs) or use a comma-separated combination.",
     schema: {
         type: "string",
         enum: ["hell_let_loose", "hell_let_loose_vietnam", "wardogs", "all"],
@@ -110,6 +111,11 @@ const responses = {
     },
     "401": {
         description: "Invalid API key",
+        content: { "application/json": { schema: error } },
+    },
+    "403": {
+        description:
+            "insufficient_scope: the read-only key does not grant this resource, operation or game selection.",
         content: { "application/json": { schema: error } },
     },
     "404": {
@@ -987,16 +993,38 @@ for (const resource of resources) {
         }
 }
 
+// Document every endpoint's effective permission boundary, including legacy-only reads.
+for (const [path, operations] of Object.entries(paths)) {
+    if (!path.startsWith("/clan/")) continue
+    for (const [method, operation] of Object.entries(
+        operations as Record<string, Record<string, unknown>>
+    )) {
+        const resource = path.split("/")[2]
+        operation["x-logi-read-access"] =
+            method === "get" &&
+            (API_KEY_READ_RESOURCES as readonly string[]).includes(resource)
+                ? {
+                      resource,
+                      gameSelection: path.includes("{")
+                          ? "persisted-record"
+                          : "explicit-permitted-games",
+                  }
+                : null
+    }
+}
+
 export async function GET() {
     return NextResponse.json(
         {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.0.0",
+                version: "1.1.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read
+
+Keys with a \`readAccess\` policy can only read their explicitly granted resources and games. Collections require explicit \`game\` values; \`game=all\`, writes, metadata, settings, users, calendar, presets and performance-history return \`403 insufficient_scope\`. Detail reads enforce the persisted record's game and return \`404\` outside it. Revoked keys return \`401\`. Legacy keys without this policy retain their existing access. A manager can issue restricted keys through the session-authenticated \`POST /api/servers/{serverId}/api-keys\` endpoint; bearer keys cannot issue or escalate keys. See the [read-only integration handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.3/README.md) for provisioning, compatibility and safe publication rules.
 
 
 \`curl -H "Authorization: Bearer YOUR_API_KEY" "https://YOUR_LOGI_HOST/api/v1/clan/events?game=wardogs&limit=25&updatedSince=2026-01-01T00:00:00Z"\`
@@ -1080,7 +1108,7 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                         scheme: "bearer",
                         bearerFormat: "logi API key",
                         description:
-                            "Send `Authorization: Bearer YOUR_API_KEY`. API keys are scoped to one clan and revoked keys are rejected.",
+                            "Send `Authorization: Bearer YOUR_API_KEY`. API keys are scoped to one clan and revoked keys are rejected. Optional readAccess restricts resources and games and forbids every write; x-logi-read-access describes each operation. No readAccess means legacy full access.",
                     },
                 },
             },

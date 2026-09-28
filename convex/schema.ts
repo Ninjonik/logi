@@ -1,4 +1,5 @@
 import { defineSchema, defineTable } from "convex/server"
+import { apiKeyReadAccess } from "./apiKeyValidators"
 import { v } from "convex/values"
 
 const users = defineTable({
@@ -1141,6 +1142,7 @@ export default defineSchema({
         createdAt: v.string(),
         lastUsedAt: v.optional(v.string()),
         revokedAt: v.optional(v.string()),
+        readAccess: v.optional(apiKeyReadAccess),
     })
         .index("guildId", ["guildId"])
         .index("keyHash", ["keyHash"]),

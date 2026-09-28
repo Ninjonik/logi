@@ -762,8 +762,8 @@ export async function GET(
             },
             {
                 headers: {
-                    ...auth.headers,
                     "Cache-Control": "private, max-age=30",
+                    ...auth.headers,
                 },
             }
         )
@@ -855,6 +855,6 @@ export async function GET(
             data: data.items,
             page: { nextCursor: data.nextCursor, limit: data.limit },
         },
-        { headers: { ...auth.headers, "Cache-Control": "private, max-age=30" } }
+        { headers: { "Cache-Control": "private, max-age=30", ...auth.headers } }
     )
 }
