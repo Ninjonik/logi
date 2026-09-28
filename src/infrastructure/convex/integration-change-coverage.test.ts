@@ -111,6 +111,7 @@ test("registered authoritative writers keep transaction tracking at their Convex
         "discordSync",
         "userAssignments",
         "groups",
+        "players",
     ]) {
         const source = readFileSync(`convex/${writer}.ts`, "utf8")
         assert.match(
@@ -158,3 +159,80 @@ test("assignment create and removal advance the exact membership projection", as
     assert.equal(ctx.db.tables.integrationChanges.length, 2)
     assert.equal(ctx.db.tables.integrationChanges[1].operation, "upsert")
 })
+
+for (const hasPrimaryAssignment of [false, true]) {
+    test(`actual user merge invalidates ${hasPrimaryAssignment ? "deleted duplicate assignment" : "both reassigned subjects"} and event projections`, async () => {
+        process.env.INTERNAL_AUTH_SECRET = "synthetic-sync-secret"
+        const players = await import("../../../convex/players")
+        const ctx = testContext()
+        for (const discordId of ["primary", "secondary"])
+            ctx.db.seed("users", {
+                _id: `users:${discordId}`,
+                discordId,
+                name: discordId,
+                avatar: "",
+                managedGuildIds: [],
+                mercenaryGuildIds: [],
+            })
+        const assignment = {
+            serverId: "guild-a",
+            gameId: "wardogs",
+            type: "member",
+            status: "active",
+            secondaryGroupIds: [],
+            paused: false,
+        }
+        ctx.db.seed("userAssignments", {
+            _id: "userAssignments:secondary",
+            userId: "secondary",
+            ...assignment,
+        })
+        if (hasPrimaryAssignment)
+            ctx.db.seed("userAssignments", {
+                _id: "userAssignments:primary",
+                userId: "primary",
+                ...assignment,
+            })
+        ctx.db.seed("events", {
+            _id: "events:merge",
+            guildId: "guild-a",
+            gameId: "wardogs",
+            kind: "match",
+            name: "Synthetic match",
+            updatedAt: "2020-01-01T00:00:00Z",
+            participants: [{ userId: "secondary" }],
+        })
+        await invoke(players.mergeUsers, ctx, {
+            secret: "synthetic-sync-secret",
+            primaryUserId: "primary",
+            secondaryUserId: "secondary",
+        })
+        assert.equal(ctx.db.tables.userAssignments.length, 1)
+        assert.equal(ctx.db.tables.userAssignments[0].userId, "primary")
+        assert.equal(ctx.db.tables.events[0].participants[0].userId, "primary")
+        const changes = ctx.db.tables.integrationChanges ?? []
+        assert.deepEqual(
+            changes
+                .filter((row) => row.resource === "membership-summaries")
+                .map((row) => row.id)
+                .sort(),
+            hasPrimaryAssignment ? ["secondary"] : ["primary", "secondary"]
+        )
+        assert.deepEqual(
+            changes
+                .filter((row) => row.id === "events:merge")
+                .map((row) => row.resource)
+                .sort(),
+            ["event-summaries", "match-summaries"]
+        )
+        assert.ok(
+            changes.every(
+                (row) =>
+                    row.guildId === "guild-a" &&
+                    row.gameId === "wardogs" &&
+                    row.operation === "upsert"
+            )
+        )
+        assert.equal(ctx.db.tables.integrationRecords.length, changes.length)
+    })
+}

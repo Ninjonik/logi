@@ -445,6 +445,57 @@ export const finishReconciliation = mutation({
         )
             throw new Error("A complete member fetch is required.")
         if (run.status === "complete") return { isDone: true }
+        if (run.status === "cache-sweeping") {
+            // Existing installations can have access rows without observations.
+            // Keyset pagination remains stable as departed access rows are deleted.
+            const rows = await ctx.db
+                .query("discordMemberAccess")
+                .withIndex("guildId_userId", (q) =>
+                    q.eq("guildId", run.guildId).gt("userId", run.cursor ?? "")
+                )
+                .take(100)
+            for (const row of rows) {
+                // Legacy bot writes lack a revision; protect writes at or after
+                // the snapshot boundary, including equal millisecond timestamps.
+                if (Date.parse(row.updatedAt) >= Date.parse(run.observedAt))
+                    continue
+                const current = await memberObservation(
+                    ctx,
+                    run.guildId,
+                    row.userId
+                )
+                if (
+                    current &&
+                    revisionOrder(current.revision) >
+                        revisionOrder(run.startedRevision)
+                )
+                    continue
+                const seen = await ctx.db
+                    .query("membershipSyncSubjects")
+                    .withIndex("runId_discordUserId", (q) =>
+                        q.eq("runId", run._id).eq("discordUserId", row.userId)
+                    )
+                    .unique()
+                if (!seen)
+                    await storeMemberObservation(
+                        ctx,
+                        run.guildId,
+                        row.userId,
+                        {
+                            state: "left",
+                            roleIds: [],
+                            observedAt: run.observedAt,
+                        },
+                        run._id
+                    )
+            }
+            const isDone = rows.length < 100
+            await ctx.db.patch(run._id, {
+                status: isDone ? "complete" : "cache-sweeping",
+                cursor: isDone ? null : rows[rows.length - 1].userId,
+            })
+            return { isDone }
+        }
         const page = await ctx.db
             .query("memberObservations")
             .withIndex("guildId", (q) => q.eq("guildId", run.guildId))
@@ -473,10 +524,10 @@ export const finishReconciliation = mutation({
                 )
         }
         await ctx.db.patch(run._id, {
-            status: page.isDone ? "complete" : "sweeping",
+            status: page.isDone ? "cache-sweeping" : "sweeping",
             cursor: page.isDone ? null : page.continueCursor,
         })
-        return { isDone: page.isDone }
+        return { isDone: false }
     },
 })
 

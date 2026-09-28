@@ -1,4 +1,5 @@
 import * as members from "../../../convex/memberObservations"
+import { canAdminServerContext } from "./server-read-model"
 import * as feed from "../../../convex/integrationChanges"
 import { invoke, testContext } from "./testing/database"
 import assert from "node:assert/strict"
@@ -36,6 +37,161 @@ function fixture() {
     })
     return ctx
 }
+
+test("completed reconciliation removes legacy-only admin cache in bounded pages and preserves newer members", async () => {
+    const ctx = fixture()
+    const oldTime = new Date(Date.now() - 120_000).toISOString()
+    const seedCache = (
+        userId: string,
+        guildId = "guild-a",
+        updatedAt = oldTime
+    ) =>
+        ctx.db.seed("discordMemberAccess", {
+            _id: `discordMemberAccess:${guildId}:${userId}`,
+            guildId,
+            userId,
+            roleIds: [],
+            isAdmin: true,
+            hasDashboardAccess: true,
+            createdAt: oldTime,
+            updatedAt,
+        })
+    for (let i = 0; i < 201; i++)
+        seedCache(`departed-${String(i).padStart(3, "0")}`)
+    seedCache("other-tenant", "guild-b")
+    const hasAdmin = (userId: string) => {
+        const access = ctx.db.tables.discordMemberAccess.find(
+            (row) => row.guildId === "guild-a" && row.userId === userId
+        )
+        return canAdminServerContext({
+            userId,
+            serverAdminIds: [],
+            discordAccess: access
+                ? {
+                      isAdmin: access.isAdmin === true,
+                      hasDashboardAccess: access.hasDashboardAccess === true,
+                  }
+                : null,
+        })
+    }
+    assert.equal(hasAdmin("departed-000"), true)
+    const epoch = await invoke(members.ensureGuild, ctx, {
+        secret,
+        guildId: "guild-a",
+    })
+    const run = await invoke(members.beginReconciliation, ctx, {
+        secret,
+        guildId: "guild-a",
+        epoch,
+    })
+    await invoke(members.applyReconciliationBatch, ctx, {
+        secret,
+        runId: run.id,
+        batch: 0,
+        expectedCount: 1,
+        members: [
+            {
+                discordUserId: "still-present",
+                roleIds: [],
+                isAdmin: true,
+                hasDashboardAccess: true,
+            },
+        ],
+    })
+    const discord = await import("../../../convex/discordSync")
+    await invoke(discord.upsertMemberAccess, ctx, {
+        secret,
+        guildId: "guild-a",
+        userId: "new-gateway-member",
+        roleIds: [],
+        isAdmin: true,
+        hasDashboardAccess: true,
+        observation: { epoch, observedAt: new Date().toISOString() },
+    })
+    // An older bot can still write the legacy endpoint without an observation.
+    // Preserve writes at the snapshot boundary too: ISO timestamps have millisecond precision.
+    seedCache("concurrent-legacy-write", "guild-a", run.observedAt)
+    let done = false,
+        calls = 0
+    while (!done && calls++ < 10) {
+        const before = ctx.db.tables.discordMemberAccess.length
+        done = (
+            await invoke(members.finishReconciliation, ctx, {
+                secret,
+                runId: run.id,
+            })
+        ).isDone
+        assert.ok(before - ctx.db.tables.discordMemberAccess.length <= 100)
+    }
+    assert.equal(done, true)
+    assert.equal(hasAdmin("departed-000"), false)
+    assert.deepEqual(
+        ctx.db.tables.discordMemberAccess.map((row) => row.userId).sort(),
+        [
+            "concurrent-legacy-write",
+            "new-gateway-member",
+            "other-tenant",
+            "still-present",
+        ]
+    )
+    assert.equal(
+        ctx.db.tables.memberObservations.filter((row) => row.state === "left")
+            .length,
+        201
+    )
+    assert.equal(hasAdmin("new-gateway-member"), true)
+    assert.equal(hasAdmin("still-present"), true)
+})
+
+test("legacy cache cleanup requires complete fetch proof and rejects a superseded epoch between pages", async () => {
+    const ctx = fixture()
+    ctx.db.seed("discordMemberAccess", {
+        _id: "discordMemberAccess:legacy",
+        guildId: "guild-a",
+        userId: "legacy-admin",
+        roleIds: [],
+        isAdmin: true,
+        hasDashboardAccess: true,
+        createdAt: "2020-01-01T00:00:00Z",
+        updatedAt: "2020-01-01T00:00:00Z",
+    })
+    const epoch = await invoke(members.ensureGuild, ctx, {
+        secret,
+        guildId: "guild-a",
+    })
+    const run = await invoke(members.beginReconciliation, ctx, {
+        secret,
+        guildId: "guild-a",
+        epoch,
+    })
+    await assert.rejects(
+        invoke(members.finishReconciliation, ctx, { secret, runId: run.id }),
+        /complete/i
+    )
+    assert.equal(ctx.db.tables.discordMemberAccess.length, 1)
+    await invoke(members.applyReconciliationBatch, ctx, {
+        secret,
+        runId: run.id,
+        batch: 0,
+        expectedCount: 0,
+        members: [],
+    })
+    assert.equal(
+        (
+            await invoke(members.finishReconciliation, ctx, {
+                secret,
+                runId: run.id,
+            })
+        ).isDone,
+        false
+    )
+    await invoke(members.invalidateGuild, ctx, { secret, guildId: "guild-a" })
+    await assert.rejects(
+        invoke(members.finishReconciliation, ctx, { secret, runId: run.id }),
+        /superseded/i
+    )
+    assert.equal(ctx.db.tables.discordMemberAccess.length, 1)
+})
 test("membership grant and per-key policy are both required and tenant/game bound", async () => {
     const ctx = fixture()
     assert.ok(await invoke(members.prepareLookup, ctx, lookup))

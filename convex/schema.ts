@@ -1282,6 +1282,7 @@ export default defineSchema({
         status: v.union(
             v.literal("collecting"),
             v.literal("sweeping"),
+            v.literal("cache-sweeping"),
             v.literal("complete"),
             v.literal("superseded")
         ),

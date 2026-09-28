@@ -10,6 +10,7 @@ throws commit nothing. Tests simulate rollback; Convex supplies the real guarant
 | Dashboard and bot  | All `events` mutations: upsert, toggleSignUp, reconcileStatuses, applyEventScore, conclude, completeTraining, appendAttendanceReminderLog, upsertNotice, setDiscordEventRoles, setResult |
 | API                | `publicApi.mutateClanEvent`, `mutateClanEventSignup`; every mutation in that module uses the decorator, preserving existing idempotency                                                  |
 | Discord resync     | `discordSync.requestForumTopicResync` changes event updatedAt; message sync metadata is not projected                                                                                    |
+| User merge         | `players.mergeUsers` rewrites event participants/signups and updatedAt; all mutations in `players` use the decorator                                                                     |
 | Result import      | `matchStats.upsertForEvent` updates event timestamp/linkage; `events.setResult` changes the provisional result                                                                           |
 | Migration          | `migrations.migrateEventResults`; old result shapes are compared without DTO parsing so migration remains possible                                                                       |
 | Helper setup       | `serverSetup.resetHelperDataForGuild`, `initializeDefaultHelperDataForGuild`; projected timestamps if modified                                                                           |
@@ -25,10 +26,14 @@ projection (e.g. match to training). Extra invalidations are harmless; private
 fields never enter the stream.
 
 Handler tests exercise dashboard upsert, API create, bot role update, result
-import and migration; collector tests exercise decorated configure/claim/finish
+import, migration and user merge; collector tests exercise decorated configure/claim/finish
 and history paths. Static tests protect the registered entrypoint imports.
 New writers/fields require manifest and handler-test updates; this is not an
 automatic proof of future code. Scope, retention and rollback tests are separate.
+
+Membership tracking in v0.7 also covers assignment rekey/deletion during user
+merge: both affected subjects are invalidated on rekey, and the removed subject
+is invalidated when a duplicate assignment is deleted.
 
 The standalone legacy HLL scope repository currently has no production caller;
 any future caller must use the decorator. Scheduled jobs call covered event

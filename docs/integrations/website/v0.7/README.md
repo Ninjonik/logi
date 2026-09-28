@@ -81,6 +81,11 @@ Fail closed for protected website actions in every unavailable/denied case.
   a complete available guild response, matching member count, no partial members
   and the bot itself. It commits batches of 100 and sweeps absence in pages of
   100 only after every expected member was recorded. Later observations win.
+  A second bounded sweep reconciles pre-upgrade `discordMemberAccess` rows that
+  have no observation yet. Absent old rows become departures and lose cached
+  dashboard access. Each page rechecks the epoch; newer observations and legacy
+  cache writes at/after the snapshot boundary survive. Deletions use a user-ID
+  continuation so removing one page cannot skip the next.
   Failure/partial fetch never becomes an empty guild. Runs expire after ten
   minutes; minute maintenance removes expired scratch rows in bounded batches.
 - Successful periodic full syncs are throttled to five minutes; invalidation
@@ -115,7 +120,7 @@ when fresh provider evidence is needed.
 
 Raw observations and projected assignment changes append transactional records.
 The assignment writers are `userAssignments` (including import/reassignment),
-`publicApi`, `groups`, `serverSetup` and `migrations`; their mutations use the
+`publicApi`, `groups`, `serverSetup`, `migrations` and `players.mergeUsers`; their mutations use the
 same integration decorator. Assignment deletion invalidates the membership
 projection with `upsert`, so the next record has `assignment: null`. Policy/epoch
 changes allocate a global revision and force cursor reset instead of fanout.
@@ -145,5 +150,6 @@ private acceptance; this milestone neither replaces Discord OAuth nor activates
 an SSO provider.
 
 Evidence: [synthetic wire examples](./fixtures.json), [validation](./validation.md),
-[actual component screenshots](./ui-validation.md). Reject `differentGuild` when
+[actual component screenshots](./ui-validation.md),
+[delivery decisions](./delivery-decisions.md). Reject `differentGuild` when
 the configured source is the fixture guild, even if the Discord subject matches.
