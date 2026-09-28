@@ -48,7 +48,12 @@ export default async function SystemPage({
                             id: "website-api",
                             title: dictionary.clan.websiteApi,
                             description: "",
-                            content: <ApiKeyManager serverId={serverId} />,
+                            content: (
+                                <ApiKeyManager
+                                    serverId={serverId}
+                                    dictionary={dictionary}
+                                />
+                            ),
                         },
                         {
                             id: "google-calendar",

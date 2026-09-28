@@ -9,7 +9,15 @@ No consumer implementation or hosted deployment is claimed here.
 
 ## Provision the summary reader
 
-A workspace administrator can use the existing session-authenticated endpoint:
+A workspace administrator can use **System → Website API**. The form defaults
+to read-only access and the two summary resources; select the required games
+explicitly. Empty resource/game selections cannot create a restricted key.
+Existing-key rows display their actual resource/game grants or explicit legacy
+full access. Create a replacement, switch the consumer, then revoke its old key
+to change permissions. The UI supports English, Czech and German; see the
+[UI validation and simulated screenshots](./ui-validation.md).
+
+The existing session-authenticated management endpoint accepts the same policy:
 
 ```http
 POST /api/servers/{serverId}/api-keys
@@ -28,7 +36,8 @@ Grant only the configured games/resources needed by that consumer. Games may
 use different guilds and keys. The response reveals the key once; store it only
 in the website backend and use `Authorization: Bearer <key>`. Listing and
 revocation use the [existing management contract](../v0.3/README.md#issue-a-restricted-key).
-The dashboard creation form still issues legacy full-access keys.
+The form creates a legacy full-access key only after that mode is selected.
+Its label explains that this permits reads and writes across all games.
 
 The two new grants are independent of each other and of `events`/`matches`.
 An event-summary key cannot read match summaries, raw events, raw match stats,
@@ -131,8 +140,9 @@ migration or dependency/toolchain change is required. Existing endpoints retain
 their contracts. Before a backend downgrade, revoke keys using unsupported
 policies; follow the [0.3 rollback requirements](../v0.3/README.md#compatibility-and-rollout).
 
-This adds alternate read representations of existing dashboard event/results
-data, not a new lifecycle or dashboard/Discord presentation. Key management
+The summaries are alternate read representations of existing dashboard
+event/results data. The key manager exposes the existing policy provisioning
+contract without changing the event lifecycle or Discord presentation. Key management
 remains session-authenticated and deliberately outside `/api/v1`; a bearer key
 cannot grant itself broader access.
 
@@ -147,10 +157,14 @@ remain in scope. This extension adds:
   zero is preserved, training is excluded and legacy HLL identity stays explicit.
 - **AC8:** Actual HTTP routes, shared OpenAPI schemas, wiki and synthetic wire
   fixtures agree. Reviewers can reproduce the [validation](./validation.md).
+- **AC9:** The localized key manager defaults to read-only summary access,
+  requires explicit games, displays existing permissions and reveals credentials
+  once. Browser evidence covers creation, revocation, errors and workspace changes.
 
 The prior [capability inventory](../v0.3/capabilities.md) remains the source audit;
 the new minimized reads are the added capability. [Follow-up drafts](../v0.3/issue-drafts.md)
 still cover confirmed/corrected result provenance, member-consent integration,
-durable website synchronization, game-server snapshots and restricted-key UI.
+durable website synchronization and game-server snapshots. Restricted-key UI is
+implemented in this milestone; production workspace acceptance remains separate.
 SSO remains subject to separate private provider acceptance. Hosted readiness,
 website consumer behavior and real provider/Discord behavior are unverified.

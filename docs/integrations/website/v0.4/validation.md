@@ -1,8 +1,8 @@
-# Summary milestone validation
+# Scoped keys and summary milestone validation
 
 Validation date: 2026-09-28. The PR description pins the full commit SHA of the
-validated tree. This extension starts at
-`373698e6a23e3d465861f5a484fcf0eb97313803`, on `feat/valkyria-integration`,
+validated tree. The administrator UI follow-up starts at
+`1c6c1d586446870f5134047bf704f599e65e2300`, on `feat/valkyria-integration`,
 and keeps the existing PR against upstream's default `main`. The tested branch's
 upstream ancestor is `a34ef149883240ab6a9eb879e845b5f71a5786e6`. At final refresh,
 `main` was `65a016402d77abe61b584dae19f46ac6d00b3867`; its additional SSO
@@ -19,15 +19,17 @@ No dependencies, lockfile or toolchain configuration were changed.
 
 | Check | Result |
 | --- | --- |
-| Focused domain/backend/HTTP/OpenAPI command below | 45 passed |
-| `npm test` with synthetic environment | 357 passed, 1 pre-existing failure |
+| Focused UI/domain/backend/HTTP/OpenAPI command below | 48 passed |
+| `npm test` with synthetic environment | 360 passed, 1 pre-existing failure |
 | `npm run typecheck` | Passed |
 | `npm run lint` | Existing `next lint` script fails with an invalid project directory ending in `/lint` |
 | Direct ESLint on all PR TypeScript files | 0 errors, the same 5 pre-existing unused-variable warnings in `convex/publicApi.ts` and the OpenAPI route |
+| ESLint on the new UI, dictionaries and preview scripts | 0 errors and 0 warnings |
 | Prettier on all PR TypeScript files | Passed |
 | `npm run generate:openapi` | Passed; existing generated document schemas unchanged; summary schemas derive directly from the runtime Zod schemas |
 | `npm run build` with unavailable loopback backend | Compilation and TypeScript passed; prerendering `/cs/competitions` failed with `ECONNREFUSED 127.0.0.1:32199` |
 | Synthetic fixtures and local handoff links | Six responses checked; four DTOs validate against runtime schemas; local links resolve |
+| Actual component in browser, with simulated API | Creation scopes, full-access mode, copy/hide, workspace changes, revocation, failure/retry and narrow layout verified; [captioned screenshots and procedure](./ui-validation.md) |
 | `git diff --check` | Passed |
 
 The unchanged full-suite failure is
@@ -44,12 +46,12 @@ From the repository root, in PowerShell:
 $env:NEXT_PUBLIC_CONVEX_URL = 'https://offline-test.convex.cloud'
 $env:INTERNAL_AUTH_SECRET = 'dev-internal-auth-secret'
 $env:DISCORD_BOT_TOKEN = 'synthetic-offline-test-token'
-node --import tsx --test src/domain/api/event-summaries.test.ts src/infrastructure/convex/public-api-key-access.test.ts src/lib/api/authenticated-clan-route.test.ts src/lib/api/clan-route-http.test.ts src/app/api/v1/openapi.json/route.test.ts
+node --import tsx --test src/components/app/api-key-manager.test.ts src/domain/api/event-summaries.test.ts src/infrastructure/convex/public-api-key-access.test.ts src/lib/api/authenticated-clan-route.test.ts src/lib/api/clan-route-http.test.ts src/app/api/v1/openapi.json/route.test.ts
 npm test
 npm run typecheck
 npm run lint
 $changedTs = @(git diff --name-only 'a34ef149883240ab6a9eb879e845b5f71a5786e6' HEAD -- '*.ts' '*.tsx')
-npx eslint @changedTs
+npx eslint @changedTs scripts/preview-api-key-manager.mjs
 npx prettier --check @changedTs
 npm run generate:openapi
 git diff --check
@@ -90,7 +92,8 @@ deployed Convex execution/concurrency, consumer crash/retry recovery, consent
 withdrawal and real provider behavior remain unverified. The inherited consumer
 scenarios are acceptance requirements, not claims of implemented website behavior.
 
-Screenshots: **N/A — backend-only contract/permission change**. Dashboard and
-Discord presentation are unchanged. A complete production build is not verified;
-its page-data phase requires a reachable backend. No merge, deployment, hosted
-settings change, website edit or live Discord message was performed.
+The key manager's changed dashboard presentation has [actual component screenshots
+with simulated data](./ui-validation.md). Discord presentation is unchanged.
+A complete production build is not verified; its page-data phase requires a
+reachable backend. No merge, deployment, hosted settings change, website edit or
+live Discord message was performed.

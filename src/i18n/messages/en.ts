@@ -1,4 +1,58 @@
 export const enMessages = {
+    apiKeys: {
+        description:
+            "Create an integration key and keep it on your server. Choose only the data and games the integration needs.",
+        name: "Key name",
+        namePlaceholder: "Website name, e.g. main site",
+        access: "Access",
+        readOnly: "Read-only",
+        fullAccess: "Full access (legacy)",
+        readOnlyHelp:
+            "Can read only the selected resources and games. Cannot create, update or delete data.",
+        fullAccessHelp:
+            "Can read and modify all clan data across all games. Use only for integrations that need write access.",
+        resources: "Resources",
+        games: "Games",
+        selectScope: "Select at least one resource and one game.",
+        privateData:
+            "Complete records may contain private operational details. Review data before publishing it.",
+        createReadOnly: "Create read-only key",
+        createFullAccess: "Create full-access key",
+        copyNow:
+            "Copy this key now. It cannot be shown again. Keep it on your server.",
+        copy: "Copy API key",
+        copied: "API key copied.",
+        copyFailed:
+            "Unable to copy the key. Copy it manually before hiding it.",
+        hide: "Hide key",
+        createFailed:
+            "Unable to create the key. Check your selection and try again.",
+        invalidKey: "The server returned an invalid API key.",
+        revoke: "Revoke",
+        revokeFailed: "Unable to revoke the key. Try again.",
+        revoked: "revoked",
+        created: "created",
+        existingKeys: "Existing keys",
+        rotateHelp:
+            "To change permissions, create a replacement key, switch the integration, then revoke the old key.",
+        allGames: "all games; read and write",
+        loading: "Loading keys…",
+        loadFailed:
+            "Unable to refresh keys. Displayed permissions may be out of date.",
+        retry: "Retry",
+        empty: "No API keys have been created.",
+        invalidPolicy: "Unrecognized restrictions; backend access is denied.",
+        resourceLabels: {
+            "event-summaries": "Event summaries",
+            "match-summaries": "Match summaries",
+            events: "Events (complete records)",
+            matches: "Matches (raw statistics)",
+            groups: "Groups",
+            rosters: "Rosters",
+            assignments: "Member assignments",
+            stratmaps: "Tactical maps",
+        },
+    },
     publicProfiles: {
         communityTitle: "Community",
         communityDescription:

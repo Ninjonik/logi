@@ -52,16 +52,29 @@ creation flow from **All games** first asks the manager to choose a game.
 
 The manager-only **System** area groups Website API keys, Google Calendar sync, single sign-on applications, Imports, Helper data, and Webhooks into collapsed sections. Normal Clan settings contains game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
-Each website API key belongs to the currently selected workspace and can read
-that workspace's clan-owned data. Give it a recognisable name of at most 80
+Each website API key belongs to the currently selected workspace. Its permissions
+determine which data it can read or change. Give it a recognisable name of at most 80
 characters. The full value is displayed once, at creation time; afterward the
-dashboard shows only its prefix, creation date, and whether it has been
-revoked. Revoking a key takes effect for future requests and cannot be undone:
+dashboard shows its prefix, creation date, granted resources/games, and whether
+it has been revoked. Revoking a key takes effect for future requests and cannot be undone:
 create and deploy a replacement key before revoking one used by a live site.
 
 #### Read-only integration keys
 
-Administrators can issue a restricted key through the existing authenticated
+In **System → Website API**, the form starts with **Read-only** access and
+only **Event summaries** and **Match summaries** selected. Choose the required
+games explicitly; an empty resource or game selection cannot create a restricted
+key. Review the selection, enter a name and press **Create read-only key**.
+Copy the revealed key before hiding it or leaving the workspace. It is never
+available from the existing-key list.
+
+Choose **Full access (legacy)** only when an integration needs write access.
+That mode can read and modify all clan data across all games. Existing keys
+keep their permissions; restricted and legacy keys are clearly distinguished
+in the list. To change a policy, create a replacement key, switch the integration,
+and then revoke its old key. The interface is localized in English, Czech and German.
+
+Administrators can also issue a restricted key through the existing authenticated
 `POST /api/servers/{serverId}/api-keys` endpoint by including a `readAccess`
 object alongside `name`:
 
@@ -84,8 +97,8 @@ ungranted resources and all writes return `403 insufficient_scope`. Detail
 reads check the stored tenant and game. Revocation is checked on every backend
 operation, and restricted reads are not cached by HTTP clients.
 
-The dashboard's existing creation form and requests without `readAccess` still
-create full-access legacy keys. Existing keys are not automatically restricted.
+Requests without `readAccess` still create full-access legacy keys, including
+the form's explicit full-access option. Existing keys are not automatically restricted.
 Use a newly issued restricted key for a read-only website and revoke the old
 credential after switching it. The management list endpoint includes the stored
 policy. A bearer key cannot create or broaden keys; that requires a dashboard

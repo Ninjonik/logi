@@ -1,4 +1,61 @@
 export const deMessages = {
+    apiKeys: {
+        description:
+            "Erstelle einen Integrationsschlüssel und bewahre ihn auf deinem Server auf. Wähle nur die benötigten Daten und Spiele.",
+        name: "Schlüsselname",
+        namePlaceholder: "Name der Website, z. B. Hauptseite",
+        access: "Berechtigung",
+        readOnly: "Nur lesen",
+        fullAccess: "Vollzugriff (bisheriger Modus)",
+        readOnlyHelp:
+            "Kann nur ausgewählte Ressourcen und Spiele lesen. Kann keine Daten erstellen, ändern oder löschen.",
+        fullAccessHelp:
+            "Kann alle Clan-Daten für alle Spiele lesen und ändern. Nur für Integrationen verwenden, die Schreibzugriff benötigen.",
+        resources: "Ressourcen",
+        games: "Spiele",
+        selectScope: "Wähle mindestens eine Ressource und ein Spiel.",
+        privateData:
+            "Vollständige Datensätze können private Betriebsdaten enthalten. Prüfe die Daten vor der Veröffentlichung.",
+        createReadOnly: "Leseschlüssel erstellen",
+        createFullAccess: "Schlüssel mit Vollzugriff erstellen",
+        copyNow:
+            "Kopiere den Schlüssel jetzt. Er kann nicht erneut angezeigt werden. Bewahre ihn auf deinem Server auf.",
+        copy: "API-Schlüssel kopieren",
+        copied: "API-Schlüssel kopiert.",
+        copyFailed:
+            "Kopieren fehlgeschlagen. Kopiere den Schlüssel manuell, bevor du ihn ausblendest.",
+        hide: "Schlüssel ausblenden",
+        createFailed:
+            "Der Schlüssel konnte nicht erstellt werden. Prüfe deine Auswahl und versuche es erneut.",
+        invalidKey:
+            "Der Server hat einen ungültigen API-Schlüssel zurückgegeben.",
+        revoke: "Widerrufen",
+        revokeFailed:
+            "Der Schlüssel konnte nicht widerrufen werden. Versuche es erneut.",
+        revoked: "widerrufen",
+        created: "erstellt",
+        existingKeys: "Vorhandene Schlüssel",
+        rotateHelp:
+            "Erstelle zum Ändern der Berechtigungen einen Ersatzschlüssel, stelle die Integration um und widerrufe dann den alten Schlüssel.",
+        allGames: "alle Spiele; Lesen und Schreiben",
+        loading: "Schlüssel werden geladen…",
+        loadFailed:
+            "Schlüssel konnten nicht aktualisiert werden. Angezeigte Berechtigungen sind möglicherweise veraltet.",
+        retry: "Erneut versuchen",
+        empty: "Es wurden noch keine API-Schlüssel erstellt.",
+        invalidPolicy:
+            "Unbekannte Einschränkungen; der Backend-Zugriff wird verweigert.",
+        resourceLabels: {
+            "event-summaries": "Ereignisübersichten",
+            "match-summaries": "Match-Übersichten",
+            events: "Ereignisse (vollständige Datensätze)",
+            matches: "Matches (Rohstatistiken)",
+            groups: "Gruppen",
+            rosters: "Aufstellungen",
+            assignments: "Mitgliedszuordnungen",
+            stratmaps: "Taktikkarten",
+        },
+    },
     publicProfiles: {
         communityTitle: "Community",
         communityDescription:

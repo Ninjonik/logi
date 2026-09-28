@@ -1,4 +1,58 @@
 export const csMessages = {
+    apiKeys: {
+        description:
+            "Vytvořte klíč pro integraci a uchovávejte ho na svém serveru. Vyberte jen potřebná data a hry.",
+        name: "Název klíče",
+        namePlaceholder: "Název webu, např. hlavní web",
+        access: "Oprávnění",
+        readOnly: "Pouze pro čtení",
+        fullAccess: "Plný přístup (původní režim)",
+        readOnlyHelp:
+            "Může číst pouze vybrané zdroje a hry. Nemůže vytvářet, měnit ani mazat data.",
+        fullAccessHelp:
+            "Může číst a měnit všechna klanová data napříč hrami. Použijte jen pro integrace, které potřebují zápis.",
+        resources: "Zdroje dat",
+        games: "Hry",
+        selectScope: "Vyberte alespoň jeden zdroj dat a jednu hru.",
+        privateData:
+            "Úplné záznamy mohou obsahovat neveřejné provozní údaje. Před zveřejněním data zkontrolujte.",
+        createReadOnly: "Vytvořit klíč pro čtení",
+        createFullAccess: "Vytvořit klíč s plným přístupem",
+        copyNow:
+            "Nyní klíč zkopírujte. Znovu ho nelze zobrazit. Uchovávejte ho na svém serveru.",
+        copy: "Zkopírovat API klíč",
+        copied: "API klíč zkopírován.",
+        copyFailed:
+            "Klíč se nepodařilo zkopírovat. Před skrytím ho zkopírujte ručně.",
+        hide: "Skrýt klíč",
+        createFailed:
+            "Klíč se nepodařilo vytvořit. Zkontrolujte výběr a zkuste to znovu.",
+        invalidKey: "Server vrátil neplatný API klíč.",
+        revoke: "Zneplatnit",
+        revokeFailed: "Klíč se nepodařilo zneplatnit. Zkuste to znovu.",
+        revoked: "zneplatněný",
+        created: "vytvořeno",
+        existingKeys: "Existující klíče",
+        rotateHelp:
+            "Oprávnění změníte vytvořením nového klíče. Přepojte na něj integraci a pak zneplatněte starý klíč.",
+        allGames: "všechny hry; čtení i zápis",
+        loading: "Načítání klíčů…",
+        loadFailed:
+            "Seznam klíčů se nepodařilo obnovit. Zobrazená oprávnění nemusí být aktuální.",
+        retry: "Zkusit znovu",
+        empty: "Zatím nebyly vytvořeny žádné API klíče.",
+        invalidPolicy: "Nerozpoznaná omezení; backend přístup zamítne.",
+        resourceLabels: {
+            "event-summaries": "Souhrny událostí",
+            "match-summaries": "Souhrny zápasů",
+            events: "Události (úplné záznamy)",
+            matches: "Zápasy (surové statistiky)",
+            groups: "Skupiny",
+            rosters: "Soupisky",
+            assignments: "Zařazení členů",
+            stratmaps: "Taktické mapy",
+        },
+    },
     publicProfiles: {
         communityTitle: "Komunita",
         communityDescription:

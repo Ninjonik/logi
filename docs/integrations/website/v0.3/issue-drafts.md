@@ -70,6 +70,12 @@ remain a later change with actor authorization, game-scoped grants and auditing.
 
 ## Add administrator controls for restricted-key provisioning
 
+**Implemented in the current milestone:** The key manager now supports explicit
+resource/game selections, read-only defaults, permission summaries and English,
+Czech and German copy. [UI validation](../v0.4/ui-validation.md) includes actual
+component screenshots with simulated API data. This is source/browser evidence;
+deployment and production workspace acceptance remain unverified.
+
 **Problem:** The authenticated management endpoint now supports `readAccess`,
 but the existing key-creation form still creates legacy full-access keys.
 
