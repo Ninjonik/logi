@@ -2,12 +2,28 @@ import {
     PublicPage,
     PublicSiteShell,
 } from "@/components/public/public-site-shell"
+import { getLocalizedCanonical } from "@/lib/seo"
 import ReactMarkdown from "react-markdown"
 import { isLocale } from "@/i18n/config"
+import type { Metadata } from "next"
 import remarkGfm from "remark-gfm"
 import rehypeRaw from "rehype-raw"
 import fs from "fs/promises"
 import path from "path"
+
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+    const { locale } = (await params) ?? { locale: "en" }
+    const safeLocale = isLocale(locale) ? locale : "en"
+    return {
+        title: "Privacy policy",
+        description: "Logi privacy policy and information about personal data.",
+        alternates: getLocalizedCanonical(safeLocale, "/privacy-policy"),
+    }
+}
 
 export default async function Page({
     params,

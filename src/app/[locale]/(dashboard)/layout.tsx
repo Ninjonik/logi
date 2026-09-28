@@ -4,6 +4,11 @@ import { getDictionary } from "@/i18n/dictionaries"
 import { getCurrentPlayer } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { connection } from "next/server"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+    robots: { index: false, follow: false },
+}
 
 export default async function DashboardLayout({
     children,

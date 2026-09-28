@@ -57,6 +57,7 @@ export function ServerSwitcher({
         noWorkspaceSelected: string
         searchWorkspace: string
         noMatchingResults: string
+        missingWorkspaceHelp: string
     }
 }) {
     const [open, setOpen] = React.useState(false)
@@ -200,6 +201,9 @@ export function ServerSwitcher({
                             )
                         })}
                     </CommandList>
+                    <p className="text-muted-foreground border-t px-3 py-2.5 text-xs leading-5">
+                        {labels.missingWorkspaceHelp}
+                    </p>
                 </Command>
             </PopoverContent>
         </Popover>

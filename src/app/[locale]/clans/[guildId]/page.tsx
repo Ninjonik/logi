@@ -22,6 +22,7 @@ import { getPublicPreviewMetadata } from "@/lib/public-preview-metadata"
 import { getPublicClan } from "@/lib/read-models/public-profiles"
 import { PublicStat } from "@/components/public/public-stat"
 import { getDictionary } from "@/i18n/dictionaries"
+import { getLocalizedCanonical } from "@/lib/seo"
 import { isLocale } from "@/i18n/config"
 
 type Props = { params: Promise<{ locale: string; guildId: string }> }
@@ -39,7 +40,8 @@ function DynamicMetadataMarker() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { guildId } = await params
+    const { locale, guildId } = await params
+    const safeLocale = isLocale(locale) ? locale : "en"
     const preview = await getPublicPreviewMetadata("clan", guildId)
     const title = preview?.title ?? "Clan profile | Logi"
     const description =
@@ -53,6 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title,
         description,
+        alternates: getLocalizedCanonical(safeLocale, `/clans/${guildId}`),
         openGraph: {
             title,
             description,

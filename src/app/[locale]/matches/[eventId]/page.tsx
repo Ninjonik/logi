@@ -16,6 +16,7 @@ import { getPublicPreviewMetadata } from "@/lib/public-preview-metadata"
 import { getPublicMatch } from "@/lib/read-models/public-profiles"
 import { MatchDetails } from "@/components/app/match-details"
 import { getDictionary } from "@/i18n/dictionaries"
+import { getLocalizedCanonical } from "@/lib/seo"
 import { isLocale } from "@/i18n/config"
 
 type Props = { params: Promise<{ locale: string; eventId: string }> }
@@ -32,7 +33,8 @@ function DynamicMetadataMarker() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { eventId } = await params
+    const { locale, eventId } = await params
+    const safeLocale = isLocale(locale) ? locale : "en"
     const preview = await getPublicPreviewMetadata("match", eventId)
     const title = preview?.title ?? "Match result | Logi"
     const description = preview?.description ?? "Recorded public match result."
@@ -44,6 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title,
         description,
+        alternates: getLocalizedCanonical(safeLocale, `/matches/${eventId}`),
         openGraph: {
             title,
             description,

@@ -22,6 +22,7 @@ import { getPublicPlayerProfile } from "@/lib/read-models/public-profiles"
 import { getPublicPreviewMetadata } from "@/lib/public-preview-metadata"
 import { PublicStat } from "@/components/public/public-stat"
 import { getDictionary } from "@/i18n/dictionaries"
+import { getLocalizedCanonical } from "@/lib/seo"
 import { Badge } from "@/components/ui/badge"
 import { isLocale } from "@/i18n/config"
 
@@ -41,7 +42,8 @@ function DynamicMetadataMarker() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { playerId } = await params
+    const { locale, playerId } = await params
+    const safeLocale = isLocale(locale) ? locale : "en"
     const preview = await getPublicPreviewMetadata("player", playerId)
     const title = preview?.title ?? "Player profile | Logi"
     const description =
@@ -55,6 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title,
         description,
+        alternates: getLocalizedCanonical(safeLocale, `/players/${playerId}`),
         openGraph: {
             title,
             description,

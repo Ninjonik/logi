@@ -321,6 +321,11 @@ export const csMessages = {
         refreshingBotStatus: "Obnovuje se stav bota...",
         botStatusRefreshed: "Stav bota byl obnoven.",
         botStatusRefreshError: "Stav bota se nepodařilo obnovit.",
+        botMissingWorkspaceTitle: "Bot Logi na serveru {workspace} chybí",
+        botMissingWorkspaceDescription:
+            "Většina funkcí workspace nebude fungovat, dokud nepozvete Discord bota. Nainstalujte ho na tento server, schvalte požadovaná oprávnění a potom zde obnovte jeho stav.",
+        botMissingWorkspacePermissions:
+            "Bot potřebuje oprávnění požadovaná Discordem a musí být nad každou rolí, kterou má spravovat.",
         botTitle: "Operace bota",
         botDescription:
             "Globální stav bota, strukturované logy a filtrovaný přehled napříč dashboardem a Discord botem.",
@@ -981,6 +986,8 @@ export const csMessages = {
         activeWorkspace: "Aktivní workspace",
         noWorkspaceSelected: "Žádný workspace není vybraný",
         searchWorkspace: "Hledat workspace...",
+        missingWorkspaceHelp:
+            "Chybí vám workspace? Ujistěte se, že jste na daném Discord serveru nebo na něm máte přístup správce.",
     },
     languageSwitcher: {
         selectLanguage: "Vybrat jazyk",
@@ -1561,17 +1568,27 @@ export const csMessages = {
         webhookEventsBody:
             "Nové odběry přijímají všechny níže uvedené produkční události. Podle seznamu můžete endpoint připravit ještě před zapnutím webhooku.",
         webhookEvents: {
-            "article.created": "Článek byl vytvořen pomocí Webového API.",
-            "article.updated": "Článek byl upraven pomocí Webového API.",
-            "article.deleted": "Článek byl smazán pomocí Webového API.",
-            "event.created": "Akce byla vytvořena pomocí Webového API.",
-            "event.updated":
-                "Akce byla upravena nebo uzavřena pomocí Webového API.",
-            "roster.updated":
-                "Soupiska se změnila, včetně přihlášení přes API a změn přiřazení ovlivňujících soupisku.",
-            "settings.updated":
-                "Bezpečná nastavení klanu nebo Discordu byla upravena pomocí Webového API.",
-            "webhook.test": "Správce ručně odeslal testovací doručení.",
+            article: {
+                created: "Článek byl vytvořen pomocí Webového API.",
+                updated: "Článek byl upraven pomocí Webového API.",
+                deleted: "Článek byl smazán pomocí Webového API.",
+            },
+            event: {
+                created: "Akce byla vytvořena pomocí Webového API.",
+                updated:
+                    "Akce byla upravena nebo uzavřena pomocí Webového API.",
+            },
+            roster: {
+                updated:
+                    "Soupiska se změnila, včetně přihlášení přes API a změn přiřazení ovlivňujících soupisku.",
+            },
+            settings: {
+                updated:
+                    "Bezpečná nastavení klanu nebo Discordu byla upravena pomocí Webového API.",
+            },
+            webhook: {
+                test: "Správce ručně odeslal testovací doručení.",
+            },
         },
         webhookUi: {
             copySecret:

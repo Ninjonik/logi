@@ -2,7 +2,19 @@ import { PublicSiteShell } from "@/components/public/public-site-shell"
 import { LandingPage } from "@/components/landing/landing-page"
 import { defaultLocale, isLocale } from "@/i18n/config"
 import { getDictionary } from "@/i18n/dictionaries"
+import { getLocalizedCanonical } from "@/lib/seo"
 import { getCurrentPlayer } from "@/lib/auth"
+import type { Metadata } from "next"
+
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+    const { locale } = await params
+    const safeLocale = isLocale(locale) ? locale : defaultLocale
+    return { alternates: getLocalizedCanonical(safeLocale, "") }
+}
 
 export default async function LocaleHomePage({
     params,

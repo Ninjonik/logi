@@ -4,11 +4,13 @@ import {
     getVisibleGuildsForLoggedInUser,
     isCurrentUserSuperadmin,
 } from "@/lib/auth"
+import { MissingBotWorkspaceWarning } from "@/components/app/missing-bot-workspace-warning"
 import { DashboardOnboarding } from "@/components/app/dashboard-onboarding"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { SiteHeader } from "@/components/app/site-header"
 import { SiteFooter } from "@/components/app/site-footer"
 import { AppSidebar } from "@/components/app/app-sidebar"
+import { buildDiscordBotInviteUrl } from "@/lib/discord"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { getLogiStatus } from "@/lib/logi-status"
 import type { AppUser } from "@/types/domain"
@@ -30,6 +32,12 @@ export async function DashboardShell({
         isCurrentUserSuperadmin(),
         getLogiStatus(),
     ])
+    const inviteUrlByGuildId = Object.fromEntries(
+        visibleServers.map((server) => [
+            server.id,
+            buildDiscordBotInviteUrl(server.discordId),
+        ])
+    )
 
     return (
         <DashboardOnboarding
@@ -56,6 +64,11 @@ export async function DashboardShell({
                         user={user}
                     />
                     <div className="relative flex flex-1 flex-col gap-3 py-3 sm:gap-4 sm:py-4 2xl:gap-6 2xl:py-6">
+                        <MissingBotWorkspaceWarning
+                            dictionary={dictionary}
+                            inviteUrlByGuildId={inviteUrlByGuildId}
+                            servers={visibleServers}
+                        />
                         {children}
                     </div>
                     <SiteFooter dictionary={dictionary} status={status} />

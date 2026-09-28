@@ -18,7 +18,9 @@ import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
 import { GAME_IDS, GAME_LABELS, isGameId } from "@/domain/games/game"
 import { GAME_ICON_SOURCES } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
+import { getLocalizedCanonical } from "@/lib/seo"
 import { isLocale } from "@/i18n/config"
+import type { Metadata } from "next"
 
 type Props = {
     params: Promise<{ locale: string }>
@@ -29,6 +31,17 @@ type Props = {
         playersCursor?: string
         game?: string | string[]
     }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const { locale } = (await params) ?? { locale: "en" }
+    const safeLocale = isLocale(locale) ? locale : "en"
+    return {
+        title: "Hell Let Loose community, clans, players, and match results",
+        description:
+            "Explore Hell Let Loose communities, clan profiles, player statistics, and recorded match results.",
+        alternates: getLocalizedCanonical(safeLocale, "/community"),
+    }
 }
 
 export default async function CommunityPage({ params, searchParams }: Props) {

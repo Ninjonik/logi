@@ -16,6 +16,7 @@ import { isLocale } from "@/i18n/config"
 export const metadata: Metadata = {
     title: "Sign in | Logi",
     description: "Sign in to continue to Logi.",
+    robots: { index: false, follow: false },
 }
 
 export default async function LoginPage({

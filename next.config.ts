@@ -57,6 +57,8 @@ const nextConfig: NextConfig = {
             },
         ],
         formats: ["image/webp", "image/avif"],
+        qualities: [70],
+        minimumCacheTTL: 60 * 60 * 24 * 31,
     },
 
     // Headers for better security and performance

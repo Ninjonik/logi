@@ -320,6 +320,11 @@ export const enMessages = {
         refreshingBotStatus: "Refreshing bot status...",
         botStatusRefreshed: "Bot status refreshed.",
         botStatusRefreshError: "Unable to refresh bot status.",
+        botMissingWorkspaceTitle: "The Logi bot is missing from {workspace}",
+        botMissingWorkspaceDescription:
+            "Most workspace features will not work until you invite the Discord bot. Install it for this server, approve the requested permissions, then refresh its status here.",
+        botMissingWorkspacePermissions:
+            "The bot needs the permissions requested by Discord and must be placed above every role it needs to manage.",
         botTitle: "Bot operations",
         botDescription:
             "Global bot health, structured logs, and a filtered view across the dashboard app and Discord bot.",
@@ -979,6 +984,8 @@ export const enMessages = {
         activeWorkspace: "Active workspace",
         noWorkspaceSelected: "No workspace selected",
         searchWorkspace: "Search workspaces...",
+        missingWorkspaceHelp:
+            "Missing a workspace? Make sure you are in that Discord server or have administrator access to it.",
     },
     languageSwitcher: {
         selectLanguage: "Select language",
@@ -1555,20 +1562,27 @@ export const enMessages = {
         webhookEventsBody:
             "New subscriptions receive every production event below. Use this list to prepare your endpoint before enabling a webhook.",
         webhookEvents: {
-            "article.created":
-                "An article was created through the Website API.",
-            "article.updated":
-                "An article was updated through the Website API.",
-            "article.deleted":
-                "An article was deleted through the Website API.",
-            "event.created": "An event was created through the Website API.",
-            "event.updated":
-                "An event was updated or concluded through the Website API.",
-            "roster.updated":
-                "A roster changed, including API signups and roster-affecting assignment changes.",
-            "settings.updated":
-                "Safe clan or Discord settings were updated through the Website API.",
-            "webhook.test": "A manager sent a test delivery manually.",
+            article: {
+                created: "An article was created through the Website API.",
+                updated: "An article was updated through the Website API.",
+                deleted: "An article was deleted through the Website API.",
+            },
+            event: {
+                created: "An event was created through the Website API.",
+                updated:
+                    "An event was updated or concluded through the Website API.",
+            },
+            roster: {
+                updated:
+                    "A roster changed, including API signups and roster-affecting assignment changes.",
+            },
+            settings: {
+                updated:
+                    "Safe clan or Discord settings were updated through the Website API.",
+            },
+            webhook: {
+                test: "A manager sent a test delivery manually.",
+            },
         },
         webhookUi: {
             copySecret:

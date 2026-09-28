@@ -26,6 +26,7 @@ import {
     useTransform,
 } from "framer-motion"
 import type { getDictionary } from "@/i18n/dictionaries"
+import Image from "next/image"
 import { useRef } from "react"
 import Link from "next/link"
 
@@ -127,11 +128,13 @@ export function LandingPage({
                             className="absolute top-24 left-[3%] w-[58%] -rotate-[8deg] opacity-50"
                             light="calendar"
                             title={landing.features.calendar.title}
+                            sizes="(max-width: 640px) 58vw, 668px"
                         />
                         <Deck
                             className="absolute top-20 right-[3%] w-[58%] rotate-[8deg] opacity-50"
                             light="roster"
                             title={landing.features.roster.title}
+                            sizes="(max-width: 640px) 58vw, 668px"
                         />
                         <motion.div
                             initial={
@@ -151,6 +154,7 @@ export function LandingPage({
                                 light="dashboard"
                                 title={landing.features.dashboard.title}
                                 priority
+                                sizes="(max-width: 640px) 90vw, (max-width: 1280px) 82vw, 984px"
                             />
                             <FloatingSignal text={landing.playersConfirmed} />
                         </motion.div>
@@ -284,6 +288,7 @@ function Deck({
     priority = false,
     crop = false,
     flush = false,
+    sizes,
 }: {
     light: string
     title: string
@@ -291,22 +296,30 @@ function Deck({
     priority?: boolean
     crop?: boolean
     flush?: boolean
+    sizes: string
 }) {
     return (
         <div
             className={`overflow-hidden ${flush ? "rounded-t-[1.75rem]" : "rounded-2xl border border-zinc-300 bg-zinc-200 p-1 shadow-[0_35px_100px_-24px_rgba(0,0,0,.25)] dark:border-white/20 dark:bg-zinc-800 dark:shadow-[0_35px_100px_-24px_rgba(0,0,0,.8)]"} ${className}`}
         >
-            <img
+            <Image
                 src={`/images/product/${light}-light.png`}
                 alt={title}
+                width={1904}
+                height={1016}
+                sizes={sizes}
+                quality={70}
+                preload={priority}
                 className={`block w-full ${flush ? "rounded-t-[1.75rem]" : "rounded-xl"} dark:hidden ${crop ? "h-full object-cover object-top" : ""}`}
-                fetchPriority={priority ? "high" : "auto"}
             />
-            <img
+            <Image
                 src={`/images/product/${light}-dark.png`}
                 alt=""
+                width={1904}
+                height={1016}
+                sizes={sizes}
+                quality={70}
                 className={`hidden w-full ${flush ? "rounded-t-[1.75rem]" : "rounded-xl"} dark:block ${crop ? "h-full object-cover object-top" : ""}`}
-                fetchPriority={priority ? "high" : "auto"}
             />
         </div>
     )
@@ -374,6 +387,7 @@ function Spotlight({
                     crop
                     flush
                     className="h-full"
+                    sizes="(max-width: 767px) calc(100vw - 3rem), (max-width: 1023px) calc(50vw - 3rem), 384px"
                 />
             </div>
         </motion.article>

@@ -324,6 +324,8 @@ export function AppSidebar({
                             dictionary.workspace.noWorkspaceSelected,
                         searchWorkspace: dictionary.workspace.searchWorkspace,
                         noMatchingResults: dictionary.shared.noMatchingResults,
+                        missingWorkspaceHelp:
+                            dictionary.workspace.missingWorkspaceHelp,
                     }}
                 />
                 {resolvedServerId ? (
