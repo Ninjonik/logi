@@ -2,6 +2,8 @@ import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
 import { calculateMatchRecapBaseline } from "../src/domain/match-results/match-recap-baseline"
+import { canReceiveMatchRecap } from "../src/domain/match-results/match-recap-notifications"
+import { getUserStableId } from "./identity"
 
 const INTERNAL_AUTH_SECRET =
     process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
@@ -57,8 +59,13 @@ export const queueForPublishedResult = mutation({
         )
         const optedOut = new Set(
             users
-                .filter((user) => user.matchRecapNotificationsEnabled === false)
-                .map((user) => user.id ?? user.discordId)
+                .filter(
+                    (user) =>
+                        !canReceiveMatchRecap(
+                            user.matchRecapNotificationsEnabled
+                        )
+                )
+                .map(getUserStableId)
                 .filter((id): id is string => Boolean(id))
         )
         let queued = 0
@@ -97,39 +104,59 @@ export const listPendingForEvent = query({
     args: { secret: v.string(), eventId: v.id("events") },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
-        const [event, recaps, stats] = await Promise.all([
+        const [event, recaps, stats, users] = await Promise.all([
             ctx.db.get(args.eventId),
             ctx.db
                 .query("matchRecaps")
                 .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
                 .collect(),
             ctx.db.query("playerStats").collect(),
+            ctx.db.query("users").collect(),
         ])
         if (!event) return []
-        return recaps
-            .filter((r) => r.status === "pending")
-            .flatMap((recap) => {
-                const current = stats
-                    .flatMap((s) =>
-                        s.userId === recap.userId
-                            ? [s.matches[String(args.eventId)]]
-                            : []
-                    )
-                    .find(Boolean)
-                return current
-                    ? [
-                          {
-                              userId: recap.userId,
-                              eventName: event.name,
-                              mapName: current.mapName,
-                              kills: current.kills,
-                              deaths: current.deaths,
-                              kd: current.killDeathRatio,
-                              previousTen: recap.previousTen,
-                          },
-                      ]
-                    : []
-            })
+        const optedOut = new Set(
+            users
+                .filter(
+                    (user) =>
+                        !canReceiveMatchRecap(
+                            user.matchRecapNotificationsEnabled
+                        )
+                )
+                .map(getUserStableId)
+                .filter((id): id is string => Boolean(id))
+        )
+        return (
+            recaps
+                // Re-check the live setting: a recap can have been queued before
+                // the player unsubscribed, or while the bot was waiting to send it.
+                .filter(
+                    (recap) =>
+                        recap.status === "pending" &&
+                        !optedOut.has(recap.userId)
+                )
+                .flatMap((recap) => {
+                    const current = stats
+                        .flatMap((s) =>
+                            s.userId === recap.userId
+                                ? [s.matches[String(args.eventId)]]
+                                : []
+                        )
+                        .find(Boolean)
+                    return current
+                        ? [
+                              {
+                                  userId: recap.userId,
+                                  eventName: event.name,
+                                  mapName: current.mapName,
+                                  kills: current.kills,
+                                  deaths: current.deaths,
+                                  kd: current.killDeathRatio,
+                                  previousTen: recap.previousTen,
+                              },
+                          ]
+                        : []
+                })
+        )
     },
 })
 
