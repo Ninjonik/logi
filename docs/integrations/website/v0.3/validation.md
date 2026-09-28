@@ -1,7 +1,10 @@
 # Milestone validation
 
-The PR's validation section records the exact tested head commit. This file
-travels with that commit; the baseline is
+The implementation checks below were run at
+`013c625ab62358e272314c0750e0134e06c3a9f6`. The later documentation clarification
+of the website-backend/Logi ownership boundary changes no runtime code; its
+validation is a documentation diff and local-link check, recorded in the PR.
+The original implementation baseline is
 `6fbfe4e7d9c41e9a5bdc004c65f1e2d935c86e0b` on upstream's default `main` branch.
 No contribution rule specified `dev` as the PR base. Both `main` and the prepared
 feature branch matched that baseline before editing. Issues were disabled.

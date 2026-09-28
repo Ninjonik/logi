@@ -13,10 +13,26 @@ Their proposed TypeScript shapes are in [contract.ts](./contract.ts).
 
 ## Ownership and identity
 
-Logi/Convex owns events, signups, rosters and operational coordination. The
-website owns CMS publication, translations, public-member consent and explicit
-administrative grants. Never mirror these as two writable masters. No second
-Logi instance or website access to internal Convex credentials is needed.
+The website retains its own backend. That backend consumes Logi as the
+authoritative service for shared HLL/Wardogs operational data, through Logi's
+supported API. Logi/Convex owns events, signups, rosters, results and the domain
+behavior behind those records. The website backend owns CMS publication,
+translations, public-member consent, website sessions and explicit website
+administrative grants, plus its API client, cache and derived read models.
+
+```mermaid
+flowchart LR
+    Browser --> Website["Valkyria website backend"]
+    Website -->|Scoped API requests| Logi["Logi API"]
+    Logi --> Convex
+    Logi -.->|Signed invalidations| Website
+```
+
+This is the target integration boundary; consumer synchronization remains
+follow-up work. Website copies of Logi-owned data are derived projections with
+source provenance. Logi remains their authoritative writer. Website-owned CMS,
+consent and authorization records remain in the website backend. No second Logi
+instance or direct website access to internal Convex credentials is needed.
 
 Use `(source, sourceInstanceId, guildId, gameId, kind, externalId)` as the
 composite external reference. IDs remain opaque strings. The source instance
@@ -32,6 +48,31 @@ Never join members by nickname, display name or approximate matching.
 The website has one CMS and identity/session on its canonical origin, Czech
 primary and English secondary. A shared session does not grant both games'
 administration. Hub aggregation must preserve each explicit game reference.
+
+## Extending Logi for website requirements
+
+New data requirements can be implemented upstream in Logi. A capability marked
+missing in this handoff is a candidate for Logi development; the current API
+surface does not limit the eventual integration. For each requirement:
+
+1. Establish its authoritative owner. Shared operational data, game-provider
+   adapters and reusable domain behavior belong in Logi. Website presentation,
+   editorial workflows and site-specific policies belong in the website backend.
+2. Add the necessary Logi domain behavior, Convex persistence and supported API
+   contract together. Cover tenant/game isolation, scoped permissions, pagination
+   and deletion/invalidation semantics as applicable.
+3. Deliver versioned DTOs, synthetic fixtures, tests and wiki/OpenAPI updates so
+   the website backend can consume the feature. Keep upstream behavior configurable
+   without Valkyria-specific IDs or a separate operational data implementation.
+4. Connect the website backend to that contract and keep its derived projections
+   current. Browser-facing responses pass through the website's publication,
+   consent and authorization policy.
+
+This first milestone gives the website backend read-only access. Future website
+commands can be exposed through Logi with explicit actor authorization,
+game-scoped permissions and auditing; the initial service key does not authorize
+those commands. The implementation scope of this contribution remains Logi and
+its handoff to the separately owned website workstream.
 
 ## Issue a restricted key
 

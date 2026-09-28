@@ -10,8 +10,10 @@ Private provider-review findings are deliberately excluded.
 **Problem:** Clan records are operational documents. Read-only authorization
 does not minimize their fields or establish public-member consent.
 
-**Scope:** Add configurable, allowlisted projection contracts for events and
-confirmed match provenance. Agree the website-owned member-consent interface;
+**Scope:** Add configurable, allowlisted Logi API projection contracts for events
+and confirmed match provenance, including missing upstream data behavior. The
+website's own backend consumes those contracts and applies its publication
+policy. Agree the website-owned member-consent interface;
 keep raw platform IDs, private notes, credentials and tactical fields private.
 Do not create a second operational event/signup/roster master.
 
@@ -28,9 +30,11 @@ Do not create a second operational event/signup/roster master.
 **Problem:** Read endpoints and outbound webhooks do not provide a complete
 consumer synchronization implementation or snapshot-isolated deletion stream.
 
-**Scope:** Implement the handoff's consumer port in the website-owned workstream,
-with any necessary upstream tombstone/change-feed feature in Logi. Do not modify
-the website branch from this contribution.
+**Scope:** Implement the consumer port in the website's own backend and add any
+necessary producer features, such as tombstones or a change feed, upstream in
+Logi. Keep website read models derived from Logi's authoritative records. The
+website workstream owns its consumer implementation; this contribution owns
+Logi changes and their versioned handoff.
 
 **Acceptance:**
 - Fixed filters/updatedSince and independent cursor/completed watermark survive
@@ -48,7 +52,8 @@ the website branch from this contribution.
 establish live game-server status or Wardogs control support.
 
 **Scope:** First implement read-only, configured provider adapters and safe
-nullable snapshots. Inventory actual Wardogs provider capabilities. Controls
+nullable snapshots in Logi, exposed through its API to the website backend.
+Inventory actual Wardogs provider capabilities. Controls
 remain a later change with actor authorization, game-scoped grants and auditing.
 
 **Acceptance:**
