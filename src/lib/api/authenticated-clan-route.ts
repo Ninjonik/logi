@@ -3,6 +3,8 @@ import {
     type ApiKeyReadAccess,
 } from "@/domain/api/key-access"
 import { parseApiGameScope, isApiGameScopeError } from "./game-scope"
+import { isApiKeyReadAccess } from "@/domain/api/key-access"
+import { parseIntegrationQuery } from "./integration-query"
 import { NextResponse } from "next/server"
 
 import {
@@ -93,6 +95,47 @@ export async function authenticateClanRequestWith(
             },
             { status: 401, headers }
         )
+    if (
+        /^\/api\/v1\/clan\/(changes|sync-records)(\/|$)/.test(
+            new URL(request.url).pathname
+        )
+    ) {
+        headers["Cache-Control"] = "no-store"
+        const input = parseIntegrationQuery(request)
+        if (!input)
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "invalid_query",
+                        message:
+                            "An explicit single game and registered resources are required.",
+                    },
+                },
+                { status: 400, headers }
+            )
+        if (
+            request.method !== "GET" ||
+            !isApiKeyReadAccess(authenticated.readAccess) ||
+            !input.resources.every((resource) =>
+                allowsApiKeyRead(
+                    authenticated.readAccess,
+                    resource,
+                    input.gameId
+                )
+            )
+        )
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "insufficient_scope",
+                        message:
+                            "Explicit underlying read grants are required.",
+                    },
+                },
+                { status: 403, headers }
+            )
+        return { key, guildId: authenticated.guildId, headers }
+    }
     if (authenticated.readAccess !== undefined) {
         headers["Cache-Control"] = "no-store"
         const url = new URL(request.url)

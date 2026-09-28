@@ -10,8 +10,9 @@ import {
     projectSnapshot,
 } from "../src/domain/game-data/policy"
 import { gameDataError, gameDataObservation } from "./gameDataValidators"
-import { mutation, query, internalMutation } from "./_generated/server"
+import { mutation, internalMutation } from "./integrationMutation"
 import { resetHistory } from "./gameDataHistory"
+import { query } from "./_generated/server"
 import { internal } from "./_generated/api"
 import { v } from "convex/values"
 

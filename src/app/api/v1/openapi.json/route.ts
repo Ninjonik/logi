@@ -1,4 +1,9 @@
 import {
+    integrationChangeSchema,
+    syncRecordSchema,
+    SYNC_RESOURCES,
+} from "@/domain/integrations/change"
+import {
     clanEventSummarySchema,
     clanMatchSummarySchema,
 } from "@/domain/api/event-summaries"
@@ -13,6 +18,8 @@ import { z } from "zod"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
 const summaryResponseSchemas = {
+    IntegrationChange: z.toJSONSchema(integrationChangeSchema),
+    IntegrationSyncRecord: z.toJSONSchema(syncRecordSchema),
     ClanServerSnapshotsDocument: z.toJSONSchema(serverSnapshotSchema),
     ClanIntegrationHealthDocument: z.toJSONSchema(integrationHealthSchema),
     ClanEventSummariesDocument: z.toJSONSchema(clanEventSummarySchema),
@@ -1042,6 +1049,141 @@ for (const resource of resources) {
         }
 }
 
+const syncParameters = [
+    {
+        ...gameParameter,
+        required: true,
+        description:
+            "Exactly one explicit permitted game. No legacy or game=all fallback.",
+        schema: {
+            type: "string",
+            enum: ["hell_let_loose", "hell_let_loose_vietnam", "wardogs"],
+        },
+    },
+]
+paths["/clan/changes"] = {
+    get: {
+        tags: ["Clan API — Synchronization"],
+        security: [{ clanApiKey: [] }],
+        summary: "Read scoped transactional invalidations",
+        description:
+            "Requires explicit underlying read grants. First obtain start=now before a baseline sweep, then replay the signed cursor. Keep resources and game fixed. Revisions are canonical decimal strings (compare as integers). Empty pages may have hasMore=true. The cursor remains usable for polling when hasMore=false. Retention is seven days; 410 reset_required requires a new bootstrap. Polling backstops webhook loss. Existing records have revision zero.",
+        parameters: [
+            ...syncParameters,
+            {
+                name: "resources",
+                in: "query",
+                required: true,
+                description: `Comma-separated subset of ${SYNC_RESOURCES.join(", ")}.`,
+                schema: { type: "string" },
+            },
+            {
+                name: "start",
+                in: "query",
+                schema: { type: "string", enum: ["now"] },
+            },
+            {
+                name: "cursor",
+                in: "query",
+                description:
+                    "Use exactly one of cursor or start=now. Bound to key, guild, game and resources.",
+                schema: { type: "string", maxLength: 4096 },
+            },
+            pageParameters[0],
+        ],
+        responses: {
+            ...responses,
+            "410": {
+                description: "reset_required: cursor predates retained history",
+                content: { "application/json": { schema: error } },
+            },
+            "200": {
+                description:
+                    "Filtered change page and next polling/continuation cursor",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data", "page"],
+                            additionalProperties: false,
+                            properties: {
+                                data: {
+                                    type: "array",
+                                    items: {
+                                        $ref: "#/components/schemas/IntegrationChange",
+                                    },
+                                },
+                                page: {
+                                    type: "object",
+                                    required: [
+                                        "nextCursor",
+                                        "hasMore",
+                                        "limit",
+                                    ],
+                                    additionalProperties: false,
+                                    properties: {
+                                        nextCursor: { type: "string" },
+                                        hasMore: { type: "boolean" },
+                                        limit: {
+                                            type: "integer",
+                                            minimum: 1,
+                                            maximum: 100,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
+paths["/clan/sync-records/{resource}/{id}"] = {
+    get: {
+        tags: ["Clan API — Synchronization"],
+        security: [{ clanApiKey: [] }],
+        summary: "Atomically read a safe projection and its revision",
+        description:
+            "Requires an explicit grant for the underlying resource and game. Returns an upsert projection or a retained scoped removal tombstone. Unknown, foreign and expired-tombstone IDs return 404. Dynamic freshness is computed at read time, so consumers must also enforce observedAt age; passage of time does not emit an invalidation.",
+        parameters: [
+            ...syncParameters,
+            {
+                name: "resource",
+                in: "path",
+                required: true,
+                schema: { type: "string", enum: [...SYNC_RESOURCES] },
+            },
+            {
+                name: "id",
+                in: "path",
+                required: true,
+                schema: { type: "string" },
+            },
+        ],
+        responses: {
+            ...responses,
+            "200": {
+                description: "Atomic projection or tombstone",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            additionalProperties: false,
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/IntegrationSyncRecord",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
+
 // Document every endpoint's effective permission boundary, including legacy-only reads.
 for (const [path, operations] of Object.entries(paths)) {
     if (!path.startsWith("/clan/")) continue
@@ -1050,15 +1192,22 @@ for (const [path, operations] of Object.entries(paths)) {
     )) {
         const resource = path.split("/")[2]
         operation["x-logi-read-access"] =
-            method === "get" &&
-            (API_KEY_READ_RESOURCES as readonly string[]).includes(resource)
+            method === "get" && ["changes", "sync-records"].includes(resource)
                 ? {
-                      resource,
-                      gameSelection: path.includes("{")
-                          ? "persisted-record"
-                          : "explicit-permitted-games",
+                      resources: "underlying-explicit-grants",
+                      gameSelection: "one-explicit-game",
                   }
-                : null
+                : method === "get" &&
+                    (API_KEY_READ_RESOURCES as readonly string[]).includes(
+                        resource
+                    )
+                  ? {
+                        resource,
+                        gameSelection: path.includes("{")
+                            ? "persisted-record"
+                            : "explicit-permitted-games",
+                    }
+                  : null
     }
 }
 
@@ -1068,7 +1217,7 @@ export async function GET() {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.3.0",
+                version: "1.4.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read

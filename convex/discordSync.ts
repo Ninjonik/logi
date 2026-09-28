@@ -9,8 +9,9 @@ import {
 } from "./discord_shared"
 import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
 import type { MutationCtx } from "./_generated/server"
-import { mutation, query } from "./_generated/server"
+import { mutation } from "./integrationMutation"
 import { getGuildDiscordId } from "./identity"
+import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 async function syncDashboardAdminOverrides(

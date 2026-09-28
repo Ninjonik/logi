@@ -1,3 +1,4 @@
+import { handleIntegrationRead } from "@/lib/api/integration-route"
 import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 
@@ -743,6 +744,8 @@ export async function GET(
     const auth = await authenticateClanRequest(request)
     if (isAuthError(auth)) return auth
     const path = (await params).path ?? []
+    if (path[0] === "changes" || path[0] === "sync-records")
+        return handleIntegrationRead(request, auth)
     if (path.length === 1 && path[0] === "meta") {
         const meta = await getClanApiMeta(auth.key)
         if (!meta)

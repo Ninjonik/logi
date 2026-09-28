@@ -3,9 +3,11 @@ import {
     projectMatchSummary,
 } from "../src/domain/api/event-summaries"
 import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
+import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
 import type { MutationCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
-import { mutation, query } from "./_generated/server"
+import { mutation } from "./integrationMutation"
+import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 import {
@@ -406,8 +408,9 @@ async function enqueueClanWebhook(
         .query("webhookSubscriptions")
         .withIndex("guildId", (q) => q.eq("guildId", input.guildId))
         .collect()
+    let enqueued = false
     for (const hook of hooks)
-        if (hook.enabled && hook.eventTypes.includes(input.eventType))
+        if (hook.enabled && hook.eventTypes.includes(input.eventType)) {
             await ctx.db.insert("webhookDeliveries", {
                 webhookId: hook._id,
                 guildId: input.guildId,
@@ -418,6 +421,12 @@ async function enqueueClanWebhook(
                 nextAttemptAt: Date.now(),
                 createdAt: input.createdAt,
             })
+            enqueued = true
+        }
+    if (enqueued) {
+        await wakeWebhookGuild(ctx, input.guildId)
+        await scheduleWebhookDrain(ctx)
+    }
 }
 
 async function applyEventScore(ctx: MutationCtx, eventId: string) {

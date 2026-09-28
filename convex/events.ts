@@ -31,8 +31,9 @@ import { getGuildById, getGuildDiscordId } from "./identity"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import type { MutationCtx } from "./_generated/server"
-import { mutation, query } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
+import { mutation } from "./integrationMutation"
+import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 const INTERNAL_AUTH_SECRET =

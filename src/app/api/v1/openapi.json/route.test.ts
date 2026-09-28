@@ -63,6 +63,13 @@ test("every clan operation documents runtime scope denial and its read-access re
                 `${method} ${path} must document insufficient_scope`
             )
             const resource = path.split("/")[2]
+            if (["changes", "sync-records"].includes(resource)) {
+                assert.deepEqual(operation["x-logi-read-access"], {
+                    resources: "underlying-explicit-grants",
+                    gameSelection: "one-explicit-game",
+                })
+                continue
+            }
             const allowed =
                 method === "get" &&
                 [

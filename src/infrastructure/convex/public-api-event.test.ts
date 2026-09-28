@@ -44,6 +44,9 @@ class FakeQuery {
 }
 
 class FakeDb {
+    normalizeId(table: string, id: string) {
+        return this.tables[table]?.has(id) ? id : null
+    }
     readonly tables: Record<string, Map<string, Document>> = {
         apiKeys: new Map([
             ["key-1", { _id: "key-1", keyHash: "key", guildId: "guild-a" }],
@@ -110,15 +113,17 @@ class FakeDb {
     }
 }
 
-const handler = (value: unknown) =>
-    (
-        value as {
-            _handler: (
-                ctx: { db: FakeDb },
-                args: Record<string, unknown>
-            ) => Promise<{ status: number; body: string } | null>
-        }
-    )._handler
+const handler =
+    (value: unknown) =>
+    (ctx: { db: FakeDb; scheduler?: unknown }, args: Record<string, unknown>) =>
+        (
+            value as {
+                _handler: (
+                    ctx: { db: FakeDb; scheduler?: unknown },
+                    args: Record<string, unknown>
+                ) => Promise<{ status: number; body: string } | null>
+            }
+        )._handler({ ...ctx, scheduler: { runAfter: async () => null } }, args)
 
 function event(overrides: Record<string, unknown> = {}) {
     return {

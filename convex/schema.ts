@@ -1230,6 +1230,34 @@ export default defineSchema({
     })
         .index("guildId_key", ["guildId", "key"])
         .index("expiresAt", ["expiresAt"]),
+    integrationHeads: defineTable({
+        guildId: v.string(),
+        revision: v.string(),
+        floor: v.string(),
+    }).index("guildId", ["guildId"]),
+    integrationChanges: defineTable({
+        guildId: v.string(),
+        gameId: v.string(),
+        resource: v.string(),
+        id: v.string(),
+        revision: v.string(),
+        revisionOrder: v.string(),
+        operation: v.union(v.literal("upsert"), v.literal("remove")),
+        expiresAt: v.number(),
+    })
+        .index("guildId_revisionOrder", ["guildId", "revisionOrder"])
+        .index("expiresAt", ["expiresAt"]),
+    integrationRecords: defineTable({
+        guildId: v.string(),
+        gameId: v.string(),
+        resource: v.string(),
+        id: v.string(),
+        revision: v.string(),
+        operation: v.union(v.literal("upsert"), v.literal("remove")),
+        expiresAt: v.optional(v.number()),
+    })
+        .index("identity", ["guildId", "gameId", "resource", "id"])
+        .index("expiresAt", ["expiresAt"]),
     webhookSubscriptions: defineTable({
         guildId: v.string(),
         url: v.string(),
@@ -1254,6 +1282,7 @@ export default defineSchema({
             v.literal("failed")
         ),
         processingStartedAt: v.optional(v.number()),
+        fence: v.optional(v.number()),
         nextAttemptAt: v.number(),
         responseStatus: v.optional(v.number()),
         lastError: v.optional(v.string()),
@@ -1263,7 +1292,25 @@ export default defineSchema({
         .index("guildId", ["guildId"])
         .index("webhookId", ["webhookId"])
         .index("status_nextAttemptAt", ["status", "nextAttemptAt"])
+        .index("guildId_status_nextAttemptAt", [
+            "guildId",
+            "status",
+            "nextAttemptAt",
+        ])
         .index("status_processingStartedAt", ["status", "processingStartedAt"]),
+    webhookDispatchGuilds: defineTable({
+        guildId: v.string(),
+        wakeAt: v.number(),
+    })
+        .index("guildId", ["guildId"])
+        .index("wakeAt", ["wakeAt"]),
+    webhookDispatchState: defineTable({
+        name: v.string(),
+        cursor: v.union(v.string(), v.null()),
+        migrated: v.boolean(),
+        fence: v.number(),
+        leaseUntil: v.number(),
+    }).index("name", ["name"]),
     articles: defineTable({
         guildId: v.string(),
         title: v.string(),

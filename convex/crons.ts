@@ -1,8 +1,15 @@
 import { cronJobs } from "convex/server"
 
+import { makeFunctionReference } from "convex/server"
 import { internal } from "./_generated/api"
 
 const crons = cronJobs()
+crons.interval(
+    "prune integration change retention",
+    { hours: 1 },
+    makeFunctionReference<"mutation">("integrationChanges:prune"),
+    {}
+)
 crons.interval(
     "collect game server data",
     { minutes: 1 },

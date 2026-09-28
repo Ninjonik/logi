@@ -1,15 +1,7 @@
-import {
-    internalMutation,
-    internalQuery,
-    mutation,
-    query,
-} from "./_generated/server"
+import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
+import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
-import {
-    shouldRetryWebhookDelivery,
-    webhookRetryDelayMs,
-} from "../src/domain/webhooks/delivery-policy"
 import { validateWebhookUrl } from "../src/domain/webhooks/url"
 
 const secret = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
@@ -171,7 +163,7 @@ export const enqueueTest = mutation({
         if (!hook || hook.guildId !== args.guildId)
             throw new Error("Webhook not found.")
         const createdAt = now()
-        return await ctx.db.insert("webhookDeliveries", {
+        const id = await ctx.db.insert("webhookDeliveries", {
             webhookId: hook._id,
             guildId: args.guildId,
             eventType: "webhook.test",
@@ -187,109 +179,10 @@ export const enqueueTest = mutation({
             nextAttemptAt: Date.now(),
             createdAt,
         })
+        await wakeWebhookGuild(ctx, args.guildId)
+        await scheduleWebhookDrain(ctx)
+        return id
     },
 })
 
-export const claimDueDelivery = internalMutation({
-    args: {},
-    handler: async (ctx) => {
-        // Actions can be terminated after claiming work. Return abandoned work
-        // to the queue so a delivery can never remain processing forever.
-        const abandonedBefore = Date.now() - 5 * 60_000
-        const abandoned = await ctx.db
-            .query("webhookDeliveries")
-            .withIndex("status_processingStartedAt", (q) =>
-                q
-                    .eq("status", "processing")
-                    .lte("processingStartedAt", abandonedBefore)
-            )
-            .first()
-        if (abandoned)
-            await ctx.db.patch(abandoned._id, {
-                status: "pending",
-                processingStartedAt: undefined,
-                nextAttemptAt: Date.now(),
-                lastError: "Recovered abandoned delivery.",
-            })
-        const delivery = await ctx.db
-            .query("webhookDeliveries")
-            .withIndex("status_nextAttemptAt", (q) =>
-                q.eq("status", "pending").lte("nextAttemptAt", Date.now())
-            )
-            .first()
-        if (!delivery) return null
-        const hook = await ctx.db.get(delivery.webhookId)
-        if (!hook || !hook.enabled) {
-            await ctx.db.patch(delivery._id, {
-                status: "failed",
-                lastError: "Webhook subscription is unavailable.",
-            })
-            return null
-        }
-        await ctx.db.patch(delivery._id, {
-            status: "processing",
-            processingStartedAt: Date.now(),
-        })
-        return {
-            id: String(delivery._id),
-            url: hook.url,
-            signingSecret: hook.secret,
-            eventType: delivery.eventType,
-            payload: delivery.payload,
-            attempt: delivery.attempt,
-        }
-    },
-})
-
-export const finishDelivery = internalMutation({
-    args: {
-        deliveryId: v.id("webhookDeliveries"),
-        delivered: v.boolean(),
-        responseStatus: v.optional(v.number()),
-        error: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        const delivery = await ctx.db.get(args.deliveryId)
-        if (!delivery) return
-        const timestamp = now()
-        if (args.delivered) {
-            await ctx.db.patch(delivery._id, {
-                status: "delivered",
-                processingStartedAt: undefined,
-                deliveredAt: timestamp,
-                responseStatus: args.responseStatus,
-            })
-            // A subscription can be deleted while its claimed delivery is in
-            // flight. Keep the delivery audit record, but do not fail the
-            // completion mutation trying to update a missing subscription.
-            if (await ctx.db.get(delivery.webhookId))
-                await ctx.db.patch(delivery.webhookId, {
-                    lastDeliveredAt: timestamp,
-                })
-            return
-        }
-        const nextAttempt = delivery.attempt + 1
-        if (shouldRetryWebhookDelivery(args.responseStatus, nextAttempt)) {
-            await ctx.db.patch(delivery._id, {
-                status: "pending",
-                processingStartedAt: undefined,
-                attempt: nextAttempt,
-                responseStatus: args.responseStatus,
-                lastError: args.error?.slice(0, 500),
-                nextAttemptAt: Date.now() + webhookRetryDelayMs(nextAttempt),
-            })
-        } else {
-            await ctx.db.patch(delivery._id, {
-                status: "failed",
-                processingStartedAt: undefined,
-                attempt: nextAttempt,
-                responseStatus: args.responseStatus,
-                lastError: args.error?.slice(0, 500),
-            })
-            if (await ctx.db.get(delivery.webhookId))
-                await ctx.db.patch(delivery.webhookId, {
-                    lastFailureAt: timestamp,
-                })
-        }
-    },
-})
+export { claimDueDelivery, finishDelivery } from "./webhookQueue"

@@ -8,8 +8,9 @@ import {
     type DataSource,
 } from "../src/domain/game-data/contracts"
 import type { HistoryProgress } from "../src/application/game-data/collect-sessions"
-import { internalMutation, type MutationCtx } from "./_generated/server"
 import { parseSources } from "../src/domain/game-data/policy"
+import { internalMutation } from "./integrationMutation"
+import { type MutationCtx } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
 import { internal } from "./_generated/api"
 import { v } from "convex/values"
