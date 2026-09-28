@@ -92,6 +92,10 @@ Set the timezone and one non-destructive channel, save, then confirm the setting
 
 Configure only the sections your community will use. Empty optional fields disable the corresponding behavior rather than making the whole bot fail.
 
+The landing page also shows these Discord workflows: membership applications,
+event information and sign-ups, attendance acknowledgements, and support tickets.
+They are examples of the configured bot capabilities, not separate services.
+
 | Capability                                      | Configure in the workspace                                                                        | What to verify                                                                                                    |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Event announcements and sign-up buttons         | Announcements channel, plus Event info channel when using separate detail posts                   | Create a test event. Confirm an announcement is posted and a test member can respond.                             |
@@ -119,6 +123,17 @@ Configure only the sections your community will use. Empty optional fields disab
 4. Create a draft roster, publish only to the test audience, and check any notification option before enabling it for real members.
 5. If you use role automation, test it with a disposable role and account before connecting real membership roles.
 6. Inspect the bot dashboard/logs for errors, then remove the test event and any test channels or roles when finished.
+
+## Platform status channel (superadmins)
+
+Superadmins can choose one bot-enabled workspace as Logi's platform workspace
+under **Platform settings**. Enter a writable text-channel ID there. The bot
+keeps one service-status embed in that channel and creates a **Status updates**
+thread beneath it. It tracks the same dashboard, Convex, data-store, Discord,
+and LogiComms dependencies shown on Logi's public status page, posting only
+when a monitored service degrades or recovers. The selected workspace remains
+a normal Logi workspace; this adds platform monitoring and does not replace its
+own clan configuration.
 
 ## Troubleshooting
 

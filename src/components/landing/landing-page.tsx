@@ -16,6 +16,7 @@ import {
     Sparkles,
     Swords,
     UsersRound,
+    ZoomIn,
 } from "lucide-react"
 import {
     motion,
@@ -26,8 +27,9 @@ import {
     useTransform,
 } from "framer-motion"
 import type { getDictionary } from "@/i18n/dictionaries"
+import { PhotoSlider } from "react-photo-view"
+import { useRef, useState } from "react"
 import Image from "next/image"
-import { useRef } from "react"
 import Link from "next/link"
 
 type Dictionary = ReturnType<typeof getDictionary>
@@ -53,6 +55,39 @@ const visuals = [
     [BookOpen, "wiki", "wiki"],
 ] as const
 
+const botVisuals = [
+    [
+        UsersRound,
+        "clanRegistration",
+        "/images/clanregistration.png",
+        "/images/clanregistration_d.png",
+    ],
+    [
+        CalendarDays,
+        "eventInfo",
+        "/images/eventinfo.png",
+        "/images/eventinfo_d.png",
+    ],
+    [
+        Check,
+        "matchSignup",
+        "/images/matchsignup.png",
+        "/images/matchsignup_d.png",
+    ],
+    [
+        Check,
+        "attendance",
+        "/images/acknowledgment.png",
+        "/images/acknoledgment_d.png",
+    ],
+    [
+        ClipboardList,
+        "tickets",
+        "/images/ticketsubmit.png",
+        "/images/ticketsubmit_d.png",
+    ],
+] as const
+
 export function LandingPage({
     dictionary,
     locale,
@@ -66,6 +101,10 @@ export function LandingPage({
             ? (dashboardHref ?? `/${locale}/dashboard`)
             : `/${locale}/login`,
         hero = useRef<HTMLElement>(null)
+    const [viewerImage, setViewerImage] = useState<{
+        src: string
+        title: string
+    } | null>(null)
     const { scrollYProgress } = useScroll({
             target: hero,
             offset: ["start start", "end start"],
@@ -128,12 +167,14 @@ export function LandingPage({
                             className="absolute top-24 left-[3%] w-[58%] -rotate-[8deg] opacity-50"
                             light="calendar"
                             title={landing.features.calendar.title}
+                            onView={setViewerImage}
                             sizes="(max-width: 640px) 58vw, 668px"
                         />
                         <Deck
                             className="absolute top-20 right-[3%] w-[58%] rotate-[8deg] opacity-50"
                             light="roster"
                             title={landing.features.roster.title}
+                            onView={setViewerImage}
                             sizes="(max-width: 640px) 58vw, 668px"
                         />
                         <motion.div
@@ -153,6 +194,7 @@ export function LandingPage({
                             <Deck
                                 light="dashboard"
                                 title={landing.features.dashboard.title}
+                                onView={setViewerImage}
                                 priority
                                 sizes="(max-width: 640px) 90vw, (max-width: 1280px) 82vw, 984px"
                             />
@@ -183,6 +225,29 @@ export function LandingPage({
                             icon={Icon}
                             image={image}
                             index={i}
+                            onView={setViewerImage}
+                        />
+                    ))}
+                </div>
+            </section>
+            <section className="relative border-y border-zinc-200 bg-zinc-100 px-6 py-28 sm:px-8 lg:px-12 dark:border-white/10 dark:bg-[#0d0d0e]">
+                <Beam />
+                <Heading
+                    eyebrow={landing.botEyebrow}
+                    title={landing.botTitle}
+                    body={landing.botDescription}
+                />
+                <div className="relative mx-auto mt-16 grid max-w-7xl gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {botVisuals.map(([Icon, key, lightImage, darkImage], i) => (
+                        <Spotlight
+                            key={key}
+                            title={landing.botFeatures[key].title}
+                            text={landing.botFeatures[key].description}
+                            icon={Icon}
+                            image={lightImage}
+                            darkImage={darkImage}
+                            index={i}
+                            onView={setViewerImage}
                         />
                     ))}
                 </div>
@@ -255,6 +320,23 @@ export function LandingPage({
                     </MovingButton>
                 </div>
             </section>
+            <PhotoSlider
+                images={
+                    viewerImage
+                        ? [{ key: viewerImage.src, src: viewerImage.src }]
+                        : []
+                }
+                visible={viewerImage !== null}
+                onClose={() => setViewerImage(null)}
+                maskOpacity={0.92}
+                overlayRender={() =>
+                    viewerImage ? (
+                        <p className="absolute right-6 bottom-6 left-6 text-center text-sm font-medium text-white">
+                            {viewerImage.title}
+                        </p>
+                    ) : null
+                }
+            />
         </main>
     )
 }
@@ -283,44 +365,69 @@ function Heading({
 }
 function Deck({
     light,
+    lightImage,
+    darkImage,
     title,
     className = "",
     priority = false,
     crop = false,
     flush = false,
     sizes,
+    onView,
 }: {
     light: string
+    lightImage?: string
+    darkImage?: string
     title: string
     className?: string
     priority?: boolean
     crop?: boolean
     flush?: boolean
     sizes: string
+    onView?: (image: { src: string; title: string }) => void
 }) {
+    const lightSource = lightImage ?? `/images/product/${light}-light.png`
+    const darkSource = darkImage ?? `/images/product/${light}-dark.png`
+
     return (
         <div
             className={`overflow-hidden ${flush ? "rounded-t-[1.75rem]" : "rounded-2xl border border-zinc-300 bg-zinc-200 p-1 shadow-[0_35px_100px_-24px_rgba(0,0,0,.25)] dark:border-white/20 dark:bg-zinc-800 dark:shadow-[0_35px_100px_-24px_rgba(0,0,0,.8)]"} ${className}`}
         >
-            <Image
-                src={`/images/product/${light}-light.png`}
-                alt={title}
-                width={1904}
-                height={1016}
-                sizes={sizes}
-                quality={70}
-                preload={priority}
-                className={`block w-full ${flush ? "rounded-t-[1.75rem]" : "rounded-xl"} dark:hidden ${crop ? "h-full object-cover object-top" : ""}`}
-            />
-            <Image
-                src={`/images/product/${light}-dark.png`}
-                alt=""
-                width={1904}
-                height={1016}
-                sizes={sizes}
-                quality={70}
-                className={`hidden w-full ${flush ? "rounded-t-[1.75rem]" : "rounded-xl"} dark:block ${crop ? "h-full object-cover object-top" : ""}`}
-            />
+            <button
+                type="button"
+                className="group/image relative block w-full cursor-zoom-in"
+                onClick={() => onView?.({ src: lightSource, title })}
+                aria-label={`View ${title} screenshot`}
+            >
+                <Image
+                    src={lightSource}
+                    alt={title}
+                    width={1904}
+                    height={1016}
+                    sizes={sizes}
+                    quality={90}
+                    preload={priority}
+                    className={`block w-full ${flush ? "rounded-t-[1.75rem]" : "rounded-xl"} dark:hidden ${crop ? "h-full object-cover object-top" : ""}`}
+                />
+                <ZoomIn className="pointer-events-none absolute right-3 bottom-3 size-5 rounded-full bg-black/55 p-1 text-white opacity-0 shadow-sm transition-opacity group-hover/image:opacity-100 group-focus-visible/image:opacity-100" />
+            </button>
+            <button
+                type="button"
+                className="group/image relative hidden w-full cursor-zoom-in dark:block"
+                onClick={() => onView?.({ src: darkSource, title })}
+                aria-label={`View ${title} screenshot`}
+            >
+                <Image
+                    src={darkSource}
+                    alt=""
+                    width={1904}
+                    height={1016}
+                    sizes={sizes}
+                    quality={90}
+                    className={`w-full ${flush ? "rounded-t-[1.75rem]" : "rounded-xl"} ${crop ? "h-full object-cover object-top" : ""}`}
+                />
+                <ZoomIn className="pointer-events-none absolute right-3 bottom-3 size-5 rounded-full bg-black/55 p-1 text-white opacity-0 shadow-sm transition-opacity group-hover/image:opacity-100 group-focus-visible/image:opacity-100" />
+            </button>
         </div>
     )
 }
@@ -329,13 +436,17 @@ function Spotlight({
     text,
     icon: Icon,
     image,
+    darkImage,
     index,
+    onView,
 }: {
     title: string
     text: string
     icon: typeof CalendarDays
     image: string
+    darkImage?: string
     index: number
+    onView: (image: { src: string; title: string }) => void
 }) {
     const ref = useRef<HTMLDivElement>(null),
         x = useMotionValue(0),
@@ -383,10 +494,13 @@ function Spotlight({
             <div className="absolute inset-x-0 bottom-0 h-[205px] transition-transform duration-500 group-hover:-translate-y-1">
                 <Deck
                     light={image}
+                    lightImage={image.startsWith("/") ? image : undefined}
+                    darkImage={darkImage}
                     title={title}
                     crop
                     flush
                     className="h-full"
+                    onView={onView}
                     sizes="(max-width: 767px) calc(100vw - 3rem), (max-width: 1023px) calc(50vw - 3rem), 384px"
                 />
             </div>

@@ -579,6 +579,16 @@ export default defineSchema({
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),
+    platformSettings: defineTable({
+        workspaceGuildId: v.string(),
+        statusChannelId: v.optional(v.string()),
+        statusMessageId: v.optional(v.string()),
+        statusUpdatesThreadId: v.optional(v.string()),
+        serviceStates: v.optional(
+            v.array(v.object({ name: v.string(), online: v.boolean() }))
+        ),
+        updatedAt: v.string(),
+    }).index("workspaceGuildId", ["workspaceGuildId"]),
     calendarItems: defineTable(calendarItem).index("guildId", ["guildId"]),
     groups: defineTable({
         guildId: v.string(),

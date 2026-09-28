@@ -7,6 +7,7 @@ import {
     syncGuildMemberAccessMember,
 } from "./sync/member-access"
 import { MeetingAttendanceRequestService } from "./meeting-attendance"
+import { startPlatformStatusMonitor } from "./platform-status"
 import { DiscordSyncService } from "./runtime/sync-service"
 import { createInteractionHandler } from "./interactions"
 import { logError, logInfo, logWarn } from "./log"
@@ -156,6 +157,7 @@ client.once(Events.ClientReady, async (readyClient) => {
 
         await meetingAttendanceRequestService.start()
         await syncService.start()
+        startPlatformStatusMonitor(client)
 
         startFallbackWorker()
     } catch (error) {
