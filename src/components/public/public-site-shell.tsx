@@ -1,4 +1,5 @@
-import { BookOpen, Github, MessageCircle } from "lucide-react"
+import { BookOpen, Github } from "lucide-react"
+import { SiDiscord } from "react-icons/si"
 import Link from "next/link"
 
 import { LogiStatusLink } from "@/components/app/logi-status-link"
@@ -61,6 +62,15 @@ export async function PublicSiteShell({
                         >
                             {dictionary.publicNavigation.wiki}
                         </Link>
+                        <a
+                            href={discordSupportUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hover:text-foreground inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
+                        >
+                            <SiDiscord className="size-3.5" />
+                            {dictionary.publicNavigation.discordSupport}
+                        </a>
                     </nav>
                     <div className="flex items-center gap-2">
                         <LogiStatusLink status={status} showLabel={false} />
@@ -76,21 +86,6 @@ export async function PublicSiteShell({
                             >
                                 {dictionary.home.openApp}
                             </Link>
-                        </Button>
-                        <Button
-                            asChild
-                            variant="outline"
-                            size="sm"
-                            className="hidden md:inline-flex"
-                        >
-                            <a
-                                href={discordSupportUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                <MessageCircle className="size-3.5" />
-                                {dictionary.publicNavigation.discordSupport}
-                            </a>
                         </Button>
                     </div>
                 </div>
@@ -109,7 +104,7 @@ export async function PublicSiteShell({
                             rel="noreferrer"
                             className="hover:text-foreground inline-flex items-center gap-1.5"
                         >
-                            <MessageCircle className="size-3.5" />
+                            <SiDiscord className="size-3.5" />
                             {dictionary.publicNavigation.discordSupport}
                         </a>
                         <Link

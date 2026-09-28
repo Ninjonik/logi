@@ -2,7 +2,7 @@ import { LogiStatusLink } from "@/components/app/logi-status-link"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { LogiStatus } from "@/lib/logi-status"
 import { getDiscordSupportUrl } from "@/lib/env"
-import { MessageCircle } from "lucide-react"
+import { SiDiscord } from "react-icons/si"
 import Link from "next/link"
 
 export function SiteFooter({
@@ -26,7 +26,7 @@ export function SiteFooter({
                         rel="noreferrer"
                         className="hover:text-foreground inline-flex items-center gap-1"
                     >
-                        <MessageCircle className="size-3" />
+                        <SiDiscord className="size-3" />
                         {dictionary.publicNavigation.discordSupport}
                     </a>
                     <Link
