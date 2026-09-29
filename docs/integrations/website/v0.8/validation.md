@@ -23,9 +23,9 @@ npm run generate:openapi
 npm run build
 ```
 
-- I3 focused: **27/27 pass**. Domain/use-case, actual persistence handlers, transport,
+- I3 focused: **35/35 pass**. Domain/use-case, actual persistence handlers, transport,
   bot adapter and operator HTTP tests run without live provider access.
-- Complete suite: **465 tests, 464 pass, one unchanged baseline failure** at
+- Complete suite: **473 tests, 472 pass, one unchanged baseline failure** at
   `discord-bot/src/message-builders.test.ts:434`: expected `Alpha\nDelta\nGolf`,
   actual `Alpha\nEcho\nCharlie`. Neither that implementation nor its test changed.
   An initial run without the synthetic environment failed setup; it was not counted
@@ -61,6 +61,13 @@ the HTTP read; and the versioned closed fixture schema.
 
 Regression failures were observed before fixes for initial missing implementations,
 convergence proof, audit bounds, second-writer ownership and unlinked identities.
+The final review added eight regressions, including independently reproduced OAuth
+and role-cache revocation, explicit grants/denials, linked imported players, numeric
+unlinked players, relink/unlink/user replacement, alias locks/versions and self-application
+departure checks. The bot regression additionally checks the explicit provider subject.
+Their RED outputs returned stale `ready`, rejected a valid linked player, accepted an
+unlinked numeric player, or failed to share/supersede identity. All are now GREEN;
+the unchanged complete-suite baseline is disclosed above. [Review disposition](./review.md).
 No tests contact Discord. Convex handlers run against the isolated transactional
 database fixture, which simulates rollback/index reads, not a deployed Convex service.
 

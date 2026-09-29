@@ -19,6 +19,7 @@ export const memberRoleOperationsSchema = z
                 id: z.string().min(1).max(256),
                 gameId: z.enum(GAME_IDS),
                 userId: z.string().min(1).max(256),
+                discordUserId: snowflake.nullable(),
                 actorId: snowflake,
                 provenance: z.enum([
                     "dashboard",

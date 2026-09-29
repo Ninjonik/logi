@@ -19,7 +19,7 @@ type Work = {
     allowedRoleIds: string[]
     desiredRoleIds: string[]
     guildId?: string
-    userId?: string
+    discordUserId?: string
     actorId?: string
 }
 type Ports = {
@@ -57,12 +57,12 @@ export async function processManagedRoleOperation(claim: Claim, ports: Ports) {
             if (
                 work.verdict === "ready" &&
                 work.guildId === claim.guildId &&
-                work.userId &&
+                work.discordUserId &&
                 work.actorId
             )
                 discord ??= ports.discord({
                     guildId: work.guildId,
-                    userId: work.userId,
+                    userId: work.discordUserId,
                     actorId: work.actorId,
                     operationId: claim.operationId,
                 })

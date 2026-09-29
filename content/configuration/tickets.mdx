@@ -87,6 +87,13 @@ After six consecutive failures, correct the cause and save a new authorized memb
 request. Importing members does not create role grants. Details and activation
 requirements are in the [managed-role handoff](https://github.com/Ninjonik/logi/blob/feat/valkyria-integration/docs/integrations/website/v0.8/README.md).
 
+The bot verifies current Discord permissions before changing roles. A newly granted
+dashboard admin role must reach Discord first; old login/access caches cannot authorize
+the operation. A player's internal Logi ID is not a Discord link, even when numeric.
+Unlinked players remain editable, but their role request is denied without a Discord
+call. Changing the linked account invalidates an older queued request; save a new
+authorized request after checking the link.
+
 Membership settings also contain the roster-score values used when a concluded
 event resolves player scores. They are per-workspace and determine the numeric
 result for declined, confirmed/absent roster or reserve, excused absence, and

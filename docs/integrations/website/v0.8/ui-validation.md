@@ -14,8 +14,11 @@ Session authorization is verified by handler tests, not this isolated harness.
 
 ![Czech managed role queue and expanded attempt audit](./screenshots/roles-cs.png)
 
-Czech: verified success after a transient failure, a pending Wardogs request and
-a denied HLL request. Expanded history contains sanitized reasons and synthetic actors.
+Czech: verified success after a transient failure, a pending Wardogs request,
+a denied HLL request and an unlinked numeric Wardogs player. The linked imported
+player displays its explicit Discord ID; the numeric unlinked player is labeled
+as a Logi ID. Expanded history contains sanitized reasons and synthetic actors.
+These screenshots were refreshed after the final identity/authority review fixes.
 
 ![Czech simulated unavailable response](./screenshots/roles-error-cs.png)
 
@@ -27,7 +30,7 @@ Switching to Workspace B removes every identifier from Workspace A.
 
 ![English managed role operations](./screenshots/roles-en.png)
 
-English status labels and recovery guidance.
+English status labels, unlinked-identity distinction and recovery guidance.
 
 ![German mobile managed role operations](./screenshots/roles-mobile-de.png)
 

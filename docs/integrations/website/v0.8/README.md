@@ -3,7 +3,9 @@
 Date: 2026-09-29. Implements I3 on top of [0.7 membership observations](../v0.7/README.md),
 [0.6 synchronization](../v0.6/README.md) and [0.5 collectors](../v0.5/README.md).
 OpenAPI remains **1.5.0**: this milestone adds no bearer-key role command.
-PR #158 pins the exact tested revision. Evidence is local and synthetic.
+[PR #158](https://github.com/Ninjonik/logi/pull/158) contains the entire delivery
+and pins the exact tested revision. Start with the [whole-PR review guide](./review-guide.md).
+Evidence is local and synthetic.
 
 ## Staff workflow
 
@@ -51,10 +53,23 @@ There is no force/retry button that bypasses current permissions.
   remain untouched. Removing a role from policy does not authorize its removal later:
   resolve old role assignments separately before transferring ownership.
 - Every attempt re-reads assignment/policy and current actor permission. Dashboard
-  operations require current administrator authority. Recruitment operations also
+  operations require a fresh Discord Administrator permission or the configured
+  dashboard role, with an explicit false override vetoing that role. Cached OAuth
+  `adminIds` and true `adminAccessOverrides` cannot grant execution authority.
+  Manual dashboard access controls the desired Discord role: it becomes sufficient
+  for these commands only after Discord confirms the role. Administrator bootstrap
+  authority still requires fresh Discord evidence. Recruitment operations also
   accept the category's current support role. Self-application is restricted to the
   applying member and configured pending/automatic recruit flow; rollback requires
   their assignment to be absent.
+- Assignment `userId` is an internal/imported identifier, not necessarily Discord ID.
+  Enqueue resolves the user record's explicit `discordId` and stores both that subject
+  and the user record ID. A numeric imported identifier alone is never a link.
+  Every preparation/completion re-resolves the mapping; relinking, unlinking or
+  replacing the user supersedes old work. Versions and locks use the resolved Discord
+  subject across assignment aliases; self-application and departures use it too.
+  Audit DTOs keep `userId` and nullable `discordUserId` distinct. The UI labels an
+  unlinked numeric player as a Logi ID, rather than implying Discord verification.
 - Departure revisions survive rejoin. An operation predating a known departure
   cannot resume granting roles to a rejoined member. An unavailable observation is
   not a new grant; execution also requires a fresh exact Discord member read.
@@ -110,6 +125,11 @@ Additive tables: `memberRoleOperations`, `memberRoleLocks`, `memberRoleAudits`;
 optional `memberObservations.departureRevision`. No destructive data migration or
 bulk role backfill. Existing internal assignment callers may omit actor provenance
 and retain data-only semantics. Old operations are not fabricated from history.
+The new I3 tables have not been deployed in this delivery. If a pre-release I3
+runtime was independently installed, stop its workers before upgrading: older
+unbound operations are refused, and its former `userId` lock shape needs an explicit
+test-environment migration to the new `discordUserId` index. Do not infer links or
+copy numeric identifiers as proof. The pre-I3 production schema has no such records.
 
 For a separately authorized activation, deploy compatible Convex schema/functions,
 web and bot together, run target Convex codegen and restart the bot. Retire old bot
@@ -127,4 +147,5 @@ I2 and W1/W3/W4 remain consumer-owned; I5 verified Steam linking and D4 reviewed
 remain next Logi milestones. Optional OIDC acceptance stays in the private workstream.
 
 Evidence: [validation](./validation.md), [synthetic audit fixtures](./fixtures.json),
-[actual UI screenshots](./ui-validation.md), [delivery decisions](./delivery-decisions.md).
+[actual UI screenshots](./ui-validation.md), [review findings and disposition](./review.md),
+[delivery decisions](./delivery-decisions.md).

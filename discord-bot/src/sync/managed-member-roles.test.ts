@@ -13,30 +13,33 @@ test("bot runner uses current durable claim, fresh provider evidence and fenced 
                 return {
                     verdict: "ready",
                     guildId: "guild",
-                    userId: "target",
+                    discordUserId: "222222222222222222",
                     actorId: "staff",
                     allowedRoleIds: [],
                     desiredRoleIds: [],
                 }
             },
-            discord: () => ({
-                observe: async () => {
-                    observed = true
-                    return {
-                        roleIds: [],
-                        manageableRoleIds: [],
-                        targetEligible: true,
-                        evidence: {
-                            actorPresent: true,
-                            actorAdministrator: false,
-                            actorRoleIds: [],
-                            targetRoleIds: [],
-                            observedAt: 1,
-                        },
-                    }
-                },
-                change: async () => assert.fail("No role write required"),
-            }),
+            discord: (work) => {
+                assert.equal(work.userId, "222222222222222222")
+                return {
+                    observe: async () => {
+                        observed = true
+                        return {
+                            roleIds: [],
+                            manageableRoleIds: [],
+                            targetEligible: true,
+                            evidence: {
+                                actorPresent: true,
+                                actorAdministrator: false,
+                                actorRoleIds: [],
+                                targetRoleIds: [],
+                                observedAt: 1,
+                            },
+                        }
+                    },
+                    change: async () => assert.fail("No role write required"),
+                }
+            },
             finish: async (claim, status, _reason, _retry, evidence) => {
                 assert.equal(claim.fence, 3)
                 assert.equal(status, "applied")

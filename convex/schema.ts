@@ -1276,7 +1276,10 @@ export default defineSchema({
     memberRoleOperations: defineTable({
         guildId: v.string(),
         gameId,
+        // Assignment identifier and explicit, enqueue-time Discord link are distinct.
         userId: v.string(),
+        userRecordId: v.optional(v.id("users")),
+        discordUserId: v.optional(v.string()),
         version: v.number(),
         actorId: v.string(),
         actorKind: v.union(
@@ -1316,13 +1319,19 @@ export default defineSchema({
             "userId",
             "version",
         ])
+        .index("guildId_gameId_discordUserId_version", [
+            "guildId",
+            "gameId",
+            "discordUserId",
+            "version",
+        ])
         .index("guildId_createdAt", ["guildId", "createdAt"]),
     memberRoleLocks: defineTable({
         guildId: v.string(),
-        userId: v.string(),
+        discordUserId: v.string(),
         leaseUntil: v.number(),
         fence: v.number(),
-    }).index("guildId_userId", ["guildId", "userId"]),
+    }).index("guildId_discordUserId", ["guildId", "discordUserId"]),
     memberRoleAudits: defineTable({
         operationId: v.id("memberRoleOperations"),
         guildId: v.string(),

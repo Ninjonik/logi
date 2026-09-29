@@ -2,7 +2,8 @@
     {
         "id": "synthetic-applied",
         "gameId": "hell_let_loose",
-        "userId": "222222222222222222",
+        "userId": "imported-player",
+        "discordUserId": "222222222222222222",
         "actorId": "333333333333333333",
         "provenance": "recruitment",
         "version": 2,
@@ -29,6 +30,7 @@
         "id": "synthetic-pending",
         "gameId": "wardogs",
         "userId": "444444444444444444",
+        "discordUserId": "444444444444444444",
         "actorId": "333333333333333333",
         "provenance": "dashboard",
         "version": 1,
@@ -42,6 +44,7 @@
         "id": "synthetic-denied",
         "gameId": "hell_let_loose",
         "userId": "555555555555555555",
+        "discordUserId": "555555555555555555",
         "actorId": "333333333333333333",
         "provenance": "dashboard",
         "version": 4,
@@ -57,5 +60,19 @@
                 "at": "2026-09-29T08:33:00.000Z"
             }
         ]
+    },
+    {
+        "id": "synthetic-unlinked",
+        "gameId": "wardogs",
+        "userId": "666666666666666666",
+        "discordUserId": null,
+        "actorId": "333333333333333333",
+        "provenance": "dashboard",
+        "version": 1,
+        "status": "denied",
+        "attempts": 0,
+        "reason": "target_not_linked",
+        "updatedAt": "2026-09-29T08:34:00.000Z",
+        "audit": []
     }
 ]

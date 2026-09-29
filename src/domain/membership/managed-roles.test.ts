@@ -116,7 +116,6 @@ test("actor authority is current and recruitment permission cannot authorize gen
         actorPresent: true,
         actorAdministrator: false,
         actorRoleIds: ["staff"],
-        adminIds: [],
         adminOverride: undefined,
         dashboardRoleId: "dashboard",
         supportRoleIds: ["staff"],

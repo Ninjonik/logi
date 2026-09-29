@@ -97,12 +97,13 @@ function Operations({ serverId, dictionary }: Props) {
                         <dl className="grid gap-2 sm:grid-cols-2">
                             <div>
                                 <dt className="text-muted-foreground">
-                                    {/^\d{17,20}$/.test(operation.userId)
+                                    {operation.discordUserId
                                         ? t.target
                                         : t.unlinkedTarget}
                                 </dt>
                                 <dd className="font-mono break-all">
-                                    {operation.userId}
+                                    {operation.discordUserId ??
+                                        operation.userId}
                                 </dd>
                             </div>
                             <div>

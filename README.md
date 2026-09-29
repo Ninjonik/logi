@@ -20,6 +20,8 @@ Our goal is to make running a community less manual: give players a clear place 
 
 The [wiki](./content/index.mdx) has practical guides for players, managers, events, rosters, settings, and [Discord bot setup](./content/discord-bot-setup.mdx).
 
+The cumulative website/Discord integration has a [review guide](./docs/integrations/website/v0.8/review-guide.md) with architecture, milestone coverage, remaining tasks and reproducible proof.
+
 ## Architecture
 
 Logi consists of three cooperating runtimes:

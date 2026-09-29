@@ -18,8 +18,8 @@ import {
     type GameId,
 } from "../src/domain/games/game"
 import { assertMembershipSecret, memberObservation } from "./membership_shared"
+import { getGuildByDiscordId, getUserByIdentifier } from "./identity"
 import type { Doc } from "./_generated/dataModel"
-import { getGuildByDiscordId } from "./identity"
 import { v } from "convex/values"
 
 export const roleActorValidator = v.object({
@@ -102,11 +102,28 @@ async function latest(
         .order("desc")
         .first()
 }
-async function lockFor(ctx: Context, guildId: string, userId: string) {
+async function latestForSubject(
+    ctx: Context,
+    guildId: string,
+    gameId: GameId,
+    discordUserId: string
+) {
+    return ctx.db
+        .query("memberRoleOperations")
+        .withIndex("guildId_gameId_discordUserId_version", (q) =>
+            q
+                .eq("guildId", guildId)
+                .eq("gameId", gameId)
+                .eq("discordUserId", discordUserId)
+        )
+        .order("desc")
+        .first()
+}
+async function lockFor(ctx: Context, guildId: string, discordUserId: string) {
     return ctx.db
         .query("memberRoleLocks")
-        .withIndex("guildId_userId", (q) =>
-            q.eq("guildId", guildId).eq("userId", userId)
+        .withIndex("guildId_discordUserId", (q) =>
+            q.eq("guildId", guildId).eq("discordUserId", discordUserId)
         )
         .unique()
 }
@@ -125,14 +142,19 @@ export async function enqueueManagedRoles(
     const { guildId, gameId, userId, actor } = input
     if (!/^\d{17,20}$/.test(actor.userId))
         throw new Error("Invalid role actor.")
-    const linkedTarget = /^\d{17,20}$/.test(userId)
+    const user = await getUserByIdentifier(ctx, userId)
+    // Stable/imported IDs are not proof of a Discord link, even if numeric.
+    const discordUserId =
+        user?.discordId && /^\d{17,20}$/.test(user.discordId)
+            ? user.discordId
+            : undefined
     const policy = await policyFor(ctx, guildId, gameId)
     const assignment = await assignmentFor(ctx, guildId, gameId, userId)
     const categoryId =
         assignment?.membershipCategoryId ?? input.before?.membershipCategoryId
     if (
         (actor.kind === "application" || actor.kind === "rollback") &&
-        (actor.userId !== userId ||
+        (actor.userId !== discordUserId ||
             (actor.kind === "rollback"
                 ? assignment !== null
                 : !assignment ||
@@ -142,23 +164,36 @@ export async function enqueueManagedRoles(
                           assignment.type !== "member"))))
     )
         throw new Error("Invalid self-application role intent.")
-    const previous = await latest(ctx, guildId, gameId, userId)
-    const version = (previous?.version ?? 0) + 1
+    const previousAssignment = await latest(ctx, guildId, gameId, userId)
+    const previousSubject = discordUserId
+        ? await latestForSubject(ctx, guildId, gameId, discordUserId)
+        : null
+    const previous = [previousAssignment, previousSubject].filter(
+        (row, index, all): row is Operation =>
+            Boolean(
+                row && all.findIndex((item) => item?._id === row._id) === index
+            )
+    )
+    const version = Math.max(0, ...previous.map((row) => row.version)) + 1
     if (!Number.isSafeInteger(version))
         throw new Error("Role version exhausted.")
     const now = new Date().toISOString()
-    if (previous)
-        await ctx.db.patch(previous._id, {
+    for (const row of previous)
+        await ctx.db.patch(row._id, {
             status: "superseded",
             nextAttemptAt: NEVER,
             updatedAt: now,
             reason: "new_desired_version",
         })
-    const observation = await memberObservation(ctx, guildId, userId)
+    const observation = discordUserId
+        ? await memberObservation(ctx, guildId, discordUserId)
+        : null
     return ctx.db.insert("memberRoleOperations", {
         guildId,
         gameId,
         userId,
+        userRecordId: user?._id,
+        discordUserId,
         version,
         actorId: actor.userId,
         actorKind: actor.kind,
@@ -168,13 +203,13 @@ export async function enqueueManagedRoles(
         allowedRoleIds: policy.roleIds,
         desiredRoleIds: desiredMembershipRoles(policy, assignment),
         departureRevision: observation?.departureRevision ?? "0",
-        status: linkedTarget ? "pending" : "denied",
+        status: discordUserId ? "pending" : "denied",
         attempts: 0,
         failureCount: 0,
-        nextAttemptAt: linkedTarget ? Date.now() : NEVER,
+        nextAttemptAt: discordUserId ? Date.now() : NEVER,
         leaseUntil: 0,
         fence: 0,
-        reason: linkedTarget ? "assignment_changed" : "target_not_linked",
+        reason: discordUserId ? "assignment_changed" : "target_not_linked",
         createdAt: now,
         updatedAt: now,
     })
@@ -185,6 +220,14 @@ async function evaluate(
     operation: Operation,
     evidence?: Evidence
 ) {
+    const user = await getUserByIdentifier(ctx, operation.userId)
+    if (
+        !operation.discordUserId ||
+        !operation.userRecordId ||
+        user?._id !== operation.userRecordId ||
+        user.discordId !== operation.discordUserId
+    )
+        return "superseded" as const
     const current = await assignmentFor(
         ctx,
         operation.guildId,
@@ -204,7 +247,7 @@ async function evaluate(
     const observation = await memberObservation(
         ctx,
         operation.guildId,
-        operation.userId
+        operation.discordUserId
     )
     if (
         observation?.state === "left" ||
@@ -225,9 +268,8 @@ async function evaluate(
             !canExecuteManagedRoles({
                 kind: operation.actorKind,
                 actorId: operation.actorId,
-                targetId: operation.userId,
+                targetId: operation.discordUserId,
                 ...evidence,
-                adminIds: guild?.adminIds ?? [],
                 adminOverride: guild?.adminAccessOverrides?.[operation.actorId],
                 dashboardRoleId: policy.dashboardRoleId,
                 supportRoleIds: category?.supportRoleIds ?? [],
@@ -255,12 +297,13 @@ async function liveLease(
 ) {
     if (
         !operation ||
+        !operation.discordUserId ||
         operation.status !== "running" ||
         operation.fence !== fence ||
         operation.leaseUntil <= Date.now()
     )
         return false
-    const lock = await lockFor(ctx, operation.guildId, operation.userId)
+    const lock = await lockFor(ctx, operation.guildId, operation.discordUserId)
     return Boolean(lock && lock.fence === fence && lock.leaseUntil > Date.now())
 }
 
@@ -274,17 +317,18 @@ async function desiredFor(
     // Preserve an existing shared clan role held by another game's valid intent;
     // never add it on the authority of that other operation's actor.
     if (
+        operation.discordUserId &&
         policy.clanRoleId &&
         operation.allowedRoleIds.includes(policy.clanRoleId) &&
         !desiredRoleIds.includes(policy.clanRoleId) &&
         evidence?.targetRoleIds.includes(policy.clanRoleId)
     ) {
         for (const gameId of GAME_IDS.filter((id) => id !== operation.gameId)) {
-            const other = await latest(
+            const other = await latestForSubject(
                 ctx,
                 operation.guildId,
                 gameId,
-                operation.userId
+                operation.discordUserId
             )
             if (
                 other &&
@@ -322,7 +366,21 @@ export const claimNext = mutation({
                 )
             )
                 continue
-            const lock = await lockFor(ctx, operation.guildId, operation.userId)
+            // Incomplete pre-release records cannot acquire a provider lease.
+            if (!operation.discordUserId || !operation.userRecordId) {
+                await ctx.db.patch(operation._id, {
+                    status: "denied",
+                    reason: "target_not_linked",
+                    nextAttemptAt: NEVER,
+                    updatedAt: new Date().toISOString(),
+                })
+                continue
+            }
+            const lock = await lockFor(
+                ctx,
+                operation.guildId,
+                operation.discordUserId
+            )
             if (lock && lock.leaseUntil > Date.now()) continue
             const failureCount =
                 operation.failureCount +
@@ -342,7 +400,7 @@ export const claimNext = mutation({
             else
                 await ctx.db.insert("memberRoleLocks", {
                     guildId: operation.guildId,
-                    userId: operation.userId,
+                    discordUserId: operation.discordUserId,
                     fence,
                     leaseUntil,
                 })
@@ -404,7 +462,7 @@ export const prepare = query({
             allowedRoleIds: operation.allowedRoleIds,
             desiredRoleIds,
             guildId: operation.guildId,
-            userId: operation.userId,
+            discordUserId: operation.discordUserId,
             actorId: operation.actorId,
         }
     },
@@ -486,7 +544,9 @@ export const finish = mutation({
             reason,
             updatedAt: new Date().toISOString(),
         })
-        const lock = await lockFor(ctx, operation.guildId, operation.userId)
+        const lock = operation.discordUserId
+            ? await lockFor(ctx, operation.guildId, operation.discordUserId)
+            : null
         if (lock?.fence === args.fence)
             await ctx.db.patch(lock._id, { leaseUntil: 0 })
         const audit = await ctx.db
@@ -524,6 +584,7 @@ export const listForGuild = query({
                     id: String(row._id),
                     gameId: row.gameId,
                     userId: row.userId,
+                    discordUserId: row.discordUserId ?? null,
                     actorId: row.actorId,
                     provenance: row.actorKind,
                     version: row.version,

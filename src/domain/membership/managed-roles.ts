@@ -120,7 +120,6 @@ export function canExecuteManagedRoles(input: {
     actorPresent: boolean
     actorAdministrator: boolean
     actorRoleIds: string[]
-    adminIds: string[]
     adminOverride?: boolean
     dashboardRoleId?: string
     supportRoleIds: string[]
@@ -131,12 +130,13 @@ export function canExecuteManagedRoles(input: {
         return input.actorId === input.targetId && input.selfAllowed
     const admin =
         input.actorAdministrator ||
-        (input.adminOverride ??
-            (input.adminIds.includes(input.actorId) ||
-                Boolean(
-                    input.dashboardRoleId &&
-                    input.actorRoleIds.includes(input.dashboardRoleId)
-                )))
+        // Overrides mix manual desired-role settings with cached observations.
+        // A true value cannot grant authority; Discord must confirm the role.
+        (input.adminOverride !== false &&
+            Boolean(
+                input.dashboardRoleId &&
+                input.actorRoleIds.includes(input.dashboardRoleId)
+            ))
     return (
         admin ||
         (input.kind === "recruitment" &&
