@@ -27,6 +27,7 @@ permission to deploy or change website/identity-provider repositories. Earlier
 | Bind recap recipient separately from player/data ID; recheck after Discord lookup | Imported IDs and account consent must not be confused with a Discord subject | Requires compatible optional schema and protocol-2 bot/functions |
 | Withhold old unbound recaps and older delivery clients | Existing rows do not prove the intended recipient | No automatic backfill, resend or repair of prior unsubscribe clicks |
 | Keep recap consent and sending outside bearer `/api/v1` | A consumer key is not the recipient's authenticated consent | Own-account dashboard/Discord action and internal delivery only; [proof and limits](recap-delivery-follow-up.md) |
+| Add an on-demand, private manager status command over stored data | Operators need HLL/WDG visibility inside the existing bot | Explicit game and current Discord Manage Server permission; first five connections, ten-second wait; automatic public panels remain separate |
 
 ## Remaining owner work
 

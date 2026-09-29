@@ -30,6 +30,8 @@ npm run dev:all
 - Handle signup button interactions
 - Send eligible personal match recaps to explicitly linked Discord accounts and
   handle each account's own global recap preference
+- Handle `/server-status` for Discord server managers, with a private localized
+  HLL/WDG summary from stored collector observations
 - Write sync state back to Convex
 - Reconcile actor-backed membership roles through a durable queue, including
   independent recovery after reconnect. `src/sync/managed-member-roles.ts` owns
@@ -47,6 +49,11 @@ protocol 2. Stop the old bot before rollout; legacy unbound queued rows are
 withheld, not automatically migrated. The bot rechecks account binding and opt-out
 after Discord lookup, before sending. See the [recap delivery follow-up](../docs/integrations/website/v0.10/recap-delivery-follow-up.md)
 for compatibility, rollback, tests and the remaining in-flight/duplicate limits.
+
+The [server-status command handoff](../docs/integrations/website/v0.10/server-status-command.md)
+records its guild/game scope, ten-second backend wait, five-connection display
+limit and simulated proof. It requires the existing game-data backend; command
+registration uses the normal guild ready/join path and performs no game-server poll.
 
 ## Source layout
 

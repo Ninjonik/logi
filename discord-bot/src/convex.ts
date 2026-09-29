@@ -44,6 +44,9 @@ export async function closeConvexClient() {
 }
 
 export const references = {
+    getGameDataConnections: makeFunctionReference<"query">(
+        "gameData:listConnections"
+    ),
     getPlatformSettings: makeFunctionReference<"query">("platformSettings:get"),
     updatePlatformStatusState: makeFunctionReference<"mutation">(
         "platformSettings:updateBotState"

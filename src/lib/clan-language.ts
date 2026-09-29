@@ -159,6 +159,30 @@ type ClanDiscordMessages = {
         rewardGranted: string
         dmResult: string
     }
+    serverStatus: {
+        description: string
+        gameOption: string
+        title: string
+        intro: string
+        noConnections: string
+        forbidden: string
+        invalidGame: string
+        unavailable: string
+        server: string
+        state: string
+        map: string
+        players: string
+        observed: string
+        provider: string
+        fresh: string
+        stale: string
+        unknown: string
+        online: string
+        offline: string
+        noData: string
+        disabled: string
+        shown: string
+    }
     matchRecap: {
         title: string
         fallbackMapName: string
@@ -540,6 +564,34 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             rewardGranted: "Reward roles have been granted in Discord.",
             dmResult:
                 "Hi {name}, your training result for **{event}** is: {result}.{reward}",
+        },
+        serverStatus: {
+            description:
+                "Show stored HLL or Wardogs server status (server managers).",
+            gameOption: "Game whose configured servers to show.",
+            title: "Game server status",
+            intro: "Stored observations, not a live server check. Older player/map values remain historical.",
+            noConnections:
+                "No stored connection for this game. Configure a game data source in Logi settings.",
+            forbidden:
+                "Use this command in a server where you have Manage Server permission.",
+            invalidGame: "Choose Hell Let Loose or Wardogs.",
+            unavailable:
+                "Stored server status is currently unavailable. Try again later.",
+            server: "Game server",
+            state: "State",
+            map: "Map",
+            players: "Players",
+            observed: "Observed",
+            provider: "Source",
+            fresh: "Fresh",
+            stale: "Stale",
+            unknown: "Unknown",
+            online: "Online",
+            offline: "Offline",
+            noData: "Unavailable",
+            disabled: "Collection disabled",
+            shown: "Showing {shown} of {total} stored connections. Full list in Logi settings.",
         },
         matchRecap: {
             title: "Match recap - {event}",
@@ -1051,6 +1103,34 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             dmResult:
                 "Ahoj {name}, výsledek tvého trainingu **{event}** je: {result}.{reward}",
         },
+        serverStatus: {
+            description:
+                "Zobrazí uložený stav HLL nebo Wardogs serverů (pro správce).",
+            gameOption: "Hra, jejíž nakonfigurované servery chceš zobrazit.",
+            title: "Stav herních serverů",
+            intro: "Uložená pozorování, nikoli živá kontrola serveru. Starší počty hráčů a mapy jsou historické.",
+            noConnections:
+                "Žádný uložený zdroj pro tuto hru. Přidej zdroj herních dat v nastavení Logiho.",
+            forbidden:
+                "Příkaz použij na serveru, kde máš oprávnění Spravovat server.",
+            invalidGame: "Vyber Hell Let Loose nebo Wardogs.",
+            unavailable:
+                "Uložený stav serverů je nyní nedostupný. Zkus to později.",
+            server: "Herní server",
+            state: "Stav",
+            map: "Mapa",
+            players: "Hráči",
+            observed: "Pozorováno",
+            provider: "Zdroj",
+            fresh: "Aktuální",
+            stale: "Zastaralé",
+            unknown: "Neznámý",
+            online: "Online",
+            offline: "Offline",
+            noData: "Nedostupné",
+            disabled: "Sběr vypnutý",
+            shown: "Zobrazeno {shown} z {total} uložených zdrojů. Celý seznam je v nastavení Logiho.",
+        },
         matchRecap: {
             title: "Shrnutí zápasu - {event}",
             fallbackMapName: "Zápas",
@@ -1391,6 +1471,35 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             rewardGranted: "Die Belohnungs-Rollen wurden in Discord vergeben.",
             dmResult:
                 "Hallo {name}, Ihr Trainingsergebnis für **{event}** lautet: {result}.{reward}",
+        },
+        serverStatus: {
+            description:
+                "Zeigt gespeicherten HLL- oder Wardogs-Serverstatus (für Serververwalter).",
+            gameOption:
+                "Spiel, dessen konfigurierte Server angezeigt werden sollen.",
+            title: "Spielserverstatus",
+            intro: "Gespeicherte Beobachtungen, keine Live-Prüfung. Ältere Spielerzahlen und Karten sind historisch.",
+            noConnections:
+                "Keine gespeicherte Verbindung für dieses Spiel. Konfiguriere eine Datenquelle in den Logi-Einstellungen.",
+            forbidden:
+                "Nutze diesen Befehl auf einem Server mit der Berechtigung Server verwalten.",
+            invalidGame: "Wähle Hell Let Loose oder Wardogs.",
+            unavailable:
+                "Der gespeicherte Serverstatus ist derzeit nicht verfügbar. Versuche es später erneut.",
+            server: "Spielserver",
+            state: "Status",
+            map: "Karte",
+            players: "Spieler",
+            observed: "Beobachtet",
+            provider: "Quelle",
+            fresh: "Aktuell",
+            stale: "Veraltet",
+            unknown: "Unbekannt",
+            online: "Online",
+            offline: "Offline",
+            noData: "Nicht verfügbar",
+            disabled: "Erfassung deaktiviert",
+            shown: "{shown} von {total} gespeicherten Verbindungen. Vollständige Liste in den Logi-Einstellungen.",
         },
         matchRecap: {
             title: "Spielzusammenfassung - {event}",

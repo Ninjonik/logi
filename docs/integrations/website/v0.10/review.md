@@ -80,3 +80,12 @@ implementer review, **21/21** focused tests, **536/536** full-suite tests and a
 CS/EN/DE simulated presentation capture. Earlier independent review did not cover
 this later patch. The follow-up records the protocol/schema rollout, legacy-row
 suppression and remaining delivery race/duplicate limits explicitly.
+
+## Discord game-server status follow-up
+
+The [server-status command](server-status-command.md) adds an on-demand, private
+manager view over existing collector snapshots. Its implementer review and
+**15/15** focused tests cover trusted interaction permissions, guild/game filters,
+shared freshness, transport timeout, safe display bounds and actual command
+registration. Full suite: **551/551**. This later patch has no new independent
+cumulative review; live command/provider acceptance remains outstanding.

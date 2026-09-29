@@ -79,6 +79,10 @@ import {
     extractPlayerSearchResults,
 } from "./interactions/player-search"
 import {
+    buildServerStatusCommand,
+    handleServerStatusCommand,
+} from "./interactions/server-status"
+import {
     buildMembershipApplicationThreadEmbed,
     buildTicketThreadEmbed,
 } from "./message-builders"
@@ -584,7 +588,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         },
 
         async handleChatInputCommand(interaction: ChatInputCommandInteraction) {
-            if (interaction.commandName === "close_ticket") {
+            if (interaction.commandName === "server-status") {
+                await handleServerStatusCommand(interaction)
+            } else if (interaction.commandName === "close_ticket") {
                 await handleCloseTicketCommand(interaction)
             } else if (interaction.commandName === "close_application") {
                 await handleCloseApplicationCommand(interaction)
@@ -606,6 +612,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                       : "en"
             )
             const commands = [
+                buildServerStatusCommand(),
                 new SlashCommandBuilder()
                     .setName("close_ticket")
                     .setDescription(messages.commands.closeTicketDescription)

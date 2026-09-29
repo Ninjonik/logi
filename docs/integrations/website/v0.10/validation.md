@@ -4,14 +4,15 @@ Date: 2026-09-29. I5 commit: `f0c2d8a`. The PR description pins the final D4 and
 review-fix commit; documentation does not use a self-referential commit hash.
 All commands run locally with synthetic configuration, no production credentials.
 
-**Latest follow-up:** the [recap delivery and opt-out fixes](recap-delivery-follow-up.md)
-pass the full **536/536** suite and typecheck, with **21/21** focused regressions.
+**Latest follow-up:** the [Discord server-status command](server-status-command.md)
+passes the full **551/551** suite and typecheck, with **15/15** focused tests.
 Its changed-source lint has zero errors/three existing warnings; cumulative
 TypeScript lint has three existing errors
 and 17 warnings. Production compilation passes; `/en/competitions` prerender
 still cannot reach the absent synthetic Convex endpoint. The counts below record
 the earlier I5/D4 checkpoint. The intermediate [role-audit and Discord sorting
-follow-up](reliability-follow-up.md) records **517/517** before the recap fixes.
+follow-up](reliability-follow-up.md) records **517/517**; the
+[recap fixes](recap-delivery-follow-up.md) then passed **536/536**, with **21/21** focused tests.
 
 ## Reproduce
 

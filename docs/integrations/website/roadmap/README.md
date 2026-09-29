@@ -28,6 +28,8 @@ Wardogs server. These now include persistence, adapters, scoped reads and manage
 UI. W2/I1 add transactional invalidation and scoped membership; I3 adds actor-backed
 managed-role reliability and audit. I5 adds verified Steam identity; D4 adds
 reviewed result revisions with an independent read contract.
+The later [Discord server-status command](../v0.10/server-status-command.md)
+lets server managers inspect the stored HLL/WDG observations privately in the bot.
 Website owners can implement I2 and W1/W3/W4 from the versioned contracts.
 The broader dependency ordering below still applies to website-owned work.
 
