@@ -1,9 +1,10 @@
-import type { Client } from "discord.js"
+import { MessageFlags, type Client } from "discord.js"
 
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
 import { matchesGameScope } from "../../../src/domain/games/game"
-import { buildAnnouncementMessage } from "../message-builders"
+import { buildAnnouncementV2Message } from "../message-builders"
+import { resolveAnnouncementDisplayNames } from "./events"
 import type { SyncPayload } from "../types"
 import { logInfo } from "../log"
 
@@ -61,7 +62,20 @@ export async function processSignupReminders(
             event.participants.map((participant) => participant.userId)
         )
 
-        const { embed, components } = buildAnnouncementMessage(payload, event)
+        // Render reminders exactly like the live registration announcement.
+        // In particular, resolve current guild display names instead of showing
+        // the raw Discord IDs stored in event signups.
+        const guild = await client.guilds
+            .fetch(payload.config.guildId)
+            .catch(() => null)
+        const userDisplayNames = guild
+            ? await resolveAnnouncementDisplayNames(payload, event, guild)
+            : payload.userDisplayNames
+        const message = buildAnnouncementV2Message(
+            payload,
+            event,
+            userDisplayNames
+        )
         // Assignments were not included in older cached payloads. Treat them
         // as an empty recipient set while a rolling deployment catches up.
         const recipients = (payload.assignments ?? []).filter((assignment) =>
@@ -78,7 +92,7 @@ export async function processSignupReminders(
                 .catch(() => null)
             if (!user) continue
             await user
-                .send({ embeds: [embed], components })
+                .send({ ...message, flags: MessageFlags.IsComponentsV2 })
                 .then(() =>
                     logInfo("signup-reminders", "Sent signup reminder", {
                         eventId: event.id,

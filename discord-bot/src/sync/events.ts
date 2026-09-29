@@ -109,7 +109,7 @@ export function getAnnouncementPingRoleIds(
     return [...new Set(roleIds.map((roleId) => roleId.trim()).filter(Boolean))]
 }
 
-async function resolveAnnouncementDisplayNames(
+export async function resolveAnnouncementDisplayNames(
     payload: SyncPayload,
     event: EventRecord,
     guild: Guild
