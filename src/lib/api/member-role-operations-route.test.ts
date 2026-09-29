@@ -40,10 +40,12 @@ test("versioned operator fixtures obey the closed schema and invalid audit data 
     )
     // The test file is under src/lib/api; fixture path is rooted at the repository.
     const rows = memberRoleOperationsSchema.parse(fixture)
-    assert.equal(rows.length, 4)
+    assert.equal(rows.length, 5)
     assert.equal(rows[0].userId, "imported-player")
     assert.equal(rows[0].discordUserId, "222222222222222222")
     assert.equal(rows[3].discordUserId, null)
+    assert.equal(rows[0].audit[1].reason, "lease_expired")
+    assert.equal(rows[4].audit[0].outcome, "superseded")
     fixture[0].policyFingerprint = "private policy"
     const handle = memberRoleOperationsHandler({
         authorize: async () => "guild",

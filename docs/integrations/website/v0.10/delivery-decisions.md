@@ -22,7 +22,7 @@ permission to deploy or change website/identity-provider repositories. Earlier
 | Keep legacy competition and recap semantics | Preserve existing import callers | Legacy finalization is not new human confirmation |
 | Ignore malformed legacy drafts only for new review staging | Old contract permits empty participant labels | Such imports need explicit labels before a review can exist |
 | Strip result storage fields from generic event responses | Final review reproduced bypass of result/game grants | Consumers use the dedicated result resource; old event schema is preserved |
-| Do not change unrelated baseline lint/test failures | Repository instructions require reporting instead of scope creep | Full upstream checks are not green |
+| Fix the signup-order baseline within the authorized embed work; keep unrelated lint/toolchain issues separate | Root cause is host-dependent collation and compact column order | Full tests now pass; lint/build limits remain |
 | Synthetic local UI and handlers | Live provider/login/Discord actions are outside this proof | No claim of deployed identity, ingestion or website acceptance |
 
 ## Remaining owner work
@@ -37,9 +37,9 @@ permission to deploy or change website/identity-provider repositories. Earlier
   sustained throughput and rollback acceptance.
 - Later product decisions: authenticated website commands, role moderation/game
   controls, formal result retraction and longer/exportable audit browsing.
-- Previously reviewed Minor: an expired/superseded role attempt can retain its
-  historical `running`/`claimed` label while the operation status is correct.
-  [0.8 disposition](../v0.8/review.md) explains the scope and cost.
+- The previously reviewed audit-label Minor is fixed for new transitions in the
+  [reliability follow-up](reliability-follow-up.md). Pre-fix orphaned historical
+  rows are not backfilled; their operation status remains authoritative.
 
 Final fresh review findings and their one-pass disposition are recorded in
 [review](review.md). Local task scratch was retained after automatic approval

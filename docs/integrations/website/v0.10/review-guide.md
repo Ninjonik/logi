@@ -71,14 +71,16 @@ There is one new pinned identity dependency; this is not a vendored SDK dump.
 
 ## Proof and remaining acceptance
 
-See [validation](validation.md) for exact commands and baseline failures,
+See [reliability follow-up](reliability-follow-up.md) for the latest **517/517**
+suite, closed role-audit Minor, locale-independent signup ordering and screenshots.
+See [validation](validation.md) for exact commands and earlier baseline failures,
 [fresh automated review](review.md) for findings/disposition and
 [decisions](delivery-decisions.md) for deviations and costs. Review is not
-maintainer approval. No all-green suite/full production build is claimed while
-the documented baseline/environment failures remain.
+maintainer approval. The full test suite now passes; repository lint and the full
+production build still have the documented baseline/environment failures.
 
 Logi plan tasks D1–D4, W2, I1/I3/I5 now have local implementation. Website-owned
 W1/W3/W4 and I2, private hosted OIDC I4, actual provider configuration and live
-acceptance remain outstanding. A historical role-attempt label Minor also remains
-deferred. No website/CircleBot checkout, infrastructure, DNS or hosted OAuth
+acceptance remain outstanding. The role-attempt label fix applies to new transitions;
+pre-fix historical rows were not backfilled. No website/CircleBot checkout, infrastructure, DNS or hosted OAuth
 configuration was changed; no merge or deployment occurred.

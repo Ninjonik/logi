@@ -21,7 +21,7 @@
             {
                 "attempt": 1,
                 "outcome": "retry_scheduled",
-                "reason": "provider_unavailable",
+                "reason": "lease_expired",
                 "at": "2026-09-29T08:30:00.000Z"
             }
         ]
@@ -74,5 +74,26 @@
         "reason": "target_not_linked",
         "updatedAt": "2026-09-29T08:34:00.000Z",
         "audit": []
+    },
+    {
+        "id": "synthetic-superseded",
+        "gameId": "hell_let_loose",
+        "userId": "imported-player",
+        "discordUserId": "222222222222222222",
+        "actorId": "333333333333333333",
+        "provenance": "recruitment",
+        "version": 1,
+        "status": "superseded",
+        "attempts": 1,
+        "reason": "new_desired_version",
+        "updatedAt": "2026-09-29T08:29:00.000Z",
+        "audit": [
+            {
+                "attempt": 1,
+                "outcome": "superseded",
+                "reason": "new_desired_version",
+                "at": "2026-09-29T08:28:59.000Z"
+            }
+        ]
     }
 ]

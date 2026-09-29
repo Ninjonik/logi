@@ -41,10 +41,12 @@ Two Important findings were reproduced with failing regressions and fixed in one
 TDD pass: stale cached actor authority and confusion between stable/Discord IDs.
 See [review evidence](./review.md) for the exact failure, regression names and limits.
 
-One Minor remains deferred: an expired or superseded attempt can retain historical
+One Minor was deferred at this checkpoint: an expired or superseded attempt can retain historical
 `running`/`claimed` text while the operation has the correct final/current state.
 Use the operation status for recovery; that old attempt row does not prove a live worker.
 This is an acknowledged audit-display limitation, not another authorization path.
+The later [reliability follow-up](../v0.10/reliability-follow-up.md) fixes new
+transitions; it does not backfill old records or repeat this independent review.
 
 The final reviewer did not establish website consumer behavior, private hosted OIDC,
 verified Steam linking, reviewed match results, live Discord/provider behavior,

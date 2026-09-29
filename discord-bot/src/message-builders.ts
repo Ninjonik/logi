@@ -289,9 +289,20 @@ export function buildCompactV2FieldText(fields: APIEmbedField[]) {
 
     return sections
         .map((section) => {
-            const members = section.values
-                .flatMap((value) => value.split("\n"))
-                .filter((value) => value.trim() && value !== "\u200B")
+            const columns = section.values.map((value) =>
+                value
+                    .split("\n")
+                    .filter((name) => name.trim() && name !== "\u200B")
+            )
+            // Legacy fields are filled across each row; undo that layout for V2.
+            const members: string[] = []
+            const rowCount = Math.max(
+                0,
+                ...columns.map((column) => column.length)
+            )
+            for (let row = 0; row < rowCount; row++)
+                for (const column of columns)
+                    if (column[row]) members.push(column[row])
             return `**${section.name}**\n${members.join(", ")}`
         })
         .join("\n\n")
@@ -444,7 +455,9 @@ export function buildEventEmbed(
 
     for (const members of signupsByGroup.values()) {
         members.sort((left, right) =>
-            left.localeCompare(right, undefined, { sensitivity: "base" })
+            left.localeCompare(right, config.defaultLanguage, {
+                sensitivity: "base",
+            })
         )
     }
 

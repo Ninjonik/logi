@@ -37,6 +37,13 @@ It resolves the Discord guild from a fresh administrator context, rechecks acces
 after the query, validates a closed response schema and returns `Cache-Control: no-store`.
 There is no force/retry button that bypasses current permissions.
 
+Interrupted attempts now close in the same transaction as supersession, recovery
+or terminal denial/failure. A recovered expired attempt records
+`retry_scheduled / lease_expired`; it does not prove that Discord failed or that
+another retry is still pending. Already completed attempts are preserved, and
+`at` remains the attempt's start time. See the [reliability follow-up](../v0.10/reliability-follow-up.md)
+for regression proof, historical-row limits and operator screenshots.
+
 ## Ownership and authority
 
 - Root recruitment settings own legacy HLL. Other games require an explicit

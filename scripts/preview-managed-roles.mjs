@@ -23,7 +23,7 @@ const css = await postcss([tailwindcss({ base: root })]).process(
     await readFile(cssPath, "utf8"),
     { from: cssPath }
 )
-const fixtures = memberRoleOperationsSchema.parse(
+const allFixtures = memberRoleOperationsSchema.parse(
     JSON.parse(
         await readFile(
             resolve(root, "docs/integrations/website/v0.8/fixtures.json"),
@@ -31,6 +31,11 @@ const fixtures = memberRoleOperationsSchema.parse(
         )
     )
 )
+const fixtures = process.argv.includes("--recovery")
+    ? allFixtures.filter((row) =>
+          ["synthetic-applied", "synthetic-superseded"].includes(row.id)
+      )
+    : allFixtures
 const html =
     '<!doctype html><html class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Logi roles — synthetic preview</title><link rel="stylesheet" href="/preview.css"><style>:root{--font-inter:Arial,sans-serif}body{background:var(--background);color:var(--foreground)}</style></head><body><div id="root"></div><script src="/preview.js"></script></body></html>'
 let failNext = false

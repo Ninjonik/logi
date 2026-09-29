@@ -91,6 +91,11 @@ new scheduled event instead.
 
 ### Discord behavior per event
 
+Match signup names are sorted within each group using the server's configured
+Discord language, independently of the bot host's language. Legacy embeds read
+left to right across each row; compact Components V2 messages keep that same
+order. Czech sorting treats **Ch** as a letter after **H**.
+
 Discord output needs the bot running and the relevant server or event-level
 channel configuration. The event's announcement and event-info channels are
 chosen when the event is created and are kept for later edits; changing those

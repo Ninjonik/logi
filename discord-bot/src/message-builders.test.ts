@@ -95,7 +95,7 @@ function futureIso(days: number, hours = 0) {
     ).toISOString()
 }
 
-test("buildCompactV2FieldText removes legacy embed padding and compacts field columns", () => {
+test("buildCompactV2FieldText removes padding and preserves row order when compacting columns", () => {
     const result = buildCompactV2FieldText([
         { name: "Infantry (4)", value: "Alpha\nDelta", inline: true },
         { name: "\u200B", value: "Bravo", inline: true },
@@ -106,7 +106,7 @@ test("buildCompactV2FieldText removes legacy embed padding and compacts field co
 
     assert.equal(
         result,
-        "**Infantry (4)**\nAlpha, Delta, Bravo, Charlie\n\n**Armor (0)**\nNobody yet"
+        "**Infantry (4)**\nAlpha, Bravo, Charlie, Delta\n\n**Armor (0)**\nNobody yet"
     )
 })
 
@@ -363,78 +363,93 @@ test("buildEventEmbed uses plain display names instead of Discord mentions", () 
     assert.doesNotMatch(combinedValues, /<@/)
 })
 
-test("buildEventEmbed alphabetizes match signup names within each group before laying them out in columns", () => {
-    const embed = buildEventEmbed(
-        config,
-        groups,
-        eventCategories,
-        createMatchEvent({
-            participants: [
-                {
-                    userId: "user-1",
-                    status: "attending",
-                    group: "command",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-                {
-                    userId: "user-2",
-                    status: "attending",
-                    group: "command",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-                {
-                    userId: "user-3",
-                    status: "attending",
-                    group: "command",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-                {
-                    userId: "user-4",
-                    status: "attending",
-                    group: "command",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-                {
-                    userId: "user-5",
-                    status: "attending",
-                    group: "command",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-                {
-                    userId: "user-6",
-                    status: "attending",
-                    group: "command",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-                {
-                    userId: "user-7",
-                    status: "attending",
-                    group: "command",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-            ],
-        }),
-        undefined,
-        {
-            "user-1": "Golf",
-            "user-2": "Delta",
-            "user-3": "Alpha",
-            "user-4": "Foxtrot",
-            "user-5": "Charlie",
-            "user-6": "Echo",
-            "user-7": "Bravo",
-        }
-    )
+for (const language of ["en", "cs", "de"] as const) {
+    test(`buildEventEmbed alphabetizes signup columns using the configured ${language} locale`, () => {
+        const embed = buildEventEmbed(
+            { ...config, defaultLanguage: language },
+            groups,
+            eventCategories,
+            createMatchEvent({
+                participants: [
+                    {
+                        userId: "user-1",
+                        status: "attending",
+                        group: "command",
+                        updatedAt: "2026-07-29T10:00:00.000Z",
+                    },
+                    {
+                        userId: "user-2",
+                        status: "attending",
+                        group: "command",
+                        updatedAt: "2026-07-29T10:00:00.000Z",
+                    },
+                    {
+                        userId: "user-3",
+                        status: "attending",
+                        group: "command",
+                        updatedAt: "2026-07-29T10:00:00.000Z",
+                    },
+                    {
+                        userId: "user-4",
+                        status: "attending",
+                        group: "command",
+                        updatedAt: "2026-07-29T10:00:00.000Z",
+                    },
+                    {
+                        userId: "user-5",
+                        status: "attending",
+                        group: "command",
+                        updatedAt: "2026-07-29T10:00:00.000Z",
+                    },
+                    {
+                        userId: "user-6",
+                        status: "attending",
+                        group: "command",
+                        updatedAt: "2026-07-29T10:00:00.000Z",
+                    },
+                    {
+                        userId: "user-7",
+                        status: "attending",
+                        group: "command",
+                        updatedAt: "2026-07-29T10:00:00.000Z",
+                    },
+                ],
+            }),
+            undefined,
+            {
+                "user-1": "Golf",
+                "user-2": "Delta",
+                "user-3": "Alpha",
+                "user-4": "Foxtrot",
+                "user-5": "Charlie",
+                "user-6": "Echo",
+                "user-7": "Bravo",
+            }
+        )
 
-    const fields = embed.toJSON().fields ?? []
-    assert.equal(fields[0]?.inline, true)
-    assert.equal(fields[1]?.inline, true)
-    assert.equal(fields[2]?.inline, true)
-    assert.match(fields[0]?.name ?? "", /Command \(7\)/)
-    assert.equal(fields[0]?.value, "Alpha\nDelta\nGolf")
-    assert.equal(fields[1]?.value, "Bravo\nEcho")
-    assert.equal(fields[2]?.value, "Charlie\nFoxtrot")
-})
+        const fields = embed.toJSON().fields ?? []
+        assert.equal(fields[0]?.inline, true)
+        assert.equal(fields[1]?.inline, true)
+        assert.equal(fields[2]?.inline, true)
+        assert.match(fields[0]?.name ?? "", /Command \(7\)/)
+        const expected =
+            language === "cs"
+                ? ["Alpha\nEcho\nCharlie", "Bravo\nFoxtrot", "Delta\nGolf"]
+                : ["Alpha\nDelta\nGolf", "Bravo\nEcho", "Charlie\nFoxtrot"]
+        assert.deepEqual(
+            fields.slice(0, 3).map((field) => field.value),
+            expected
+        )
+        assert.equal(
+            buildCompactV2FieldText(fields.slice(0, 3)),
+            `**${fields[0]!.name}**\n${
+                language === "cs"
+                    ? "Alpha, Bravo, Delta, Echo, Foxtrot, Golf, Charlie"
+                    : "Alpha, Bravo, Charlie, Delta, Echo, Foxtrot, Golf"
+            }`
+        )
+    })
+}
 
 test("buildEventEmbed pads signup sections so the next group starts on a new row", () => {
     const embed = buildEventEmbed(

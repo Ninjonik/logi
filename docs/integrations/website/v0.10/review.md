@@ -66,6 +66,8 @@ Every reviewer exclusion was considered by the implementing agent:
 | Retraction, long-history export and automatic deletion | Keep separate explicit product work | Current UI reads only recent history; no new retention/export command |
 | Atomic undo of a Discord effect after revocation | Preserve the documented distributed-system limit and operator recovery | Partial denied role work may need manual inspection |
 
-Earlier I3 review and its deferred historical audit-label Minor remain in
-[0.8 review](../v0.8/review.md). Current validation limits are in
-[verification](validation.md).
+Earlier I3 review remains in [0.8 review](../v0.8/review.md). Its historical
+audit-label Minor was subsequently addressed by the regression-driven
+[reliability follow-up](reliability-follow-up.md), which also fixes signup sorting.
+That follow-up has an implementer review, not another independent cumulative review.
+Current validation limits are in [verification](validation.md).

@@ -54,6 +54,23 @@ type Evidence = {
     observedAt: number
 }
 
+async function closeRunningAttempt(
+    ctx: MutationCtx,
+    operation: Operation,
+    outcome: "applied" | "retry_scheduled" | "denied" | "superseded" | "failed",
+    reason: string
+) {
+    const audit = await ctx.db
+        .query("memberRoleAudits")
+        .withIndex("operationId_fence", (q) =>
+            q.eq("operationId", operation._id).eq("fence", operation.fence)
+        )
+        .unique()
+    // A later desired version must not rewrite an already verified attempt.
+    if (audit?.outcome === "running")
+        await ctx.db.patch(audit._id, { outcome, reason })
+}
+
 async function policyFor(ctx: Context, guildId: string, gameId: GameId) {
     const config = await ctx.db
         .query("discordConfigs")
@@ -178,13 +195,15 @@ export async function enqueueManagedRoles(
     if (!Number.isSafeInteger(version))
         throw new Error("Role version exhausted.")
     const now = new Date().toISOString()
-    for (const row of previous)
+    for (const row of previous) {
+        await closeRunningAttempt(ctx, row, "superseded", "new_desired_version")
         await ctx.db.patch(row._id, {
             status: "superseded",
             nextAttemptAt: NEVER,
             updatedAt: now,
             reason: "new_desired_version",
         })
+    }
     const observation = discordUserId
         ? await memberObservation(ctx, guildId, discordUserId)
         : null
@@ -368,6 +387,12 @@ export const claimNext = mutation({
                 continue
             // Incomplete pre-release records cannot acquire a provider lease.
             if (!operation.discordUserId || !operation.userRecordId) {
+                await closeRunningAttempt(
+                    ctx,
+                    operation,
+                    "denied",
+                    "target_not_linked"
+                )
                 await ctx.db.patch(operation._id, {
                     status: "denied",
                     reason: "target_not_linked",
@@ -386,6 +411,12 @@ export const claimNext = mutation({
                 operation.failureCount +
                 (operation.status === "running" ? 1 : 0)
             if (failureCount >= 6) {
+                await closeRunningAttempt(
+                    ctx,
+                    operation,
+                    "failed",
+                    "attempt_limit"
+                )
                 await ctx.db.patch(operation._id, {
                     status: "failed",
                     reason: "attempt_limit",
@@ -394,6 +425,13 @@ export const claimNext = mutation({
                 })
                 continue
             }
+            if (operation.status === "running")
+                await closeRunningAttempt(
+                    ctx,
+                    operation,
+                    "retry_scheduled",
+                    "lease_expired"
+                )
             const fence = (lock?.fence ?? 0) + 1,
                 leaseUntil = Date.now() + 45_000
             if (lock) await ctx.db.patch(lock._id, { fence, leaseUntil })
@@ -549,13 +587,7 @@ export const finish = mutation({
             : null
         if (lock?.fence === args.fence)
             await ctx.db.patch(lock._id, { leaseUntil: 0 })
-        const audit = await ctx.db
-            .query("memberRoleAudits")
-            .withIndex("operationId_fence", (q) =>
-                q.eq("operationId", operation._id).eq("fence", args.fence)
-            )
-            .unique()
-        if (audit) await ctx.db.patch(audit._id, { outcome: status, reason })
+        await closeRunningAttempt(ctx, operation, status, reason)
         return true
     },
 })

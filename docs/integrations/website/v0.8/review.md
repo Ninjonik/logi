@@ -71,16 +71,19 @@ The [bot adapter test](../../../../discord-bot/src/sync/managed-member-roles.tes
 also asserts the provider receives the explicit Discord ID. The existing cross-game
 test now uses different assignment aliases for HLL and Wardogs.
 
-## Minor — incomplete historical attempt label, deferred
+## Minor — incomplete historical attempt label, subsequently fixed
 
 Superseding an operation or reclaiming an expired attempt can leave an earlier audit
 row as `running / claimed`. The operation itself carries the correct current/final
 status and stale completion is fenced. This can mislead historical troubleshooting;
 it does not authorize an extra write or report the operation as applied.
 
-Use the operation status and latest attempt during recovery. A later audit-only
-change should finalize interrupted historical rows and test supersession/crash
-recovery. This Minor was deliberately not bundled into the Important fix pass.
+This Minor was deliberately deferred from the Important fix pass. The subsequent
+[reliability follow-up](../v0.10/reliability-follow-up.md) closes attempts during
+supersession/crash recovery and denial/exhaustion, with observed RED → GREEN tests.
+It preserves completed audit rows and the live Discord lock. No historical-row
+backfill was run; old records from before the fix must still be interpreted using
+their operation status. This does not retroactively expand the independent review.
 
 ## Review limits
 

@@ -49,6 +49,14 @@ does not mean the roles have been applied. Unlinked players remain editable, wit
 an explicit denied role operation until their Discord identity is linked. Legacy
 API assignments and imports remain data-only and cannot mint role authority.
 
+Attempt history records an interrupted attempt as **Superseded** when a newer
+request replaces it. When the bot recovers an expired attempt, that attempt shows
+**Retry scheduled** with `lease_expired`; exhausting six attempts shows **Failed**
+with `attempt_limit`. These labels describe the attempt's outcome, not a promise
+that another attempt is still waiting. Check the operation's current status above
+the history. A previously verified attempt keeps its **Applied** result even if
+the overall request is later superseded. Attempt times are start times in UTC.
+
 The server **Settings** page contains bulk tools for managers. Treat the selected Discord role as a filter, not as a permanent relationship between Logi and Discord.
 
 | Tool                          | Exact effect                                                                                                                                                                                                                                                                                                 | Important limits and checks                                                                                                                                                                                                                                                                                                  |

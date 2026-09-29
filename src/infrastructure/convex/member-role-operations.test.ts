@@ -151,6 +151,10 @@ test("expired leases are reclaimed and stale completion cannot claim success", a
         guildId: "111111111111111111",
     })
     assert.ok(second.fence > first.fence)
+    const interrupted = structuredClone(ctx.db.tables.memberRoleAudits[0])
+    assert.equal(interrupted.outcome, "retry_scheduled")
+    assert.equal(interrupted.reason, "lease_expired")
+    assert.equal(ctx.db.tables.memberRoleAudits[1].outcome, "running")
     assert.equal(
         await invoke(operations.finish, ctx, {
             secret,
@@ -160,6 +164,7 @@ test("expired leases are reclaimed and stale completion cannot claim success", a
         }),
         false
     )
+    assert.deepEqual(ctx.db.tables.memberRoleAudits[0], interrupted)
     assert.equal(
         await invoke(operations.finish, ctx, {
             secret,
@@ -174,6 +179,118 @@ test("expired leases are reclaimed and stale completion cannot claim success", a
         ctx.db.tables.memberRoleOperations[0].nextAttemptAt >=
             Date.now() + 119_000
     )
+})
+
+test("superseding a running request closes its attempt without releasing the Discord lock", async () => {
+    const ctx = fixture(),
+        first = await queued(ctx)
+    const lock = structuredClone(ctx.db.tables.memberRoleLocks[0])
+    await invoke(assignments.upsertByServerDiscordId, ctx, {
+        ...save,
+        assignmentId: ctx.db.tables.userAssignments[0]._id,
+        status: "active",
+        roleActor: actor,
+    })
+    const audit = structuredClone(ctx.db.tables.memberRoleAudits[0])
+    assert.equal(audit.outcome, "superseded")
+    assert.equal(audit.reason, "new_desired_version")
+    assert.deepEqual(ctx.db.tables.memberRoleLocks[0], lock)
+    assert.equal(
+        await invoke(operations.claimNext, ctx, {
+            secret,
+            guildId: save.serverDiscordId,
+        }),
+        null
+    )
+    assert.equal(
+        await invoke(operations.finish, ctx, {
+            secret,
+            ...first,
+            outcome: "applied",
+            reason: "verified",
+            evidence: { ...evidence(), targetRoleIds: ["clan", "recruit"] },
+        }),
+        false
+    )
+    assert.deepEqual(ctx.db.tables.memberRoleAudits[0], audit)
+    const rows = await invoke(operations.listForGuild, ctx, {
+        secret,
+        guildId: save.serverDiscordId,
+    })
+    assert.equal(
+        rows.find((row: { id: string }) => row.id === first.operationId)
+            .audit[0].outcome,
+        "superseded"
+    )
+})
+
+test("superseding a completed request preserves its verified attempt history", async () => {
+    const ctx = fixture(),
+        first = await queued(ctx)
+    assert.equal(
+        await invoke(operations.finish, ctx, {
+            secret,
+            ...first,
+            outcome: "applied",
+            reason: "verified",
+            evidence: { ...evidence(), targetRoleIds: ["clan", "recruit"] },
+        }),
+        true
+    )
+    const audit = structuredClone(ctx.db.tables.memberRoleAudits[0])
+    await invoke(assignments.upsertByServerDiscordId, ctx, {
+        ...save,
+        assignmentId: ctx.db.tables.userAssignments[0]._id,
+        status: "active",
+        roleActor: actor,
+    })
+    assert.equal(ctx.db.tables.memberRoleOperations[0].status, "superseded")
+    assert.deepEqual(ctx.db.tables.memberRoleAudits[0], audit)
+    assert.equal(audit.outcome, "applied")
+})
+
+test("exhausted crash recovery closes the final attempt instead of leaving it running", async () => {
+    const ctx = fixture()
+    await queued(ctx)
+    for (let attempt = 1; attempt <= 6; attempt++) {
+        ctx.db.tables.memberRoleOperations[0].nextAttemptAt = 0
+        ctx.db.tables.memberRoleOperations[0].leaseUntil = 0
+        ctx.db.tables.memberRoleLocks[0].leaseUntil = 0
+        const next = await invoke(operations.claimNext, ctx, {
+            secret,
+            guildId: save.serverDiscordId,
+        })
+        assert.equal(next === null, attempt === 6)
+    }
+    assert.equal(ctx.db.tables.memberRoleOperations[0].status, "failed")
+    assert.equal(ctx.db.tables.memberRoleAudits.length, 6)
+    assert.deepEqual(
+        ctx.db.tables.memberRoleAudits.map((row) => [row.outcome, row.reason]),
+        [
+            ...Array.from({ length: 5 }, () => [
+                "retry_scheduled",
+                "lease_expired",
+            ]),
+            ["failed", "attempt_limit"],
+        ]
+    )
+})
+
+test("rejecting an incomplete legacy request closes its outstanding attempt", async () => {
+    const ctx = fixture()
+    await queued(ctx)
+    delete ctx.db.tables.memberRoleOperations[0].userRecordId
+    ctx.db.tables.memberRoleOperations[0].nextAttemptAt = 0
+    assert.equal(
+        await invoke(operations.claimNext, ctx, {
+            secret,
+            guildId: save.serverDiscordId,
+        }),
+        null
+    )
+    assert.equal(ctx.db.tables.memberRoleOperations[0].status, "denied")
+    assert.equal(ctx.db.tables.memberRoleAudits[0].outcome, "denied")
+    assert.equal(ctx.db.tables.memberRoleAudits[0].reason, "target_not_linked")
 })
 test("departure and rejoin cannot revive a previously queued grant", async () => {
     const ctx = fixture(),
