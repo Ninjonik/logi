@@ -125,6 +125,29 @@ They are examples of the configured bot capabilities, not separate services.
 5. If you use role automation, test it with a disposable role and account before connecting real membership roles.
 6. Inspect the bot dashboard/logs for errors, then remove the test event and any test channels or roles when finished.
 
+## Slash commands
+
+Logi registers these six commands for cached guilds when the bot becomes ready.
+After installing it in a new guild, restart the bot when command registration is
+needed; this revision does not register commands separately on guild join.
+All six commands are guild-only. Names stay in English; descriptions/options
+support Czech and German localization.
+
+| Command | Purpose and access |
+| --- | --- |
+| `/server-status game:wardogs` or `game:hell_let_loose` | Private stored game-server status for Discord Manage Server / Administrator |
+| `/close_ticket [reason]` | Close the current tracked ticket thread; Administrator, configured dashboard-admin role or category support role |
+| `/close_application outcome:<choice> [reason]` | Close the current tracked application and request the corresponding membership state; authorized recruitment staff |
+| `/notice event:<selection>` | Open your notice/reason modal for a matching eligible event |
+| `/link` | Privately manage your claimed platform identifiers; this is not verified Steam ownership |
+| `/player player:<selection>` | Show the selected clan player's profile/statistics in the channel |
+
+Brackets mark optional input. Closing reasons are limited to 500 characters.
+Application outcomes are `denied`, `pending`, `recruit`, `member` and `mercenary`.
+Event and player selections support autocomplete. Signup, attendance, ticket,
+application and recap-preference buttons are separate workflows, not additional
+slash commands. Verified Steam linking is available in your Logi account settings.
+
 ## Game-server status (server managers)
 
 Use `/server-status` and choose **Hell Let Loose** or **Wardogs**. You need Discord

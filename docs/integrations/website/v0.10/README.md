@@ -5,6 +5,11 @@ and [collection 0.5](../v0.5/README.md), in the same
 [PR #158](https://github.com/Ninjonik/logi/pull/158). This is implemented source
 with offline acceptance evidence, not a deployed integration.
 
+For the whole PR, start with the [delivery handbook](pr-handbook.md),
+[web/API catalog](web-capabilities.md), [Discord commands](discord-reference.md)
+and [committed verification proof](verification-evidence.md). This page specifies
+the reviewed-result contract in detail.
+
 Logi owns collection and the review record. The website keeps its own backend,
 sessions, publication decisions and consent. Existing 0.4 `match-summaries` remain
 unchanged. The new `result-summaries` resource carries explicit review state.

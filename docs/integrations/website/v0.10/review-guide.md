@@ -5,6 +5,11 @@ login sessions, access decisions, CMS, consent and publication. All work stays i
 [PR #158](https://github.com/Ninjonik/logi/pull/158). The PR body pins the tested
 head and measured diff totals. This is source delivery, not production activation.
 
+Start with the [delivery handbook](pr-handbook.md) for the complete web/API and
+Discord command catalogs, activation sequence and remaining ownership. The
+[fresh verification package](verification-evidence.md) commits named test output,
+build/lint diagnostics, command payloads and a hashed evidence manifest.
+
 ## Implemented boundaries
 
 | Boundary | Review entry point | Implementation and proof |

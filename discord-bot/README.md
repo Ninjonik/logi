@@ -53,7 +53,15 @@ for compatibility, rollback, tests and the remaining in-flight/duplicate limits.
 The [server-status command handoff](../docs/integrations/website/v0.10/server-status-command.md)
 records its guild/game scope, ten-second backend wait, five-connection display
 limit and simulated proof. It requires the existing game-data backend; command
-registration uses the normal guild ready/join path and performs no game-server poll.
+registration runs at `ClientReady` for cached guilds and performs no game-server poll.
+There is no separate join-time command registration in this revision; restart the
+bot after installation in a new guild when registration is needed.
+
+The [complete Discord reference](../docs/integrations/website/v0.10/discord-reference.md)
+lists all six slash commands, options, permissions, visibility, button/automatic
+workflows, rollout limits and reproducible registration payloads. The
+[PR handbook](../docs/integrations/website/v0.10/pr-handbook.md) links website
+capabilities, review, tests and visual proof.
 
 ## Source layout
 

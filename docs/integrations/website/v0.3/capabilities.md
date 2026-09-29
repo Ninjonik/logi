@@ -1,5 +1,9 @@
 # Capability evidence, 2026-09-28
 
+Historical baseline only. Later milestones implement several missing rows below;
+use the [current PR handbook](../v0.10/pr-handbook.md), [web catalog](../v0.10/web-capabilities.md)
+and [Discord reference](../v0.10/discord-reference.md) for delivery status.
+
 Baseline: `6fbfe4e7d9c41e9a5bdc004c65f1e2d935c86e0b`. Source and isolated tests are
 evidence for implementation only. Hosted tenant behavior is unverified throughout.
 

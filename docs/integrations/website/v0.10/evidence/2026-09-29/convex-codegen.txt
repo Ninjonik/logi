@@ -1,0 +1,8 @@
+Command: node scripts/generate-convex-api-offline.mjs
+Runtime source: 46fd6a0d06d48b923ad558b76d0a107cf2caa5af
+Exit: 0
+
+STDOUT
+Regenerated Convex API type inventory for 65 modules; no backend contacted.
+
+STDERR

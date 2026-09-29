@@ -4,6 +4,12 @@ Date: 2026-09-29. I5 commit: `f0c2d8a`. The PR description pins the final D4 and
 review-fix commit; documentation does not use a self-referential commit hash.
 All commands run locally with synthetic configuration, no production credentials.
 
+**Consolidated PR proof:** [verification-evidence.md](verification-evidence.md)
+records a fresh run at runtime source `46fd6a0d06d48b923ad558b76d0a107cf2caa5af`,
+including committed outputs for all 551 passing tests, typecheck, generation,
+the known lint/build failures and all six Discord registration definitions.
+Use the [delivery handbook](pr-handbook.md) as the current package entry point.
+
 **Latest follow-up:** the [Discord server-status command](server-status-command.md)
 passes the full **551/551** suite and typecheck, with **15/15** focused tests.
 Its changed-source lint has zero errors/three existing warnings; cumulative

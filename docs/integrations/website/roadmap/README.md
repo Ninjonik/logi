@@ -3,6 +3,8 @@
 **Status: D1–D4, W2, I1, I3 and I5 implemented for review, 2026-09-29; other tasks remain planned.**
 Current cumulative evidence is [handoff 0.10](../v0.10/README.md), with offline
 validation and explicit live-acceptance limits. It is not a deployment announcement.
+The [PR delivery handbook](../v0.10/pr-handbook.md) consolidates current web/API
+capabilities, all Discord commands, review, stored test outputs and screenshots.
 Task IDs below are local plan references,
 not GitHub issue numbers. Upstream Issues remain disabled.
 

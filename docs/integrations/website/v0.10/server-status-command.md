@@ -9,7 +9,7 @@ status view using the existing D1–D3 collector data.
 
 Run `/server-status game:wardogs` or select **Hell Let Loose** for
 `game:hell_let_loose`. The command is registered per guild on the existing bot
-startup/join path. Its English name stays stable; descriptions and replies
+`ClientReady` startup path for cached guilds. Its English name stays stable; descriptions and replies
 support Czech, English and German, with English fallback.
 
 The caller must have Discord **Manage Server** (`ManageGuild`, including
@@ -105,7 +105,9 @@ existing guild-registration pattern; no live registration was performed.
 
 Deploy only through an explicitly authorized rollout. The target needs the D1–D3
 `gameData:listConnections` function and configured/collected data. The matching
-bot registers the command through its existing ready/join handler. Before public
+bot registers the command through its existing `ClientReady` handler. Restart it
+after installation in a new guild when command registration is needed; this
+revision has no separate join-time registration call. Before public
 acceptance, verify visibility and denial with manager/non-manager test accounts,
 private responses, both configured games and a stale/disabled source. None of
 those hosted checks has been performed here. Rolling back this bot change has no
