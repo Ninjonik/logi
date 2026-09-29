@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import test from "node:test"
 
 import * as publicApi from "../../../convex/publicApi"
@@ -155,6 +156,49 @@ function deliveryPayload(db: FakeDb) {
     const delivery = [...db.tables.webhookDeliveries.values()][0]
     return JSON.parse(delivery?.payload as string) as Record<string, unknown>
 }
+
+test("generic event mutation responses and webhook payloads exclude review storage", async () => {
+    const db = new FakeDb()
+    const created = await handler(publicApi.mutateClanEvent)({ db }, request())
+    const eventId = JSON.parse(created!.body).data.id
+    const reviewedResult = JSON.parse(
+        readFileSync(
+            new URL(
+                "../../../docs/integrations/website/v0.10/fixtures/confirmed.json",
+                import.meta.url
+            ),
+            "utf8"
+        )
+    ).data.result
+    await db.patch(eventId, {
+        reviewedResult,
+        reviewedResultGameId: "hell_let_loose",
+    })
+    db.tables.webhookSubscriptions.get("hook-1")!.eventTypes = ["event.updated"]
+    for (const operation of ["update", "conclude"]) {
+        db.tables.webhookDeliveries.clear()
+        const result = await handler(publicApi.mutateClanEvent)(
+            { db },
+            request({
+                eventId,
+                operation,
+                idempotencyKey: operation,
+                bodyHash: operation,
+                methodPath: operation,
+                event: event({ name: "Reviewed event" }),
+            })
+        )
+        assert.equal(result?.status, 200)
+        for (const document of [
+            JSON.parse(result!.body).data,
+            deliveryPayload(db).resource as Record<string, unknown>,
+        ]) {
+            assert.equal("reviewedResult" in document, false)
+            assert.equal("reviewedResultGameId" in document, false)
+        }
+    }
+    assert.deepEqual((await db.get(eventId))?.reviewedResult, reviewedResult)
+})
 
 test("event API rejects cross-guild references without creating an event", async () => {
     const db = new FakeDb()

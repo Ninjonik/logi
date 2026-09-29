@@ -2,6 +2,22 @@ import type { ResultRevision } from "../match-results/result-revision"
 import { providerSchema, scoreSchema } from "../game-data/contracts"
 import { GAME_IDS, resolveGameScope } from "../games/game"
 import { z } from "zod"
+
+export const RESULT_STORAGE_FIELDS = [
+    "reviewedResult",
+    "reviewedResultGameId",
+] as const
+
+/** Storage-only result heads are served solely by the scoped result projection. */
+export function omitResultStorage<T extends object>(
+    document: T
+): Omit<T, (typeof RESULT_STORAGE_FIELDS)[number]> {
+    const output = { ...document }
+    for (const field of RESULT_STORAGE_FIELDS)
+        Reflect.deleteProperty(output, field)
+    return output
+}
+
 export const resultSummaryPayloadSchema = z
     .object({
         version: z.number().int().positive(),

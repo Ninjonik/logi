@@ -21,6 +21,7 @@ permission to deploy or change website/identity-provider repositories. Earlier
 | Frozen identity attribution at review time | Audit must describe evidence used for that decision | Unlink affects future review, not historical snapshots; public output is counts only |
 | Keep legacy competition and recap semantics | Preserve existing import callers | Legacy finalization is not new human confirmation |
 | Ignore malformed legacy drafts only for new review staging | Old contract permits empty participant labels | Such imports need explicit labels before a review can exist |
+| Strip result storage fields from generic event responses | Final review reproduced bypass of result/game grants | Consumers use the dedicated result resource; old event schema is preserved |
 | Do not change unrelated baseline lint/test failures | Repository instructions require reporting instead of scope creep | Full upstream checks are not green |
 | Synthetic local UI and handlers | Live provider/login/Discord actions are outside this proof | No claim of deployed identity, ingestion or website acceptance |
 

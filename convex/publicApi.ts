@@ -1,10 +1,13 @@
 import {
+    omitResultStorage,
+    projectResultSummary,
+} from "../src/domain/api/result-summaries"
+import {
     projectEventSummary,
     projectMatchSummary,
 } from "../src/domain/api/event-summaries"
 import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
-import { projectResultSummary } from "../src/domain/api/result-summaries"
 import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
 import { assertManagedRoleGroupLink } from "./managedRolePolicy"
 import type { MutationCtx } from "./_generated/server"
@@ -2066,7 +2069,7 @@ function apiDocument<T extends { _id: unknown; gameId?: unknown }>(
     document: T
 ) {
     return {
-        ...document,
+        ...omitResultStorage(document),
         id: String(document._id),
         ...(Object.prototype.hasOwnProperty.call(document, "gameId")
             ? { gameId: resolveGameScope(document.gameId as never) }

@@ -39,6 +39,8 @@ function fixture() {
         gameId: "hell_let_loose",
         kind: "match",
         name: "Fixture",
+        registrationEnd: "2026-09-29T07:00:00Z",
+        meetingStart: "2026-09-29T08:00:00Z",
         gameEnd: "2026-09-29T09:00:00Z",
     })
     ctx.db.seed("gameDataConnections", {
@@ -267,4 +269,63 @@ test("reviewed result participates in transactional changes, refetch and deletio
     const tombstone = await invoke(feed.readSyncRecord, ctx, query)
     assert.equal(tombstone.operation, "remove")
     assert.equal(tombstone.data, null)
+})
+
+test("generic event reads cannot bypass the reviewed-result grant or game boundary", async () => {
+    const ctx = fixture()
+    await stage(ctx)
+    await confirm(ctx)
+    for (const gameId of ["hell_let_loose", "wardogs"]) {
+        await ctx.db.patch("events:a", { gameId })
+        await ctx.db.patch("apiKeys:a", {
+            readAccess: { resources: ["events"], gameIds: [gameId] },
+        })
+        assert.equal(
+            await invoke(api.getClanResource, ctx, {
+                secret,
+                keyHash: "key",
+                resource: "result-summaries",
+                id: "events:a",
+            }),
+            null
+        )
+        const detail = await invoke(api.getClanResource, ctx, {
+            secret,
+            keyHash: "key",
+            resource: "events",
+            id: "events:a",
+        })
+        const page = await invoke(api.getClanResourcePage, ctx, {
+            secret,
+            keyHash: "key",
+            resource: "events",
+            game: gameId,
+            cursor: null,
+            limit: 10,
+        })
+        for (const event of [detail, ...page.items]) {
+            assert.equal(event.id, "events:a")
+            assert.equal(event.gameId, gameId)
+            assert.equal("reviewedResult" in event, false)
+            assert.equal("reviewedResultGameId" in event, false)
+        }
+    }
+    await ctx.db.patch("apiKeys:a", {
+        readAccess: { resources: ["result-summaries"], gameIds: ["wardogs"] },
+    })
+    assert.equal(
+        (
+            await invoke(api.getClanResource, ctx, {
+                secret,
+                keyHash: "key",
+                resource: "result-summaries",
+                id: "events:a",
+            })
+        ).result,
+        null
+    )
+    assert.equal(
+        (await ctx.db.get("events:a"))?.reviewedResult.status,
+        "confirmed"
+    )
 })

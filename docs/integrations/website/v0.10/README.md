@@ -122,6 +122,10 @@ minimal source provenance, review timestamp, superseded version and attribution
 counts. It excludes source addresses, credentials, hashes, raw telemetry, player
 identities, reviewer identities and free-text correction reasons. Private history
 is available only through the management route.
+Generic `events` responses and their mutation/webhook payloads omit the stored
+review head entirely, so an event grant cannot bypass the independent result
+grant or expose a previous game's frozen head. The OpenAPI event schema makes
+the same exclusion.
 
 Revision appends use the existing transactional W2 event projection. Changes,
 refetch and deletion tombstones now include `result-summaries`. A source refresh

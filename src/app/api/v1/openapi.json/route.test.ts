@@ -3,6 +3,16 @@ import test from "node:test"
 
 import { GET } from "./route"
 
+test("generic event schemas exclude internal reviewed result storage", async () => {
+    const document = await (await GET()).json()
+    const schema = document.components.schemas.ClanEventsDocument
+    for (const field of ["reviewedResult", "reviewedResultGameId"]) {
+        assert.equal(field in schema.properties, false)
+        assert.equal(field in schema.example, false)
+        assert.equal(schema.required.includes(field), false)
+    }
+})
+
 test("OpenAPI exposes read-only summary routes with closed minimal response schemas", async () => {
     const document = await (await GET()).json()
     for (const [resource, schemaName, field] of [
