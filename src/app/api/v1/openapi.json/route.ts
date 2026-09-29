@@ -12,6 +12,7 @@ import {
     integrationHealthSchema,
 } from "@/domain/game-data/contracts"
 import { membershipObservationSchema } from "@/domain/membership/observation"
+import { clanResultSummarySchema } from "@/domain/api/result-summaries"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { NextResponse } from "next/server"
 import { z } from "zod"
@@ -26,6 +27,7 @@ const summaryResponseSchemas = {
     ClanIntegrationHealthDocument: z.toJSONSchema(integrationHealthSchema),
     ClanEventSummariesDocument: z.toJSONSchema(clanEventSummarySchema),
     ClanMatchSummariesDocument: z.toJSONSchema(clanMatchSummarySchema),
+    ClanResultSummariesDocument: z.toJSONSchema(clanResultSummarySchema),
 }
 
 const error = {
@@ -86,6 +88,7 @@ const resources = [
     "integration-health",
     "event-summaries",
     "match-summaries",
+    "result-summaries",
     "events",
     "groups",
     "rosters",
@@ -103,6 +106,7 @@ const resourceTags: Record<string, string> = {
     "integration-health": "Clan API — Game data",
     "event-summaries": "Clan API — Events",
     "match-summaries": "Clan API — Matches",
+    "result-summaries": "Clan API — Matches",
     events: "Clan API — Events",
     groups: "Clan API — Groups",
     rosters: "Clan API — Rosters",
@@ -368,6 +372,7 @@ for (const resource of resources) {
         "integration-health",
         "event-summaries",
         "match-summaries",
+        "result-summaries",
         "events",
         "groups",
         "rosters",
@@ -387,6 +392,12 @@ for (const resource of resources) {
                           "Allowlisted operational summaries. A separate matching readAccess resource grant is required for restricted keys. Website publication still requires its own approval. Match summaries use event IDs, exclude training events and report imported results as provisional; absent results remain unknown.",
                   }
                 : {}),
+            ...(resource === "result-summaries"
+                ? {
+                      description:
+                          "Reviewed event-result snapshots with independent result-summaries/game grants. States unknown, provisional, confirmed and corrected. Scores preserve null and zero and support 2-16 factions. Private player/reviewer identities, free-text reasons and source addresses are excluded. Confirmation/correction are account-session-only; bearer writes are unavailable. Publication remains consumer-owned.",
+                  }
+                : {}),
             tags: [resourceTags[resource]!],
             security: [{ clanApiKey: [] }],
             parameters: [
@@ -397,16 +408,22 @@ for (const resource of resources) {
             responses,
         },
     }
-    const itemPath =
-        resource === "matches" || resource === "match-summaries"
-            ? `/clan/${resource}/{eventId}`
-            : `/clan/${resource}/{id}`
+    const itemPath = [
+        "matches",
+        "match-summaries",
+        "result-summaries",
+    ].includes(resource)
+        ? `/clan/${resource}/{eventId}`
+        : `/clan/${resource}/{id}`
     paths[itemPath] = {
         get: {
-            summary:
-                resource === "matches" || resource === "match-summaries"
-                    ? "Get match details for a clan event"
-                    : `Get a clan ${resource} record`,
+            summary: [
+                "matches",
+                "match-summaries",
+                "result-summaries",
+            ].includes(resource)
+                ? "Get match details for a clan event"
+                : `Get a clan ${resource} record`,
             ...(gameDataDescription
                 ? { description: gameDataDescription }
                 : {}),
@@ -414,10 +431,13 @@ for (const resource of resources) {
             security: [{ clanApiKey: [] }],
             parameters: [
                 {
-                    name:
-                        resource === "matches" || resource === "match-summaries"
-                            ? "eventId"
-                            : "id",
+                    name: [
+                        "matches",
+                        "match-summaries",
+                        "result-summaries",
+                    ].includes(resource)
+                        ? "eventId"
+                        : "id",
                     in: "path",
                     required: true,
                     schema: { type: "string" },
@@ -1012,10 +1032,13 @@ for (const resource of resources) {
             ...responses,
             "200": successResponse(resource, true),
         }
-    const itemPath =
-        resource === "matches" || resource === "match-summaries"
-            ? `/clan/${resource}/{eventId}`
-            : `/clan/${resource}/{id}`
+    const itemPath = [
+        "matches",
+        "match-summaries",
+        "result-summaries",
+    ].includes(resource)
+        ? `/clan/${resource}/{eventId}`
+        : `/clan/${resource}/{id}`
     const item = paths[itemPath] as { get?: OpenApiOperation }
     if (item.get)
         item.get.responses = {
@@ -1289,7 +1312,7 @@ export async function GET() {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.5.0",
+                version: "1.6.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read

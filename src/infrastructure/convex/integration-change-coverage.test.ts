@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import test from "node:test"
 
-test("actual bot event mutation appends both summary invalidations", async () => {
+test("actual bot event mutation appends all event summary invalidations", async () => {
     process.env.INTERNAL_AUTH_SECRET = "synthetic-sync-secret"
     const events = await import("../../../convex/events")
     const ctx = testContext()
@@ -21,7 +21,7 @@ test("actual bot event mutation appends both summary invalidations", async () =>
     })
     assert.deepEqual(
         ctx.db.tables.integrationChanges?.map((row) => row.resource).sort(),
-        ["event-summaries", "match-summaries"]
+        ["event-summaries", "match-summaries", "result-summaries"]
     )
 })
 
@@ -47,7 +47,7 @@ test("dashboard upsert, API upsert, result import and legacy migration emit tran
         serverId: "guilds:one",
         ...input,
     })
-    assert.equal(ctx.db.tables.integrationChanges.length, 2)
+    assert.equal(ctx.db.tables.integrationChanges.length, 3)
     ctx.db.seed("apiKeys", {
         _id: "apiKeys:one",
         guildId: "guild-a",
@@ -63,7 +63,7 @@ test("dashboard upsert, API upsert, result import and legacy migration emit tran
         event: input,
     })
     assert.equal(result.status, 201)
-    assert.equal(ctx.db.tables.integrationChanges.length, 4)
+    assert.equal(ctx.db.tables.integrationChanges.length, 6)
     const eventResult = {
         sourceUrl: "https://private.test/no-export",
         mapId: "test",
@@ -78,7 +78,7 @@ test("dashboard upsert, API upsert, result import and legacy migration emit tran
         eventId: id,
         eventResult,
     })
-    assert.equal(ctx.db.tables.integrationChanges.length, 6)
+    assert.equal(ctx.db.tables.integrationChanges.length, 9)
     const row = await ctx.db.get(id)
     row!.eventResult = {
         ...eventResult,
@@ -89,7 +89,7 @@ test("dashboard upsert, API upsert, result import and legacy migration emit tran
     await invoke(migrations.migrateEventResults, ctx, {
         secret: "synthetic-sync-secret",
     })
-    assert.equal(ctx.db.tables.integrationChanges.length, 8)
+    assert.equal(ctx.db.tables.integrationChanges.length, 12)
     assert.equal(
         JSON.stringify(ctx.db.tables.integrationChanges).includes(
             "private.test"
@@ -101,6 +101,7 @@ test("dashboard upsert, API upsert, result import and legacy migration emit tran
 test("registered authoritative writers keep transaction tracking at their Convex entrypoints", () => {
     for (const writer of [
         "events",
+        "eventResults",
         "publicApi",
         "migrations",
         "matchStats",
@@ -223,7 +224,7 @@ for (const hasPrimaryAssignment of [false, true]) {
                 .filter((row) => row.id === "events:merge")
                 .map((row) => row.resource)
                 .sort(),
-            ["event-summaries", "match-summaries"]
+            ["event-summaries", "match-summaries", "result-summaries"]
         )
         assert.ok(
             changes.every(

@@ -13,6 +13,7 @@ export const API_KEY_READ_RESOURCES = [
     "matches",
     "event-summaries",
     "match-summaries",
+    "result-summaries",
 ] as const
 
 export type ApiKeyReadAccess = {

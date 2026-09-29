@@ -62,4 +62,29 @@ the workspace's configured clan language and opens the matching localized
 public-statistics page. Its comparison uses the same previously recorded player
 matches shown on that page.
 
-> **Screenshot placeholder — match workflow:** Show a match detail page with tabs or links to briefing, roster, match statistics, and result/conclude controls. Use arrows to show the workflow from planning to conclusion.
+## Review a result (manager)
+
+On a concluded match, open **Review result**. Choose a collected HLL session,
+load an existing imported result, or enter scores manually. Selecting a source
+does not approve it. Save a provisional version, check the displayed scores and
+then confirm that version. Unsaved changes must be saved before confirmation.
+An empty score is unknown; zero is a known score.
+
+The form supports two to sixteen participants, including manual Wardogs factions.
+Current Wardogs collection supplies server status, not match history. HLL source
+candidates are the fifty most recently fetched sessions. A changed or incomplete
+source cannot be confirmed; refresh, select the current source and review again.
+
+After confirmation, use **Save reviewed correction** with a reason. The previous
+version remains in the recent revision history with its reviewer and timestamp.
+A later import does not silently replace a reviewed result. Another manager's
+concurrent save requires you to refresh before saving your version.
+
+Player attribution uses active verified Steam links at review time. Manually
+entered IDs and player names do not verify an account. Unlinking affects future
+reviews; it does not rewrite past review history. Counts do not establish team
+membership, attendance or game ownership.
+
+Reviewed results are separate from the legacy imported scoreboard, competition
+fixture finalization and event conclusion described above. A confirmed result
+does not automatically publish anything on an external website.

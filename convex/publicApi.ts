@@ -4,6 +4,7 @@ import {
 } from "../src/domain/api/event-summaries"
 import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
+import { projectResultSummary } from "../src/domain/api/result-summaries"
 import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
 import { assertManagedRoleGroupLink } from "./managedRolePolicy"
 import type { MutationCtx } from "./_generated/server"
@@ -1930,6 +1931,7 @@ const apiResource = v.union(
     v.literal("integration-health"),
     v.literal("event-summaries"),
     v.literal("match-summaries"),
+    v.literal("result-summaries"),
     v.literal("events"),
     v.literal("groups"),
     v.literal("rosters"),
@@ -2171,6 +2173,7 @@ export const getClanResourcePage = query({
         }
         switch (args.resource) {
             case "event-summaries":
+            case "result-summaries":
             case "match-summaries": {
                 const events = ctx.db
                     .query("events")
@@ -2191,9 +2194,11 @@ export const getClanResourcePage = query({
                                     (event.kind ?? "match") === "match")
                         )
                         .map((event) =>
-                            args.resource === "event-summaries"
-                                ? projectEventSummary(event)
-                                : projectMatchSummary(event)
+                            args.resource === "result-summaries"
+                                ? projectResultSummary(event)
+                                : args.resource === "event-summaries"
+                                  ? projectEventSummary(event)
+                                  : projectMatchSummary(event)
                         ),
                     nextCursor: result.isDone ? null : result.continueCursor,
                     limit: args.limit,
@@ -2496,6 +2501,7 @@ export const getClanResource = query({
         }
         if (
             args.resource === "event-summaries" ||
+            args.resource === "result-summaries" ||
             args.resource === "match-summaries"
         ) {
             const eventId = ctx.db.normalizeId("events", args.id)
@@ -2509,13 +2515,16 @@ export const getClanResource = query({
                     args.resource,
                     resolveGameScope(event.gameId)
                 ) ||
-                (args.resource === "match-summaries" &&
+                ((args.resource === "match-summaries" ||
+                    args.resource === "result-summaries") &&
                     (event.kind ?? "match") !== "match")
             )
                 return null
-            return args.resource === "event-summaries"
-                ? projectEventSummary(event)
-                : projectMatchSummary(event)
+            return args.resource === "result-summaries"
+                ? projectResultSummary(event)
+                : args.resource === "event-summaries"
+                  ? projectEventSummary(event)
+                  : projectMatchSummary(event)
         }
         const item = (await ctx.db.get(args.id as never)) as
             (Record<string, unknown> & { _id: unknown }) | null

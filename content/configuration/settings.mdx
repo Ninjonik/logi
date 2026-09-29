@@ -386,8 +386,8 @@ Store decimal revisions losslessly. After seven days without recovery, a 410
 `reset_required` response requires a new baseline. Keep CMS/publication decisions
 in the website's own backend.
 
-The registered projections are event summaries, match summaries, server snapshots
-and integration health. Optional `integration.changed` webhook subscriptions emit
+The registered projections are event summaries, match summaries, reviewed result
+summaries, server snapshots and integration health. Optional `integration.changed` webhook subscriptions emit
 minimal invalidations from dashboard, API, bot, import and collector transactions.
 Use the existing administrator-session webhook endpoint to opt into that event
 type; existing subscriptions are unchanged. The queue processes bounded batches,
@@ -395,6 +395,17 @@ honors Retry-After and recovers expired worker leases. Receivers must deduplicat
 the change feed remains the recovery source. See `/api/v1/docs` for the contract.
 
 > **Screenshot placeholder — settings:** Show the server Settings page with the active workspace name, clearly separated settings sections, and a redacted example of any sensitive key field.
+
+### Reviewed result access
+
+Select **Reviewed result summaries** explicitly when creating a restricted key;
+the existing event/match defaults do not include it. Read
+`/api/v1/clan/result-summaries?game=hell_let_loose`, or a detail using its event ID.
+The response distinguishes unknown, provisional, confirmed and corrected results,
+preserves zero versus unknown scores, and supports multiple factions. It omits
+private player/reviewer identities and correction notes. Confirmation and
+correction require a signed-in manager in Logi; an integration key cannot do them.
+Existing match summaries retain their earlier import-only semantics.
 
 ## Discord membership integrations
 

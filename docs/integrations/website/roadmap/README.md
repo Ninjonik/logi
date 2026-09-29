@@ -1,7 +1,7 @@
 # Data, website and identity integration roadmap
 
-**Status: D1–D3, W2, I1 and I3 implemented for review, 2026-09-29; other tasks remain planned.**
-Current producer and membership evidence is [handoff 0.8](../v0.8/README.md), with offline
+**Status: D1–D4, W2, I1, I3 and I5 implemented for review, 2026-09-29; other tasks remain planned.**
+Current cumulative evidence is [handoff 0.10](../v0.10/README.md), with offline
 validation and explicit live-acceptance limits. It is not a deployment announcement.
 Task IDs below are local plan references,
 not GitHub issue numbers. Upstream Issues remain disabled.
@@ -26,7 +26,8 @@ models. Extend the existing Logi dashboard, Convex backend and Discord bot.
 The user's continuation prioritizes D1–D3 for the existing HLL setup and one
 Wardogs server. These now include persistence, adapters, scoped reads and manager
 UI. W2/I1 add transactional invalidation and scoped membership; I3 adds actor-backed
-managed-role reliability and audit. Next Logi work is I5 verified identity, then D4 reviewed results.
+managed-role reliability and audit. I5 adds verified Steam identity; D4 adds
+reviewed result revisions with an independent read contract.
 Website owners can implement I2 and W1/W3/W4 from the versioned contracts.
 The broader dependency ordering below still applies to website-owned work.
 
@@ -95,5 +96,5 @@ Until that contract is reviewed, the website links to Logi operational workflows
 The original planning-only revision checked 45 relative links across nine files,
 13 unique task IDs, 52 unchecked steps, plan structure, formatting and code fences.
 Its runtime baseline was `cd69579` in handoff 0.4. Current collector evidence and
-plan adjustments are recorded in [0.8 validation](../v0.8/validation.md);
-unchanged W1/W3/W4, I2/I4/I5 and D4 checkboxes remain future work.
+plan adjustments are recorded in [0.10 validation](../v0.10/validation.md);
+unchanged W1/W3/W4 and I2/I4 checkboxes remain future work.

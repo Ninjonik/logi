@@ -43,6 +43,7 @@ const gameOwned = new Set<ClanApiResource>([
     "integration-health",
     "event-summaries",
     "match-summaries",
+    "result-summaries",
     "events",
     "groups",
     "rosters",

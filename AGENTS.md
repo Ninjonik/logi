@@ -31,9 +31,10 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — contribution workflow, placement rules, and expected validation
 - [discord-bot/README.md](./discord-bot/README.md) — bot runtime, required environment variables, responsibilities, and source layout
 - [Website integration handoff](./docs/integrations/website/v0.8/README.md) — actor-backed managed role queue/audit; inherits scoped membership from 0.7, synchronization from 0.6, collectors from 0.5 and scoped summary keys from 0.4
-- [Integration PR review guide](./docs/integrations/website/v0.8/review-guide.md) — cumulative architecture, review boundaries, findings, verification and remaining owner tasks
+- [Integration PR review guide](./docs/integrations/website/v0.10/review-guide.md) — cumulative architecture, review boundaries, findings, verification and remaining owner tasks
 - [Integration roadmap](./docs/integrations/website/roadmap/README.md) — proposed HLL/Wardogs collection, website synchronization, Discord membership and identity plans
 - [Verified Steam identity](./docs/integrations/website/v0.9/README.md) — session-bound account proof, revocation, identity separation and synthetic acceptance evidence
+- [Reviewed result handoff](./docs/integrations/website/v0.10/README.md) — immutable confirmation/correction, proof-based attribution, scoped result summaries, consumer fixtures and synthetic acceptance
 
 ### User-facing and legal Markdown
 

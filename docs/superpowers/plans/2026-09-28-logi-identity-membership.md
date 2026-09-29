@@ -185,6 +185,6 @@ to existing Logi workflows; do not enable writes merely to make a button work.
 
 ## Evidence and execution boundary
 
-Checked I1/I3 steps have local implementation evidence; unchecked steps describe future work. No live membership, role mutation or OAuth
+Checked I1/I3/I5 steps have local implementation evidence; unchecked steps describe future work. No live membership, role mutation or OAuth
 flow was exercised to create this plan. Read-only research is documented separately.
 Website edits belong to its owner; provider-specific security work stays private.

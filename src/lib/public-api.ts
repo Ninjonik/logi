@@ -74,6 +74,7 @@ export const clanApiResources = [
     "integration-health",
     "event-summaries",
     "match-summaries",
+    "result-summaries",
     "events",
     "groups",
     "rosters",

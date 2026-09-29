@@ -2,7 +2,8 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import { projectHealth, projectSnapshot } from "@/domain/game-data/policy"
-import { GET } from "@/app/api/v1/clan/[[...path]]/route"
+import { clanResultSummarySchema } from "@/domain/api/result-summaries"
+import { GET, POST } from "@/app/api/v1/clan/[[...path]]/route"
 
 test("summary HTTP routes preserve page filters, detail identity and no-store", async (t) => {
     const previous = {
@@ -132,6 +133,118 @@ test("summary HTTP routes preserve page filters, detail identity and no-store", 
         { params: Promise.resolve({ path: ["events"] }) }
     )
     assert.equal(denied.status, 403)
+})
+
+test("reviewed result HTTP reads need their own grant; bearer keys cannot confirm", async (t) => {
+    const oldUrl = process.env.NEXT_PUBLIC_CONVEX_URL
+    process.env.NEXT_PUBLIC_CONVEX_URL = "https://offline-test.convex.cloud"
+    t.after(() => {
+        if (oldUrl === undefined) delete process.env.NEXT_PUBLIC_CONVEX_URL
+        else process.env.NEXT_PUBLIC_CONVEX_URL = oldUrl
+    })
+    let granted = true,
+        reads = 0
+    const summary = {
+        id: "event",
+        eventId: "event",
+        guildId: "guild-a",
+        gameId: "wardogs",
+        title: "Fixture",
+        updatedAt: null,
+        resultState: "unknown",
+        result: null,
+    }
+    t.mock.method(
+        globalThis,
+        "fetch",
+        async (_input: unknown, init?: RequestInit) => {
+            const request = JSON.parse(String(init?.body))
+            let value: unknown
+            if (request.path === "publicApi:checkRateLimit")
+                value = { allowed: true, remaining: 299, resetAt: 0 }
+            else if (request.path === "publicApi:authenticateKey")
+                value = {
+                    guildId: "guild-a",
+                    readAccess: {
+                        resources: granted
+                            ? ["result-summaries"]
+                            : ["match-summaries"],
+                        gameIds: ["wardogs"],
+                    },
+                }
+            else if (request.path === "publicApi:getClanResourcePage") {
+                reads++
+                assert.equal(request.args[0].resource, "result-summaries")
+                assert.equal(request.args[0].game, "wardogs")
+                value = { items: [summary], limit: 10, nextCursor: null }
+            } else throw new Error(`Unexpected offline call: ${request.path}`)
+            return Response.json({ status: "success", value })
+        }
+    )
+    const headers = { authorization: "Bearer synthetic" }
+    const params = { params: Promise.resolve({ path: ["result-summaries"] }) }
+    const response = await GET(
+        new Request(
+            "https://logi.test/api/v1/clan/result-summaries?game=wardogs&limit=10",
+            { headers }
+        ),
+        params
+    )
+    assert.equal(response.status, 200)
+    assert.equal(response.headers.get("cache-control"), "no-store")
+    assert.deepEqual(
+        clanResultSummarySchema.parse((await response.json()).data[0]),
+        summary
+    )
+    assert.equal(
+        (
+            await GET(
+                new Request(
+                    "https://logi.test/api/v1/clan/result-summaries?game=hell_let_loose",
+                    { headers }
+                ),
+                params
+            )
+        ).status,
+        403
+    )
+    granted = false
+    assert.equal(
+        (
+            await GET(
+                new Request(
+                    "https://logi.test/api/v1/clan/result-summaries?game=wardogs",
+                    { headers }
+                ),
+                params
+            )
+        ).status,
+        403
+    )
+    assert.equal(reads, 1)
+    assert.equal(
+        (
+            await POST(
+                new Request(
+                    "https://logi.test/api/v1/clan/result-summaries/event",
+                    {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({
+                            action: "confirm",
+                            expectedRevision: 1,
+                        }),
+                    }
+                ),
+                {
+                    params: Promise.resolve({
+                        path: ["result-summaries", "event"],
+                    }),
+                }
+            )
+        ).status,
+        404
+    )
 })
 
 test("clan route rejects missing and malformed credentials through HTTP", async () => {

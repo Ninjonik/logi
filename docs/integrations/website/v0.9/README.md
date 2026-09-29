@@ -3,7 +3,7 @@
 Logi remains the data authority behind the website's own backend. This milestone
 adds account-owned Steam identity proof. It inherits the [0.8 role contract](../v0.8/README.md)
 and does not change existing summaries, recruitment, OAuth/OIDC, role grants or
-publication consent. Reviewed event results follow in D4.
+publication consent. Reviewed event results are documented in [D4 / 0.10](../v0.10/README.md).
 
 ## Account lifecycle
 

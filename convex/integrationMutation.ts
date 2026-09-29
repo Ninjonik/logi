@@ -8,6 +8,7 @@ import {
     projectMatchSummary,
 } from "../src/domain/api/event-summaries"
 import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
+import { projectResultSummary } from "../src/domain/api/result-summaries"
 import type { SyncResource } from "../src/domain/integrations/change"
 import { appendIntegrationChange } from "./integrationChangeLog"
 import type { Doc, Id } from "./_generated/dataModel"
@@ -34,6 +35,10 @@ export function projectIntegrationRow(
                       {
                           resource: "match-summaries" as const,
                           data: projectMatchSummary(event),
+                      },
+                      {
+                          resource: "result-summaries" as const,
+                          data: projectResultSummary(event),
                       },
                   ]
                 : []),
@@ -163,6 +168,8 @@ export async function withIntegrationChanges<T>(
                           "gameEnd",
                           "updatedAt",
                           "eventResult",
+                          "reviewedResult",
+                          "reviewedResultGameId",
                       ]
                     : [
                           "provider",
@@ -182,7 +189,10 @@ export async function withIntegrationChanges<T>(
                     ? [
                           "event-summaries",
                           ...((data.kind ?? "match") === "match"
-                              ? ["match-summaries" as const]
+                              ? [
+                                    "match-summaries" as const,
+                                    "result-summaries" as const,
+                                ]
                               : []),
                       ]
                     : ["server-snapshots", "integration-health"]

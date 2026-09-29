@@ -4,6 +4,7 @@ import {
     gameDataHistoryProgress,
     gameDataSession,
 } from "./gameDataValidators"
+import { resultPublicPayload, resultRevision } from "./resultValidators"
 import { defineSchema, defineTable } from "convex/server"
 import { apiKeyReadAccess } from "./apiKeyValidators"
 import { v } from "convex/values"
@@ -492,6 +493,13 @@ const guildGames = defineTable({
 }).index("guildId_gameId", ["guildId", "gameId"])
 
 export default defineSchema({
+    eventResultRevisions: defineTable({
+        eventId: v.id("events"),
+        guildId: v.string(),
+        gameId: v.string(),
+        version: v.number(),
+        revision: resultRevision,
+    }).index("eventId_version", ["eventId", "version"]),
     platformLinkChallenges: defineTable({
         tokenHash: v.string(),
         sessionHash: v.string(),
@@ -740,6 +748,8 @@ export default defineSchema({
         statusUpdatedAt: v.optional(v.string()),
         concludedAt: v.optional(v.string()),
         eventResult: v.optional(eventResult),
+        reviewedResult: v.optional(resultPublicPayload),
+        reviewedResultGameId: v.optional(v.string()),
         matchStatsId: v.optional(v.id("matchStats")),
         competitionFixtureId: v.optional(v.id("competitionFixtures")),
         attendanceReminderLog: v.optional(v.array(attendanceReminder)),
@@ -1238,6 +1248,7 @@ export default defineSchema({
         updatedAt: v.string(),
     })
         .index("connection_external", ["connectionId", "externalId"])
+        .index("guildId_gameId_fetchedAt", ["guildId", "gameId", "fetchedAt"])
         .index("connection_complete_fetched", [
             "connectionId",
             "complete",

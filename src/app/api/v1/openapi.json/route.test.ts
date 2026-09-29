@@ -14,6 +14,7 @@ test("OpenAPI exposes read-only summary routes with closed minimal response sche
         ],
         ["event-summaries", "ClanEventSummariesDocument", "startsAt"],
         ["match-summaries", "ClanMatchSummariesDocument", "resultState"],
+        ["result-summaries", "ClanResultSummariesDocument", "resultState"],
     ]) {
         const operations = document.paths[`/clan/${resource}`]
         assert.ok(operations?.get, `${resource} list is documented`)
@@ -92,6 +93,7 @@ test("every clan operation documents runtime scope denial and its read-access re
                     "matches",
                     "event-summaries",
                     "match-summaries",
+                    "result-summaries",
                 ].includes(resource)
             assert.deepEqual(
                 operation["x-logi-read-access"],

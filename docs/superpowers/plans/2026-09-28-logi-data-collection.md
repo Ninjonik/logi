@@ -18,7 +18,7 @@ and [pinned research](../../integrations/website/roadmap/research.md).
 
 ## Implementation record — 2026-09-28
 
-D1–D3 are implemented together in [handoff 0.5](../../integrations/website/v0.5/README.md). The checkboxes record local implementation and offline evidence, not hosted acceptance. D4 remains pending. The PR pins the tested SHA.
+D1–D3 are implemented together in [handoff 0.5](../../integrations/website/v0.5/README.md). D4 is implemented in [handoff 0.10](../../integrations/website/v0.10/README.md), following I5 verified identity. The checkboxes record local implementation and offline evidence, not hosted acceptance. The PR pins the tested SHA.
 
 Adjustments after provider research: use Node HTTPS with DNS destination pinning instead of native fetch in production; omit lease renewal because the 30-second work budget is shorter than the 60-second lease; use resumable full HLL sweeps because offset pagination is not a durable cursor. Pending IDs commit with each session, and unfinished IDs are revisited independently. Interfaces were narrowed to snapshot and history use-cases rather than a generic provider framework. Three coupled tasks ship in one coherent commit. Private player identities remain unresolved until I5/D4.
 
@@ -155,10 +155,10 @@ callers while adding explicit confirmation. Extend D1's API/grant/UI/docs set.
 `provisional | confirmed | corrected`, reviewer/time and optional superseded revision.
 Actor is obtained from trusted session/bot context, never caller-supplied authority.
 
-- [ ] Write tests `import cannot confirm`, `reimport cannot overwrite confirmed revision`, `concurrent confirmations conflict`, `correction retains prior audit`, `0 differs from null`, `multi-faction result is not coerced`, and `unverified platform ID remains unresolved`. Run the new tests and observe failures.
-- [ ] Implement explicit session/event linking and append-only confirmation/correction with compare-and-set. Keep current 0.4 `match-summaries` unchanged; expose the new scoped `result-summaries` DTO. Never auto-upgrade old imported results to confirmed. Human confirmation/linking require the documented session-only management route; clan bearer keys cannot perform them until actor delegation is accepted.
-- [ ] Run the result/player/link tests, HTTP/OpenAPI scope tests, full suite and typecheck; test forbidden tenant/game/actor paths. Verify reviewer UI and correction history with simulated data/screenshots. Regenerate API schemas through tooling, not manual generated-file edits.
-- [ ] Publish versioned result fixtures including no result, provisional, confirmed, corrected and N-participant cases; include consumer mapping notes. Commit `feat(results): add reviewed result provenance and safe projections`.
+- [x] Write tests `import cannot confirm`, `reimport cannot overwrite confirmed revision`, `concurrent confirmations conflict`, `correction retains prior audit`, `0 differs from null`, `multi-faction result is not coerced`, and `unverified platform ID remains unresolved`. Run the new tests and observe failures.
+- [x] Implement explicit session/event linking and append-only confirmation/correction with compare-and-set. Keep current 0.4 `match-summaries` unchanged; expose the new scoped `result-summaries` DTO. Never auto-upgrade old imported results to confirmed. Human confirmation/linking require the documented session-only management route; clan bearer keys cannot perform them until actor delegation is accepted.
+- [x] Run the result/player/link tests, HTTP/OpenAPI scope tests, full suite and typecheck; test forbidden tenant/game/actor paths. Verify reviewer UI and correction history with simulated data/screenshots. Regenerate API schemas through tooling, not manual generated-file edits.
+- [x] Publish versioned result fixtures including no result, provisional, confirmed, corrected and N-participant cases; include consumer mapping notes. Commit `feat(results): add reviewed result provenance and safe projections`.
 
 ## Acceptance and handoff
 
