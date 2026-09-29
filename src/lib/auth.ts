@@ -147,6 +147,17 @@ export async function setSessionToken(token: string) {
 
 export async function clearSessionToken() {
     const cookieStore = await cookies()
+    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value
+    if (token) {
+        const session = await verifySessionToken(token)
+        if (session) {
+            const { cancelSteamSession } =
+                await import("./gateways/platform-links")
+            // Cookie removal must still succeed if persistence is unavailable. Callback
+            // needs the current account cookie; this is not global JWT revocation.
+            await cancelSteamSession(token, session.sub).catch(() => undefined)
+        }
+    }
     cookieStore.delete(SESSION_COOKIE_NAME)
 }
 

@@ -1,0 +1,5 @@
+{
+  "claimedOnly": { "platformIds": ["76561198000000001"], "verifiedLinks": [] },
+  "verified": { "platform": "steam", "platformId": "76561198000000001", "logiUserId": "synthetic-player", "method": "steam_openid", "verifiedAt": 1790672400000, "revokedAt": null },
+  "revoked": { "platform": "steam", "platformId": "76561198000000001", "logiUserId": "synthetic-player", "method": "steam_openid", "verifiedAt": 1790672400000, "revokedAt": 1790672460000 }
+}

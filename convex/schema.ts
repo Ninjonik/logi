@@ -492,6 +492,48 @@ const guildGames = defineTable({
 }).index("guildId_gameId", ["guildId", "gameId"])
 
 export default defineSchema({
+    platformLinkChallenges: defineTable({
+        tokenHash: v.string(),
+        sessionHash: v.string(),
+        discordUserId: v.string(),
+        userRecordId: v.id("users"),
+        returnOrigin: v.string(),
+        locale: v.union(v.literal("en"), v.literal("cs"), v.literal("de")),
+        createdAt: v.number(),
+        expiresAt: v.number(),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("verifying"),
+            v.literal("consumed"),
+            v.literal("failed"),
+            v.literal("cancelled")
+        ),
+    })
+        .index("tokenHash", ["tokenHash"])
+        .index("userRecordId_createdAt", ["userRecordId", "createdAt"]),
+    platformIdentityLinks: defineTable({
+        platform: v.literal("steam"),
+        platformId: v.string(),
+        userRecordId: v.id("users"),
+        discordUserId: v.string(),
+        logiUserId: v.string(),
+        method: v.literal("steam_openid"),
+        verifiedAt: v.number(),
+        revokedAt: v.union(v.number(), v.null()),
+        active: v.boolean(),
+    })
+        .index("platform_platformId_active", [
+            "platform",
+            "platformId",
+            "active",
+        ])
+        .index("userRecordId_verifiedAt", ["userRecordId", "verifiedAt"]),
+    platformLinkNonces: defineTable({
+        nonceHash: v.string(),
+        expiresAt: v.number(),
+    })
+        .index("nonceHash", ["nonceHash"])
+        .index("expiresAt", ["expiresAt"]),
     users,
     guildGames,
     ssoApplications: defineTable({

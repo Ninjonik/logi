@@ -687,6 +687,24 @@ export const csMessages = {
         symbolsCategory: "Symboly",
         flagsCategory: "Vlajky",
     },
+    verifiedPlatformLinks: {
+        title: "Ověřený účet Steam",
+        description:
+            "Vlastnictví účtu ověříte přihlášením na Steamu. ID ručně zadaná do profilu nejsou ověřená.",
+        loading: "Načítání…",
+        refresh: "Obnovit",
+        error: "Propojení se Steamem není dostupné. Obnovte přehled nebo to zkuste za chvíli.",
+        callbackFailed:
+            "Ověření přes Steam se nepodařilo dokončit. Zahajte nový pokus.",
+        verified: "Ověřeno přes Steam",
+        empty: "Žádný ověřený účet Steam",
+        verifiedAt: "Ověřeno",
+        revokedAt: "Odpojeno",
+        link: "Ověřit přes Steam",
+        unlink: "Odpojit Steam",
+        history: "Poslední změny propojení",
+        effect: "Odpojení zastaví budoucí přiřazování hráče. Ověření nepřidává role na Discordu, nepotvrzuje vlastnictví hry ani nezveřejňuje profil na webu.",
+    },
     userSettings: {
         privacyTitle: "Soukromí a data",
         privacyDescription:
@@ -720,7 +738,7 @@ export const csMessages = {
         platformConnection: "Platformní identita",
         platformConnected: "Platform ID nastaveno",
         platformDisconnected: "Platform ID není nastaveno",
-        platformId: "Platform ID",
+        platformId: "Platform ID (neověřené)",
         platformIdPlaceholder: "Steam64 nebo Epic player ID",
         currentPlatformId: "Aktuální platform ID",
         platformIdHelp:

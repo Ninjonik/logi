@@ -13,8 +13,10 @@ export const metadata: Metadata = {
 
 export default async function UserSettingsPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string }>
+    searchParams: Promise<{ steam?: string }>
 }) {
     const { locale } = await params
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
@@ -38,6 +40,10 @@ export default async function UserSettingsPage({
                     user={user}
                     dictionary={dictionary}
                     workspaces={workspaces}
+                    locale={isLocale(locale) ? locale : "en"}
+                    steamCallbackFailed={
+                        (await searchParams).steam === "failed"
+                    }
                 />
             </div>
         </>

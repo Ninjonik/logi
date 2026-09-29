@@ -698,6 +698,24 @@ export const deMessages = {
         symbolsCategory: "Symbole",
         flagsCategory: "Flaggen",
     },
+    verifiedPlatformLinks: {
+        title: "Verifiziertes Steam-Konto",
+        description:
+            "Bestätige den Zugriff auf dein Steam-Konto durch eine Anmeldung bei Steam. Manuell eingetragene Profil-IDs sind nicht verifiziert.",
+        loading: "Laden…",
+        refresh: "Aktualisieren",
+        error: "Die Steam-Verknüpfung ist nicht verfügbar. Aktualisiere die Übersicht oder versuche es später erneut.",
+        callbackFailed:
+            "Die Steam-Verifizierung wurde nicht abgeschlossen. Starte einen neuen Versuch.",
+        verified: "Über Steam verifiziert",
+        empty: "Kein verifiziertes Steam-Konto",
+        verifiedAt: "Verifiziert",
+        revokedAt: "Getrennt",
+        link: "Mit Steam verifizieren",
+        unlink: "Steam trennen",
+        history: "Letzte Verknüpfungsänderungen",
+        effect: "Das Trennen beendet zukünftige Spielerzuordnungen. Dieser Nachweis vergibt keine Discord-Rollen, bestätigt keinen Spielbesitz und veröffentlicht dein Profil nicht auf der Website.",
+    },
     userSettings: {
         privacyTitle: "Privatsphäre und Daten",
         privacyDescription:
@@ -731,7 +749,7 @@ export const deMessages = {
         platformConnection: "Plattform-Identität",
         platformConnected: "Plattform-ID gesetzt",
         platformDisconnected: "Plattform-ID nicht gesetzt",
-        platformId: "Plattform-ID",
+        platformId: "Plattform-ID (nicht verifiziert)",
         platformIdPlaceholder: "Steam64- oder Epic-Spieler-ID",
         currentPlatformId: "Aktuelle Plattform-ID",
         platformIdHelp:

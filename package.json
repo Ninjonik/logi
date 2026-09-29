@@ -75,6 +75,7 @@
         "nextra": "^4.6.1",
         "nextra-theme-docs": "^4.6.1",
         "nextstepjs": "^2.3.0",
+        "passport-steam-openid": "1.1.12",
         "postcss": "^8.5.28",
         "react": "^19.2.8",
         "react-big-calendar": "^1.20.0",

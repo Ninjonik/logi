@@ -688,6 +688,24 @@ export const enMessages = {
         symbolsCategory: "Symbols",
         flagsCategory: "Flags",
     },
+    verifiedPlatformLinks: {
+        title: "Verified Steam account",
+        description:
+            "Verify control of your Steam account by signing in on Steam. IDs entered in your profile are unverified claims.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        error: "Steam linking is unavailable. Refresh or try again shortly.",
+        callbackFailed:
+            "Steam verification did not complete. Start a new link attempt.",
+        verified: "Verified through Steam",
+        empty: "No verified Steam account",
+        verifiedAt: "Verified",
+        revokedAt: "Unlinked",
+        link: "Verify with Steam",
+        unlink: "Unlink Steam",
+        history: "Recent link history",
+        effect: "Unlinking stops future player attribution. This proof does not grant Discord roles, confirm game ownership, or publish your profile on the website.",
+    },
     userSettings: {
         privacyTitle: "Privacy and data",
         privacyDescription:
@@ -721,7 +739,7 @@ export const enMessages = {
         platformConnection: "Platform identity",
         platformConnected: "Platform ID set",
         platformDisconnected: "Platform ID not set",
-        platformId: "Platform ID",
+        platformId: "Platform ID (unverified)",
         platformIdPlaceholder: "Steam64 or Epic player ID",
         currentPlatformId: "Current platform ID",
         platformIdHelp:

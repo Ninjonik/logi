@@ -136,3 +136,17 @@ freshness and its own permissions; successful OAuth login, Logi assignment or gu
 presence alone does not grant website administration. Disabling the policy or revoking
 the key denies subsequent reads. See the [membership handoff](https://github.com/Ninjonik/logi/blob/feat/valkyria-integration/docs/integrations/website/v0.7/README.md)
 for the exact-subject API, freshness windows and consumer responsibilities.
+
+## Verified Steam accounts
+
+Open **User settings → Verified Steam account → Verify with Steam** while signed
+into Logi. Sign in on Steam and return within ten minutes using the same browser
+session. No Steam API key is required. If verification fails, start a new attempt;
+wait 30 seconds between attempts. A Steam account can be linked to only one Logi
+account at a time. Unlink the current verified account before linking a different one.
+
+Platform IDs typed into the profile or recruitment form remain unverified. The
+separate verified account card records proof and the verification time. **Unlink
+Steam** stops future attribution while keeping recent link history. Merging
+accounts or changing the associated Discord identity requires fresh verification.
+This does not grant Discord roles, confirm game ownership or publish a website profile.
