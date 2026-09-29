@@ -62,7 +62,6 @@ import {
     loadTicketCategoryContext,
     resolveSupportMemberIds,
     rollbackMembershipApplicationSetup,
-    syncMembershipRoles,
 } from "./interactions/shared"
 import {
     handleEventButtonInteraction,
@@ -2519,7 +2518,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const assignmentId = (await convex
             .mutation(references.upsertAssignment, {
                 secret: env.internalSecret,
+                roleActor: { userId: interaction.user.id, kind: "application" },
                 serverDiscordId: interaction.guildId,
+                gameId: "hell_let_loose",
                 userId: interaction.user.id,
                 type: category.assignmentType,
                 status: initialStatus,
@@ -2558,17 +2559,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             assignmentId,
         })
 
-        await syncMembershipRoles(
-            interaction.guild,
-            interaction.user.id,
-            categoryContext.config,
-            undefined,
-            undefined,
-            undefined,
-            category.assignmentType,
-            initialStatus,
-            category.id
-        )
         await interaction.guild.members.fetch().catch(() => null)
 
         const thread = await (parentChannel as TextChannel).threads
@@ -3034,7 +3024,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const member = interaction.member as GuildMember | null
+        const member = await guild.members
+            .fetch({ user: interaction.user.id, force: true })
+            .catch(() => null)
         if (!member) {
             await interaction.editReply({
                 content: messages.membership.unableToVerifyPermissions,
@@ -3070,12 +3062,15 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         if (outcome === "denied") {
             if (context.application.assignmentId) {
-                await convex
-                    .mutation(references.removeAssignment, {
-                        secret: env.internalSecret,
-                        assignmentId: context.application.assignmentId as never,
-                    })
-                    .catch(() => null)
+                await convex.mutation(references.removeAssignment, {
+                    secret: env.internalSecret,
+                    assignmentId: context.application.assignmentId as never,
+                    roleActor: {
+                        userId: interaction.user.id,
+                        kind: "recruitment",
+                    },
+                    roleGuildId: interaction.guildId,
+                })
                 await revalidateAppData({
                     type: "assignment-changed",
                     serverId: interaction.guildId,
@@ -3083,18 +3078,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     assignmentId: context.application.assignmentId,
                 })
             }
-            await syncMembershipRoles(
-                guild,
-                context.application.creatorId,
-                context.config,
-                context.assignment?.type,
-                context.assignment?.status,
-                context.assignment?.membershipCategoryId ??
-                    context.application.categoryId,
-                undefined,
-                undefined,
-                undefined
-            )
         } else {
             const nextType = outcome === "mercenary" ? "mercenary" : "member"
             const nextStatus =
@@ -3112,6 +3095,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     secret: env.internalSecret,
                     serverDiscordId: interaction.guildId,
                     assignmentId: context.application.assignmentId as never,
+                    roleActor: {
+                        userId: interaction.user.id,
+                        kind: "recruitment",
+                    },
+                    gameId: context.application.gameId,
                     userId: context.application.creatorId,
                     type: nextType,
                     status: nextStatus,
@@ -3128,18 +3116,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 userId: context.application.creatorId,
                 assignmentId,
             })
-            await syncMembershipRoles(
-                guild,
-                context.application.creatorId,
-                context.config,
-                context.assignment?.type,
-                context.assignment?.status,
-                context.assignment?.membershipCategoryId ??
-                    context.application.categoryId,
-                nextType,
-                nextStatus,
-                nextCategoryId
-            )
         }
 
         await convex.mutation(references.closeMembershipApplicationThread, {

@@ -1,0 +1,61 @@
+[
+    {
+        "id": "synthetic-applied",
+        "gameId": "hell_let_loose",
+        "userId": "222222222222222222",
+        "actorId": "333333333333333333",
+        "provenance": "recruitment",
+        "version": 2,
+        "status": "applied",
+        "attempts": 2,
+        "reason": "verified",
+        "updatedAt": "2026-09-29T08:31:00.000Z",
+        "audit": [
+            {
+                "attempt": 2,
+                "outcome": "applied",
+                "reason": "verified",
+                "at": "2026-09-29T08:30:59.000Z"
+            },
+            {
+                "attempt": 1,
+                "outcome": "retry_scheduled",
+                "reason": "provider_unavailable",
+                "at": "2026-09-29T08:30:00.000Z"
+            }
+        ]
+    },
+    {
+        "id": "synthetic-pending",
+        "gameId": "wardogs",
+        "userId": "444444444444444444",
+        "actorId": "333333333333333333",
+        "provenance": "dashboard",
+        "version": 1,
+        "status": "pending",
+        "attempts": 0,
+        "reason": "assignment_changed",
+        "updatedAt": "2026-09-29T08:32:00.000Z",
+        "audit": []
+    },
+    {
+        "id": "synthetic-denied",
+        "gameId": "hell_let_loose",
+        "userId": "555555555555555555",
+        "actorId": "333333333333333333",
+        "provenance": "dashboard",
+        "version": 4,
+        "status": "denied",
+        "attempts": 1,
+        "reason": "role_unmanageable_or_deleted",
+        "updatedAt": "2026-09-29T08:33:00.000Z",
+        "audit": [
+            {
+                "attempt": 1,
+                "outcome": "denied",
+                "reason": "role_unmanageable_or_deleted",
+                "at": "2026-09-29T08:33:00.000Z"
+            }
+        ]
+    }
+]

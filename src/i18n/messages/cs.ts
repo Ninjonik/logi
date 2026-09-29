@@ -891,6 +891,52 @@ export const csMessages = {
         routingInfoDescription:
             "Support role z kategorií se do nových ticket threadů přidávají automaticky. Uživatelé s dashboard admin rolí se také berou jako support staff pro zpracování ticketů.",
     },
+    memberRoleOperations: {
+        unlinkedTarget: "Logi ID (Discord není propojen)",
+        title: "Změny členských rolí",
+        refresh: "Obnovit",
+        loading: "Načítání…",
+        description:
+            "Posledních 100 operací správce nebo přihlášek napříč hrami. Uložení člena zařadí změnu do fronty; stav Provedeno vyžaduje ověření na Discordu.",
+        error: "Přehled změn rolí není dostupný. Zkuste jej obnovit.",
+        empty: "Zatím nejsou žádné změny spravovaných rolí.",
+        target: "Discord ID člena",
+        actor: "Discord ID zadavatele",
+        origin: "Zdroj",
+        version: "Verze",
+        updated: "Aktualizace",
+        audit: "Historie pokusů",
+        auditDescription:
+            "Zobrazeno posledních 5 pokusů; uchovává se nejvýše 20 na operaci. Časy jsou v UTC. Kódy důvodů pomáhají při řešení chyb.",
+        reason: "Důvod",
+        status: {
+            pending: "Čeká",
+            running: "Probíhá",
+            retry_scheduled: "Čeká na opakování",
+            applied: "Provedeno",
+            denied: "Zamítnuto",
+            superseded: "Nahrazeno",
+            failed: "Selhalo",
+        },
+        provenance: {
+            dashboard: "Správce",
+            recruitment: "Náborový tým",
+            application: "Přihláška člena",
+            rollback: "Vrácení přihlášky",
+        },
+        hint: {
+            pending: "Bot před změnou rolí ověří oprávnění.",
+            running: "Bot kontroluje Discord a zpracovává aktuální požadavek.",
+            retry_scheduled:
+                "Bot požadavek automaticky zopakuje po uplynutí čekací doby.",
+            applied:
+                "Při poslední kontrole role na Discordu odpovídaly požadavku. Bot je pravidelně kontroluje.",
+            denied: "Ověřte přístup zadavatele, členství, oprávnění bota a pořadí rolí, poté uložte nový požadavek na člena.",
+            superseded:
+                "Přiřazení nebo pravidla se změnila. Nový stav vyžaduje nový oprávněný požadavek.",
+            failed: "Automatické pokusy skončily. Odstraňte příčinu a uložte nový požadavek na člena.",
+        },
+    },
     membershipSettings: {
         title: "Nastavení členství",
         pageDescription:
@@ -933,7 +979,7 @@ export const csMessages = {
             "Přihlášky jsou zapnuté, ale Discord membership panel se nezveřejní a application thready nepůjde otevírat, dokud nenastavíte: {items}.",
         roleSyncTitle: "Jak funguje synchronizace membership rolí",
         roleSyncDescription:
-            "Pending přihlášky nepřidělují membership role. Status recruit používá klanovou roli plus recruit roli kategorie a active status používá klanovou roli plus finální roli kategorie, pokud jsou tyto role nastavené.",
+            "Pending přihlášky nepřidělují membership role. Status recruit používá klanovou roli plus recruit roli kategorie a active status používá klanovou roli plus finální roli kategorie, pokud jsou tyto role nastavené. Změny členských rolí se zpracovávají ve frontě; výsledek ověřte v nastavení členství v přehledu změn rolí.",
         rosterScoreDescription:
             "Nastavte změny skóre pro tento server po ukončení akce. Pokud vše necháte na 0, automatické skórování bude vypnuté.",
         rosterScoreNoCategory: "Mimo všechny kategorie / bez reakce",
@@ -1112,7 +1158,7 @@ export const csMessages = {
             "Rezervní členové nemohou používat recruit status.",
         roleSyncTitle: "Jak funguje synchronizace membership rolí",
         roleSyncDescription:
-            "Discord role navázané na skupiny se synchronizují podle vybrané hlavní a vedlejší skupiny. Membership role se synchronizují jen pro členy mimo pending stav a recruit nebo active status závisí na klanové roli plus rolích navázaných na membership kategorii, pokud jsou dostupné.",
+            "Discord role navázané na skupiny se synchronizují podle vybrané hlavní a vedlejší skupiny. Membership role se synchronizují jen pro členy mimo pending stav a recruit nebo active status závisí na klanové roli plus rolích navázaných na membership kategorii, pokud jsou dostupné. Změny členských rolí se zpracovávají ve frontě; výsledek ověřte v nastavení členství v přehledu změn rolí.",
         missingClanRoleTitle: "Klanová role není nastavená",
         missingClanRoleDescription:
             "Hráč může být v Logi i tak označen jako recruit nebo active, ale dokud se v nastavení klanu nenastaví klanová role, nepřidá se mu na Discordu základní klanová role.",

@@ -892,6 +892,53 @@ export const enMessages = {
         routingInfoDescription:
             "Category support roles are invited into new ticket threads automatically. Users with the dashboard admin role are also treated as support staff for ticket handling.",
     },
+    memberRoleOperations: {
+        unlinkedTarget: "Logi ID (Discord not linked)",
+        title: "Membership role operations",
+        refresh: "Refresh",
+        loading: "Loading…",
+        description:
+            "Latest 100 staff or application operations across games. Saving a member queues a change; only a verified Discord result is marked applied.",
+        error: "Role operations are unavailable. Refresh to try again.",
+        empty: "No managed role operations yet.",
+        target: "Member Discord ID",
+        actor: "Actor Discord ID",
+        origin: "Source",
+        version: "Version",
+        updated: "Updated",
+        audit: "Attempt history",
+        auditDescription:
+            "Latest 5 attempts shown; up to 20 retained per operation. Times are UTC. Reason codes help diagnose failures.",
+        reason: "Reason",
+        status: {
+            pending: "Pending",
+            running: "In progress",
+            retry_scheduled: "Retry scheduled",
+            applied: "Applied",
+            denied: "Denied",
+            superseded: "Superseded",
+            failed: "Failed",
+        },
+        provenance: {
+            dashboard: "Administrator",
+            recruitment: "Recruitment staff",
+            application: "Member application",
+            rollback: "Application rollback",
+        },
+        hint: {
+            pending: "The bot will check permissions before changing roles.",
+            running:
+                "The bot is checking Discord and applying the current request.",
+            retry_scheduled:
+                "The bot will retry automatically after the waiting period.",
+            applied:
+                "Discord roles matched this request at the last check. The bot checks again periodically.",
+            denied: "Check staff access, membership, bot permissions and role hierarchy, then save a new member request.",
+            superseded:
+                "The assignment or policy changed. Only a new authorized request can apply the updated state.",
+            failed: "Automatic retries stopped. Resolve the cause and save a new member request.",
+        },
+    },
     membershipSettings: {
         title: "Membership settings",
         pageDescription:
@@ -934,7 +981,7 @@ export const enMessages = {
             "Applications are enabled, but the Discord membership panel will not be posted and application threads cannot open until you set {items}.",
         roleSyncTitle: "How membership role sync works",
         roleSyncDescription:
-            "Pending applications do not assign membership roles. Recruit status uses the clan role plus the category recruit role, and active status uses the clan role plus the category final role when those roles are configured.",
+            "Pending applications do not assign membership roles. Recruit status uses the clan role plus the category recruit role, and active status uses the clan role plus the category final role when those roles are configured. Membership changes are queued; verify the result in Membership settings → Membership role operations.",
         rosterScoreDescription:
             "Set per-server score changes after the event concludes. Leaving everything at 0 disables automatic score movement.",
         rosterScoreNoCategory: "No category / no reaction",
@@ -1121,7 +1168,7 @@ export const enMessages = {
             "Reserve members cannot use the recruit status.",
         roleSyncTitle: "How membership role sync works",
         roleSyncDescription:
-            "Group-linked Discord roles sync from the selected primary and secondary groups. Membership roles only sync for non-pending members, and recruit or active status depends on the clan role plus the linked membership category roles when available.",
+            "Group-linked Discord roles sync from the selected primary and secondary groups. Membership roles only sync for non-pending members, and recruit or active status depends on the clan role plus the linked membership category roles when available. Membership changes are queued; verify the result in Membership settings → Membership role operations.",
         missingClanRoleTitle: "Clan role is not configured",
         missingClanRoleDescription:
             "This player can still be marked as recruit or active in Logi, but no base clan role will be added in Discord until the clan role is set in clan settings.",

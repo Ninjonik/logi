@@ -132,6 +132,7 @@ export type GuildRecord = {
 export type MembershipStatus = "pending" | "recruit" | "active"
 
 export type MembershipApplicationThreadRecord = {
+    gameId?: import("../../src/domain/games/game").GameId
     id: string
     guildId: string
     threadId: string

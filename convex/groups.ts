@@ -1,4 +1,5 @@
 import { matchesGameScope, resolveGameScope } from "../src/domain/games/game"
+import { assertManagedRoleGroupLink } from "./managedRolePolicy"
 import { getGuildById, getGuildDiscordId } from "./identity"
 import { mutation } from "./integrationMutation"
 import { query } from "./_generated/server"
@@ -91,6 +92,12 @@ export const upsert = mutation({
             throw new Error("Server not found.")
         }
         const guildDiscordId = getGuildDiscordId(guild)
+
+        await assertManagedRoleGroupLink(
+            ctx,
+            guildDiscordId,
+            args.discordRoleId
+        )
 
         if (args.parentId) {
             const parent = await ctx.db.get(args.parentId)

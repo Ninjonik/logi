@@ -3,9 +3,12 @@ import {
     projectMatchSummary,
 } from "../src/domain/api/event-summaries"
 import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
+import { managedRolePolicy } from "../src/domain/membership/managed-roles"
 import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
+import { assertManagedRoleGroupLink } from "./managedRolePolicy"
 import type { MutationCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
+import { GAME_IDS } from "../src/domain/games/game"
 import { mutation } from "./integrationMutation"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
@@ -747,6 +750,23 @@ export const mutateClanGroup = mutation({
                             error: {
                                 code: "validation_error",
                                 message: "Parent group not found.",
+                            },
+                        }
+                    }
+                }
+                if (!response!) {
+                    try {
+                        await assertManagedRoleGroupLink(
+                            ctx,
+                            key.guildId,
+                            args.discordRoleId
+                        )
+                    } catch {
+                        status = 400
+                        response = {
+                            error: {
+                                code: "validation_error",
+                                message: "Conflicting managed role owner.",
                             },
                         }
                     }
@@ -1769,6 +1789,46 @@ export const mutateClanSettings = mutation({
                 }
             }
             const guildPatch: Record<string, string | undefined> = {}
+            if (
+                config &&
+                (args.clanRoleId !== undefined ||
+                    args.dashboardAdminRoleId !== undefined)
+            ) {
+                const prospective = {
+                    ...config,
+                    clanRoleId:
+                        args.clanRoleId === undefined
+                            ? config.clanRoleId
+                            : args.clanRoleId?.trim() || undefined,
+                    dashboardAdminRoleId:
+                        args.dashboardAdminRoleId === undefined
+                            ? config.dashboardAdminRoleId
+                            : args.dashboardAdminRoleId?.trim() || undefined,
+                }
+                const groups = await ctx.db
+                    .query("groups")
+                    .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
+                    .collect()
+                try {
+                    for (const gameId of GAME_IDS)
+                        managedRolePolicy(
+                            prospective,
+                            gameId,
+                            groups.flatMap((group) =>
+                                group.discordRoleId ? [group.discordRoleId] : []
+                            )
+                        )
+                } catch {
+                    status = 400
+                    response = {
+                        error: {
+                            code: "validation_error",
+                            message:
+                                "Managed role ownership conflicts with another policy.",
+                        },
+                    }
+                }
+            }
             if (args.name !== undefined) guildPatch.name = args.name.trim()
             if (args.avatar !== undefined)
                 guildPatch.avatar = args.avatar.trim()

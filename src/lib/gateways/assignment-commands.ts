@@ -35,6 +35,7 @@ const mergeUsersReference =
     makeFunctionReference<"mutation">("players:mergeUsers")
 
 export async function saveServerUserAssignmentCommand(input: {
+    roleActor?: import("@/domain/membership/managed-roles").RoleActor
     assignmentId?: string
     userId: string
     serverId: string
@@ -50,6 +51,7 @@ export async function saveServerUserAssignmentCommand(input: {
 }) {
     return await fetchMutation(upsertAssignmentReference, {
         secret: getInternalAuthSecret(),
+        roleActor: input.roleActor,
         assignmentId: input.assignmentId as never,
         userId: input.userId,
         serverId: input.serverId,
@@ -75,10 +77,17 @@ export async function savePlayerNoteCommand(input: {
     })
 }
 
-export async function deleteServerUserAssignmentCommand(assignmentId: string) {
+export async function deleteServerUserAssignmentCommand(
+    assignmentId: string,
+    roleContext?: {
+        roleActor: import("@/domain/membership/managed-roles").RoleActor
+        roleGuildId: string
+    }
+) {
     return await fetchMutation(removeAssignmentReference, {
         secret: getInternalAuthSecret(),
         assignmentId: assignmentId as never,
+        ...roleContext,
     })
 }
 

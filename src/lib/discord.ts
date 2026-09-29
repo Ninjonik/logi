@@ -5,7 +5,9 @@ import {
     getDiscordRedirectUri,
 } from "@/lib/env"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
+import { managedRolePolicy } from "@/domain/membership/managed-roles"
 import { getServerGroups } from "@/lib/server-groups"
+import { GAME_IDS } from "@/domain/games/game"
 
 const ADMINISTRATOR_PERMISSION = BigInt(8)
 const MANAGE_ROLES_PERMISSION = BigInt(1) << BigInt(28)
@@ -384,6 +386,10 @@ export async function syncDiscordRolesForAssignment(input: {
         getDiscordConfigByGuild(input.serverId),
     ])
     const roleIdByGroupId = buildLinkedRoleIdsByGroupId(groups)
+    // Membership outcomes are handled by the durable queue. This existing
+    // group-only path must never become a second writer for a managed role.
+    for (const gameId of GAME_IDS)
+        managedRolePolicy(config ?? {}, gameId, [...roleIdByGroupId.values()])
 
     const beforeRoleIds = new Set(
         [input.beforePrimaryGroupId, ...(input.beforeSecondaryGroupIds ?? [])]
@@ -398,35 +404,6 @@ export async function syncDiscordRolesForAssignment(input: {
             .map((groupId) => roleIdByGroupId.get(groupId))
             .filter((roleId): roleId is string => Boolean(roleId))
     )
-
-    const beforeSpecialRoleIds = [
-        input.beforeAssignmentType && input.beforeMembershipStatus
-            ? getMembershipRoleIds(
-                  config,
-                  input.beforeAssignmentType,
-                  input.beforeMembershipStatus,
-                  input.beforeMembershipCategoryId
-              )
-            : [],
-    ].flat()
-    const afterSpecialRoleIds = [
-        input.afterAssignmentType && input.afterMembershipStatus
-            ? getMembershipRoleIds(
-                  config,
-                  input.afterAssignmentType,
-                  input.afterMembershipStatus,
-                  input.afterMembershipCategoryId
-              )
-            : [],
-    ].flat()
-
-    for (const roleId of beforeSpecialRoleIds) {
-        beforeRoleIds.add(roleId)
-    }
-
-    for (const roleId of afterSpecialRoleIds) {
-        afterRoleIds.add(roleId)
-    }
 
     const roleIdsToAdd = [...afterRoleIds].filter(
         (roleId) => !beforeRoleIds.has(roleId)
@@ -504,41 +481,4 @@ export async function syncDiscordMemberRoleIds(input: {
         addedRoleIds: roleIdsToAdd,
         removedRoleIds: roleIdsToRemove,
     }
-}
-
-function getMembershipRoleIds(
-    config: Awaited<ReturnType<typeof getDiscordConfigByGuild>>,
-    type: "member" | "reserve_member" | "mercenary",
-    status: "pending" | "recruit" | "active",
-    membershipCategoryId?: string
-) {
-    if (!config) {
-        return []
-    }
-
-    if (status === "pending") {
-        return []
-    }
-
-    const roleIds = new Set<string>()
-    const category = membershipCategoryId
-        ? config.membershipSettings?.categories.find(
-              (item) => item.id === membershipCategoryId
-          )
-        : undefined
-    if (config.clanRoleId) {
-        roleIds.add(config.clanRoleId)
-    }
-    if (status === "recruit") {
-        for (const roleId of category?.recruitRoleIds ?? []) {
-            roleIds.add(roleId)
-        }
-    }
-    if (status === "active") {
-        for (const roleId of category?.finalRoleIds ?? []) {
-            roleIds.add(roleId)
-        }
-    }
-
-    return [...roleIds]
 }

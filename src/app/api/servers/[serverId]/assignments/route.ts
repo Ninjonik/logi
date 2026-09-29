@@ -5,6 +5,7 @@ import {
     savePlayerPlatformId,
     saveServerUserAssignment,
 } from "@/lib/server-user-management"
+import { getServerContextUncached as getServerContext } from "@/lib/read-models/server-context"
 import {
     getUserSafeErrorMessage,
     logRouteError,
@@ -12,7 +13,6 @@ import {
 import { userAssignmentSchema } from "@/lib/validation/user-assignment"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { syncDiscordRolesForAssignment } from "@/lib/discord"
-import { getServerContext } from "@/lib/server-context"
 
 function getAssignmentErrorCode(error: unknown) {
     if (!(error instanceof Error)) return "UNKNOWN"
@@ -54,6 +54,10 @@ export async function POST(
             serverId,
             ...normalizedBody,
             membershipCategoryId: undefined,
+            roleActor: {
+                userId: serverContext.user.discordId,
+                kind: "dashboard",
+            },
         })
         await savePlayerPlatformId({
             userId: normalizedBody.userId,

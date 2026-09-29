@@ -41,12 +41,20 @@ Changing or removing an assignment rebuilds the workspace membership summary and
 
 ### Bulk member tools: what they do and do not do
 
+Authenticated assignment changes and the membership-status migration now queue
+durable membership-role operations. Check **Membership settings → Membership role
+operations** for the actual Discord outcome, current reason and recent attempts.
+Retries recheck the original actor's current permissions; saving assignment data
+does not mean the roles have been applied. Unlinked players remain editable, with
+an explicit denied role operation until their Discord identity is linked. Legacy
+API assignments and imports remain data-only and cannot mint role authority.
+
 The server **Settings** page contains bulk tools for managers. Treat the selected Discord role as a filter, not as a permanent relationship between Logi and Discord.
 
 | Tool                          | Exact effect                                                                                                                                                                                                                                                                                                 | Important limits and checks                                                                                                                                                                                                                                                                                                  |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Import Discord members**    | Finds non-bot Discord members with the selected role, creates or updates their Logi profile, and creates or updates an assignment as a recruit, regular member, reserve member, or mercenary for the selected game. It also imports every linked group role the person currently has as a _secondary_ group. | A source role is required. A person can be imported as a member only if they have no primary workspace elsewhere, are already primary here, or already have an assignment here. The tool skips bots and reports ineligible people. It reads the role once; removing or adding the role later does not update the assignment. |
-| **Migrate membership status** | Changes existing assignments for non-bot Discord members with the selected role to recruit, active member, reserve member, or mercenary. It attempts the normal membership-role sync for every changed assignment.                                                                                           | It never creates an assignment. Members who match the role but have no assignment are skipped; already matching assignments are also skipped. Group selections and membership category stay as they were. A Discord role-sync error does not roll back the Logi assignment, so verify both systems afterward.                |
+| **Migrate membership status** | Changes existing assignments for non-bot Discord members with the selected role to recruit, active member, reserve member, or mercenary. It queues an actor-backed membership-role operation for each changed assignment. | It never creates an assignment. Missing or already matching assignments are skipped. Groups and category are preserved. Check the role-operation audit for Discord success; transient errors retry and denied/failed requests require a new authorized staff action after correction. |
 | **Link missing Discord IDs**  | Attempts to connect imported/statistics-only people to a Discord profile from the selected role. If that Discord profile already exists in Logi, the records can be merged.                                                                                                                                  | It considers only server people referenced by this server's event player statistics and only profiles without a Discord link. Matching is based on a normalized display name, so it is not proof of identity. Check every match, especially common names. Bots are ignored.                                                  |
 | **Auto-link platform IDs**    | Reads scoreboards referenced by this server's saved event results, strips the clan tag supplied by the manager, and adds a matching platform ID to an assigned user.                                                                                                                                         | It does nothing if there are no saved result source URLs. A name must identify exactly one assigned user; one user must produce exactly one candidate ID; and that ID must not already belong to another Logi user. The tool reports ambiguous names, conflicts, and unreadable source events instead of guessing.           |
 
@@ -109,6 +117,9 @@ group from another game is never offered. A group can also have an optional
 Discord emoji for its sign-up option.
 
 When deleting a group, Logi removes that group from affected primary and secondary assignments before deleting the group. It does not delete the Discord role itself.
+
+Group-linked roles must not overlap managed membership roles or the dashboard
+administrator/clan role. Settings and group writers reject those ownership conflicts.
 
 > **Screenshot placeholder — members and groups:** Show the Members table with a member detail/assignment action and the Groups list with name, usage count, and description columns.
 

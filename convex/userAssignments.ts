@@ -15,6 +15,20 @@ import { RemoveAssignmentUseCase } from "../src/application/assignments/remove-a
 import { validateAssignmentGroupIds } from "../src/domain/assignments/policy";
 import { getGuildById, getGuildDiscordId } from "./identity";
 import { systemClock } from "../src/domain/shared/clock";
+import { enqueueManagedRoles, roleActorValidator } from "./memberRoleOperations";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { RoleActor } from "../src/domain/membership/managed-roles";
+import { resolveGameScope } from "../src/domain/games/game";
+
+async function queueRoleChange(ctx: MutationCtx, actor: RoleActor | undefined, before: Doc<"userAssignments"> | null, after: Doc<"userAssignments"> | null) {
+  if (!actor) return;
+  const source = after ?? before;
+  if (!source) return;
+  if (before && after && (before.userId !== after.userId || before.serverId !== after.serverId || resolveGameScope(before.gameId) !== resolveGameScope(after.gameId))) {
+    throw new Error("Managed assignment identity cannot change.");
+  }
+  await enqueueManagedRoles(ctx, { guildId: source.serverId, gameId: resolveGameScope(source.gameId), userId: source.userId, actor, before });
+}
 
 const INTERNAL_AUTH_SECRET =
   process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
@@ -128,6 +142,7 @@ export const getForServerUser = query({
 export const upsert = mutation({
   args: {
     secret: v.string(),
+    roleActor: v.optional(roleActorValidator),
     serverId: v.id("guilds"),
     assignmentId: v.optional(v.id("userAssignments")),
     gameId: v.optional(
@@ -167,7 +182,9 @@ export const upsert = mutation({
       new ConvexAssignmentRosterSyncPort(ctx),
       systemClock
     );
-    return await useCase.execute({
+    const previous = args.assignmentId ? await ctx.db.get(args.assignmentId) : null;
+    const before = previous ? { ...previous } : null;
+    const result = await useCase.execute({
       userId: args.userId,
       serverDiscordId,
       gameId: args.gameId,
@@ -184,12 +201,15 @@ export const upsert = mutation({
       paused: args.paused,
       pausedNote: args.pausedNote,
     });
+    await queueRoleChange(ctx, args.roleActor, before, await ctx.db.get(result as Id<"userAssignments">));
+    return result;
   },
 });
 
 export const upsertByServerDiscordId = mutation({
   args: {
     secret: v.string(),
+    roleActor: v.optional(roleActorValidator),
     serverDiscordId: v.string(),
     assignmentId: v.optional(v.id("userAssignments")),
     gameId: v.optional(
@@ -224,7 +244,9 @@ export const upsertByServerDiscordId = mutation({
       new ConvexAssignmentRosterSyncPort(ctx),
       systemClock
     );
-    return await useCase.execute({
+    const previous = args.assignmentId ? await ctx.db.get(args.assignmentId) : null;
+    const before = previous ? { ...previous } : null;
+    const result = await useCase.execute({
       userId: args.userId,
       serverDiscordId: args.serverDiscordId,
       gameId: args.gameId,
@@ -241,6 +263,8 @@ export const upsertByServerDiscordId = mutation({
       paused: args.paused,
       pausedNote: args.pausedNote,
     });
+    await queueRoleChange(ctx, args.roleActor, before, await ctx.db.get(result as Id<"userAssignments">));
+    return result;
   },
 });
 
@@ -248,6 +272,8 @@ export const remove = mutation({
   args: {
     secret: v.string(),
     assignmentId: v.id("userAssignments"),
+    roleActor: v.optional(roleActorValidator),
+    roleGuildId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     assertInternalSecret(args.secret);
@@ -256,7 +282,11 @@ export const remove = mutation({
       new ConvexAssignmentRosterSyncPort(ctx),
       systemClock
     );
-    return await useCase.execute(String(args.assignmentId));
+    const before = await ctx.db.get(args.assignmentId);
+    if (args.roleActor && (!before || before.serverId !== args.roleGuildId)) throw new Error("Assignment guild mismatch.");
+    const result = await useCase.execute(String(args.assignmentId));
+    await queueRoleChange(ctx, args.roleActor, before, null);
+    return result;
   },
 });
 

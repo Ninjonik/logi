@@ -158,6 +158,8 @@ export async function storeMemberObservation(
         refreshUntil: 0,
         nextRefreshAt: 0,
         seenRunId,
+        departureRevision:
+            value.state === "left" ? revision : previous?.departureRevision,
     }
     if (previous) await ctx.db.patch(previous._id, patch)
     else

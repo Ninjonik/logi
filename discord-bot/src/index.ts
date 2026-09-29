@@ -1,4 +1,5 @@
 import { registerMembershipInvalidationEvents } from "./sync/membership-events"
+import { startManagedRoleWorker } from "./sync/managed-member-roles"
 import { Worker } from "node:worker_threads"
 import { createRequire } from "node:module"
 import { Events } from "discord.js"
@@ -140,6 +141,7 @@ function startFallbackWorker() {
 }
 
 client.once(Events.ClientReady, async (readyClient) => {
+    startManagedRoleWorker(client)
     try {
         logInfo("bot", "Discord bot ready", {
             user: readyClient.user.tag,

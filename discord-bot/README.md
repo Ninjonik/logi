@@ -29,6 +29,16 @@ npm run dev:all
 - Create one forum post per event
 - Handle signup button interactions
 - Write sync state back to Convex
+- Reconcile actor-backed membership roles through a durable queue, including
+  independent recovery after reconnect. `src/sync/managed-member-roles.ts` owns
+  polling; shared domain/application modules own policy and reconciliation.
+
+Managed-role activation requires compatible web/Convex/bot versions, GuildMembers
+intent and Manage Roles with configured roles below the bot. Do not mix an old
+immediate role writer with the new queue. The bot rechecks current actor access,
+target eligibility and role hierarchy on retries and only reports applied after
+fresh provider evidence. See [handoff 0.8](../docs/integrations/website/v0.8/README.md)
+for limits, operator recovery and the session-only audit. No bearer role-grant API.
 
 ## Source layout
 

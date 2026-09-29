@@ -24,6 +24,7 @@ import {
 } from "@/components/app/discord-entity-select"
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { MemberRoleOperations } from "@/components/app/member-role-operations"
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
 import { ExpandableItemCard } from "@/components/app/expandable-item-card"
 import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
@@ -349,6 +350,10 @@ export function MembershipSettingsForm({
                 <CardTitle>{dictionary.membershipSettings.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+                <MemberRoleOperations
+                    serverId={serverId}
+                    dictionary={dictionary}
+                />
                 {settings.enabled && missingMembershipParts.length ? (
                     <ConfigNotice
                         title={dictionary.membershipSettings.incompleteTitle}

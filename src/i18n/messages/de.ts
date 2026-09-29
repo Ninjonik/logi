@@ -903,6 +903,53 @@ export const deMessages = {
         routingInfoDescription:
             "Kategorie-Support-Rollen werden automatisch in neue Ticket-Threads eingeladen. Nutzer mit der Dashboard-Admin-Rolle gelten ebenfalls als Support-Personal für die Ticket-Bearbeitung.",
     },
+    memberRoleOperations: {
+        unlinkedTarget: "Logi-ID (Discord nicht verknüpft)",
+        title: "Änderungen der Mitgliedsrollen",
+        refresh: "Aktualisieren",
+        loading: "Laden…",
+        description:
+            "Die letzten 100 Verwaltungs- oder Bewerbungsvorgänge für alle Spiele. Das Speichern stellt eine Änderung in die Warteschlange; erst die Discord-Prüfung bestätigt sie.",
+        error: "Rollenvorgänge sind nicht verfügbar. Bitte erneut aktualisieren.",
+        empty: "Noch keine Änderungen verwalteter Rollen.",
+        target: "Discord-ID des Mitglieds",
+        actor: "Discord-ID des Auftraggebers",
+        origin: "Quelle",
+        version: "Version",
+        updated: "Aktualisiert",
+        audit: "Versuchsverlauf",
+        auditDescription:
+            "Die letzten 5 Versuche werden angezeigt; maximal 20 je Vorgang gespeichert. Zeiten in UTC. Grundcodes helfen bei der Fehlerdiagnose.",
+        reason: "Grund",
+        status: {
+            pending: "Ausstehend",
+            running: "In Bearbeitung",
+            retry_scheduled: "Wiederholung geplant",
+            applied: "Angewendet",
+            denied: "Abgelehnt",
+            superseded: "Ersetzt",
+            failed: "Fehlgeschlagen",
+        },
+        provenance: {
+            dashboard: "Administrator",
+            recruitment: "Rekrutierungsteam",
+            application: "Mitgliedsbewerbung",
+            rollback: "Bewerbung zurückgenommen",
+        },
+        hint: {
+            pending: "Der Bot prüft vor der Rollenänderung die Berechtigungen.",
+            running:
+                "Der Bot prüft Discord und bearbeitet den aktuellen Auftrag.",
+            retry_scheduled:
+                "Der Bot wiederholt den Versuch nach der Wartezeit automatisch.",
+            applied:
+                "Die Discord-Rollen entsprachen beim letzten Prüfen dem Auftrag. Der Bot prüft regelmäßig erneut.",
+            denied: "Zugang des Auftraggebers, Mitgliedschaft, Bot-Rechte und Rollenhierarchie prüfen, dann einen neuen Mitgliedsauftrag speichern.",
+            superseded:
+                "Zuweisung oder Regeln wurden geändert. Der neue Zustand benötigt einen neuen berechtigten Auftrag.",
+            failed: "Automatische Versuche wurden beendet. Ursache beheben und einen neuen Mitgliedsauftrag speichern.",
+        },
+    },
     membershipSettings: {
         title: "Mitgliedschaftseinstellungen",
         pageDescription:
@@ -945,7 +992,7 @@ export const deMessages = {
             "Bewerbungen sind aktiviert, aber das Discord-Mitglieds-Panel wird nicht gepostet und Bewerbungs-Threads können nicht geöffnet werden, bis du {items} setzt.",
         roleSyncTitle: "So funktioniert Mitglieds-Rollen-Sync",
         roleSyncDescription:
-            "Ausstehende Bewerbungen weisen keine Mitgliedsrollen zu. Rekruten-Status nutzt die Clan-Rolle plus die Kategorie-Rekruten-Rolle, und Aktiv-Status nutzt die Clan-Rolle plus die Kategorie-Finalrolle, wenn diese Rollen konfiguriert sind.",
+            "Ausstehende Bewerbungen weisen keine Mitgliedsrollen zu. Rekruten-Status nutzt die Clan-Rolle plus die Kategorie-Rekruten-Rolle, und Aktiv-Status nutzt die Clan-Rolle plus die Kategorie-Finalrolle, wenn diese Rollen konfiguriert sind. Mitgliedsrollen werden über eine Warteschlange geändert; das Ergebnis steht in den Mitgliedschaftseinstellungen unter Rollenvorgänge.",
         rosterScoreDescription:
             "Lege Score-Änderungen pro Server nach Event-Abschluss fest. Alles auf 0 lassen deaktiviert automatische Score-Bewegung.",
         rosterScoreNoCategory: "Keine Kategorie / keine Reaktion",
@@ -1139,7 +1186,7 @@ export const deMessages = {
             "Reservemitglieder können den Rekruten-Status nicht nutzen.",
         roleSyncTitle: "So funktioniert Mitglieds-Rollen-Sync",
         roleSyncDescription:
-            "Gruppenverknüpfte Discord-Rollen syncen aus den gewählten primären und sekundären Gruppen. Mitgliedsrollen syncen nur für nicht-ausstehende Mitglieder, und Rekruten- oder Aktiv-Status hängt von Clan-Rolle plus verknüpften Mitglieds-Kategorierollen ab, wenn verfügbar.",
+            "Gruppenverknüpfte Discord-Rollen syncen aus den gewählten primären und sekundären Gruppen. Mitgliedsrollen syncen nur für nicht-ausstehende Mitglieder, und Rekruten- oder Aktiv-Status hängt von Clan-Rolle plus verknüpften Mitglieds-Kategorierollen ab, wenn verfügbar. Mitgliedsrollen werden über eine Warteschlange geändert; das Ergebnis steht in den Mitgliedschaftseinstellungen unter Rollenvorgänge.",
         missingClanRoleTitle: "Clan-Rolle ist nicht konfiguriert",
         missingClanRoleDescription:
             "Dieser Spieler kann in Logi weiterhin als Rekrut oder aktiv markiert werden, aber in Discord wird keine Basis-Clan-Rolle hinzugefügt, bis die Clan-Rolle in den Clan-Einstellungen gesetzt ist.",

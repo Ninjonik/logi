@@ -7,8 +7,10 @@ import {
     playerStatsServerValidator,
     ticketSettingsValidator,
 } from "./discord_shared"
+import { managedRolePolicy } from "../src/domain/membership/managed-roles"
 import { getGuildById, getGuildDiscordId } from "./identity"
 import { mutation, query } from "./_generated/server"
+import { GAME_IDS } from "../src/domain/games/game"
 import { v } from "convex/values"
 
 export const getConfigByGuild = query({
@@ -107,6 +109,19 @@ export const upsertConfig = mutation({
             .query("discordConfigs")
             .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
             .unique()
+
+        const groups = await ctx.db
+            .query("groups")
+            .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+            .collect()
+        for (const gameId of GAME_IDS)
+            managedRolePolicy(
+                payload,
+                gameId,
+                groups.flatMap((group) =>
+                    group.discordRoleId ? [group.discordRoleId] : []
+                )
+            )
 
         if (existing) {
             await ctx.db.patch(existing._id, payload)

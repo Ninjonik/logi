@@ -1268,9 +1268,74 @@ export default defineSchema({
         refreshUntil: v.number(),
         nextRefreshAt: v.number(),
         seenRunId: v.optional(v.id("membershipSyncRuns")),
+        // Survives rejoin so queued side effects cannot cross a departure.
+        departureRevision: v.optional(v.string()),
     })
         .index("guildId", ["guildId"])
         .index("guildId_discordUserId", ["guildId", "discordUserId"]),
+    memberRoleOperations: defineTable({
+        guildId: v.string(),
+        gameId,
+        userId: v.string(),
+        version: v.number(),
+        actorId: v.string(),
+        actorKind: v.union(
+            v.literal("dashboard"),
+            v.literal("recruitment"),
+            v.literal("application"),
+            v.literal("rollback")
+        ),
+        categoryId: v.optional(v.string()),
+        assignmentFingerprint: v.string(),
+        policyFingerprint: v.string(),
+        allowedRoleIds: v.array(v.string()),
+        desiredRoleIds: v.array(v.string()),
+        departureRevision: v.string(),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("running"),
+            v.literal("retry_scheduled"),
+            v.literal("applied"),
+            v.literal("denied"),
+            v.literal("superseded"),
+            v.literal("failed")
+        ),
+        attempts: v.number(),
+        failureCount: v.number(),
+        nextAttemptAt: v.number(),
+        leaseUntil: v.number(),
+        fence: v.number(),
+        reason: v.string(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId_nextAttemptAt", ["guildId", "nextAttemptAt"])
+        .index("guildId_gameId_userId_version", [
+            "guildId",
+            "gameId",
+            "userId",
+            "version",
+        ])
+        .index("guildId_createdAt", ["guildId", "createdAt"]),
+    memberRoleLocks: defineTable({
+        guildId: v.string(),
+        userId: v.string(),
+        leaseUntil: v.number(),
+        fence: v.number(),
+    }).index("guildId_userId", ["guildId", "userId"]),
+    memberRoleAudits: defineTable({
+        operationId: v.id("memberRoleOperations"),
+        guildId: v.string(),
+        userId: v.string(),
+        actorId: v.string(),
+        fence: v.number(),
+        attempt: v.number(),
+        outcome: v.string(),
+        reason: v.string(),
+        at: v.string(),
+    })
+        .index("operationId_fence", ["operationId", "fence"])
+        .index("guildId_at", ["guildId", "at"]),
     membershipSyncRuns: defineTable({
         guildId: v.string(),
         epoch: v.string(),

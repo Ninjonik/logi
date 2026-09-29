@@ -78,6 +78,7 @@ export async function getEligibleUsersForServer(
 }
 
 export async function saveServerUserAssignment(input: {
+    roleActor?: import("@/domain/membership/managed-roles").RoleActor
     assignmentId?: string
     userId: string
     serverId: string
@@ -94,8 +95,14 @@ export async function saveServerUserAssignment(input: {
     return await saveServerUserAssignmentCommand(input)
 }
 
-export async function deleteServerUserAssignment(assignmentId: string) {
-    return await deleteServerUserAssignmentCommand(assignmentId)
+export async function deleteServerUserAssignment(
+    assignmentId: string,
+    roleContext?: {
+        roleActor: import("@/domain/membership/managed-roles").RoleActor
+        roleGuildId: string
+    }
+) {
+    return await deleteServerUserAssignmentCommand(assignmentId, roleContext)
 }
 
 export async function savePlayerPlatformId(input: {

@@ -117,10 +117,10 @@ Modify `convex/schema.ts`, `convex/discordMembership.ts`,
 An operation persists actor/provenance, guild/game/target, desired-state version,
 allowed role set and attempt/result audit; each retry re-resolves authority.
 
-- [ ] Write `unmanaged roles preserved`, `pending/recruit/active/mercenary transitions match current policy`, `two game policies do not remove each other's roles`, `bot hierarchy prevents operation`, `actor revoked before execution denies`, `timeout after Discord success retries idempotently`, and `stale desired version is superseded`. Test departures/rejoins and deleted configured roles. Run new domain/use-case/bot tests and observe failures.
-- [ ] Reuse existing recruitment outcome rules and generate durable desired/applied operations. Define a single owner for each managed role and reject conflicting configuration. Read authoritative state before retry; use a set difference only within the configured managed set. Reconcile after reconnect; never claim a failed side effect succeeded.
-- [ ] Add operator-visible pending/failed/applied status and sanitized audit with actor, target, reason and outcome. Authority comes from the authenticated Logi staff workflow; client-posted roles/actor names are not proof. Do not expose new role-grant actions to legacy bearer assignment writes. Document this API exclusion until the later delegated-actor command contract exists.
-- [ ] Run simulated Discord tests, full suite/typecheck and applicable lint/build checks. Capture actual UI/Discord presentation using simulated data; document bot intent/role prerequisites without requesting production changes. Commit `feat(membership): reconcile and audit managed Discord roles`.
+- [x] Write `unmanaged roles preserved`, `pending/recruit/active/mercenary transitions match current policy`, `two game policies do not remove each other's roles`, `bot hierarchy prevents operation`, `actor revoked before execution denies`, `timeout after Discord success retries idempotently`, and `stale desired version is superseded`. Test departures/rejoins and deleted configured roles. Run new domain/use-case/bot tests and observe failures.
+- [x] Reuse existing recruitment outcome rules and generate durable desired/applied operations. Define a single owner for each managed role and reject conflicting configuration. Read authoritative state before retry; use a set difference only within the configured managed set. Reconcile after reconnect; never claim a failed side effect succeeded.
+- [x] Add operator-visible pending/failed/applied status and sanitized audit with actor, target, reason and outcome. Authority comes from the authenticated Logi staff workflow; client-posted roles/actor names are not proof. Do not expose new role-grant actions to legacy bearer assignment writes. Document this API exclusion until the later delegated-actor command contract exists.
+- [x] Run simulated Discord tests, full suite/typecheck and applicable lint/build checks. Capture actual UI/Discord presentation using simulated data; document bot intent/role prerequisites without requesting production changes. Commit `feat(membership): reconcile and audit managed Discord roles`.
 
 ### I4 — Private Logi OIDC acceptance and optional website provider
 
@@ -185,6 +185,6 @@ to existing Logi workflows; do not enable writes merely to make a button work.
 
 ## Evidence and execution boundary
 
-These checkboxes describe future work. No live membership, role mutation or OAuth
+Checked I1/I3 steps have local implementation evidence; unchecked steps describe future work. No live membership, role mutation or OAuth
 flow was exercised to create this plan. Read-only research is documented separately.
 Website edits belong to its owner; provider-specific security work stays private.
