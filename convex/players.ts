@@ -960,7 +960,11 @@ export const setMatchRecapNotifications = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const user = await getUserByIdentifier(ctx, args.userId)
+        // Both callers supply the authenticated Discord subject, never a player ID.
+        const user = await ctx.db
+            .query("users")
+            .withIndex("discordId", (q) => q.eq("discordId", args.userId))
+            .unique()
         if (!user) throw new Error("Player not found.")
         await ctx.db.patch(user._id, {
             matchRecapNotificationsEnabled: args.enabled,

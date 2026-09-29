@@ -902,6 +902,9 @@ export default defineSchema({
     matchRecaps: defineTable({
         eventId: v.id("events"),
         userId: v.string(),
+        // New deliveries bind the data identity separately from the Discord recipient.
+        userRecordId: v.optional(v.id("users")),
+        discordUserId: v.optional(v.string()),
         status: v.union(v.literal("pending"), v.literal("sent")),
         previousTen: v.optional(
             v.object({

@@ -96,6 +96,9 @@ export const references = {
     getPendingMatchRecaps: makeFunctionReference<"query">(
         "matchRecaps:listPendingForEvent"
     ),
+    prepareMatchRecapDelivery: makeFunctionReference<"query">(
+        "matchRecaps:prepareDelivery"
+    ),
     markMatchRecapSent: makeFunctionReference<"mutation">(
         "matchRecaps:markSent"
     ),

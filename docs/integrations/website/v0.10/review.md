@@ -71,3 +71,12 @@ audit-label Minor was subsequently addressed by the regression-driven
 [reliability follow-up](reliability-follow-up.md), which also fixes signup sorting.
 That follow-up has an implementer review, not another independent cumulative review.
 Current validation limits are in [verification](validation.md).
+
+## Recap delivery follow-up
+
+The subsequent [recap correction](recap-delivery-follow-up.md) closes separately
+reproduced recipient, preference-identity and unsubscribe defects. It has an
+implementer review, **21/21** focused tests, **536/536** full-suite tests and a
+CS/EN/DE simulated presentation capture. Earlier independent review did not cover
+this later patch. The follow-up records the protocol/schema rollout, legacy-row
+suppression and remaining delivery race/duplicate limits explicitly.

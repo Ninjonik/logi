@@ -168,6 +168,10 @@ type ClanDiscordMessages = {
         noComparisonAvailable: string
         viewStats: string
         unsubscribe: string
+        subscribe: string
+        subscribed: string
+        unsubscribed: string
+        invalidAction: string
     }
     rosterUpdate: {
         announcementTitle: string
@@ -547,6 +551,11 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             noComparisonAvailable: "No prior recorded matches to compare yet.",
             viewStats: "View public match stats",
             unsubscribe: "Unsubscribe from recaps",
+            subscribe: "Subscribe to recaps",
+            subscribed: "You are subscribed to match recaps again.",
+            unsubscribed: "You are unsubscribed from match recaps.",
+            invalidAction:
+                "This match recap control is invalid. Open your account settings to change notifications.",
         },
         rosterUpdate: {
             announcementTitle: "Roster update",
@@ -1053,6 +1062,11 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
                 "Zatím nejsou k dispozici žádné předchozí zaznamenané zápasy pro srovnání.",
             viewStats: "Zobrazit veřejné statistiky zápasu",
             unsubscribe: "Odhlásit shrnutí",
+            subscribe: "Přihlásit shrnutí",
+            subscribed: "Jsi znovu přihlášen k odběru shrnutí zápasů.",
+            unsubscribed: "Jsi odhlášen z odběru shrnutí zápasů.",
+            invalidAction:
+                "Toto tlačítko shrnutí není platné. Upozornění můžeš změnit v nastavení účtu.",
         },
         rosterUpdate: {
             announcementTitle: "Aktualizace soupisky",
@@ -1389,6 +1403,11 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
                 "Es sind noch keine früheren gespeicherten Spiele zum Vergleichen vorhanden.",
             viewStats: "Öffentliche Spielstatistiken anzeigen",
             unsubscribe: "Zusammenfassungen abbestellen",
+            subscribe: "Zusammenfassungen abonnieren",
+            subscribed: "Du hast Spielzusammenfassungen wieder abonniert.",
+            unsubscribed: "Du hast Spielzusammenfassungen abbestellt.",
+            invalidAction:
+                "Diese Schaltfläche ist ungültig. Ändere Benachrichtigungen in deinen Kontoeinstellungen.",
         },
         rosterUpdate: {
             announcementTitle: "Roster-Update",

@@ -17,6 +17,7 @@ head and measured diff totals. This is source delivery, not production activatio
 | Managed Discord roles | [0.8](../v0.8/README.md) | Trusted actor, explicit Discord links, per-member locks, hierarchy checks, retries and operator audit |
 | Verified Steam identity I5 | [0.9](../v0.9/README.md) | Fixed Steam OpenID 2.0 provider, session-bound single-use challenge, nonce replay/uniqueness, unlink/relink invalidation |
 | Reviewed result revisions D4 | [0.10](README.md) | Explicit source/event link, active proof attribution, append-only confirmation/correction, CAS, minimized scoped DTO and W2 projection |
+| Personal recap delivery | [Follow-up](recap-delivery-follow-up.md) | Explicit Discord binding, exact opt-out, fresh preparation and mixed-version gate; legacy result semantics retained |
 
 The architectural path remains framework entrypoint → adapter → application →
 domain. Convex owns durable transactions; provider network calls run outside them.
@@ -71,8 +72,10 @@ There is one new pinned identity dependency; this is not a vendored SDK dump.
 
 ## Proof and remaining acceptance
 
-See [reliability follow-up](reliability-follow-up.md) for the latest **517/517**
-suite, closed role-audit Minor, locale-independent signup ordering and screenshots.
+See [recap delivery follow-up](recap-delivery-follow-up.md) for the latest **536/536**
+suite, recipient/opt-out regressions, deployment compatibility and CS/EN/DE proof.
+The previous [reliability follow-up](reliability-follow-up.md) records its **517/517**
+checkpoint, closed role-audit Minor and locale-independent signup ordering.
 See [validation](validation.md) for exact commands and earlier baseline failures,
 [fresh automated review](review.md) for findings/disposition and
 [decisions](delivery-decisions.md) for deviations and costs. Review is not
@@ -84,3 +87,6 @@ W1/W3/W4 and I2, private hosted OIDC I4, actual provider configuration and live
 acceptance remain outstanding. The role-attempt label fix applies to new transitions;
 pre-fix historical rows were not backfilled. No website/CircleBot checkout, infrastructure, DNS or hosted OAuth
 configuration was changed; no merge or deployment occurred.
+Legacy unbound recap rows are also withheld without migration. Recap delivery
+requires the compatible schema/functions/bot; it does not guarantee exactly-once
+DMs or cancellation of an in-flight Discord request.

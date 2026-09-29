@@ -28,6 +28,8 @@ npm run dev:all
 - Keep announcement embeds in sync
 - Create one forum post per event
 - Handle signup button interactions
+- Send eligible personal match recaps to explicitly linked Discord accounts and
+  handle each account's own global recap preference
 - Write sync state back to Convex
 - Reconcile actor-backed membership roles through a durable queue, including
   independent recovery after reconnect. `src/sync/managed-member-roles.ts` owns
@@ -39,6 +41,12 @@ immediate role writer with the new queue. The bot rechecks current actor access,
 target eligibility and role hierarchy on retries and only reports applied after
 fresh provider evidence. See [handoff 0.8](../docs/integrations/website/v0.8/README.md)
 for limits, operator recovery and the session-only audit. No bearer role-grant API.
+
+Recap delivery requires matching Convex/bot versions using internal delivery
+protocol 2. Stop the old bot before rollout; legacy unbound queued rows are
+withheld, not automatically migrated. The bot rechecks account binding and opt-out
+after Discord lookup, before sending. See the [recap delivery follow-up](../docs/integrations/website/v0.10/recap-delivery-follow-up.md)
+for compatibility, rollback, tests and the remaining in-flight/duplicate limits.
 
 ## Source layout
 

@@ -24,6 +24,9 @@ permission to deploy or change website/identity-provider repositories. Earlier
 | Strip result storage fields from generic event responses | Final review reproduced bypass of result/game grants | Consumers use the dedicated result resource; old event schema is preserved |
 | Fix the signup-order baseline within the authorized embed work; keep unrelated lint/toolchain issues separate | Root cause is host-dependent collation and compact column order | Full tests now pass; lint/build limits remain |
 | Synthetic local UI and handlers | Live provider/login/Discord actions are outside this proof | No claim of deployed identity, ingestion or website acceptance |
+| Bind recap recipient separately from player/data ID; recheck after Discord lookup | Imported IDs and account consent must not be confused with a Discord subject | Requires compatible optional schema and protocol-2 bot/functions |
+| Withhold old unbound recaps and older delivery clients | Existing rows do not prove the intended recipient | No automatic backfill, resend or repair of prior unsubscribe clicks |
+| Keep recap consent and sending outside bearer `/api/v1` | A consumer key is not the recipient's authenticated consent | Own-account dashboard/Discord action and internal delivery only; [proof and limits](recap-delivery-follow-up.md) |
 
 ## Remaining owner work
 

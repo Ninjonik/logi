@@ -3,8 +3,6 @@ import {
     type APIMessageComponentEmoji,
     AutocompleteInteraction,
     ButtonInteraction,
-    ButtonBuilder,
-    ButtonStyle,
     ChannelType,
     ChatInputCommandInteraction,
     EmbedBuilder,
@@ -84,6 +82,7 @@ import {
     buildMembershipApplicationThreadEmbed,
     buildTicketThreadEmbed,
 } from "./message-builders"
+import { handleMatchRecapPreference } from "./interactions/match-recap-preference"
 import { reportClanDiscordError } from "./error-reporting"
 import { logError, logInfo, logWarn } from "./log"
 import { convex, references } from "./convex"
@@ -487,31 +486,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     return {
         async handleButtonInteraction(interaction: ButtonInteraction) {
             if (interaction.customId.startsWith("match-recap:")) {
-                const enabled = interaction.customId.endsWith("subscribe")
-                await convex.mutation(references.setMatchRecapNotifications, {
-                    secret: env.internalSecret,
-                    userId: interaction.user.id,
-                    enabled,
-                })
-                await interaction.update({
-                    content: enabled
-                        ? "You are subscribed to match recaps again."
-                        : "You are unsubscribed from match recaps.",
-                    components: [
-                        new ActionRowBuilder<ButtonBuilder>().addComponents(
-                            new ButtonBuilder()
-                                .setStyle(ButtonStyle.Secondary)
-                                .setLabel(
-                                    enabled
-                                        ? "Unsubscribe from recaps"
-                                        : "Subscribe to recaps"
-                                )
-                                .setCustomId(
-                                    `match-recap:${enabled ? "unsubscribe" : "subscribe"}`
-                                )
-                        ),
-                    ],
-                })
+                await handleMatchRecapPreference(interaction)
                 return
             }
             if (interaction.customId.startsWith("attendance-late:")) {
