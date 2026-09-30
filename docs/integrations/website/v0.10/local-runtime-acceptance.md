@@ -1,5 +1,10 @@
 # Local runtime and test Discord acceptance — 2026-09-30
 
+**Historical checkpoint.** The [subsequent cumulative review](runtime-review.md)
+fixes the gateway crash described below and provides fresh regression tests,
+runtime acceptance, screenshots and cleanup evidence. This report and its
+original artifacts retain the outcomes of the earlier source revision.
+
 The unchanged runtime at **`b5b452ce40ffda609b0c06e3114a35dbd0498ab1`** now
 passes a full production build against a real, separate local Convex database.
 The Next production server, Convex functions, collectors and Discord bot were

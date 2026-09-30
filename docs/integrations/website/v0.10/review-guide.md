@@ -10,6 +10,11 @@ Discord command catalogs, activation sequence and remaining ownership. The
 [fresh verification package](verification-evidence.md) commits named test output,
 build/lint diagnostics, command payloads and a hashed evidence manifest.
 
+The latest [cumulative runtime review](runtime-review.md) records the gateway,
+role-freshness and imported-identity fixes, 564 passing tests, six actual browser
+screenshots and the user-confirmed private Discord status response. Earlier proof
+packages remain historical; the latest report lists the remaining acceptance gaps.
+
 ## Implemented boundaries
 
 | Boundary | Review entry point | Implementation and proof |
@@ -56,7 +61,8 @@ deletions across 158 files. Later delivery adds managed-role reliability, identi
 proof and reviewed results, with regression tests, contracts, fixtures and visual
 evidence. The PR body measures implementation, tests/previews, documentation and
 generated schemas separately. Screenshot binaries do not count as text lines.
-There is one new pinned identity dependency; this is not a vendored SDK dump.
+Dependencies include the pinned Steam OpenID adapter and `patch-package` for the
+version-pinned Discord gateway fix; the SDK itself is not vendored.
 
 ## Trust and compatibility checks
 
@@ -78,8 +84,10 @@ There is one new pinned identity dependency; this is not a vendored SDK dump.
 
 ## Proof and remaining acceptance
 
-See [server-status command](server-status-command.md) for the latest **551/551**
-suite, **15/15** focused tests and CS/EN/DE proof. The
+See the [latest runtime review](runtime-review.md) for **564/564** tests, the
+successful local production build and actual web/Discord acceptance. The earlier
+[server-status command](server-status-command.md) checkpoint records **551/551**
+tests, **15/15** focused tests and CS/EN/DE proof. The
 [recap delivery follow-up](recap-delivery-follow-up.md) records its **536/536**
 checkpoint, recipient/opt-out regressions and deployment compatibility.
 The previous [reliability follow-up](reliability-follow-up.md) records its **517/517**
@@ -87,8 +95,9 @@ checkpoint, closed role-audit Minor and locale-independent signup ordering.
 See [validation](validation.md) for exact commands and earlier baseline failures,
 [fresh automated review](review.md) for findings/disposition and
 [decisions](delivery-decisions.md) for deviations and costs. Review is not
-maintainer approval. The full test suite now passes; repository lint and the full
-production build still have the documented baseline/environment failures.
+maintainer approval. The full test suite and local production build now pass;
+repository-wide lint retains 140 errors and 142 warnings. The latest report
+separates changed-file lint, the known malformed-URL response and unrun acceptance.
 
 Logi plan tasks D1–D4, W2, I1/I3/I5 now have local implementation. Website-owned
 W1/W3/W4 and I2, private hosted OIDC I4, actual provider configuration and live

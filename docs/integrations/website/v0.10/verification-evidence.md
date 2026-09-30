@@ -1,10 +1,16 @@
 # Verification and proof for PR #158
 
-**Update, 2026-09-30:** [Actual local runtime and test Discord acceptance](local-runtime-acceptance.md)
+**Latest cumulative review:** [Review, fixes and fresh runtime evidence](runtime-review.md)
+records 564 passing tests, successful typecheck/build, changed-file ESLint without
+errors, the fixed gateway crash, clean installations, actual browser screenshots
+and live Discord acceptance. Its [manifest](evidence/2026-09-30-review/manifest.json)
+is the current checkpoint. The dated results below remain historical evidence.
+
+**Earlier update, 2026-09-30:** [Actual local runtime and test Discord acceptance](local-runtime-acceptance.md)
 now includes a successful full production build against a separate local Convex,
 real HTTPS fixture collectors, persistent HTTP/concurrency checks and live test
-Discord effects. An extended-run WebSocket crash was also reproduced and remains
-an open release blocker, alongside lint and the listed external acceptance gaps.
+Discord effects. That run reproduced an extended-run WebSocket crash; the latest
+review above fixes its deterministic cause and records the remaining acceptance gaps.
 The September 29 results below are preserved as the earlier snapshot.
 
 Fresh local run: 2026-09-29, Node **24.21.0**, Windows. Tested runtime source:

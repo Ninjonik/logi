@@ -17,6 +17,7 @@ not a deployment or approval to activate optional Logi SSO.
 | What does Discord do, who can use it, and what are the commands? | [Discord reference](discord-reference.md) |
 | Which tests actually ran, with what results? | [Verification and stored proof](verification-evidence.md) |
 | What ran against a real local database and test Discord guild? | [Local runtime acceptance and remaining gaps](local-runtime-acceptance.md) |
+| What did the cumulative review fix, and where is the newest proof? | [Runtime review, current tests and actual browser screenshots](runtime-review.md) |
 | Where are the architecture boundaries and review findings? | [Cumulative review guide](review-guide.md), [review record](review.md) |
 | How is the feature configured, deployed and recovered? | [Activation sequence below](#activation-and-recovery), versioned contracts below |
 | What is still missing, and who owns it? | [Remaining work below](#remaining-work-and-owners) |
@@ -24,7 +25,7 @@ not a deployment or approval to activate optional Logi SSO.
 Historical milestone documents describe their own checkpoint. This handbook and
 the PR body are the current overview; an earlier test count or “missing” row does
 not override a later delivered milestone. The exact tested runtime source and
-fresh check results are pinned in the [evidence manifest](evidence/2026-09-29/manifest.json).
+fresh check results are pinned in the [latest evidence manifest](evidence/2026-09-30-review/manifest.json).
 
 ## System and ownership
 
@@ -73,13 +74,14 @@ all six registered slash commands, plus button, modal and automatic workflows.
 
 ## Proof available in this PR
 
-Fresh runtime verification at `46fd6a0d06d48b923ad558b76d0a107cf2caa5af`:
-**551 tests passed, zero failed/skipped; typecheck passed**. OpenAPI and offline
-Convex generation passed without generated-source changes. Cumulative ESLint has
-three existing errors and 17 warnings. `npm run lint` still invokes unsupported
-`next lint`. Production compilation and TypeScript pass, but full build fails at
-`/en/competitions` because the synthetic Convex endpoint is absent. These are
-separate outcomes, not an all-green build/lint claim.
+Latest cumulative review: **564 tests passed, zero failed/skipped; typecheck and
+production build passed** against isolated local Convex. Changed-file ESLint has
+**0 errors and 17 warnings** across 192 TS/TSX files. `npm run lint` now invokes
+ESLint correctly; repository-wide lint still has 140 errors and 142 warnings.
+The deterministic gateway crash, stale role evidence and imported-identity feed
+defects are fixed. Clean npm/Bun installations, actual Discord membership and
+message delivery, manually confirmed `/server-status`, and persistent browser
+actions have fresh proof in the [runtime review](runtime-review.md).
 
 The [verification page](verification-evidence.md) links committed output, commands,
 file hashes, source revision, test-to-feature mapping and every screenshot family.
@@ -153,5 +155,6 @@ not a claim that the entire website is missing. No website checkout is edited he
 All non-sensitive source, contracts, fixtures, screenshots, review and verification
 outputs are kept in this single PR. Private security details and real credentials
 are deliberately outside the public delivery; only their acceptance status belongs
-here. No live message, provider action, hosted-auth probe, merge or deployment is
-part of this handoff.
+here. The latest pass sent an authorized test event to the isolated Discord
+channel and verified a user-triggered private status reply. No production game
+server action, hosted-auth probe, merge or production deployment occurred.

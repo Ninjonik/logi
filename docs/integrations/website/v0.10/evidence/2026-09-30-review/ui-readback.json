@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Browser HLL disable persisted in Convex and returned via HTTP",
+    "status": "pass"
+  },
+  {
+    "name": "Browser correction persists version 3, keeps prior zero-score version 2, public API returns corrected version 3",
+    "status": "pass"
+  }
+]

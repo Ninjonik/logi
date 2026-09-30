@@ -1,0 +1,157 @@
+{
+  "createdAt": "2026-09-30T11:15:42.113Z",
+  "source": {
+    "commit": "ba845b38703d7ab053bd4f6897c002fbf6268f9f",
+    "base": "a34ef149883240ab6a9eb879e845b5f71a5786e6"
+  },
+  "environment": {
+    "node": "v24.21.0",
+    "platform": "win32",
+    "nativeConvex": "isolated loopback SQLite instance",
+    "productionCredentialsUsed": false
+  },
+  "boundaries": {
+    "providerData": "synthetic HTTPS fixtures",
+    "discord": "real authorized isolated guild, channel and approved exact member",
+    "dashboardSession": "synthetic local session; OAuth not exercised",
+    "manualConfirmation": "Private /server-status game:wardogs response: 0/98; Alpha 0, Bravo 12, Charlie 7",
+    "repositoryLint": "140 errors / 142 warnings",
+    "knownHttpLimitation": "Malformed UTF-8 path returns framework-level 500",
+    "positiveRoleMutation": "blocked by approved target hierarchy",
+    "hostedAcceptance": "not run"
+  },
+  "artifacts": {
+    "../../screenshots/runtime-review/api-scope-form-cs.png": {
+      "encoding": "binary",
+      "sha256": "1ebf410ff6abbf02cca0a0ef9038e0195f8c37500c556f51395eeb9ce783bd21"
+    },
+    "../../screenshots/runtime-review/collector-disabled-cs.png": {
+      "encoding": "binary",
+      "sha256": "1642c0bd594100a5f6a48f1fba9babfe4f1228c6390d24fbcdaee6f7848dbcdb"
+    },
+    "../../screenshots/runtime-review/collector-resumed-cs.png": {
+      "encoding": "binary",
+      "sha256": "edb1bbc96175565a063e714c52d76679ac14d73ed9c8bbc727b48344cb6521f8"
+    },
+    "../../screenshots/runtime-review/collectors-cs.png": {
+      "encoding": "binary",
+      "sha256": "4059e25e659b500c385dba6f7b79f22a6ec5ccc1eb15d04e22cb4025dab9639f"
+    },
+    "../../screenshots/runtime-review/result-confirmed-cs.png": {
+      "encoding": "binary",
+      "sha256": "cfa6f76d21d642843ccdafbb3fd5f854db116eee625972915e4de83be8f0d8d5"
+    },
+    "../../screenshots/runtime-review/result-correction-history-cs.png": {
+      "encoding": "binary",
+      "sha256": "6c6d175086fa4db28104a0dec6810edaa5aa1bf4f1e77329e2c967e2586ac7e5"
+    },
+    "README.md": {
+      "encoding": "utf8-lf",
+      "sha256": "b71e16db12e83ea1c173ef8994466198ef92bea02cb4e0ffeb3d10f0fda158d2"
+    },
+    "build.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "2b2e76d6d85d70ab27dfabe99549e52a6fd89a168b4dd9dabb677a54bf111360"
+    },
+    "bun-clean-install.json": {
+      "encoding": "utf8-lf",
+      "sha256": "bb6713a657f6fbdb02278cb7a79ee94e7b5af48f7669fbd4d4785b330596feee"
+    },
+    "bun-clean-install.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "be88ff41d5c8c6da16fe54f86b836e34e563b04914cc6cb19eff3fd0726cd45f"
+    },
+    "checks.json": {
+      "encoding": "utf8-lf",
+      "sha256": "b26f3fc3c5d0c34dfa2ca44bb1731302ca230567aa00414d58bbb4a164860067"
+    },
+    "clean-install.json": {
+      "encoding": "utf8-lf",
+      "sha256": "b5a31d5c9bc5546b6c28f79d7c524934069b228a1e8a665f4f6f660b308d745f"
+    },
+    "clean-install.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "ac1d4bdc9645fc9205dcdb81351a4074652a0835d02b6590ba356a812661c350"
+    },
+    "cleanup.json": {
+      "encoding": "utf8-lf",
+      "sha256": "7991b75e0e1cd913d90ebbcd6dd162d9275eccfaabf4f8e4fd55f0debee76959"
+    },
+    "convex-local-push.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "a80f648792de0a036c4926a51da3b56b11c8efa4aba43dc35601cb40a2e89e91"
+    },
+    "eslint-changed.json": {
+      "encoding": "utf8-lf",
+      "sha256": "ecde87d51e1fbdb001238e9f88bb7dbbea87ed3d9f9c87287d2daedb46a0dce6"
+    },
+    "eslint-files.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "4faa8a944fe5c668fb7d7b4e64d084ae14fb63676a2381518c5297cd3d15163f"
+    },
+    "eslint-repository-summary.json": {
+      "encoding": "utf8-lf",
+      "sha256": "8ddd3db463e32c3257ead35fbc56770ae7ee80350cd06b6295c6450b196c3229"
+    },
+    "gateway-regression-red.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "bb1a5f3940c9d45236600d58e1ace1cc6989161620c186f3139a33453e6c2826"
+    },
+    "membership-identity-red.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "c3cff7c4839b2b67e4bb6219b19512551bb0362ac250512c51cc945140152aed"
+    },
+    "membership-legacy-red.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "0e60c7f8ab4147ef0c37afded6b1a043b22659207e17dc11d135ab24df9e97c7"
+    },
+    "openapi.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "4e5003bfb5280da18b792478b519086dc8b8c2d2c9d7eb0f695ce9d05e124447"
+    },
+    "query-regression-red.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "10defeef05e591db2f86dfb7809870a7315f2b1799be363a938050d29c2a862c"
+    },
+    "roles-regression-red.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "ef02eb2948bcb27abdfdecc315f5970b1f918bc3a1f88622b6acd1f80c1cc8b7"
+    },
+    "runtime-collectors.json": {
+      "encoding": "utf8-lf",
+      "sha256": "3b1400721456d45898051ba74a2637f3bcd5a4f33779ede9faf27c8e562b4208"
+    },
+    "runtime-discord.json": {
+      "encoding": "utf8-lf",
+      "sha256": "8566542a39f65a7e80db8d2e943b196268a656e556b3a5c45ebec6b185678cfd"
+    },
+    "runtime-extra.json": {
+      "encoding": "utf8-lf",
+      "sha256": "563595cabf22de7ecaf9c8273b79e140e7e7a748ed23ced36661d8240cf74170"
+    },
+    "runtime-membership.json": {
+      "encoding": "utf8-lf",
+      "sha256": "b74aa44f25bd58859c373d81f4ea938cbd6f1b799a532981b5bf5834f2c7dbb5"
+    },
+    "source-manifest.json": {
+      "encoding": "utf8-lf",
+      "sha256": "ef178fc73942c4b2811c29aadb0bfaa7ae8a03aa103dce0269ed4d7fe4e0460f"
+    },
+    "tests.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "5c4095cf30d6eaf830d57f1ec5af4468d62baf02dbeed0e5c15e51d0c679c3d3"
+    },
+    "typecheck.txt": {
+      "encoding": "utf8-lf",
+      "sha256": "2aa82fa1c4fdef6d455f10688f7fcdc79c5dbd29e70cf0b8fd9bbb6383558d13"
+    },
+    "ui-readback.json": {
+      "encoding": "utf8-lf",
+      "sha256": "7c81f47c1ba127d5865edb0918099606cedc4cc36d2725569e5aeeb43ee0933f"
+    },
+    "verify-proof.mjs": {
+      "encoding": "utf8-lf",
+      "sha256": "7fe87b85ba25cd80dff1d6509415c7aa7fa4d4e004eaefafecb8da841cf8fc33"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "executedAt": "2026-09-30T10:52:35.587Z",
+  "backend": "native local Convex",
+  "results": [
+    {
+      "name": "Browser resume persisted in local DB",
+      "status": "pass"
+    },
+    {
+      "name": "Malformed percent-encoding reaches the framework before the API parser",
+      "status": "known-limitation",
+      "observedHttpStatus": 500,
+      "expectedHttpStatus": 400,
+      "detail": "Next.js returns plain-text 500 before this route runs; parser-level regression is fixed separately."
+    },
+    {
+      "name": "Imported identity binding exposes its stable-ID assignment over actual HTTP",
+      "status": "pass",
+      "importedIdExported": false,
+      "assignment": {
+        "type": "member",
+        "status": "active"
+      }
+    },
+    {
+      "name": "Relinking invalidates old and new exact Discord subjects transactionally",
+      "status": "pass"
+    }
+  ]
+}

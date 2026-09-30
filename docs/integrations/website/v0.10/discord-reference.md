@@ -36,6 +36,12 @@ descriptions, option bounds, choices and permission defaults, are committed in
 by calling the production `registerGuildCommands` with a fake Discord guild. This
 proves emitted metadata, not a successful real registration or every command action.
 
+The subsequent [runtime acceptance](runtime-review.md) verifies actual registration
+of all six commands in the authorized test guild and a user-confirmed private
+`/server-status game:wardogs` response with configured synthetic provider data.
+It also verifies fresh Components V2 event delivery and exact-member reads.
+The other five slash-command workflows were not each exercised interactively.
+
 ## Registration and prerequisites
 
 [`index.ts`](../../../../discord-bot/src/index.ts) registers the commands for each
@@ -49,7 +55,9 @@ The bot needs its token, Convex URL and matching internal secret; the dashboard
 needs its own Discord OAuth configuration. Enable member intent, required channel
 permissions and Manage Roles as appropriate. Place every managed role below the
 bot's highest role. Installation, registration, hierarchy and actual message
-rendering remain live acceptance items.
+rendering must be checked for each target guild. The isolated-guild acceptance
+above does not qualify deployment elsewhere; positive role grant/revoke remains
+blocked by the approved target's position above the test bot.
 
 ## Buttons, modals and automatic behavior
 

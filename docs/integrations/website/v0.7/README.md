@@ -126,6 +126,19 @@ projection with `upsert`, so the next record has `assignment: null`. Policy/epoc
 changes allocate a global revision and force cursor reset instead of fanout.
 The returned revision is the maximum of subject, policy and epoch revisions.
 
+**Identity correction, 2026-09-30:** assignment projections resolve the explicit
+`users.discordId` binding and the corresponding stable Logi assignment ID.
+Unlinked imported IDs are never substituted for Discord subjects. Profile
+creation, relinking, unlinking and deletion invalidate affected old/new subjects,
+including existing legacy assignment aliases. Conflicting alias assignments
+project `assignment: null` until repaired. The wire DTO is unchanged.
+
+Consumers upgrading from an earlier PR checkpoint must capture a new `start=now`
+cursor, refetch each authorized exact-member scope, then drain all pages through
+that cursor. Old logs may contain imported IDs that did not reach an exact-subject
+subscriber; this producer fix does not rewrite historical logs. Always follow
+`hasMore`, including when a filtered page contains no items.
+
 Membership notifications use the separate explicit **`membership.changed`**
 webhook subscription. Existing `integration.changed` subscribers never receive
 member IDs automatically. Notification bodies carry only subject/scope/revision;
