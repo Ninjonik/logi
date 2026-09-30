@@ -35,11 +35,22 @@ type SignupInteraction = ButtonInteraction | StringSelectMenuInteraction
 
 async function loadSignupContext(
     interaction: SignupInteraction,
-    eventId: string
+    eventId: string,
+    customIdGuildId?: string
 ) {
+    const guildId =
+        interaction.guildId ??
+        customIdGuildId ??
+        (
+            (await convex.query(references.getEventInteractionContext, {
+                secret: env.internalSecret,
+                eventId: eventId as never,
+            })) as EventInteractionContext | null
+        )?.event.guildId
+    if (!guildId) return null
     return (await convex.query(references.getEventSignupContext, {
         secret: env.internalSecret,
-        ...(interaction.guildId ? { guildId: interaction.guildId } : {}),
+        guildId,
         eventId: eventId as never,
     })) as EventInteractionContext | null
 }
@@ -102,7 +113,9 @@ function buildSignupSelectionRow(
     return available.length
         ? new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
               new StringSelectMenuBuilder()
-                  .setCustomId(`signup:${context.event.id}:select`)
+                  .setCustomId(
+                      `signup:${context.event.id}:select:${context.event.guildId}`
+                  )
                   .setPlaceholder(messages.embed.chooseSignup)
                   .addOptions(
                       available.slice(0, 25).map((action) => ({
@@ -125,8 +138,12 @@ function buildSignupSelectionRow(
 export async function handleEventSignupPickerInteraction(
     interaction: ButtonInteraction
 ) {
-    const eventId = interaction.customId.replace("signup-picker:", "")
-    const context = await loadSignupContext(interaction, eventId)
+    const [, eventId, customIdGuildId] = interaction.customId.split(":")
+    const context = await loadSignupContext(
+        interaction,
+        eventId ?? "",
+        customIdGuildId
+    )
     if (!context) {
         await interaction.reply({
             content:
@@ -164,8 +181,12 @@ export async function handleEventSignupPickerInteraction(
 export async function handleCheckSignupInteraction(
     interaction: ButtonInteraction
 ) {
-    const eventId = interaction.customId.replace("check-signup:", "")
-    const context = await loadSignupContext(interaction, eventId)
+    const [, eventId, customIdGuildId] = interaction.customId.split(":")
+    const context = await loadSignupContext(
+        interaction,
+        eventId ?? "",
+        customIdGuildId
+    )
     if (!context) {
         await interaction.reply({
             content:
@@ -244,7 +265,8 @@ export async function handleEventButtonInteraction(
     interaction: SignupInteraction,
     options: InteractionHandlerOptions
 ) {
-    const [, eventId, encodedGroupId] = interaction.customId.split(":")
+    const [, eventId, encodedGroupId, customIdGuildId] =
+        interaction.customId.split(":")
     const requestedGroupId = interaction.isStringSelectMenu()
         ? (interaction.values[0] ?? "")
         : decodeURIComponent(encodedGroupId ?? "")
@@ -278,7 +300,11 @@ export async function handleEventButtonInteraction(
         return
     }
 
-    const context = await loadSignupContext(interaction, eventId)
+    const context = await loadSignupContext(
+        interaction,
+        eventId,
+        customIdGuildId
+    )
     if (!context) {
         await interaction.reply({
             content:

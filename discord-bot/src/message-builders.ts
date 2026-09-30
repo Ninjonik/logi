@@ -51,7 +51,10 @@ type EventEmbedOptions = {
     forumChannelId?: string
     showPublishedRosterImage?: boolean
     rosterImageUrl?: string
+    hideSignupDetails?: boolean
 }
+
+type EventLink = { label: string; url: string }
 
 export function buildAnnouncementMessage(
     payload: SyncPayload,
@@ -83,7 +86,10 @@ export function buildAnnouncementV2Message(
     payload: SyncPayload,
     event: EventRecord,
     userDisplayNames: Record<string, string> = payload.userDisplayNames,
-    options?: EventEmbedOptions & { pingRoleIds?: string[] }
+    options?: EventEmbedOptions & {
+        pingRoleIds?: string[]
+        eventLinks?: EventLink[]
+    }
 ) {
     const legacy = buildAnnouncementMessage(
         payload,
@@ -134,6 +140,18 @@ export function buildAnnouncementV2Message(
         container.addSeparatorComponents(new SeparatorBuilder())
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(block.slice(0, 4000))
+        )
+    }
+
+    if (options?.eventLinks?.length) {
+        container.addSeparatorComponents(new SeparatorBuilder())
+        container.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                options.eventLinks
+                    .map((link) => `[${link.label}](${link.url})`)
+                    .join(" • ")
+                    .slice(0, 4000)
+            )
         )
     }
 
@@ -221,7 +239,7 @@ export function buildAnnouncementV2Message(
                     new ActionRowBuilder<ButtonBuilder>().addComponents(
                         new ButtonBuilder()
                             .setCustomId(
-                                `signup:${event.id}:${SIGNUP_PRIMARY_GROUP}`
+                                `signup:${event.id}:${SIGNUP_PRIMARY_GROUP}:${payload.config.guildId}`
                             )
                             .setStyle(ButtonStyle.Success)
                             .setEmoji("✅")
@@ -231,7 +249,9 @@ export function buildAnnouncementV2Message(
                                 ).embed.chooseSignup
                             ),
                         new ButtonBuilder()
-                            .setCustomId(`check-signup:${event.id}`)
+                            .setCustomId(
+                                `check-signup:${event.id}:${payload.config.guildId}`
+                            )
                             .setStyle(ButtonStyle.Primary)
                             .setEmoji("🔎")
                             .setLabel(
@@ -241,7 +261,7 @@ export function buildAnnouncementV2Message(
                             ),
                         new ButtonBuilder()
                             .setCustomId(
-                                `signup:${event.id}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`
+                                `signup:${event.id}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}:${payload.config.guildId}`
                             )
                             .setStyle(ButtonStyle.Danger)
                             .setEmoji("❌")
@@ -516,12 +536,14 @@ export function buildEventEmbed(
     descriptionLines.push(
         `**📌 ${messages.embed.status}:** ${formatEventStatus(event.status, config.defaultLanguage)}`
     )
-    const signedUpCount = signups.filter(
-        (signUp) => signUp.group !== SIGNUP_NOT_ATTENDING
-    ).length
-    descriptionLines.push(
-        `**👥 ${messages.embed.signupCount}:** ${signedUpCount}`
-    )
+    if (!options?.hideSignupDetails) {
+        const signedUpCount = signups.filter(
+            (signUp) => signUp.group !== SIGNUP_NOT_ATTENDING
+        ).length
+        descriptionLines.push(
+            `**👥 ${messages.embed.signupCount}:** ${signedUpCount}`
+        )
+    }
     if (options?.forumChannelId) {
         descriptionLines.push(
             `**💬 ${messages.embed.eventForum}:** <#${options.forumChannelId}>`
@@ -559,7 +581,7 @@ export function buildEventEmbed(
         embed.setImage(event.imageUrl)
     }
 
-    if (event.kind === "match") {
+    if (event.kind === "match" && !options?.hideSignupDetails) {
         const configuredGroupIds = event.signupGroupIds
             ? new Set(event.signupGroupIds)
             : null
@@ -621,6 +643,10 @@ export function buildEventEmbed(
         .map((participant) =>
             resolveAnnouncementDisplayName(participant.userId, userDisplayNames)
         )
+
+    if (options?.hideSignupDetails) {
+        return embed
+    }
 
     embed.addFields(
         {

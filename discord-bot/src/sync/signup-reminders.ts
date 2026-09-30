@@ -4,7 +4,7 @@ import { isRegistrationAnnouncementDue } from "../../../src/domain/events/regist
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
 import { matchesGameScope } from "../../../src/domain/games/game"
 import { buildAnnouncementV2Message } from "../message-builders"
-import { resolveAnnouncementDisplayNames } from "./events"
+import { buildDiscordMessageLink } from "../utils"
 import type { SyncPayload } from "../types"
 import { logInfo } from "../log"
 
@@ -62,19 +62,33 @@ export async function processSignupReminders(
             event.participants.map((participant) => participant.userId)
         )
 
-        // Render reminders exactly like the live registration announcement.
-        // In particular, resolve current guild display names instead of showing
-        // the raw Discord IDs stored in event signups.
-        const guild = await client.guilds
-            .fetch(payload.config.guildId)
-            .catch(() => null)
-        const userDisplayNames = guild
-            ? await resolveAnnouncementDisplayNames(payload, event, guild)
-            : payload.userDisplayNames
+        const syncState = payload.syncStates.find(
+            (state) => state.eventId === event.id
+        )
+        const registrationUrl = buildDiscordMessageLink(
+            payload.config.guildId,
+            event.announcementChannelId ?? payload.config.announcementsChannelId
+        )
+        const forumUrl = buildDiscordMessageLink(
+            payload.config.guildId,
+            syncState?.forumChannelId
+        )
+        const eventLinks = [
+            registrationUrl
+                ? { label: "Open registration channel", url: registrationUrl }
+                : null,
+            forumUrl ? { label: "Open event forum", url: forumUrl } : null,
+        ].filter(
+            (link): link is { label: string; url: string } => link !== null
+        )
         const message = buildAnnouncementV2Message(
             payload,
             event,
-            userDisplayNames
+            {},
+            {
+                hideSignupDetails: true,
+                eventLinks,
+            }
         )
         // Assignments were not included in older cached payloads. Treat them
         // as an empty recipient set while a rolling deployment catches up.

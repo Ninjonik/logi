@@ -601,3 +601,54 @@ test("Components V2 announcements show published roster below event artwork", ()
         ]
     )
 })
+
+test("Components V2 signup reminders can hide signup details and retain DM-safe controls", () => {
+    const event = createMatchEvent({
+        participants: [
+            {
+                userId: "user-1",
+                status: "attending",
+                updatedAt: "2026-07-29T10:00:00.000Z",
+            },
+        ],
+    })
+    const payload = {
+        config: { ...config, defaultLanguage: "en" },
+        groups,
+        guild: { eventCategories },
+        rosters: [],
+        userDisplayNames: { "user-1": "Alpha" },
+        events: [event],
+        calendarItems: [],
+        topicPresets: [],
+        syncStates: [],
+        assignments: [],
+    } as unknown as SyncPayload
+
+    const message = buildAnnouncementV2Message(
+        payload,
+        event,
+        {},
+        {
+            hideSignupDetails: true,
+            eventLinks: [
+                {
+                    label: "Open registration channel",
+                    url: "https://discord.com/channels/guild-1/registration",
+                },
+                {
+                    label: "Open event forum",
+                    url: "https://discord.com/channels/guild-1/forum",
+                },
+            ],
+        }
+    )
+    const rendered = JSON.stringify(message.components?.[0]?.toJSON())
+
+    assert.match(rendered, /Open registration channel/)
+    assert.match(rendered, /Open event forum/)
+    assert.doesNotMatch(rendered, /People signed up/)
+    assert.doesNotMatch(rendered, /Alpha/)
+    assert.match(rendered, /signup:event-1:PRIMARY_GROUP:guild-1/)
+    assert.match(rendered, /check-signup:event-1:guild-1/)
+})
