@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { ConfigurationScopeIndicator } from "@/components/app/configuration-scope-indicator"
 import { MembershipSettingsForm } from "@/components/app/membership-settings-form"
 import { GameSelectionGate } from "@/components/app/game-selection-gate"
-import { isGameId, withGameOverrides } from "@/domain/games/game"
+import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { PageHeader } from "@/components/app/page-header"
 import { getGuildMetadata } from "@/lib/server-metadata"
 import { getServerContext } from "@/lib/server-context"
@@ -50,14 +50,28 @@ export default async function ServerMembershipsPage({
                     dictionary={dictionary}
                 />
                 <MembershipSettingsForm
+                    // Client-side navigation between game query parameters
+                    // preserves component state. A key prevents one game's
+                    // unsaved form values from appearing in another game.
+                    key={gameId}
                     serverId={serverId}
                     config={
                         discordConfig
-                            ? withGameOverrides(
-                                  discordConfig,
-                                  discordConfig.gameOverrides,
-                                  gameId
-                              )
+                            ? {
+                                  ...discordConfig,
+                                  // Membership settings were historically
+                                  // global HLL settings. Other games must not
+                                  // inherit them before they are configured.
+                                  membershipSettings:
+                                      gameId === DEFAULT_GAME_ID
+                                          ? (discordConfig.gameOverrides?.[
+                                                gameId
+                                            ]?.membershipSettings ??
+                                            discordConfig.membershipSettings)
+                                          : discordConfig.gameOverrides?.[
+                                                gameId
+                                            ]?.membershipSettings,
+                              }
                             : null
                     }
                     baseConfig={discordConfig}
