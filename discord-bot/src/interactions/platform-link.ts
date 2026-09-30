@@ -23,6 +23,7 @@ type PlatformKey = "steam" | "epic" | "xbox" | "playstation"
 type PlatformLinkContext = {
     mode: PlatformLinkMode
     categoryId?: string
+    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
 }
 
 type PlatformEmojiMap = Partial<Record<PlatformKey, APIMessageComponentEmoji>>
@@ -68,15 +69,24 @@ function formatEmojiForText(emoji: APIMessageComponentEmoji | undefined) {
 
 function decodeContext(
     mode: string,
-    categoryId: string | undefined
+    categoryId: string | undefined,
+    gameId?: string
 ): PlatformLinkContext | null {
     if (mode !== "membership" && mode !== "link") {
         return null
     }
 
+    const parsedGameId =
+        gameId === "hell_let_loose" ||
+        gameId === "hell_let_loose_vietnam" ||
+        gameId === "wardogs"
+            ? gameId
+            : undefined
+
     return {
         mode,
-        categoryId: categoryId && categoryId !== "_" ? categoryId : undefined,
+        ...(categoryId && categoryId !== "_" ? { categoryId } : {}),
+        ...(parsedGameId ? { gameId: parsedGameId } : {}),
     }
 }
 
@@ -85,7 +95,14 @@ export function buildPlatformLinkCustomId(
     context: PlatformLinkContext,
     extra?: string
 ) {
-    return [FLOW_PREFIX, step, context.mode, context.categoryId ?? "_", extra]
+    return [
+        FLOW_PREFIX,
+        step,
+        context.mode,
+        context.categoryId ?? "_",
+        context.gameId ?? "_",
+        extra,
+    ]
         .filter(Boolean)
         .join(":")
 }
@@ -94,38 +111,56 @@ export function buildPlatformLinkModalId(
     context: PlatformLinkContext,
     platform: PlatformKey
 ) {
-    return `${MODAL_PREFIX}:${context.mode}:${context.categoryId ?? "_"}:${platform}`
+    return `${MODAL_PREFIX}:${context.mode}:${context.categoryId ?? "_"}:${context.gameId ?? "_"}:${platform}`
 }
 
 export function buildPlatformLinkApplyModalId(
     categoryId: string,
-    platform: PlatformKey
+    platform: PlatformKey,
+    gameId?: PlatformLinkContext["gameId"]
 ) {
-    return `${APPLY_MODAL_PREFIX}:membership:${categoryId}:${platform}`
+    return `${APPLY_MODAL_PREFIX}:membership:${categoryId}:${gameId ?? "_"}:${platform}`
 }
 
 export function buildPlatformLinkMockApplyModalId(
     categoryId: string,
-    mockPlayerId: string
+    mockPlayerId: string,
+    gameId?: PlatformLinkContext["gameId"]
 ) {
-    return `${MOCK_APPLY_MODAL_PREFIX}:membership:${categoryId}:${mockPlayerId}`
+    return `${MOCK_APPLY_MODAL_PREFIX}:membership:${categoryId}:${gameId ?? "_"}:${mockPlayerId}`
 }
 
 export function parsePlatformLinkInteractionId(customId: string) {
-    const [prefix, step, mode, categoryId, ...rest] = customId.split(":")
+    const [prefix, step, mode, categoryId, gameIdOrExtra, ...rest] =
+        customId.split(":")
     if (prefix !== FLOW_PREFIX || !step || !mode) {
         return null
     }
 
+    const hasGameId =
+        gameIdOrExtra === "_" ||
+        gameIdOrExtra === "hell_let_loose" ||
+        gameIdOrExtra === "hell_let_loose_vietnam" ||
+        gameIdOrExtra === "wardogs"
     return {
         step,
-        context: decodeContext(mode, categoryId),
-        extra: rest.length ? rest.join(":") : undefined,
+        context: decodeContext(
+            mode,
+            categoryId,
+            hasGameId ? gameIdOrExtra : undefined
+        ),
+        extra: hasGameId
+            ? rest.length
+                ? rest.join(":")
+                : undefined
+            : gameIdOrExtra,
     }
 }
 
 export function parsePlatformLinkModalId(customId: string) {
-    const [prefix, mode, categoryId, platform] = customId.split(":")
+    const [prefix, mode, categoryId, gameIdOrPlatform, maybePlatform] =
+        customId.split(":")
+    const platform = maybePlatform ?? gameIdOrPlatform
     if (prefix !== MODAL_PREFIX || !mode || !platform) {
         return null
     }
@@ -140,26 +175,32 @@ export function parsePlatformLinkModalId(customId: string) {
     }
 
     return {
-        context: decodeContext(mode, categoryId),
+        context: decodeContext(
+            mode,
+            categoryId,
+            maybePlatform ? gameIdOrPlatform : undefined
+        ),
         platform,
     } satisfies { context: PlatformLinkContext | null; platform: PlatformKey }
 }
 
 export function buildPlatformLinkSearchModalId(context: PlatformLinkContext) {
-    return `${SEARCH_MODAL_PREFIX}:${context.mode}:${context.categoryId ?? "_"}`
+    return `${SEARCH_MODAL_PREFIX}:${context.mode}:${context.categoryId ?? "_"}:${context.gameId ?? "_"}`
 }
 
 export function parsePlatformLinkSearchModalId(customId: string) {
-    const [prefix, mode, categoryId] = customId.split(":")
+    const [prefix, mode, categoryId, gameId] = customId.split(":")
     if (prefix !== SEARCH_MODAL_PREFIX || !mode) {
         return null
     }
 
-    return decodeContext(mode, categoryId)
+    return decodeContext(mode, categoryId, gameId)
 }
 
 export function parsePlatformLinkApplyModalId(customId: string) {
-    const [prefix, mode, categoryId, platform] = customId.split(":")
+    const [prefix, mode, categoryId, gameIdOrPlatform, maybePlatform] =
+        customId.split(":")
+    const platform = maybePlatform ?? gameIdOrPlatform
     if (
         prefix !== APPLY_MODAL_PREFIX ||
         mode !== "membership" ||
@@ -178,14 +219,23 @@ export function parsePlatformLinkApplyModalId(customId: string) {
         return null
     }
 
-    return { categoryId, platform } satisfies {
+    return {
+        categoryId,
+        gameId: maybePlatform
+            ? decodeContext(mode, categoryId, gameIdOrPlatform)?.gameId
+            : undefined,
+        platform,
+    } satisfies {
         categoryId: string
+        gameId?: PlatformLinkContext["gameId"]
         platform: PlatformKey
     }
 }
 
 export function parsePlatformLinkMockApplyModalId(customId: string) {
-    const [prefix, mode, categoryId, mockPlayerId] = customId.split(":")
+    const [prefix, mode, categoryId, gameIdOrPlayerId, maybePlayerId] =
+        customId.split(":")
+    const mockPlayerId = maybePlayerId ?? gameIdOrPlayerId
     if (
         prefix !== MOCK_APPLY_MODAL_PREFIX ||
         mode !== "membership" ||
@@ -195,7 +245,13 @@ export function parsePlatformLinkMockApplyModalId(customId: string) {
         return null
     }
 
-    return { categoryId, mockPlayerId }
+    return {
+        categoryId,
+        gameId: maybePlayerId
+            ? decodeContext(mode, categoryId, gameIdOrPlayerId)?.gameId
+            : undefined,
+        mockPlayerId,
+    }
 }
 
 export function buildPlatformLinkStartMessage(

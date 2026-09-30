@@ -32,6 +32,7 @@ import {
     getClanDiscordMessages,
     type ClanLanguage,
 } from "../../src/lib/clan-language"
+import { withGameOverrides, type GameId } from "../../src/domain/games/game"
 
 import {
     buildMockPlayerMessage,
@@ -106,12 +107,44 @@ type TicketAnswer = {
 
 type MembershipAnswer = TicketAnswer
 
+function parseGameId(value: string | undefined): GameId | undefined {
+    return value === "hell_let_loose" ||
+        value === "hell_let_loose_vietnam" ||
+        value === "wardogs"
+        ? value
+        : undefined
+}
+
+function getMembershipPlatformReuseCopy(language: ClanLanguage) {
+    switch (language) {
+        case "cs":
+            return {
+                prompt: "Pro jinou hru už máte propojené platform ID. Chcete ho použít i pro tuto přihlášku?",
+                reuse: "Použít propojené ID",
+                linkAnother: "Propojit jiné ID",
+            }
+        case "de":
+            return {
+                prompt: "Für ein anderes Spiel ist bereits eine Plattform-ID verknüpft. Möchtest du sie auch für diese Bewerbung verwenden?",
+                reuse: "Verknüpfte ID verwenden",
+                linkAnother: "Andere ID verknüpfen",
+            }
+        default:
+            return {
+                prompt: "You already have a platform ID linked for another game. Would you like to use it for this application?",
+                reuse: "Use linked ID",
+                linkAnother: "Link another ID",
+            }
+    }
+}
+
 type MembershipPrereq = {
     config: EventInteractionContext["config"]
     category: MembershipCategory
     user: { platformIds?: string[] } | null
     assignment: { id: string; membershipCategoryId?: string } | null
     hasOpenApplication: boolean
+    hasAssignmentInOtherGame: boolean
 }
 
 type PlatformLinkState = {
@@ -561,6 +594,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
             if (interaction.customId.startsWith("membership:")) {
                 await handleMembershipButtonInteraction(interaction)
+                return
+            }
+
+            if (interaction.customId.startsWith("membership-reuse:")) {
+                await handleMembershipPlatformReuseInteraction(interaction)
                 return
             }
 
@@ -1290,11 +1328,15 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const categoryId = interaction.customId.replace("membership:", "")
+        const [gameIdOrCategoryId, categoryId] = interaction.customId
+            .replace("membership:", "")
+            .split(":", 2)
+        const gameId = categoryId ? parseGameId(gameIdOrCategoryId) : undefined
         const prereq = await loadMembershipApplicationPrereq(
             interaction.guildId,
-            categoryId,
-            interaction.user.id
+            categoryId ?? gameIdOrCategoryId,
+            interaction.user.id,
+            gameId
         )
         const messages = getClanDiscordMessages(prereq?.config.defaultLanguage)
 
@@ -1326,14 +1368,86 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             await interaction.reply({
                 ...buildPlatformLinkStartMessage(
                     prereq.config.defaultLanguage,
-                    { mode: "membership", categoryId }
+                    {
+                        mode: "membership",
+                        categoryId: categoryId ?? gameIdOrCategoryId,
+                        gameId,
+                    }
                 ),
                 flags: MessageFlags.Ephemeral,
             })
             return
         }
 
-        await continueMembershipApplicationFlow(interaction, prereq)
+        if (gameId && prereq.hasAssignmentInOtherGame) {
+            const copy = getMembershipPlatformReuseCopy(
+                prereq.config.defaultLanguage
+            )
+            await interaction.reply({
+                content: copy.prompt,
+                components: [
+                    new ActionRowBuilder<ButtonBuilder>().addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(
+                                `membership-reuse:${gameId}:${categoryId}:yes`
+                            )
+                            .setLabel(copy.reuse)
+                            .setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder()
+                            .setCustomId(
+                                `membership-reuse:${gameId}:${categoryId}:no`
+                            )
+                            .setLabel(copy.linkAnother)
+                            .setStyle(ButtonStyle.Secondary)
+                    ),
+                ],
+                flags: MessageFlags.Ephemeral,
+            })
+            return
+        }
+
+        await continueMembershipApplicationFlow(interaction, prereq, gameId)
+    }
+
+    async function handleMembershipPlatformReuseInteraction(
+        interaction: ButtonInteraction
+    ) {
+        const [, gameIdRaw, categoryId, choice] =
+            interaction.customId.split(":")
+        const gameId = parseGameId(gameIdRaw)
+        if (!interaction.guildId || !gameId || !categoryId || !choice) return
+
+        const prereq = await loadMembershipApplicationPrereq(
+            interaction.guildId,
+            categoryId,
+            interaction.user.id,
+            gameId
+        )
+        const messages = getClanDiscordMessages(prereq?.config.defaultLanguage)
+        if (!prereq?.config.membershipSettings?.enabled || prereq.assignment) {
+            await interaction.update({
+                content: prereq?.assignment
+                    ? messages.membership.alreadyInClan
+                    : messages.membership.unavailable,
+                components: [],
+            })
+            return
+        }
+
+        if (choice === "yes" && prereq.user?.platformIds?.length) {
+            await continueMembershipApplicationFlow(interaction, prereq, gameId)
+            return
+        }
+
+        if (choice === "no") {
+            await interaction.update(
+                buildPlatformLinkStartMessage(prereq.config.defaultLanguage, {
+                    mode: "membership",
+                    categoryId,
+                    gameId,
+                })
+            )
+        }
     }
 
     async function handlePlatformLinkButtonInteraction(
@@ -1354,7 +1468,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const emojis = await getPlatformEmojis()
 
         if (parsed.step === "start") {
-            if (await hasConfiguredStatsServers(interaction.guildId)) {
+            if (
+                await hasConfiguredStatsServers(
+                    interaction.guildId,
+                    context.gameId
+                )
+            ) {
                 await interaction.update(
                     buildPlayedBeforeMessage(language, context)
                 )
@@ -1411,7 +1530,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             if (context.mode === "membership" && context.categoryId) {
                 const categoryContext = await loadMembershipCategoryContext(
                     interaction.guildId!,
-                    context.categoryId
+                    context.categoryId,
+                    context.gameId
                 )
                 const messages = getClanDiscordMessages(
                     categoryContext?.config.defaultLanguage ?? language
@@ -1430,7 +1550,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                             context.categoryId,
                             parsed.extra,
                             categoryContext.category,
-                            messages.membership.modalTitle
+                            messages.membership.modalTitle,
+                            context.gameId
                         )
                     )
                     return
@@ -1529,7 +1650,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 const prereq = await loadMembershipApplicationPrereq(
                     interaction.guildId!,
                     context.categoryId,
-                    interaction.user.id
+                    interaction.user.id,
+                    context.gameId
                 )
                 const messages = getClanDiscordMessages(
                     prereq?.config.defaultLanguage ?? language
@@ -1548,7 +1670,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                             context.categoryId,
                             value,
                             prereq.category,
-                            messages.membership.modalTitle
+                            messages.membership.modalTitle,
+                            context.gameId
                         )
                     )
                     return
@@ -1563,7 +1686,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 await createDiscordMembershipApplication(
                     interaction,
                     prereq.category,
-                    []
+                    [],
+                    context.gameId
                 )
                 return
             }
@@ -1599,10 +1723,15 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const categoryId = interaction.customId.replace("membership-modal:", "")
+        const [gameIdRaw, categoryIdRaw] = interaction.customId
+            .replace("membership-modal:", "")
+            .split(":", 2)
+        const gameId = categoryIdRaw ? parseGameId(gameIdRaw) : undefined
+        const categoryId = categoryIdRaw ?? gameIdRaw
         const context = await loadMembershipCategoryContext(
             interaction.guildId,
-            categoryId
+            categoryId,
+            gameId
         )
         const messages = getClanDiscordMessages(context?.config.defaultLanguage)
         if (!context?.config.membershipSettings?.enabled) {
@@ -1622,7 +1751,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await createDiscordMembershipApplication(
             interaction,
             context.category,
-            answers
+            answers,
+            gameId
         )
     }
 
@@ -1665,7 +1795,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             const prereq = await loadMembershipApplicationPrereq(
                 interaction.guildId!,
                 parsed.context.categoryId,
-                interaction.user.id
+                interaction.user.id,
+                parsed.context.gameId
             )
             if (!prereq) {
                 await interaction.reply({
@@ -1679,7 +1810,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             await createDiscordMembershipApplication(
                 interaction,
                 prereq.category,
-                []
+                [],
+                parsed.context.gameId
             )
             return
         }
@@ -1715,7 +1847,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const query = interaction.fields.getTextInputValue("query").trim()
         const results = await searchPlayerStatsServers(
             interaction.guildId,
-            query
+            query,
+            context.gameId
         )
         const emojis = await getPlatformEmojis()
 
@@ -1767,7 +1900,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         const context = await loadMembershipCategoryContext(
             interaction.guildId,
-            parsed.categoryId
+            parsed.categoryId,
+            parsed.gameId
         )
         if (!context) {
             await interaction.reply({
@@ -1786,7 +1920,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await createDiscordMembershipApplication(
             interaction,
             context.category,
-            collectMembershipAnswers(interaction, context.category, 4)
+            collectMembershipAnswers(interaction, context.category, 4),
+            parsed.gameId
         )
     }
 
@@ -1806,7 +1941,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         const context = await loadMembershipCategoryContext(
             interaction.guildId,
-            parsed.categoryId
+            parsed.categoryId,
+            parsed.gameId
         )
         const messages = getClanDiscordMessages(language)
         if (!context) {
@@ -1826,7 +1962,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await createDiscordMembershipApplication(
             interaction,
             context.category,
-            collectMembershipAnswers(interaction, context.category, 5)
+            collectMembershipAnswers(interaction, context.category, 5),
+            parsed.gameId
         )
     }
 
@@ -1877,13 +2014,15 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     async function loadMembershipApplicationPrereq(
         guildId: string,
         categoryId: string,
-        userId: string
+        userId: string,
+        gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
     ) {
         return (await convex.query(references.getMembershipApplicationPrereq, {
             secret: env.internalSecret,
             guildId,
             categoryId,
             userId,
+            gameId,
         })) as MembershipPrereq | null
     }
 
@@ -1894,7 +2033,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         })) as PlatformLinkState
     }
 
-    async function hasConfiguredStatsServers(guildId: string | null) {
+    async function hasConfiguredStatsServers(
+        guildId: string | null,
+        gameId?: GameId
+    ) {
         if (!guildId) {
             return false
         }
@@ -1905,8 +2047,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             })
             .catch(() => null)) as EventInteractionContext["config"] | null
 
+        const scopedConfig = config
+            ? withGameOverrides(config, config.gameOverrides, gameId)
+            : null
         return (
-            config?.playerStatsServers?.some(
+            scopedConfig?.playerStatsServers?.some(
                 (item) => item.token?.trim() && item.url?.trim()
             ) ?? false
         )
@@ -1914,15 +2059,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
     async function searchPlayerStatsServers(
         guildId: string,
-        query: string
+        query: string,
+        gameId?: GameId
     ): Promise<PlayerSearchResult[]> {
         const config = (await convex
             .query(references.getConfigByDiscordGuildId, {
                 guildId,
             })
             .catch(() => null)) as EventInteractionContext["config"] | null
+        const scopedConfig = config
+            ? withGameOverrides(config, config.gameOverrides, gameId)
+            : null
         const servers =
-            config?.playerStatsServers?.filter(
+            scopedConfig?.playerStatsServers?.filter(
                 (item) => item.token?.trim() && item.url?.trim()
             ) ?? []
         if (!query.trim() || !servers.length) {
@@ -1988,13 +2137,14 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
     async function continueMembershipApplicationFlow(
         interaction: ButtonInteraction | StringSelectMenuInteraction,
-        prereq: MembershipPrereq
+        prereq: MembershipPrereq,
+        gameId?: GameId
     ) {
         const messages = getClanDiscordMessages(prereq.config.defaultLanguage)
         if (prereq.category.modalQuestions.length) {
             await interaction.showModal(
                 buildMembershipQuestionsModal(
-                    `membership-modal:${prereq.category.id}`,
+                    `membership-modal:${gameId ? `${gameId}:` : ""}${prereq.category.id}`,
                     prereq.category,
                     messages.membership.modalTitle,
                     5
@@ -2006,7 +2156,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await createDiscordMembershipApplication(
             interaction,
             prereq.category,
-            []
+            [],
+            gameId
         )
     }
 
@@ -2045,7 +2196,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     function buildPlayerSearchModal(
-        context: { mode: "membership" | "link"; categoryId?: string },
+        context: {
+            mode: "membership" | "link"
+            categoryId?: string
+            gameId?: GameId
+        },
         language: ClanLanguage
     ) {
         const messages = getPlatformFlowMessages(language)
@@ -2094,10 +2249,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         categoryId: string,
         platform: "steam" | "epic" | "xbox" | "playstation",
         category: MembershipCategory,
-        fallbackTitle: string
+        fallbackTitle: string,
+        gameId?: GameId
     ) {
         const modal = buildMembershipQuestionsModal(
-            buildPlatformLinkApplyModalId(categoryId, platform),
+            buildPlatformLinkApplyModalId(categoryId, platform, gameId),
             category,
             fallbackTitle,
             4
@@ -2121,10 +2277,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         categoryId: string,
         playerId: string,
         category: MembershipCategory,
-        fallbackTitle: string
+        fallbackTitle: string,
+        gameId?: GameId
     ) {
         return buildMembershipQuestionsModal(
-            buildPlatformLinkMockApplyModalId(categoryId, playerId),
+            buildPlatformLinkMockApplyModalId(categoryId, playerId, gameId),
             category,
             fallbackTitle,
             5
@@ -2453,7 +2610,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             | StringSelectMenuInteraction
             | ModalSubmitInteraction,
         category: MembershipCategory,
-        answers: MembershipAnswer[]
+        answers: MembershipAnswer[],
+        gameId?: GameId
     ) {
         const fallbackMessages = getClanDiscordMessages("en")
         if (!interaction.guildId || !interaction.guild) {
@@ -2470,7 +2628,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         const categoryContext = await loadMembershipCategoryContext(
             interaction.guildId,
-            category.id
+            category.id,
+            gameId
         )
         const membershipSettings = categoryContext?.config.membershipSettings
         const messages = getClanDiscordMessages(
@@ -2491,6 +2650,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             {
                 serverDiscordId: interaction.guildId,
                 userId: interaction.user.id,
+                gameId,
             }
         )) as { id: string } | null
         if (existingAssignment) {
@@ -2521,6 +2681,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 secret: env.internalSecret,
                 serverDiscordId: interaction.guildId,
                 userId: interaction.user.id,
+                gameId,
                 type: category.assignmentType,
                 status: initialStatus,
                 membershipCategoryId: category.id,
@@ -2671,6 +2832,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 parentChannelId: parentChannel.id,
                 creatorId: interaction.user.id,
                 categoryId: category.id,
+                gameId,
                 assignmentType: category.assignmentType,
                 assignmentId: assignmentId as never,
                 answers,
@@ -3113,6 +3275,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     serverDiscordId: interaction.guildId,
                     assignmentId: context.application.assignmentId as never,
                     userId: context.application.creatorId,
+                    gameId: context.application.gameId,
                     type: nextType,
                     status: nextStatus,
                     membershipCategoryId: nextCategoryId,

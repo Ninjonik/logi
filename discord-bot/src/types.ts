@@ -102,6 +102,16 @@ export type DiscordConfig = {
     clanRoleId?: string
     dashboardAdminRoleId?: string
     playerStatsServers?: PlayerStatsServer[]
+    gameOverrides?: Partial<
+        Record<
+            "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs",
+            {
+                membershipSettings?: MembershipSettings
+                membershipPanelMessageId?: string
+                membershipPanelLastConfigUpdatedAt?: string
+            }
+        >
+    >
     ticketSettings?: TicketSettings
     membershipSettings?: MembershipSettings
     ticketPanelMessageId?: string
@@ -134,6 +144,8 @@ export type MembershipStatus = "pending" | "recruit" | "active"
 export type MembershipApplicationThreadRecord = {
     id: string
     guildId: string
+    /** Missing values are legacy Hell Let Loose applications. */
+    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
     threadId: string
     parentChannelId: string
     creatorId: string

@@ -231,6 +231,8 @@ export type GameDiscordOverrides = Pick<
     | "meetingChannelId"
     | "playerStatsServers"
     | "membershipSettings"
+    | "membershipPanelMessageId"
+    | "membershipPanelLastConfigUpdatedAt"
 >
 
 export type MembershipStatus = "pending" | "recruit" | "active"

@@ -155,6 +155,13 @@ export const updateMembershipPanelState = mutation({
     args: {
         secret: v.string(),
         guildId: v.string(),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
         membershipPanelMessageId: v.optional(v.string()),
         membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
     },
@@ -170,11 +177,25 @@ export const updateMembershipPanelState = mutation({
             throw new Error("Discord config not found.")
         }
 
-        await ctx.db.patch(config._id, {
-            membershipPanelMessageId: args.membershipPanelMessageId,
-            membershipPanelLastConfigUpdatedAt:
-                args.membershipPanelLastConfigUpdatedAt,
-        })
+        if (args.gameId) {
+            await ctx.db.patch(config._id, {
+                gameOverrides: {
+                    ...config.gameOverrides,
+                    [args.gameId]: {
+                        ...config.gameOverrides?.[args.gameId],
+                        membershipPanelMessageId: args.membershipPanelMessageId,
+                        membershipPanelLastConfigUpdatedAt:
+                            args.membershipPanelLastConfigUpdatedAt,
+                    },
+                },
+            })
+        } else {
+            await ctx.db.patch(config._id, {
+                membershipPanelMessageId: args.membershipPanelMessageId,
+                membershipPanelLastConfigUpdatedAt:
+                    args.membershipPanelLastConfigUpdatedAt,
+            })
+        }
 
         return { ok: true }
     },

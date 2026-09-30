@@ -7,6 +7,7 @@ import {
     buildCompactV2FieldText,
     buildEventComponents,
     buildEventEmbed,
+    buildMembershipPanelComponents,
 } from "./message-builders"
 import type {
     CalendarItem,
@@ -107,6 +108,51 @@ test("buildCompactV2FieldText removes legacy embed padding and compacts field co
     assert.equal(
         result,
         "**Infantry (4)**\nAlpha, Delta, Bravo, Charlie\n\n**Armor (0)**\nNobody yet"
+    )
+})
+
+test("membership panel components keep Wardogs scoped while HLL stays legacy-compatible", () => {
+    const membershipConfig: DiscordConfig = {
+        ...config,
+        membershipSettings: {
+            enabled: true,
+            submitChannelId: "submit",
+            applicationParentChannelId: "parent",
+            panelTitle: "Apply",
+            panelDescription: "Choose a category.",
+            autoAssignRecruitOnApply: false,
+            categories: [
+                {
+                    id: "recruit",
+                    supportRoleIds: [],
+                    recruitRoleIds: [],
+                    finalRoleIds: [],
+                    modalQuestions: [],
+                    assignmentType: "member",
+                },
+            ],
+        },
+    }
+
+    const legacyButton =
+        buildMembershipPanelComponents(membershipConfig)[0]?.toJSON()
+            .components[0]
+    const wardogsButton = buildMembershipPanelComponents(
+        membershipConfig,
+        "wardogs"
+    )[0]?.toJSON().components[0]
+
+    assert.equal(
+        legacyButton && "custom_id" in legacyButton
+            ? legacyButton.custom_id
+            : undefined,
+        "membership:recruit"
+    )
+    assert.equal(
+        wardogsButton && "custom_id" in wardogsButton
+            ? wardogsButton.custom_id
+            : undefined,
+        "membership:wardogs:recruit"
     )
 })
 

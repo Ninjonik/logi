@@ -996,7 +996,10 @@ export function buildMembershipPanelEmbed(config: DiscordConfig) {
     return embed
 }
 
-export function buildMembershipPanelComponents(config: DiscordConfig) {
+export function buildMembershipPanelComponents(
+    config: DiscordConfig,
+    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
+) {
     const membershipSettings = config.membershipSettings
     if (!membershipSettings?.categories.length) {
         return []
@@ -1004,7 +1007,11 @@ export function buildMembershipPanelComponents(config: DiscordConfig) {
 
     const buttons = membershipSettings.categories.map((category) => {
         const button = new ButtonBuilder()
-            .setCustomId(`membership:${category.id}`)
+            .setCustomId(
+                gameId
+                    ? `membership:${gameId}:${category.id}`
+                    : `membership:${category.id}`
+            )
             .setStyle(ButtonStyle.Success)
 
         const label = category.label?.trim()

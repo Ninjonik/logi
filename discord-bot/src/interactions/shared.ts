@@ -65,12 +65,14 @@ export async function loadTicketCategoryContext(
 
 export async function loadMembershipCategoryContext(
     guildId: string,
-    categoryId: string
+    categoryId: string,
+    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
 ) {
     return (await convex.query(references.getMembershipCategoryContext, {
         secret: env.internalSecret,
         guildId,
         categoryId,
+        gameId,
     })) as {
         config: EventInteractionContext["config"]
         category: import("../types").MembershipCategory

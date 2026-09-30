@@ -255,6 +255,8 @@ const gameDiscordOverrides = v.object({
     meetingChannelId: v.optional(v.string()),
     playerStatsServers: v.optional(v.array(playerStatsServer)),
     membershipSettings: v.optional(membershipSettings),
+    membershipPanelMessageId: v.optional(v.string()),
+    membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
 })
 
 // Convex records require a free-form string key validator.  These are known,
