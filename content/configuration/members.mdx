@@ -139,6 +139,17 @@ Create a read-only API key with the Discord membership grant first, then enable 
 policy and enter the allowed roles for each game. Empty role lists share no roles.
 No integration gains access until both gates are configured.
 
+Imported players keep their Logi identity separate from their Discord identity.
+Their assignment is included only after an explicit Discord link; a matching
+imported ID alone is not a link. Relinking refreshes the old and new membership
+projections. Conflicting legacy assignments require an administrator to repair
+the duplicate records before an assignment can be shared.
+
+Managed role updates recheck Discord evidence around backend authorization.
+If that evidence becomes older than ten seconds, Logi schedules a fresh attempt
+instead of applying roles with stale permissions. The operation history shows
+the retry; Discord hierarchy restrictions still apply.
+
 Unavailable or stale Discord data is explicitly unknown. The website must enforce
 freshness and its own permissions; successful OAuth login, Logi assignment or guild
 presence alone does not grant website administration. Disabling the policy or revoking

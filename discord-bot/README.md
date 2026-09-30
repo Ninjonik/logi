@@ -65,6 +65,16 @@ capabilities, review, tests and visual proof.
 
 ## Source layout
 
+Dependency installation applies the pinned Discord gateway lifecycle fix from
+[`patches/`](../patches/README.md). Keep install lifecycle scripts enabled, or run
+`npm run postinstall` explicitly before starting the bot. The patch prevents a
+pending WebSocket upgrade from losing its error listener during teardown; its
+six offline gateway regression tests do not require a Discord token.
+
+The managed-role worker rejects observations older than ten seconds both before
+and after backend authorization. Slow authorization therefore schedules a fresh
+attempt instead of continuing with stale Discord permissions.
+
 - `src/index.ts` boots the bot and wires events
 - `src/sync.ts` runs the polling loop and guild/event sync
 - `src/interactions.ts` handles signup and attendance button actions

@@ -11,6 +11,7 @@ import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
 import { projectResultSummary } from "../src/domain/api/result-summaries"
 import type { SyncResource } from "../src/domain/integrations/change"
 import { appendIntegrationChange } from "./integrationChangeLog"
+import { assignmentDiscordSubject } from "./membershipSubject"
 import type { Doc, Id } from "./_generated/dataModel"
 
 const tables = ["events", "gameDataConnections", "userAssignments"] as const
@@ -67,7 +68,7 @@ export async function withIntegrationChanges<T>(
 ): Promise<T> {
     const touched = new Map<
         string,
-        { table: TrackedTable; before: Row | null }
+        { table: TrackedTable; before: Row | null; subject?: string | null }
     >()
     const capture = async (id: string) => {
         if (touched.has(id)) return
@@ -77,13 +78,44 @@ export async function withIntegrationChanges<T>(
             touched.set(id, {
                 table,
                 before: row ? structuredClone(row) : null,
+                ...(table === "userAssignments" && row
+                    ? {
+                          subject: await assignmentDiscordSubject(
+                              ctx,
+                              (row as Doc<"userAssignments">).userId
+                          ),
+                      }
+                    : {}),
             })
+        }
+    }
+    const userAliases = (value: unknown): unknown[] =>
+        value && typeof value === "object"
+            ? [
+                  "id" in value ? value.id : null,
+                  "discordId" in value ? value.discordId : null,
+              ]
+            : []
+    const captureAssignments = async (aliases: unknown[]) => {
+        for (const alias of new Set(
+            aliases.filter(
+                (value): value is string =>
+                    typeof value === "string" && value.length > 0
+            )
+        )) {
+            const assignments = await ctx.db
+                .query("userAssignments")
+                .withIndex("userId", (q) => q.eq("userId", alias))
+                .collect()
+            for (const row of assignments) await capture(String(row._id))
         }
     }
     const db = new Proxy(ctx.db, {
         get(target, property) {
             if (property === "insert")
                 return async (table: string, value: unknown) => {
+                    if (table === "users")
+                        await captureAssignments(userAliases(value))
                     const id = await target.insert(
                         table as TrackedTable,
                         value as never
@@ -101,6 +133,21 @@ export async function withIntegrationChanges<T>(
                 property === "delete"
             )
                 return async (id: string, value: unknown) => {
+                    if (
+                        property !== "patch" ||
+                        (value &&
+                            typeof value === "object" &&
+                            ("id" in value || "discordId" in value))
+                    ) {
+                        const userId = ctx.db.normalizeId("users", id)
+                        if (userId) {
+                            const user = await ctx.db.get(userId)
+                            await captureAssignments([
+                                ...userAliases(user),
+                                ...userAliases(value),
+                            ])
+                        }
+                    }
                     await capture(id)
                     if (property === "delete")
                         return target.delete(id as Id<TrackedTable>)
@@ -119,15 +166,18 @@ export async function withIntegrationChanges<T>(
         },
     })
     const result = await execute({ ...ctx, db })
-    for (const [id, { table, before }] of touched) {
+    for (const [id, { table, before, subject }] of touched) {
         if (table === "userAssignments") {
             const after = await ctx.db.get(id as Id<"userAssignments">)
             const previous = before as Doc<"userAssignments"> | null
-            const identity = (row: Doc<"userAssignments">) => ({
+            const identity = (
+                row: Doc<"userAssignments">,
+                discordUserId: string
+            ) => ({
                 guildId: row.serverId,
                 gameId: row.gameId ?? "hell_let_loose",
                 resource: "membership-summaries" as const,
-                id: row.userId,
+                id: discordUserId,
                 operation: "upsert" as const,
             })
             const fingerprint = (row: Doc<"userAssignments"> | null) =>
@@ -140,16 +190,23 @@ export async function withIntegrationChanges<T>(
                           row.status,
                       ])
                     : null
-            if (fingerprint(previous) !== fingerprint(after)) {
-                if (previous)
-                    await appendIntegrationChange(ctx, identity(previous))
+            const nextSubject = after
+                ? await assignmentDiscordSubject(ctx, after.userId)
+                : null
+            const oldIdentity =
+                previous && subject ? identity(previous, subject) : null
+            const newIdentity =
+                after && nextSubject ? identity(after, nextSubject) : null
+            if (
+                fingerprint(previous) !== fingerprint(after) ||
+                JSON.stringify(oldIdentity) !== JSON.stringify(newIdentity)
+            ) {
+                if (oldIdentity) await appendIntegrationChange(ctx, oldIdentity)
                 if (
-                    after &&
-                    (!previous ||
-                        JSON.stringify(identity(previous)) !==
-                            JSON.stringify(identity(after)))
+                    newIdentity &&
+                    JSON.stringify(oldIdentity) !== JSON.stringify(newIdentity)
                 )
-                    await appendIntegrationChange(ctx, identity(after))
+                    await appendIntegrationChange(ctx, newIdentity)
             }
             continue
         }

@@ -89,6 +89,11 @@ test("change HTTP bootstrap, signed cursor, atomic detail and explicit reset", a
         (await call("sync-records/event-summaries/one", "game=wardogs")).status,
         200
     )
+    assert.equal(
+        (await call("sync-records/event-summaries/%E0%A4", "game=wardogs"))
+            .status,
+        400
+    )
     reset = true
     const expired = await call("changes", query)
     assert.equal(expired.status, 410)

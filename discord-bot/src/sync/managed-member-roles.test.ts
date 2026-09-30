@@ -52,3 +52,53 @@ test("bot runner uses current durable claim, fresh provider evidence and fenced 
     assert.equal(outcome, "applied")
     assert.deepEqual(calls, ["prepare", "prepare-fresh", "finish"])
 })
+
+for (const expiresDuring of ["observation", "authorization"] as const) {
+    test(`bot runner never changes a role when evidence expires during ${expiresDuring}`, async () => {
+        let now = 1000
+        let observed = false
+        const changed: string[] = []
+        const outcome = await processManagedRoleOperation(
+            { guildId: "guild", operationId: "op", fence: 3 },
+            {
+                now: () => now,
+                prepare: async () => {
+                    if (observed && expiresDuring === "authorization")
+                        now = 12000
+                    return {
+                        verdict: "ready",
+                        guildId: "guild",
+                        discordUserId: "222222222222222222",
+                        actorId: "staff",
+                        allowedRoleIds: ["role"],
+                        desiredRoleIds: ["role"],
+                    }
+                },
+                discord: () => ({
+                    observe: async () => {
+                        observed = true
+                        if (expiresDuring === "observation") now = 12000
+                        return {
+                            roleIds: [...changed],
+                            manageableRoleIds: ["role"],
+                            targetEligible: true,
+                            evidence: {
+                                actorPresent: true,
+                                actorAdministrator: true,
+                                actorRoleIds: [],
+                                targetRoleIds: [...changed],
+                                observedAt: 1000,
+                            },
+                        }
+                    },
+                    change: async (_action, id) => {
+                        changed.push(id)
+                    },
+                }),
+                finish: async () => true,
+            }
+        )
+        assert.deepEqual(changed, [])
+        assert.equal(outcome, "retry_scheduled")
+    })
+}

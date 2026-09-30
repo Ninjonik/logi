@@ -1,3 +1,5 @@
+import type { Id } from "../../../convex/_generated/dataModel"
+import { mutation } from "../../../convex/integrationMutation"
 import { testContext, invoke } from "./testing/database"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
@@ -22,6 +24,121 @@ test("actual bot event mutation appends all event summary invalidations", async 
     assert.deepEqual(
         ctx.db.tables.integrationChanges?.map((row) => row.resource).sort(),
         ["event-summaries", "match-summaries", "result-summaries"]
+    )
+})
+
+test("assignment changes and identity relinks invalidate the exact Discord subjects, never imported IDs", async () => {
+    const ctx = testContext()
+    ctx.db.seed("users", {
+        _id: "users:imported",
+        id: "imported-player",
+        discordId: "discord-before",
+    })
+    ctx.db.seed("userAssignments", {
+        _id: "userAssignments:linked",
+        serverId: "guild-a",
+        userId: "imported-player",
+        gameId: "wardogs",
+        type: "member",
+        status: "pending",
+    })
+    await invoke(
+        mutation({
+            args: {},
+            handler: async (tracked) => {
+                await tracked.db.patch(
+                    "userAssignments:linked" as Id<"userAssignments">,
+                    { status: "active" }
+                )
+            },
+        }),
+        ctx
+    )
+    assert.deepEqual(
+        ctx.db.tables.integrationChanges.map((row) => row.id),
+        ["discord-before"]
+    )
+    await invoke(
+        mutation({
+            args: {},
+            handler: async (tracked) => {
+                await tracked.db.patch("users:imported" as Id<"users">, {
+                    discordId: "discord-after",
+                })
+            },
+        }),
+        ctx
+    )
+    assert.deepEqual(
+        ctx.db.tables.integrationChanges.map((row) => row.id),
+        ["discord-before", "discord-before", "discord-after"]
+    )
+    await invoke(
+        mutation({
+            args: {},
+            handler: async (tracked) => {
+                await tracked.db.patch("users:imported" as Id<"users">, {
+                    discordId: undefined,
+                })
+            },
+        }),
+        ctx
+    )
+    assert.deepEqual(
+        ctx.db.tables.integrationChanges.map((row) => row.id),
+        ["discord-before", "discord-before", "discord-after", "discord-after"]
+    )
+})
+
+test("creating a Discord profile invalidates its pre-existing legacy assignment", async () => {
+    process.env.INTERNAL_AUTH_SECRET = "synthetic-sync-secret"
+    const players = await import("../../../convex/players")
+    const ctx = testContext()
+    ctx.db.seed("userAssignments", {
+        _id: "userAssignments:legacy",
+        serverId: "guild-a",
+        userId: "discord-new",
+        gameId: "wardogs",
+        type: "member",
+        status: "active",
+    })
+    await invoke(players.syncDiscordProfile, ctx, {
+        secret: "synthetic-sync-secret",
+        id: "discord-new",
+        name: "Fixture",
+        avatar: "",
+    })
+    assert.deepEqual(
+        ctx.db.tables.integrationChanges?.map((row) => row.id),
+        ["discord-new"]
+    )
+})
+
+test("relinking to a legacy assignment alias invalidates the newly visible membership", async () => {
+    const ctx = testContext()
+    ctx.db.seed("users", { _id: "users:imported", id: "imported-player" })
+    ctx.db.seed("userAssignments", {
+        _id: "userAssignments:legacy",
+        serverId: "guild-a",
+        userId: "discord-new",
+        gameId: "wardogs",
+        type: "member",
+        status: "active",
+    })
+    await invoke(
+        mutation({
+            args: {},
+            handler: async (tracked) => {
+                await tracked.db.patch("users:imported" as Id<"users">, {
+                    discordId: "discord-new",
+                })
+            },
+        }),
+        ctx
+    )
+    assert.deepEqual(
+        ctx.db.tables.integrationChanges?.map((row) => row.id),
+        ["discord-new"]
     )
 })
 

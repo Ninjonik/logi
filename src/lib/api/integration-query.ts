@@ -26,11 +26,17 @@ export function parseIntegrationQuery(request: Request) {
             [...params.keys()].some((key) => key !== "game")
         )
             return null
+        let id: string
+        try {
+            id = decodeURIComponent(path[3])
+        } catch {
+            return null
+        }
         return {
             kind: "record" as const,
             gameId,
             resources: [path[2] as SyncResource],
-            id: decodeURIComponent(path[3]),
+            id,
         }
     }
     if (

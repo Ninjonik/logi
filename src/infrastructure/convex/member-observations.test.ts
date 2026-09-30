@@ -38,6 +38,55 @@ function fixture() {
     return ctx
 }
 
+test("membership resolves an imported player's assignment through its explicit Discord binding", async () => {
+    const ctx = fixture()
+    ctx.db.seed("users", {
+        _id: "users:linked",
+        id: "imported-player",
+        discordId: "member-a",
+    })
+    ctx.db.seed("userAssignments", {
+        _id: "userAssignments:linked",
+        serverId: "guild-a",
+        userId: "imported-player",
+        gameId: "wardogs",
+        type: "member",
+        status: "active",
+    })
+    const record = await invoke(feed.readSyncRecord, ctx, {
+        secret,
+        keyHash: "reader",
+        gameId: "wardogs",
+        resource: "membership-summaries",
+        id: "member-a",
+    })
+    assert.deepEqual(record.data.assignment, {
+        type: "member",
+        status: "active",
+    })
+})
+
+test("membership never treats an unlinked imported ID as a Discord identity", async () => {
+    const ctx = fixture()
+    ctx.db.seed("users", { _id: "users:unlinked", id: "member-a" })
+    ctx.db.seed("userAssignments", {
+        _id: "userAssignments:unlinked",
+        serverId: "guild-a",
+        userId: "member-a",
+        gameId: "wardogs",
+        type: "member",
+        status: "active",
+    })
+    const record = await invoke(feed.readSyncRecord, ctx, {
+        secret,
+        keyHash: "reader",
+        gameId: "wardogs",
+        resource: "membership-summaries",
+        id: "member-a",
+    })
+    assert.equal(record.data.assignment, null)
+})
+
 test("completed reconciliation removes legacy-only admin cache in bounded pages and preserves newer members", async () => {
     const ctx = fixture()
     const oldTime = new Date(Date.now() - 120_000).toISOString()

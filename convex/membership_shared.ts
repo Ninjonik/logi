@@ -13,6 +13,7 @@ import {
 import { nextRevision, revisionOrder } from "../src/domain/integrations/change"
 import { isGameId, GAME_IDS, type GameId } from "../src/domain/games/game"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
+import { readMembershipAssignment } from "./membershipSubject"
 import type { Doc } from "./_generated/dataModel"
 
 export function assertMembershipSecret(secret: string) {
@@ -93,15 +94,7 @@ export async function readMembershipRecord(
 ) {
     const guild = await membershipGuild(ctx, args.guildId),
         raw = await memberObservation(ctx, args.guildId, args.discordUserId)
-    const assignments = await ctx.db
-        .query("userAssignments")
-        .withIndex("serverId_userId", (q) =>
-            q.eq("serverId", args.guildId).eq("userId", args.discordUserId)
-        )
-        .collect()
-    const assignment = assignments.find(
-        (row) => (row.gameId ?? "hell_let_loose") === args.gameId
-    )
+    const assignment = await readMembershipAssignment(ctx, args)
     const stamp = await integrationRecord(ctx, {
         guildId: args.guildId,
         gameId: args.gameId,

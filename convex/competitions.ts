@@ -1,6 +1,6 @@
+import { query, type QueryCtx, type MutationCtx } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
-import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 import { resolveGameScope } from "../src/domain/games/game"
@@ -49,15 +49,15 @@ function assertSecret(secret: string) {
     if (secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized.")
 }
 
-async function findGuildByName(ctx: any, name: string) {
+async function findGuildByName(ctx: Pick<QueryCtx, "db">, name: string) {
     return (await ctx.db.query("guilds").collect()).find(
-        (guild: any) => normalizedName(guild.name) === normalizedName(name)
+        (guild) => normalizedName(guild.name) === normalizedName(name)
     )
 }
 
-async function resolveGuild(ctx: any, name: string) {
+async function resolveGuild(ctx: MutationCtx, name: string) {
     const existing = await findGuildByName(ctx, name)
-    if (existing) return existing._id as Id<"guilds">
+    if (existing) return existing._id
     const now = NOW()
     return await ctx.db.insert("guilds", {
         name,

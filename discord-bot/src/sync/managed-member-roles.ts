@@ -1,12 +1,13 @@
 import {
+    ManagedRoleFailure,
+    reconcileManagedRoles,
+    type ManagedRoleOutcome,
+} from "../../../src/application/membership/reconcile-managed-roles"
+import {
     createManagedRoleDiscord,
     type RoleEvidence,
     type RoleSnapshot,
 } from "../../../src/infrastructure/discord/managed-roles"
-import {
-    reconcileManagedRoles,
-    type ManagedRoleOutcome,
-} from "../../../src/application/membership/reconcile-managed-roles"
 import { makeFunctionReference } from "convex/server"
 import type { Client } from "discord.js"
 import { env } from "../environment"
@@ -45,15 +46,20 @@ type Ports = {
 export async function processManagedRoleOperation(claim: Claim, ports: Ports) {
     let evidence: RoleEvidence | undefined,
         discord: ReturnType<Ports["discord"]> | undefined
+    const assertFreshEvidence = () => {
+        if (!evidence) return // The initial prepare precedes the first observation.
+        const age = ports.now() - evidence.observedAt
+        if (!Number.isFinite(age) || age < 0 || age > 10_000)
+            throw new ManagedRoleFailure("observation_expired")
+    }
     return reconcileManagedRoles({
         now: ports.now,
         prepare: async () => {
-            const work = await ports.prepare(
-                claim,
-                evidence && ports.now() - evidence.observedAt <= 10_000
-                    ? evidence
-                    : undefined
-            )
+            assertFreshEvidence()
+            const work = await ports.prepare(claim, evidence)
+            // A slow backend response must not turn old provider evidence into
+            // an unchecked authorization immediately before a Discord write.
+            assertFreshEvidence()
             if (
                 work.verdict === "ready" &&
                 work.guildId === claim.guildId &&
