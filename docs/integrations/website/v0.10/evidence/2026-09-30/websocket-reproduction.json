@@ -1,0 +1,21 @@
+{
+  "executedAt": "2026-09-30T07:11:41.818Z",
+  "source": "b5b452ce40ffda609b0c06e3114a35dbd0498ab1",
+  "dependency": "@discordjs/ws 1.2.3",
+  "network": "loopback only; no Discord connection or credential",
+  "actualBotExit": 1,
+  "actualBotDurationMs": 32219827,
+  "actualBotError": "Unhandled WebSocket error: read ECONNRESET",
+  "results": [
+    {
+      "mode": "control",
+      "exitCode": 0,
+      "output": "Control: network reset handled by SDK without process crash\n"
+    },
+    {
+      "mode": "destroy-connecting",
+      "exitCode": 1,
+      "output": "SDK destroyed CONNECTING socket before the pending handshake ended\nnode:events:505\r\n    throw er; // Unhandled 'error' event\r\n    ^\r\n\r\nError: socket hang up\r\n    at Socket.socketOnEnd (node:_http_client:790:25)\r\n    at Socket.emit (node:events:526:24)\r\n    at endReadableNT (node:internal/streams/readable:1764:12)\r\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)\r\nEmitted 'error' event on WebSocket instance at:\r\n    at emitErrorAndClose (<repository>\\node_modules\\ws\\lib\\websocket.js:1060:13)\r\n    at ClientRequest.<anonymous> (<repository>\\node_modules\\ws\\lib\\websocket.js:898:5)\r\n    at ClientRequest.emit (node:events:514:28)\r\n    at emitErrorEvent (node:_http_client:114:11)\r\n    at Socket.socketOnEnd (node:_http_client:790:5)\r\n    at Socket.emit (node:events:526:24)\r\n    at endReadableNT (node:internal/streams/readable:1764:12)\r\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {\r\n  code: 'ECONNRESET'\r\n}\r\n\r\nNode.js v24.21.0\r\n"
+    }
+  ]
+}

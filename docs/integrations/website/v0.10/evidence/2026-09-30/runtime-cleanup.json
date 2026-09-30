@@ -1,0 +1,12 @@
+{
+  "databasePreserved": true,
+  "credentialsOutsideGit": true,
+  "finishedAt": "2026-09-30T07:13:00.1879538Z",
+  "botAlreadyExitedWithError": true,
+  "stopped": [
+    "start",
+    "provider",
+    "backend",
+    "browser-session"
+  ]
+}

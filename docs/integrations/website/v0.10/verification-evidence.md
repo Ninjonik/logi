@@ -1,5 +1,12 @@
 # Verification and proof for PR #158
 
+**Update, 2026-09-30:** [Actual local runtime and test Discord acceptance](local-runtime-acceptance.md)
+now includes a successful full production build against a separate local Convex,
+real HTTPS fixture collectors, persistent HTTP/concurrency checks and live test
+Discord effects. An extended-run WebSocket crash was also reproduced and remains
+an open release blocker, alongside lint and the listed external acceptance gaps.
+The September 29 results below are preserved as the earlier snapshot.
+
 Fresh local run: 2026-09-29, Node **24.21.0**, Windows. Tested runtime source:
 **`46fd6a0d06d48b923ad558b76d0a107cf2caa5af`**. The following commit only packages
 documentation and evidence; the PR body pins its final delivery hash. No runtime

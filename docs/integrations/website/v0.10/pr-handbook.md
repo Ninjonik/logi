@@ -16,6 +16,7 @@ not a deployment or approval to activate optional Logi SSO.
 | What can our web backend consume, and what must it implement? | [Web capabilities and API map](web-capabilities.md) |
 | What does Discord do, who can use it, and what are the commands? | [Discord reference](discord-reference.md) |
 | Which tests actually ran, with what results? | [Verification and stored proof](verification-evidence.md) |
+| What ran against a real local database and test Discord guild? | [Local runtime acceptance and remaining gaps](local-runtime-acceptance.md) |
 | Where are the architecture boundaries and review findings? | [Cumulative review guide](review-guide.md), [review record](review.md) |
 | How is the feature configured, deployed and recovered? | [Activation sequence below](#activation-and-recovery), versioned contracts below |
 | What is still missing, and who owns it? | [Remaining work below](#remaining-work-and-owners) |
