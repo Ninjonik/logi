@@ -30,6 +30,7 @@ import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { GameId } from "@/domain/games/game"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -162,11 +163,14 @@ export function MembershipSettingsForm({
     serverId,
     config,
     baseConfig,
+    gameId,
     dictionary,
 }: {
     serverId: string
     config: DiscordConfig | null
     baseConfig?: DiscordConfig | null
+    /** A selected game saves membership settings as that game's override. */
+    gameId?: GameId
     dictionary: Dictionary
 }) {
     const router = useRouter()
@@ -318,18 +322,37 @@ export function MembershipSettingsForm({
             {
                 method: "POST",
                 headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                    timezone: sharedConfig?.timezone ?? "UTC",
-                    defaultLanguage: sharedConfig?.defaultLanguage ?? "en",
-                    announcementsChannelId:
-                        sharedConfig?.announcementsChannelId,
-                    forumCategoryId: sharedConfig?.forumCategoryId,
-                    meetingChannelId: sharedConfig?.meetingChannelId,
-                    clanRoleId: sharedConfig?.clanRoleId,
-                    dashboardAdminRoleId: sharedConfig?.dashboardAdminRoleId,
-                    ticketSettings: sharedConfig?.ticketSettings,
-                    membershipSettings,
-                }),
+                body: JSON.stringify(
+                    gameId
+                        ? {
+                              ...(baseConfig ?? {
+                                  timezone: "UTC",
+                                  defaultLanguage: "en",
+                                  calendarCategories: [],
+                              }),
+                              gameOverrides: {
+                                  ...baseConfig?.gameOverrides,
+                                  [gameId]: {
+                                      ...baseConfig?.gameOverrides?.[gameId],
+                                      membershipSettings,
+                                  },
+                              },
+                          }
+                        : {
+                              timezone: sharedConfig?.timezone ?? "UTC",
+                              defaultLanguage:
+                                  sharedConfig?.defaultLanguage ?? "en",
+                              announcementsChannelId:
+                                  sharedConfig?.announcementsChannelId,
+                              forumCategoryId: sharedConfig?.forumCategoryId,
+                              meetingChannelId: sharedConfig?.meetingChannelId,
+                              clanRoleId: sharedConfig?.clanRoleId,
+                              dashboardAdminRoleId:
+                                  sharedConfig?.dashboardAdminRoleId,
+                              ticketSettings: sharedConfig?.ticketSettings,
+                              membershipSettings,
+                          }
+                ),
             }
         )
 

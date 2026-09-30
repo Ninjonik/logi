@@ -122,6 +122,8 @@ export const gameDiscordOverridesValidator = v.object({
     meetingChannelId: v.optional(v.string()),
     playerStatsServers: v.optional(v.array(playerStatsServerValidator)),
     membershipSettings: v.optional(membershipSettingsValidator),
+    membershipPanelMessageId: v.optional(v.string()),
+    membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
 })
 
 export const gameOverridesValidator = v.object({

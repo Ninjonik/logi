@@ -283,6 +283,8 @@ const gameDiscordOverridesSchema = z.object({
     meetingChannelId: discordIdField,
     playerStatsServers: z.array(playerStatsServerSchema).max(20).optional(),
     membershipSettings: membershipSettingsSchema.optional(),
+    membershipPanelMessageId: z.string().optional(),
+    membershipPanelLastConfigUpdatedAt: z.string().optional(),
 })
 
 export const discordSettingsSchema = z.object({
