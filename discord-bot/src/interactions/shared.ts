@@ -82,7 +82,8 @@ export async function loadMembershipCategoryContext(
 export function resolveSupportMemberIds(
     guild: Guild,
     supportRoleIds: string[],
-    dashboardAdminRoleId?: string
+    dashboardAdminRoleId?: string,
+    includeSupportRoleMembers = true
 ) {
     const memberIds = new Set<string>()
 
@@ -93,7 +94,8 @@ export function resolveSupportMemberIds(
             (dashboardAdminRoleId
                 ? roleIds.includes(dashboardAdminRoleId)
                 : false) ||
-            supportRoleIds.some((roleId) => roleIds.includes(roleId))
+            (includeSupportRoleMembers &&
+                supportRoleIds.some((roleId) => roleIds.includes(roleId)))
         ) {
             memberIds.add(member.id)
         }

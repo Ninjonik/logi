@@ -17,7 +17,10 @@ test("Discord settings retain independent game membership overrides", () => {
                     panelTitle: "",
                     panelDescription: "",
                     panelImageUrl: undefined,
+                    applicationWelcomeMessage:
+                        "Welcome {applicant}; {support_roles} can help.",
                     autoAssignRecruitOnApply: false,
+                    inviteSupportMembersIndividually: false,
                     rosterScoreSettings: {
                         noCategory: 0,
                         declined: 0,
@@ -43,5 +46,49 @@ test("Discord settings retain independent game membership overrides", () => {
             ?.enabled,
         false
     )
+    assert.equal(
+        parsed.gameOverrides?.hell_let_loose_vietnam?.membershipSettings
+            ?.applicationWelcomeMessage,
+        "Welcome {applicant}; {support_roles} can help."
+    )
+    assert.equal(
+        parsed.gameOverrides?.hell_let_loose_vietnam?.membershipSettings
+            ?.inviteSupportMembersIndividually,
+        false
+    )
     assert.equal(parsed.gameOverrides?.wardogs?.meetingChannelId, "456")
+})
+
+test("role-ping application invitations allow no more than ten support roles", () => {
+    const result = discordSettingsSchema.safeParse({
+        timezone: "UTC",
+        defaultLanguage: "en",
+        membershipSettings: {
+            enabled: true,
+            submitChannelId: "123",
+            applicationParentChannelId: "456",
+            panelTitle: "Apply",
+            panelDescription: "Choose a category.",
+            autoAssignRecruitOnApply: false,
+            inviteSupportMembersIndividually: false,
+            categories: [
+                {
+                    id: "member",
+                    label: "Member",
+                    supportRoleIds: Array.from({ length: 11 }, (_, index) =>
+                        String(index + 1)
+                    ),
+                    recruitRoleIds: [],
+                    finalRoleIds: [],
+                    modalQuestions: [],
+                    assignmentType: "member",
+                },
+            ],
+        },
+    })
+
+    assert.equal(result.success, false)
+    if (!result.success) {
+        assert.match(result.error.issues[0]?.message ?? "", /10 roles/)
+    }
 })

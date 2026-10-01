@@ -786,8 +786,17 @@ export const csMessages = {
         skipPendingTitle: "Přeskočit pending fázi",
         skipPendingDescription:
             "Nové členské přihlášky začnou po odeslání rovnou jako recruitti.",
+        inviteSupportMembersIndividuallyTitle:
+            "Přidávat členy support rolí jednotlivě",
+        inviteSupportMembersIndividuallyDescription:
+            "Když je vypnuto, Logi místo toho pingne support role kategorie. Discord přidá členy podporovaných malých rolí; dashboard administrátoři se stále přidávají přímo.",
         panelTitle: "Nadpis panelu",
         panelDescription: "Popis panelu",
+        welcomeMessage: "Uvítací zpráva v application threadu",
+        welcomeMessageDescription:
+            "Zobrazí se nad shrnutím přihlášky v každém soukromém threadu. Použijte {applicant}, {support_roles} a {category} pro živé Discord zmínky a vybranou kategorii.",
+        welcomeMessagePlaceholder:
+            "Ahoj {applicant}, děkujeme za přihlášku. {support_roles} se ti brzy ozvou.",
         image: "Náhledový obrázek",
         applicationThumbnail: "Náhled přihlášky",
         categoriesTitle: "Kategorie přihlášek",

@@ -785,8 +785,17 @@ export const enMessages = {
         skipPendingTitle: "Skip pending phase",
         skipPendingDescription:
             "New member applications start as recruits immediately after submission.",
+        inviteSupportMembersIndividuallyTitle:
+            "Add support-role members individually",
+        inviteSupportMembersIndividuallyDescription:
+            "When off, Logi pings the category support roles instead. Discord adds members of eligible small roles; dashboard administrators are still added directly.",
         panelTitle: "Panel title",
         panelDescription: "Panel description",
+        welcomeMessage: "Application thread welcome message",
+        welcomeMessageDescription:
+            "Posted above the application summary in each private thread. Use {applicant}, {support_roles}, and {category} for live Discord mentions and the selected category.",
+        welcomeMessagePlaceholder:
+            "Hi {applicant}, thanks for applying. {support_roles} will be with you shortly.",
         image: "Thumbnail image",
         applicationThumbnail: "Application thumbnail",
         categoriesTitle: "Application categories",

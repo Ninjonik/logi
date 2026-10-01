@@ -79,8 +79,18 @@ not use group-linked roles for this purpose.
 
 Membership applications are configured separately for each enabled game. Open
 the membership settings screen with a game selected to configure that game's
-panel, submit channel, parent channel, categories, and roles. Existing
-applications without a game ID remain Hell Let Loose applications.
+panel, submit channel, parent channel, categories, roles, and optional
+application-thread welcome message. The welcome message is posted above the
+application summary and supports `{applicant}`, `{support_roles}`, and
+`{category}` placeholders. Existing applications without a game ID remain Hell
+Let Loose applications.
+
+For each game, choose whether category support-role members are added to an
+application thread individually or invited by the support-role mention in the
+opening message. Individual adds are the reliable default. Role mentions let
+Discord add eligible small roles, but Discord limits this to roles with fewer
+than 100 members and up to 10 mentioned roles; dashboard administrators remain
+directly added in either mode.
 
 Membership settings also contain the roster-score values used when a concluded
 event resolves player scores. They are per-workspace and determine the numeric

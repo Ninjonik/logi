@@ -93,7 +93,9 @@ export const membershipSettingsValidator = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    applicationWelcomeMessage: v.optional(v.string()),
     autoAssignRecruitOnApply: v.boolean(),
+    inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(
         v.object({
             noCategory: v.number(),
