@@ -2,6 +2,7 @@ import { MessageFlags, type Client } from "discord.js"
 
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
+import { getClanDiscordMessages } from "../../../src/lib/clan-language"
 import { matchesGameScope } from "../../../src/domain/games/game"
 import { buildAnnouncementV2Message } from "../message-builders"
 import { buildDiscordMessageLink } from "../utils"
@@ -73,11 +74,17 @@ export async function processSignupReminders(
             payload.config.guildId,
             syncState?.forumChannelId
         )
+        const messages = getClanDiscordMessages(payload.config.defaultLanguage)
         const eventLinks = [
             registrationUrl
-                ? { label: "Open registration channel", url: registrationUrl }
+                ? {
+                      label: messages.buttons.openRegistrationChannel,
+                      url: registrationUrl,
+                  }
                 : null,
-            forumUrl ? { label: "Open event forum", url: forumUrl } : null,
+            forumUrl
+                ? { label: messages.buttons.openEventForum, url: forumUrl }
+                : null,
         ].filter(
             (link): link is { label: string; url: string } => link !== null
         )
