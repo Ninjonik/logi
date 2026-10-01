@@ -86,6 +86,7 @@ import {
     buildMembershipApplicationThreadEmbed,
     buildTicketThreadEmbed,
 } from "./message-builders"
+import { buildMembershipApplicationWelcomeContent } from "./interactions/membership-welcome"
 import { reportClanDiscordError } from "./error-reporting"
 import { logError, logInfo, logWarn } from "./log"
 import { convex, references } from "./convex"
@@ -2790,7 +2791,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const supportMemberIds = resolveSupportMemberIds(
             interaction.guild,
             category.supportRoleIds,
-            categoryContext.config.dashboardAdminRoleId
+            categoryContext.config.dashboardAdminRoleId,
+            membershipSettings.inviteSupportMembersIndividually !== false
         )
         const participantIds = [
             ...new Set([interaction.user.id, ...supportMemberIds]),
@@ -2879,14 +2881,24 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const mentions = [
-            `<@${interaction.user.id}>`,
-            ...category.supportRoleIds.map((roleId) => `<@&${roleId}>`),
-        ].join(" ")
+        const supportRoleIdsForMessage =
+            membershipSettings.inviteSupportMembersIndividually === false
+                ? category.supportRoleIds.slice(0, 10)
+                : category.supportRoleIds
+        const content = buildMembershipApplicationWelcomeContent({
+            applicantId: interaction.user.id,
+            supportRoleIds: supportRoleIdsForMessage,
+            categoryLabel: category.label?.trim() || category.id,
+            welcomeMessage: membershipSettings.applicationWelcomeMessage,
+        })
 
         const starter = await thread
             .send({
-                content: mentions,
+                content,
+                allowedMentions: {
+                    users: [interaction.user.id],
+                    roles: supportRoleIdsForMessage,
+                },
                 embeds: [
                     buildMembershipApplicationThreadEmbed({
                         language: categoryContext.config.defaultLanguage,

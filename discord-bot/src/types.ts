@@ -46,7 +46,9 @@ export type MembershipSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    applicationWelcomeMessage?: string
     autoAssignRecruitOnApply: boolean
+    inviteSupportMembersIndividually?: boolean
     categories: MembershipCategory[]
 }
 

@@ -790,8 +790,17 @@ export const deMessages = {
         skipPendingTitle: "Pending-Phase überspringen",
         skipPendingDescription:
             "Neue Mitgliederbewerbungen starten sofort nach Einreichung als Rekruten.",
+        inviteSupportMembersIndividuallyTitle:
+            "Mitglieder der Support-Rolle einzeln hinzufügen",
+        inviteSupportMembersIndividuallyDescription:
+            "Wenn deaktiviert, erwähnt Logi stattdessen die Support-Rollen der Kategorie. Discord fügt Mitglieder geeigneter kleiner Rollen hinzu; Dashboard-Administratoren werden weiterhin direkt hinzugefügt.",
         panelTitle: "Panel-Titel",
         panelDescription: "Panel-Beschreibung",
+        welcomeMessage: "Begrüßungsnachricht im Bewerbungs-Thread",
+        welcomeMessageDescription:
+            "Wird über der Bewerbungsübersicht in jedem privaten Thread gepostet. Verwende {applicant}, {support_roles} und {category} für Discord-Erwähnungen und die gewählte Kategorie.",
+        welcomeMessagePlaceholder:
+            "Hallo {applicant}, danke für deine Bewerbung. {support_roles} meldet sich in Kürze.",
         image: "Thumbnail-Bild",
         applicationThumbnail: "Bewerbungs-Thumbnail",
         categoriesTitle: "Bewerbungskategorien",

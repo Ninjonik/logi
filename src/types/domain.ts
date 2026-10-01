@@ -172,7 +172,11 @@ export type MembershipSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    /** Optional first message posted in each application thread. */
+    applicationWelcomeMessage?: string
     autoAssignRecruitOnApply: boolean
+    /** Defaults to true for legacy configurations. */
+    inviteSupportMembersIndividually?: boolean
     rosterScoreSettings?: {
         noCategory: number
         declined: number
