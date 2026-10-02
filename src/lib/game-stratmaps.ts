@@ -57,11 +57,9 @@ export const HLL_VIETNAM_PLACEHOLDER_MAPS = [
 ]
 
 export const WARDOGS_PLACEHOLDER_MAPS = [
-    placeholderMap(
-        "wardogs-placeholder",
-        "Wardogs — placeholder map",
-        "/maps/wardogs-placeholder.svg"
-    ),
+    placeholderMap("bakurani", "Bakurani", "/maps/wardogs-placeholder.svg"),
+    placeholderMap("ozeti", "Ozeti", "/maps/wardogs-placeholder.svg"),
+    placeholderMap("zestafona", "Zestafona", "/maps/wardogs-placeholder.svg"),
 ]
 
 export function getStratmapMaps(gameId?: GameId) {

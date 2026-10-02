@@ -119,6 +119,10 @@ async function buildServerContext(
             .collect(),
     ])
     const scopedEvents = filterByGameScope(events, options.gameScope)
+    const scopedSquadPresets = filterByGameScope(
+        squadPresets,
+        options.gameScope
+    )
     const scopedStratmaps = filterByGameScope(stratmaps, options.gameScope)
     const scopedGroups = filterByGameScope(groups, options.gameScope)
     const scopedAssignments = filterByGameScope(assignments, options.gameScope)
@@ -150,7 +154,7 @@ async function buildServerContext(
         memberRoleIds: discordAccess?.roleIds ?? [],
         events: scopedEvents.map(normalizeEventDoc),
         topicPresets: topicPresets.map(normalizeDoc),
-        squadPresets: squadPresets.map(normalizeDoc),
+        squadPresets: scopedSquadPresets.map(normalizeDoc),
         stratmaps: scopedStratmaps.map(normalizeStratmapDoc),
         rosters: relevantRosters.map(normalizeDoc),
         groups: scopedGroups.map(normalizeDoc),

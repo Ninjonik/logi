@@ -40,6 +40,7 @@ export class ConvexRosterCommandRepository implements RosterCommandRepository {
         const id = await this.ctx.db.insert("rosters", {
             ...roster,
             guildId: event.guildId,
+            gameId: event.gameId,
             createdAt: now,
             updatedAt: now,
         })
@@ -52,6 +53,7 @@ export class ConvexRosterCommandRepository implements RosterCommandRepository {
         await this.ctx.db.patch(rosterId as Id<"rosters">, {
             ...roster,
             guildId: event.guildId,
+            gameId: event.gameId,
             updatedAt: new Date().toISOString(),
         })
     }

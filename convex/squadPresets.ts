@@ -1,6 +1,7 @@
 import { v } from "convex/values"
 
 import { getGuildById, getGuildDiscordId } from "./identity"
+import { resolveGameScope } from "../src/domain/games/game"
 import { mutation } from "./_generated/server"
 
 const INTERNAL_AUTH_SECRET =
@@ -34,6 +35,13 @@ export const upsert = mutation({
         secret: v.string(),
         serverId: v.id("guilds"),
         presetId: v.optional(v.id("squadPresets")),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
         name: v.string(),
         squads: v.array(squadPresetSquad),
     },
@@ -94,6 +102,13 @@ export const upsert = mutation({
             if (!existing || existing.guildId !== guildDiscordId) {
                 throw new Error("Squad preset not found.")
             }
+            if (
+                args.gameId !== undefined &&
+                resolveGameScope(existing.gameId) !==
+                    resolveGameScope(args.gameId)
+            ) {
+                throw new Error("Squad presets cannot be moved between games.")
+            }
 
             await ctx.db.patch(args.presetId, payload)
             return String(args.presetId)
@@ -102,6 +117,7 @@ export const upsert = mutation({
         const now = new Date().toISOString()
         const presetId = await ctx.db.insert("squadPresets", {
             ...payload,
+            gameId: args.gameId,
             createdAt: now,
             updatedAt: now,
         })
