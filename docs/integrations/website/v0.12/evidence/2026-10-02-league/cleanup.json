@@ -1,0 +1,20 @@
+{
+  "stopped": [
+    {
+      "pid": 32244,
+      "name": "start"
+    },
+    {
+      "pid": 11300,
+      "name": "browser"
+    },
+    {
+      "pid": 31040,
+      "name": "backend"
+    }
+  ],
+  "privateFilesRetainedOutsideGit": true,
+  "remainingListeners": [],
+  "at": "2026-10-02T19:26:38.8211752Z",
+  "productionDatabaseUsed": false
+}

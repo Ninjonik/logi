@@ -1,0 +1,118 @@
+{
+  "packagedAt": "2026-10-02T19:30:42.145Z",
+  "runtimeCommit": "47fe06ead719d584848c57b8d9d680af4cd9687b",
+  "sourceUrl": "https://wardogsleague.net/matches/cmuqt8ep605e1lf018w2nlywu",
+  "parserVersion": "wardogs-league-html/1",
+  "artifacts": [
+    {
+      "path": "README.md",
+      "encoding": "utf8-lf",
+      "sha256": "82cae4fcf255c7225c869e08ad5417c9df64844c6709d8ab2b2e1b661cbf209c"
+    },
+    {
+      "path": "adapter.json",
+      "encoding": "utf8-lf",
+      "sha256": "6320b23745bfbe9b833e1b45d6ae3f05b52d53f7a15b150e4dbe1887b0a51a37"
+    },
+    {
+      "path": "browser.json",
+      "encoding": "utf8-lf",
+      "sha256": "7f9a0552e3b7a85e56dd2c75668f02a382efc3714173b4a2427f8c6fa9418bef"
+    },
+    {
+      "path": "build.txt",
+      "encoding": "utf8-lf",
+      "sha256": "21edd20d505cab02647c263273624b4d04036ac4ea4c4d2ac5413b3345fb8757"
+    },
+    {
+      "path": "checks.json",
+      "encoding": "utf8-lf",
+      "sha256": "b89b7b77e155066876c8a8715796e20f341d8c18c1401d4fbe138d8f385096b0"
+    },
+    {
+      "path": "cleanup.json",
+      "encoding": "utf8-lf",
+      "sha256": "b1c4fd89984bc5d4df40dd5c7e54e3628a5fcfa8856210be43ec12c226105850"
+    },
+    {
+      "path": "convex-push.txt",
+      "encoding": "utf8-lf",
+      "sha256": "683ea1823726dab3336318196b11e1feaf26b2d3e0adf0fb6cefecf0bd2a9f50"
+    },
+    {
+      "path": "dashboard-cs-full.jpg",
+      "encoding": "binary",
+      "sha256": "7b92e413a7573faa37b951b250987708c6a7d49af83349bdaf1efb25b65f5a64"
+    },
+    {
+      "path": "dashboard-full.jpg",
+      "encoding": "binary",
+      "sha256": "ec3386c884b9c56c1fb3c6cf0601507865701ce5d3f5208fbf6db9556f45ad16"
+    },
+    {
+      "path": "dashboard-stale.jpg",
+      "encoding": "binary",
+      "sha256": "e5bc6168d146fae226667cbf68a26c75239b2fa4b803926b3c17ea22869e4bd7"
+    },
+    {
+      "path": "format.txt",
+      "encoding": "utf8-lf",
+      "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+    },
+    {
+      "path": "http-acceptance.json",
+      "encoding": "utf8-lf",
+      "sha256": "11238abd3231663fb92fcbd87ca7f4a9eea227c8b53435c63bfea59cec8619af"
+    },
+    {
+      "path": "lint.txt",
+      "encoding": "utf8-lf",
+      "sha256": "6e3a8ec1ae0aae463f097eb61e210740691202c156fb1c52f622d380162b9594"
+    },
+    {
+      "path": "live-http.json",
+      "encoding": "utf8-lf",
+      "sha256": "e467ad3775b18b65b0ce3a378a79a2c05ba2101f9ab6dab3e63fea13ec373e92"
+    },
+    {
+      "path": "lock.txt",
+      "encoding": "utf8-lf",
+      "sha256": "290e39d73aa33aac9ac54cc289a17c43f2cac4f218b6d83090b95c5a1a1804d8"
+    },
+    {
+      "path": "recovery-http.json",
+      "encoding": "utf8-lf",
+      "sha256": "60d81b443f557336feec30bc515380c48b6a1a9b50d79435416ff0e4bf7d001c"
+    },
+    {
+      "path": "reference-meta.json",
+      "encoding": "utf8-lf",
+      "sha256": "d8a0ed650255cc914265f269b62cc9eca1501c7f91b2d845a5177f750d89f8e9"
+    },
+    {
+      "path": "source-manifest.json",
+      "encoding": "utf8-lf",
+      "sha256": "09253628a5b331ccc24bf4db9bc70ab1be8557ce73846cc45aa38c28b90c1e6b"
+    },
+    {
+      "path": "stale-http.json",
+      "encoding": "utf8-lf",
+      "sha256": "a5fe8d99b452cbfcde3662073d27b58051355b3078609385754f7270d916f49d"
+    },
+    {
+      "path": "tests.txt",
+      "encoding": "utf8-lf",
+      "sha256": "7fbbac8ff9faaabcd34ece47b19e5fa8fbf1c1d4a5ba21e11a623f0081494201"
+    },
+    {
+      "path": "typecheck.txt",
+      "encoding": "utf8-lf",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "verify.mjs",
+      "encoding": "utf8-lf",
+      "sha256": "413e9c8017a1148c44ecf91dca628b708cad543cd7ea4ee4a7330067393ddf45"
+    }
+  ]
+}

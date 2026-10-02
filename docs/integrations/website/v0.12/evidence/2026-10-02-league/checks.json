@@ -1,0 +1,62 @@
+{
+  "runtimeCommit": "47fe06ead719d584848c57b8d9d680af4cd9687b",
+  "executionTree": "baseRevision plus working-tree source subsequently committed unchanged as runtimeCommit",
+  "versions": {
+    "node": "v24.21.0",
+    "next": "16.3.6",
+    "convex": "1.46.0",
+    "typescript": "5.9.3",
+    "zod": "4.3.6",
+    "cheerio": "1.2.0"
+  },
+  "tests": {
+    "passed": 619,
+    "failed": 0,
+    "skipped": 0
+  },
+  "checks": [
+    {
+      "mode": "test",
+      "code": 0,
+      "signal": null,
+      "durationMs": 7045,
+      "baseRevision": "89c9f9d0ffd77177afca996da9e91d5024c68e38",
+      "productionConvexLoaded": false
+    },
+    {
+      "mode": "build",
+      "code": 0,
+      "signal": null,
+      "durationMs": 11887,
+      "baseRevision": "89c9f9d0ffd77177afca996da9e91d5024c68e38",
+      "productionConvexLoaded": false
+    },
+    {
+      "mode": "typecheck",
+      "code": 0,
+      "signal": null,
+      "durationMs": 4651,
+      "baseRevision": "89c9f9d0ffd77177afca996da9e91d5024c68e38",
+      "productionConvexLoaded": false
+    },
+    {
+      "mode": "lint",
+      "code": 0,
+      "signal": null,
+      "durationMs": 3513,
+      "baseRevision": "89c9f9d0ffd77177afca996da9e91d5024c68e38",
+      "productionConvexLoaded": false
+    },
+    {
+      "mode": "push",
+      "code": 0,
+      "signal": null,
+      "durationMs": 1431,
+      "baseRevision": "89c9f9d0ffd77177afca996da9e91d5024c68e38",
+      "productionConvexLoaded": false
+    }
+  ],
+  "productionDatabaseUsed": false,
+  "providerKeysUsed": false,
+  "freshBunInstallClaimed": false
+}
