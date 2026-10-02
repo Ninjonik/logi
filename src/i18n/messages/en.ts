@@ -1,4 +1,49 @@
 export const enMessages = {
+    leagueMatch: {
+        title: "Wardogs League match",
+        description:
+            "Paste a public match link to preview its schedule, teams and preparation. Reading a link does not create an event.",
+        url: "Public match URL",
+        load: "Load match",
+        loading: "Loading…",
+        unknown: "Not available",
+        error: "Unable to read the match. Check the public Wardogs League URL and try again.",
+        unavailable:
+            "The source is temporarily unavailable. No saved match is available.",
+        nextCheck: "Next refresh allowed",
+        source: "Open source match",
+        stale: "Showing a saved match that may be out of date. Load the link again when a refresh is allowed.",
+        fetched: "Fetched",
+        scheduled: "Match time (Prague)",
+        map: "Map",
+        zone: "Zone",
+        lighting: "Lighting",
+        hosting: "Hosting",
+        moderator: "Moderator",
+        ready: "Ready check",
+        points: "Scoring rule",
+        membersNote:
+            "Displayed team membership, not the match roster or player count.",
+        team: "Team",
+        faction: "Faction",
+        nations: "Nations",
+        members: "Team members",
+        teamsUnavailable: "The source did not provide team details.",
+        vote: "Map vote",
+        closes: "Voting closes (Prague)",
+        rules: "Rules",
+        progress: "Match progress",
+        resultsNote:
+            "Results and placements are not imported. Scoring rules are not awarded points.",
+        partial:
+            "Some fields or this match state could not be verified. Check the source page.",
+        age: "Snapshot age: {seconds} seconds",
+        timezone:
+            "Times shown in Europe/Prague. Reads are cached for five minutes.",
+        done: "Done",
+        current: "Current step",
+        not_started: "Not started",
+    },
     membershipIntegration: {
         title: "Discord membership integrations",
         description:
@@ -119,6 +164,7 @@ export const enMessages = {
         empty: "No API keys have been created.",
         invalidPolicy: "Unrecognized restrictions; backend access is denied.",
         resourceLabels: {
+            "league-matches": "Wardogs League",
             "warcon-data":
                 "Warcon gameplay data (includes player names and Steam IDs)",
             "membership-summaries":

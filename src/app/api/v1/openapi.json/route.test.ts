@@ -1,6 +1,21 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+test("League match preview documents stale snapshots, explicit grants and nullable results", async () => {
+    const document = await (await GET()).json()
+    const operation = document.paths["/clan/league-matches"].get
+    assert.equal(operation["x-logi-read-access"].resource, "league-matches")
+    assert.match(operation.description, /stale=true/)
+    assert.equal(
+        operation.parameters.find((p: { name: string }) => p.name === "game")
+            .schema.enum[0],
+        "wardogs"
+    )
+    assert.ok(document.components.schemas.LeagueMatchRead)
+    for (const code of ["200", "400", "401", "403", "429", "503"])
+        assert.ok(operation.responses[code])
+})
+
 test("Warcon reads document every view, an explicit grant and typed player data", async () => {
     const document = await (await GET()).json()
     const endpoint = document.paths["/clan/warcon-data/{connectionId}"]
@@ -94,6 +109,14 @@ test("every clan operation documents runtime scope denial and its read-access re
                 `${method} ${path} must document insufficient_scope`
             )
             const resource = path.split("/")[2]
+            if (resource === "league-matches") {
+                assert.deepEqual(operation["x-logi-read-access"], {
+                    resource,
+                    games: ["wardogs"],
+                    explicitGrantRequired: true,
+                })
+                continue
+            }
             if (resource === "membership-summaries") {
                 assert.deepEqual(operation["x-logi-read-access"], {
                     resource,

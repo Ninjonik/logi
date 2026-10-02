@@ -1,4 +1,49 @@
 export const deMessages = {
+    leagueMatch: {
+        title: "Wardogs League Spiel",
+        description:
+            "Füge einen öffentlichen Spiellink ein, um Termin, Teams und Vorbereitung anzuzeigen. Das Lesen erstellt kein Ereignis.",
+        url: "Öffentliche Spiel-URL",
+        load: "Spiel laden",
+        loading: "Wird geladen…",
+        unknown: "Nicht verfügbar",
+        error: "Das Spiel konnte nicht geladen werden. Prüfe die öffentliche Wardogs League URL.",
+        unavailable:
+            "Die Quelle ist vorübergehend nicht verfügbar. Kein gespeichertes Spiel vorhanden.",
+        nextCheck: "Nächste Aktualisierung ab",
+        source: "Quellspiel öffnen",
+        stale: "Das gespeicherte Spiel ist möglicherweise veraltet. Lade den Link erneut, sobald eine Aktualisierung erlaubt ist.",
+        fetched: "Abgerufen",
+        scheduled: "Spieltermin (Prag)",
+        map: "Karte",
+        zone: "Zone",
+        lighting: "Beleuchtung",
+        hosting: "Hosting",
+        moderator: "Moderator",
+        ready: "Ready Check",
+        points: "Punkteregel",
+        membersNote:
+            "Angezeigte Teammitglieder, nicht die Aufstellung oder Spielerzahl des Spiels.",
+        team: "Team",
+        faction: "Fraktion",
+        nations: "Nationen",
+        members: "Teammitglieder",
+        teamsUnavailable: "Die Quelle hat keine Teamdetails bereitgestellt.",
+        vote: "Kartenabstimmung",
+        closes: "Abstimmungsende (Prag)",
+        rules: "Regeln",
+        progress: "Spielablauf",
+        resultsNote:
+            "Ergebnisse und Platzierungen werden nicht importiert. Punkteregeln sind keine vergebenen Punkte.",
+        partial:
+            "Einige Felder oder dieser Spielstatus konnten nicht geprüft werden. Prüfe die Quellseite.",
+        age: "Alter des Datensatzes: {seconds} Sekunden",
+        timezone:
+            "Zeiten in Europe/Prague. Daten werden fünf Minuten zwischengespeichert.",
+        done: "Erledigt",
+        current: "Aktueller Schritt",
+        not_started: "Nicht begonnen",
+    },
     membershipIntegration: {
         title: "Integrationen für Discord-Mitgliedschaft",
         description:
@@ -126,6 +171,7 @@ export const deMessages = {
         invalidPolicy:
             "Unbekannte Einschränkungen; der Backend-Zugriff wird verweigert.",
         resourceLabels: {
+            "league-matches": "Öffentliche Wardogs League Spiele",
             "warcon-data": "Warcon-Spieldaten (mit Spielernamen und Steam-IDs)",
             "membership-summaries":
                 "Discord-Mitgliedschaft (separate Freigabe erforderlich)",

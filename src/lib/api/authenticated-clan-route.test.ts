@@ -1,6 +1,41 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+test("League reads require both explicit Wardogs grants and reject legacy/write access", async () => {
+    for (const [readAccess, method, expected] of [
+        [undefined, "GET", 403],
+        [{ resources: ["events"], gameIds: ["wardogs"] }, "GET", 403],
+        [
+            { resources: ["league-matches"], gameIds: ["hell_let_loose"] },
+            "GET",
+            403,
+        ],
+        [{ resources: ["league-matches"], gameIds: ["wardogs"] }, "POST", 403],
+        [{ resources: ["league-matches"], gameIds: ["wardogs"] }, "GET", 200],
+    ] as const) {
+        const result = await authenticateClanRequestWith(
+            new Request(
+                "https://logi.test/api/v1/clan/league-matches?game=wardogs&url=https://wardogsleague.net/matches/example",
+                { method, headers: { authorization: "Bearer fixture" } }
+            ),
+            createDependencies({
+                authenticateKey: async () => ({
+                    guildId: "guild",
+                    ...(readAccess
+                        ? {
+                              readAccess: {
+                                  resources: [...readAccess.resources],
+                                  gameIds: [...readAccess.gameIds],
+                              },
+                          }
+                        : {}),
+                }),
+            })
+        )
+        assert.equal(isAuthError(result) ? result.status : 200, expected)
+    }
+})
+
 test("Warcon reads require an explicit grant even for legacy keys", async () => {
     for (const readAccess of [
         undefined,

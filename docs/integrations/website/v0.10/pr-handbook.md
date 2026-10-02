@@ -20,6 +20,7 @@ not a deployment or approval to activate optional Logi SSO.
 | What did the cumulative review fix, and where is the newest proof? | [Runtime review, current tests and actual browser screenshots](runtime-review.md) |
 | Do the supplied real CRCON/Warcon keys work, and what can we consume? | [Live provider read probe and Warcon API map](live-provider-probe.md) |
 | Is the Warcon adapter now implemented, including live players? | [Warcon 0.11: fifteen views, dashboard, website and history](../v0.11/README.md), [verification](../v0.11/verification.md) |
+| Can Logi read a public Wardogs League match link? | [League 0.12: HTML parser, URL preview and scoped API](../v0.12/README.md), [verification](../v0.12/verification.md) |
 | Where are the architecture boundaries and review findings? | [Cumulative review guide](review-guide.md), [review record](review.md) |
 | How is the feature configured, deployed and recovered? | [Activation sequence below](#activation-and-recovery), versioned contracts below |
 | What is still missing, and who owns it? | [Remaining work below](#remaining-work-and-owners) |
@@ -27,7 +28,9 @@ not a deployment or approval to activate optional Logi SSO.
 Historical milestone documents describe their own checkpoint. This handbook and
 the PR body are the current overview; an earlier test count or “missing” row does
 not override a later delivered milestone. The exact tested runtime source and
-fresh check results are pinned in the [latest Warcon evidence manifest](../v0.11/evidence/2026-10-02-warcon/manifest.json).
+fresh check results are pinned in the [latest League evidence manifest](../v0.12/evidence/2026-10-02-league/manifest.json).
+The [Warcon manifest](../v0.11/evidence/2026-10-02-warcon/manifest.json) remains
+the historical provider/scoreboard checkpoint for its exact tested revision.
 
 The [October 2 live provider probe](live-provider-probe.md) adds actual HLL
 transport/parser compatibility and Warcon API read evidence. The subsequent

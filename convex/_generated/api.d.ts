@@ -33,6 +33,8 @@ import type * as identity from "../identity.js";
 import type * as integrationChangeLog from "../integrationChangeLog.js";
 import type * as integrationChanges from "../integrationChanges.js";
 import type * as integrationMutation from "../integrationMutation.js";
+import type * as leagueMatchData from "../leagueMatchData.js";
+import type * as leagueMatches from "../leagueMatches.js";
 import type * as managedRolePolicy from "../managedRolePolicy.js";
 import type * as matchRecaps from "../matchRecaps.js";
 import type * as matchStats from "../matchStats.js";
@@ -109,6 +111,8 @@ declare const fullApi: ApiFromModules<{
   integrationChangeLog: typeof integrationChangeLog;
   integrationChanges: typeof integrationChanges;
   integrationMutation: typeof integrationMutation;
+  leagueMatchData: typeof leagueMatchData;
+  leagueMatches: typeof leagueMatches;
   managedRolePolicy: typeof managedRolePolicy;
   matchRecaps: typeof matchRecaps;
   matchStats: typeof matchStats;

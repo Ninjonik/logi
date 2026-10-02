@@ -34,6 +34,28 @@ For example, after a scheduling or Discord-related change, inspect an event or t
 
 ## System area, API keys, and Discord metadata
 
+### Preview a Wardogs League match
+
+Select **Wardogs**, then open **System → Imports → Wardogs League match**.
+Paste a public `https://wardogsleague.net/matches/{id}` link and choose **Load match**.
+The preview shows the schedule in Europe/Prague, teams with their factions,
+map/zone/lighting, public hosting, moderator, map voting, rules and preparation steps.
+Team member counts describe the team profile; they are not the match roster.
+Reading the link does not create an event or confirm results.
+
+No League account or Team API key is needed. Logi refreshes on request, at most
+once every five minutes per match. If a refresh fails, the last saved match
+remains visible with a stale warning, collection time and next allowed refresh.
+Missing fields remain unknown. Only the Scheduled page format has live validation;
+results, placements and no-show interpretation are not supported yet.
+
+Website backends can request the same preview with an API key explicitly granting
+**Public Wardogs League matches** (`league-matches`) and **Wardogs**:
+`GET /api/v1/clan/league-matches?game=wardogs&url=<URL-encoded-public-match-link>`.
+Poll every 5–10 minutes and honor `nextRefreshAt` and `Retry-After`. Inspect `stale`
+and `fetchedAt` before presenting cached data as current. Legacy full-access keys
+do not grant this new read. Server passwords and join IDs are never returned.
+
 ## Games
 
 The **Games** section controls which games are active for this workspace:

@@ -16,6 +16,7 @@ Our goal is to make running a community less manual: give players a clear place 
 - Provide an authenticated `/api/v1` integration surface, OpenAPI documentation, API keys, idempotent writes, and webhooks.
 - Collect configured HLL CRCON and Wardogs server data for scoped website reads; see the [collector handoff](./docs/integrations/website/v0.5/README.md) for setup and verification limits.
 - Read Warcon live scoreboards, analytics, player statistics, kills, catalogs and completed matches; see [Warcon handoff 0.11](./docs/integrations/website/v0.11/README.md) for all fifteen views and the explicit website grant.
+- Preview public Wardogs League match links in System / Imports and through the scoped website API; see [League handoff 0.12](./docs/integrations/website/v0.12/README.md) for parsing, freshness and verification limits.
 - Synchronize scoped changes and observe Discord membership with per-key role policies; see [handoff 0.7](./docs/integrations/website/v0.7/README.md) for freshness, revocation and offline evidence.
 - Queue, verify and audit managed membership roles with current actor and hierarchy checks; see [handoff 0.8](./docs/integrations/website/v0.8/README.md) for ownership, retries and activation limits.
 

@@ -15,6 +15,7 @@ import { LinkMissingDiscordIdsButton } from "@/components/app/link-missing-disco
 import { ImportDiscordMembersButton } from "@/components/app/import-discord-members-button"
 import { AutoLinkPlatformIdsButton } from "@/components/app/auto-link-platform-ids-button"
 import { DedupePlayerStatsButton } from "@/components/app/dedupe-player-stats-button"
+import { WardogsLeaguePreview } from "@/components/app/wardogs-league-preview"
 import { ImportEventsButton } from "@/components/app/import-events-button"
 import { HelperDataActions } from "@/components/app/helper-data-actions"
 import { WebhookManager } from "@/components/app/webhook-manager"
@@ -123,6 +124,9 @@ export function SystemMaintenanceSections({
                             gameId={gameId}
                         />
                     </div>
+                    {gameId === "wardogs" && (
+                        <WardogsLeaguePreview serverId={serverId} />
+                    )}
                 </AccordionContent>
             </AccordionItem>
 

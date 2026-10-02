@@ -10,15 +10,19 @@ Discord command catalogs, activation sequence and remaining ownership. The
 [fresh verification package](verification-evidence.md) commits named test output,
 build/lint diagnostics, command payloads and a hashed evidence manifest.
 
-The latest [cumulative runtime review](runtime-review.md) records the gateway,
+The [cumulative runtime review](runtime-review.md) records the gateway,
 role-freshness and imported-identity fixes, 564 passing tests, six actual browser
 screenshots and the user-confirmed private Discord status response. Earlier proof
-packages remain historical; the latest report lists the remaining acceptance gaps.
+packages remain historical. The [Warcon 0.11 review](../v0.11/verification.md)
+adds provider/scoreboard evidence; the [League 0.12 review](../v0.12/verification.md)
+is the latest full-suite checkpoint with 619 tests and actual public-match reads.
+Each report distinguishes local/synthetic evidence from remaining hosted acceptance.
 
 ## Implemented boundaries
 
 | Boundary | Review entry point | Implementation and proof |
 | --- | --- | --- |
+| Public Wardogs League previews | [0.12](../v0.12/README.md) | Pure DOM parser, safe anonymous fetch, shared last-valid cache, scoped URL API and administrator preview |
 | Scoped resource/game keys and safe summaries | [0.4](../v0.4/README.md) | `src/domain/api/`, `convex/publicApi.ts`, key manager, HTTP/OpenAPI scope tests |
 | HLL status and private session collection | [0.5](../v0.5/README.md) | `game-data` domain/application/adapters, `convex/gameData*.ts`, fences/checkpoints/provider fixtures |
 | Wardogs status and explicit directory source | [0.5](../v0.5/README.md) | Capability probing, stable source identity, nullable/unsupported fields; no invented historical API |

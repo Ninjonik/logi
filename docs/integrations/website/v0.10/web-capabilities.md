@@ -6,14 +6,16 @@ the new explicit `warcon-data` + `wardogs` grant; the existing snapshot grant do
 not include player rows. See the handoff for queries, freshness and proof.
 
 This is the consumer catalog for [PR #158](pr-handbook.md). Runtime OpenAPI version
-is **1.7.0** at `/api/v1/openapi.json`, with interactive `/api/v1/docs`. These are
+is **1.8.0** at `/api/v1/openapi.json`, with interactive `/api/v1/docs`. These are
 source contracts; the hosted instance must be checked during authorized deployment
 acceptance before relying on that version there.
 
 The [live CRCON/Warcon read probe](live-provider-probe.md) distinguishes data
 available from the actual providers from the resources currently exported by Logi.
-Warcon panel analytics/leaderboards are readable upstream but are not Logi API
-resources in this revision.
+The subsequent Warcon handoff implements those gameplay reads. The
+[League 0.12 handoff](../v0.12/README.md) adds public match URL previews through
+the explicit `league-matches` + `wardogs` grant, with nullable fields and stale
+snapshot metadata. Only Scheduled League fixtures have real-page acceptance.
 
 ## What the website can build from Logi
 
@@ -24,6 +26,7 @@ resources in this revision.
 | Reviewed result pages and corrections | `result-summaries` | Show explicit state/version and N participants; retain 0 versus null; publication still needs website approval |
 | Game-server cards | `server-snapshots` | Show observation age and source attribution, unknown/stale rather than guessed offline/zero |
 | Warcon scoreboard, analytics and gameplay statistics | `warcon-data` + `wardogs` | Fifteen typed views, including player names/Steam IDs; keep keys server-side and apply website publication policy |
+| Wardogs League fixture preview from a pasted URL | `league-matches` + `wardogs` | Public teams/factions, schedule, map and preparation; poll every 5–10 minutes, retain stale metadata, no inferred results or automatic event creation |
 | Integration administration / stale-data notices | `integration-health` | Restrict to appropriate website operators; do not expose provider secrets or raw errors |
 | Member-only/game-specific sections | Exact `membership-summaries` lookup | Authenticate the user, bind their Discord subject, check freshness and your game/role policy on each decision |
 | Recovery after missed notifications or restarts | Changes feed, atomic refetch, signed webhooks | Durable inbox, projections and checkpoint transactions; periodic reconciliation and reset handling |

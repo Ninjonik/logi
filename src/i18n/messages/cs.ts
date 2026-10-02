@@ -1,4 +1,49 @@
 export const csMessages = {
+    leagueMatch: {
+        title: "Zápas Wardogs League",
+        description:
+            "Vlož veřejný odkaz na zápas a zobraz termín, týmy a přípravu. Načtením odkazu nevznikne událost.",
+        url: "Veřejná URL zápasu",
+        load: "Načíst zápas",
+        loading: "Načítání…",
+        unknown: "Není k dispozici",
+        error: "Zápas se nepodařilo načíst. Zkontroluj veřejnou URL Wardogs League a zkus to znovu.",
+        unavailable:
+            "Zdroj je dočasně nedostupný. Uložený zápas není k dispozici.",
+        nextCheck: "Další obnovení od",
+        source: "Otevřít zdrojový zápas",
+        stale: "Uložený zápas už nemusí být aktuální. Až bude povolené obnovení, načti odkaz znovu.",
+        fetched: "Načteno",
+        scheduled: "Termín zápasu (Praha)",
+        map: "Mapa",
+        zone: "Zóna",
+        lighting: "Osvětlení",
+        hosting: "Hostování",
+        moderator: "Moderátor",
+        ready: "Ready check",
+        points: "Pravidlo bodování",
+        membersNote:
+            "Zobrazené členství v týmu, nikoli soupiska nebo počet účastníků zápasu.",
+        team: "Tým",
+        faction: "Frakce",
+        nations: "Národy",
+        members: "Členové týmu",
+        teamsUnavailable: "Zdroj neposkytl podrobnosti o týmech.",
+        vote: "Hlasování o mapě",
+        closes: "Uzávěrka hlasování (Praha)",
+        rules: "Pravidla",
+        progress: "Průběh zápasu",
+        resultsNote:
+            "Výsledky a umístění se neimportují. Pravidlo bodování není udělený počet bodů.",
+        partial:
+            "Některé údaje nebo tento stav zápasu se nepodařilo ověřit. Zkontroluj zdrojovou stránku.",
+        age: "Stáří záznamu: {seconds} s",
+        timezone:
+            "Časy jsou v Europe/Prague. Čerstvá data se načítají nejdříve po pěti minutách.",
+        done: "Hotovo",
+        current: "Aktuální krok",
+        not_started: "Nezahájeno",
+    },
     membershipIntegration: {
         title: "Integrace členství Discordu",
         description:
@@ -117,6 +162,7 @@ export const csMessages = {
         empty: "Zatím nebyly vytvořeny žádné API klíče.",
         invalidPolicy: "Nerozpoznaná omezení; backend přístup zamítne.",
         resourceLabels: {
+            "league-matches": "Veřejné zápasy Wardogs League",
             "warcon-data": "Herní data Warconu (včetně jmen hráčů a Steam ID)",
             "membership-summaries":
                 "Členství Discordu (vyžaduje samostatná pravidla)",

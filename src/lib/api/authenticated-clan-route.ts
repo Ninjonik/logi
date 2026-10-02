@@ -96,27 +96,23 @@ export async function authenticateClanRequestWith(
             },
             { status: 401, headers }
         )
-    if (
-        /^\/api\/v1\/clan\/warcon-data(\/|$)/.test(
+    const wardogsGrant =
+        /^\/api\/v1\/clan\/(warcon-data|league-matches)(\/|$)/.exec(
             new URL(request.url).pathname
-        )
-    ) {
+        )?.[1]
+    if (wardogsGrant) {
         headers["Cache-Control"] = "no-store"
         if (
             request.method !== "GET" ||
             !isApiKeyReadAccess(authenticated.readAccess) ||
-            !allowsApiKeyRead(
-                authenticated.readAccess,
-                "warcon-data",
-                "wardogs"
-            )
+            !allowsApiKeyRead(authenticated.readAccess, wardogsGrant, "wardogs")
         )
             return NextResponse.json(
                 {
                     error: {
                         code: "insufficient_scope",
                         message:
-                            "An explicit Warcon gameplay read grant is required.",
+                            "An explicit read grant for this Wardogs resource is required.",
                     },
                 },
                 { status: 403, headers }

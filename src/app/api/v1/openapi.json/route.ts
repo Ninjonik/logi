@@ -14,6 +14,7 @@ import {
 import { membershipObservationSchema } from "@/domain/membership/observation"
 import { warconEnvelopeSchema } from "@/domain/game-data/warcon-contracts"
 import { clanResultSummarySchema } from "@/domain/api/result-summaries"
+import { leagueReadSchema } from "@/domain/wardogs-league/contracts"
 import { warconQuerySchema } from "@/domain/game-data/warcon-query"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { NextResponse } from "next/server"
@@ -22,6 +23,7 @@ import { z } from "zod"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
 const summaryResponseSchemas = {
+    LeagueMatchRead: z.toJSONSchema(leagueReadSchema),
     WarconEnvelope: z.toJSONSchema(warconEnvelopeSchema),
     WarconQuery: z.toJSONSchema(warconQuerySchema),
     MembershipObservation: z.toJSONSchema(membershipObservationSchema),
@@ -1275,6 +1277,65 @@ paths["/clan/membership-summaries/{discordUserId}"] = {
     },
 }
 
+paths["/clan/league-matches"] = {
+    get: {
+        tags: ["Clan API — Matches"],
+        summary: "Preview a public Wardogs League match URL",
+        description:
+            "Requires explicit league-matches and wardogs read grants; legacy keys are denied. Reads anonymous server-rendered HTML only, with no Team API key, cookies or browser. URL must be HTTPS wardogsleague.net/matches/{id}, without credentials/query/fragment. Shared cache by match ID for five minutes, 20 origin requests/minute and a shared Retry-After cooldown. Data is public and cached across authorized clans. On refresh failures a last valid snapshot returns HTTP 200 with stale=true, its original fetchedAt, ageSeconds and an error; with no snapshot returns 429 or 503. Consumers should poll no faster than 5–10 minutes and respect nextRefreshAt/Retry-After. Missing values are null. Displayed membership is not a match roster. Only Scheduled HTML has live acceptance evidence; results remain null and unverified states generate warnings. No event/result creation, server passwords, join IDs or authenticated League data. Reads are not emitted in the changes feed. Timestamps use UTC ISO 8601; dashboard renders Europe/Prague. Response is always no-store to consumers.",
+        security: [{ clanApiKey: [] }],
+        "x-logi-read-access": {
+            resource: "league-matches",
+            games: ["wardogs"],
+            explicitGrantRequired: true,
+        },
+        parameters: [
+            {
+                name: "game",
+                in: "query",
+                required: true,
+                schema: { type: "string", enum: ["wardogs"] },
+            },
+            {
+                name: "url",
+                in: "query",
+                required: true,
+                schema: { type: "string", format: "uri", maxLength: 125 },
+                description:
+                    "Public detail URL; duplicate or unknown parameters are rejected.",
+            },
+        ],
+        responses: {
+            "200": {
+                description: "Fresh or explicitly stale last-valid match",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/LeagueMatchRead",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "400": { description: "Invalid URL or query" },
+            "401": { description: "Missing, invalid or revoked API key" },
+            "403": { description: "Missing explicit Wardogs League grant" },
+            "429": {
+                description:
+                    "No cached snapshot; shared or upstream rate limit. Retry-After and data.nextRefreshAt apply.",
+            },
+            "503": {
+                description:
+                    "No cached snapshot; source or refresh unavailable. Retry metadata is included when known.",
+            },
+        },
+    },
+}
 paths["/clan/warcon-data/{connectionId}"] = {
     get: {
         tags: ["Clan API — Game data"],
@@ -1503,6 +1564,7 @@ for (const [path, operations] of Object.entries(paths)) {
         operations as Record<string, Record<string, unknown>>
     )) {
         const resource = path.split("/")[2]
+        if (resource === "league-matches" && method === "get") continue
         operation["x-logi-read-access"] =
             resource === "membership-summaries" && method === "get"
                 ? {
@@ -1537,7 +1599,7 @@ export async function GET() {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.7.0",
+                version: "1.8.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read

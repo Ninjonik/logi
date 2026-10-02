@@ -1230,6 +1230,25 @@ export default defineSchema({
         .index("guildId", ["guildId"])
         .index("sourceRef", ["sourceRef"])
         .index("nextAttemptAt", ["nextAttemptAt"]),
+    leagueMatchCache: defineTable({
+        matchId: v.string(),
+        snapshotJson: v.optional(v.string()),
+        lastAttemptAt: v.optional(v.number()),
+        nextRefreshAt: v.number(),
+        error: v.optional(v.string()),
+        leaseUntil: v.number(),
+        fence: v.number(),
+        accessedAt: v.number(),
+    })
+        .index("matchId", ["matchId"])
+        .index("accessedAt", ["accessedAt"]),
+    leagueFetchBudget: defineTable({
+        key: v.literal("public-matches"),
+        windowAt: v.number(),
+        count: v.number(),
+        blockedUntil: v.number(),
+        cachedEntries: v.number(),
+    }).index("key", ["key"]),
     warconReadCache: defineTable({
         connectionId: v.id("gameDataConnections"),
         queryJson: v.string(),

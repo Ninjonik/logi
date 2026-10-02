@@ -37,6 +37,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Verified Steam identity](./docs/integrations/website/v0.9/README.md) — session-bound account proof, revocation, identity separation and synthetic acceptance evidence
 - [Reviewed result handoff](./docs/integrations/website/v0.10/README.md) — immutable confirmation/correction, proof-based attribution, scoped result summaries, consumer fixtures and synthetic acceptance
 - [Warcon read integration](./docs/integrations/website/v0.11/README.md) — fifteen gameplay reads, live scoreboard, scoped website access, completed-match collection and provider/local proof
+- [Wardogs League public match reader](./docs/integrations/website/v0.12/README.md) — anonymous HTML parser, safe URL preview, shared stale cache, scoped website API and live/local proof
 
 ### User-facing and legal Markdown
 
