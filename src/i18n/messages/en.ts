@@ -634,6 +634,7 @@ export const enMessages = {
         errorsChannelId: "Errors channel ID",
         calendarChannelId: "Calendar channel ID",
         forumCategoryId: "Forum category ID",
+        squadVoiceCategoryId: "Default squad voice category",
         meetingChannelId: "Meeting voice channel ID",
         clanRoleId: "Clan role ID",
         dashboardAdminRoleId: "Dashboard admin role ID",
@@ -1402,6 +1403,12 @@ export const enMessages = {
             pingMode: "Announcement ping",
             pingRoleIds: "Roles to ping",
             createForumChannel: "Create forum channel",
+            createSquadVoiceChannels:
+                "Create squad voice channels at meeting start",
+            squadVoiceCategory:
+                "Squad voice category (server default when empty)",
+            conclusionReserveHelp:
+                "The event automatically concludes 15 minutes after this duration ends.",
         },
         channelRoutingCreateHelp:
             "Starts with the clan settings as a preset. This choice is locked after creation to keep Discord messages stable.",

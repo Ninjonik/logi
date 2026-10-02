@@ -79,6 +79,9 @@ export type EventLike = {
     announcementChannelId?: string
     eventInfoChannelId?: string
     meetingChannelId?: string
+    createSquadVoiceChannels?: boolean
+    squadVoiceCategoryId?: string
+    durationMinutes?: number
     requiredRoleIds?: string[]
     rewardRoleIds?: string[]
     stratmapIds?: string[]

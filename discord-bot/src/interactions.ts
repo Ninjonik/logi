@@ -1846,6 +1846,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         }
 
         const query = interaction.fields.getTextInputValue("query").trim()
+        const originalMessage = interaction.message
+        if (!originalMessage) {
+            await interaction.reply({
+                content: flowMessages.invalidSearchModal,
+                flags: MessageFlags.Ephemeral,
+            })
+            return
+        }
+
+        // Search modals originate from the platform-link response. A modal
+        // cannot update that response directly, so acknowledge it and edit its
+        // originating message in place instead of creating another reply.
+        await interaction.deferUpdate()
         const results = await searchPlayerStatsServers(
             interaction.guildId,
             query,
@@ -1853,8 +1866,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         )
         const emojis = await getPlatformEmojis()
 
-        await interaction.reply({
-            ...buildPlayerSearchResultsMessage({
+        await originalMessage.edit(
+            buildPlayerSearchResultsMessage({
                 language,
                 context,
                 results: results.map((result) => ({
@@ -1866,9 +1879,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                             ? undefined
                             : emojis[result.platform],
                 })),
-            }),
-            flags: MessageFlags.Ephemeral,
-        })
+            })
+        )
     }
 
     async function handlePlatformLinkApplyModalSubmit(

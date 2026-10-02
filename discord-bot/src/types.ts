@@ -101,6 +101,7 @@ export type DiscordConfig = {
     calendarMessageLastConfigUpdatedAt?: string
     forumCategoryId?: string
     meetingChannelId?: string
+    squadVoiceCategoryId?: string
     clanRoleId?: string
     dashboardAdminRoleId?: string
     playerStatsServers?: PlayerStatsServer[]
@@ -258,6 +259,9 @@ export type EventRecord = {
     announcementChannelId?: string
     eventInfoChannelId?: string
     meetingChannelId?: string
+    createSquadVoiceChannels?: boolean
+    squadVoiceCategoryId?: string
+    durationMinutes?: number
     requiredRoleIds: string[]
     rewardRoleIds: string[]
     signupGroupIds?: string[]
@@ -355,6 +359,7 @@ export type SyncState = {
     lastRosterUpdatedAt?: string
     lastConfigUpdatedAt?: string
     lastCalendarSyncVersion?: string
+    squadVoiceChannelIds?: string[]
 }
 
 export type SyncPayload = {

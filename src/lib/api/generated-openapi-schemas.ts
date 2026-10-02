@@ -54,6 +54,15 @@ export const generatedOpenApiSchemas = {
             "meetingChannelId": {
                 "type": "string"
             },
+            "createSquadVoiceChannels": {
+                "type": "boolean"
+            },
+            "squadVoiceCategoryId": {
+                "type": "string"
+            },
+            "durationMinutes": {
+                "type": "number"
+            },
             "requiredRoleIds": {
                 "type": "array",
                 "items": {
@@ -483,6 +492,9 @@ export const generatedOpenApiSchemas = {
             "announcementChannelId": "string",
             "eventInfoChannelId": "string",
             "meetingChannelId": "string",
+            "createSquadVoiceChannels": true,
+            "squadVoiceCategoryId": "string",
+            "durationMinutes": 0,
             "requiredRoleIds": [
                 "string"
             ],

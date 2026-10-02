@@ -78,3 +78,29 @@ test("ConcludeEventUseCase concludes and scores the event", async () => {
     assert.equal(repo.events.get("event-1")?.status, "concluded")
     assert.deepEqual(scores.calls, ["event-1"])
 })
+
+test("ConcludeEventUseCase rejects conclusion before meeting start", async () => {
+    const repo = new Repo(
+        new Map([
+            [
+                "event-1",
+                {
+                    id: "event-1",
+                    registrationEnd: "2026-07-22T10:00:00.000Z",
+                    meetingStart: "2026-07-22T11:00:00.000Z",
+                    gameEnd: "2026-07-22T14:00:00.000Z",
+                },
+            ],
+        ])
+    )
+    const scores = new Scores()
+    await assert.rejects(
+        new ConcludeEventUseCase(
+            repo,
+            scores,
+            new FakeClock(new Date("2026-07-22T10:59:00.000Z"))
+        ).execute("event-1"),
+        /only be concluded after it has started/
+    )
+    assert.deepEqual(scores.calls, [])
+})

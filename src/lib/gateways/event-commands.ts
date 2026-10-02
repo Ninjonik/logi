@@ -32,6 +32,9 @@ export async function saveServerEventCommand(input: {
     announcementChannelId?: string
     eventInfoChannelId?: string
     meetingChannelId?: string
+    createSquadVoiceChannels?: boolean
+    squadVoiceCategoryId?: string
+    durationMinutes?: number
     requiredRoleIds?: string[]
     rewardRoleIds?: string[]
     signupGroupIds?: string[]
@@ -80,6 +83,9 @@ export async function saveServerEventCommand(input: {
         announcementChannelId: input.announcementChannelId,
         eventInfoChannelId: input.eventInfoChannelId,
         meetingChannelId: input.meetingChannelId,
+        createSquadVoiceChannels: input.createSquadVoiceChannels,
+        squadVoiceCategoryId: input.squadVoiceCategoryId,
+        durationMinutes: input.durationMinutes,
         requiredRoleIds: input.requiredRoleIds,
         rewardRoleIds: input.rewardRoleIds,
         signupGroupIds: input.signupGroupIds,

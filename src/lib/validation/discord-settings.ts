@@ -303,6 +303,7 @@ const gameDiscordOverridesSchema = z.object({
     eventInfoChannelId: discordIdField,
     forumCategoryId: discordIdField,
     meetingChannelId: discordIdField,
+    squadVoiceCategoryId: discordIdField,
     playerStatsServers: z.array(playerStatsServerSchema).max(20).optional(),
     membershipSettings: membershipSettingsSchema.optional(),
     membershipPanelMessageId: z.string().optional(),
@@ -322,6 +323,7 @@ export const discordSettingsSchema = z.object({
         .default([]),
     forumCategoryId: discordIdField,
     meetingChannelId: discordIdField,
+    squadVoiceCategoryId: discordIdField,
     clanRoleId: discordIdField,
     dashboardAdminRoleId: discordIdField,
     playerStatsServers: z

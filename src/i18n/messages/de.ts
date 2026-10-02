@@ -639,6 +639,7 @@ export const deMessages = {
         errorsChannelId: "Fehler-Channel-ID",
         calendarChannelId: "Kalender-Channel-ID",
         forumCategoryId: "Forums-Kategorie-ID",
+        squadVoiceCategoryId: "Standard-Squad-Sprachkategorie",
         meetingChannelId: "Meeting-Sprachchannel-ID",
         clanRoleId: "Clan-Rollen-ID",
         dashboardAdminRoleId: "Dashboard-Admin-Rollen-ID",
@@ -1424,6 +1425,12 @@ export const deMessages = {
             pingMode: "Ankündigungs-Ping",
             pingRoleIds: "Zu pingende Rollen",
             createForumChannel: "Forums-Channel erstellen",
+            createSquadVoiceChannels:
+                "Squad-Sprachkanäle beim Meeting-Beginn erstellen",
+            squadVoiceCategory:
+                "Squad-Sprachkategorie (leer nutzt den Serverstandard)",
+            conclusionReserveHelp:
+                "Das Event wird 15 Minuten nach dieser Dauer automatisch abgeschlossen.",
         },
         channelRoutingCreateHelp:
             "Startet mit den Clan-Einstellungen als Voreinstellung. Diese Wahl ist nach Erstellung gesperrt, um Discord-Nachrichten stabil zu halten.",

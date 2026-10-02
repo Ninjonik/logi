@@ -211,6 +211,7 @@ export type DiscordConfig = {
     calendarMessageLastConfigUpdatedAt?: string
     forumCategoryId?: string
     meetingChannelId?: string
+    squadVoiceCategoryId?: string
     clanRoleId?: string
     dashboardAdminRoleId?: string
     playerStatsServers?: PlayerStatsServer[]
@@ -233,6 +234,7 @@ export type GameDiscordOverrides = Pick<
     | "eventInfoChannelId"
     | "forumCategoryId"
     | "meetingChannelId"
+    | "squadVoiceCategoryId"
     | "playerStatsServers"
     | "membershipSettings"
     | "membershipPanelMessageId"
@@ -285,6 +287,9 @@ export type EventRecord = {
     announcementChannelId?: string
     eventInfoChannelId?: string
     meetingChannelId?: string
+    createSquadVoiceChannels?: boolean
+    squadVoiceCategoryId?: string
+    durationMinutes?: number
     requiredRoleIds: string[]
     rewardRoleIds: string[]
     server?: string
