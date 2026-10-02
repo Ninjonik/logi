@@ -19,7 +19,14 @@ const squadPresetSquadSchema = z.object({
         .min(1, "Each squad needs at least one role."),
 })
 
+const gameIdSchema = z.enum([
+    "hell_let_loose",
+    "hell_let_loose_vietnam",
+    "wardogs",
+])
+
 export const squadPresetSchema = z.object({
+    gameId: gameIdSchema,
     name: z.string().trim().min(1, "Preset name is required."),
     squads: z.array(squadPresetSquadSchema).min(1, "Add at least one squad."),
 })

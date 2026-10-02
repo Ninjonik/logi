@@ -3,6 +3,7 @@ import {
     UpsertRosterUseCase,
 } from "../src/application/rosters/roster-commands.use-case"
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories"
+import { resolveGameScope } from "../src/domain/games/game"
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
@@ -59,6 +60,23 @@ export const upsert = mutation({
         published: v.boolean(),
     },
     handler: async (ctx, args) => {
+        if (args.squadPresetId) {
+            const [event, preset] = await Promise.all([
+                ctx.db.get(args.eventId),
+                ctx.db.get(args.squadPresetId),
+            ])
+            if (!event || !preset) {
+                throw new Error("Event or squad preset not found.")
+            }
+            if (
+                resolveGameScope(event.gameId) !==
+                resolveGameScope(preset.gameId)
+            ) {
+                throw new Error(
+                    "Squad preset does not belong to this event's game."
+                )
+            }
+        }
         const useCase = new UpsertRosterUseCase(
             new ConvexRosterCommandRepository(ctx)
         )

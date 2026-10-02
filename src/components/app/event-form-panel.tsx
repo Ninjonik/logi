@@ -141,9 +141,14 @@ function getOutcomeLabel(
     }
 }
 
-function getPresetMatch(preset: TopicPreset, context: TopicPresetMatchContext) {
-    const presetSelection = inferHllSelection(preset.map)
-    const presetMapId = presetSelection?.mapId ?? inferHllBaseMapId(preset.map)
+function getPresetMatch(
+    preset: TopicPreset,
+    context: TopicPresetMatchContext,
+    gameId?: EventRecord["gameId"]
+) {
+    const presetSelection = inferHllSelection(preset.map, gameId)
+    const presetMapId =
+        presetSelection?.mapId ?? inferHllBaseMapId(preset.map, gameId)
     const hasComparableMapCode = Boolean(context.mapCode && preset.map)
     const hasComparableMapId = Boolean(context.mapId && presetMapId)
     const hasComparableTime = Boolean(context.time && presetSelection?.time)
@@ -196,7 +201,7 @@ function getPresetMatch(preset: TopicPreset, context: TopicPresetMatchContext) {
             comparableFieldCount > 0 &&
             matchedFields.length === comparableFieldCount,
         label: matchedFields.join(" + "),
-        metaLabel: formatHllPresetLabel(preset.map) ?? preset.map ?? "",
+        metaLabel: formatHllPresetLabel(preset.map, gameId) ?? preset.map ?? "",
     }
 }
 
@@ -691,9 +696,15 @@ export function EventFormPanel({
     const presetMatchContext = useMemo<TopicPresetMatchContext>(
         () => ({
             mapCode: mapValue,
-            mapId: selectedMapId || inferHllSelection(mapValue)?.mapId,
-            time: selectedMapTime || inferHllSelection(mapValue)?.time,
-            mode: selectedMapMode || inferHllSelection(mapValue)?.mode,
+            mapId:
+                selectedMapId ||
+                inferHllSelection(mapValue, event.gameId)?.mapId,
+            time:
+                selectedMapTime ||
+                inferHllSelection(mapValue, event.gameId)?.time,
+            mode:
+                selectedMapMode ||
+                inferHllSelection(mapValue, event.gameId)?.mode,
             side: sideValue,
             cap: presetMatchValues.cap,
         }),
@@ -711,7 +722,11 @@ export function EventFormPanel({
             topicPresets
                 .map((preset) => ({
                     preset,
-                    match: getPresetMatch(preset, presetMatchContext),
+                    match: getPresetMatch(
+                        preset,
+                        presetMatchContext,
+                        event.gameId
+                    ),
                 }))
                 .sort(
                     (left, right) =>
@@ -746,7 +761,7 @@ export function EventFormPanel({
             return
         }
 
-        const inferredSelection = inferHllSelection(mapValue)
+        const inferredSelection = inferHllSelection(mapValue, event.gameId)
         if (inferredSelection) {
             setSelectedMapId(inferredSelection.mapId)
             setSelectedMapTime(inferredSelection.time)
@@ -774,6 +789,7 @@ export function EventFormPanel({
             time: selectedMapTime,
             mode: selectedMapMode,
             side: sideValue,
+            gameId: event.gameId,
         })
 
         if (resolvedCode && resolvedCode !== mapValue) {
@@ -1285,6 +1301,7 @@ export function EventFormPanel({
                             <div className="flex flex-row gap-4 space-y-3 md:col-span-2">
                                 {canEdit ? (
                                     <HllMapSelector
+                                        gameId={event.gameId}
                                         mapId={selectedMapId}
                                         onMapIdChange={(value) => {
                                             handleMapSelection(value)
@@ -1345,8 +1362,10 @@ export function EventFormPanel({
                                 ) : (
                                     <ReadOnlyValue
                                         value={
-                                            formatHllPresetLabel(mapValue) ??
-                                            mapValue
+                                            formatHllPresetLabel(
+                                                mapValue,
+                                                event.gameId
+                                            ) ?? mapValue
                                         }
                                         emptyLabel={dictionary.shared.notSet}
                                     />

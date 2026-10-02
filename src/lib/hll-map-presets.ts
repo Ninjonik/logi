@@ -1,6 +1,7 @@
 import rawPresetCodes from "@/data/hll-map-presets.json"
+import type { GameId } from "@/domain/games/game"
 
-type MapMode = "warfare" | "offensive" | "skirmish"
+type MapMode = "warfare" | "offensive" | "skirmish" | "koth"
 type MapTime =
     "day" | "morning" | "dusk" | "evening" | "night" | "rain" | "overcast"
 type OffensiveSide = "ger" | "us" | "rus" | "cw" | "can" | "british"
@@ -96,6 +97,12 @@ const MAP_DEFINITIONS: MapDefinition[] = [
     { id: "utah_beach", name: "Utah Beach", aliases: ["utahbeach"] },
 ]
 
+const WARDOGS_MAP_DEFINITIONS: MapDefinition[] = [
+    { id: "bakurani", name: "Bakurani", aliases: ["bakurani"] },
+    { id: "ozeti", name: "Ozeti", aliases: ["ozeti"] },
+    { id: "zestafona", name: "Zestafona", aliases: ["zestafona"] },
+]
+
 const TIME_LABELS: Record<MapTime, string> = {
     day: "Day",
     morning: "Morning",
@@ -110,6 +117,7 @@ const MODE_LABELS: Record<MapMode, string> = {
     warfare: "Warfare",
     offensive: "Offensive",
     skirmish: "Skirmish",
+    koth: "KOTH",
 }
 
 const SIDE_ALIASES: Record<OffensiveSide, string[]> = {
@@ -121,19 +129,21 @@ const SIDE_ALIASES: Record<OffensiveSide, string[]> = {
     british: ["british", "uk", "allies"],
 }
 
-function getMapDefinition(code: string) {
+function getMapDefinition(code: string, definitions = MAP_DEFINITIONS) {
     const normalizedCode = code.toLowerCase()
-    return MAP_DEFINITIONS.filter((definition) =>
-        definition.aliases.some((alias) => normalizedCode.startsWith(alias))
-    ).sort((left, right) => {
-        const leftLength = Math.max(
-            ...left.aliases.map((alias) => alias.length)
+    return definitions
+        .filter((definition) =>
+            definition.aliases.some((alias) => normalizedCode.startsWith(alias))
         )
-        const rightLength = Math.max(
-            ...right.aliases.map((alias) => alias.length)
-        )
-        return rightLength - leftLength
-    })[0]
+        .sort((left, right) => {
+            const leftLength = Math.max(
+                ...left.aliases.map((alias) => alias.length)
+            )
+            const rightLength = Math.max(
+                ...right.aliases.map((alias) => alias.length)
+            )
+            return rightLength - leftLength
+        })[0]
 }
 
 function parseTime(code: string): MapTime {
@@ -158,6 +168,7 @@ function parseMode(code: string): MapMode | null {
     )
         return "offensive"
     if (normalizedCode.includes("skirmish")) return "skirmish"
+    if (normalizedCode.includes("koth")) return "koth"
     return null
 }
 
@@ -187,12 +198,15 @@ function parseOffensiveSide(code: string): OffensiveSide | undefined {
     return undefined
 }
 
-function parsePresetCode(code: string): MapPresetEntry | null {
+function parsePresetCode(
+    code: string,
+    definitions = MAP_DEFINITIONS
+): MapPresetEntry | null {
     if (code === "bla_" || code === "unknown") {
         return null
     }
 
-    const definition = getMapDefinition(code)
+    const definition = getMapDefinition(code, definitions)
     const mode = parseMode(code)
     if (!definition || !mode) {
         return null
@@ -220,6 +234,21 @@ const mapPresetEntries = rawPresetCodes
             left.code.localeCompare(right.code)
     )
 
+const wardogsMapPresetEntries: MapPresetEntry[] =
+    WARDOGS_MAP_DEFINITIONS.flatMap((definition) =>
+        (Object.keys(TIME_LABELS) as MapTime[]).map((time) => ({
+            code: `${definition.id}_koth_${time}`,
+            mapId: definition.id,
+            mapName: definition.name,
+            time,
+            mode: "koth" as const,
+        }))
+    )
+
+function getMapPresetEntries(gameId?: GameId) {
+    return gameId === "wardogs" ? wardogsMapPresetEntries : mapPresetEntries
+}
+
 function dedupeOptions(
     values: string[],
     labelForValue: (value: string) => string
@@ -239,18 +268,27 @@ export function getHllMapOptions(): SelectOption[] {
     )
 }
 
-export function getHllTimeOptions(mapId: string): SelectOption[] {
+export function getHllTimeOptions(
+    mapId: string,
+    gameId?: GameId
+): SelectOption[] {
+    const entries = getMapPresetEntries(gameId)
     return dedupeOptions(
-        mapPresetEntries
+        entries
             .filter((entry) => entry.mapId === mapId)
             .map((entry) => entry.time),
         (time) => TIME_LABELS[time as MapTime] ?? time
     )
 }
 
-export function getHllModeOptions(mapId: string, time: string): SelectOption[] {
+export function getHllModeOptions(
+    mapId: string,
+    time: string,
+    gameId?: GameId
+): SelectOption[] {
+    const entries = getMapPresetEntries(gameId)
     return dedupeOptions(
-        mapPresetEntries
+        entries
             .filter((entry) => entry.mapId === mapId && entry.time === time)
             .map((entry) => entry.mode),
         (mode) => MODE_LABELS[mode as MapMode] ?? mode
@@ -276,26 +314,34 @@ export function getDefaultHllSelection(mapId: string): MapSelection | null {
     return { mapId, time, mode }
 }
 
-export function inferHllBaseMapId(value?: string | null) {
+export function inferHllBaseMapId(value?: string | null, gameId?: GameId) {
     if (!value) {
         return null
     }
 
-    const parsed = parsePresetCode(value)
+    const definitions =
+        gameId === "wardogs" ? WARDOGS_MAP_DEFINITIONS : MAP_DEFINITIONS
+    const parsed = parsePresetCode(value, definitions)
     if (parsed) {
         return parsed.mapId
     }
 
-    const direct = MAP_DEFINITIONS.find((definition) => definition.id === value)
+    const direct = definitions.find((definition) => definition.id === value)
     return direct?.id ?? null
 }
 
-export function inferHllSelection(code?: string | null): MapSelection | null {
+export function inferHllSelection(
+    code?: string | null,
+    gameId?: GameId
+): MapSelection | null {
     if (!code) {
         return null
     }
 
-    const parsed = parsePresetCode(code)
+    const parsed = parsePresetCode(
+        code,
+        gameId === "wardogs" ? WARDOGS_MAP_DEFINITIONS : MAP_DEFINITIONS
+    )
     if (!parsed) {
         return null
     }
@@ -323,8 +369,9 @@ export function resolveHllPresetCode(input: {
     time: string
     mode: string
     side?: string | null
+    gameId?: GameId
 }) {
-    const matchingEntries = mapPresetEntries.filter(
+    const matchingEntries = getMapPresetEntries(input.gameId).filter(
         (entry) =>
             entry.mapId === input.mapId &&
             entry.time === input.time &&
@@ -349,21 +396,31 @@ export function resolveHllPresetCode(input: {
     return matchingEntries[0].code
 }
 
-export function isKnownHllPresetCode(code?: string | null) {
-    return Boolean(inferHllSelection(code))
+export function isKnownHllPresetCode(code?: string | null, gameId?: GameId) {
+    return Boolean(inferHllSelection(code, gameId))
 }
 
-export function formatHllPresetLabel(code?: string | null) {
+export function formatHllPresetLabel(code?: string | null, gameId?: GameId) {
     if (!code) {
         return null
     }
 
-    const direct = MAP_DEFINITIONS.find((definition) => definition.id === code)
+    const definitions =
+        gameId === "wardogs" ? WARDOGS_MAP_DEFINITIONS : MAP_DEFINITIONS
+    const direct =
+        definitions.find((definition) => definition.id === code) ??
+        (!gameId
+            ? WARDOGS_MAP_DEFINITIONS.find(
+                  (definition) => definition.id === code
+              )
+            : undefined)
     if (direct) {
         return direct.name
     }
 
-    const parsed = parsePresetCode(code)
+    const parsed =
+        parsePresetCode(code, definitions) ??
+        (!gameId ? parsePresetCode(code, WARDOGS_MAP_DEFINITIONS) : null)
     if (parsed) {
         return [
             parsed.mapName,

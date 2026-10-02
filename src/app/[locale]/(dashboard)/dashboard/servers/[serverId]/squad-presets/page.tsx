@@ -8,6 +8,7 @@ import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getPaginatedRows } from "@/lib/data-table"
 import { Button } from "@/components/ui/button"
+import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
@@ -25,7 +26,9 @@ export default async function SquadPresetsPage({
     const { locale, serverId } = await params
     const resolvedSearchParams = await searchParams
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const context = await getServerContext(serverId)
+    const game = resolvedSearchParams?.game
+    const gameScope = typeof game === "string" && isGameId(game) ? game : "all"
+    const context = await getServerContext(serverId, gameScope)
     if (!context) return null
     const { squadPresets, canAdmin } = context
     const paginated = getPaginatedRows({
@@ -47,7 +50,7 @@ export default async function SquadPresetsPage({
                         canAdmin ? (
                             <Button asChild className="rounded-xl">
                                 <a
-                                    href={`/${locale}/dashboard/servers/${serverId}/squad-presets/create`}
+                                    href={`/${locale}/dashboard/servers/${serverId}/squad-presets/create${gameScope === "all" ? "" : `?game=${gameScope}`}`}
                                 >
                                     {dictionary.common.createPreset}
                                 </a>
@@ -68,8 +71,12 @@ export default async function SquadPresetsPage({
                 search={paginated.search}
                 searchPlaceholder={dictionary.shared.searchTable}
                 getHref={(preset) =>
-                    `/${locale}/dashboard/servers/${serverId}/squad-presets/${preset.id}`
+                    `/${locale}/dashboard/servers/${serverId}/squad-presets/${preset.id}${gameScope === "all" ? "" : `?game=${gameScope}`}`
                 }
+                gameColumn={{
+                    show: gameScope === "all",
+                    getGameId: (preset) => preset.gameId,
+                }}
                 columns={[
                     {
                         key: "name",

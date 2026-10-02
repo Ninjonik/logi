@@ -4,10 +4,12 @@ import {
 } from "@/domain/rosters/attendance-policy"
 import { mergeRosterWithEventState } from "@/domain/rosters/sync"
 import type { AttendanceStatus } from "@/domain/rosters/types"
+import type { GameId } from "@/domain/games/game"
 
 export type RosterCommandRecord = {
     id: string
     eventId: string
+    gameId?: GameId
     squadPresetId?: string
     squads: Array<{
         name: string
@@ -38,6 +40,7 @@ export type RosterCommandRecord = {
 
 type EventRosterRecord = {
     guildId: string
+    gameId?: GameId
     registrationEnd: string
     participants?: Array<{
         userId: string
@@ -75,6 +78,7 @@ export type UpsertRosterInput = Omit<RosterCommandRecord, "id"> & {
 function buildPersistedRosterPayload(roster: Omit<RosterCommandRecord, "id">) {
     return {
         eventId: roster.eventId,
+        gameId: roster.gameId,
         squadPresetId: roster.squadPresetId,
         squads: roster.squads,
         reservePlayerIds: roster.reservePlayerIds,
@@ -102,6 +106,7 @@ export class UpsertRosterUseCase {
                   {
                       ...(existing ?? {}),
                       ...input,
+                      gameId: event.gameId,
                       reserveAttendances:
                           input.reserveAttendances ??
                           existing?.reserveAttendances ??

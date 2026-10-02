@@ -822,6 +822,8 @@ export default defineSchema({
     }).index("guildId", ["guildId"]),
     squadPresets: defineTable({
         guildId: v.string(),
+        // Missing values are legacy Hell Let Loose presets.
+        gameId: v.optional(gameId),
         name: v.string(),
         squads: v.array(squadPresetSquad),
         createdAt: v.string(),
@@ -830,6 +832,8 @@ export default defineSchema({
     rosters: defineTable({
         // Optional while legacy rosters are backfilled from their parent event.
         guildId: v.optional(v.string()),
+        // Missing values are legacy Hell Let Loose rosters.
+        gameId: v.optional(gameId),
         eventId: v.id("events"),
         squadPresetId: v.optional(v.id("squadPresets")),
         squads: v.array(rosterSquad),

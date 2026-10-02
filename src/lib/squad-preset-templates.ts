@@ -1,6 +1,7 @@
 import type { SquadPresetSquad } from "@/types/domain"
+import type { GameId } from "@/domain/games/game"
 
-export const roleIconOptions = [
+const hllRoleIconOptions = [
     "/img/roles/icn_commander.png",
     "/img/roles/icn_tankCommand.png",
     "/img/roles/icn_tankCrew.png",
@@ -16,6 +17,30 @@ export const roleIconOptions = [
     "/img/roles/icn_eng.png",
     "/img/roles/icn_medic.png",
 ] as const
+
+const wardogsRoleIconOptions = [
+    "/img/roles/icn_builder.png",
+    "/img/roles/icn_havoc.png",
+    "/img/roles/icn_humvee.png",
+    "/img/roles/icn_littlebird.png",
+    "/img/roles/icn_spa.png",
+    "/img/roles/icn_tank.png",
+    "/img/roles/icn_wdtank.png",
+] as const
+
+/** Role icons are intentionally available only for their supported game. */
+export const roleIconOptionsByGame: Record<GameId, readonly string[]> = {
+    hell_let_loose: hllRoleIconOptions,
+    hell_let_loose_vietnam: hllRoleIconOptions,
+    wardogs: wardogsRoleIconOptions,
+}
+
+export function getRoleIconOptions(gameId: GameId) {
+    return roleIconOptionsByGame[gameId]
+}
+
+// Retained for roster layout editing until that editor receives a game context.
+export const roleIconOptions = hllRoleIconOptions
 
 export function createHllStarterSquadPreset(): SquadPresetSquad[] {
     return [

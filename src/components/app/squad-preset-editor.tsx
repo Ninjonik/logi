@@ -23,11 +23,12 @@ import {
 } from "@/components/ui/select"
 import {
     createHllStarterSquadPreset,
-    roleIconOptions,
+    getRoleIconOptions,
 } from "@/lib/squad-preset-templates"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Group, SquadPresetSquad } from "@/types/domain"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -43,11 +44,14 @@ function IconPreview({ src, alt }: { src: string; alt: string }) {
 
 const IconSelect = memo(function IconSelect({
     defaultValue,
+    gameId,
     onChange,
 }: {
     defaultValue: string
+    gameId: GameId
     onChange: (value: string) => void
 }) {
+    const roleIconOptions = getRoleIconOptions(gameId)
     return (
         <Select defaultValue={defaultValue} onValueChange={onChange}>
             <SelectTrigger className="w-14 rounded-xl px-2">
@@ -106,6 +110,7 @@ export function SquadPresetEditor({
     serverId,
     locale,
     presetId,
+    gameId,
     startInEditMode = false,
 }: {
     name: string
@@ -116,6 +121,7 @@ export function SquadPresetEditor({
     serverId: string
     locale: string
     presetId?: string
+    gameId: GameId
     startInEditMode?: boolean
 }) {
     const router = useRouter()
@@ -259,6 +265,7 @@ export function SquadPresetEditor({
                     method: createMode ? "POST" : "PATCH",
                     headers: { "content-type": "application/json" },
                     body: JSON.stringify({
+                        gameId,
                         name: draftNameRef.current,
                         squads: toPersistedSquads(draftSquadsRef.current),
                     }),
@@ -471,6 +478,7 @@ export function SquadPresetEditor({
                                         />
                                         <IconSelect
                                             defaultValue={squad.icon}
+                                            gameId={gameId}
                                             onChange={(value) =>
                                                 updateSquad(
                                                     squadIndex,
@@ -559,6 +567,7 @@ export function SquadPresetEditor({
                                                     />
                                                     <IconSelect
                                                         defaultValue={role.icon}
+                                                        gameId={gameId}
                                                         onChange={(value) =>
                                                             updateRole(
                                                                 squadIndex,

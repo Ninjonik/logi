@@ -575,6 +575,8 @@ export type SquadPresetSquad = {
 export type SquadPreset = {
     id: string
     name: string
+    /** Missing values are legacy Hell Let Loose presets. */
+    gameId?: GameId
     squads: SquadPresetSquad[]
     guildId: string
     createdAt: Timestamp
@@ -604,6 +606,8 @@ export type Roster = {
     id: string
     eventId: string
     guildId: string
+    /** Missing values are legacy Hell Let Loose rosters. */
+    gameId?: GameId
     squadPresetId?: string
     squads: RosterSquad[]
     reservePlayerIds: string[]

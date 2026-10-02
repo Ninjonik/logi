@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { SquadPresetEditor } from "@/components/app/squad-preset-editor"
+import { isGameId, resolveGameScope } from "@/domain/games/game"
 import { getSquadPresetMetadata } from "@/lib/server-metadata"
 import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
@@ -18,12 +19,16 @@ export function generateStaticParams() {
 
 export default async function SquadPresetDetailPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string; presetId: string }>
+    searchParams: Promise<{ game?: string }>
 }) {
     const { locale, serverId, presetId } = await params
+    const { game } = await searchParams
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const context = await getServerContext(serverId)
+    const selectedGame = isGameId(game) ? game : undefined
+    const context = await getServerContext(serverId, selectedGame ?? "all")
     if (!context) return null
     const { squadPresets, canAdmin, groups = [] } = context
     const preset = squadPresets.find((item) => item.id === presetId)
@@ -46,6 +51,7 @@ export default async function SquadPresetDetailPage({
                     serverId={serverId}
                     locale={locale}
                     presetId={preset.id}
+                    gameId={resolveGameScope(preset.gameId)}
                 />
             </div>
         </>
