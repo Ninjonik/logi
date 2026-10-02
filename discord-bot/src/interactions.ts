@@ -160,7 +160,6 @@ type PlatformEmojiMap = Partial<
 type PlayerSearchResult = {
     playerId: string
     playerName: string
-    sourceLabel: string
     platform: "steam" | "epic" | "xbox" | "playstation" | "other"
 }
 
@@ -1873,7 +1872,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 results: results.map((result) => ({
                     playerId: result.playerId,
                     playerName: result.playerName,
-                    description: `${result.playerId} • ${result.sourceLabel}`,
+                    description: result.playerId,
                     emoji:
                         result.platform === "other"
                             ? undefined
@@ -2126,7 +2125,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 return extractPlayerSearchResults(body).map((item) => ({
                     playerId: item.playerId,
                     playerName: item.playerName,
-                    sourceLabel: new URL(server.url).hostname,
                     platform: detectPlatformFromStatsId(item.playerId),
                 }))
             })
