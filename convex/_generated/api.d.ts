@@ -13,6 +13,8 @@ import type * as articles from "../articles.js";
 import type * as calendarFeed from "../calendarFeed.js";
 import type * as competitions from "../competitions.js";
 import type * as crons from "../crons.js";
+import type * as dashboardSessionStore from "../dashboardSessionStore.js";
+import type * as dashboardSessions from "../dashboardSessions.js";
 import type * as discordConfig from "../discordConfig.js";
 import type * as discordMemberAccessStore from "../discordMemberAccessStore.js";
 import type * as discordMembership from "../discordMembership.js";
@@ -68,6 +70,7 @@ import type * as serverSetup from "../serverSetup.js";
 import type * as signupActivity from "../signupActivity.js";
 import type * as squadPresets from "../squadPresets.js";
 import type * as sso from "../sso.js";
+import type * as ssoTokenStore from "../ssoTokenStore.js";
 import type * as stratmaps from "../stratmaps.js";
 import type * as topicPresets from "../topicPresets.js";
 import type * as uploads from "../uploads.js";
@@ -78,6 +81,7 @@ import type * as warconReads from "../warconReads.js";
 import type * as webhookDispatcher from "../webhookDispatcher.js";
 import type * as webhookQueue from "../webhookQueue.js";
 import type * as webhooks from "../webhooks.js";
+import type * as websiteEventCommands from "../websiteEventCommands.js";
 
 import type {
   ApiFromModules,
@@ -91,6 +95,8 @@ declare const fullApi: ApiFromModules<{
   calendarFeed: typeof calendarFeed;
   competitions: typeof competitions;
   crons: typeof crons;
+  dashboardSessionStore: typeof dashboardSessionStore;
+  dashboardSessions: typeof dashboardSessions;
   discordConfig: typeof discordConfig;
   discordMemberAccessStore: typeof discordMemberAccessStore;
   discordMembership: typeof discordMembership;
@@ -146,6 +152,7 @@ declare const fullApi: ApiFromModules<{
   signupActivity: typeof signupActivity;
   squadPresets: typeof squadPresets;
   sso: typeof sso;
+  ssoTokenStore: typeof ssoTokenStore;
   stratmaps: typeof stratmaps;
   topicPresets: typeof topicPresets;
   uploads: typeof uploads;
@@ -156,6 +163,7 @@ declare const fullApi: ApiFromModules<{
   webhookDispatcher: typeof webhookDispatcher;
   webhookQueue: typeof webhookQueue;
   webhooks: typeof webhooks;
+  websiteEventCommands: typeof websiteEventCommands;
 }>;
 
 /**

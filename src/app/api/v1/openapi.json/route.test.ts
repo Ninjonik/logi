@@ -38,6 +38,40 @@ test("Warcon reads document every view, an explicit grant and typed player data"
 
 import { GET } from "./route"
 
+test("actor event commands document two simultaneous credentials and durable revision-safe writes", async () => {
+    const document = await (await GET()).json()
+    const command = document.paths["/clan/event-commands"].post
+    assert.deepEqual(command.security, [{ clanApiKey: [], ssoActorToken: [] }])
+    assert.match(command.description, /at most 60 seconds/)
+    assert.match(command.description, /without a time expiry/)
+    assert.match(command.description, /unknown outcome/)
+    for (const code of [
+        "200",
+        "201",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409",
+        "429",
+        "503",
+    ])
+        assert.ok(command.responses[code])
+    assert.equal(
+        document.components.securitySchemes.ssoActorToken.name,
+        "X-Logi-Actor-Token"
+    )
+    assert.equal(
+        document.components.schemas.WebsiteEventReceipt.additionalProperties,
+        false
+    )
+    assert.equal(
+        document.components.schemas.WebsiteEventEditor.additionalProperties,
+        false
+    )
+    assert.ok(document.paths["/clan/event-commands/{eventId}"].get)
+})
+
 test("generic event schemas exclude internal reviewed result storage", async () => {
     const document = await (await GET()).json()
     const schema = document.components.schemas.ClanEventsDocument

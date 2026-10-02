@@ -20,6 +20,10 @@ import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
+import {
+    websiteEventCommandPaths,
+    websiteEventCommandSchemas,
+} from "@/lib/api/website-event-command-openapi"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
 const summaryResponseSchemas = {
@@ -1686,6 +1690,7 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                 schemas: {
                     ...generatedOpenApiSchemas,
                     ...summaryResponseSchemas,
+                    ...websiteEventCommandSchemas,
                 },
                 securitySchemes: {
                     clanApiKey: {
@@ -1693,11 +1698,18 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                         scheme: "bearer",
                         bearerFormat: "logi API key",
                         description:
-                            "Send `Authorization: Bearer YOUR_API_KEY`. API keys are scoped to one clan and revoked keys are rejected. Optional readAccess restricts resources and games and forbids every write; x-logi-read-access describes each operation. No readAccess means legacy full access.",
+                            "Send `Authorization: Bearer YOUR_API_KEY`. API keys are scoped to one clan and revoked keys are rejected. Optional readAccess restricts resources and games and forbids generic writes; x-logi-read-access describes each read. Only the separate actor-backed event-commands boundary accepts an explicit writeAccess grant together with an SSO actor token. No readAccess means legacy access to generic routes, never an event-commands grant.",
+                    },
+                    ssoActorToken: {
+                        type: "apiKey",
+                        in: "header",
+                        name: "X-Logi-Actor-Token",
+                        description:
+                            "Current opaque SSO access token for this application, subject, central session and guild. Send only from the website backend together with its explicitly permitted service key.",
                     },
                 },
             },
-            paths,
+            paths: { ...paths, ...websiteEventCommandPaths },
         },
         { headers: { "Cache-Control": "no-store" } }
     )

@@ -10,6 +10,7 @@ import { apiKeyReadAccess } from "./apiKeyValidators"
 import { v } from "convex/values"
 
 const users = defineTable({
+    sessionVersion: v.optional(v.number()),
     discordId: v.optional(v.string()),
     id: v.optional(v.string()),
     name: v.string(),
@@ -544,6 +545,17 @@ export default defineSchema({
         .index("expiresAt", ["expiresAt"]),
     users,
     guildGames,
+    dashboardSessions: defineTable({
+        sid: v.string(),
+        subject: v.string(),
+        userRecordId: v.id("users"),
+        userSessionVersion: v.number(),
+        createdAt: v.number(),
+        expiresAt: v.number(),
+        revokedAt: v.optional(v.number()),
+    })
+        .index("sid", ["sid"])
+        .index("expiresAt", ["expiresAt"]),
     ssoApplications: defineTable({
         guildId: v.string(),
         clientId: v.string(),
@@ -558,6 +570,12 @@ export default defineSchema({
         .index("clientId", ["clientId"])
         .index("guildId", ["guildId"]),
     ssoAuthorizationCodes: defineTable({
+        applicationRecordId: v.optional(v.id("ssoApplications")),
+        clientSecretHash: v.optional(v.string()),
+        userRecordId: v.optional(v.id("users")),
+        sessionId: v.optional(v.string()),
+        nonce: v.optional(v.string()),
+        scope: v.optional(v.string()),
         codeHash: v.string(),
         clientId: v.string(),
         redirectUri: v.string(),
@@ -566,14 +584,23 @@ export default defineSchema({
         codeChallengeMethod: v.string(),
         expiresAt: v.number(),
         usedAt: v.optional(v.number()),
-    }).index("codeHash", ["codeHash"]),
+    })
+        .index("codeHash", ["codeHash"])
+        .index("expiresAt", ["expiresAt"]),
     ssoAccessTokens: defineTable({
+        applicationRecordId: v.optional(v.id("ssoApplications")),
+        clientSecretHash: v.optional(v.string()),
+        userRecordId: v.optional(v.id("users")),
+        sessionId: v.optional(v.string()),
+        scope: v.optional(v.string()),
         tokenHash: v.string(),
         clientId: v.string(),
         userId: v.string(),
         expiresAt: v.number(),
         revokedAt: v.optional(v.number()),
-    }).index("tokenHash", ["tokenHash"]),
+    })
+        .index("tokenHash", ["tokenHash"])
+        .index("expiresAt", ["expiresAt"]),
     guilds: defineTable({
         discordId: v.optional(v.string()),
         id: v.optional(v.string()),
@@ -1302,9 +1329,63 @@ export default defineSchema({
         lastUsedAt: v.optional(v.string()),
         revokedAt: v.optional(v.string()),
         readAccess: v.optional(apiKeyReadAccess),
+        writeAccess: v.optional(
+            v.object({
+                resources: v.array(v.literal("event-commands")),
+                gameIds: v.array(
+                    v.union(v.literal("hell_let_loose"), v.literal("wardogs"))
+                ),
+            })
+        ),
     })
         .index("guildId", ["guildId"])
         .index("keyHash", ["keyHash"]),
+    websiteEventPolicies: defineTable({
+        applicationRecordId: v.id("ssoApplications"),
+        apiKeyId: v.id("apiKeys"),
+        guildId: v.string(),
+        enabled: v.boolean(),
+        games: v.array(
+            v.object({
+                gameId: v.union(
+                    v.literal("hell_let_loose"),
+                    v.literal("wardogs")
+                ),
+                roleIds: v.array(v.string()),
+            })
+        ),
+        version: v.string(),
+        updatedAt: v.string(),
+        updatedBy: v.string(),
+    })
+        .index("applicationRecordId", ["applicationRecordId"])
+        .index("apiKeyId", ["apiKeyId"])
+        .index("guildId", ["guildId"]),
+    websiteEventCommandReceipts: defineTable({
+        applicationRecordId: v.id("ssoApplications"),
+        apiKeyId: v.id("apiKeys"),
+        clientId: v.string(),
+        guildId: v.string(),
+        subject: v.string(),
+        gameId: v.union(v.literal("hell_let_loose"), v.literal("wardogs")),
+        idempotencyKey: v.string(),
+        bodyHash: v.string(),
+        operation: v.union(
+            v.literal("create"),
+            v.literal("update"),
+            v.literal("cancel")
+        ),
+        eventId: v.id("events"),
+        revision: v.string(),
+        createdAt: v.string(),
+    })
+        .index("application_subject_game_key", [
+            "applicationRecordId",
+            "subject",
+            "gameId",
+            "idempotencyKey",
+        ])
+        .index("guildId", ["guildId"]),
     apiRateLimitBuckets: defineTable({
         bucket: v.string(),
         resetAt: v.number(),

@@ -72,6 +72,10 @@ Create a private `.env.local` file at the repository root. Do not commit it. The
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Discord OAuth sign-in                                           |
 | `DISCORD_REDIRECT_URI` or `SITE_URL`         | OAuth callback and public site URLs                             |
 | `JWT_SECRET`                                 | Dashboard session signing                                       |
+| `SITE_URL`                                   | Fixed dashboard/OIDC issuer origin, without a trailing slash    |
+| `LOGI_SSO_ENABLED`                           | Explicit opt-in for the optional SSO provider in Next.js and Convex; disabled unless `true` |
+| `LOGI_SSO_PRIVATE_JWK`                       | Operator-managed private RSA JWK with a `kid`, only in Next.js; its public counterpart is exposed at `/api/sso/jwks` |
+| `LOGI_SSO_ALLOW_LOOPBACK_HTTP`               | Development-only opt-in for explicit localhost/127.0.0.1/IPv6 loopback issuer and callbacks; ordinary HTTP remains rejected |
 | `INTERNAL_AUTH_SECRET`                       | Shared secret for trusted dashboard/bot-to-Convex operations    |
 | `DISCORD_BOT_TOKEN`                          | Required when running the Discord bot                           |
 | `DISCORD_SUPPORT_URL`                         | Public Discord support-server invite shown in Logi navigation   |
@@ -83,6 +87,12 @@ Start the dashboard:
 ```bash
 npm run dev
 ```
+
+Dashboard sign-in now creates a durable session in Convex. `SITE_URL`, `JWT_SECRET`
+and matching `INTERNAL_AUTH_SECRET` must be configured before sign-in. A coordinated
+upgrade requires one re-login for existing dashboard users. The optional SSO
+provider remains disabled until separately configured and qualified; see the
+[provider contract and rollout](./docs/integrations/website/sso-provider-contract.md).
 
 Start the dashboard and bot together:
 

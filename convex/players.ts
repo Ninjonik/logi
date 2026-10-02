@@ -1,5 +1,6 @@
 import { getDefaultWorkspaceCandidatesFromMemberships } from "../src/domain/workspaces/default-workspace"
 import { revokePlatformIdentity } from "./platformIdentityStore"
+import { invalidateUserSessions } from "./dashboardSessionStore"
 import { matchesGameScope } from "../src/domain/games/game"
 import type { MutationCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
@@ -1240,8 +1241,11 @@ export const linkImportedDiscordProfile = mutation({
                 existingDiscordUser._id !== importedUser._id)
         ) {
             await revokePlatformIdentity(ctx, importedUser._id)
+            await invalidateUserSessions(ctx, importedUser._id)
             if (existingDiscordUser)
                 await revokePlatformIdentity(ctx, existingDiscordUser._id)
+            if (existingDiscordUser)
+                await invalidateUserSessions(ctx, existingDiscordUser._id)
         }
 
         if (
@@ -1328,6 +1332,8 @@ export const mergeUsers = mutation({
         const secondaryStableId = getUserStableId(secondaryUser)
         await revokePlatformIdentity(ctx, primaryUser._id)
         await revokePlatformIdentity(ctx, secondaryUser._id)
+        await invalidateUserSessions(ctx, primaryUser._id)
+        await invalidateUserSessions(ctx, secondaryUser._id)
 
         const mergedPlatformIds = mergeUniqueStrings(
             normalizePlatformIds(primaryUser.platformIds),

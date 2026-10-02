@@ -1,14 +1,20 @@
-import { NextResponse } from "next/server"
-
-import { clearSessionToken, getSession } from "@/lib/auth"
-import { revokeSsoTokensForUser } from "@/lib/sso-server"
-
-export async function POST() {
-    const session = await getSession()
-    if (session) await revokeSsoTokensForUser(session.sub)
-    await clearSessionToken()
-    return NextResponse.json(
-        { ok: true },
-        { headers: { "cache-control": "no-store" } }
-    )
+import { getSsoProvider } from "@/lib/gateways/sso-provider"
+import { ssoError, ssoHeaders } from "@/lib/api/sso-routes"
+import { clearSessionToken } from "@/lib/auth"
+import { getSiteUrl } from "@/lib/env"
+// Same-origin Logi UI operation, not an OIDC RP-initiated logout endpoint.
+export async function POST(request: Request) {
+    try {
+        await getSsoProvider()
+    } catch {
+        return ssoError("temporarily_unavailable", 503)
+    }
+    if (request.headers.get("origin") !== new URL(getSiteUrl()).origin)
+        return ssoError("invalid_request", 403)
+    try {
+        await clearSessionToken(true)
+        return Response.json({ ok: true }, { headers: ssoHeaders })
+    } catch {
+        return ssoError("temporarily_unavailable", 503)
+    }
 }

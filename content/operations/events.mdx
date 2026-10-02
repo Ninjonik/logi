@@ -9,6 +9,27 @@ import { Callout, Steps, Tabs } from "nextra/components"
 
 Events are the central schedule for a server. They can represent a general community event, a match, or another planned activity. Managers create and edit events; members use them to understand timing and respond when sign-up is enabled.
 
+## Connected clan websites
+
+A configured clan website can create and update the same native Logi event.
+Changes made in Logi or Discord are then available to the website through its
+event synchronization. Website publication remains a separate editorial choice.
+
+Website event editing requires a current Logi sign-in and an explicitly allowed
+Discord role for the selected game. Signing in alone does not grant access. If
+membership cannot be verified or another editor changed the event, the website
+must refresh the information before accepting a new edit.
+
+The website command supports match or training names, descriptions, maps, sides
+and schedule times. Updates and cancellation are available before meeting start.
+Cancelling uses Logi's existing early-conclusion behavior and awards no attendance
+points. Discord settings, rosters and result confirmation remain managed in
+their dedicated Logi workflows. An event created from a website does not enable
+clan pings or forum creation automatically.
+
+Operators can use the [website event command contract](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/event-commands.md)
+to configure a dedicated application/key policy and per-game role allowlist.
+
 ## Create an event (manager)
 
 <Steps>
