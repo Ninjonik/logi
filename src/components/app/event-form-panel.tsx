@@ -223,6 +223,18 @@ function resolveTrainingEndTime(values: EventInput, timezone: string) {
     return new Date(meetingStartMs + 90 * 60 * 1000).toISOString()
 }
 
+function resolveMatchEndTime(values: EventInput, timezone: string) {
+    const gameStart = fromDateTimeLocalInTimeZone(
+        values.gameStart ?? values.meetingStart,
+        timezone
+    )
+    const gameStartMs = new Date(gameStart).getTime()
+    if (!Number.isFinite(gameStartMs)) return gameStart
+    return new Date(
+        gameStartMs + Number(values.durationMinutes) * 60 * 1000
+    ).toISOString()
+}
+
 function getAllowedSignupStatusLabel(
     status: "recruit" | "member" | "reserve_member" | "mercenary",
     dictionary: Dictionary
@@ -575,6 +587,9 @@ export function EventFormPanel({
                 event.eventInfoChannelId ??
                 (createMode ? (discordConfig?.eventInfoChannelId ?? "") : ""),
             meetingChannelId: event.meetingChannelId ?? "",
+            createSquadVoiceChannels: event.createSquadVoiceChannels ?? false,
+            squadVoiceCategoryId: event.squadVoiceCategoryId ?? "",
+            durationMinutes: event.durationMinutes ?? 90,
             requiredRoleIds: event.requiredRoleIds,
             rewardRoleIds: event.rewardRoleIds,
             server: event.server ?? "",
@@ -650,6 +665,8 @@ export function EventFormPanel({
         metadata?.channels?.filter(
             (channel) => channel.type === 2 || channel.type === 13
         ) ?? []
+    const categoryChannels =
+        metadata?.channels?.filter((channel) => channel.type === 4) ?? []
     const announcementChannels =
         metadata?.channels?.filter(
             (channel) => channel.type === 0 || channel.type === 5
@@ -875,6 +892,7 @@ export function EventFormPanel({
                 values.meetingStart,
                 timezone
             ),
+            durationMinutes: values.durationMinutes,
             gameStart:
                 values.kind === "match"
                     ? fromDateTimeLocalInTimeZone(
@@ -887,12 +905,7 @@ export function EventFormPanel({
                       ),
             gameEnd:
                 values.kind === "match"
-                    ? fromDateTimeLocalInTimeZone(
-                          values.gameEnd ??
-                              values.gameStart ??
-                              values.meetingStart,
-                          timezone
-                      )
+                    ? resolveMatchEndTime(values, timezone)
                     : resolveTrainingEndTime(values, timezone),
             createForumChannel:
                 values.kind === "match" ? values.createForumChannel : false,
@@ -922,6 +935,8 @@ export function EventFormPanel({
                 values.kind === "match"
                     ? values.eventInfoChannelId || undefined
                     : undefined,
+            createSquadVoiceChannels: values.createSquadVoiceChannels,
+            squadVoiceCategoryId: values.squadVoiceCategoryId || undefined,
             pingClan: values.pingMode === "clan",
             pingRoleIds: values.pingMode === "roles" ? values.pingRoleIds : [],
         }
@@ -2286,6 +2301,77 @@ export function EventFormPanel({
                             </div>
                         ) : null}
                         <div className="border-border/60 rounded-xl border p-4 md:col-span-2">
+                            <div className="mb-4 grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <FieldLabel
+                                        label={dictionary.event.durationMinutes}
+                                    />
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={1440}
+                                        disabled={!canEdit}
+                                        {...form.register("durationMinutes")}
+                                        className="rounded-xl"
+                                    />
+                                    <p className="text-muted-foreground text-sm">
+                                        {
+                                            dictionary.event.fields
+                                                .conclusionReserveHelp
+                                        }
+                                    </p>
+                                </div>
+                                <div className="space-y-3 pt-7">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <Label htmlFor="create-squad-voice-channels">
+                                            {
+                                                dictionary.event.fields
+                                                    .createSquadVoiceChannels
+                                            }
+                                        </Label>
+                                        <Controller
+                                            control={form.control}
+                                            name="createSquadVoiceChannels"
+                                            render={({ field }) => (
+                                                <Switch
+                                                    id="create-squad-voice-channels"
+                                                    checked={field.value}
+                                                    onCheckedChange={
+                                                        field.onChange
+                                                    }
+                                                    disabled={!canEdit}
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                    {form.watch("createSquadVoiceChannels") ? (
+                                        <Controller
+                                            control={form.control}
+                                            name="squadVoiceCategoryId"
+                                            render={({ field }) => (
+                                                <DiscordEntitySelect
+                                                    value={
+                                                        field.value || undefined
+                                                    }
+                                                    onChange={(value) =>
+                                                        field.onChange(
+                                                            value ?? ""
+                                                        )
+                                                    }
+                                                    options={categoryChannels}
+                                                    placeholder={
+                                                        dictionary.event.fields
+                                                            .squadVoiceCategory
+                                                    }
+                                                    noneLabel={
+                                                        dictionary.shared.notSet
+                                                    }
+                                                />
+                                            )}
+                                        />
+                                    ) : null}
+                                </div>
+                            </div>
                             {canEdit && createMode ? (
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>

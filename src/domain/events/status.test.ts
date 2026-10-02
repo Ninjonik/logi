@@ -87,7 +87,7 @@ test("deriveEventStatus returns closed after registration ends but before the st
     )
 })
 
-test("deriveEventStatus returns concluded at game end and preserves explicit concluded state", () => {
+test("deriveEventStatus concludes after the 15-minute reserve and preserves explicit concluded state", () => {
     assert.equal(
         deriveEventStatus(
             {
@@ -95,7 +95,7 @@ test("deriveEventStatus returns concluded at game end and preserves explicit con
                 meetingStart: "2026-01-01T12:00:00.000Z",
                 gameEnd: "2026-01-01T14:00:00.000Z",
             },
-            new Date("2026-01-01T14:00:00.000Z")
+            new Date("2026-01-01T14:15:00.000Z")
         ),
         "concluded"
     )

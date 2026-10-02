@@ -13,6 +13,7 @@ const INTERNAL_AUTH_SECRET =
 function assertSecret(secret: string) {
     if (secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized.")
 }
+const EVENT_CONCLUSION_RESERVE_MS = 15 * 60 * 1000
 
 export const claimDue = mutation({
     args: { secret: v.string(), limit: v.optional(v.number()) },
@@ -35,6 +36,7 @@ export const claimDue = mutation({
                 | "close-registration"
                 | "registration-start"
                 | "start-event"
+                | "create-squad-voice-channels"
                 | "conclude-event"
                 | "attendance-reminder"
                 | "signup-reminder"
@@ -192,7 +194,21 @@ export const backfillMissing = mutation({
                     : []),
                 ["close-registration", event.registrationEnd],
                 ["start-event", new Date(startAtMs).toISOString()],
-                ["conclude-event", event.gameEnd],
+                ...(event.createSquadVoiceChannels
+                    ? [
+                          [
+                              "create-squad-voice-channels",
+                              event.meetingStart,
+                          ] as const,
+                      ]
+                    : []),
+                [
+                    "conclude-event",
+                    new Date(
+                        new Date(event.gameEnd).getTime() +
+                            EVENT_CONCLUSION_RESERVE_MS
+                    ).toISOString(),
+                ],
                 ...[24, 18, 12, 6].flatMap((hours) => {
                     const dueAt = getAttendanceReminderDueAt(
                         event.meetingStart,
@@ -220,7 +236,22 @@ export const backfillMissing = mutation({
                 })(),
             ] as const
             for (const [kind, dueAt] of deadlines) {
-                if (existingJobs.some((job) => job.kind === kind)) continue
+                const existing = existingJobs.find((job) => job.kind === kind)
+                if (existing) {
+                    // Older deployments scheduled conclusion at game end. Move
+                    // that durable job into the new reserve window on startup.
+                    if (
+                        kind === "conclude-event" &&
+                        existing.status === "pending" &&
+                        existing.dueAt !== dueAt
+                    ) {
+                        await ctx.db.patch(existing._id, {
+                            dueAt,
+                            updatedAt: now,
+                        })
+                    }
+                    continue
+                }
                 if (
                     !Number.isFinite(new Date(dueAt).getTime()) ||
                     new Date(dueAt).getTime() < nowDate.getTime()
@@ -232,6 +263,7 @@ export const backfillMissing = mutation({
                         | "close-registration"
                         | "registration-start"
                         | "start-event"
+                        | "create-squad-voice-channels"
                         | "conclude-event"
                         | "attendance-reminder"
                         | "signup-reminder",

@@ -122,6 +122,7 @@ export const gameDiscordOverridesValidator = v.object({
     eventInfoChannelId: v.optional(v.string()),
     forumCategoryId: v.optional(v.string()),
     meetingChannelId: v.optional(v.string()),
+    squadVoiceCategoryId: v.optional(v.string()),
     playerStatsServers: v.optional(v.array(playerStatsServerValidator)),
     membershipSettings: v.optional(membershipSettingsValidator),
     membershipPanelMessageId: v.optional(v.string()),

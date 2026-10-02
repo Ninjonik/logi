@@ -22,6 +22,9 @@ export type EventUpsertInput = {
     announcementChannelId?: string
     eventInfoChannelId?: string
     meetingChannelId?: string
+    createSquadVoiceChannels?: boolean
+    squadVoiceCategoryId?: string
+    durationMinutes?: number
     requiredRoleIds?: string[]
     rewardRoleIds?: string[]
     server?: string
@@ -77,6 +80,13 @@ export function buildEventBasePayload(input: EventUpsertInput) {
                 ? trimOptional(input.eventInfoChannelId)
                 : undefined,
         meetingChannelId: trimOptional(input.meetingChannelId),
+        createSquadVoiceChannels: Boolean(input.createSquadVoiceChannels),
+        squadVoiceCategoryId: trimOptional(input.squadVoiceCategoryId),
+        durationMinutes:
+            Number.isInteger(input.durationMinutes) &&
+            input.durationMinutes! > 0
+                ? input.durationMinutes
+                : 90,
         requiredRoleIds: normalizeOptionalArray(input.requiredRoleIds)
             .map((roleId) => roleId.trim())
             .filter(Boolean),

@@ -47,6 +47,7 @@ export async function saveDiscordConfig(input: {
     calendarCategories?: string[]
     forumCategoryId?: string
     meetingChannelId?: string
+    squadVoiceCategoryId?: string
     clanRoleId?: string
     dashboardAdminRoleId?: string
     playerStatsServers?: PlayerStatsServer[]
@@ -68,6 +69,7 @@ export async function saveDiscordConfig(input: {
         calendarCategories: input.calendarCategories,
         forumCategoryId: input.forumCategoryId,
         meetingChannelId: input.meetingChannelId,
+        squadVoiceCategoryId: input.squadVoiceCategoryId,
         clanRoleId: input.clanRoleId,
         dashboardAdminRoleId: input.dashboardAdminRoleId,
         playerStatsServers: input.playerStatsServers,

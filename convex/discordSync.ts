@@ -445,6 +445,7 @@ export const updateEventSyncState = mutation({
         lastRosterUpdatedAt: v.optional(v.string()),
         lastConfigUpdatedAt: v.optional(v.string()),
         lastCalendarSyncVersion: v.optional(v.string()),
+        squadVoiceChannelIds: v.optional(v.array(v.string())),
         lastSyncedAt: v.string(),
     },
     handler: async (ctx, args) => {
@@ -467,6 +468,7 @@ export const updateEventSyncState = mutation({
             lastRosterUpdatedAt: args.lastRosterUpdatedAt,
             lastConfigUpdatedAt: args.lastConfigUpdatedAt,
             lastCalendarSyncVersion: args.lastCalendarSyncVersion,
+            squadVoiceChannelIds: args.squadVoiceChannelIds,
             lastSyncedAt: args.lastSyncedAt,
             updatedAt: now,
         }

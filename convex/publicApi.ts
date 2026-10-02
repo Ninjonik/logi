@@ -1670,6 +1670,7 @@ export const mutateClanSettings = mutation({
         calendarChannelId: v.optional(v.union(v.string(), v.null())),
         forumCategoryId: v.optional(v.union(v.string(), v.null())),
         meetingChannelId: v.optional(v.union(v.string(), v.null())),
+        squadVoiceCategoryId: v.optional(v.union(v.string(), v.null())),
         clanRoleId: v.optional(v.union(v.string(), v.null())),
         dashboardAdminRoleId: v.optional(v.union(v.string(), v.null())),
     },
@@ -1701,6 +1702,7 @@ export const mutateClanSettings = mutation({
                 args.calendarChannelId,
                 args.forumCategoryId,
                 args.meetingChannelId,
+                args.squadVoiceCategoryId,
                 args.clanRoleId,
                 args.dashboardAdminRoleId,
             ].some((value) => value !== undefined)
@@ -1729,6 +1731,7 @@ export const mutateClanSettings = mutation({
                 "calendarChannelId",
                 "forumCategoryId",
                 "meetingChannelId",
+                "squadVoiceCategoryId",
                 "clanRoleId",
                 "dashboardAdminRoleId",
             ] as const

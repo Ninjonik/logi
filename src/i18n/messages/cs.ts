@@ -636,6 +636,7 @@ export const csMessages = {
         errorsChannelId: "ID kanálu pro chyby",
         calendarChannelId: "ID kanálu kalendáře",
         forumCategoryId: "ID forum kategorie",
+        squadVoiceCategoryId: "Výchozí kategorie hlasových kanálů čet",
         meetingChannelId: "ID hlasového kanálu pro sraz",
         clanRoleId: "ID klanové role",
         dashboardAdminRoleId: "ID role pro správu dashboardu",
@@ -1401,6 +1402,12 @@ export const csMessages = {
             pingMode: "Ping oznámení",
             pingRoleIds: "Role k upozornění",
             createForumChannel: "Vytvořit forum kanál",
+            createSquadVoiceChannels:
+                "Vytvořit hlasové kanály čet při začátku srazu",
+            squadVoiceCategory:
+                "Kategorie hlasových kanálů čet (prázdné použije výchozí)",
+            conclusionReserveHelp:
+                "Akce se automaticky uzavře 15 minut po skončení této délky.",
         },
         channelRoutingCreateHelp:
             "Začíná s předvolbou z nastavení klanu. Po vytvoření je volba uzamčená, aby Discord zprávy zůstaly stabilní.",

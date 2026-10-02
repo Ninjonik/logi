@@ -1,5 +1,7 @@
 import type { EventKind, EventLike, EventStatus } from "./types"
 
+export const EVENT_CONCLUSION_RESERVE_MINUTES = 15
+
 export function deriveEventStatus(
     event: {
         registrationEnd: string
@@ -22,7 +24,10 @@ export function deriveEventStatus(
         : meetingCountdownStart
     const gameEnd = new Date(event.gameEnd).getTime()
 
-    if (Number.isFinite(gameEnd) && currentTime >= gameEnd) {
+    if (
+        Number.isFinite(gameEnd) &&
+        currentTime >= gameEnd + EVENT_CONCLUSION_RESERVE_MINUTES * 60 * 1000
+    ) {
         return "concluded"
     }
     if (Number.isFinite(startingAt) && currentTime >= startingAt) {

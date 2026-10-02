@@ -74,12 +74,12 @@ attended.
 
 ## Event timeline and automation
 
-| Status       | When it applies                                                                                  | What changes for members                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Registration | Before the registration deadline                                                                 | Eligible people can sign up.                                                                                                   |
-| Closed       | After registration closes, before the event is starting                                          | New sign-ups are blocked.                                                                                                      |
-| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until game end | Sign-ups are normally blocked; training retains the exception above. Published-roster attendance acknowledgement is available. |
-| Concluded    | When a manager concludes it or when game end is reached during status reconciliation             | Discord event messages are removed, temporary event roles are cleaned up, and event scoring is resolved once.                  |
+| Status       | When it applies                                                                                                        | What changes for members                                                                                                               |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Registration | Before the registration deadline                                                                                       | Eligible people can sign up.                                                                                                           |
+| Closed       | After registration closes, before the event is starting                                                                | New sign-ups are blocked.                                                                                                              |
+| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until the duration plus reserve ends | Sign-ups are normally blocked; training retains the exception above. Published-roster attendance acknowledgement is available.         |
+| Concluded    | When a manager concludes it after the meeting has started, or 15 minutes after the planned duration ends               | Discord event messages are removed, temporary event roles and squad voice channels are cleaned up, and event scoring is resolved once. |
 
 The dashboard/bot background work reconciles time-based statuses; it is not a
 promise that every visual update happens at the exact second. Editing an event
@@ -105,6 +105,14 @@ An optional registration announcement start delays Discord registration messages
 event announcements, and match forum posts, without delaying calendar entries or
 Discord scheduled events. Events created before this option was added have no
 start time and continue to announce immediately.
+
+Events have a planned duration (90 minutes by default, including legacy
+events) and a 15-minute reserve before automatic conclusion. Managers may
+conclude an event at any time after its meeting start. An event can also create
+one temporary voice channel for each non-empty roster squad at meeting start.
+Enable this per event and select a category there, or leave the category empty
+to use the server's default squad-voice category. Those channels are removed
+when the event concludes.
 
 The bot creates temporary Attendees and Reserves roles for non-concluded
 events. Attending sign-ups and squad placements feed Attendees; roster reserves

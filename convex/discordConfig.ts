@@ -58,6 +58,7 @@ export const upsertConfig = mutation({
         calendarCategories: v.optional(calendarCategoriesValidator),
         forumCategoryId: v.optional(v.string()),
         meetingChannelId: v.optional(v.string()),
+        squadVoiceCategoryId: v.optional(v.string()),
         clanRoleId: v.optional(v.string()),
         dashboardAdminRoleId: v.optional(v.string()),
         playerStatsServers: v.optional(v.array(playerStatsServerValidator)),
@@ -88,6 +89,8 @@ export const upsertConfig = mutation({
                 .filter(Boolean),
             forumCategoryId: args.forumCategoryId?.trim() || undefined,
             meetingChannelId: args.meetingChannelId?.trim() || undefined,
+            squadVoiceCategoryId:
+                args.squadVoiceCategoryId?.trim() || undefined,
             clanRoleId: args.clanRoleId?.trim() || undefined,
             dashboardAdminRoleId:
                 args.dashboardAdminRoleId?.trim() || undefined,
