@@ -97,6 +97,32 @@ export async function authenticateClanRequestWith(
             { status: 401, headers }
         )
     if (
+        /^\/api\/v1\/clan\/warcon-data(\/|$)/.test(
+            new URL(request.url).pathname
+        )
+    ) {
+        headers["Cache-Control"] = "no-store"
+        if (
+            request.method !== "GET" ||
+            !isApiKeyReadAccess(authenticated.readAccess) ||
+            !allowsApiKeyRead(
+                authenticated.readAccess,
+                "warcon-data",
+                "wardogs"
+            )
+        )
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "insufficient_scope",
+                        message:
+                            "An explicit Warcon gameplay read grant is required.",
+                    },
+                },
+                { status: 403, headers }
+            )
+    }
+    if (
         /^\/api\/v1\/clan\/membership-summaries(\/|$)/.test(
             new URL(request.url).pathname
         )

@@ -12,7 +12,9 @@ import {
     integrationHealthSchema,
 } from "@/domain/game-data/contracts"
 import { membershipObservationSchema } from "@/domain/membership/observation"
+import { warconEnvelopeSchema } from "@/domain/game-data/warcon-contracts"
 import { clanResultSummarySchema } from "@/domain/api/result-summaries"
+import { warconQuerySchema } from "@/domain/game-data/warcon-query"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { NextResponse } from "next/server"
 import { z } from "zod"
@@ -20,6 +22,8 @@ import { z } from "zod"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
 const summaryResponseSchemas = {
+    WarconEnvelope: z.toJSONSchema(warconEnvelopeSchema),
+    WarconQuery: z.toJSONSchema(warconQuerySchema),
     MembershipObservation: z.toJSONSchema(membershipObservationSchema),
     IntegrationChange: z.toJSONSchema(integrationChangeSchema),
     IntegrationSyncRecord: z.toJSONSchema(syncRecordSchema),
@@ -1271,6 +1275,227 @@ paths["/clan/membership-summaries/{discordUserId}"] = {
     },
 }
 
+paths["/clan/warcon-data/{connectionId}"] = {
+    get: {
+        tags: ["Clan API — Game data"],
+        security: [{ clanApiKey: [] }],
+        summary: "Read Warcon gameplay data for one configured connection",
+        description:
+            "Requires explicit warcon-data and wardogs readAccess grants. Legacy keys are denied. Includes game display names and Steam IDs; never treat these as verified Logi identity or membership. Uses a Logi connection ID from server-snapshots, not the panel UUID or game join code. Only an enabled, matching guild/game/source is readable. Credential provisioning and connection enable/disable are operator/session-only operations. Live includes per-player K/D, cash, ping and separate status/player timestamps and freshness. Closed match detail is null for an unfinished or missing match. Kills exposes configured=false when the upstream feed is disabled; this API never enables it. Career requires a Warcon key restricted to exactly this one server, because upstream career otherwise aggregates its visible organisation. Unknown/admin fields are stripped. Always no-store to consumers. Logi shares a 10-second live cache, 15-second kills cache, 5-minute catalog/capabilities cache and 60-second cache for other views. Provider misses share a 30/minute/connection budget and a lease. Authorization and configuration are rechecked after fetch. On errors return 429/503, never stale data relabeled as live. See WarconQuery for the closed, view-specific parameter combinations: unknown, duplicate and inapplicable parameters are rejected. Warcon reads use polling and are not part of the changes/webhook feed; durable snapshots and reviewed results retain their existing change feed.",
+        "x-logi-query-schema": "#/components/schemas/WarconQuery",
+        parameters: [
+            {
+                name: "connectionId",
+                in: "path",
+                required: true,
+                schema: { type: "string" },
+            },
+            {
+                name: "game",
+                in: "query",
+                required: true,
+                schema: { type: "string", const: "wardogs" },
+            },
+            {
+                name: "view",
+                in: "query",
+                required: true,
+                schema: {
+                    type: "string",
+                    enum: warconQuerySchema.options.map(
+                        (option) => option.shape.view.value
+                    ),
+                },
+            },
+            {
+                name: "range",
+                in: "query",
+                description:
+                    "analytics: 24h (default), 7d, 30d; leaderboard: 7d, 30d (default), 90d, all",
+                schema: {
+                    type: "string",
+                    enum: ["24h", "7d", "30d", "90d", "all"],
+                },
+            },
+            {
+                name: "page",
+                in: "query",
+                description:
+                    "matches/leaderboard only; 50 upstream rows per page",
+                schema: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: 100000,
+                    default: 1,
+                },
+            },
+            {
+                name: "matchId",
+                in: "query",
+                description: "Required for view=match",
+                schema: { type: "string", pattern: "^[1-9][0-9]{0,14}$" },
+            },
+            {
+                name: "steamId",
+                in: "query",
+                description: "Required for view=career",
+                schema: { type: "string", pattern: "^7656119[0-9]{10}$" },
+            },
+            {
+                name: "sort",
+                in: "query",
+                description:
+                    "Leaderboard: kills, deaths, kd, perHour, playtime, seeded, matches, wins, winRate, cash. Players: lastSeen, firstSeen, minutes, sessions, kills, deaths, name.",
+                schema: { type: "string" },
+            },
+            {
+                name: "dir",
+                in: "query",
+                schema: {
+                    type: "string",
+                    enum: ["asc", "desc"],
+                    default: "desc",
+                },
+            },
+            {
+                name: "minMinutes",
+                in: "query",
+                description: "Leaderboard playtime floor",
+                schema: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 100000,
+                    default: 60,
+                },
+            },
+            {
+                name: "q",
+                in: "query",
+                description: "Seen-player name or Steam ID search",
+                schema: { type: "string", maxLength: 100 },
+            },
+            {
+                name: "since",
+                in: "query",
+                description:
+                    "Players: last N days, 0=all. Cash: ISO timestamp, defaults to last hour, upstream clamps to 24 hours and newest 3000 samples.",
+                schema: {
+                    oneOf: [
+                        { type: "integer", minimum: 0, maximum: 3650 },
+                        { type: "string", format: "date-time" },
+                    ],
+                },
+            },
+            {
+                name: "offset",
+                in: "query",
+                description: "Seen players only",
+                schema: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 1000000,
+                    default: 0,
+                },
+            },
+            {
+                name: "limit",
+                in: "query",
+                description: "Seen players: 1–100; kills: 1–200",
+                schema: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: 200,
+                    default: 50,
+                },
+            },
+            {
+                name: "map",
+                in: "query",
+                description:
+                    "Catalog map ID (for example Kavkazi), NOT the live display name (Bakurani). Required for alternators, optional for experiences.",
+                schema: { type: "string", pattern: "^[\\w .-]{1,100}$" },
+            },
+            {
+                name: "before",
+                in: "query",
+                description: "Kills cursor receipt timestamp",
+                schema: { type: "string", format: "date-time" },
+            },
+            {
+                name: "beforeTime",
+                in: "query",
+                description:
+                    "Kills cursor match-clock seconds, requires before",
+                schema: { type: "number", minimum: 0 },
+            },
+            {
+                name: "match",
+                in: "query",
+                description: "Kills match ID filter",
+                schema: { type: "string", pattern: "^[1-9][0-9]{0,14}$" },
+            },
+            ...["player", "killer", "victim"].map((name) => ({
+                name,
+                in: "query",
+                description: "Kills: exact Steam ID or part of name",
+                schema: { type: "string", maxLength: 100 },
+            })),
+            {
+                name: "cause",
+                in: "query",
+                description: "Kills weapon/vehicle tag",
+                schema: { type: "string", maxLength: 200 },
+            },
+            {
+                name: "kind",
+                in: "query",
+                description: "Kills only",
+                schema: {
+                    type: "string",
+                    enum: [
+                        "headshot",
+                        "teamKill",
+                        "suicide",
+                        "vehicle",
+                        "environment",
+                    ],
+                },
+            },
+            {
+                name: "minM",
+                in: "query",
+                description: "Kills minimum distance",
+                schema: { type: "integer", minimum: 0, maximum: 100000 },
+            },
+        ],
+        responses: {
+            ...responses,
+            "200": {
+                description:
+                    "Validated gameplay data, including provider timestamps",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/WarconEnvelope",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "503": {
+                description:
+                    "Provider or local storage unavailable; fixed error category only",
+                content: { "application/json": { schema: error } },
+            },
+        },
+    },
+}
+
 // Document every endpoint's effective permission boundary, including legacy-only reads.
 for (const [path, operations] of Object.entries(paths)) {
     if (!path.startsWith("/clan/")) continue
@@ -1312,7 +1537,7 @@ export async function GET() {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.6.0",
+                version: "1.7.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read

@@ -2,6 +2,7 @@
 
 import { gameDataSettingsSchema } from "@/domain/game-data/contracts"
 import { useCallback, useEffect, useState } from "react"
+import { WarconScoreboard } from "./warcon-scoreboard"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 import type { z } from "zod"
@@ -224,6 +225,14 @@ function Connections({ serverId, dictionary }: Props) {
                                     : t.never}
                             </p>
                         )}
+                        {health?.enabled &&
+                            snapshot?.provider === "wardogs_warcon" && (
+                                <WarconScoreboard
+                                    serverId={serverId}
+                                    connectionId={snapshot.id}
+                                    dictionary={dictionary}
+                                />
+                            )}
                         {health?.historyErrorCategory && (
                             <p role="status" className="text-sm">
                                 {t.historyError}:{" "}

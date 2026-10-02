@@ -1,5 +1,10 @@
 # Website capabilities and API map
 
+The [Warcon 0.11 handoff](../v0.11/README.md) adds fifteen typed gameplay views,
+live player scoreboards and completed Wardogs match collection. These reads need
+the new explicit `warcon-data` + `wardogs` grant; the existing snapshot grant does
+not include player rows. See the handoff for queries, freshness and proof.
+
 This is the consumer catalog for [PR #158](pr-handbook.md). Runtime OpenAPI version
 is **1.6.0** at `/api/v1/openapi.json`, with interactive `/api/v1/docs`. These are
 source contracts; the hosted instance must be checked during authorized deployment

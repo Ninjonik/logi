@@ -4,6 +4,7 @@ import {
     type DataSource,
     type ProviderHttp,
 } from "../../domain/game-data/contracts"
+import { allowsWarconUrl } from "../../domain/game-data/warcon-query"
 import { lookup } from "node:dns/promises"
 import { BlockList, isIP } from "node:net"
 import { request } from "node:https"
@@ -195,7 +196,9 @@ export function createProviderHttp(
             const url = new URL(path, source.origin)
             if (
                 url.origin !== new URL(source.origin).origin ||
-                !paths.includes(url.pathname) ||
+                !(source.provider === "wardogs_warcon"
+                    ? allowsWarconUrl(url, source.providerServerId)
+                    : paths.includes(url.pathname)) ||
                 url.hash ||
                 url.username ||
                 url.password
@@ -259,7 +262,9 @@ export function createProviderHttp(
                         }
                         if (
                             [304, 404].includes(response.status) &&
-                            source.provider === "wardogs_public_directory"
+                            (source.provider === "wardogs_public_directory" ||
+                                (source.provider === "wardogs_warcon" &&
+                                    response.status === 404))
                         )
                             return {
                                 status: response.status,

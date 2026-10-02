@@ -3,6 +3,7 @@ import { z } from "zod"
 export const providerSchema = z.enum([
     "hll_crcon",
     "wardogs_rcon",
+    "wardogs_warcon",
     "wardogs_public_directory",
 ])
 export const dataGameSchema = z.enum(["hell_let_loose", "wardogs"])
@@ -71,6 +72,16 @@ export const sourceSchema = z
             ctx.addIssue({
                 code: "custom",
                 message: "RCON credential reference required",
+            })
+        if (
+            value.provider === "wardogs_warcon" &&
+            (!value.secretRef ||
+                !z.uuid().safeParse(value.providerServerId).success)
+        )
+            ctx.addIssue({
+                code: "custom",
+                message:
+                    "Warcon requires a credential reference and panel server UUID",
             })
     })
 export type DataSource = z.infer<typeof sourceSchema>

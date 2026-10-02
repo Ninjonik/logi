@@ -82,8 +82,11 @@ export function projectHealth(value: StoredConnection, now: number) {
                 : new Date(value.nextAttemptAt).toISOString(),
         errorCategory: value.errorCategory,
         freshness: snapshot.freshness,
-        collectedSessions:
-            value.provider === "hll_crcon" ? (value.historyCount ?? 0) : null,
+        collectedSessions: ["hll_crcon", "wardogs_warcon"].includes(
+            value.provider
+        )
+            ? (value.historyCount ?? 0)
+            : null,
         lastHistorySuccessAt: value.historyLastSuccessAt ?? null,
         historyErrorCategory: value.historyErrorCategory ?? null,
     })

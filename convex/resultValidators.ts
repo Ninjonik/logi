@@ -2,6 +2,7 @@ import { v } from "convex/values"
 const gameDataProvider = v.union(
     v.literal("hll_crcon"),
     v.literal("wardogs_rcon"),
+    v.literal("wardogs_warcon"),
     v.literal("wardogs_public_directory")
 )
 const score = v.object({

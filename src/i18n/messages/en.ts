@@ -17,6 +17,21 @@ export const enMessages = {
         invalid: "Use valid Discord role IDs, with at most 100 roles per game.",
     },
     gameData: {
+        liveScoreboard: "Warcon live scoreboard",
+        scoreboardPolling:
+            "Refreshes every 15 seconds while open. Provider updates may lag.",
+        scoreboardError:
+            "The live scoreboard is unavailable. Retry after the provider recovers.",
+        scoreboardEmpty: "No players in the latest observation.",
+        scoreboardUnavailable: "No recent player observation is available.",
+        playerObservation: "Player observation",
+        joinCode: "Game join code",
+        player: "Player",
+        faction: "Faction",
+        kills: "Kills",
+        deaths: "Deaths",
+        cash: "Cash",
+        ping: "Ping (ms)",
         collectedSessions: "Collected sessions",
         historyObserved: "Last history import",
         historyError: "History collection",
@@ -104,6 +119,8 @@ export const enMessages = {
         empty: "No API keys have been created.",
         invalidPolicy: "Unrecognized restrictions; backend access is denied.",
         resourceLabels: {
+            "warcon-data":
+                "Warcon gameplay data (includes player names and Steam IDs)",
             "membership-summaries":
                 "Discord membership (separate policy required)",
             "server-snapshots": "Game server snapshots",

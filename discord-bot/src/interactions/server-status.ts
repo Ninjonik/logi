@@ -22,6 +22,7 @@ const gameNames = { hell_let_loose: "Hell Let Loose", wardogs: "Wardogs" }
 const sourceNames = {
     hll_crcon: "HLL CRCON",
     wardogs_rcon: "Wardogs RCON",
+    wardogs_warcon: "Wardogs Warcon",
     wardogs_public_directory: "[Wardog Servers](https://wardogservers.com)",
 }
 

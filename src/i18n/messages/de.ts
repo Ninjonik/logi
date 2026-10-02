@@ -18,6 +18,22 @@ export const deMessages = {
             "Verwende gültige Discord-Rollen-IDs, höchstens 100 Rollen pro Spiel.",
     },
     gameData: {
+        liveScoreboard: "Warcon Live-Scoreboard",
+        scoreboardPolling:
+            "Aktualisierung alle 15 Sekunden bei geöffneter Ansicht. Die Quelle kann verzögert sein.",
+        scoreboardError:
+            "Das Live-Scoreboard ist nicht verfügbar. Bitte später erneut versuchen.",
+        scoreboardEmpty:
+            "Bei der letzten Beobachtung waren keine Spieler verbunden.",
+        scoreboardUnavailable: "Keine aktuellen Spielerdaten verfügbar.",
+        playerObservation: "Spielerdaten vom",
+        joinCode: "Beitrittscode",
+        player: "Spieler",
+        faction: "Fraktion",
+        kills: "Kills",
+        deaths: "Tode",
+        cash: "Geld",
+        ping: "Ping (ms)",
         collectedSessions: "Erfasste Spiele",
         historyObserved: "Letzter Verlaufimport",
         historyError: "Verlauferfassung",
@@ -110,6 +126,7 @@ export const deMessages = {
         invalidPolicy:
             "Unbekannte Einschränkungen; der Backend-Zugriff wird verweigert.",
         resourceLabels: {
+            "warcon-data": "Warcon-Spieldaten (mit Spielernamen und Steam-IDs)",
             "membership-summaries":
                 "Discord-Mitgliedschaft (separate Freigabe erforderlich)",
             "server-snapshots": "Spielserver-Status",

@@ -80,7 +80,7 @@ export const configure = mutation({
                 ...(source ? { sourceFingerprint: fingerprint(source) } : {}),
                 etag: null,
             })
-            if (existing.provider === "hll_crcon")
+            if (["hll_crcon", "wardogs_warcon"].includes(existing.provider))
                 await resetHistory(ctx, existing._id, args.enabled)
             if (args.enabled)
                 await ctx.scheduler.runAfter(
@@ -105,7 +105,7 @@ export const configure = mutation({
             etag: null,
             createdAt: state.updatedAt,
         })
-        if (source.provider === "hll_crcon")
+        if (["hll_crcon", "wardogs_warcon"].includes(source.provider))
             await resetHistory(ctx, id, args.enabled)
         if (args.enabled)
             await ctx.scheduler.runAfter(

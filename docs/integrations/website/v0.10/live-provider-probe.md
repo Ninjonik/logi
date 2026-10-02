@@ -1,5 +1,10 @@
 # Live HLL CRCON and Warcon read probe — 2026-10-02
 
+**Follow-up delivered:** [Warcon 0.11](../v0.11/README.md) now implements the panel
+adapter, fifteen gameplay reads and the dashboard scoreboard. This report remains
+the original pre-implementation probe; see the newer
+[verification record](../v0.11/verification.md) for current acceptance and limits.
+
 Both operator-supplied credentials work against the supplied HTTPS origins.
 The unchanged Logi HLL collector can parse actual status, history pagination and
 a completed scoreboard. Warcon's panel API is readable with its organisation

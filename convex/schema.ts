@@ -1203,6 +1203,7 @@ export default defineSchema({
         provider: v.union(
             v.literal("hll_crcon"),
             v.literal("wardogs_rcon"),
+            v.literal("wardogs_warcon"),
             v.literal("wardogs_public_directory")
         ),
         providerServerId: v.string(),
@@ -1222,10 +1223,26 @@ export default defineSchema({
         historyCount: v.optional(v.number()),
         historyLastSuccessAt: v.optional(v.string()),
         historyErrorCategory: v.optional(v.union(gameDataError, v.null())),
+        warconReadWindowAt: v.optional(v.number()),
+        warconReadCount: v.optional(v.number()),
+        warconReadBlockedUntil: v.optional(v.number()),
     })
         .index("guildId", ["guildId"])
         .index("sourceRef", ["sourceRef"])
         .index("nextAttemptAt", ["nextAttemptAt"]),
+    warconReadCache: defineTable({
+        connectionId: v.id("gameDataConnections"),
+        queryJson: v.string(),
+        generation: v.number(),
+        fence: v.number(),
+        leaseUntil: v.number(),
+        cacheUntil: v.number(),
+        retryUntil: v.optional(v.number()),
+        retainUntil: v.number(),
+        envelopeJson: v.optional(v.string()),
+    })
+        .index("connection_query", ["connectionId", "queryJson"])
+        .index("connectionId", ["connectionId"]),
     gameDataHistoryRuns: defineTable({
         connectionId: v.id("gameDataConnections"),
         progress: gameDataHistoryProgress,
@@ -1243,7 +1260,7 @@ export default defineSchema({
     gameSessions: defineTable({
         connectionId: v.id("gameDataConnections"),
         guildId: v.string(),
-        gameId: v.literal("hell_let_loose"),
+        gameId: v.union(v.literal("hell_let_loose"), v.literal("wardogs")),
         externalId: v.string(),
         session: gameDataSession,
         complete: v.boolean(),

@@ -17,6 +17,21 @@ export const csMessages = {
         invalid: "Použijte platná ID rolí Discordu, nejvýše 100 rolí na hru.",
     },
     gameData: {
+        liveScoreboard: "Živý scoreboard Warconu",
+        scoreboardPolling:
+            "Při otevření se obnovuje každých 15 sekund. Zdroj může mít zpoždění.",
+        scoreboardError:
+            "Živý scoreboard není dostupný. Zkuste to po obnovení zdroje.",
+        scoreboardEmpty: "Při posledním měření nebyli připojeni žádní hráči.",
+        scoreboardUnavailable: "Aktuální údaje o hráčích nejsou dostupné.",
+        playerObservation: "Údaje o hráčích z",
+        joinCode: "Kód pro připojení do hry",
+        player: "Hráč",
+        faction: "Frakce",
+        kills: "Zabití",
+        deaths: "Úmrtí",
+        cash: "Peníze",
+        ping: "Ping (ms)",
         collectedSessions: "Načtené zápasy",
         historyObserved: "Poslední import historie",
         historyError: "Sběr historie",
@@ -102,6 +117,7 @@ export const csMessages = {
         empty: "Zatím nebyly vytvořeny žádné API klíče.",
         invalidPolicy: "Nerozpoznaná omezení; backend přístup zamítne.",
         resourceLabels: {
+            "warcon-data": "Herní data Warconu (včetně jmen hráčů a Steam ID)",
             "membership-summaries":
                 "Členství Discordu (vyžaduje samostatná pravidla)",
             "server-snapshots": "Stav herních serverů",

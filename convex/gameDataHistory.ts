@@ -82,7 +82,7 @@ export const claimNext = internalMutation({
             if (
                 !connection?.enabled ||
                 !source ||
-                source.provider !== "hll_crcon" ||
+                !["hll_crcon", "wardogs_warcon"].includes(source.provider) ||
                 JSON.stringify(source) !== connection.sourceFingerprint
             ) {
                 await ctx.db.patch(row._id, {
@@ -151,7 +151,7 @@ async function currentRun(
     if (
         !connection?.enabled ||
         connection.generation !== args.generation ||
-        connection.provider !== "hll_crcon"
+        !["hll_crcon", "wardogs_warcon"].includes(connection.provider)
     )
         return null
     const source = parseSources(process.env.LOGI_GAME_DATA_SOURCES).find(
@@ -165,7 +165,7 @@ async function currentRun(
 }
 const progressSchema = z.strictObject({
     page: z.number().int().min(1).max(1_000_000),
-    pendingIds: z.array(z.string().regex(/^\d{1,20}$/)).max(10),
+    pendingIds: z.array(z.string().regex(/^\d{1,20}$/)).max(50),
     nextPage: z.number().int().min(1).max(1_000_000).nullable(),
 })
 export const commit = internalMutation({
@@ -208,7 +208,7 @@ export const commit = internalMutation({
                     ...record,
                     connectionId: row.connectionId,
                     guildId: connection.guildId,
-                    gameId: "hell_let_loose",
+                    gameId: connection.gameId,
                     externalId: session.externalId,
                 })
                 count++

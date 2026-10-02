@@ -1,6 +1,38 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+test("Warcon reads require an explicit grant even for legacy keys", async () => {
+    for (const readAccess of [
+        undefined,
+        {
+            resources: ["server-snapshots"] as const,
+            gameIds: ["wardogs"] as const,
+        },
+    ]) {
+        const result = await authenticateClanRequestWith(
+            new Request(
+                "https://logi.test/api/v1/clan/warcon-data/connection?game=wardogs&view=live",
+                { headers: { authorization: "Bearer fixture" } }
+            ),
+            createDependencies({
+                authenticateKey: async () => ({
+                    guildId: "guild-1",
+                    ...(readAccess
+                        ? {
+                              readAccess: {
+                                  resources: [...readAccess.resources],
+                                  gameIds: [...readAccess.gameIds],
+                              },
+                          }
+                        : {}),
+                }),
+            })
+        )
+        assert.ok(isAuthError(result))
+        assert.equal(result.status, 403)
+    }
+})
+
 test("scoped HLL readers cannot use empty game tokens as an implicit default", async () => {
     for (const query of ["", "?game=", "?game=,"]) {
         const response = await authenticateClanRequestWith(

@@ -19,6 +19,7 @@ not a deployment or approval to activate optional Logi SSO.
 | What ran against a real local database and test Discord guild? | [Local runtime acceptance and remaining gaps](local-runtime-acceptance.md) |
 | What did the cumulative review fix, and where is the newest proof? | [Runtime review, current tests and actual browser screenshots](runtime-review.md) |
 | Do the supplied real CRCON/Warcon keys work, and what can we consume? | [Live provider read probe and Warcon API map](live-provider-probe.md) |
+| Is the Warcon adapter now implemented, including live players? | [Warcon 0.11: fifteen views, dashboard, website and history](../v0.11/README.md), [verification](../v0.11/verification.md) |
 | Where are the architecture boundaries and review findings? | [Cumulative review guide](review-guide.md), [review record](review.md) |
 | How is the feature configured, deployed and recovered? | [Activation sequence below](#activation-and-recovery), versioned contracts below |
 | What is still missing, and who owns it? | [Remaining work below](#remaining-work-and-owners) |
@@ -29,8 +30,11 @@ not override a later delivered milestone. The exact tested runtime source and
 fresh check results are pinned in the [latest evidence manifest](evidence/2026-09-30-review/manifest.json).
 
 The [October 2 live provider probe](live-provider-probe.md) adds actual HLL
-transport/parser compatibility and Warcon API read evidence. Warcon panel
-ingestion, continuous production collection and the consuming website remain open.
+transport/parser compatibility and Warcon API read evidence. The subsequent
+[Warcon 0.11 implementation](../v0.11/README.md) delivers panel ingestion and
+scoped gameplay reads. Continuous production collection and the consuming website
+remain activation/adoption work. The 0.11 verification record supersedes the
+earlier Warcon implementation gap without changing historical proof.
 
 ## System and ownership
 

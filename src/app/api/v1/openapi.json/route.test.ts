@@ -1,6 +1,26 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+test("Warcon reads document every view, an explicit grant and typed player data", async () => {
+    const document = await (await GET()).json()
+    const endpoint = document.paths["/clan/warcon-data/{connectionId}"]
+    assert.ok(endpoint?.get)
+    assert.deepEqual(Object.keys(endpoint), ["get"])
+    assert.match(endpoint.get.description, /Legacy keys are denied/)
+    assert.ok(
+        endpoint.get.parameters
+            .find((p: { name: string }) => p.name === "view")
+            .schema.enum.includes("live")
+    )
+    assert.equal(
+        document.components.schemas.WarconEnvelope.properties.result.oneOf
+            ?.length ??
+            document.components.schemas.WarconEnvelope.properties.result.anyOf
+                ?.length,
+        15
+    )
+})
+
 import { GET } from "./route"
 
 test("generic event schemas exclude internal reviewed result storage", async () => {
@@ -93,6 +113,7 @@ test("every clan operation documents runtime scope denial and its read-access re
             const allowed =
                 method === "get" &&
                 [
+                    "warcon-data",
                     "server-snapshots",
                     "integration-health",
                     "events",

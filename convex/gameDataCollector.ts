@@ -1,6 +1,11 @@
 "use node"
 
 import {
+    warconProvider,
+    readWarconSession,
+    readWarconSessionPage,
+} from "../src/infrastructure/game-data/warcon"
+import {
     ProviderError,
     type ClaimedConnection,
     type GameDataProvider,
@@ -22,6 +27,7 @@ import { internal } from "./_generated/api"
 const providers: Record<ClaimedConnection["provider"], GameDataProvider> = {
     hll_crcon: hllCrconProvider,
     wardogs_rcon: wardogsRconProvider,
+    wardogs_warcon: warconProvider,
     wardogs_public_directory: wardogsDirectoryProvider,
 }
 
@@ -83,8 +89,16 @@ export const collectHistoryDue = internalAction({
             now: Date.now,
         })
         try {
+            const readSession =
+                claim.connection.provider === "wardogs_warcon"
+                    ? readWarconSession
+                    : readHllSession
+            const readPage =
+                claim.connection.provider === "wardogs_warcon"
+                    ? readWarconSessionPage
+                    : readHllSessionPage
             if (claim.revisitId) {
-                const session = await readHllSession(
+                const session = await readSession(
                     claim.connection,
                     claim.revisitId,
                     http
@@ -100,10 +114,9 @@ export const collectHistoryDue = internalAction({
                 })
             } else {
                 await collectSessions(claim.progress, {
-                    readPage: (page) =>
-                        readHllSessionPage(claim.connection, page, http),
+                    readPage: (page) => readPage(claim.connection, page, http),
                     readSession: (id) =>
-                        readHllSession(claim.connection, id, http),
+                        readSession(claim.connection, id, http),
                     commit: (result) =>
                         ctx.runMutation(internal.gameDataHistory.commit, {
                             ...token,

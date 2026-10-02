@@ -326,10 +326,12 @@ The operator supplies the provider address and token privately before activation
 HLL CRCON supports current server data and historical match collection. Wardogs
 RCON supports current server data after checking its available functions. An
 optional Wardog Servers directory source provides public status with attribution.
+The **Wardogs Warcon** provider reads an existing Warcon panel, including live
+players and completed matches. It is distinct from a direct Wardogs RCON source.
 Select one source for a server; Logi does not silently replace it with another.
 
 Cards show players, map, last observation, data freshness and any provider error.
-HLL also shows the number of collected sessions and last successful history
+HLL and Warcon also show the number of collected sessions and last successful history
 import. Zero players is a known value; unknown is different. Old counts remain
 visible with their timestamp when a source fails. Data becomes stale after three
 minutes and unavailable after fifteen; disabling a source makes it unavailable
@@ -351,6 +353,36 @@ result. No game-server controls are provided by this screen or these API routes.
 Discord server managers can also use `/server-status` with a game to see a private
 summary of stored observations and their freshness. The command does not trigger
 collection; the full connection list stays in settings.
+
+### Warcon live scoreboard and website reads
+
+An enabled Warcon connection has a **Live Warcon scoreboard** panel. Expand it
+to see current players, faction scores, kills/deaths, K/D, cash, ping and the game
+join code. It refreshes every 15 seconds while open in a visible tab. Its refresh
+button requests a live view, which can reuse a shared ten-second cache.
+
+Player and status timestamps are separate. This live view becomes stale after
+45 seconds and unavailable after three minutes; unavailable player rows are
+hidden. These thresholds differ from the stored snapshot card above. Missing
+values are unknown, while a displayed zero is a measurement. Failed reads show
+an error instead of leaving a player table labeled as current.
+
+For the website, create a read-only key with the explicit **Warcon gameplay
+data** grant and **Wardogs** selected. Legacy full-access keys do not implicitly
+include it. The grant includes game display names and Steam IDs; only publish
+those according to your community's policy. Keep the key in your website backend.
+
+Read `/api/v1/clan/warcon-data/{connectionId}?game=wardogs&view=live`. Other views
+provide analytics, cash history, match pages/details, leaderboard, seen players,
+career, kills, catalogs, rotation and API health/capabilities. See the
+[Warcon integration guide](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.11/README.md)
+and [API documentation](/api/v1/docs) for parameters and permissions. Map filters
+use IDs from the catalog, which can differ from live display names.
+
+A disabled kill feed remains disabled; Logi does not turn it on. Imported matches
+and player observations remain unconfirmed and do not establish account ownership.
+The scoreboard and website API provide reads only. Ban lists, staff notes, private
+server configuration and administrative actions are outside this integration.
 
 ## Imports, performance, and helper data
 
