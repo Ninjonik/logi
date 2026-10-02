@@ -1,5 +1,10 @@
 # Verification and proof for PR #158
 
+**Live provider update, 2026-10-02:** [CRCON/Warcon read probe](live-provider-probe.md)
+verifies the supplied credentials, actual HLL transport/parser compatibility and
+Warcon panel reads. This extends provider evidence without a deployment or changes
+to the runtime; the full-suite/build checkpoint below remains September 30.
+
 **Latest cumulative review:** [Review, fixes and fresh runtime evidence](runtime-review.md)
 records 564 passing tests, successful typecheck/build, changed-file ESLint without
 errors, the fixed gateway crash, clean installations, actual browser screenshots

@@ -5,6 +5,11 @@ is **1.6.0** at `/api/v1/openapi.json`, with interactive `/api/v1/docs`. These a
 source contracts; the hosted instance must be checked during authorized deployment
 acceptance before relying on that version there.
 
+The [live CRCON/Warcon read probe](live-provider-probe.md) distinguishes data
+available from the actual providers from the resources currently exported by Logi.
+Warcon panel analytics/leaderboards are readable upstream but are not Logi API
+resources in this revision.
+
 ## What the website can build from Logi
 
 | Website capability | Logi data / flow | Website responsibility and limits |

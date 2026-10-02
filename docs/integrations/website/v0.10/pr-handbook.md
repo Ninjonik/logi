@@ -18,6 +18,7 @@ not a deployment or approval to activate optional Logi SSO.
 | Which tests actually ran, with what results? | [Verification and stored proof](verification-evidence.md) |
 | What ran against a real local database and test Discord guild? | [Local runtime acceptance and remaining gaps](local-runtime-acceptance.md) |
 | What did the cumulative review fix, and where is the newest proof? | [Runtime review, current tests and actual browser screenshots](runtime-review.md) |
+| Do the supplied real CRCON/Warcon keys work, and what can we consume? | [Live provider read probe and Warcon API map](live-provider-probe.md) |
 | Where are the architecture boundaries and review findings? | [Cumulative review guide](review-guide.md), [review record](review.md) |
 | How is the feature configured, deployed and recovered? | [Activation sequence below](#activation-and-recovery), versioned contracts below |
 | What is still missing, and who owns it? | [Remaining work below](#remaining-work-and-owners) |
@@ -26,6 +27,10 @@ Historical milestone documents describe their own checkpoint. This handbook and
 the PR body are the current overview; an earlier test count or “missing” row does
 not override a later delivered milestone. The exact tested runtime source and
 fresh check results are pinned in the [latest evidence manifest](evidence/2026-09-30-review/manifest.json).
+
+The [October 2 live provider probe](live-provider-probe.md) adds actual HLL
+transport/parser compatibility and Warcon API read evidence. Warcon panel
+ingestion, continuous production collection and the consuming website remain open.
 
 ## System and ownership
 
