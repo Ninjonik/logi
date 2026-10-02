@@ -27,7 +27,7 @@ not a deployment or approval to activate optional Logi SSO.
 Historical milestone documents describe their own checkpoint. This handbook and
 the PR body are the current overview; an earlier test count or “missing” row does
 not override a later delivered milestone. The exact tested runtime source and
-fresh check results are pinned in the [latest evidence manifest](evidence/2026-09-30-review/manifest.json).
+fresh check results are pinned in the [latest Warcon evidence manifest](../v0.11/evidence/2026-10-02-warcon/manifest.json).
 
 The [October 2 live provider probe](live-provider-probe.md) adds actual HLL
 transport/parser compatibility and Warcon API read evidence. The subsequent
@@ -67,7 +67,7 @@ role administrator. Reading data does not grant permission to publish it.
 | Events, training, signups, rosters, attendance | Existing Logi workflows reused; scoped website summaries added | [0.4](../v0.4/README.md); website does not become a second operational writer |
 | Read authority | Revocable resource/game grants and dashboard key provisioning | Default two summary grants; further resources require selection |
 | HLL collection | CRCON status, bounded session discovery, checkpointed private scoreboards | [0.5](../v0.5/README.md); no automatic event/player link from telemetry |
-| Wardogs collection | Capability-aware status or explicitly chosen public directory | One configured server/source initially; no history/player-list/control capability claimed |
+| Wardogs collection | Warcon live scoreboard, fifteen gameplay reads and completed sessions; direct RCON/directory alternatives remain | [0.11](../v0.11/README.md); explicit player-data grant, no server controls, no automatic result approval |
 | Website synchronization | Durable revisions, scope-bound cursors, atomic refetch, tombstones and retries | [0.6](../v0.6/README.md); website inbox/checkpoints still need implementation |
 | Discord membership | Exact Discord-subject observation, freshness and role allowlist | [0.7](../v0.7/README.md); no enumeration or automatic website admin grant |
 | Managed membership roles | Actor-backed queue, per-member leases, hierarchy checks, recovery and audit | [0.8](../v0.8/README.md); configured roles only, no general moderation API |
@@ -83,7 +83,15 @@ all six registered slash commands, plus button, modal and automatic workflows.
 
 ## Proof available in this PR
 
-Latest cumulative review: **564 tests passed, zero failed/skipped; typecheck and
+Latest Warcon extension: **592 tests passed, zero failed/skipped; typecheck and
+production build passed**. All fifteen views passed through local HTTP to actual
+Warcon; 33 HTTP checks and the separately runnable consumer smoke test passed.
+Changed TS/TSX lint has zero errors and one pre-existing warning. Three browser
+screenshots, exact source identities, cleanup and 19 hashed artifacts are in
+[Warcon verification](../v0.11/verification.md). Actual completed matches and
+nonempty kill events were unavailable; populated paths use synthetic evidence.
+
+The preceding September 30 cumulative review had **564 tests passed, zero failed/skipped; typecheck and
 production build passed** against isolated local Convex. Changed-file ESLint has
 **0 errors and 17 warnings** across 192 TS/TSX files. `npm run lint` now invokes
 ESLint correctly; repository-wide lint still has 140 errors and 142 warnings.
@@ -151,7 +159,7 @@ Exact compatibility notes live with each versioned contract.
 | W1/W3/W4: Logi adapter, projections, durable inbox/recovery, consent/publication adoption | Website backend | Not implemented by this Logi PR |
 | I2: website sessions and fresh game-scoped access decisions | Website identity/backend | Consumer implementation and acceptance remain open |
 | I4: optional Logi OIDC provider | Private provider coordination, then website owner | Not qualified for activation; sensitive findings/tests/remediation remain private |
-| Source credentials/origins, real CRCON/WDG behavior, Steam callback, Discord permissions | Operators | Deferred; synthetic tests do not establish live compatibility |
+| Production source activation, Steam callback and Discord permissions | Operators | Actual CRCON/Warcon GET compatibility now verified; deployment, callback and positive role/hierarchy acceptance remain open |
 | Real Convex contention, scheduling/load, migration and rollback | Operators and maintainers | Unrun on a target deployment |
 | Moderation, arbitrary role grants, game-server control, automatic public game-status panels | Later product work | Not delivered; needs explicit actor authority and audit design |
 | Formal result retraction and longer/exportable audit browsing | Later result workflow | Not delivered by confirmation/correction |
@@ -164,6 +172,6 @@ not a claim that the entire website is missing. No website checkout is edited he
 All non-sensitive source, contracts, fixtures, screenshots, review and verification
 outputs are kept in this single PR. Private security details and real credentials
 are deliberately outside the public delivery; only their acceptance status belongs
-here. The latest pass sent an authorized test event to the isolated Discord
+here. The September 30 pass sent an authorized test event to the isolated Discord
 channel and verified a user-triggered private status reply. No production game
 server action, hosted-auth probe, merge or production deployment occurred.

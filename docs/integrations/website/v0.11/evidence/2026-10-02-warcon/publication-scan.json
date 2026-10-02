@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-02T18:15:32.152Z",
+  "stagedFiles": 47,
+  "knownSecretValuesChecked": 9,
+  "actualPlayerIdsChecked": 100,
+  "matches": 0,
+  "scope": "Exact supplied/runtime secrets and observed live Steam IDs, plus private filename patterns; not an exhaustive secret scanner"
+}

@@ -6,7 +6,7 @@ the new explicit `warcon-data` + `wardogs` grant; the existing snapshot grant do
 not include player rows. See the handoff for queries, freshness and proof.
 
 This is the consumer catalog for [PR #158](pr-handbook.md). Runtime OpenAPI version
-is **1.6.0** at `/api/v1/openapi.json`, with interactive `/api/v1/docs`. These are
+is **1.7.0** at `/api/v1/openapi.json`, with interactive `/api/v1/docs`. These are
 source contracts; the hosted instance must be checked during authorized deployment
 acceptance before relying on that version there.
 
@@ -23,6 +23,7 @@ resources in this revision.
 | Match schedule and imported scores | `match-summaries` | Preserve `unknown`/`provisional`, no inferred final result or home/away identity |
 | Reviewed result pages and corrections | `result-summaries` | Show explicit state/version and N participants; retain 0 versus null; publication still needs website approval |
 | Game-server cards | `server-snapshots` | Show observation age and source attribution, unknown/stale rather than guessed offline/zero |
+| Warcon scoreboard, analytics and gameplay statistics | `warcon-data` + `wardogs` | Fifteen typed views, including player names/Steam IDs; keep keys server-side and apply website publication policy |
 | Integration administration / stale-data notices | `integration-health` | Restrict to appropriate website operators; do not expose provider secrets or raw errors |
 | Member-only/game-specific sections | Exact `membership-summaries` lookup | Authenticate the user, bind their Discord subject, check freshness and your game/role policy on each decision |
 | Recovery after missed notifications or restarts | Changes feed, atomic refetch, signed webhooks | Durable inbox, projections and checkpoint transactions; periodic reconciliation and reset handling |
@@ -54,7 +55,7 @@ explicit selection. A present malformed restriction fails closed. Legacy keys
 remain powerful and are not a substitute for scoped keys.
 
 Supported restricted resource names are `event-summaries`, `match-summaries`,
-`result-summaries`, `server-snapshots`, `integration-health`, `membership-summaries`,
+`result-summaries`, `server-snapshots`, `integration-health`, `membership-summaries`, `warcon-data`,
 `events`, `groups`, `rosters`, `assignments`, `stratmaps`, and `matches`.
 The last six are operational resources and can contain data inappropriate for a
 public site. Raw `users` is not an allowed restricted resource. Resource names and
@@ -73,6 +74,7 @@ schemas and full errors; examples use synthetic IDs only.
 | `/result-summaries?game=wardogs` and `/result-summaries/{eventId}` | Independent `result-summaries` grant | Unknown/provisional/confirmed/corrected revision; [0.10](README.md#website-read-contract--openapi-160) |
 | `/server-snapshots?game=wardogs` and `/server-snapshots/{connectionId}` | `server-snapshots` | Safe current observation and freshness; [0.5](../v0.5/README.md#website-api-130) |
 | `/integration-health?game=hell_let_loose` and `/integration-health/{connectionId}` | `integration-health` | Collector health/freshness without secrets; [0.5](../v0.5/README.md#website-api-130) |
+| `/warcon-data/{connectionId}?game=wardogs&view=live` | Explicit `warcon-data` + `wardogs`; legacy keys denied | Timestamped gameplay projection; fifteen views in [0.11](../v0.11/README.md), including deliberately granted player names/IDs |
 | `/membership-summaries/{discordUserId}?game=wardogs&maxAgeMs=60000` | `membership-summaries` **and enabled per-key/game policy** | Exact subject observation; no collection endpoint; [0.7](../v0.7/README.md) |
 | `/changes?game=wardogs&resources=event-summaries,result-summaries&start=now` | Restricted key with all requested resource/game grants | Initial signed cursor, then paged changes; [0.6](../v0.6/README.md) |
 | `/sync-records/{resource}/{id}?game=wardogs` | Same restricted grants; membership also needs its policy | Atomic projection/revision or tombstone; [0.6](../v0.6/README.md) |

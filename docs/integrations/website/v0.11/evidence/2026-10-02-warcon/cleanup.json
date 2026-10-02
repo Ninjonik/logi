@@ -1,0 +1,31 @@
+{
+  "at": "2026-10-02T18:19:07.8385321Z",
+  "localConnectionsDisabled": 2,
+  "services": [
+    {
+      "service": "start",
+      "ownershipVerified": true,
+      "stopped": true
+    },
+    {
+      "service": "fixture",
+      "ownershipVerified": true,
+      "stopped": true
+    },
+    {
+      "service": "browser",
+      "ownershipVerified": true,
+      "stopped": true
+    },
+    {
+      "service": "backend",
+      "ownershipVerified": true,
+      "stopped": true
+    }
+  ],
+  "acceptancePortsListening": 0,
+  "productionDatabaseUsed": false,
+  "providerMutations": 0,
+  "privateFilesPreserved": true,
+  "globalCertificateStoreChanged": false
+}

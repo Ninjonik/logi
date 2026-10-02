@@ -1,0 +1,288 @@
+{
+  "startedAt": "2026-10-02T17:41:31.077Z",
+  "mode": "actual provider + actual Logi adapter and pinned TLS transport",
+  "productionDatabaseUsed": false,
+  "requests": [
+    {
+      "view": "live",
+      "ok": true,
+      "durationMs": 193,
+      "at": "2026-10-02T17:41:31.077Z",
+      "dataKeys": [
+        "serverId",
+        "ok",
+        "tier",
+        "build",
+        "gameServerId",
+        "startedAt",
+        "reservedSlots",
+        "throttledUntil",
+        "status",
+        "players",
+        "statusAt",
+        "playersAt",
+        "observedAt",
+        "freshness",
+        "playersFreshness"
+      ],
+      "available": true,
+      "players": 57,
+      "playerCount": 57,
+      "freshness": "fresh",
+      "playersFreshness": "fresh"
+    },
+    {
+      "view": "cash",
+      "ok": true,
+      "durationMs": 155,
+      "at": "2026-10-02T17:41:31.234Z",
+      "dataKeys": [
+        "since",
+        "points"
+      ],
+      "available": true
+    },
+    {
+      "view": "analytics",
+      "range": "24h",
+      "ok": true,
+      "durationMs": 210,
+      "at": "2026-10-02T17:41:31.444Z",
+      "dataKeys": [
+        "range",
+        "from",
+        "to",
+        "sampleSeconds",
+        "bucketSeconds",
+        "summary",
+        "population",
+        "cash",
+        "maps",
+        "wins",
+        "players",
+        "matches",
+        "hourly",
+        "combat"
+      ],
+      "available": true
+    },
+    {
+      "view": "analytics",
+      "range": "7d",
+      "ok": true,
+      "durationMs": 135,
+      "at": "2026-10-02T17:41:31.579Z",
+      "dataKeys": [
+        "range",
+        "from",
+        "to",
+        "sampleSeconds",
+        "bucketSeconds",
+        "summary",
+        "population",
+        "cash",
+        "maps",
+        "wins",
+        "players",
+        "matches",
+        "hourly",
+        "combat"
+      ],
+      "available": true
+    },
+    {
+      "view": "analytics",
+      "range": "30d",
+      "ok": true,
+      "durationMs": 121,
+      "at": "2026-10-02T17:41:31.700Z",
+      "dataKeys": [
+        "range",
+        "from",
+        "to",
+        "sampleSeconds",
+        "bucketSeconds",
+        "summary",
+        "population",
+        "cash",
+        "maps",
+        "wins",
+        "players",
+        "matches",
+        "hourly",
+        "combat"
+      ],
+      "available": true
+    },
+    {
+      "view": "leaderboard",
+      "range": "all",
+      "ok": true,
+      "durationMs": 109,
+      "at": "2026-10-02T17:41:31.810Z",
+      "dataKeys": [
+        "query",
+        "rows",
+        "total",
+        "pageSize",
+        "hasFeed"
+      ],
+      "available": true
+    },
+    {
+      "view": "players",
+      "ok": true,
+      "durationMs": 112,
+      "at": "2026-10-02T17:41:31.923Z",
+      "dataKeys": [
+        "players",
+        "total"
+      ],
+      "available": true
+    },
+    {
+      "view": "kills",
+      "ok": true,
+      "durationMs": 94,
+      "at": "2026-10-02T17:41:32.017Z",
+      "dataKeys": [
+        "configured",
+        "feedAt",
+        "kills",
+        "total"
+      ],
+      "available": true,
+      "configured": true,
+      "count": 0
+    },
+    {
+      "view": "catalog",
+      "ok": true,
+      "durationMs": 141,
+      "at": "2026-10-02T17:41:32.158Z",
+      "dataKeys": [
+        "maps",
+        "lightings",
+        "experiences"
+      ],
+      "available": true
+    },
+    {
+      "view": "rotation",
+      "ok": true,
+      "durationMs": 141,
+      "at": "2026-10-02T17:41:32.300Z",
+      "dataKeys": [
+        "enabled",
+        "mode",
+        "nowIndex",
+        "nextIndex",
+        "entries"
+      ],
+      "available": true
+    },
+    {
+      "view": "health",
+      "ok": true,
+      "durationMs": 98,
+      "at": "2026-10-02T17:41:32.398Z",
+      "dataKeys": [
+        "status",
+        "uptimeSeconds",
+        "connections",
+        "gameThreadQueue"
+      ],
+      "available": true
+    },
+    {
+      "view": "capabilities",
+      "ok": true,
+      "durationMs": 109,
+      "at": "2026-10-02T17:41:32.507Z",
+      "dataKeys": [
+        "routes",
+        "features"
+      ],
+      "available": true
+    },
+    {
+      "view": "experiences",
+      "ok": true,
+      "durationMs": 197,
+      "at": "2026-10-02T17:41:32.704Z",
+      "dataKeys": [
+        "experiences"
+      ],
+      "available": true
+    },
+    {
+      "view": "alternators",
+      "ok": true,
+      "durationMs": 139,
+      "at": "2026-10-02T17:41:32.843Z",
+      "dataKeys": [
+        "alternators"
+      ],
+      "available": true
+    },
+    {
+      "view": "matches",
+      "ok": true,
+      "durationMs": 150,
+      "at": "2026-10-02T17:41:32.993Z",
+      "dataKeys": [
+        "matches",
+        "live",
+        "page",
+        "pageSize",
+        "total",
+        "pages"
+      ],
+      "available": true,
+      "rows": 1,
+      "completed": 0
+    },
+    {
+      "view": "match",
+      "ok": true,
+      "durationMs": 98,
+      "at": "2026-10-02T17:41:33.091Z",
+      "dataKeys": [],
+      "available": false
+    },
+    {
+      "view": "career",
+      "ok": true,
+      "durationMs": 201,
+      "at": "2026-10-02T17:41:33.293Z",
+      "dataKeys": [
+        "rank",
+        "streak",
+        "matches",
+        "wins",
+        "losses",
+        "draws",
+        "kills",
+        "deaths",
+        "minutes",
+        "headshots",
+        "vehicleKills",
+        "longestM",
+        "killStreak",
+        "deathStreak",
+        "maps",
+        "factions",
+        "last"
+      ],
+      "available": true
+    },
+    {
+      "view": "collector-snapshot",
+      "ok": true,
+      "players": 57,
+      "state": "online",
+      "joinIdPresent": true,
+      "source": "actual pinned HTTPS transport"
+    }
+  ]
+}
