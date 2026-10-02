@@ -3,6 +3,9 @@ import { v } from "convex/values"
 export const apiKeyReadAccess = v.object({
     resources: v.array(
         v.union(
+            v.literal("member-summaries"),
+            v.literal("roster-summaries"),
+            v.literal("player-stat-summaries"),
             v.literal("league-matches"),
             v.literal("warcon-data"),
             v.literal("membership-summaries"),

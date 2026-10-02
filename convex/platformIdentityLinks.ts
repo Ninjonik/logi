@@ -12,8 +12,9 @@ import {
     verifiedPlatformLinkSchema,
 } from "../src/domain/identity/platform-link"
 import { assertMembershipSecret } from "./membership_shared"
-import { mutation, query } from "./_generated/server"
+import { mutation } from "./integrationMutation"
 import { getUserStableId } from "./identity"
+import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 const actor = { secret: v.string(), discordUserId: v.string() }

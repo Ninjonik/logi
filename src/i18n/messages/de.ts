@@ -173,6 +173,11 @@ export const deMessages = {
         resourceLabels: {
             "league-matches": "Öffentliche Wardogs League Spiele",
             "warcon-data": "Warcon-Spieldaten (mit Spielernamen und Steam-IDs)",
+            "member-summaries": "Mitgliederverzeichnis (nur lesen)",
+            "roster-summaries":
+                "Veröffentlichte Aufstellungen und Teilnahme (nur lesen)",
+            "player-stat-summaries":
+                "Verifizierte Spielerdaten aus erfassten Runden",
             "membership-summaries":
                 "Discord-Mitgliedschaft (separate Freigabe erforderlich)",
             "server-snapshots": "Spielserver-Status",

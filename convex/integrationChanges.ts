@@ -10,14 +10,20 @@ import {
     readMembershipRecord,
 } from "./membership_shared"
 import {
+    PEOPLE_RESOURCES,
+    type PeopleResource,
+} from "../src/domain/api/people-summaries"
+import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
 import { query, internalMutation, type QueryCtx } from "./_generated/server"
 import { projectIntegrationRow } from "./integrationMutation"
 import { integrationRecord } from "./integrationChangeLog"
+import { readPeopleProjection } from "./peopleProjection"
 import { makeFunctionReference } from "convex/server"
 import { isGameId } from "../src/domain/games/game"
+import { peopleGeneration } from "./peopleChanges"
 import { v } from "convex/values"
 
 async function authorize(
@@ -61,10 +67,24 @@ export const readChanges = query({
         issuedAt: v.optional(v.number()),
         discordUserId: v.optional(v.string()),
         membershipScopeVersion: v.optional(v.string()),
+        peopleScopeVersion: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const key = await authorize(ctx, args, args.resources)
         if (!key) return null
+        let peopleScopeVersion: string | undefined
+        if (
+            args.resources.some((resource) =>
+                (PEOPLE_RESOURCES as readonly string[]).includes(resource)
+            )
+        ) {
+            peopleScopeVersion = await peopleGeneration(ctx)
+            if (
+                !args.startNow &&
+                args.peopleScopeVersion !== peopleScopeVersion
+            )
+                return { resetRequired: true }
+        }
         let membershipScopeVersion: string | undefined
         if (args.resources.includes("membership-summaries")) {
             if (!args.discordUserId) return null
@@ -95,6 +115,9 @@ export const readChanges = query({
                 hasMore: false,
                 resetRequired: false,
                 ...(membershipScopeVersion ? { membershipScopeVersion } : {}),
+                ...(peopleScopeVersion !== undefined
+                    ? { peopleScopeVersion }
+                    : {}),
             }
         const after = args.afterRevision
         if (
@@ -145,6 +168,7 @@ export const readChanges = query({
                 ),
             revision: rows.at(-1)?.revision ?? after,
             ...(membershipScopeVersion ? { membershipScopeVersion } : {}),
+            ...(peopleScopeVersion !== undefined ? { peopleScopeVersion } : {}),
             hasMore: rows.length === args.limit,
             resetRequired: false,
         }
@@ -198,6 +222,23 @@ export const readSyncRecord = query({
                       data: null,
                   }
                 : null
+        if ((PEOPLE_RESOURCES as readonly string[]).includes(resource)) {
+            const data = await readPeopleProjection(
+                ctx,
+                identity,
+                resource as PeopleResource,
+                args.id,
+                Date.now()
+            )
+            return data
+                ? {
+                      ...identity,
+                      revision: stamp?.revision ?? "0",
+                      operation: "upsert" as const,
+                      data,
+                  }
+                : null
+        }
         const table =
             resource === "server-snapshots" || resource === "integration-health"
                 ? "gameDataConnections"

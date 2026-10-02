@@ -1,5 +1,7 @@
 import { handleIntegrationRead } from "@/lib/api/integration-route"
 import { handleMembershipRead } from "@/lib/api/membership-route"
+import { PEOPLE_RESOURCES } from "@/domain/api/people-summaries"
+import { handlePeopleRead } from "@/lib/api/people-route"
 import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 
@@ -748,6 +750,8 @@ export async function GET(
     const path = (await params).path ?? []
     if (path[0] === "membership-summaries")
         return handleMembershipRead(request, auth)
+    if ((PEOPLE_RESOURCES as readonly string[]).includes(path[0]))
+        return handlePeopleRead(request, auth)
     if (path[0] === "changes" || path[0] === "sync-records")
         return handleIntegrationRead(request, auth)
     if (path.length === 1 && path[0] === "meta") {

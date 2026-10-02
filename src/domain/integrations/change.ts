@@ -1,4 +1,7 @@
 export const SYNC_RESOURCES = [
+    "member-summaries",
+    "roster-summaries",
+    "player-stat-summaries",
     "membership-summaries",
     "event-summaries",
     "match-summaries",
@@ -34,6 +37,9 @@ export const syncRecordSchema = z.union([
     integrationChangeSchema.extend({
         operation: z.literal("upsert"),
         data: z.union([
+            clanMemberSummarySchema,
+            clanRosterSummarySchema,
+            clanPlayerStatSummarySchema,
             clanEventSummarySchema,
             clanMatchSummarySchema,
             clanResultSummarySchema,
@@ -55,6 +61,11 @@ export function nextRevision(revision: string): string {
     revisionOrder(next)
     return next
 }
+import {
+    clanMemberSummarySchema,
+    clanRosterSummarySchema,
+    clanPlayerStatSummarySchema,
+} from "../api/people-summaries"
 import {
     clanEventSummarySchema,
     clanMatchSummarySchema,

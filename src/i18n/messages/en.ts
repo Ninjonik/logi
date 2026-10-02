@@ -167,6 +167,10 @@ export const enMessages = {
             "league-matches": "Wardogs League",
             "warcon-data":
                 "Warcon gameplay data (includes player names and Steam IDs)",
+            "member-summaries": "Member directory (read-only)",
+            "roster-summaries": "Published rosters and attendance (read-only)",
+            "player-stat-summaries":
+                "Verified player facts from collected sessions",
             "membership-summaries":
                 "Discord membership (separate policy required)",
             "server-snapshots": "Game server snapshots",

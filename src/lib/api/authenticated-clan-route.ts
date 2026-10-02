@@ -3,9 +3,11 @@ import {
     type ApiKeyReadAccess,
 } from "@/domain/api/key-access"
 import { parseApiGameScope, isApiGameScopeError } from "./game-scope"
+import { PEOPLE_RESOURCES } from "@/domain/api/people-summaries"
 import { isApiKeyReadAccess } from "@/domain/api/key-access"
 import { parseIntegrationQuery } from "./integration-query"
 import { parseMembershipQuery } from "./membership-query"
+import { parsePeopleQuery } from "./people-query"
 import { NextResponse } from "next/server"
 
 import {
@@ -100,6 +102,42 @@ export async function authenticateClanRequestWith(
         /^\/api\/v1\/clan\/(warcon-data|league-matches)(\/|$)/.exec(
             new URL(request.url).pathname
         )?.[1]
+    const peopleResource = new URL(request.url).pathname.split("/")[4]
+    if ((PEOPLE_RESOURCES as readonly string[]).includes(peopleResource)) {
+        headers["Cache-Control"] = "no-store"
+        const input = parsePeopleQuery(request)
+        if (!input)
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "invalid_query",
+                        message:
+                            "One game and a bounded people projection are required.",
+                    },
+                },
+                { status: 400, headers }
+            )
+        if (
+            request.method !== "GET" ||
+            !isApiKeyReadAccess(authenticated.readAccess) ||
+            !allowsApiKeyRead(
+                authenticated.readAccess,
+                input.resource,
+                input.gameId
+            )
+        )
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "insufficient_scope",
+                        message:
+                            "An explicit read grant for this people resource and game is required.",
+                    },
+                },
+                { status: 403, headers }
+            )
+        return { key, guildId: authenticated.guildId, headers }
+    }
     if (wardogsGrant) {
         headers["Cache-Control"] = "no-store"
         if (

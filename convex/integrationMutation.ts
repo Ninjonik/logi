@@ -13,6 +13,7 @@ import type { SyncResource } from "../src/domain/integrations/change"
 import { appendIntegrationChange } from "./integrationChangeLog"
 import { assignmentDiscordSubject } from "./membershipSubject"
 import type { Doc, Id } from "./_generated/dataModel"
+import { withPeopleChanges } from "./peopleChanges"
 
 const tables = ["events", "gameDataConnections", "userAssignments"] as const
 type TrackedTable = (typeof tables)[number]
@@ -62,7 +63,7 @@ export function projectIntegrationRow(
 }
 
 /** Tracks the initial and final projection, including nested repository writes. Flush shares the mutation transaction. */
-export async function withIntegrationChanges<T>(
+async function trackIntegrationChanges<T>(
     ctx: MutationCtx,
     execute: (tracked: MutationCtx) => Promise<T>
 ): Promise<T> {
@@ -302,6 +303,14 @@ export async function withIntegrationChanges<T>(
 }
 
 // Retain Convex's generic argument/return validator inference at each entrypoint.
+export function withIntegrationChanges<T>(
+    ctx: MutationCtx,
+    execute: (tracked: MutationCtx) => Promise<T>
+) {
+    return withPeopleChanges(ctx, (tracked) =>
+        trackIntegrationChanges(tracked, execute)
+    )
+}
 function trackedBuilder<B>(base: B): B {
     return ((definition: {
         handler: (ctx: MutationCtx, args: unknown) => Promise<unknown>

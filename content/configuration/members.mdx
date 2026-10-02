@@ -11,6 +11,21 @@ These pages are for server managers. They control the server’s working data; t
 
 ## Members
 
+### Connected websites
+
+A website can read a minimized member directory using its own explicitly scoped
+`member-summaries` API grant. Member types, status, paused state and groups remain
+managed in Logi. This read does not authorize website administration or public
+publication. Websites must obtain their own profile/publication consent and
+bind it to the exact member and native user IDs; matching a nickname is not a
+valid identity link. Notes, pause reasons and Discord role IDs are excluded.
+
+Collected player facts have a separate `player-stat-summaries` grant. They cover
+stored HLL/Warcon server sessions and only attribute a player through a current
+verified Steam account and matching game membership. Unknown metrics remain
+unknown, and the displayed collection is not a career total. Disconnecting the
+verified account or changing membership invalidates website synchronization.
+
 The **Members** page lists people known to the workspace. Managers can view a person, create a record where the workflow allows it, and manage server-specific assignments. Carefully distinguish the person’s identity from their roles and groups in this one server.
 
 The available maintenance actions can include importing Discord members, linking missing Discord IDs, linking platform IDs, merging duplicate records, and cleaning duplicate player statistics. Use these only after checking the affected records: they change or combine real server data.

@@ -63,6 +63,7 @@ export async function handleIntegrationRead(
             .digest()
     let afterRevision: string | undefined, issuedAt: number | undefined
     let membershipScopeVersion: string | undefined
+    let peopleScopeVersion: string | undefined
     if (input.cursor) {
         try {
             const parts = input.cursor.split(".")
@@ -83,6 +84,8 @@ export async function handleIntegrationRead(
             issuedAt = cursor.issuedAt
             if (typeof cursor.membershipScopeVersion === "string")
                 membershipScopeVersion = cursor.membershipScopeVersion
+            if (typeof cursor.peopleScopeVersion === "string")
+                peopleScopeVersion = cursor.peopleScopeVersion
         } catch {
             return error("invalid_cursor", 400)
         }
@@ -98,6 +101,7 @@ export async function handleIntegrationRead(
                 ? { discordUserId: input.discordUserId }
                 : {}),
             ...(membershipScopeVersion ? { membershipScopeVersion } : {}),
+            ...(peopleScopeVersion !== undefined ? { peopleScopeVersion } : {}),
             ...(afterRevision !== undefined ? { afterRevision, issuedAt } : {}),
         }
     )
@@ -122,6 +126,9 @@ export async function handleIntegrationRead(
             issuedAt: Date.now(),
             ...(value.membershipScopeVersion
                 ? { membershipScopeVersion: value.membershipScopeVersion }
+                : {}),
+            ...(value.peopleScopeVersion !== undefined
+                ? { peopleScopeVersion: value.peopleScopeVersion }
                 : {}),
         })
     ).toString("base64url")

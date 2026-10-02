@@ -2,6 +2,9 @@ import { isGameId, type GameId, type GameSelection } from "../games/game"
 
 /** Only resources with a backend-enforced game ownership boundary. */
 export const API_KEY_READ_RESOURCES = [
+    "member-summaries",
+    "roster-summaries",
+    "player-stat-summaries",
     "league-matches",
     "warcon-data",
     "membership-summaries",
@@ -53,7 +56,13 @@ export function allowsApiKeyRead(
     game?: GameSelection
 ) {
     if (access === undefined)
-        return !["warcon-data", "league-matches"].includes(resource)
+        return ![
+            "warcon-data",
+            "league-matches",
+            "member-summaries",
+            "roster-summaries",
+            "player-stat-summaries",
+        ].includes(resource)
     if (
         !isApiKeyReadAccess(access) ||
         !(access.resources as string[]).includes(resource)

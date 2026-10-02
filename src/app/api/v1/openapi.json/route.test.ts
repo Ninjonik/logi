@@ -170,6 +170,9 @@ test("every clan operation documents runtime scope denial and its read-access re
             const allowed =
                 method === "get" &&
                 [
+                    "member-summaries",
+                    "roster-summaries",
+                    "player-stat-summaries",
                     "warcon-data",
                     "server-snapshots",
                     "integration-health",
@@ -358,6 +361,7 @@ test("OpenAPI groups operations by their clan resource", async () => {
     assert.deepEqual(
         document.tags.map((tag) => tag.name),
         [
+            "Clan API — People",
             "Public API — no key required",
             "Clan API — Overview",
             "Clan API — Settings",

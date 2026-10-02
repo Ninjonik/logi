@@ -200,6 +200,7 @@ export const commit = internalMutation({
                 session,
                 complete: session.complete,
                 fetchedAt: now,
+                sourceGeneration: connection.generation,
                 updatedAt,
             }
             if (existing) await ctx.db.patch(existing._id, record)

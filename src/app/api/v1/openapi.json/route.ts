@@ -11,6 +11,10 @@ import {
     serverSnapshotSchema,
     integrationHealthSchema,
 } from "@/domain/game-data/contracts"
+import {
+    peopleReadPaths,
+    peopleResponseSchemas,
+} from "@/lib/api/people-openapi"
 import { membershipObservationSchema } from "@/domain/membership/observation"
 import { warconEnvelopeSchema } from "@/domain/game-data/warcon-contracts"
 import { clanResultSummarySchema } from "@/domain/api/result-summaries"
@@ -1562,6 +1566,7 @@ paths["/clan/warcon-data/{connectionId}"] = {
 }
 
 // Document every endpoint's effective permission boundary, including legacy-only reads.
+Object.assign(paths, peopleReadPaths)
 for (const [path, operations] of Object.entries(paths)) {
     if (!path.startsWith("/clan/")) continue
     for (const [method, operation] of Object.entries(
@@ -1603,12 +1608,14 @@ export async function GET() {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.8.0",
+                version: "1.9.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read
 
 For minimized website reads, grant event-summaries and/or match-summaries and use their matching clan endpoints. Each grant is independent of raw events/matches access. Summary DTOs exclude passwords, notes, player identities, source URLs and raw telemetry. They remain private operational content requiring website publication review. Match summaries identify Logi events and expose unknown or provisional results, never automatic confirmation.
+
+Read-only people integrations have three additional independent grants: member-summaries, roster-summaries and player-stat-summaries. Legacy keys do not grant these reads. They expose closed versioned native identity references, published roster/attendance facts and current verified collected-session player facts. Publication consent and fresh role authorization remain separate. Their opaque cursors reset after cross-row identity/source changes; rebuild the entire scope before public display. See the [people integration handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.14/README.md) for coverage, null metrics, current proof and five-minute reconciliation rules.
 
 Keys with a \`readAccess\` policy can only read their explicitly granted resources and games. Collections require explicit \`game\` values; \`game=all\`, writes, metadata, settings, users, calendar, presets and performance-history return \`403 insufficient_scope\`. Detail reads enforce the persisted record's game and return \`404\` outside it. Revoked keys return \`401\`. Legacy keys without this policy retain their existing access. A manager can issue restricted keys through the session-authenticated \`POST /api/servers/{serverId}/api-keys\` endpoint; bearer keys cannot issue or escalate keys. The System > Website API form defaults to read-only summary resources and requires explicit game selection; full legacy access must be selected separately. See the [read-only integration handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.4/README.md) for provisioning, compatibility and safe publication rules.
 
@@ -1631,6 +1638,11 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
             },
             servers: [{ url: "/api/v1" }],
             tags: [
+                {
+                    name: "Clan API — People",
+                    description:
+                        "Minimized member, published roster and verified collected-session facts; website remains read-only.",
+                },
                 {
                     name: "Public API — no key required",
                     description:
@@ -1688,6 +1700,7 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
             ],
             components: {
                 schemas: {
+                    ...peopleResponseSchemas,
                     ...generatedOpenApiSchemas,
                     ...summaryResponseSchemas,
                     ...websiteEventCommandSchemas,

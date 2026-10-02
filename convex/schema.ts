@@ -494,6 +494,21 @@ const guildGames = defineTable({
 }).index("guildId_gameId", ["guildId", "gameId"])
 
 export default defineSchema({
+    peopleIntegrationState: defineTable({
+        key: v.literal("global"),
+        generation: v.string(),
+        reconciliationRun: v.optional(v.string()),
+        reconciliationCursor: v.optional(v.union(v.string(), v.null())),
+        reconciliationLeaseUntil: v.optional(v.number()),
+    }).index("key", ["key"]),
+    peopleResultLinks: defineTable({
+        eventId: v.id("events"),
+        sessionId: v.id("gameSessions"),
+        sourceDigest: v.string(),
+        resultVersion: v.number(),
+    })
+        .index("eventId", ["eventId"])
+        .index("sessionId", ["sessionId"]),
     eventResultRevisions: defineTable({
         eventId: v.id("events"),
         guildId: v.string(),
@@ -1311,9 +1326,12 @@ export default defineSchema({
         session: gameDataSession,
         complete: v.boolean(),
         fetchedAt: v.number(),
+        // Older rows must be recollected before they prove the current source configuration.
+        sourceGeneration: v.optional(v.number()),
         updatedAt: v.string(),
     })
         .index("connection_external", ["connectionId", "externalId"])
+        .index("guildId_gameId", ["guildId", "gameId"])
         .index("guildId_gameId_fetchedAt", ["guildId", "gameId", "fetchedAt"])
         .index("connection_complete_fetched", [
             "connectionId",

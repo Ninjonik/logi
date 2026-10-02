@@ -37,6 +37,10 @@ class FakeQuery {
         return this.matching()
     }
 
+    async take(limit: number) {
+        return this.matching().slice(0, limit)
+    }
+
     private matching() {
         return this.documents.filter(
             (document) => !this.field || document[this.field] === this.value

@@ -21,10 +21,7 @@ import {
     useState,
     useTransition,
 } from "react"
-import type { Id } from "../../../convex/_generated/dataModel"
-import { api } from "../../../convex/_generated/api"
 import { useRouter } from "next/navigation"
-import { useMutation } from "convex/react"
 import { toast } from "sonner"
 
 import {
@@ -244,7 +241,6 @@ export function RosterBoard({
     const [isPending, startTransition] = useTransition()
     const [isConfirmingMeetingChannel, setIsConfirmingMeetingChannel] =
         useState(false)
-    const upsertRoster = useMutation(api.rosters.upsert)
 
     const usersById = useMemo(
         () => new Map(users.map((user) => [user.discordId, user])),
@@ -1244,25 +1240,40 @@ export function RosterBoard({
                         !cleanNotAttendingSet.has(id)
                 )
 
-                const rosterId = await upsertRoster({
-                    rosterId:
-                        board.id === "draft-roster"
-                            ? undefined
-                            : (board.id as Id<"rosters">),
-                    eventId: event.id as Id<"events">,
-                    squadPresetId: board.squadPresetId as Id<"squadPresets">,
-                    squads: saveSquads,
-                    reservePlayerIds: cleanReservePlayerIds,
-                    reserveAttendances: (board.reserveAttendances ?? []).filter(
-                        (attendance) =>
-                            cleanReservePlayerIds.includes(attendance.userId)
-                    ),
-                    notAttendingPlayerIds: cleanNotAttendingPlayerIds,
-                    streamerId: board.streamerId,
-                    published: published,
-                })
-
-                const nextRosterId = String(rosterId)
+                const response = await fetch(
+                    `/api/servers/${serverId}/rosters`,
+                    {
+                        method: "POST",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({
+                            rosterId:
+                                board.id === "draft-roster"
+                                    ? undefined
+                                    : board.id,
+                            eventId: event.id,
+                            squadPresetId: board.squadPresetId || undefined,
+                            squads: saveSquads,
+                            reservePlayerIds: cleanReservePlayerIds,
+                            reserveAttendances: (
+                                board.reserveAttendances ?? []
+                            ).filter((attendance) =>
+                                cleanReservePlayerIds.includes(
+                                    attendance.userId
+                                )
+                            ),
+                            notAttendingPlayerIds: cleanNotAttendingPlayerIds,
+                            streamerId: board.streamerId,
+                            published: published,
+                        }),
+                    }
+                )
+                const result = (await response.json().catch(() => null)) as {
+                    id?: unknown
+                    error?: string
+                } | null
+                if (!response.ok || typeof result?.id !== "string")
+                    throw new Error(result?.error ?? dictionary.common.error)
+                const nextRosterId = result.id
                 const wasDraft = board.id === "draft-roster"
 
                 setBoard((prev) =>

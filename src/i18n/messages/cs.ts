@@ -164,6 +164,10 @@ export const csMessages = {
         resourceLabels: {
             "league-matches": "Veřejné zápasy Wardogs League",
             "warcon-data": "Herní data Warconu (včetně jmen hráčů a Steam ID)",
+            "member-summaries": "Seznam členů (pouze čtení)",
+            "roster-summaries": "Publikované sestavy a účast (pouze čtení)",
+            "player-stat-summaries":
+                "Ověřené statistiky hráčů ze serverových kol",
             "membership-summaries":
                 "Členství Discordu (vyžaduje samostatná pravidla)",
             "server-snapshots": "Stav herních serverů",

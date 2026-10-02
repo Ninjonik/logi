@@ -5,6 +5,12 @@ import { internal } from "./_generated/api"
 
 const crons = cronJobs()
 crons.interval(
+    "reconcile people result relationships",
+    { minutes: 5 },
+    makeFunctionReference<"mutation">("peopleSummaries:reconcileResultLinks"),
+    {}
+)
+crons.interval(
     "prune expired identity sessions",
     { hours: 1 },
     makeFunctionReference<"mutation">("dashboardSessions:prune"),
