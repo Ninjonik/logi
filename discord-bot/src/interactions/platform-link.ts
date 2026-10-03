@@ -49,6 +49,14 @@ export function getPlatformFlowMessages(language: ClanLanguage) {
         return messages.platformFlow
     }
 
+    if (language === "cs") {
+        const czechFallback =
+            getClanDiscordMessages("en").platformFlowCsFallback
+        if (czechFallback) {
+            return czechFallback
+        }
+    }
+
     return getClanDiscordMessages("en").platformFlow!
 }
 
@@ -201,16 +209,23 @@ export function parsePlatformLinkModalId(customId: string) {
 }
 
 export function buildPlatformLinkSearchModalId(context: PlatformLinkContext) {
-    return `${SEARCH_MODAL_PREFIX}:${context.mode}:${context.categoryId ?? "_"}:${context.gameId ?? "_"}`
+    return `${SEARCH_MODAL_PREFIX}:${context.mode}:${context.categoryId ?? "_"}:${context.gameId ?? "_"}${context.draftId ? `:draft_${context.draftId}` : ""}`
 }
 
 export function parsePlatformLinkSearchModalId(customId: string) {
-    const [prefix, mode, categoryId, gameId] = customId.split(":")
+    const [prefix, mode, categoryId, gameId, draftToken] = customId.split(":")
     if (prefix !== SEARCH_MODAL_PREFIX || !mode) {
         return null
     }
 
-    return decodeContext(mode, categoryId, gameId)
+    return decodeContext(
+        mode,
+        categoryId,
+        gameId,
+        draftToken?.startsWith("draft_")
+            ? draftToken.slice("draft_".length)
+            : undefined
+    )
 }
 
 export function parsePlatformLinkApplyModalId(customId: string) {

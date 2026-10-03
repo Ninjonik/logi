@@ -129,20 +129,21 @@ test("membership panel categories open the shared membership wizard", () => {
                     finalRoleIds: [],
                     modalQuestions: [],
                     assignmentType: "member",
+                    gameId: "wardogs",
                 },
             ],
         },
     }
 
-    const legacyButton =
+    const applyButton =
         buildMembershipPanelComponents(membershipConfig)[0]?.toJSON()
             .components[0]
 
     assert.equal(
-        legacyButton && "custom_id" in legacyButton
-            ? legacyButton.custom_id
+        applyButton && "custom_id" in applyButton
+            ? applyButton.custom_id
             : undefined,
-        "membership:recruit"
+        "membership:apply"
     )
 })
 

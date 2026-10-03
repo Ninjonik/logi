@@ -31,3 +31,18 @@ test("membership flow exposes localized specialization choices", () => {
     assert.match(JSON.stringify(message.components[0]?.toJSON()), /Pěchota/)
     assert.match(JSON.stringify(message.components[0]?.toJSON()), /Tank/)
 })
+
+test("membership flow always renders the account action", () => {
+    const message = buildMembershipFlowMessage({
+        language: "cs",
+        draftId: "draft-1",
+        step: "account",
+        gameId: "wardogs",
+        platformLinked: false,
+    })
+
+    assert.match(
+        JSON.stringify(message.components[0]?.toJSON()),
+        /membership-flow:draft-1:link/
+    )
+})

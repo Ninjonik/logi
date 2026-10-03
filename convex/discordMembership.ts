@@ -27,6 +27,7 @@ export const createMembershipApplicationDraft = mutation({
         guildId: v.string(),
         creatorId: v.string(),
         categoryId: v.string(),
+        gameId: v.optional(gameIdValidator),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -35,12 +36,15 @@ export const createMembershipApplicationDraft = mutation({
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .unique()
         const category = config?.membershipSettings?.categories.find(
-            (item) => item.id === args.categoryId
+            (item) =>
+                item.id === args.categoryId &&
+                (item.gameId ?? "hell_let_loose") ===
+                    (args.gameId ?? "hell_let_loose")
         )
         if (!config?.membershipSettings?.enabled || !category) {
             throw new Error("Membership applications are not enabled.")
         }
-        const gameId = category.gameId ?? "hell_let_loose"
+        const gameId = args.gameId ?? "hell_let_loose"
         const now = new Date()
         const draftId = await ctx.db.insert("membershipApplicationDrafts", {
             guildId: args.guildId,
@@ -48,11 +52,7 @@ export const createMembershipApplicationDraft = mutation({
             categoryId: args.categoryId,
             gameId,
             answers: [],
-            step:
-                gameId !== "wardogs" &&
-                config.membershipSettings.collectSpecialization !== false
-                    ? "specialization"
-                    : "account",
+            step: "account",
             expiresAt: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
             createdAt: now.toISOString(),
             updatedAt: now.toISOString(),

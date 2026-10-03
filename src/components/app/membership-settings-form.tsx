@@ -83,8 +83,6 @@ function buildDefaultSettings(
             panelImageUrl: config.membershipSettings.panelImageUrl ?? "",
             applicationWelcomeMessage:
                 config.membershipSettings.applicationWelcomeMessage ?? "",
-            collectSpecialization:
-                config.membershipSettings.collectSpecialization ?? true,
             inviteSupportMembersIndividually:
                 config.membershipSettings.inviteSupportMembersIndividually ??
                 true,
@@ -137,7 +135,6 @@ function buildDefaultSettings(
         panelDescription: dictionary.membershipSettings.defaultPanelDescription,
         panelImageUrl: "",
         applicationWelcomeMessage: "",
-        collectSpecialization: true,
         autoAssignRecruitOnApply: false,
         inviteSupportMembersIndividually: true,
         rosterScoreSettings: {
@@ -298,7 +295,6 @@ export function MembershipSettingsForm({
                   panelImageUrl: settings.panelImageUrl || undefined,
                   applicationWelcomeMessage:
                       settings.applicationWelcomeMessage?.trim() || undefined,
-                  collectSpecialization: settings.collectSpecialization ?? true,
                   autoAssignRecruitOnApply: settings.autoAssignRecruitOnApply,
                   inviteSupportMembersIndividually:
                       settings.inviteSupportMembersIndividually ?? true,
@@ -803,28 +799,6 @@ export function MembershipSettingsForm({
                 </div>
 
                 <div className="space-y-4">
-                    <div className="border-border/60 bg-muted/10 flex items-center justify-between gap-4 rounded-xl border p-4">
-                        <div>
-                            <Label>
-                                {
-                                    dictionary.membershipSettings
-                                        .specializationTitle
-                                }
-                            </Label>
-                            <p className="text-muted-foreground mt-1 text-sm">
-                                {
-                                    dictionary.membershipSettings
-                                        .specializationDescription
-                                }
-                            </p>
-                        </div>
-                        <Switch
-                            checked={settings.collectSpecialization ?? true}
-                            onCheckedChange={(collectSpecialization) =>
-                                patchSettings({ collectSpecialization })
-                            }
-                        />
-                    </div>
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <h3 className="font-semibold">

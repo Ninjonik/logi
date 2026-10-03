@@ -1,9 +1,13 @@
-import { ChannelType, type Client, type TextChannel } from "discord.js"
+import {
+    ChannelType,
+    MessageFlags,
+    type Client,
+    type TextChannel,
+} from "discord.js"
 
 import {
     buildCalendarPanelEmbed,
-    buildMembershipPanelComponents,
-    buildMembershipPanelEmbed,
+    buildMembershipPanelMessage,
     buildTicketPanelComponents,
     buildTicketPanelEmbed,
 } from "../message-builders"
@@ -207,11 +211,10 @@ async function syncMembershipPanelForGame(
               .fetch(payload.config.membershipPanelMessageId)
               .catch(() => null)
         : null
-    const embed = buildMembershipPanelEmbed(payload.config)
-    if (!embed) {
+    const membershipPanelMessage = buildMembershipPanelMessage(payload.config)
+    if (!membershipPanelMessage) {
         return
     }
-    const components = buildMembershipPanelComponents(payload.config)
 
     let membershipPanelMessageId = payload.config.membershipPanelMessageId
 
@@ -225,7 +228,11 @@ async function syncMembershipPanelForGame(
             }
         )
         await currentMessage
-            .edit({ embeds: [embed], components })
+            .edit({
+                embeds: [],
+                ...membershipPanelMessage,
+                flags: MessageFlags.IsComponentsV2,
+            })
             .catch(async (error) => {
                 await reportClanDiscordError({
                     client,
@@ -244,7 +251,10 @@ async function syncMembershipPanelForGame(
             })
     } else {
         const created = await textChannel
-            .send({ embeds: [embed], components })
+            .send({
+                ...membershipPanelMessage,
+                flags: MessageFlags.IsComponentsV2,
+            })
             .catch(async (error) => {
                 await reportClanDiscordError({
                     client,

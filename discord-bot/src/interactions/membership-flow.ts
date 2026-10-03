@@ -12,17 +12,18 @@ import type { ClanLanguage } from "../../../src/lib/clan-language"
 import type { GameId } from "../../../src/domain/games/game"
 
 export type MembershipFlowStep =
-    "game" | "specialization" | "account" | "questions" | "review"
+    "game" | "specialization" | "account" | "platform" | "questions" | "review"
 
 type FlowAnswer = { label: string; value: string }
 
 const copy = {
     en: {
         title: "Membership application",
-        steps: ["Game", "Specialization", "Account", "Form", "Review"],
+        steps: ["Game", "Category", "Account", "Form", "Review"],
         selectGame: "Choose the game you want to join.",
         selectSpecialization: "Choose your preferred specialization.",
         linkAccount: "Link a platform account before continuing.",
+        choosePlatform: "Choose the platform for your platform ID.",
         accountReady: "Your platform account is linked.",
         form: "Complete the application form.",
         review: "Review your application before submitting it.",
@@ -43,10 +44,11 @@ const copy = {
     },
     cs: {
         title: "Členská přihláška",
-        steps: ["Hra", "Specializace", "Účet", "Formulář", "Kontrola"],
+        steps: ["Hra", "Kategorie", "Účet", "Formulář", "Kontrola"],
         selectGame: "Vyberte hru, do které se hlásíte.",
         selectSpecialization: "Vyberte preferovanou specializaci.",
         linkAccount: "Před pokračováním propojte platformní účet.",
+        choosePlatform: "Vyberte platformu pro své platform ID.",
         accountReady: "Váš platformní účet je propojený.",
         form: "Vyplňte formulář přihlášky.",
         review: "Před odesláním zkontrolujte přihlášku.",
@@ -67,10 +69,11 @@ const copy = {
     },
     de: {
         title: "Mitgliedschaftsbewerbung",
-        steps: ["Spiel", "Spezialisierung", "Konto", "Formular", "Prüfung"],
+        steps: ["Spiel", "Kategorie", "Konto", "Formular", "Prüfung"],
         selectGame: "Wähle das Spiel, für das du dich bewirbst.",
         selectSpecialization: "Wähle deine bevorzugte Spezialisierung.",
         linkAccount: "Verknüpfe ein Plattformkonto, bevor du fortfährst.",
+        choosePlatform: "Wähle die Plattform für deine Plattform-ID.",
         accountReady: "Dein Plattformkonto ist verknüpft.",
         form: "Fülle das Bewerbungsformular aus.",
         review: "Prüfe deine Bewerbung vor dem Absenden.",
@@ -91,6 +94,34 @@ const copy = {
     },
 } as const
 
+export function buildMembershipFlowHeading(
+    language: ClanLanguage,
+    step: "game" | "specialization" | "account" | "questions" | "review",
+    hasQuestions = true
+) {
+    const text = copy[language]
+    const steps = [
+        "game",
+        "specialization",
+        "account",
+        ...(hasQuestions ? ["questions"] : []),
+        "review",
+    ]
+    const stepIndex = steps.indexOf(step)
+    const progress = text.steps
+        .filter((_, index) => hasQuestions || index !== 3)
+        .map(
+            (label, index) =>
+                `${index < stepIndex ? "✓" : index === stepIndex ? "●" : "○"} ${label}`
+        )
+        .join("  →  ")
+    return `# ${text.title}\n${progress}`
+}
+
+export function getMembershipFlowCancelLabel(language: ClanLanguage) {
+    return copy[language].cancel
+}
+
 function flowId(draftId: string, action: string) {
     return `membership-flow:${draftId}:${action}`
 }
@@ -110,25 +141,19 @@ export function buildMembershipFlowMessage(input: {
     gameId?: GameId
     specialization?: "infantry" | "armour"
     platformLinked: boolean
+    hasQuestions?: boolean
     answers?: FlowAnswer[]
 }) {
     const text = copy[input.language]
-    const stepIndex = [
-        "game",
-        "specialization",
-        "account",
-        "questions",
-        "review",
-    ].indexOf(input.step)
-    const progress = text.steps
-        .map(
-            (label, index) =>
-                `${index < stepIndex ? "✓" : index === stepIndex ? "●" : "○"} ${label}`
-        )
-        .join("  →  ")
     const container = new ContainerBuilder().setAccentColor(0x5865f2)
     container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`# ${text.title}\n${progress}`)
+        new TextDisplayBuilder().setContent(
+            buildMembershipFlowHeading(
+                input.language,
+                input.step === "platform" ? "account" : input.step,
+                input.hasQuestions
+            )
+        )
     )
     container.addSeparatorComponents(new SeparatorBuilder())
 
@@ -189,6 +214,28 @@ export function buildMembershipFlowMessage(input: {
                     .setStyle(ButtonStyle.Primary)
             )
         )
+    } else if (input.step === "platform") {
+        container.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(text.choosePlatform)
+        )
+        container.addActionRowComponents(
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+                ...(["steam", "epic", "xbox", "playstation"] as const).map(
+                    (platform) =>
+                        new ButtonBuilder()
+                            .setCustomId(
+                                flowId(input.draftId, `platform:${platform}`)
+                            )
+                            .setLabel(
+                                platform === "playstation"
+                                    ? "PlayStation"
+                                    : platform[0].toUpperCase() +
+                                          platform.slice(1)
+                            )
+                            .setStyle(ButtonStyle.Primary)
+                )
+            )
+        )
     } else if (input.step === "questions") {
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(text.form)
@@ -205,7 +252,6 @@ export function buildMembershipFlowMessage(input: {
         const summary = [
             text.review,
             `**${text.game}:** ${input.gameId ? gameLabel(input.gameId) : "—"}`,
-            `**${text.specialization}:** ${input.specialization ? text[input.specialization] : "—"}`,
             `**${text.account}:** ${input.platformLinked ? text.linked : text.notLinked}`,
             ...(input.answers?.map(
                 (answer) => `**${answer.label}:** ${answer.value}`

@@ -17,6 +17,7 @@ import {
     ModalBuilder,
     ModalSubmitInteraction,
     SlashCommandBuilder,
+    StringSelectMenuBuilder,
     StringSelectMenuInteraction,
     TextChannel,
     TextInputBuilder,
@@ -66,6 +67,13 @@ import {
     syncMembershipRoles,
 } from "./interactions/shared"
 import {
+    buildMembershipFlowCancelledMessage,
+    buildMembershipFlowHeading,
+    buildMembershipFlowMessage,
+    getMembershipFlowCancelLabel,
+    type MembershipFlowStep,
+} from "./interactions/membership-flow"
+import {
     handleEventButtonInteraction,
     handleCheckSignupInteraction,
     handleEventSignupPickerInteraction,
@@ -79,10 +87,9 @@ import type {
     TicketThreadRecord,
 } from "./types"
 import {
-    buildMembershipFlowCancelledMessage,
-    buildMembershipFlowMessage,
-    type MembershipFlowStep,
-} from "./interactions/membership-flow"
+    buildMembershipCategorySelectionMessage,
+    buildMembershipGameSelectionMessage,
+} from "./message-builders"
 import {
     detectPlatformFromStatsId,
     extractPlayerSearchResults,
@@ -121,23 +128,32 @@ function parseGameId(value: string | undefined): GameId | undefined {
         : undefined
 }
 
-function getMembershipPlatformReuseCopy(language: ClanLanguage) {
+function getMembershipPlatformReuseCopy(
+    language: ClanLanguage,
+    linkedThroughAnotherGame: boolean
+) {
     switch (language) {
         case "cs":
             return {
-                prompt: "Pro jinou hru už máte propojené platform ID. Chcete ho použít i pro tuto přihlášku?",
+                prompt: linkedThroughAnotherGame
+                    ? "Našli jsme platform ID propojené s vaším účtem pro jinou hru. Chcete ho použít i pro tuto přihlášku?"
+                    : "Už máte propojené platform ID. Chcete ho použít i pro tuto přihlášku?",
                 reuse: "Použít propojené ID",
                 linkAnother: "Propojit jiné ID",
             }
         case "de":
             return {
-                prompt: "Für ein anderes Spiel ist bereits eine Plattform-ID verknüpft. Möchtest du sie auch für diese Bewerbung verwenden?",
+                prompt: linkedThroughAnotherGame
+                    ? "Wir haben eine Plattform-ID gefunden, die über dein Konto mit einem anderen Spiel verknüpft ist. Möchtest du sie auch für diese Bewerbung verwenden?"
+                    : "Du hast bereits eine Plattform-ID verknüpft. Möchtest du sie auch für diese Bewerbung verwenden?",
                 reuse: "Verknüpfte ID verwenden",
                 linkAnother: "Andere ID verknüpfen",
             }
         default:
             return {
-                prompt: "You already have a platform ID linked for another game. Would you like to use it for this application?",
+                prompt: linkedThroughAnotherGame
+                    ? "We found a platform ID linked to your account for another game. Would you like to use it for this application?"
+                    : "You already have a linked platform ID. Would you like to use it for this application?",
                 reuse: "Use linked ID",
                 linkAnother: "Link another ID",
             }
@@ -1369,6 +1385,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             gameId: draft.gameId,
             specialization: draft.specialization,
             platformLinked,
+            hasQuestions: category.modalQuestions.length > 0,
             answers: draft.answers,
         })
         const payload = {
@@ -1377,9 +1394,83 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         }
         if (mode === "reply") {
             await interaction.reply(payload)
-        } else if (interaction.isButton() || interaction.isStringSelectMenu()) {
+        } else if (interaction.isModalSubmit()) {
+            // discord.js exposes `update` on modal submits at runtime, but its
+            // TypeScript declaration omits it. This is Discord's component
+            // interaction response and updates the originating ephemeral card.
+            const updateModalMessage = Reflect.get(interaction, "update")
+            if (typeof updateModalMessage === "function") {
+                await Reflect.apply(updateModalMessage, interaction, [payload])
+            } else {
+                await interaction.reply(payload)
+            }
+        } else {
             await interaction.update(payload)
         }
+    }
+
+    function buildMembershipPlatformFlowMessage<
+        T extends readonly ActionRowBuilder<
+            ButtonBuilder | StringSelectMenuBuilder
+        >[],
+    >(
+        language: ClanLanguage,
+        draftId: string,
+        legacyMessage: { embeds: readonly EmbedBuilder[]; components: T }
+    ) {
+        const container = new ContainerBuilder().setAccentColor(0x5865f2)
+        container.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                buildMembershipFlowHeading(language, "account")
+            )
+        )
+        container.addSeparatorComponents(new SeparatorBuilder())
+        const description = legacyMessage.embeds[0]?.data.description
+        if (description) {
+            container.addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(description)
+            )
+        }
+        for (const row of legacyMessage.components) {
+            container.addActionRowComponents(row)
+        }
+        container.addActionRowComponents(
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`membership-flow:${draftId}:cancel`)
+                    .setLabel(getMembershipFlowCancelLabel(language))
+                    .setStyle(ButtonStyle.Danger)
+            )
+        )
+        return { components: [container], flags: MessageFlags.IsComponentsV2 }
+    }
+
+    async function updateMembershipPlatformFlow(
+        interaction: ButtonInteraction | StringSelectMenuInteraction,
+        language: ClanLanguage,
+        context: {
+            mode: "membership" | "link"
+            draftId?: string
+        },
+        legacyMessage: {
+            embeds: readonly EmbedBuilder[]
+            components: readonly ActionRowBuilder<
+                ButtonBuilder | StringSelectMenuBuilder
+            >[]
+        }
+    ) {
+        if (context.mode === "membership" && context.draftId) {
+            await interaction.update({
+                ...buildMembershipPlatformFlowMessage(
+                    language,
+                    context.draftId,
+                    legacyMessage
+                ),
+                flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+            })
+            return
+        }
+        await interaction.update(legacyMessage)
     }
 
     async function resumeMembershipDraftAfterPlatformLink(
@@ -1422,7 +1513,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             "questions",
             context.category,
             true,
-            interaction.isModalSubmit() ? "reply" : "update"
+            "update"
         )
     }
 
@@ -1498,12 +1589,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 })
                 return
             }
-            const step: MembershipFlowStep =
-                gameId !== "wardogs" &&
-                context.config.membershipSettings?.collectSpecialization !==
-                    false
-                    ? "specialization"
-                    : "account"
+            const step: MembershipFlowStep = "account"
             await convex.mutation(references.updateMembershipApplicationDraft, {
                 secret: env.internalSecret,
                 draftId: draftId as never,
@@ -1677,13 +1763,47 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         if (action === "link") {
             await interaction.update({
-                ...buildPlatformLinkStartMessage(language, {
-                    mode: "membership",
-                    categoryId: draft.categoryId,
-                    gameId: draft.gameId,
+                ...buildMembershipPlatformFlowMessage(
+                    language,
                     draftId,
-                }),
+                    buildPlatformLinkStartMessage(language, {
+                        mode: "membership",
+                        categoryId: draft.categoryId,
+                        gameId: draft.gameId,
+                        draftId,
+                    })
+                ),
+                flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
             })
+            return
+        }
+
+        if (action.startsWith("platform:")) {
+            const platform = action.slice("platform:".length)
+            if (
+                platform !== "steam" &&
+                platform !== "epic" &&
+                platform !== "xbox" &&
+                platform !== "playstation"
+            ) {
+                return
+            }
+            await interaction.showModal(
+                buildPlatformIdOnlyModal(
+                    buildPlatformLinkModalId(
+                        {
+                            mode: "membership",
+                            categoryId: draft.categoryId,
+                            gameId: draft.gameId,
+                            draftId,
+                        },
+                        platform
+                    ),
+                    platform,
+                    language,
+                    getClanDiscordMessages(language).membership.modalTitle
+                )
+            )
             return
         }
 
@@ -1705,7 +1825,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             "specialization:"
         )
             ? "account"
-            : draft.step
+            : draft.step === "questions" &&
+                !context.category.modalQuestions.length
+              ? "account"
+              : draft.step
         await renderMembershipFlow(
             interaction,
             draft,
@@ -1775,8 +1898,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             language,
             "review",
             context.category,
-            Boolean(prereq?.user?.platformIds?.length),
-            "reply"
+            Boolean(prereq?.user?.platformIds?.length)
         )
     }
 
@@ -1792,10 +1914,44 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const [gameIdOrCategoryId, legacyCategoryId] = interaction.customId
+        const membershipAction = interaction.customId.replace("membership:", "")
+        const config = (await convex.query(
+            references.getConfigByDiscordGuildId,
+            { guildId: interaction.guildId }
+        )) as EventInteractionContext["config"] | null
+        const language = config?.defaultLanguage as ClanLanguage
+        if (!config?.membershipSettings?.enabled) {
+            await interaction.reply({
+                content: fallbackMessages.membership.unavailable,
+                flags: MessageFlags.Ephemeral,
+            })
+            return
+        }
+        if (membershipAction === "apply") {
+            await interaction.reply({
+                ...buildMembershipGameSelectionMessage(config),
+                flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+            })
+            return
+        }
+        if (membershipAction.startsWith("game:")) {
+            const gameId = parseGameId(membershipAction.slice("game:".length))
+            if (!gameId) return
+            await interaction.update({
+                ...buildMembershipCategorySelectionMessage(config, gameId),
+                flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+            })
+            return
+        }
+
+        const [gameIdOrCategoryId, legacyCategoryId] = membershipAction
             .replace("membership:", "")
             .split(":", 2)
         const categoryId = legacyCategoryId ?? gameIdOrCategoryId
+        const gameId = legacyCategoryId
+            ? parseGameId(gameIdOrCategoryId)
+            : undefined
+        if (legacyCategoryId && !gameId) return
 
         const draft = (await convex.mutation(
             references.createMembershipApplicationDraft,
@@ -1804,6 +1960,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 guildId: interaction.guildId,
                 creatorId: interaction.user.id,
                 categoryId,
+                gameId,
             }
         )) as { id: string }
         const storedDraft = await getMembershipFlowDraft(
@@ -1817,7 +1974,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             interaction.user.id,
             storedDraft.gameId
         )
-        const language = prereq?.config.defaultLanguage as ClanLanguage
+        const membershipLanguage = prereq?.config.defaultLanguage ?? language
         if (!prereq?.config.membershipSettings?.enabled) {
             await interaction.reply({
                 content: fallbackMessages.membership.unavailable,
@@ -1828,7 +1985,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         if (prereq.assignment) {
             await interaction.reply({
                 content:
-                    getClanDiscordMessages(language).membership.alreadyInClan,
+                    getClanDiscordMessages(membershipLanguage).membership
+                        .alreadyInClan,
                 flags: MessageFlags.Ephemeral,
             })
             return
@@ -1836,32 +1994,88 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         if (prereq.hasOpenApplication) {
             await interaction.reply({
                 content:
-                    getClanDiscordMessages(language).membership
+                    getClanDiscordMessages(membershipLanguage).membership
                         .openApplicationExists,
                 flags: MessageFlags.Ephemeral,
             })
             return
         }
-        await interaction.reply({
+        if (prereq.user?.platformIds?.length && gameId) {
+            const reuseCopy = getMembershipPlatformReuseCopy(
+                membershipLanguage,
+                prereq.hasAssignmentInOtherGame
+            )
+            const reuseMessage = new ContainerBuilder().setAccentColor(0x5865f2)
+            reuseMessage.addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(
+                    `${buildMembershipFlowHeading(membershipLanguage, "account")}\n${reuseCopy.prompt}`
+                )
+            )
+            reuseMessage.addActionRowComponents(
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(
+                            `membership-reuse:${draft.id}:${gameId}:${categoryId}:yes`
+                        )
+                        .setLabel(reuseCopy.reuse)
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
+                        .setCustomId(
+                            `membership-reuse:${draft.id}:${gameId}:${categoryId}:no`
+                        )
+                        .setLabel(reuseCopy.linkAnother)
+                        .setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`membership-flow:${draft.id}:cancel`)
+                        .setLabel(
+                            getMembershipFlowCancelLabel(membershipLanguage)
+                        )
+                        .setStyle(ButtonStyle.Danger)
+                )
+            )
+            const reusePayload = {
+                components: [reuseMessage],
+                flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+            }
+            if (interaction.message.flags.has(MessageFlags.IsComponentsV2)) {
+                await interaction.update(reusePayload)
+            } else {
+                await interaction.reply(reusePayload)
+            }
+            return
+        }
+        const membershipFlowMessage = {
             ...buildMembershipFlowMessage({
-                language,
+                language: membershipLanguage,
                 draftId: draft.id,
                 step: storedDraft.step,
                 gameId: storedDraft.gameId,
                 platformLinked: Boolean(prereq.user?.platformIds?.length),
             }),
             flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
-        })
+        }
+        if (interaction.message.flags.has(MessageFlags.IsComponentsV2)) {
+            await interaction.update(membershipFlowMessage)
+        } else {
+            await interaction.reply(membershipFlowMessage)
+        }
         return
     }
 
     async function handleMembershipPlatformReuseInteraction(
         interaction: ButtonInteraction
     ) {
-        const [, gameIdRaw, categoryId, choice] =
+        const [, draftId, gameIdRaw, categoryId, choice] =
             interaction.customId.split(":")
         const gameId = parseGameId(gameIdRaw)
-        if (!interaction.guildId || !gameId || !categoryId || !choice) return
+        if (
+            !interaction.guildId ||
+            !draftId ||
+            !gameId ||
+            !categoryId ||
+            !choice
+        )
+            return
 
         const prereq = await loadMembershipApplicationPrereq(
             interaction.guildId,
@@ -1881,18 +2095,32 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         }
 
         if (choice === "yes" && prereq.user?.platformIds?.length) {
-            await continueMembershipApplicationFlow(interaction, prereq, gameId)
+            await resumeMembershipDraftAfterPlatformLink(interaction, draftId)
             return
         }
 
         if (choice === "no") {
-            await interaction.update(
-                buildPlatformLinkStartMessage(prereq.config.defaultLanguage, {
-                    mode: "membership",
-                    categoryId,
-                    gameId,
-                })
+            const draft = await getMembershipFlowDraft(
+                draftId,
+                interaction.guildId,
+                interaction.user.id
             )
+            await interaction.update({
+                ...buildMembershipPlatformFlowMessage(
+                    prereq.config.defaultLanguage as ClanLanguage,
+                    draft.id,
+                    buildPlatformLinkStartMessage(
+                        prereq.config.defaultLanguage as ClanLanguage,
+                        {
+                            mode: "membership",
+                            categoryId,
+                            gameId,
+                            draftId: draft.id,
+                        }
+                    )
+                ),
+                flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+            })
         }
     }
 
@@ -1920,13 +2148,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     context.gameId
                 )
             ) {
-                await interaction.update(
+                await updateMembershipPlatformFlow(
+                    interaction,
+                    language,
+                    context,
                     buildPlayedBeforeMessage(language, context)
                 )
                 return
             }
 
-            await interaction.update(
+            await updateMembershipPlatformFlow(
+                interaction,
+                language,
+                context,
                 buildPlatformSelectMessageWithEmojis({
                     language,
                     context,
@@ -1990,7 +2224,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     return
                 }
 
-                if (categoryContext.category.modalQuestions.length) {
+                if (
+                    categoryContext.category.modalQuestions.length &&
+                    !context.draftId
+                ) {
                     await interaction.showModal(
                         buildPlatformAndMembershipModal(
                             context.categoryId,
@@ -2034,13 +2271,19 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         if (parsed.step === "played") {
             if (value === "yes") {
-                await interaction.update(
+                await updateMembershipPlatformFlow(
+                    interaction,
+                    language,
+                    context,
                     buildMockPlayerMessage(language, context)
                 )
                 return
             }
 
-            await interaction.update(
+            await updateMembershipPlatformFlow(
+                interaction,
+                language,
+                context,
                 buildPlatformSelectMessageWithEmojis({
                     language,
                     context,
@@ -2066,7 +2309,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 return
             }
 
-            await interaction.update(
+            await updateMembershipPlatformFlow(
+                interaction,
+                language,
+                context,
                 buildPlatformGuideMessage(language, context, value, emojis)
             )
             return
@@ -2107,6 +2353,21 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                         content: messages.membership.unavailable,
                         flags: MessageFlags.Ephemeral,
                     })
+                    return
+                }
+
+                if (context.draftId) {
+                    await savePlatformIdLink(
+                        interaction.user.id,
+                        interaction.user.globalName ??
+                            interaction.user.username,
+                        interaction.user.displayAvatarURL(),
+                        value
+                    )
+                    await resumeMembershipDraftAfterPlatformLink(
+                        interaction,
+                        context.draftId
+                    )
                     return
                 }
 
@@ -2318,21 +2579,30 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         )
         const emojis = await getPlatformEmojis()
 
-        await originalMessage.edit(
-            buildPlayerSearchResultsMessage({
-                language,
-                context,
-                results: results.map((result) => ({
-                    playerId: result.playerId,
-                    playerName: result.playerName,
-                    description: result.playerId,
-                    emoji:
-                        result.platform === "other"
-                            ? undefined
-                            : emojis[result.platform],
-                })),
+        const searchResultsMessage = buildPlayerSearchResultsMessage({
+            language,
+            context,
+            results: results.map((result) => ({
+                playerId: result.playerId,
+                playerName: result.playerName,
+                description: result.playerId,
+                emoji:
+                    result.platform === "other"
+                        ? undefined
+                        : emojis[result.platform],
+            })),
+        })
+        if (context.mode === "membership" && context.draftId) {
+            await originalMessage.edit({
+                components: buildMembershipPlatformFlowMessage(
+                    language,
+                    context.draftId,
+                    searchResultsMessage
+                ).components,
             })
-        )
+            return
+        }
+        await originalMessage.edit(searchResultsMessage)
     }
 
     async function handlePlatformLinkApplyModalSubmit(
@@ -2687,7 +2957,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     function buildPlatformIdOnlyModal(
         customId: string,
         platform: "steam" | "epic" | "xbox" | "playstation",
-        language: ClanLanguage
+        language: ClanLanguage,
+        title?: string
     ) {
         const messages =
             getClanDiscordMessages(language).platformFlow ??
@@ -2696,7 +2967,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         return new ModalBuilder()
             .setCustomId(customId)
-            .setTitle(messages.title.slice(0, 45))
+            .setTitle((title ?? messages.title).slice(0, 45))
             .addComponents(
                 new ActionRowBuilder<TextInputBuilder>().addComponents(
                     new TextInputBuilder()
