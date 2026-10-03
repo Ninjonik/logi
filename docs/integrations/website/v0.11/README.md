@@ -6,6 +6,9 @@ dashboard includes a live scoreboard. This extends PR #158; the website retains
 its own backend, authentication, publishing policy and presentation.
 
 Read the [design](warcon-design.md) and [verification record](verification.md).
+The [October 3 history/analytics follow-up](history-analytics-gap.md) records
+actual populated match and leaderboard reads, the current durable-storage gap,
+and the proposed independent website analytics.
 The earlier [provider probe](../v0.10/live-provider-probe.md) describes the state
 before this implementation. Production activation and website adoption are
 separate from the local and provider acceptance recorded here.
