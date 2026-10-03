@@ -24,8 +24,8 @@ import {
     DiscordEntitySelect,
     type DiscordSelectOption,
 } from "@/components/app/discord-entity-select"
+import { DEFAULT_GAME_ID, GAME_LABELS, type GameId } from "@/domain/games/game"
 import type { Dictionary } from "@/i18n/dictionaries"
-import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 
@@ -38,21 +38,29 @@ export function ImportDiscordMembersButton({
     dictionary,
     defaultRoleId,
     gameId,
+    enabledGames,
 }: {
     serverId: string
     dictionary: Dictionary
     defaultRoleId?: string
     gameId: GameId
+    enabledGames?: GameId[]
 }) {
     const [isOpen, setIsOpen] = useState(false)
     const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
     const [roleId, setRoleId] = useState(defaultRoleId ?? "")
+    const availableGames = enabledGames?.length
+        ? enabledGames
+        : [DEFAULT_GAME_ID]
     const [membershipKind, setMembershipKind] = useState<
         "member" | "mercenary"
     >("member")
     const [memberStatus, setMemberStatus] = useState<
         "recruit" | "member" | "reserve_member"
     >("member")
+    const [targetGameId, setTargetGameId] = useState(
+        availableGames.includes(gameId) ? gameId : availableGames[0]!
+    )
     const [isPending, startTransition] = useTransition()
 
     useEffect(() => {
@@ -75,7 +83,7 @@ export function ImportDiscordMembersButton({
                     headers: { "content-type": "application/json" },
                     body: JSON.stringify({
                         roleId,
-                        gameId,
+                        gameId: targetGameId,
                         target:
                             membershipKind === "mercenary"
                                 ? "mercenary"
@@ -131,6 +139,29 @@ export function ImportDiscordMembersButton({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>{dictionary.games.column}</Label>
+                        <Select
+                            value={targetGameId}
+                            onValueChange={(value) =>
+                                setTargetGameId(value as GameId)
+                            }
+                        >
+                            <SelectTrigger className="rounded-xl">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableGames.map((availableGameId) => (
+                                    <SelectItem
+                                        key={availableGameId}
+                                        value={availableGameId}
+                                    >
+                                        {GAME_LABELS[availableGameId]}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className="space-y-2">
                         <Label>
                             {dictionary.userManagement.discordSourceRole}

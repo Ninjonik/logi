@@ -29,6 +29,7 @@ export function ToolPropertiesPanel({
     textValue,
     textSize,
     iconId,
+    iconSize,
     catalogGroups,
     onStrokeWidthChange,
     onStrokeColorChange,
@@ -39,6 +40,7 @@ export function ToolPropertiesPanel({
     onTextValueChange,
     onTextSizeChange,
     onIconChange,
+    onIconSizeChange,
 }: {
     dictionary: Dictionary
     tool: Tool
@@ -51,6 +53,7 @@ export function ToolPropertiesPanel({
     textValue: string
     textSize: number
     iconId: string
+    iconSize: number
     catalogGroups: Record<string, HllStratmapCatalogItem[]>
     onStrokeWidthChange: (value: number) => void
     onStrokeColorChange: (value: string) => void
@@ -61,6 +64,7 @@ export function ToolPropertiesPanel({
     onTextValueChange: (value: string) => void
     onTextSizeChange: (value: number) => void
     onIconChange: (value: string) => void
+    onIconSizeChange: (value: number) => void
 }) {
     return (
         <div className="space-y-1.5 overflow-x-hidden">
@@ -155,45 +159,60 @@ export function ToolPropertiesPanel({
                 </>
             ) : null}
             {tool === "icon" ? (
-                <EditorField label={dictionary.stratmaps.iconLibrary}>
-                    <div className="border-border/60 h-52 [scrollbar-width:thin] overflow-y-auto rounded-[3px] border p-1">
-                        {Object.entries(catalogGroups).map(
-                            ([category, items]) => (
-                                <div
-                                    key={category}
-                                    className="mb-2 space-y-1 last:mb-0"
-                                >
-                                    <div className="text-muted-foreground text-[8px] font-semibold tracking-[0.1em] uppercase">
-                                        {category}
+                <>
+                    <EditorField label={dictionary.stratmaps.size}>
+                        <EditorInput
+                            type="number"
+                            min={16}
+                            max={160}
+                            value={iconSize}
+                            onChange={(event) =>
+                                onIconSizeChange(
+                                    Number(event.target.value) || 16
+                                )
+                            }
+                        />
+                    </EditorField>
+                    <EditorField label={dictionary.stratmaps.iconLibrary}>
+                        <div className="border-border/60 h-52 [scrollbar-width:thin] overflow-y-auto rounded-[3px] border p-1">
+                            {Object.entries(catalogGroups).map(
+                                ([category, items]) => (
+                                    <div
+                                        key={category}
+                                        className="mb-2 space-y-1 last:mb-0"
+                                    >
+                                        <div className="text-muted-foreground text-[8px] font-semibold tracking-[0.1em] uppercase">
+                                            {category}
+                                        </div>
+                                        <div className="grid grid-cols-5 gap-0.5">
+                                            {items.map((item) => (
+                                                <button
+                                                    key={item.id}
+                                                    type="button"
+                                                    className={cn(
+                                                        "border-border/60 hover:bg-muted/50 flex aspect-square items-center justify-center rounded-[2px] border p-0.5",
+                                                        iconId === item.id &&
+                                                            "border-primary bg-primary/10"
+                                                    )}
+                                                    onClick={() =>
+                                                        onIconChange(item.id)
+                                                    }
+                                                    title={item.label}
+                                                >
+                                                    <img
+                                                        src={item.iconPath}
+                                                        alt=""
+                                                        className="size-5 object-contain"
+                                                    />
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-5 gap-0.5">
-                                        {items.map((item) => (
-                                            <button
-                                                key={item.id}
-                                                type="button"
-                                                className={cn(
-                                                    "border-border/60 hover:bg-muted/50 flex aspect-square items-center justify-center rounded-[2px] border p-0.5",
-                                                    iconId === item.id &&
-                                                        "border-primary bg-primary/10"
-                                                )}
-                                                onClick={() =>
-                                                    onIconChange(item.id)
-                                                }
-                                                title={item.label}
-                                            >
-                                                <img
-                                                    src={item.iconPath}
-                                                    alt=""
-                                                    className="size-5 object-contain"
-                                                />
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )
-                        )}
-                    </div>
-                </EditorField>
+                                )
+                            )}
+                        </div>
+                    </EditorField>
+                </>
             ) : null}
         </div>
     )

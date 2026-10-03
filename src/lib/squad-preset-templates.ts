@@ -28,6 +28,42 @@ const wardogsRoleIconOptions = [
     "/img/roles/icn_wdtank.png",
 ] as const
 
+const wardogsSquadIconOptions = [
+    ...wardogsRoleIconOptions,
+    "/stratmap/icons/wardogs/artillery.webp",
+    "/stratmap/icons/wardogs/assault.webp",
+    "/stratmap/icons/wardogs/bulkhead.webp",
+    "/stratmap/icons/wardogs/driver.webp",
+    "/stratmap/icons/wardogs/dune.webp",
+    "/stratmap/icons/wardogs/fob.webp",
+    "/stratmap/icons/wardogs/garage_vendor.webp",
+    "/stratmap/icons/wardogs/havoc.webp",
+    "/stratmap/icons/wardogs/heli.webp",
+    "/stratmap/icons/wardogs/hill_warning.webp",
+    "/stratmap/icons/wardogs/kodiak.webp",
+    "/stratmap/icons/wardogs/lasthit.webp",
+    "/stratmap/icons/wardogs/like.webp",
+    "/stratmap/icons/wardogs/lonestar.webp",
+    "/stratmap/icons/wardogs/manticore.webp",
+    "/stratmap/icons/wardogs/medic.webp",
+    "/stratmap/icons/wardogs/pilot.webp",
+    "/stratmap/icons/wardogs/quad.webp",
+    "/stratmap/icons/wardogs/recon.webp",
+    "/stratmap/icons/wardogs/spawn_board.webp",
+    "/stratmap/icons/wardogs/spawn_deploy.webp",
+    "/stratmap/icons/wardogs/spawn_vehicle.webp",
+    "/stratmap/icons/wardogs/spotted.webp",
+    "/stratmap/icons/wardogs/support.webp",
+    "/stratmap/icons/wardogs/tank.webp",
+    "/stratmap/icons/wardogs/tower.webp",
+    "/stratmap/icons/wardogs/ural.webp",
+    "/stratmap/icons/wardogs/valkyra.webp",
+    "/stratmap/icons/wardogs/vendor.webp",
+    "/stratmap/icons/wardogs/wardogs.webp",
+    "/stratmap/icons/wardogs/warning.webp",
+    "/stratmap/icons/wardogs/weapons_vendor.webp",
+] as const
+
 /** Role icons are intentionally available only for their supported game. */
 export const roleIconOptionsByGame: Record<GameId, readonly string[]> = {
     hell_let_loose: hllRoleIconOptions,
@@ -37,6 +73,10 @@ export const roleIconOptionsByGame: Record<GameId, readonly string[]> = {
 
 export function getRoleIconOptions(gameId: GameId) {
     return roleIconOptionsByGame[gameId]
+}
+
+export function getSquadIconOptions(gameId: GameId): readonly string[] {
+    return gameId === "wardogs" ? wardogsSquadIconOptions : hllRoleIconOptions
 }
 
 // Retained for roster layout editing until that editor receives a game context.

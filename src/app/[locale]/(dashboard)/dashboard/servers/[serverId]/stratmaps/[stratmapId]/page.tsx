@@ -1,13 +1,16 @@
+import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 
+import {
+    getPublicStratmapDetail,
+    getStratmapDetail,
+} from "@/lib/server-stratmaps"
 import { PublicShareLinkButton } from "@/components/app/public-share-link-button"
 import { StratmapEditor } from "@/components/app/stratmap-editor"
-import { getPublicStratmapDetail } from "@/lib/server-stratmaps"
+import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { PageHeader } from "@/components/app/page-header"
 import { getStratmapMapById } from "@/lib/game-stratmaps"
-import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
-import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 type Props = {
@@ -82,18 +85,18 @@ export default async function StratmapDetailPage({
     const { game } = await searchParams
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const context = await getServerContext(
-        serverId,
-        isGameId(game) ? game : "all"
-    )
+    const detail = await getStratmapDetail(stratmapId)
 
-    if (!context) {
+    if (!detail || detail.serverId !== serverId) {
         return null
     }
 
-    const stratmap = context.stratmaps.find((item) => item.id === stratmapId)
-    if (!stratmap) {
-        return null
+    const stratmap = detail.stratmap
+    const stratmapGameId = stratmap.gameId ?? DEFAULT_GAME_ID
+    if (game !== stratmapGameId) {
+        redirect(
+            `/${safeLocale}/dashboard/servers/${serverId}/stratmaps/${stratmapId}?game=${stratmapGameId}`
+        )
     }
 
     return (
@@ -105,7 +108,7 @@ export default async function StratmapDetailPage({
                     dictionary.stratmaps.detailDescription
                 }
                 actions={
-                    context.canAdmin ? (
+                    detail.canAdmin ? (
                         <PublicShareLinkButton
                             href={`/${safeLocale}/stratmaps/${stratmapId}`}
                             dictionary={dictionary}
@@ -117,9 +120,9 @@ export default async function StratmapDetailPage({
                 <div className="h-full overflow-hidden">
                     <StratmapEditor
                         locale={locale}
-                        userId={context.user.discordId}
+                        userId={detail.userId}
                         stratmapId={stratmapId}
-                        initialCanAdmin={context.canAdmin}
+                        initialCanAdmin={detail.canAdmin}
                         initialStratmap={stratmap}
                         dictionary={dictionary}
                     />

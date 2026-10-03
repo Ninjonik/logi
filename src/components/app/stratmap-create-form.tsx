@@ -38,7 +38,7 @@ export function StratmapCreateForm({
     userId: string
     dictionary: Dictionary
     defaultTitle?: string
-    gameId?: GameId
+    gameId: GameId
 }) {
     const router = useRouter()
     const createStratmap = useMutation(createStratmapReference)
@@ -96,7 +96,7 @@ export function StratmapCreateForm({
                 })
 
                 router.push(
-                    `/${locale}/dashboard/servers/${serverId}/stratmaps/${stratmapId}`
+                    `/${locale}/dashboard/servers/${serverId}/stratmaps/${stratmapId}?game=${gameId}`
                 )
             } catch (error) {
                 console.error(error)

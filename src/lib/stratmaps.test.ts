@@ -16,7 +16,17 @@ test("Wardogs supplies its distinct tactical icon catalog", () => {
             .slice(0, 4),
         ["wd-fob", "wd-lonestar", "wd-manticore", "wd-valkyra"]
     )
+    assert.equal(
+        getWardogsStratmapCatalog()[0]?.iconPath,
+        "/stratmap/icons/wardogs/fob.webp"
+    )
     assert.ok(getStratmapCatalog().some((item) => item.id === "wd-helicopter"))
+    assert.equal(getWardogsStratmapCatalog().length, 32)
+    assert.ok(
+        getWardogsStratmapCatalog().some(
+            (item) => item.id === "wd-weapons-vendor"
+        )
+    )
 })
 
 test("preserves a Wardogs base map and defaults its reference overlays on", () => {

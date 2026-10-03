@@ -10,8 +10,8 @@ import {
     type StratmapSlide,
     type StratmapSlideBackground,
     type StratmapState,
-    getHllStratmapMapById,
 } from "@/lib/stratmaps"
+import { getStratmapMapById } from "@/lib/game-stratmaps"
 import type { StratmapRecord } from "@/types/domain"
 
 import {
@@ -181,7 +181,7 @@ export function updateSlide(
 }
 
 export function createDefaultOverlays(mapId: string): StratmapOverlaySettings {
-    const map = getHllStratmapMapById(mapId)
+    const map = getStratmapMapById(mapId)
     return {
         showGrid: true,
         showAllStrongpoints: true,

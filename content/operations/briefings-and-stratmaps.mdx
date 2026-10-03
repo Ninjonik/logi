@@ -28,11 +28,19 @@ with that game's maps, events, and memberships. Existing workspaces and their
 existing maps are Hell Let Loose by default. Create Vietnam or Wardogs maps
 only after enabling that game in workspace settings.
 
+When you create or open a stratmap from a game-filtered list, Logi keeps that
+game selected throughout the create and editor flow. Newly saved maps appear
+immediately in both their game-specific list and **All games**.
+
 Vietnam currently exposes placeholder tactical base maps and caps. Wardogs
 offers Bakurani, Ozeti, and Zestafona with their tactical basemaps and the
 calculator-derived fixed locations for faction HQs, towers, vendors, spawn
 boards, and faction spawn zones. The Wardogs icon picker also provides the
-distinct Wardogs tactical markers without mixing in the HLL catalog.
+distinct Wardogs tactical markers without mixing in the HLL catalog. Wardogs
+markers are rendered without the source artwork's glow and follow the selected
+marker colour. The same map-marker set is available as squad icons in Wardogs
+squad presets. Wardogs tactical basemaps use the high-resolution source tiles,
+so managers can zoom in further while planning.
 Wardogs maps do not use HLL capture points: the create and editor interfaces
 omit point selection. In the editor, managers can independently toggle the
 fixed HQ and tower reference layers.
@@ -55,6 +63,10 @@ Stratmaps are tactical map resources associated with an event or available in th
 Public stratmap links open in a full-screen editor without the usual Logi header or footer. The browser page itself does not scroll; use the map controls and editor panels within that viewport.
 
 The editor includes the Maps Let Loose blue, red, orange, yellow, green, purple, white, and grey palette. Select a swatch for the standard tactical colours, or use the final colour control to choose any custom colour. Imported Maps Let Loose green markings use the standard `#00ff00` palette green, while icons retain their friendly blue or enemy red appearance.
+
+When placing an icon, set its size in the tool properties before clicking the
+map. HLL icons default to 50, while Wardogs icons default to 25; either default
+can be overridden, and already placed icons can still be resized individually.
 
 ## Match briefing
 

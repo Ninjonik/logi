@@ -106,5 +106,89 @@
         "label": "Vehicle spawn",
         "category": "Wardogs",
         "iconPath": "/stratmap/icons/wardogs/spawn_vehicle.webp"
+    },
+    {
+        "id": "wd-artillery",
+        "label": "Artillery",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/artillery.webp"
+    },
+    {
+        "id": "wd-assault",
+        "label": "Assault",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/assault.webp"
+    },
+    {
+        "id": "wd-driver",
+        "label": "Driver",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/driver.webp"
+    },
+    {
+        "id": "wd-garage-vendor",
+        "label": "Garage vendor",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/garage_vendor.webp"
+    },
+    {
+        "id": "wd-medic",
+        "label": "Medic",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/medic.webp"
+    },
+    {
+        "id": "wd-pilot",
+        "label": "Pilot",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/pilot.webp"
+    },
+    {
+        "id": "wd-recon",
+        "label": "Recon",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/recon.webp"
+    },
+    {
+        "id": "wd-spawn-board",
+        "label": "Spawn board",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/spawn_board.webp"
+    },
+    {
+        "id": "wd-deploy-spawn",
+        "label": "Deploy spawn",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/spawn_deploy.webp"
+    },
+    {
+        "id": "wd-support",
+        "label": "Support",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/support.webp"
+    },
+    {
+        "id": "wd-tank",
+        "label": "Tank",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/tank.webp"
+    },
+    {
+        "id": "wd-tower",
+        "label": "Tower",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/tower.webp"
+    },
+    {
+        "id": "wd-vendor",
+        "label": "Vendor",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/vendor.webp"
+    },
+    {
+        "id": "wd-weapons-vendor",
+        "label": "Weapons vendor",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/weapons_vendor.webp"
     }
 ]

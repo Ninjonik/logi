@@ -20,7 +20,7 @@ export async function getStratmapDetail(stratmapId: string) {
         return null
     }
 
-    return (await fetchQuery(getStratmapByIdReference, {
+    const detail = (await fetchQuery(getStratmapByIdReference, {
         userId: user.discordId,
         stratmapId: stratmapId as never,
     })) as {
@@ -42,6 +42,8 @@ export async function getStratmapDetail(stratmapId: string) {
             updatedAt: string
         }
     } | null
+
+    return detail ? { ...detail, userId: user.discordId } : null
 }
 
 export async function getPublicStratmapDetail(stratmapId: string) {

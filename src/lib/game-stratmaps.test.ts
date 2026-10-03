@@ -14,6 +14,11 @@ test("Wardogs maps use their imported tactical basemaps", () => {
     for (const map of getStratmapMaps("wardogs")) {
         assert.equal(map.imagePath, `/maps/wardogs/${map.id}.webp`)
     }
+
+    assert.equal(
+        getStratmapMapById("bakurani", "wardogs")?.staticMarkers?.[0]?.iconPath,
+        "/stratmap/icons/wardogs/tower.webp"
+    )
 })
 
 test("Wardogs maps include calculator-derived fixed map facilities", () => {

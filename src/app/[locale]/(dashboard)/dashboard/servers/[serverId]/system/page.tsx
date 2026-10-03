@@ -41,6 +41,7 @@ export default async function SystemPage({
                 <SystemMaintenanceSections
                     serverId={serverId}
                     gameId={gameId}
+                    enabledGames={context.server.enabledGames}
                     defaultRoleId={context.discordConfig?.clanRoleId}
                     dictionary={dictionary}
                     additionalSections={[

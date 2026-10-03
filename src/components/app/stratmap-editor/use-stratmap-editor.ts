@@ -130,6 +130,9 @@ export function useStratmapEditor(
             : getHllStratmapCatalog()[0]
         )?.id ?? "garry"
     )
+    const [iconSize, setIconSize] = useState(
+        initialStratmap.gameId === "wardogs" ? 25 : 50
+    )
     const [textValue, setTextValue] = useState("Text")
     const [textSize, setTextSize] = useState(48)
     const [selectedElementIds, setSelectedElementIds] = useState<string[]>([])
@@ -951,7 +954,7 @@ export function useStratmapEditor(
                             kind: "icon",
                             x: point.x,
                             y: point.y,
-                            size: 50,
+                            size: iconSize,
                             iconId: catalogItem.id,
                             color: strokeColor,
                             note: "",
@@ -1473,6 +1476,7 @@ export function useStratmapEditor(
         lineEndStyle,
         showLineDistance,
         iconId,
+        iconSize,
         textValue,
         textSize,
         selectedElementIds,
@@ -1508,6 +1512,7 @@ export function useStratmapEditor(
         setLineEndStyle,
         setShowLineDistance,
         setIconId,
+        setIconSize,
         setTextValue,
         setTextSize,
         setTitle,

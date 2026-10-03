@@ -200,6 +200,7 @@ export function StratmapEditor({
                     textValue={editor.textValue}
                     textSize={editor.textSize}
                     iconId={editor.iconId}
+                    iconSize={editor.iconSize}
                     catalogGroups={editor.catalogGroups}
                     selectedElement={editor.selectedElement}
                     isUploadingIconAttachments={
@@ -221,6 +222,7 @@ export function StratmapEditor({
                     onTextValueChange={editor.setTextValue}
                     onTextSizeChange={editor.setTextSize}
                     onIconChange={editor.setIconId}
+                    onIconSizeChange={editor.setIconSize}
                     onSelectedElementChange={editor.handleSelectedElementChange}
                     onUpload={(event) =>
                         void editor.handleSelectedIconAttachmentUpload(event)
