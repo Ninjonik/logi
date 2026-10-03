@@ -12,6 +12,10 @@ import {
     integrationHealthSchema,
 } from "@/domain/game-data/contracts"
 import {
+    historyReadPaths,
+    historyResponseSchemas,
+} from "@/lib/api/game-history-openapi"
+import {
     peopleReadPaths,
     peopleResponseSchemas,
 } from "@/lib/api/people-openapi"
@@ -32,6 +36,7 @@ import {
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
 const summaryResponseSchemas = {
+    ...historyResponseSchemas,
     LeagueFixture: z.toJSONSchema(leagueFixtureSchema),
     LeagueMatchRead: z.toJSONSchema(leagueReadSchema),
     WarconEnvelope: z.toJSONSchema(warconEnvelopeSchema),
@@ -1642,6 +1647,7 @@ paths["/clan/warcon-data/{connectionId}"] = {
 
 // Document every endpoint's effective permission boundary, including legacy-only reads.
 Object.assign(paths, peopleReadPaths)
+Object.assign(paths, historyReadPaths)
 for (const [path, operations] of Object.entries(paths)) {
     if (!path.startsWith("/clan/")) continue
     for (const [method, operation] of Object.entries(
@@ -1649,7 +1655,11 @@ for (const [path, operations] of Object.entries(paths)) {
     )) {
         const resource = path.split("/")[2]
         if (
-            ["league-matches", "league-fixtures"].includes(resource) &&
+            [
+                "league-matches",
+                "league-fixtures",
+                "server-game-history",
+            ].includes(resource) &&
             method === "get"
         )
             continue

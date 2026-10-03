@@ -1,3 +1,4 @@
+import { warconHistoryMetadataSchema } from "./warcon-history-facts"
 import { z } from "zod"
 
 export const providerSchema = z.enum([
@@ -200,11 +201,15 @@ export const providerSessionSchema = z.strictObject({
     map: text.nullable(),
     participants: z.array(scoreSchema).max(16),
     sourceDigest: z.string().regex(/^[a-f0-9]{64}$/),
+    warcon: warconHistoryMetadataSchema.optional(),
     players: z
         .array(
             z.strictObject({
                 platform: z.enum(["steam", "xbox", "unknown"]),
                 platformId: text,
+                name: z.string().max(200).nullable().optional(),
+                faction: z.string().max(200).nullable().optional(),
+                result: z.enum(["win", "loss", "draw"]).nullable().optional(),
                 metrics: z.record(z.string(), z.number().finite().nullable()),
             })
         )

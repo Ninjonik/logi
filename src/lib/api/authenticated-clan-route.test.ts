@@ -1,6 +1,34 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+test("retained history collection accepts the canonical explicit Wardogs game query and refuses legacy keys", async () => {
+    for (const allowed of [true, false]) {
+        const result = await authenticateClanRequestWith(
+            new Request(
+                "https://logi.test/api/v1/clan/server-game-history?game=wardogs",
+                { headers: { authorization: "Bearer fixture" } }
+            ),
+            createDependencies({
+                authenticateKey: async () => ({
+                    guildId: "guild-1",
+                    ...(allowed
+                        ? {
+                              readAccess: {
+                                  resources: ["server-game-history"] as const,
+                                  gameIds: ["wardogs"] as const,
+                              },
+                          }
+                        : {}),
+                }),
+            })
+        )
+        assert.equal(
+            isAuthError(result) ? result.status : 200,
+            allowed ? 200 : 403
+        )
+    }
+})
+
 test("League reads require both explicit Wardogs grants and reject legacy/write access", async () => {
     for (const [readAccess, method, expected] of [
         [undefined, "GET", 403],

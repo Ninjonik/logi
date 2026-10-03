@@ -9,6 +9,7 @@ import {
 } from "../src/domain/game-data/contracts"
 import type { HistoryProgress } from "../src/application/game-data/collect-sessions"
 import { parseSources } from "../src/domain/game-data/policy"
+import { archiveWarconHistory } from "./gameHistoryStore"
 import { internalMutation } from "./integrationMutation"
 import { type MutationCtx } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
@@ -188,6 +189,7 @@ export const commit = internalMutation({
         let count = connection.historyCount ?? 0
         if (args.result.session) {
             const session = providerSessionSchema.parse(args.result.session)
+            await archiveWarconHistory(ctx, connection, session)
             const existing = await ctx.db
                 .query("gameSessions")
                 .withIndex("connection_external", (q) =>

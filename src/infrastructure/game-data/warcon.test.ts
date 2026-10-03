@@ -166,6 +166,41 @@ test("ended detail is absent for an unfinished match, not an invented final resu
     assert.equal(result.data, null)
 })
 
+test("durable Warcon history retains explicit outcomes, names, factions and feed coverage", async () => {
+    const detail = warconMatchDetail()
+    const result = await readWarconSession(source, "7", http(detail))
+    assert.deepEqual(result.warcon, {
+        schemaVersion: 1,
+        winner: "Bravo",
+        outcome: "decided",
+        hasFeed: false,
+        mode: "KingOfTheHill",
+        lighting: "Day",
+        factions: detail.factions,
+    })
+    assert.equal(result.players[0].name, detail.lines[0].name)
+    assert.equal(result.players[0].faction, "Alpha")
+    assert.equal(result.players[0].result, "loss")
+    assert.equal(result.players[0].metrics.headshots, null)
+})
+
+test("ended games without final scores remain without a result and unknown player attribution stays null", async () => {
+    const detail = {
+        ...warconMatchDetail(),
+        match: { ...warconMatch(), winner: null, finalScores: null },
+        lines: warconMatchDetail().lines.map((p) => ({
+            ...p,
+            faction: null,
+            result: null,
+        })),
+    }
+    const result = await readWarconSession(source, "7", http(detail))
+    assert.equal(result.warcon?.outcome, "no_result")
+    assert.equal(result.warcon?.winner, null)
+    assert.equal(result.players[0].faction, null)
+    assert.equal(result.players[0].result, null)
+})
+
 test("a detail that loses its end time is rejected rather than published as complete", async () => {
     const detail = warconMatchDetail()
     detail.match.endedAt = null

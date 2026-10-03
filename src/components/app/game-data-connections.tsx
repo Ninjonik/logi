@@ -2,6 +2,7 @@
 
 import { gameDataSettingsSchema } from "@/domain/game-data/contracts"
 import { useCallback, useEffect, useState } from "react"
+import { GameHistoryPanel } from "./game-history-panel"
 import { WarconScoreboard } from "./warcon-scoreboard"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
@@ -257,6 +258,7 @@ function Connections({ serverId, dictionary }: Props) {
                     </section>
                 )
             })}
+            <GameHistoryPanel serverId={serverId} dictionary={dictionary} />
         </div>
     )
 }

@@ -43,6 +43,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Wardogs League public match reader](./docs/integrations/website/v0.12/README.md) — anonymous HTML parser, safe URL preview, shared stale cache, scoped website API and live/local proof
 - [League discovery and shared fixtures](./docs/integrations/website/league-discovery.md) — scheduled scanning, admin pins, human links, compact persistent Discord cards and scoped collection/change feed
 - [Workspace team directory design](./docs/superpowers/specs/2026-10-03-team-directory-design.md) — proposed HLL/Wardogs team catalogue, logo ownership, historical match snapshots and website/Discord contracts; written-spec review pending
+- [Retained Warcon history](./docs/integrations/website/warcon-history.md) — durable completed-game archive, faction/player calculations, scoped web pages and local acceptance evidence
 - [Actor-backed website event commands](./docs/integrations/website/event-commands.md) — current SSO actor and role policy, native event writes, durable receipts, revision conflicts and local HTTP proof
 - [Central login and connected website acceptance](./docs/integrations/website/v0.13/README.md) — paired SSO, roles, native event commands, local regression/browser proof and remaining activation
 - [Read-only people and player facts](./docs/integrations/website/v0.14/README.md) — scoped member directory, published roster/attendance, verified collected-session facts and bounded dependency resets
@@ -106,16 +107,16 @@ Do not introduce grab-bag server modules or compatibility shims solely to preser
 
 ## Where New Work Goes
 
-| Change | Primary location | Typical validation |
-| --- | --- | --- |
-| Pure business rule or calculation | `src/domain/<feature>` | colocated unit test |
-| Multi-repository workflow | `src/application/<feature>` | colocated use-case test with fakes |
-| Convex persistence or transaction wiring | `convex/` and/or `src/infrastructure/convex` | mapping test plus focused integration check |
-| Next.js page or route | `src/app` | typecheck and focused behavioral test |
-| Web read/write integration | `src/lib/read-models` or `src/lib/gateways` | focused unit/integration test |
-| React UI | `src/components` or route-local UI | typecheck and manual UI verification |
-| Discord behavior | `discord-bot/src` | colocated bot test; use shared rules for cross-runtime behavior |
-| Translation copy | `src/i18n/messages` and related dictionaries | update all supported locales (`en`, `cs`) unless fallback is intentional |
+| Change                                   | Primary location                             | Typical validation                                                       |
+| ---------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
+| Pure business rule or calculation        | `src/domain/<feature>`                       | colocated unit test                                                      |
+| Multi-repository workflow                | `src/application/<feature>`                  | colocated use-case test with fakes                                       |
+| Convex persistence or transaction wiring | `convex/` and/or `src/infrastructure/convex` | mapping test plus focused integration check                              |
+| Next.js page or route                    | `src/app`                                    | typecheck and focused behavioral test                                    |
+| Web read/write integration               | `src/lib/read-models` or `src/lib/gateways`  | focused unit/integration test                                            |
+| React UI                                 | `src/components` or route-local UI           | typecheck and manual UI verification                                     |
+| Discord behavior                         | `discord-bot/src`                            | colocated bot test; use shared rules for cross-runtime behavior          |
+| Translation copy                         | `src/i18n/messages` and related dictionaries | update all supported locales (`en`, `cs`) unless fallback is intentional |
 
 Prefer existing feature patterns and naming over inventing a parallel abstraction. Search for a similar implementation before adding a module.
 
@@ -251,6 +252,7 @@ Before handing work back:
 - verify all new imports, links, routes, and environment variable names
 - update relevant Markdown when behavior or developer workflow changed
 - state what changed, what was validated, and any remaining risk or unrun check
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

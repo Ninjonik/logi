@@ -15,6 +15,7 @@ import {
     warconQuerySchema,
     type WarconQuery,
 } from "../../domain/game-data/warcon-query"
+import { classifyWarconOutcome } from "../../domain/game-data/warcon-history-facts"
 import { createHash } from "node:crypto"
 import { z } from "zod"
 
@@ -242,9 +243,27 @@ export async function readWarconSession(
         sourceDigest: createHash("sha256")
             .update(JSON.stringify(value))
             .digest("hex"),
+        warcon: {
+            schemaVersion: 1,
+            winner: value.match.winner?.trim() || null,
+            outcome: classifyWarconOutcome(
+                value.match.winner?.trim() || null,
+                value.match.finalScores
+            ),
+            hasFeed: value.hasFeed,
+            mode: value.match.experiences,
+            lighting: value.match.lighting,
+            factions: value.factions.map((f) => ({
+                name: f.name,
+                colorHex: f.colorHex || null,
+            })),
+        },
         players: value.lines.map((p) => ({
             platform: "steam",
             platformId: p.steamId,
+            name: p.name,
+            faction: p.faction,
+            result: p.result,
             metrics: {
                 seconds: p.seconds,
                 kills: p.kills,

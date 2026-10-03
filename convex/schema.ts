@@ -1371,6 +1371,27 @@ export default defineSchema({
             "complete",
             "fetchedAt",
         ]),
+    serverGameHistory: defineTable({
+        guildId: v.string(),
+        sourceId: v.string(),
+        externalId: v.string(),
+        session: gameDataSession,
+        contentDigest: v.string(),
+        revision: v.string(),
+        endedAt: v.string(),
+        map: v.union(v.string(), v.null()),
+        serverName: v.union(v.string(), v.null()),
+        collectedAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("source_external", ["guildId", "sourceId", "externalId"])
+        .index("guildId_endedAt", ["guildId", "endedAt"])
+        .index("guildId_sourceId_endedAt", ["guildId", "sourceId", "endedAt"]),
+    serverGameHistoryHeads: defineTable({
+        guildId: v.string(),
+        revision: v.string(),
+        lastCollectedAt: v.string(),
+    }).index("guildId", ["guildId"]),
     apiKeys: defineTable({
         guildId: v.string(),
         name: v.string(),

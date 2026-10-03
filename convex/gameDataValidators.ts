@@ -45,6 +45,27 @@ export const gameDataSession = v.object({
     complete: v.boolean(),
     map: v.union(v.string(), v.null()),
     sourceDigest: v.string(),
+    warcon: v.optional(
+        v.object({
+            schemaVersion: v.literal(1),
+            winner: v.union(v.string(), v.null()),
+            outcome: v.union(
+                v.literal("decided"),
+                v.literal("draw"),
+                v.literal("no_result"),
+                v.literal("unknown")
+            ),
+            hasFeed: v.boolean(),
+            mode: v.union(v.string(), v.null()),
+            lighting: v.union(v.string(), v.null()),
+            factions: v.array(
+                v.object({
+                    name: v.string(),
+                    colorHex: v.union(v.string(), v.null()),
+                })
+            ),
+        })
+    ),
     participants: v.array(
         v.object({
             id: v.string(),
@@ -60,6 +81,16 @@ export const gameDataSession = v.object({
                 v.literal("unknown")
             ),
             platformId: v.string(),
+            name: v.optional(v.union(v.string(), v.null())),
+            faction: v.optional(v.union(v.string(), v.null())),
+            result: v.optional(
+                v.union(
+                    v.literal("win"),
+                    v.literal("loss"),
+                    v.literal("draw"),
+                    v.null()
+                )
+            ),
             metrics: v.record(v.string(), v.union(v.number(), v.null())),
         })
     ),

@@ -1,4 +1,6 @@
+import { warconMatchDetail, warconServerId } from "../testing/warcon"
 import * as history from "../../../convex/gameDataHistory"
+import { readWarconSession } from "../game-data/warcon"
 import * as publicApi from "../../../convex/publicApi"
 import * as gameData from "../../../convex/gameData"
 import test, { type TestContext } from "node:test"
@@ -83,6 +85,97 @@ class Database {
         Object.assign((await this.get(id))!, value)
     }
 }
+
+test("Warcon archive survives collector disable and credential rotation, replaces corrections and rejects reused identities", async (t) => {
+    const ctx = fixture(t)
+    const warcon = {
+        ...source,
+        provider: "wardogs_warcon",
+        providerServerId: warconServerId,
+    }
+    process.env.LOGI_GAME_DATA_SOURCES = JSON.stringify([warcon])
+    const detail = warconMatchDetail()
+    const session = await readWarconSession(
+        warcon as Parameters<typeof readWarconSession>[0],
+        "7",
+        {
+            get: async () => ({ status: 200, etag: null, body: detail }),
+        }
+    )
+    const commit = async (value = session) => {
+        await handler(gameData.configure)(ctx, {
+            secret: "synthetic-data-secret",
+            guildId: source.guildId,
+            sourceRef: source.ref,
+            enabled: true,
+        })
+        const claim = (await handler(history.claimNext)(ctx, {})) as {
+            runId: string
+            generation: number
+            fence: number
+        }
+        return handler(history.commit)(ctx, {
+            ...claim,
+            result: {
+                session: value,
+                progress: { page: 1, pendingIds: [], nextPage: null },
+                completed: true,
+            },
+        })
+    }
+    await commit()
+    assert.equal(ctx.db.tables.serverGameHistory?.length, 1)
+    const originalId = ctx.db.tables.serverGameHistory[0]._id
+    assert.equal(ctx.db.tables.serverGameHistory[0].revision, "1")
+    await commit()
+    assert.equal(ctx.db.tables.serverGameHistory.length, 1)
+    assert.equal(
+        ctx.db.tables.serverGameHistory[0].revision,
+        "1",
+        "unchanged reads don't invent revisions"
+    )
+    await commit({
+        ...session,
+        warcon: { ...session.warcon!, winner: "Alpha" },
+        sourceDigest: "f".repeat(64),
+    })
+    assert.equal(ctx.db.tables.serverGameHistory[0]._id, originalId)
+    assert.equal(ctx.db.tables.serverGameHistory[0].revision, "2")
+    await handler(gameData.configure)(ctx, {
+        secret: "synthetic-data-secret",
+        guildId: source.guildId,
+        sourceRef: source.ref,
+        enabled: false,
+    })
+    assert.equal(ctx.db.tables.serverGameHistory.length, 1)
+    process.env.LOGI_GAME_DATA_SOURCES = JSON.stringify([
+        { ...warcon, secretRef: "LOGI_GAME_DATA_ROTATED_TOKEN" },
+    ])
+    await commit()
+    assert.equal(
+        ctx.db.tables.serverGameHistory.length,
+        1,
+        "credential changes preserve source identity"
+    )
+    await assert.rejects(
+        () => commit({ ...session, startedAt: "2026-10-01T11:00:00.000Z" }),
+        /identity conflict/i
+    )
+    assert.equal(ctx.db.tables.serverGameHistory[0]._id, originalId)
+    process.env.LOGI_GAME_DATA_SOURCES = JSON.stringify([
+        { ...warcon, origin: "https://other-source.test" },
+    ])
+    await commit()
+    assert.equal(
+        ctx.db.tables.serverGameHistory.length,
+        2,
+        "a different provider origin has its own match identity"
+    )
+    assert.notEqual(
+        ctx.db.tables.serverGameHistory[0].sourceId,
+        ctx.db.tables.serverGameHistory[1].sourceId
+    )
+})
 const source = {
     ref: "wdg",
     guildId: "guild-a",

@@ -8,6 +8,7 @@ export const API_KEY_READ_RESOURCES = [
     "league-matches",
     "league-fixtures",
     "warcon-data",
+    "server-game-history",
     "membership-summaries",
     "server-snapshots",
     "integration-health",
@@ -59,6 +60,7 @@ export function allowsApiKeyRead(
     if (access === undefined)
         return ![
             "warcon-data",
+            "server-game-history",
             "league-matches",
             "league-fixtures",
             "member-summaries",

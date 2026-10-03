@@ -1,4 +1,54 @@
 export const deMessages = {
+    gameHistory: {
+        title: "Warcon-Spielhistorie",
+        description:
+            "Abgeschlossene Serverspiele in Logi. Fraktionen sind Spielseiten, keine Clans.",
+        load: "Historie laden / aktualisieren",
+        loading: "Vollständigen Zeitraum laden…",
+        error: "Historie unvollständig. Erneut versuchen oder kürzeren Zeitraum wählen. Keine Teilrangliste wird angezeigt.",
+        period: "Zeitraum",
+        all: "Alle gespeicherten Spiele",
+        week: "7 Tage",
+        month: "30 Tage",
+        quarter: "90 Tage",
+        map: "Karte (exakter Name, optional)",
+        source: "Server",
+        allSources: "Alle gespeicherten Server",
+        minimum: "Mindestspielzeit in Minuten",
+        games: "Spiele",
+        decided: "Mit Gewinner",
+        draw: "Unentschieden",
+        no_result: "Ohne Ergebnis",
+        unknown: "Unbekannt",
+        feed: "Spiele mit Combat-Feed",
+        faction: "Fraktion",
+        factions: "Fraktionssiege",
+        share: "Anteil entschiedener Spiele",
+        players: "Spielerrangliste",
+        coverage: "Abdeckung",
+        lastCollected: "Letzter Spielimport in diesem Workspace",
+        empty: "Keine abgeschlossenen Spiele in diesem Zeitraum. Historienerfassung für eine Warcon-Quelle oben aktivieren.",
+        player: "Spieler",
+        matches: "Spiele",
+        wins: "Siege",
+        losses: "Niederlagen",
+        kills: "Kills",
+        deaths: "Tode",
+        cash: "Cash-Differenz",
+        winRate: "Siegquote",
+        kd: "K/D",
+        sort: "Sortieren nach",
+        history: "Gespeicherte Spiele",
+        previous: "Zurück",
+        next: "Weiter",
+        details: "Spielerdetails",
+        ended: "Beendet",
+        unavailable: "Unbekannt",
+        ratioHelp:
+            "K/D erfordert vollständige Kills/Tode und mindestens einen Tod. Unbekannte Ergebnisse zählen nicht zur Siegquote. Summen enthalten nur bekannte Werte; x/y zeigt die Abdeckung.",
+        retentionHelp:
+            "Nur erfolgreich importierte abgeschlossene Spiele. Fehlende Anbieterhistorie und laufende Spiele sind ausgeschlossen. Die Erfassungszeit bestätigt keinen vollständigen Anbieterimport.",
+    },
     leagueMatch: {
         title: "Wardogs League Spiel",
         description:
@@ -171,6 +221,8 @@ export const deMessages = {
         invalidPolicy:
             "Unbekannte Einschränkungen; der Backend-Zugriff wird verweigert.",
         resourceLabels: {
+            "server-game-history":
+                "Gespeicherte Serverspiele (Spielernamen und Steam-IDs)",
             "league-matches": "Öffentliche Wardogs League Spiele",
             "league-fixtures": "Verfolgte Wardogs League Spiele",
             "warcon-data": "Warcon-Spieldaten (mit Spielernamen und Steam-IDs)",

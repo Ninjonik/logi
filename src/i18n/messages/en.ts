@@ -1,4 +1,54 @@
 export const enMessages = {
+    gameHistory: {
+        title: "Warcon game history",
+        description:
+            "Completed server games retained by Logi. Factions are game sides, not clan teams.",
+        load: "Load / refresh history",
+        loading: "Loading the complete period…",
+        error: "History could not be completed. Retry, or select a shorter period. No partial ranking is shown.",
+        period: "Period",
+        all: "All retained games",
+        week: "7 days",
+        month: "30 days",
+        quarter: "90 days",
+        map: "Map (exact name, optional)",
+        source: "Server",
+        allSources: "All retained servers",
+        minimum: "Minimum minutes for ranking",
+        games: "Games",
+        decided: "With a winner",
+        draw: "Draws",
+        no_result: "No result",
+        unknown: "Unknown",
+        feed: "Games with combat feed",
+        faction: "Faction",
+        factions: "Faction wins",
+        share: "Share of decided games",
+        players: "Player ranking",
+        coverage: "Coverage",
+        lastCollected: "Last game imported in this workspace",
+        empty: "No completed games have been collected in this period. Enable match-history collection for a Warcon source above.",
+        player: "Player",
+        matches: "Games",
+        wins: "Wins",
+        losses: "Losses",
+        kills: "Kills",
+        deaths: "Deaths",
+        cash: "Cash delta",
+        winRate: "Win rate",
+        kd: "K/D",
+        sort: "Rank by",
+        history: "Retained games",
+        previous: "Previous",
+        next: "Next",
+        details: "Player details",
+        ended: "Ended",
+        unavailable: "Unknown",
+        ratioHelp:
+            "K/D requires complete kills/deaths and at least one death. Win rate excludes unknown outcomes. Numeric totals include known values only; x/y indicates metric coverage.",
+        retentionHelp:
+            "Coverage includes successfully imported completed games only. Missing provider history and ongoing games are excluded. Collection time does not prove that every provider game was imported.",
+    },
     leagueMatch: {
         title: "Wardogs League match",
         description:
@@ -164,6 +214,8 @@ export const enMessages = {
         empty: "No API keys have been created.",
         invalidPolicy: "Unrecognized restrictions; backend access is denied.",
         resourceLabels: {
+            "server-game-history":
+                "Retained server games (player names and Steam IDs)",
             "league-matches": "Wardogs League",
             "league-fixtures": "Tracked Wardogs League fixtures",
             "warcon-data":
