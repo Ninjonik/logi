@@ -6,6 +6,8 @@ import {
 import type { MutationCtx } from "../../../convex/_generated/server"
 import type { Id } from "../../../convex/_generated/dataModel"
 
+const EVENT_CONCLUSION_RESERVE_MS = 15 * 60 * 1000
+
 /** Replaces an event's pending schedule after a successful upsert. */
 export async function refreshEventSchedule(
     ctx: MutationCtx,
@@ -35,7 +37,15 @@ export async function refreshEventSchedule(
             : []),
         ["close-registration", event.registrationEnd],
         ["start-event", new Date(startAtMs).toISOString()],
-        ["conclude-event", event.gameEnd],
+        ...(event.createSquadVoiceChannels
+            ? [["create-squad-voice-channels", event.meetingStart] as const]
+            : []),
+        [
+            "conclude-event",
+            new Date(
+                new Date(event.gameEnd).getTime() + EVENT_CONCLUSION_RESERVE_MS
+            ).toISOString(),
+        ],
         ...[24, 18, 12, 6].flatMap((hours) => {
             const dueAt = getAttendanceReminderDueAt(
                 event.meetingStart,

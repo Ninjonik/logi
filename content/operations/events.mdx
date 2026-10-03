@@ -22,7 +22,7 @@ must refresh the information before accepting a new edit.
 
 The website command supports match or training names, descriptions, maps, sides
 and schedule times. Updates and cancellation are available before meeting start.
-Cancelling uses Logi's existing early-conclusion behavior and awards no attendance
+Cancelling records an early conclusion through a separate cancellation action and awards no attendance
 points. Discord settings, rosters and result confirmation remain managed in
 their dedicated Logi workflows. An event created from a website does not enable
 clan pings or forum creation automatically.
@@ -95,12 +95,12 @@ attended.
 
 ## Event timeline and automation
 
-| Status       | When it applies                                                                                  | What changes for members                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Registration | Before the registration deadline                                                                 | Eligible people can sign up.                                                                                                   |
-| Closed       | After registration closes, before the event is starting                                          | New sign-ups are blocked.                                                                                                      |
-| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until game end | Sign-ups are normally blocked; training retains the exception above. Published-roster attendance acknowledgement is available. |
-| Concluded    | When a manager concludes it or when game end is reached during status reconciliation             | Discord event messages are removed, temporary event roles are cleaned up, and event scoring is resolved once.                  |
+| Status       | When it applies                                                                                                        | What changes for members                                                                                                               |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Registration | Before the registration deadline                                                                                       | Eligible people can sign up.                                                                                                           |
+| Closed       | After registration closes, before the event is starting                                                                | New sign-ups are blocked.                                                                                                              |
+| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until the duration plus reserve ends | Sign-ups are normally blocked; training retains the exception above. Published-roster attendance acknowledgement is available.         |
+| Concluded    | When a manager concludes it after the meeting has started, or 15 minutes after the planned duration ends               | Discord event messages are removed, temporary event roles and squad voice channels are cleaned up, and event scoring is resolved once. |
 
 The dashboard/bot background work reconciles time-based statuses; it is not a
 promise that every visual update happens at the exact second. Editing an event
@@ -132,6 +132,14 @@ event announcements, and match forum posts, without delaying calendar entries or
 Discord scheduled events. Events created before this option was added have no
 start time and continue to announce immediately.
 
+Events have a planned duration (90 minutes by default, including legacy
+events) and a 15-minute reserve before automatic conclusion. Managers may
+conclude an event at any time after its meeting start. An event can also create
+one temporary voice channel for each non-empty roster squad at meeting start.
+Enable this per event and select a category there, or leave the category empty
+to use the server's default squad-voice category. Those channels are removed
+when the event concludes.
+
 The bot creates temporary Attendees and Reserves roles for non-concluded
 events. Attending sign-ups and squad placements feed Attendees; roster reserves
 feed Reserves and are excluded from Attendees. Both are deleted at conclusion.
@@ -154,9 +162,13 @@ is appropriate.
 For matches, managers can choose which membership categories receive a direct
 message reminder to sign up. The default is active regular members only;
 recruits and reserve members can be added, while mercenaries are never included.
-The bot sends the same match registration message and buttons 24 hours after
-creation, then every 24 hours while registration remains open. Clear every
-recipient category to turn the reminders off for that match. A member stops
+The bot sends a compact registration summary and controls 24 hours after
+creation, then every 24 hours while registration remains open. It does not
+show the signup list because that list is only live in the event registration
+message; when available, the DM links to the registration channel and event
+forum. Its controls let the recipient sign up, change their signup, or decline
+directly from the DM. Clear every recipient category to turn the reminders off
+for that match. A member stops
 receiving these reminders as soon as they choose either attending or not
 attending. Memberships without a game assignment are treated as Hell Let Loose
 members for Hell Let Loose matches. Matches that were created before this setting was added use the

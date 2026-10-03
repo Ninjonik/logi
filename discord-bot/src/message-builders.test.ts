@@ -7,6 +7,7 @@ import {
     buildCompactV2FieldText,
     buildEventComponents,
     buildEventEmbed,
+    buildMembershipPanelComponents,
 } from "./message-builders"
 import type {
     CalendarItem,
@@ -107,6 +108,51 @@ test("buildCompactV2FieldText removes padding and preserves row order when compa
     assert.equal(
         result,
         "**Infantry (4)**\nAlpha, Bravo, Charlie, Delta\n\n**Armor (0)**\nNobody yet"
+    )
+})
+
+test("membership panel components keep Wardogs scoped while HLL stays legacy-compatible", () => {
+    const membershipConfig: DiscordConfig = {
+        ...config,
+        membershipSettings: {
+            enabled: true,
+            submitChannelId: "submit",
+            applicationParentChannelId: "parent",
+            panelTitle: "Apply",
+            panelDescription: "Choose a category.",
+            autoAssignRecruitOnApply: false,
+            categories: [
+                {
+                    id: "recruit",
+                    supportRoleIds: [],
+                    recruitRoleIds: [],
+                    finalRoleIds: [],
+                    modalQuestions: [],
+                    assignmentType: "member",
+                },
+            ],
+        },
+    }
+
+    const legacyButton =
+        buildMembershipPanelComponents(membershipConfig)[0]?.toJSON()
+            .components[0]
+    const wardogsButton = buildMembershipPanelComponents(
+        membershipConfig,
+        "wardogs"
+    )[0]?.toJSON().components[0]
+
+    assert.equal(
+        legacyButton && "custom_id" in legacyButton
+            ? legacyButton.custom_id
+            : undefined,
+        "membership:recruit"
+    )
+    assert.equal(
+        wardogsButton && "custom_id" in wardogsButton
+            ? wardogsButton.custom_id
+            : undefined,
+        "membership:wardogs:recruit"
     )
 })
 
@@ -615,4 +661,55 @@ test("Components V2 announcements show published roster below event artwork", ()
             "attachment://published-roster.png",
         ]
     )
+})
+
+test("Components V2 signup reminders can hide signup details and retain DM-safe controls", () => {
+    const event = createMatchEvent({
+        participants: [
+            {
+                userId: "user-1",
+                status: "attending",
+                updatedAt: "2026-07-29T10:00:00.000Z",
+            },
+        ],
+    })
+    const payload = {
+        config: { ...config, defaultLanguage: "en" },
+        groups,
+        guild: { eventCategories },
+        rosters: [],
+        userDisplayNames: { "user-1": "Alpha" },
+        events: [event],
+        calendarItems: [],
+        topicPresets: [],
+        syncStates: [],
+        assignments: [],
+    } as unknown as SyncPayload
+
+    const message = buildAnnouncementV2Message(
+        payload,
+        event,
+        {},
+        {
+            hideSignupDetails: true,
+            eventLinks: [
+                {
+                    label: "Open registration channel",
+                    url: "https://discord.com/channels/guild-1/registration",
+                },
+                {
+                    label: "Open event forum",
+                    url: "https://discord.com/channels/guild-1/forum",
+                },
+            ],
+        }
+    )
+    const rendered = JSON.stringify(message.components?.[0]?.toJSON())
+
+    assert.match(rendered, /Open registration channel/)
+    assert.match(rendered, /Open event forum/)
+    assert.doesNotMatch(rendered, /People signed up/)
+    assert.doesNotMatch(rendered, /Alpha/)
+    assert.match(rendered, /signup:event-1:PRIMARY_GROUP:guild-1/)
+    assert.match(rendered, /check-signup:event-1:guild-1/)
 })

@@ -49,6 +49,7 @@ async function runTick() {
                 | "close-registration"
                 | "registration-start"
                 | "start-event"
+                | "create-squad-voice-channels"
                 | "conclude-event"
                 | "attendance-reminder"
                 | "signup-reminder"

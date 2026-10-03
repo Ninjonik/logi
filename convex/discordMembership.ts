@@ -31,19 +31,33 @@ export const getTicketCategoryContext = query({
 })
 
 export const getMembershipCategoryContext = query({
-    args: { secret: v.string(), guildId: v.string(), categoryId: v.string() },
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        categoryId: v.string(),
+        gameId: v.optional(
+            v.union(
+                v.literal("hell_let_loose"),
+                v.literal("hell_let_loose_vietnam"),
+                v.literal("wardogs")
+            )
+        ),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         const config = await ctx.db
             .query("discordConfigs")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .unique()
-        if (!config?.membershipSettings?.enabled) return null
-        const category = config.membershipSettings.categories.find(
+        const effectiveConfig = config
+            ? withGameOverrides(config, config.gameOverrides, args.gameId)
+            : null
+        if (!effectiveConfig?.membershipSettings?.enabled) return null
+        const category = effectiveConfig.membershipSettings.categories.find(
             (item) => item.id === args.categoryId
         )
         if (!category) return null
-        return { config: normalizeConfigDoc(config), category }
+        return { config: normalizeConfigDoc(effectiveConfig), category }
     },
 })
 
@@ -67,8 +81,11 @@ export const getMembershipApplicationPrereq = query({
             .query("discordConfigs")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .unique()
-        if (!config?.membershipSettings?.enabled) return null
-        const category = config.membershipSettings.categories.find(
+        const effectiveConfig = config
+            ? withGameOverrides(config, config.gameOverrides, args.gameId)
+            : null
+        if (!effectiveConfig?.membershipSettings?.enabled) return null
+        const category = effectiveConfig.membershipSettings.categories.find(
             (item) => item.id === args.categoryId
         )
         if (!category) return null
@@ -92,14 +109,22 @@ export const getMembershipApplicationPrereq = query({
         )
 
         return {
-            config: normalizeConfigDoc(config),
+            config: normalizeConfigDoc(effectiveConfig),
             category,
             user: user ? normalizeUserDoc(user) : null,
             assignment: assignment ? normalizeDoc(assignment) : null,
             hasOpenApplication: openApplications.some(
                 (application) =>
                     application.creatorId === args.userId &&
-                    application.status === "open"
+                    application.status === "open" &&
+                    matchesGameScope(application.gameId, args.gameId)
+            ),
+            hasAssignmentInOtherGame: Boolean(
+                args.gameId &&
+                assignments.some(
+                    (candidate) =>
+                        !matchesGameScope(candidate.gameId, args.gameId)
+                )
             ),
         }
     },
@@ -202,16 +227,19 @@ export const createMembershipApplicationThread = mutation({
             .query("discordConfigs")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .unique()
-        if (!config?.membershipSettings?.enabled)
+        const effectiveConfig = config
+            ? withGameOverrides(config, config.gameOverrides, args.gameId)
+            : null
+        if (!effectiveConfig?.membershipSettings?.enabled)
             throw new Error("Membership applications are not enabled.")
-        const category = config.membershipSettings.categories.find(
+        const category = effectiveConfig.membershipSettings.categories.find(
             (item) => item.id === args.categoryId
         )
         if (!category) throw new Error("Application category not found.")
         const nextApplicationNumber =
-            (config.membershipApplicationCounter ?? 0) + 1
+            (effectiveConfig.membershipApplicationCounter ?? 0) + 1
         const now = new Date().toISOString()
-        await ctx.db.patch(config._id, {
+        await ctx.db.patch(effectiveConfig._id, {
             membershipApplicationCounter: nextApplicationNumber,
         })
         const applicationId = await ctx.db.insert(
@@ -243,7 +271,7 @@ export const createMembershipApplicationThread = mutation({
                 categoryLabel: category.label?.trim() || category.id,
             },
             category,
-            config: normalizeConfigDoc(config),
+            config: normalizeConfigDoc(effectiveConfig),
         }
     },
 })

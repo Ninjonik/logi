@@ -1076,7 +1076,24 @@ export const mutateClanPreset = mutation({
                         throw new Error(
                             "Preset name and at least one squad are required."
                         )
-                    value = { name, squads }
+                    const gameId =
+                        current && "gameId" in current
+                            ? resolveGameScope(current.gameId)
+                            : (payload.gameId as
+                                  | "hell_let_loose"
+                                  | "hell_let_loose_vietnam"
+                                  | "wardogs")
+                    if (
+                        current &&
+                        payload.gameId !== undefined &&
+                        resolveGameScope(
+                            "gameId" in current ? current.gameId : undefined
+                        ) !== resolveGameScope(payload.gameId as never)
+                    )
+                        throw new Error(
+                            "A squad preset game cannot be changed."
+                        )
+                    value = { gameId, name, squads }
                 }
                 if (current) {
                     await ctx.db.patch(current._id, {
@@ -1748,6 +1765,7 @@ export const mutateClanSettings = mutation({
         calendarChannelId: v.optional(v.union(v.string(), v.null())),
         forumCategoryId: v.optional(v.union(v.string(), v.null())),
         meetingChannelId: v.optional(v.union(v.string(), v.null())),
+        squadVoiceCategoryId: v.optional(v.union(v.string(), v.null())),
         clanRoleId: v.optional(v.union(v.string(), v.null())),
         dashboardAdminRoleId: v.optional(v.union(v.string(), v.null())),
     },
@@ -1779,6 +1797,7 @@ export const mutateClanSettings = mutation({
                 args.calendarChannelId,
                 args.forumCategoryId,
                 args.meetingChannelId,
+                args.squadVoiceCategoryId,
                 args.clanRoleId,
                 args.dashboardAdminRoleId,
             ].some((value) => value !== undefined)
@@ -1847,6 +1866,7 @@ export const mutateClanSettings = mutation({
                 "calendarChannelId",
                 "forumCategoryId",
                 "meetingChannelId",
+                "squadVoiceCategoryId",
                 "clanRoleId",
                 "dashboardAdminRoleId",
             ] as const
@@ -2166,6 +2186,7 @@ export const getClanResourcePage = query({
                             "assignments",
                             "stratmaps",
                             "matches",
+                            "squad-presets",
                         ].includes(args.resource)
                             ? apiGameDocument(item as never)
                             : apiDocument(item as never)

@@ -240,7 +240,9 @@ const membershipSettings = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    applicationWelcomeMessage: v.optional(v.string()),
     autoAssignRecruitOnApply: v.boolean(),
+    inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(rosterScoreSettings),
     categories: v.array(membershipCategory),
 })
@@ -262,8 +264,11 @@ const gameDiscordOverrides = v.object({
     eventInfoChannelId: v.optional(v.string()),
     forumCategoryId: v.optional(v.string()),
     meetingChannelId: v.optional(v.string()),
+    squadVoiceCategoryId: v.optional(v.string()),
     playerStatsServers: v.optional(v.array(playerStatsServer)),
     membershipSettings: v.optional(membershipSettings),
+    membershipPanelMessageId: v.optional(v.string()),
+    membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
 })
 
 // Convex records require a free-form string key validator.  These are known,
@@ -663,6 +668,7 @@ export default defineSchema({
         calendarMessageLastConfigUpdatedAt: v.optional(v.string()),
         forumCategoryId: v.optional(v.string()),
         meetingChannelId: v.optional(v.string()),
+        squadVoiceCategoryId: v.optional(v.string()),
         clanRoleId: v.optional(v.string()),
         dashboardAdminRoleId: v.optional(v.string()),
         playerStatsServers: v.optional(v.array(playerStatsServer)),
@@ -720,6 +726,9 @@ export default defineSchema({
         announcementChannelId: v.optional(v.string()),
         eventInfoChannelId: v.optional(v.string()),
         meetingChannelId: v.optional(v.string()),
+        createSquadVoiceChannels: v.optional(v.boolean()),
+        squadVoiceCategoryId: v.optional(v.string()),
+        durationMinutes: v.optional(v.number()),
         requiredRoleIds: v.optional(v.array(v.string())),
         rewardRoleIds: v.optional(v.array(v.string())),
         signupGroupIds: v.optional(v.array(v.string())),
@@ -870,6 +879,7 @@ export default defineSchema({
             v.literal("registration-start"),
             v.literal("close-registration"),
             v.literal("start-event"),
+            v.literal("create-squad-voice-channels"),
             v.literal("conclude-event"),
             v.literal("attendance-reminder"),
             v.literal("signup-reminder")
@@ -913,6 +923,8 @@ export default defineSchema({
     }).index("guildId", ["guildId"]),
     squadPresets: defineTable({
         guildId: v.string(),
+        // Missing values are legacy Hell Let Loose presets.
+        gameId: v.optional(gameId),
         name: v.string(),
         squads: v.array(squadPresetSquad),
         createdAt: v.string(),
@@ -921,6 +933,8 @@ export default defineSchema({
     rosters: defineTable({
         // Optional while legacy rosters are backfilled from their parent event.
         guildId: v.optional(v.string()),
+        // Missing values are legacy Hell Let Loose rosters.
+        gameId: v.optional(gameId),
         eventId: v.id("events"),
         squadPresetId: v.optional(v.id("squadPresets")),
         squads: v.array(rosterSquad),
@@ -997,6 +1011,7 @@ export default defineSchema({
         lastRosterUpdatedAt: v.optional(v.string()),
         lastConfigUpdatedAt: v.optional(v.string()),
         lastCalendarSyncVersion: v.optional(v.string()),
+        squadVoiceChannelIds: v.optional(v.array(v.string())),
         createdAt: v.string(),
         updatedAt: v.string(),
     })

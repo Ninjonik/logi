@@ -881,6 +881,7 @@ export const csMessages = {
         errorsChannelId: "ID kanálu pro chyby",
         calendarChannelId: "ID kanálu kalendáře",
         forumCategoryId: "ID forum kategorie",
+        squadVoiceCategoryId: "Výchozí kategorie hlasových kanálů čet",
         meetingChannelId: "ID hlasového kanálu pro sraz",
         clanRoleId: "ID klanové role",
         dashboardAdminRoleId: "ID role pro správu dashboardu",
@@ -1077,8 +1078,17 @@ export const csMessages = {
         skipPendingTitle: "Přeskočit pending fázi",
         skipPendingDescription:
             "Nové členské přihlášky začnou po odeslání rovnou jako recruitti.",
+        inviteSupportMembersIndividuallyTitle:
+            "Přidávat členy support rolí jednotlivě",
+        inviteSupportMembersIndividuallyDescription:
+            "Když je vypnuto, Logi místo toho pingne support role kategorie. Discord přidá členy podporovaných malých rolí; dashboard administrátoři se stále přidávají přímo.",
         panelTitle: "Nadpis panelu",
         panelDescription: "Popis panelu",
+        welcomeMessage: "Uvítací zpráva v application threadu",
+        welcomeMessageDescription:
+            "Zobrazí se nad shrnutím přihlášky v každém soukromém threadu. Použijte {applicant}, {support_roles} a {category} pro živé Discord zmínky a vybranou kategorii.",
+        welcomeMessagePlaceholder:
+            "Ahoj {applicant}, děkujeme za přihlášku. {support_roles} se ti brzy ozvou.",
         image: "Náhledový obrázek",
         applicationThumbnail: "Náhled přihlášky",
         categoriesTitle: "Kategorie přihlášek",
@@ -1683,6 +1693,12 @@ export const csMessages = {
             pingMode: "Ping oznámení",
             pingRoleIds: "Role k upozornění",
             createForumChannel: "Vytvořit forum kanál",
+            createSquadVoiceChannels:
+                "Vytvořit hlasové kanály čet při začátku srazu",
+            squadVoiceCategory:
+                "Kategorie hlasových kanálů čet (prázdné použije výchozí)",
+            conclusionReserveHelp:
+                "Akce se automaticky uzavře 15 minut po skončení této délky.",
         },
         channelRoutingCreateHelp:
             "Začíná s předvolbou z nastavení klanu. Po vytvoření je volba uzamčená, aby Discord zprávy zůstaly stabilní.",

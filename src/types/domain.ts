@@ -172,7 +172,11 @@ export type MembershipSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    /** Optional first message posted in each application thread. */
+    applicationWelcomeMessage?: string
     autoAssignRecruitOnApply: boolean
+    /** Defaults to true for legacy configurations. */
+    inviteSupportMembersIndividually?: boolean
     rosterScoreSettings?: {
         noCategory: number
         declined: number
@@ -207,6 +211,7 @@ export type DiscordConfig = {
     calendarMessageLastConfigUpdatedAt?: string
     forumCategoryId?: string
     meetingChannelId?: string
+    squadVoiceCategoryId?: string
     clanRoleId?: string
     dashboardAdminRoleId?: string
     playerStatsServers?: PlayerStatsServer[]
@@ -229,8 +234,11 @@ export type GameDiscordOverrides = Pick<
     | "eventInfoChannelId"
     | "forumCategoryId"
     | "meetingChannelId"
+    | "squadVoiceCategoryId"
     | "playerStatsServers"
     | "membershipSettings"
+    | "membershipPanelMessageId"
+    | "membershipPanelLastConfigUpdatedAt"
 >
 
 export type MembershipStatus = "pending" | "recruit" | "active"
@@ -279,6 +287,9 @@ export type EventRecord = {
     announcementChannelId?: string
     eventInfoChannelId?: string
     meetingChannelId?: string
+    createSquadVoiceChannels?: boolean
+    squadVoiceCategoryId?: string
+    durationMinutes?: number
     requiredRoleIds: string[]
     rewardRoleIds: string[]
     server?: string
@@ -564,6 +575,8 @@ export type SquadPresetSquad = {
 export type SquadPreset = {
     id: string
     name: string
+    /** Missing values are legacy Hell Let Loose presets. */
+    gameId?: GameId
     squads: SquadPresetSquad[]
     guildId: string
     createdAt: Timestamp
@@ -593,6 +606,8 @@ export type Roster = {
     id: string
     eventId: string
     guildId: string
+    /** Missing values are legacy Hell Let Loose rosters. */
+    gameId?: GameId
     squadPresetId?: string
     squads: RosterSquad[]
     reservePlayerIds: string[]

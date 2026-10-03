@@ -181,6 +181,44 @@ test("manager upsert preserves event, roster and preset tenant bindings", async 
     }
 })
 
+test("native roster creation does not add members from a different game", async () => {
+    for (const gameId of ["wardogs", "hell_let_loose"] as const) {
+        const ctx = fixture()
+        await ctx.db.patch(input.eventId, { gameId, participants: [] })
+        for (const [userId, memberGame] of [
+            ["wdg-member", "wardogs"],
+            ["hll-member", "hell_let_loose"],
+            ["legacy-hll", undefined],
+        ] as const) {
+            ctx.db.seed("userAssignments", {
+                _id: `userAssignments:${userId}`,
+                userId,
+                serverId: guildId,
+                gameId: memberGame,
+                createdAt: "2019-01-01T00:00:00Z",
+            })
+        }
+        await invoke(rosters.upsert, ctx, { ...binding, ...input, squads: [] })
+        assert.deepEqual(
+            ctx.db.tables.rosters[0].notAttendingPlayerIds.sort(),
+            gameId === "wardogs" ? ["wdg-member"] : ["hll-member", "legacy-hll"]
+        )
+    }
+})
+
+test("roster presets require the same game as well as the same guild", async () => {
+    const ctx = fixture()
+    ctx.db.seed("squadPresets", {
+        _id: "squadPresets:local",
+        guildId,
+        gameId: "hell_let_loose",
+    })
+    const args = { ...binding, ...input, squadPresetId: "squadPresets:local" }
+    await assert.rejects(invoke(rosters.upsert, ctx, args), /event's game/)
+    await ctx.db.patch("squadPresets:local", { gameId: "wardogs" })
+    assert.equal(await invoke(rosters.upsert, ctx, args), "rosters:one")
+})
+
 test("valid manager writes and bot acknowledgements retain native tracked changes", async () => {
     const ctx = fixture()
     assert.equal(
@@ -245,6 +283,16 @@ test("attendance follows current event times even before the status reconciler r
     await ctx.db.patch(input.eventId, {
         status: "starting",
         gameEnd: new Date(Date.now() - 1_000).toISOString(),
+    })
+    // Upstream keeps attendance open during the 15-minute conclusion reserve.
+    await invoke(rosters.acknowledgeAttendance, ctx, {
+        secret,
+        guildId,
+        eventId: input.eventId,
+        userId: subject,
+    })
+    await ctx.db.patch(input.eventId, {
+        gameEnd: new Date(Date.now() - 15 * 60_000 - 1_000).toISOString(),
     })
     await assert.rejects(
         invoke(rosters.acknowledgeAttendance, ctx, {

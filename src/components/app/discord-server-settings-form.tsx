@@ -135,6 +135,9 @@ export function DiscordServerSettingsForm({
     const [meetingChannelId, setMeetingChannelId] = useState<
         string | undefined
     >(config?.meetingChannelId)
+    const [squadVoiceCategoryId, setSquadVoiceCategoryId] = useState<
+        string | undefined
+    >(config?.squadVoiceCategoryId)
     const [clanRoleId, setClanRoleId] = useState<string | undefined>(
         config?.clanRoleId
     )
@@ -193,6 +196,7 @@ export function DiscordServerSettingsForm({
                                       eventInfoChannelId,
                                       forumCategoryId,
                                       meetingChannelId,
+                                      squadVoiceCategoryId,
                                       playerStatsServers,
                                       membershipSettings:
                                           remappedDefaults.membershipSettings,
@@ -208,6 +212,7 @@ export function DiscordServerSettingsForm({
                               calendarChannelId,
                               forumCategoryId,
                               meetingChannelId,
+                              squadVoiceCategoryId,
                               clanRoleId,
                               dashboardAdminRoleId,
                               playerStatsServers,
@@ -331,6 +336,19 @@ export function DiscordServerSettingsForm({
                         onChange={setForumCategoryId}
                         options={categoryChannels}
                         placeholder={dictionary.serverSettings.forumCategoryId}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>
+                        {dictionary.serverSettings.squadVoiceCategoryId}
+                    </Label>
+                    <DiscordEntitySelect
+                        value={squadVoiceCategoryId}
+                        onChange={setSquadVoiceCategoryId}
+                        options={categoryChannels}
+                        placeholder={
+                            dictionary.serverSettings.squadVoiceCategoryId
+                        }
                     />
                 </div>
                 <div className="space-y-2">

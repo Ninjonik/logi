@@ -1,9 +1,11 @@
-import type { Client } from "discord.js"
+import { MessageFlags, type Client } from "discord.js"
 
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
+import { getClanDiscordMessages } from "../../../src/lib/clan-language"
 import { matchesGameScope } from "../../../src/domain/games/game"
-import { buildAnnouncementMessage } from "../message-builders"
+import { buildAnnouncementV2Message } from "../message-builders"
+import { buildDiscordMessageLink } from "../utils"
 import type { SyncPayload } from "../types"
 import { logInfo } from "../log"
 
@@ -61,7 +63,40 @@ export async function processSignupReminders(
             event.participants.map((participant) => participant.userId)
         )
 
-        const { embed, components } = buildAnnouncementMessage(payload, event)
+        const syncState = payload.syncStates.find(
+            (state) => state.eventId === event.id
+        )
+        const registrationUrl = buildDiscordMessageLink(
+            payload.config.guildId,
+            event.announcementChannelId ?? payload.config.announcementsChannelId
+        )
+        const forumUrl = buildDiscordMessageLink(
+            payload.config.guildId,
+            syncState?.forumChannelId
+        )
+        const messages = getClanDiscordMessages(payload.config.defaultLanguage)
+        const eventLinks = [
+            registrationUrl
+                ? {
+                      label: messages.buttons.openRegistrationChannel,
+                      url: registrationUrl,
+                  }
+                : null,
+            forumUrl
+                ? { label: messages.buttons.openEventForum, url: forumUrl }
+                : null,
+        ].filter(
+            (link): link is { label: string; url: string } => link !== null
+        )
+        const message = buildAnnouncementV2Message(
+            payload,
+            event,
+            {},
+            {
+                hideSignupDetails: true,
+                eventLinks,
+            }
+        )
         // Assignments were not included in older cached payloads. Treat them
         // as an empty recipient set while a rolling deployment catches up.
         const recipients = (payload.assignments ?? []).filter((assignment) =>
@@ -78,7 +113,7 @@ export async function processSignupReminders(
                 .catch(() => null)
             if (!user) continue
             await user
-                .send({ embeds: [embed], components })
+                .send({ ...message, flags: MessageFlags.IsComponentsV2 })
                 .then(() =>
                     logInfo("signup-reminders", "Sent signup reminder", {
                         eventId: event.id,

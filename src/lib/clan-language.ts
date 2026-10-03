@@ -12,6 +12,8 @@ type ClanDiscordMessages = {
         addToCalendar: string
         viewFullRoster: string
         decline: string
+        openRegistrationChannel: string
+        openEventForum: string
     }
     interaction: {
         unableToLoadEventContext: string
@@ -398,6 +400,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             addToCalendar: "Add to Calendar",
             viewFullRoster: "View roster",
             decline: "Decline",
+            openRegistrationChannel: "Open registration channel",
+            openEventForum: "Open event forum",
         },
         interaction: {
             unableToLoadEventContext: "Unable to load event context.",
@@ -931,6 +935,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             addToCalendar: "Přidat do kalendáře",
             viewFullRoster: "Zobrazit soupisku",
             decline: "Odmítnout",
+            openRegistrationChannel: "Otevřít registrační kanál",
+            openEventForum: "Otevřít fórum akce",
         },
         interaction: {
             signupStatusSignedUp:
@@ -1296,6 +1302,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             addToCalendar: "Zum Kalender hinzufügen",
             viewFullRoster: "Roster ansehen",
             decline: "Ablehnen",
+            openRegistrationChannel: "Anmeldekanal öffnen",
+            openEventForum: "Event-Forum öffnen",
         },
         interaction: {
             unableToLoadEventContext:

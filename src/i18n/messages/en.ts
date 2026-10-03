@@ -881,6 +881,7 @@ export const enMessages = {
         errorsChannelId: "Errors channel ID",
         calendarChannelId: "Calendar channel ID",
         forumCategoryId: "Forum category ID",
+        squadVoiceCategoryId: "Default squad voice category",
         meetingChannelId: "Meeting voice channel ID",
         clanRoleId: "Clan role ID",
         dashboardAdminRoleId: "Dashboard admin role ID",
@@ -1079,8 +1080,17 @@ export const enMessages = {
         skipPendingTitle: "Skip pending phase",
         skipPendingDescription:
             "New member applications start as recruits immediately after submission.",
+        inviteSupportMembersIndividuallyTitle:
+            "Add support-role members individually",
+        inviteSupportMembersIndividuallyDescription:
+            "When off, Logi pings the category support roles instead. Discord adds members of eligible small roles; dashboard administrators are still added directly.",
         panelTitle: "Panel title",
         panelDescription: "Panel description",
+        welcomeMessage: "Application thread welcome message",
+        welcomeMessageDescription:
+            "Posted above the application summary in each private thread. Use {applicant}, {support_roles}, and {category} for live Discord mentions and the selected category.",
+        welcomeMessagePlaceholder:
+            "Hi {applicant}, thanks for applying. {support_roles} will be with you shortly.",
         image: "Thumbnail image",
         applicationThumbnail: "Application thumbnail",
         categoriesTitle: "Application categories",
@@ -1687,6 +1697,12 @@ export const enMessages = {
             pingMode: "Announcement ping",
             pingRoleIds: "Roles to ping",
             createForumChannel: "Create forum channel",
+            createSquadVoiceChannels:
+                "Create squad voice channels at meeting start",
+            squadVoiceCategory:
+                "Squad voice category (server default when empty)",
+            conclusionReserveHelp:
+                "The event automatically concludes 15 minutes after this duration ends.",
         },
         channelRoutingCreateHelp:
             "Starts with the clan settings as a preset. This choice is locked after creation to keep Discord messages stable.",

@@ -168,6 +168,7 @@ export const initializeDefaultHelperDataForGuild = mutation({
 
         await ctx.db.insert("squadPresets", {
             guildId: guildDiscordId,
+            gameId: "hell_let_loose",
             name: "HLL Standard Lineup",
             squads: createHllStarterSquadPreset(),
             createdAt: now,

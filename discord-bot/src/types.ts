@@ -46,7 +46,9 @@ export type MembershipSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    applicationWelcomeMessage?: string
     autoAssignRecruitOnApply: boolean
+    inviteSupportMembersIndividually?: boolean
     categories: MembershipCategory[]
 }
 
@@ -99,9 +101,20 @@ export type DiscordConfig = {
     calendarMessageLastConfigUpdatedAt?: string
     forumCategoryId?: string
     meetingChannelId?: string
+    squadVoiceCategoryId?: string
     clanRoleId?: string
     dashboardAdminRoleId?: string
     playerStatsServers?: PlayerStatsServer[]
+    gameOverrides?: Partial<
+        Record<
+            "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs",
+            {
+                membershipSettings?: MembershipSettings
+                membershipPanelMessageId?: string
+                membershipPanelLastConfigUpdatedAt?: string
+            }
+        >
+    >
     ticketSettings?: TicketSettings
     membershipSettings?: MembershipSettings
     ticketPanelMessageId?: string
@@ -132,9 +145,10 @@ export type GuildRecord = {
 export type MembershipStatus = "pending" | "recruit" | "active"
 
 export type MembershipApplicationThreadRecord = {
-    gameId?: import("../../src/domain/games/game").GameId
     id: string
     guildId: string
+    /** Missing values are legacy Hell Let Loose applications. */
+    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
     threadId: string
     parentChannelId: string
     creatorId: string
@@ -245,6 +259,9 @@ export type EventRecord = {
     announcementChannelId?: string
     eventInfoChannelId?: string
     meetingChannelId?: string
+    createSquadVoiceChannels?: boolean
+    squadVoiceCategoryId?: string
+    durationMinutes?: number
     requiredRoleIds: string[]
     rewardRoleIds: string[]
     signupGroupIds?: string[]
@@ -342,6 +359,7 @@ export type SyncState = {
     lastRosterUpdatedAt?: string
     lastConfigUpdatedAt?: string
     lastCalendarSyncVersion?: string
+    squadVoiceChannelIds?: string[]
 }
 
 export type SyncPayload = {

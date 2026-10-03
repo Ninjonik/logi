@@ -31,6 +31,46 @@ type InteractionHandlerOptions = {
     triggerPollSoon: () => void
 }
 
+type SignupInteraction = ButtonInteraction | StringSelectMenuInteraction
+
+async function loadSignupContext(
+    interaction: SignupInteraction,
+    eventId: string,
+    customIdGuildId?: string
+) {
+    const guildId =
+        interaction.guildId ??
+        customIdGuildId ??
+        (
+            (await convex.query(references.getEventInteractionContext, {
+                secret: env.internalSecret,
+                eventId: eventId as never,
+            })) as EventInteractionContext | null
+        )?.event.guildId
+    if (!guildId) return null
+    return (await convex.query(references.getEventSignupContext, {
+        secret: env.internalSecret,
+        guildId,
+        eventId: eventId as never,
+    })) as EventInteractionContext | null
+}
+
+async function resolveInteractionMember(
+    interaction: SignupInteraction,
+    guildId: string
+) {
+    if (interaction.guildId === guildId) {
+        return interaction.member as GuildMember | null
+    }
+
+    const guild = await interaction.client.guilds
+        .fetch(guildId)
+        .catch(() => null)
+    return guild
+        ? await guild.members.fetch(interaction.user.id).catch(() => null)
+        : null
+}
+
 function buildSignupSelectionRow(
     context: EventInteractionContext,
     member: GuildMember | null,
@@ -73,7 +113,9 @@ function buildSignupSelectionRow(
     return available.length
         ? new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
               new StringSelectMenuBuilder()
-                  .setCustomId(`signup:${context.event.id}:select`)
+                  .setCustomId(
+                      `signup:${context.event.id}:select:${context.event.guildId}`
+                  )
                   .setPlaceholder(messages.embed.chooseSignup)
                   .addOptions(
                       available.slice(0, 25).map((action) => ({
@@ -96,29 +138,25 @@ function buildSignupSelectionRow(
 export async function handleEventSignupPickerInteraction(
     interaction: ButtonInteraction
 ) {
-    if (!interaction.guildId) {
-        await interaction.reply({
-            content: getClanDiscordMessages("en").interaction.signupServerOnly,
-            ephemeral: true,
-        })
-        return
-    }
-    const eventId = interaction.customId.replace("signup-picker:", "")
-    const context = (await convex.query(references.getEventSignupContext, {
-        secret: env.internalSecret,
-        guildId: interaction.guildId,
-        eventId: eventId as never,
-    })) as EventInteractionContext | null
+    const [, eventId, customIdGuildId] = interaction.customId.split(":")
+    const context = await loadSignupContext(
+        interaction,
+        eventId ?? "",
+        customIdGuildId
+    )
     if (!context) {
         await interaction.reply({
             content:
                 getClanDiscordMessages("en").interaction
                     .unableToLoadEventContext,
-            ephemeral: true,
+            ephemeral: Boolean(interaction.guildId),
         })
         return
     }
-    const member = interaction.member as GuildMember | null
+    const member = await resolveInteractionMember(
+        interaction,
+        context.event.guildId
+    )
     const messages = getClanDiscordMessages(context.config.defaultLanguage)
     const selectionRow = buildSignupSelectionRow(
         context,
@@ -129,40 +167,32 @@ export async function handleEventSignupPickerInteraction(
     if (!selectionRow) {
         await interaction.reply({
             content: messages.interaction.missingRequiredRole,
-            ephemeral: true,
+            ephemeral: Boolean(interaction.guildId),
         })
         return
     }
     await interaction.reply({
         content: messages.embed.chooseSignup,
         components: [selectionRow],
-        ephemeral: true,
+        ephemeral: Boolean(interaction.guildId),
     })
 }
 
 export async function handleCheckSignupInteraction(
     interaction: ButtonInteraction
 ) {
-    if (!interaction.guildId) {
-        await interaction.reply({
-            content: getClanDiscordMessages("en").interaction.signupServerOnly,
-            ephemeral: true,
-        })
-        return
-    }
-
-    const eventId = interaction.customId.replace("check-signup:", "")
-    const context = (await convex.query(references.getEventSignupContext, {
-        secret: env.internalSecret,
-        guildId: interaction.guildId,
-        eventId: eventId as never,
-    })) as EventInteractionContext | null
+    const [, eventId, customIdGuildId] = interaction.customId.split(":")
+    const context = await loadSignupContext(
+        interaction,
+        eventId ?? "",
+        customIdGuildId
+    )
     if (!context) {
         await interaction.reply({
             content:
                 getClanDiscordMessages("en").interaction
                     .unableToLoadEventContext,
-            ephemeral: true,
+            ephemeral: Boolean(interaction.guildId),
         })
         return
     }
@@ -185,7 +215,7 @@ export async function handleCheckSignupInteraction(
     if (!signup) {
         await interaction.reply({
             content: messages.interaction.signupStatusNotSignedUp,
-            ephemeral: true,
+            ephemeral: Boolean(interaction.guildId),
         })
         return
     }
@@ -200,7 +230,7 @@ export async function handleCheckSignupInteraction(
             "{group}",
             groupLabel
         ),
-        ephemeral: true,
+        ephemeral: Boolean(interaction.guildId),
     })
 }
 
@@ -232,10 +262,11 @@ export async function handleRosterAssignmentInteraction(
 const signupInteractionLocks = new Map<string, Promise<void>>()
 
 export async function handleEventButtonInteraction(
-    interaction: ButtonInteraction | StringSelectMenuInteraction,
+    interaction: SignupInteraction,
     options: InteractionHandlerOptions
 ) {
-    const [, eventId, encodedGroupId] = interaction.customId.split(":")
+    const [, eventId, encodedGroupId, customIdGuildId] =
+        interaction.customId.split(":")
     const requestedGroupId = interaction.isStringSelectMenu()
         ? (interaction.values[0] ?? "")
         : decodeURIComponent(encodedGroupId ?? "")
@@ -269,15 +300,22 @@ export async function handleEventButtonInteraction(
         return
     }
 
-    if (!interaction.guildId) {
+    const context = await loadSignupContext(
+        interaction,
+        eventId,
+        customIdGuildId
+    )
+    if (!context) {
         await interaction.reply({
-            content: getClanDiscordMessages("en").interaction.signupServerOnly,
-            ephemeral: true,
+            content:
+                getClanDiscordMessages("en").interaction
+                    .unableToLoadEventContext,
+            ephemeral: Boolean(interaction.guildId),
         })
         return
     }
 
-    const lockKey = `${interaction.guildId}:${eventId}:${interaction.user.id}`
+    const lockKey = `${context.event.guildId}:${eventId}:${interaction.user.id}`
     const previous = signupInteractionLocks.get(lockKey)
     let releaseLock: (() => void) | undefined
     const current = new Promise<void>((resolve) => {
@@ -290,22 +328,10 @@ export async function handleEventButtonInteraction(
     }
 
     try {
-        const context = (await convex.query(references.getEventSignupContext, {
-            secret: env.internalSecret,
-            guildId: interaction.guildId,
-            eventId: eventId as never,
-        })) as EventInteractionContext | null
-
-        if (!context) {
-            await interaction.editReply({
-                content:
-                    getClanDiscordMessages("en").interaction
-                        .unableToLoadEventContext,
-            })
-            return
-        }
-
-        const member = interaction.member as GuildMember | null
+        const member = await resolveInteractionMember(
+            interaction,
+            context.event.guildId
+        )
         const messages = getClanDiscordMessages(context.config.defaultLanguage)
         const assignment = context.assignments?.find(
             (item) => item.userId === interaction.user.id
@@ -388,7 +414,7 @@ export async function handleEventButtonInteraction(
                     ? messages.interaction.noCompatibleSignupGroup
                     : lastError,
                 components: selectionRow ? [selectionRow] : [],
-                ephemeral: true,
+                ephemeral: Boolean(interaction.guildId),
             })
             return
         }
@@ -410,7 +436,7 @@ export async function handleEventButtonInteraction(
         logInfo("interaction", "Queued event sync after signup change", {
             eventId,
             userId: interaction.user.id,
-            guildId: interaction.guildId,
+            guildId: context.event.guildId,
         })
 
         const actions = buildEventSignupActions(
@@ -442,7 +468,7 @@ export async function handleEventButtonInteraction(
                     : []),
             ].join("\n"),
             ...(selectionRow ? { components: [selectionRow] } : {}),
-            ephemeral: true,
+            ephemeral: Boolean(interaction.guildId),
         })
     } finally {
         releaseLock?.()

@@ -203,7 +203,17 @@ const membershipSettingsSchema = z
                 "Discord embed descriptions can be up to 4096 characters."
             ),
         panelImageUrl: imageUrlField,
+        applicationWelcomeMessage: z
+            .string()
+            .trim()
+            .max(
+                1200,
+                "Application welcome messages can be up to 1200 characters."
+            )
+            .optional()
+            .transform((value) => value || undefined),
         autoAssignRecruitOnApply: z.boolean(),
+        inviteSupportMembersIndividually: z.boolean().optional(),
         categories: z
             .array(membershipCategorySchema)
             .max(20, "Keep membership categories to 20 or fewer buttons."),
@@ -273,6 +283,18 @@ const membershipSettingsSchema = z
             }
 
             usedIds.add(category.id)
+
+            if (
+                value.inviteSupportMembersIndividually === false &&
+                category.supportRoleIds.length > 10
+            ) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["categories", index, "supportRoleIds"],
+                    message:
+                        "Role-ping invitations support at most 10 roles per category.",
+                })
+            }
         }
     })
 
@@ -281,8 +303,11 @@ const gameDiscordOverridesSchema = z.object({
     eventInfoChannelId: discordIdField,
     forumCategoryId: discordIdField,
     meetingChannelId: discordIdField,
+    squadVoiceCategoryId: discordIdField,
     playerStatsServers: z.array(playerStatsServerSchema).max(20).optional(),
     membershipSettings: membershipSettingsSchema.optional(),
+    membershipPanelMessageId: z.string().optional(),
+    membershipPanelLastConfigUpdatedAt: z.string().optional(),
 })
 
 export const discordSettingsSchema = z.object({
@@ -298,6 +323,7 @@ export const discordSettingsSchema = z.object({
         .default([]),
     forumCategoryId: discordIdField,
     meetingChannelId: discordIdField,
+    squadVoiceCategoryId: discordIdField,
     clanRoleId: discordIdField,
     dashboardAdminRoleId: discordIdField,
     playerStatsServers: z

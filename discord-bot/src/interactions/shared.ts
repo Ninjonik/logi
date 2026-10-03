@@ -64,12 +64,14 @@ export async function loadTicketCategoryContext(
 
 export async function loadMembershipCategoryContext(
     guildId: string,
-    categoryId: string
+    categoryId: string,
+    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
 ) {
     return (await convex.query(references.getMembershipCategoryContext, {
         secret: env.internalSecret,
         guildId,
         categoryId,
+        gameId,
     })) as {
         config: EventInteractionContext["config"]
         category: import("../types").MembershipCategory
@@ -79,7 +81,8 @@ export async function loadMembershipCategoryContext(
 export function resolveSupportMemberIds(
     guild: Guild,
     supportRoleIds: string[],
-    dashboardAdminRoleId?: string
+    dashboardAdminRoleId?: string,
+    includeSupportRoleMembers = true
 ) {
     const memberIds = new Set<string>()
 
@@ -90,7 +93,8 @@ export function resolveSupportMemberIds(
             (dashboardAdminRoleId
                 ? roleIds.includes(dashboardAdminRoleId)
                 : false) ||
-            supportRoleIds.some((roleId) => roleIds.includes(roleId))
+            (includeSupportRoleMembers &&
+                supportRoleIds.some((roleId) => roleIds.includes(roleId)))
         ) {
             memberIds.add(member.id)
         }

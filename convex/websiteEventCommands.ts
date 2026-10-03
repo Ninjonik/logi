@@ -23,9 +23,9 @@ import {
 } from "./dashboardSessionStore"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
 import { executeWebsiteEventCommand } from "../src/application/events/website-event-command"
-import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case"
 import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
+import { CancelEventUseCase } from "../src/application/events/cancel-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertInput } from "../src/domain/events/upsert-policy"
 import { memberObservation, membershipGuild } from "./membership_shared"
@@ -262,9 +262,8 @@ export const execute = mutation({
                                     .then(() => undefined)
                             )
                             if (input.operation === "cancel") {
-                                await new ConcludeEventUseCase(
+                                await new CancelEventUseCase(
                                     repository,
-                                    score,
                                     clock
                                 ).execute(input.eventId)
                                 const pending = await tracked.db

@@ -141,9 +141,14 @@ function getOutcomeLabel(
     }
 }
 
-function getPresetMatch(preset: TopicPreset, context: TopicPresetMatchContext) {
-    const presetSelection = inferHllSelection(preset.map)
-    const presetMapId = presetSelection?.mapId ?? inferHllBaseMapId(preset.map)
+function getPresetMatch(
+    preset: TopicPreset,
+    context: TopicPresetMatchContext,
+    gameId?: EventRecord["gameId"]
+) {
+    const presetSelection = inferHllSelection(preset.map, gameId)
+    const presetMapId =
+        presetSelection?.mapId ?? inferHllBaseMapId(preset.map, gameId)
     const hasComparableMapCode = Boolean(context.mapCode && preset.map)
     const hasComparableMapId = Boolean(context.mapId && presetMapId)
     const hasComparableTime = Boolean(context.time && presetSelection?.time)
@@ -196,7 +201,7 @@ function getPresetMatch(preset: TopicPreset, context: TopicPresetMatchContext) {
             comparableFieldCount > 0 &&
             matchedFields.length === comparableFieldCount,
         label: matchedFields.join(" + "),
-        metaLabel: formatHllPresetLabel(preset.map) ?? preset.map ?? "",
+        metaLabel: formatHllPresetLabel(preset.map, gameId) ?? preset.map ?? "",
     }
 }
 
@@ -221,6 +226,18 @@ function resolveTrainingEndTime(values: EventInput, timezone: string) {
     }
 
     return new Date(meetingStartMs + 90 * 60 * 1000).toISOString()
+}
+
+function resolveMatchEndTime(values: EventInput, timezone: string) {
+    const gameStart = fromDateTimeLocalInTimeZone(
+        values.gameStart ?? values.meetingStart,
+        timezone
+    )
+    const gameStartMs = new Date(gameStart).getTime()
+    if (!Number.isFinite(gameStartMs)) return gameStart
+    return new Date(
+        gameStartMs + Number(values.durationMinutes) * 60 * 1000
+    ).toISOString()
 }
 
 function getAllowedSignupStatusLabel(
@@ -575,6 +592,9 @@ export function EventFormPanel({
                 event.eventInfoChannelId ??
                 (createMode ? (discordConfig?.eventInfoChannelId ?? "") : ""),
             meetingChannelId: event.meetingChannelId ?? "",
+            createSquadVoiceChannels: event.createSquadVoiceChannels ?? false,
+            squadVoiceCategoryId: event.squadVoiceCategoryId ?? "",
+            durationMinutes: event.durationMinutes ?? 90,
             requiredRoleIds: event.requiredRoleIds,
             rewardRoleIds: event.rewardRoleIds,
             server: event.server ?? "",
@@ -650,6 +670,8 @@ export function EventFormPanel({
         metadata?.channels?.filter(
             (channel) => channel.type === 2 || channel.type === 13
         ) ?? []
+    const categoryChannels =
+        metadata?.channels?.filter((channel) => channel.type === 4) ?? []
     const announcementChannels =
         metadata?.channels?.filter(
             (channel) => channel.type === 0 || channel.type === 5
@@ -674,9 +696,15 @@ export function EventFormPanel({
     const presetMatchContext = useMemo<TopicPresetMatchContext>(
         () => ({
             mapCode: mapValue,
-            mapId: selectedMapId || inferHllSelection(mapValue)?.mapId,
-            time: selectedMapTime || inferHllSelection(mapValue)?.time,
-            mode: selectedMapMode || inferHllSelection(mapValue)?.mode,
+            mapId:
+                selectedMapId ||
+                inferHllSelection(mapValue, event.gameId)?.mapId,
+            time:
+                selectedMapTime ||
+                inferHllSelection(mapValue, event.gameId)?.time,
+            mode:
+                selectedMapMode ||
+                inferHllSelection(mapValue, event.gameId)?.mode,
             side: sideValue,
             cap: presetMatchValues.cap,
         }),
@@ -694,7 +722,11 @@ export function EventFormPanel({
             topicPresets
                 .map((preset) => ({
                     preset,
-                    match: getPresetMatch(preset, presetMatchContext),
+                    match: getPresetMatch(
+                        preset,
+                        presetMatchContext,
+                        event.gameId
+                    ),
                 }))
                 .sort(
                     (left, right) =>
@@ -729,7 +761,7 @@ export function EventFormPanel({
             return
         }
 
-        const inferredSelection = inferHllSelection(mapValue)
+        const inferredSelection = inferHllSelection(mapValue, event.gameId)
         if (inferredSelection) {
             setSelectedMapId(inferredSelection.mapId)
             setSelectedMapTime(inferredSelection.time)
@@ -757,6 +789,7 @@ export function EventFormPanel({
             time: selectedMapTime,
             mode: selectedMapMode,
             side: sideValue,
+            gameId: event.gameId,
         })
 
         if (resolvedCode && resolvedCode !== mapValue) {
@@ -875,6 +908,7 @@ export function EventFormPanel({
                 values.meetingStart,
                 timezone
             ),
+            durationMinutes: values.durationMinutes,
             gameStart:
                 values.kind === "match"
                     ? fromDateTimeLocalInTimeZone(
@@ -887,12 +921,7 @@ export function EventFormPanel({
                       ),
             gameEnd:
                 values.kind === "match"
-                    ? fromDateTimeLocalInTimeZone(
-                          values.gameEnd ??
-                              values.gameStart ??
-                              values.meetingStart,
-                          timezone
-                      )
+                    ? resolveMatchEndTime(values, timezone)
                     : resolveTrainingEndTime(values, timezone),
             createForumChannel:
                 values.kind === "match" ? values.createForumChannel : false,
@@ -922,6 +951,8 @@ export function EventFormPanel({
                 values.kind === "match"
                     ? values.eventInfoChannelId || undefined
                     : undefined,
+            createSquadVoiceChannels: values.createSquadVoiceChannels,
+            squadVoiceCategoryId: values.squadVoiceCategoryId || undefined,
             pingClan: values.pingMode === "clan",
             pingRoleIds: values.pingMode === "roles" ? values.pingRoleIds : [],
         }
@@ -1270,6 +1301,7 @@ export function EventFormPanel({
                             <div className="flex flex-row gap-4 space-y-3 md:col-span-2">
                                 {canEdit ? (
                                     <HllMapSelector
+                                        gameId={event.gameId}
                                         mapId={selectedMapId}
                                         onMapIdChange={(value) => {
                                             handleMapSelection(value)
@@ -1330,8 +1362,10 @@ export function EventFormPanel({
                                 ) : (
                                     <ReadOnlyValue
                                         value={
-                                            formatHllPresetLabel(mapValue) ??
-                                            mapValue
+                                            formatHllPresetLabel(
+                                                mapValue,
+                                                event.gameId
+                                            ) ?? mapValue
                                         }
                                         emptyLabel={dictionary.shared.notSet}
                                     />
@@ -2286,6 +2320,77 @@ export function EventFormPanel({
                             </div>
                         ) : null}
                         <div className="border-border/60 rounded-xl border p-4 md:col-span-2">
+                            <div className="mb-4 grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <FieldLabel
+                                        label={dictionary.event.durationMinutes}
+                                    />
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={1440}
+                                        disabled={!canEdit}
+                                        {...form.register("durationMinutes")}
+                                        className="rounded-xl"
+                                    />
+                                    <p className="text-muted-foreground text-sm">
+                                        {
+                                            dictionary.event.fields
+                                                .conclusionReserveHelp
+                                        }
+                                    </p>
+                                </div>
+                                <div className="space-y-3 pt-7">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <Label htmlFor="create-squad-voice-channels">
+                                            {
+                                                dictionary.event.fields
+                                                    .createSquadVoiceChannels
+                                            }
+                                        </Label>
+                                        <Controller
+                                            control={form.control}
+                                            name="createSquadVoiceChannels"
+                                            render={({ field }) => (
+                                                <Switch
+                                                    id="create-squad-voice-channels"
+                                                    checked={field.value}
+                                                    onCheckedChange={
+                                                        field.onChange
+                                                    }
+                                                    disabled={!canEdit}
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                    {form.watch("createSquadVoiceChannels") ? (
+                                        <Controller
+                                            control={form.control}
+                                            name="squadVoiceCategoryId"
+                                            render={({ field }) => (
+                                                <DiscordEntitySelect
+                                                    value={
+                                                        field.value || undefined
+                                                    }
+                                                    onChange={(value) =>
+                                                        field.onChange(
+                                                            value ?? ""
+                                                        )
+                                                    }
+                                                    options={categoryChannels}
+                                                    placeholder={
+                                                        dictionary.event.fields
+                                                            .squadVoiceCategory
+                                                    }
+                                                    noneLabel={
+                                                        dictionary.shared.notSet
+                                                    }
+                                                />
+                                            )}
+                                        />
+                                    ) : null}
+                                </div>
+                            </div>
                             {canEdit && createMode ? (
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>

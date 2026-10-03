@@ -23,6 +23,9 @@ person; it does not grant an administrator role. Website authorization uses the
 separately configured membership API and its current game-specific role policy.
 An unavailable, stale or removed membership must not leave a cached admin grant.
 
+When a user has no Logi session, authorization starts Discord sign-in immediately
+and creates a normal Logi session before returning to the website.
+
 ## Website integration
 
 | Purpose | Endpoint |

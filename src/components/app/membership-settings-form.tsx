@@ -31,6 +31,7 @@ import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { GameId } from "@/domain/games/game"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -80,6 +81,11 @@ function buildDefaultSettings(
         return {
             ...config.membershipSettings,
             panelImageUrl: config.membershipSettings.panelImageUrl ?? "",
+            applicationWelcomeMessage:
+                config.membershipSettings.applicationWelcomeMessage ?? "",
+            inviteSupportMembersIndividually:
+                config.membershipSettings.inviteSupportMembersIndividually ??
+                true,
             rosterScoreSettings: {
                 noCategory:
                     config.membershipSettings.rosterScoreSettings?.noCategory ??
@@ -128,7 +134,9 @@ function buildDefaultSettings(
         panelTitle: dictionary.membershipSettings.defaultPanelTitle,
         panelDescription: dictionary.membershipSettings.defaultPanelDescription,
         panelImageUrl: "",
+        applicationWelcomeMessage: "",
         autoAssignRecruitOnApply: false,
+        inviteSupportMembersIndividually: true,
         rosterScoreSettings: {
             noCategory: 0,
             declined: 0,
@@ -163,11 +171,14 @@ export function MembershipSettingsForm({
     serverId,
     config,
     baseConfig,
+    gameId,
     dictionary,
 }: {
     serverId: string
     config: DiscordConfig | null
     baseConfig?: DiscordConfig | null
+    /** A selected game saves membership settings as that game's override. */
+    gameId?: GameId
     dictionary: Dictionary
 }) {
     const router = useRouter()
@@ -287,7 +298,11 @@ export function MembershipSettingsForm({
                   panelTitle: settings.panelTitle,
                   panelDescription: settings.panelDescription,
                   panelImageUrl: settings.panelImageUrl || undefined,
+                  applicationWelcomeMessage:
+                      settings.applicationWelcomeMessage?.trim() || undefined,
                   autoAssignRecruitOnApply: settings.autoAssignRecruitOnApply,
+                  inviteSupportMembersIndividually:
+                      settings.inviteSupportMembersIndividually ?? true,
                   rosterScoreSettings: settings.rosterScoreSettings,
                   categories: settings.categories.map((category) => ({
                       ...category,
@@ -319,18 +334,37 @@ export function MembershipSettingsForm({
             {
                 method: "POST",
                 headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                    timezone: sharedConfig?.timezone ?? "UTC",
-                    defaultLanguage: sharedConfig?.defaultLanguage ?? "en",
-                    announcementsChannelId:
-                        sharedConfig?.announcementsChannelId,
-                    forumCategoryId: sharedConfig?.forumCategoryId,
-                    meetingChannelId: sharedConfig?.meetingChannelId,
-                    clanRoleId: sharedConfig?.clanRoleId,
-                    dashboardAdminRoleId: sharedConfig?.dashboardAdminRoleId,
-                    ticketSettings: sharedConfig?.ticketSettings,
-                    membershipSettings,
-                }),
+                body: JSON.stringify(
+                    gameId
+                        ? {
+                              ...(baseConfig ?? {
+                                  timezone: "UTC",
+                                  defaultLanguage: "en",
+                                  calendarCategories: [],
+                              }),
+                              gameOverrides: {
+                                  ...baseConfig?.gameOverrides,
+                                  [gameId]: {
+                                      ...baseConfig?.gameOverrides?.[gameId],
+                                      membershipSettings,
+                                  },
+                              },
+                          }
+                        : {
+                              timezone: sharedConfig?.timezone ?? "UTC",
+                              defaultLanguage:
+                                  sharedConfig?.defaultLanguage ?? "en",
+                              announcementsChannelId:
+                                  sharedConfig?.announcementsChannelId,
+                              forumCategoryId: sharedConfig?.forumCategoryId,
+                              meetingChannelId: sharedConfig?.meetingChannelId,
+                              clanRoleId: sharedConfig?.clanRoleId,
+                              dashboardAdminRoleId:
+                                  sharedConfig?.dashboardAdminRoleId,
+                              ticketSettings: sharedConfig?.ticketSettings,
+                              membershipSettings,
+                          }
+                ),
             }
         )
 
@@ -647,6 +681,33 @@ export function MembershipSettingsForm({
                     />
                 </div>
 
+                <div className="border-border/60 flex items-center justify-between gap-4 rounded-2xl border p-4">
+                    <div className="space-y-1">
+                        <h3 className="font-semibold">
+                            {
+                                dictionary.membershipSettings
+                                    .inviteSupportMembersIndividuallyTitle
+                            }
+                        </h3>
+                        <p className="text-muted-foreground text-sm">
+                            {
+                                dictionary.membershipSettings
+                                    .inviteSupportMembersIndividuallyDescription
+                            }
+                        </p>
+                    </div>
+                    <Switch
+                        checked={
+                            settings.inviteSupportMembersIndividually ?? true
+                        }
+                        onCheckedChange={(checked) =>
+                            patchSettings({
+                                inviteSupportMembersIndividually: checked,
+                            })
+                        }
+                    />
+                </div>
+
                 <div className="grid gap-4 lg:grid-cols-2">
                     <div className="space-y-2">
                         <Label>
@@ -725,6 +786,32 @@ export function MembershipSettingsForm({
                         maxLength={4096}
                         className="min-h-32 rounded-xl"
                         rows={8}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <div>
+                        <Label>
+                            {dictionary.membershipSettings.welcomeMessage}
+                        </Label>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                            {
+                                dictionary.membershipSettings
+                                    .welcomeMessageDescription
+                            }
+                        </p>
+                    </div>
+                    <DiscordMarkdownTextarea
+                        value={settings.applicationWelcomeMessage}
+                        onChange={(value) =>
+                            patchSettings({ applicationWelcomeMessage: value })
+                        }
+                        maxLength={1200}
+                        className="min-h-28 rounded-xl"
+                        rows={6}
+                        placeholder={
+                            dictionary.membershipSettings
+                                .welcomeMessagePlaceholder
+                        }
                     />
                 </div>
                 <div className="space-y-2">

@@ -168,16 +168,8 @@ export function ssoRoutes(ports: SsoRoutePorts) {
                 if (!session) {
                     if (params.prompt === "none")
                         return ssoError("login_required")
-                    const locales = ["en", "cs", "de"]
-                    const locale =
-                        params.ui_locales
-                            ?.split(/\s+/)
-                            .find((entry) => locales.includes(entry)) ??
-                        (locales.includes(client.defaultLanguage)
-                            ? client.defaultLanguage
-                            : "en")
                     const url = new URL(request.url)
-                    const login = new URL(`/${locale}/login`, provider.issuer)
+                    const login = new URL("/api/auth/discord", provider.issuer)
                     login.searchParams.set(
                         "redirectTo",
                         `${url.pathname}${url.search}`

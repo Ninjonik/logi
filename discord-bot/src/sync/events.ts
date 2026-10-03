@@ -109,7 +109,7 @@ export function getAnnouncementPingRoleIds(
     return [...new Set(roleIds.map((roleId) => roleId.trim()).filter(Boolean))]
 }
 
-async function resolveAnnouncementDisplayNames(
+export async function resolveAnnouncementDisplayNames(
     payload: SyncPayload,
     event: EventRecord,
     guild: Guild
@@ -289,6 +289,58 @@ async function recoverEventMessageId(
     return primary?.id
 }
 
+async function syncSquadVoiceChannels(
+    guild: Guild,
+    event: EventRecord,
+    roster: Roster | undefined,
+    defaultCategoryId: string | undefined,
+    existingIds: string[]
+) {
+    if (event.status === "concluded") {
+        await Promise.all(
+            existingIds.map(async (id) => {
+                const channel = await guild.channels.fetch(id).catch(() => null)
+                await channel
+                    ?.delete(`Event concluded: ${event.name}`)
+                    .catch(() => null)
+            })
+        )
+        return []
+    }
+
+    const categoryId = event.squadVoiceCategoryId ?? defaultCategoryId
+    const meetingStart = new Date(event.meetingStart).getTime()
+    if (
+        !event.createSquadVoiceChannels ||
+        !categoryId ||
+        !Number.isFinite(meetingStart) ||
+        Date.now() < meetingStart ||
+        !roster
+    ) {
+        return existingIds
+    }
+
+    const createdIds = [...existingIds]
+    for (const squad of roster.squads.filter(
+        (squad) => squad.players.length > 0
+    )) {
+        const alreadyExists = await Promise.all(
+            createdIds.map((id) => guild.channels.fetch(id).catch(() => null))
+        ).then((channels) =>
+            channels.some((channel) => channel?.name === squad.name)
+        )
+        if (alreadyExists) continue
+        const channel = await guild.channels.create({
+            name: squad.name,
+            type: ChannelType.GuildVoice,
+            parent: categoryId,
+            reason: `Squad voice channel for ${event.name}`,
+        })
+        createdIds.push(channel.id)
+    }
+    return createdIds
+}
+
 export async function syncPayloadEvents(
     client: Client,
     queuedEventIds: Set<string>,
@@ -447,6 +499,14 @@ async function syncEvent(
     const forumThreadId = state?.forumThreadId
     let infoMessageId = state?.infoMessageId
     let topicMessageIds = state?.topicMessageIds ?? []
+    let squadVoiceChannelIds = state?.squadVoiceChannelIds ?? []
+    squadVoiceChannelIds = await syncSquadVoiceChannels(
+        guild,
+        event,
+        roster,
+        payload.config.squadVoiceCategoryId,
+        squadVoiceChannelIds
+    )
 
     const registrationAnnouncementDue = isRegistrationAnnouncementDue(event)
 
@@ -863,6 +923,7 @@ async function syncEvent(
         lastRosterUpdatedAt: roster?.updatedAt,
         lastConfigUpdatedAt: payload.config.updatedAt,
         lastCalendarSyncVersion: getCalendarSyncVersion(event),
+        squadVoiceChannelIds,
         lastSyncedAt: new Date().toISOString(),
     })
     logInfo("event-sync", "Persisted event sync state", {

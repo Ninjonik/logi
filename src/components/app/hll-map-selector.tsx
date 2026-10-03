@@ -17,7 +17,6 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { getHllModeOptions, getHllTimeOptions } from "@/lib/hll-map-presets"
-import { getHllStratmapMapById, getHllStratmapMaps } from "@/lib/stratmaps"
 import { getStratmapMapById, getStratmapMaps } from "@/lib/game-stratmaps"
 import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
@@ -252,8 +251,9 @@ export function HllMapSelector({
     const selectedPoint = mapId
         ? resolvePointValue(mapId, pointValue, pointValueMode, gameId)
         : undefined
-    const timeOptions = mapId ? getHllTimeOptions(mapId) : []
-    const modeOptions = mapId && time ? getHllModeOptions(mapId, time) : []
+    const timeOptions = mapId ? getHllTimeOptions(mapId, gameId) : []
+    const modeOptions =
+        mapId && time ? getHllModeOptions(mapId, time, gameId) : []
 
     // Only the fields that are actually rendered, in the order they get
     // filled in and locked.

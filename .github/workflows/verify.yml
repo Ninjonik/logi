@@ -1,0 +1,47 @@
+name: Verify
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_CONVEX_URL: http://127.0.0.1:32199
+      CONVEX_SELF_HOSTED_URL: http://127.0.0.1:32199
+      INTERNAL_AUTH_SECRET: dev-internal-auth-secret
+      DISCORD_BOT_TOKEN: offline-synthetic-bot-token
+      JWT_SECRET: offline-synthetic-jwt-secret-32-characters
+      SITE_URL: http://127.0.0.1:3000
+      LOGI_SSO_ENABLED: 'false'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.21.0'
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: '1.4.2'
+      - name: Install from the committed lockfile
+        run: bun install --frozen-lockfile
+      - name: Verify generated contracts
+        run: |
+          npm run generate:openapi
+          node scripts/generate-convex-api-offline.mjs
+          git diff --exit-code -- src/lib/api/generated-openapi-schemas.ts convex/_generated/api.d.ts
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit and adapter regression tests
+        run: npm run test

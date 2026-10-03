@@ -175,6 +175,12 @@ Minimum finish criteria:
 - UI or routing change: `npm run typecheck`, relevant tests, and manual browser verification when available
 - release-sensitive change: also run `npm run build`
 
+For any change that modifies Convex functions, schema, validators, generated
+function bindings, or Convex-backed persistence behavior, run `bunx convex
+deploy` as the final implementation step. This deploys to the configured
+Convex deployment, so report its result and do not treat local tests as a
+substitute for the deploy.
+
 If a command fails for an unrelated pre-existing reason, report the exact command and failure; do not conceal it or broaden the task without authorization.
 
 ## Testing Conventions

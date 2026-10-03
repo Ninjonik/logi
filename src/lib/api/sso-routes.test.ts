@@ -112,17 +112,29 @@ test("authorization binds nonce and S256 proof and echoes opaque RP state", asyn
     assert.equal(issued.codeChallenge, challenge)
     assert.equal(result.headers.get("cache-control"), "no-store")
 })
-test("unauthenticated authorization preserves resume parameters in the login redirect", async () => {
+test("unauthenticated authorization starts Discord login with exact resume parameters", async () => {
     const f = fixture()
     f.ports.session = async () => null
     const result = await f.http.authorize(f.auth())
     assert.equal(result.status, 302)
     const login = new URL(result.headers.get("location")!)
     assert.equal(login.origin, origin)
-    assert.equal(login.pathname, "/en/login")
-    assert.ok(
-        login.searchParams.get("redirectTo")?.includes("nonce=opaque-nonce")
+    assert.equal(login.pathname, "/api/auth/discord")
+    assert.equal(
+        login.searchParams.get("redirectTo"),
+        `/api/sso/authorize?${f.params}`
     )
+    assert.equal(f.issued.length, 0)
+})
+
+test("silent authorization without a session never starts interactive Discord login", async () => {
+    const f = fixture()
+    f.ports.session = async () => null
+    f.params.set("prompt", "none")
+    const response = await f.http.authorize(f.auth())
+    assert.equal(response.status, 400)
+    assert.deepEqual(await response.json(), { error: "login_required" })
+    assert.equal(response.headers.get("location"), null)
     assert.equal(f.issued.length, 0)
 })
 for (const mode of [

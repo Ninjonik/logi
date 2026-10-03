@@ -19,3 +19,12 @@ test("Wardogs exposes a separate placeholder map with capture points", () => {
     assert.equal(map?.strongpoints.length, 5)
     assert.equal(map?.strongpoints[4]?.label, "Echo (placeholder)")
 })
+
+test("new Wardogs maps use the named catalog while saved generic stratmaps still resolve", () => {
+    assert.deepEqual(
+        getStratmapMaps("wardogs").map((map) => map.id),
+        ["bakurani", "ozeti", "zestafona"]
+    )
+    assert.ok(getStratmapMapById("wardogs-placeholder", "wardogs"))
+    assert.equal(getStratmapMapById("zestafona", "wardogs")?.name, "Zestafona")
+})

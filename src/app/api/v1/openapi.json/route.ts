@@ -995,7 +995,7 @@ const presetMutation = {
                 schema: {
                     type: "object",
                     description:
-                        "Use the complete dashboard-equivalent preset form. Stratmap eventId references must belong to this clan and use the stratmap's game.",
+                        "Use the complete dashboard-equivalent preset form. Stratmap eventId references must belong to this clan and use the stratmap's game. Wardogs match map codes use bakurani, ozeti, or zestafona with KOTH as the only mode.",
                 },
             },
         },

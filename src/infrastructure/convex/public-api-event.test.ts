@@ -181,6 +181,10 @@ test("generic event mutation responses and webhook payloads exclude review stora
     db.tables.webhookSubscriptions.get("hook-1")!.eventTypes = ["event.updated"]
     for (const operation of ["update", "conclude"]) {
         db.tables.webhookDeliveries.clear()
+        if (operation === "conclude")
+            await db.patch(eventId, {
+                meetingStart: new Date(Date.now() - 60_000).toISOString(),
+            })
         const result = await handler(publicApi.mutateClanEvent)(
             { db },
             request({

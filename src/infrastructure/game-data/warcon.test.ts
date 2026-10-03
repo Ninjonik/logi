@@ -166,6 +166,16 @@ test("ended detail is absent for an unfinished match, not an invented final resu
     assert.equal(result.data, null)
 })
 
+test("a detail that loses its end time is rejected rather than published as complete", async () => {
+    const detail = warconMatchDetail()
+    detail.match.endedAt = null
+    detail.match.finalScores = null
+    await assert.rejects(
+        () => readWarconSession(source, "7", http(detail)),
+        invalid
+    )
+})
+
 test("completed match chronology compares instants across timezone offsets", async () => {
     const detail = warconMatchDetail()
     detail.match.startedAt = "2026-10-02T12:00:00+02:00"

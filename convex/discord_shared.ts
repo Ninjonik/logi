@@ -93,7 +93,9 @@ export const membershipSettingsValidator = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    applicationWelcomeMessage: v.optional(v.string()),
     autoAssignRecruitOnApply: v.boolean(),
+    inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(
         v.object({
             noCategory: v.number(),
@@ -120,8 +122,11 @@ export const gameDiscordOverridesValidator = v.object({
     eventInfoChannelId: v.optional(v.string()),
     forumCategoryId: v.optional(v.string()),
     meetingChannelId: v.optional(v.string()),
+    squadVoiceCategoryId: v.optional(v.string()),
     playerStatsServers: v.optional(v.array(playerStatsServerValidator)),
     membershipSettings: v.optional(membershipSettingsValidator),
+    membershipPanelMessageId: v.optional(v.string()),
+    membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
 })
 
 export const gameOverridesValidator = v.object({

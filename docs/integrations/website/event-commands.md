@@ -109,7 +109,8 @@ recurrence and other non-owned fields on updates. Changing event kind or
 editing/cancelling after meeting start is rejected. A prior conclusion is not
 reopened.
 
-Cancellation invokes Logi's existing **conclude before meeting** behavior:
+Cancellation uses a dedicated pre-meeting use case, separate from post-start
+conclusion. It retains Logi's existing cancellation representation:
 `status: concluded`, attendance scoring skipped, pending schedule jobs removed,
 and no invented result. There is no new `cancelled` status. New events have no
 automatic clan ping or forum creation; configure the event's Discord settings

@@ -4,10 +4,12 @@ import {
 } from "@/domain/rosters/attendance-policy"
 import { mergeRosterWithEventState } from "@/domain/rosters/sync"
 import type { AttendanceStatus } from "@/domain/rosters/types"
+import type { GameId } from "@/domain/games/game"
 
 export type RosterCommandRecord = {
     id: string
     eventId: string
+    gameId?: GameId
     squadPresetId?: string
     squads: Array<{
         name: string
@@ -38,6 +40,7 @@ export type RosterCommandRecord = {
 
 type EventRosterRecord = {
     guildId: string
+    gameId?: GameId
     registrationEnd: string
     participants?: Array<{
         userId: string
@@ -60,7 +63,10 @@ export interface RosterCommandRepository {
     getRosterById(rosterId: string): Promise<RosterCommandRecord | null>
     getRosterByEventId(eventId: string): Promise<RosterCommandRecord | null>
     getEvent(eventId: string): Promise<EventRosterRecord | null>
-    listAssignments(serverDiscordId: string): Promise<AssignmentRosterRecord[]>
+    listAssignments(
+        serverDiscordId: string,
+        gameId?: GameId
+    ): Promise<AssignmentRosterRecord[]>
     createRoster(roster: Omit<RosterCommandRecord, "id">): Promise<string>
     updateRoster(
         rosterId: string,
@@ -75,6 +81,7 @@ export type UpsertRosterInput = Omit<RosterCommandRecord, "id"> & {
 function buildPersistedRosterPayload(roster: Omit<RosterCommandRecord, "id">) {
     return {
         eventId: roster.eventId,
+        gameId: roster.gameId,
         squadPresetId: roster.squadPresetId,
         squads: roster.squads,
         reservePlayerIds: roster.reservePlayerIds,
@@ -91,7 +98,7 @@ export class UpsertRosterUseCase {
     async execute(input: UpsertRosterInput) {
         const event = await this.repository.getEvent(input.eventId)
         const assignments = event
-            ? await this.repository.listAssignments(event.guildId)
+            ? await this.repository.listAssignments(event.guildId, event.gameId)
             : []
         const existing = input.rosterId
             ? await this.repository.getRosterById(input.rosterId)
@@ -102,6 +109,7 @@ export class UpsertRosterUseCase {
                   {
                       ...(existing ?? {}),
                       ...input,
+                      gameId: event.gameId,
                       reserveAttendances:
                           input.reserveAttendances ??
                           existing?.reserveAttendances ??

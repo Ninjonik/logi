@@ -246,19 +246,27 @@ export const getEventSyncContext = query({
 })
 
 export const getEventSignupContext = query({
-    args: { secret: v.string(), guildId: v.string(), eventId: v.id("events") },
+    args: {
+        secret: v.string(),
+        guildId: v.optional(v.string()),
+        eventId: v.id("events"),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
 
-        const [config, event, groups, roster, assignments] = await Promise.all([
+        const event = await ctx.db.get(args.eventId)
+        if (!event || (args.guildId && event.guildId !== args.guildId)) {
+            return null
+        }
+        const guildId = event.guildId
+        const [config, groups, roster, assignments] = await Promise.all([
             ctx.db
                 .query("discordConfigs")
-                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+                .withIndex("guildId", (q) => q.eq("guildId", guildId))
                 .unique(),
-            ctx.db.get(args.eventId),
             ctx.db
                 .query("groups")
-                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+                .withIndex("guildId", (q) => q.eq("guildId", guildId))
                 .collect(),
             ctx.db
                 .query("rosters")
@@ -266,11 +274,11 @@ export const getEventSignupContext = query({
                 .unique(),
             ctx.db
                 .query("userAssignments")
-                .withIndex("serverId", (q) => q.eq("serverId", args.guildId))
+                .withIndex("serverId", (q) => q.eq("serverId", guildId))
                 .collect(),
         ])
 
-        if (!config || !event || event.guildId !== args.guildId) {
+        if (!config) {
             return null
         }
 
@@ -399,6 +407,7 @@ export const updateEventSyncState = mutation({
         lastRosterUpdatedAt: v.optional(v.string()),
         lastConfigUpdatedAt: v.optional(v.string()),
         lastCalendarSyncVersion: v.optional(v.string()),
+        squadVoiceChannelIds: v.optional(v.array(v.string())),
         lastSyncedAt: v.string(),
     },
     handler: async (ctx, args) => {
@@ -421,6 +430,7 @@ export const updateEventSyncState = mutation({
             lastRosterUpdatedAt: args.lastRosterUpdatedAt,
             lastConfigUpdatedAt: args.lastConfigUpdatedAt,
             lastCalendarSyncVersion: args.lastCalendarSyncVersion,
+            squadVoiceChannelIds: args.squadVoiceChannelIds,
             lastSyncedAt: args.lastSyncedAt,
             updatedAt: now,
         }
