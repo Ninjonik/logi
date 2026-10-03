@@ -1,13 +1,13 @@
 import Link from "next/link"
 
+import { filterByGameScope, isGameId } from "@/domain/games/game"
 import { ResourceTable } from "@/components/app/resource-table"
+import { listServerStratmaps } from "@/lib/server-stratmaps"
 import { PageHeader } from "@/components/app/page-header"
 import { getStratmapMapById } from "@/lib/game-stratmaps"
-import { getServerContext } from "@/lib/server-context"
 import { parseStratmapState } from "@/lib/stratmaps"
 import { getDictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
-import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export default async function StratmapsPage({
@@ -21,16 +21,17 @@ export default async function StratmapsPage({
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
     const { search = "", page = "1", game } = (await searchParams) ?? {}
-    const context = await getServerContext(
-        serverId,
-        isGameId(game) ? game : "all"
-    )
-    if (!context) {
+    const stratmapList = await listServerStratmaps(serverId)
+    if (!stratmapList) {
         return null
     }
 
     const normalizedSearch = search.trim().toLowerCase()
-    const rows = context.stratmaps
+    const gameQuery = isGameId(game) ? `?game=${game}` : ""
+    const rows = filterByGameScope(
+        stratmapList.stratmaps,
+        isGameId(game) ? game : "all"
+    )
         .filter(
             (item) =>
                 !normalizedSearch ||
@@ -45,10 +46,10 @@ export default async function StratmapsPage({
                 title={dictionary.stratmaps.title}
                 description={dictionary.stratmaps.pageDescription}
                 actions={
-                    context.canAdmin ? (
+                    stratmapList.canAdmin ? (
                         <Button asChild className="rounded-xl">
                             <Link
-                                href={`/${locale}/dashboard/servers/${serverId}/stratmaps/create`}
+                                href={`/${locale}/dashboard/servers/${serverId}/stratmaps/create${gameQuery}`}
                             >
                                 {dictionary.stratmaps.createTitle}
                             </Link>
@@ -71,7 +72,7 @@ export default async function StratmapsPage({
                         getGameId: (stratmap) => stratmap.gameId,
                     }}
                     getHref={(row) =>
-                        `/${locale}/dashboard/servers/${serverId}/stratmaps/${row.id}`
+                        `/${locale}/dashboard/servers/${serverId}/stratmaps/${row.id}${gameQuery}`
                     }
                     columns={[
                         {

@@ -77,6 +77,6 @@ export type StateUpdate = (current: StratmapState) => StratmapState
 
 export const PING_DURATION_MS = 550
 export const MAP_SIZE = 1920
-export const MIN_VIEWPORT_SIZE = 640
+export const MIN_VIEWPORT_SIZE = 320
 export const STROKE_COLOR_OPTIONS = MAPS_LET_LOOSE_COLORS
 export const PIXELS_PER_100_METERS = 190

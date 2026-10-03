@@ -228,6 +228,15 @@ export function createServerEventsPostHandler<TEventInput>(
                         ).trim() || undefined,
                 }
 
+                if (importInput.gameId !== DEFAULT_GAME_ID) {
+                    return NextResponse.json(
+                        {
+                            error: "Event import is only available for Hell Let Loose.",
+                        },
+                        { status: 400 }
+                    )
+                }
+
                 if (streamProgress) {
                     return createImportEventsStream(deps, importInput)
                 }

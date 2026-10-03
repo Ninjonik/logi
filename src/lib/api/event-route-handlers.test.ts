@@ -253,6 +253,28 @@ test("server events POST imports events and revalidates imported entity tags", a
     ])
 })
 
+test("server events POST rejects imports for games other than Hell Let Loose", async () => {
+    const { deps, calls } = createDeps()
+    const handler = createServerEventsPostHandler(deps)
+
+    const response = await handler(
+        {
+            json: async () => ({
+                action: "importEvents",
+                gameId: "wardogs",
+                links: "https://example.com/games/123",
+            }),
+        },
+        { params: Promise.resolve({ serverId: "guild-1" }) }
+    )
+
+    assert.equal(response.status, 400)
+    assert.deepEqual(await response.json(), {
+        error: "Event import is only available for Hell Let Loose.",
+    })
+    assert.equal(calls.importedEventLinks.length, 0)
+})
+
 test("server events POST returns a safe validation error response", async () => {
     const { deps, calls } = createDeps()
     const handler = createServerEventsPostHandler(deps)

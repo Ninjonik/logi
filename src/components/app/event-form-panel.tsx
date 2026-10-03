@@ -482,7 +482,9 @@ function StratmapMultiSelect({
                                         stratmap.title,
                                         stratmap.baseMapId,
                                         stratmap.side,
-                                        stratmap.strongpointId,
+                                        stratmap.gameId === "wardogs"
+                                            ? undefined
+                                            : stratmap.strongpointId,
                                     ]
                                         .filter(Boolean)
                                         .join(" ")}
@@ -504,7 +506,9 @@ function StratmapMultiSelect({
                                             {[
                                                 stratmap.baseMapId,
                                                 stratmap.side,
-                                                stratmap.strongpointId,
+                                                stratmap.gameId === "wardogs"
+                                                    ? undefined
+                                                    : stratmap.strongpointId,
                                             ]
                                                 .filter(Boolean)
                                                 .join(" • ")}
@@ -1339,6 +1343,9 @@ export function EventFormPanel({
                                             })
                                         }
                                         includeVariants
+                                        includePoint={
+                                            event.gameId !== "wardogs"
+                                        }
                                         includeSide
                                         labels={{
                                             map: dictionary.event.fields.map,

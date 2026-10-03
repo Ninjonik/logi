@@ -17,9 +17,9 @@ import { AutoLinkPlatformIdsButton } from "@/components/app/auto-link-platform-i
 import { DedupePlayerStatsButton } from "@/components/app/dedupe-player-stats-button"
 import { ImportEventsButton } from "@/components/app/import-events-button"
 import { HelperDataActions } from "@/components/app/helper-data-actions"
+import { DEFAULT_GAME_ID, type GameId } from "@/domain/games/game"
 import { WebhookManager } from "@/components/app/webhook-manager"
 import type { Dictionary } from "@/i18n/dictionaries"
-import type { GameId } from "@/domain/games/game"
 import type { ReactNode } from "react"
 
 const sectionIds = ["imports", "helper-data", "webhooks"] as const
@@ -27,12 +27,14 @@ const sectionIds = ["imports", "helper-data", "webhooks"] as const
 export function SystemMaintenanceSections({
     serverId,
     gameId,
+    enabledGames,
     defaultRoleId,
     dictionary,
     additionalSections = [],
 }: {
     serverId: string
     gameId: GameId
+    enabledGames?: GameId[]
     defaultRoleId?: string
     dictionary: Dictionary
     additionalSections?: Array<{
@@ -43,6 +45,7 @@ export function SystemMaintenanceSections({
     }>
 }) {
     const [openSections, setOpenSections] = useState<string[]>([])
+    const isHellLetLoose = gameId === DEFAULT_GAME_ID
 
     useEffect(() => {
         const openLinkedSection = () => {
@@ -84,22 +87,27 @@ export function SystemMaintenanceSections({
                 </AccordionTrigger>
                 <AccordionContent className="pt-3">
                     <div className="flex flex-wrap gap-3">
-                        <ImportEventsButton
-                            serverId={serverId}
-                            dictionary={dictionary}
-                            gameId={gameId}
-                        />
+                        {isHellLetLoose ? (
+                            <ImportEventsButton
+                                serverId={serverId}
+                                dictionary={dictionary}
+                                gameId={gameId}
+                            />
+                        ) : null}
                         <ImportDiscordMembersButton
                             serverId={serverId}
                             dictionary={dictionary}
                             defaultRoleId={defaultRoleId}
                             gameId={gameId}
+                            enabledGames={enabledGames}
                         />
-                        <AutoLinkPlatformIdsButton
-                            serverId={serverId}
-                            dictionary={dictionary}
-                            gameId={gameId}
-                        />
+                        {isHellLetLoose ? (
+                            <AutoLinkPlatformIdsButton
+                                serverId={serverId}
+                                dictionary={dictionary}
+                                gameId={gameId}
+                            />
+                        ) : null}
                         <LinkMissingDiscordIdsButton
                             serverId={serverId}
                             dictionary={dictionary}
@@ -112,11 +120,13 @@ export function SystemMaintenanceSections({
                             defaultRoleId={defaultRoleId}
                             gameId={gameId}
                         />
-                        <DedupePlayerStatsButton
-                            serverId={serverId}
-                            dictionary={dictionary}
-                            gameId={gameId}
-                        />
+                        {isHellLetLoose ? (
+                            <DedupePlayerStatsButton
+                                serverId={serverId}
+                                dictionary={dictionary}
+                                gameId={gameId}
+                            />
+                        ) : null}
                         <RefreshPerformanceHistoryButton
                             serverId={serverId}
                             dictionary={dictionary}

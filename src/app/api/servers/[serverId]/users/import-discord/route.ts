@@ -92,6 +92,15 @@ export async function POST(
     if (!context?.canAdmin) {
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
+    const enabledGames = context.server.enabledGames?.length
+        ? context.server.enabledGames
+        : [DEFAULT_GAME_ID]
+    if (!enabledGames.includes(gameId)) {
+        return NextResponse.json(
+            { error: "The selected game is not enabled for this server." },
+            { status: 400 }
+        )
+    }
 
     try {
         const roleId = String(requestBody.roleId ?? "").trim()

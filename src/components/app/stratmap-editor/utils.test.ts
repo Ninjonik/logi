@@ -1,7 +1,11 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { resolveEditorCanAdmin, zoomViewport } from "./utils"
+import {
+    createDefaultOverlays,
+    resolveEditorCanAdmin,
+    zoomViewport,
+} from "./utils"
 
 test("keeps a server-authorized editor active when the live query lacks a superadmin override", () => {
     assert.equal(resolveEditorCanAdmin(true, false), true)
@@ -37,4 +41,26 @@ test("clamps zoom out at the canvas bounds without changing the anchor math dire
         }),
         { x: 0, y: 0, width: 1920, height: 1920 }
     )
+})
+
+test("allows tactical maps to zoom into a 320-pixel viewport", () => {
+    assert.equal(
+        zoomViewport({ x: 0, y: 0, width: 1920, height: 1920 }, 0.01, {
+            x: 960,
+            y: 960,
+        }).width,
+        320
+    )
+})
+
+test("Wardogs defaults resolve the selected map's reference points", () => {
+    const overlays = createDefaultOverlays("bakurani")
+
+    assert.deepEqual(overlays.visibleStrongpointIds, [
+        "alpha",
+        "bravo",
+        "charlie",
+        "delta",
+        "echo",
+    ])
 })

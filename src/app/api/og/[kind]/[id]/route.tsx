@@ -8,15 +8,12 @@ import {
     getPublicMatch,
     getPublicPlayerProfile,
 } from "@/lib/read-models/public-profiles"
-import {
-    getHllStratmapMapById,
-    getHllStratmapCatalog,
-    parseStratmapState,
-} from "@/lib/stratmaps"
+import { getHllStratmapCatalog, parseStratmapState } from "@/lib/stratmaps"
 import { getPublicImageDimensions } from "@/lib/public-image-version"
 import { getPerformanceTrendDeltas } from "@/lib/performance-trends"
 import { getPublicStratmapDetail } from "@/lib/server-stratmaps"
 import { publicImageCache } from "@/lib/public-image-cache"
+import { getStratmapMapById } from "@/lib/game-stratmaps"
 
 type Props = { params: Promise<{ kind: string; id: string }> }
 const palette = {
@@ -934,7 +931,7 @@ function MatchCard({
 async function renderStratmapCardImage(
     stratmap: NonNullable<Awaited<ReturnType<typeof getPublicStratmapDetail>>>
 ): Promise<string | null> {
-    const mapDef = getHllStratmapMapById(stratmap.baseMapId)
+    const mapDef = getStratmapMapById(stratmap.baseMapId, stratmap.gameId)
     const state = parseStratmapState(stratmap.state, stratmap.baseMapId)
     const firstSlide = state.slides[0]
 
@@ -1021,14 +1018,18 @@ function StratmapCard({
     stratmap: NonNullable<Awaited<ReturnType<typeof getPublicStratmapDetail>>>
     mapImage: string | null
 }) {
-    const mapDef = getHllStratmapMapById(stratmap.baseMapId)
+    const mapDef = getStratmapMapById(stratmap.baseMapId, stratmap.gameId)
     const state = parseStratmapState(stratmap.state, stratmap.baseMapId)
     const slideCount = state.slides.length
     const mapName = mapDef?.name ?? stratmap.baseMapId
-    const strongpoint = stratmap.strongpointId
-        ? (mapDef?.strongpoints.find((sp) => sp.id === stratmap.strongpointId)
-              ?.label ?? stratmap.strongpointId)
-        : undefined
+    const strongpoint =
+        stratmap.gameId === "wardogs"
+            ? undefined
+            : stratmap.strongpointId
+              ? (mapDef?.strongpoints.find(
+                    (sp) => sp.id === stratmap.strongpointId
+                )?.label ?? stratmap.strongpointId)
+              : undefined
 
     const metrics: Array<[string, string, string?]> = [
         ["BASE MAP", mapName],
