@@ -23,14 +23,14 @@ import {
     type DiscordSelectOption,
 } from "@/components/app/discord-entity-select"
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
 import { ExpandableItemCard } from "@/components/app/expandable-item-card"
+import { GAME_IDS, GAME_LABELS, type GameId } from "@/domain/games/game"
 import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
+import { Card, CardContent } from "@/components/ui/card"
 import type { Dictionary } from "@/i18n/dictionaries"
-import type { GameId } from "@/domain/games/game"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -61,6 +61,7 @@ function buildDefaultQuestion(): TicketModalQuestion {
 function buildDefaultCategory(): MembershipCategory {
     return {
         id: makeId("membership"),
+        gameId: "hell_let_loose",
         emoji: "",
         label: "",
         description: "",
@@ -82,6 +83,8 @@ function buildDefaultSettings(
             panelImageUrl: config.membershipSettings.panelImageUrl ?? "",
             applicationWelcomeMessage:
                 config.membershipSettings.applicationWelcomeMessage ?? "",
+            collectSpecialization:
+                config.membershipSettings.collectSpecialization ?? true,
             inviteSupportMembersIndividually:
                 config.membershipSettings.inviteSupportMembersIndividually ??
                 true,
@@ -134,6 +137,7 @@ function buildDefaultSettings(
         panelDescription: dictionary.membershipSettings.defaultPanelDescription,
         panelImageUrl: "",
         applicationWelcomeMessage: "",
+        collectSpecialization: true,
         autoAssignRecruitOnApply: false,
         inviteSupportMembersIndividually: true,
         rosterScoreSettings: {
@@ -169,15 +173,10 @@ function buildFieldPreview(categories: MembershipCategory[]) {
 export function MembershipSettingsForm({
     serverId,
     config,
-    baseConfig,
-    gameId,
     dictionary,
 }: {
     serverId: string
     config: DiscordConfig | null
-    baseConfig?: DiscordConfig | null
-    /** A selected game saves membership settings as that game's override. */
-    gameId?: GameId
     dictionary: Dictionary
 }) {
     const router = useRouter()
@@ -287,7 +286,7 @@ export function MembershipSettingsForm({
     }
 
     async function handleSave() {
-        const sharedConfig = baseConfig ?? config
+        const sharedConfig = config
         const membershipSettings = settings.enabled
             ? {
                   enabled: true,
@@ -299,6 +298,7 @@ export function MembershipSettingsForm({
                   panelImageUrl: settings.panelImageUrl || undefined,
                   applicationWelcomeMessage:
                       settings.applicationWelcomeMessage?.trim() || undefined,
+                  collectSpecialization: settings.collectSpecialization ?? true,
                   autoAssignRecruitOnApply: settings.autoAssignRecruitOnApply,
                   inviteSupportMembersIndividually:
                       settings.inviteSupportMembersIndividually ?? true,
@@ -333,37 +333,18 @@ export function MembershipSettingsForm({
             {
                 method: "POST",
                 headers: { "content-type": "application/json" },
-                body: JSON.stringify(
-                    gameId
-                        ? {
-                              ...(baseConfig ?? {
-                                  timezone: "UTC",
-                                  defaultLanguage: "en",
-                                  calendarCategories: [],
-                              }),
-                              gameOverrides: {
-                                  ...baseConfig?.gameOverrides,
-                                  [gameId]: {
-                                      ...baseConfig?.gameOverrides?.[gameId],
-                                      membershipSettings,
-                                  },
-                              },
-                          }
-                        : {
-                              timezone: sharedConfig?.timezone ?? "UTC",
-                              defaultLanguage:
-                                  sharedConfig?.defaultLanguage ?? "en",
-                              announcementsChannelId:
-                                  sharedConfig?.announcementsChannelId,
-                              forumCategoryId: sharedConfig?.forumCategoryId,
-                              meetingChannelId: sharedConfig?.meetingChannelId,
-                              clanRoleId: sharedConfig?.clanRoleId,
-                              dashboardAdminRoleId:
-                                  sharedConfig?.dashboardAdminRoleId,
-                              ticketSettings: sharedConfig?.ticketSettings,
-                              membershipSettings,
-                          }
-                ),
+                body: JSON.stringify({
+                    timezone: sharedConfig?.timezone ?? "UTC",
+                    defaultLanguage: sharedConfig?.defaultLanguage ?? "en",
+                    announcementsChannelId:
+                        sharedConfig?.announcementsChannelId,
+                    forumCategoryId: sharedConfig?.forumCategoryId,
+                    meetingChannelId: sharedConfig?.meetingChannelId,
+                    clanRoleId: sharedConfig?.clanRoleId,
+                    dashboardAdminRoleId: sharedConfig?.dashboardAdminRoleId,
+                    ticketSettings: sharedConfig?.ticketSettings,
+                    membershipSettings,
+                }),
             }
         )
 
@@ -379,10 +360,7 @@ export function MembershipSettingsForm({
 
     return (
         <Card className="border-border/60 rounded-2xl">
-            <CardHeader>
-                <CardTitle>{dictionary.membershipSettings.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 py-6">
                 {settings.enabled && missingMembershipParts.length ? (
                     <ConfigNotice
                         title={dictionary.membershipSettings.incompleteTitle}
@@ -825,6 +803,28 @@ export function MembershipSettingsForm({
                 </div>
 
                 <div className="space-y-4">
+                    <div className="border-border/60 bg-muted/10 flex items-center justify-between gap-4 rounded-xl border p-4">
+                        <div>
+                            <Label>
+                                {
+                                    dictionary.membershipSettings
+                                        .specializationTitle
+                                }
+                            </Label>
+                            <p className="text-muted-foreground mt-1 text-sm">
+                                {
+                                    dictionary.membershipSettings
+                                        .specializationDescription
+                                }
+                            </p>
+                        </div>
+                        <Switch
+                            checked={settings.collectSpecialization ?? true}
+                            onCheckedChange={(collectSpecialization) =>
+                                patchSettings({ collectSpecialization })
+                            }
+                        />
+                    </div>
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <h3 className="font-semibold">
@@ -896,92 +896,143 @@ export function MembershipSettingsForm({
                                     </Button>
                                 }
                             >
-                                <div className="grid gap-4 lg:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label>
+                                <section className="border-border/60 bg-muted/20 space-y-4 rounded-xl border p-4">
+                                    <div>
+                                        <h4 className="font-medium">
                                             {
                                                 dictionary.membershipSettings
-                                                    .buttonLabel
+                                                    .categoryDetails
                                             }
-                                        </Label>
-                                        <Input
-                                            value={category.label}
-                                            onChange={(event) =>
-                                                patchCategory(category.id, {
-                                                    label: event.target.value,
-                                                })
-                                            }
-                                            className="rounded-xl"
-                                        />
+                                        </h4>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {
-                                                dictionary.membershipSettings
-                                                    .applicationResult
-                                            }
-                                        </Label>
-                                        <Select
-                                            value={category.assignmentType}
-                                            onValueChange={(value) =>
-                                                patchCategory(category.id, {
-                                                    assignmentType: value as
-                                                        | "member"
-                                                        | "reserve_member"
-                                                        | "mercenary",
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger className="rounded-xl">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="member">
-                                                    {
-                                                        dictionary
-                                                            .userManagement
-                                                            .memberLabel
-                                                    }
-                                                </SelectItem>
-                                                <SelectItem value="reserve_member">
-                                                    {
-                                                        dictionary
-                                                            .userManagement
-                                                            .reserveMemberLabel
-                                                    }
-                                                </SelectItem>
-                                                <SelectItem value="mercenary">
-                                                    {
-                                                        dictionary
-                                                            .userManagement
-                                                            .mercLabel
-                                                    }
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                    <div className="grid gap-4 lg:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary
+                                                        .membershipSettings
+                                                        .buttonLabel
+                                                }
+                                            </Label>
+                                            <Input
+                                                value={category.label}
+                                                onChange={(event) =>
+                                                    patchCategory(category.id, {
+                                                        label: event.target
+                                                            .value,
+                                                    })
+                                                }
+                                                className="rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary.emojiPicker
+                                                        .pickEmoji
+                                                }
+                                            </Label>
+                                            <EmojiPickerInput
+                                                value={category.emoji ?? ""}
+                                                onChange={(value) =>
+                                                    patchCategory(category.id, {
+                                                        emoji: value ?? "",
+                                                    })
+                                                }
+                                                customEmojis={emojiOptions}
+                                                placeholder="..."
+                                                labels={dictionary.emojiPicker}
+                                                hidePickerLabel
+                                            />
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="grid gap-4 lg:grid-cols-[1fr,2fr]">
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {dictionary.ticketSettings.emoji}
-                                        </Label>
-                                        <EmojiPickerInput
-                                            value={category.emoji ?? ""}
-                                            onChange={(value) =>
-                                                patchCategory(category.id, {
-                                                    emoji: value ?? "",
-                                                })
-                                            }
-                                            customEmojis={emojiOptions}
-                                            placeholder={
-                                                dictionary.emojiPicker.pickEmoji
-                                            }
-                                            labels={dictionary.emojiPicker}
-                                        />
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary
+                                                        .membershipSettings
+                                                        .categoryGame
+                                                }
+                                            </Label>
+                                            <Select
+                                                value={
+                                                    category.gameId ??
+                                                    "hell_let_loose"
+                                                }
+                                                onValueChange={(value) =>
+                                                    patchCategory(category.id, {
+                                                        gameId: value as GameId,
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger className="rounded-xl">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {GAME_IDS.map((id) => (
+                                                        <SelectItem
+                                                            key={id}
+                                                            value={id}
+                                                        >
+                                                            {GAME_LABELS[id]}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary
+                                                        .membershipSettings
+                                                        .applicationResult
+                                                }
+                                            </Label>
+                                            <Select
+                                                value={category.assignmentType}
+                                                onValueChange={(value) =>
+                                                    patchCategory(category.id, {
+                                                        assignmentType:
+                                                            value as
+                                                                | "member"
+                                                                | "reserve_member"
+                                                                | "mercenary",
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger className="rounded-xl">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="member">
+                                                        {
+                                                            dictionary
+                                                                .userManagement
+                                                                .memberLabel
+                                                        }
+                                                    </SelectItem>
+                                                    <SelectItem value="reserve_member">
+                                                        {
+                                                            dictionary
+                                                                .userManagement
+                                                                .reserveMemberLabel
+                                                        }
+                                                    </SelectItem>
+                                                    <SelectItem value="mercenary">
+                                                        {
+                                                            dictionary
+                                                                .userManagement
+                                                                .mercLabel
+                                                        }
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
+
+                                    <div className="max-w-3xl space-y-2">
                                         <Label>
                                             {
                                                 dictionary.ticketSettings
@@ -995,78 +1046,104 @@ export function MembershipSettingsForm({
                                                     description: value,
                                                 })
                                             }
-                                            className="min-h-20 rounded-xl"
+                                            className="rounded-xl"
                                             maxLength={240}
-                                            rows={4}
+                                            rows={3}
+                                            height={120}
+                                            compactToolbar
+                                            preview="edit"
                                         />
                                     </div>
-                                </div>
+                                </section>
 
-                                <div className="grid gap-4 lg:grid-cols-2">
+                                <section className="border-border/60 space-y-4 rounded-xl border p-4">
+                                    <div>
+                                        <h4 className="font-medium">
+                                            {
+                                                dictionary.membershipSettings
+                                                    .categoryRoles
+                                            }
+                                        </h4>
+                                        <p className="text-muted-foreground mt-1 text-sm">
+                                            {
+                                                dictionary.membershipSettings
+                                                    .categoryRolesDescription
+                                            }
+                                        </p>
+                                    </div>
+                                    <div className="grid gap-4 lg:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary
+                                                        .membershipSettings
+                                                        .recruitRole
+                                                }
+                                            </Label>
+                                            <DiscordMultiEntitySelect
+                                                value={category.recruitRoleIds}
+                                                onChange={(value) =>
+                                                    patchCategory(category.id, {
+                                                        recruitRoleIds: value,
+                                                    })
+                                                }
+                                                options={roles}
+                                                placeholder={
+                                                    dictionary
+                                                        .membershipSettings
+                                                        .recruitRolePlaceholder
+                                                }
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>
+                                                {
+                                                    dictionary
+                                                        .membershipSettings
+                                                        .finalRole
+                                                }
+                                            </Label>
+                                            <DiscordMultiEntitySelect
+                                                value={category.finalRoleIds}
+                                                onChange={(value) =>
+                                                    patchCategory(category.id, {
+                                                        finalRoleIds: value,
+                                                    })
+                                                }
+                                                options={roles}
+                                                placeholder={
+                                                    dictionary
+                                                        .membershipSettings
+                                                        .finalRolePlaceholder
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+
                                     <div className="space-y-2">
                                         <Label>
                                             {
-                                                dictionary.membershipSettings
-                                                    .recruitRole
+                                                dictionary.ticketSettings
+                                                    .supportRoles
                                             }
                                         </Label>
                                         <DiscordMultiEntitySelect
-                                            value={category.recruitRoleIds}
+                                            value={category.supportRoleIds}
                                             onChange={(value) =>
                                                 patchCategory(category.id, {
-                                                    recruitRoleIds: value,
+                                                    supportRoleIds: value,
                                                 })
                                             }
                                             options={roles}
                                             placeholder={
-                                                dictionary.membershipSettings
-                                                    .recruitRolePlaceholder
+                                                dictionary.ticketSettings
+                                                    .supportRoles
                                             }
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {
-                                                dictionary.membershipSettings
-                                                    .finalRole
-                                            }
-                                        </Label>
-                                        <DiscordMultiEntitySelect
-                                            value={category.finalRoleIds}
-                                            onChange={(value) =>
-                                                patchCategory(category.id, {
-                                                    finalRoleIds: value,
-                                                })
-                                            }
-                                            options={roles}
-                                            placeholder={
-                                                dictionary.membershipSettings
-                                                    .finalRolePlaceholder
-                                            }
-                                        />
-                                    </div>
-                                </div>
+                                </section>
 
-                                <div className="space-y-2">
-                                    <Label>
-                                        {dictionary.ticketSettings.supportRoles}
-                                    </Label>
-                                    <DiscordMultiEntitySelect
-                                        value={category.supportRoleIds}
-                                        onChange={(value) =>
-                                            patchCategory(category.id, {
-                                                supportRoleIds: value,
-                                            })
-                                        }
-                                        options={roles}
-                                        placeholder={
-                                            dictionary.ticketSettings
-                                                .supportRoles
-                                        }
-                                    />
-                                </div>
-
-                                <div className="space-y-3">
+                                <section className="border-border/60 bg-muted/10 space-y-3 rounded-xl border p-4">
                                     <div className="flex items-center justify-between gap-4">
                                         <div>
                                             <h5 className="font-medium">
@@ -1274,7 +1351,7 @@ export function MembershipSettingsForm({
                                             }
                                         </div>
                                     )}
-                                </div>
+                                </section>
                             </ExpandableItemCard>
                         ))
                     ) : (

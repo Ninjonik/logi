@@ -1,3 +1,5 @@
+import type { GameId } from "../../src/domain/games/game"
+
 export type ClanLanguage = "en" | "cs" | "de"
 
 export type TicketModalQuestion = {
@@ -19,6 +21,7 @@ export type TicketCategory = {
 
 export type MembershipCategory = {
     id: string
+    gameId?: GameId
     emoji?: string
     label?: string
     description?: string
@@ -47,6 +50,7 @@ export type MembershipSettings = {
     panelDescription: string
     panelImageUrl?: string
     applicationWelcomeMessage?: string
+    collectSpecialization?: boolean
     autoAssignRecruitOnApply: boolean
     inviteSupportMembersIndividually?: boolean
     categories: MembershipCategory[]

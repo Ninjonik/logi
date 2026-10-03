@@ -62,6 +62,13 @@ export const ticketCategoryValidator = v.object({
 
 export const membershipCategoryValidator = v.object({
     id: v.string(),
+    gameId: v.optional(
+        v.union(
+            v.literal("hell_let_loose"),
+            v.literal("hell_let_loose_vietnam"),
+            v.literal("wardogs")
+        )
+    ),
     emoji: v.optional(v.string()),
     label: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -94,6 +101,7 @@ export const membershipSettingsValidator = v.object({
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
     applicationWelcomeMessage: v.optional(v.string()),
+    collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),
     inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(

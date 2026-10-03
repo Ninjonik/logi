@@ -52,19 +52,24 @@ one. Test after changing channels so staff do not leave an old panel in use.
 
 ### Membership application
 
-1. The person must not already have a workspace assignment or another open
+1. The person completes a private, ephemeral Discord wizard: game, an optional
+   specialization, platform account, category questions, and a final review.
+   The specialization step can be configured for Hell Let Loose and Vietnam;
+   it is not shown for Wardogs. The wizard keeps a short-lived draft, so
+   cancelling it creates neither an assignment nor an application thread.
+2. The person must not already have a workspace assignment or another open
    application, and must have at least one linked platform ID. If no platform
-   ID exists, the bot sends them through the platform-link flow first.
-2. The bot creates a private application thread and an assignment. It starts as
+   ID exists, the wizard sends them through the platform-link flow first.
+3. After **Agree and submit**, the bot creates a private application thread and an assignment. It starts as
    pending unless **auto-assign recruit on apply** is enabled for a member
    category, in which case it starts as recruit and the configured recruit roles
    are applied. The category decides whether its assignment is member, reserve
    member, or mercenary.
-3. Eligible staff close it with `/close_application` and choose **denied**,
+4. Eligible staff close it with `/close_application` and choose **denied**,
    **pending**, **recruit**, **member**, or **mercenary**. The selected outcome
    updates the assignment, except denied, which removes the assignment created
    for the application.
-4. The bot records the closing outcome, posts the result in the thread, renames
+5. The bot records the closing outcome, posts the result in the thread, renames
    it, attempts to DM the applicant, and applies/removes the configured
    membership roles for the status transition.
 
@@ -77,16 +82,20 @@ These are transition-based changes: Logi adds roles newly required by the
 outcome and removes roles that belonged only to the previous outcome. It does
 not use group-linked roles for this purpose.
 
-Membership applications are configured separately for each enabled game. Open
-the membership settings screen with a game selected to configure that game's
-panel, submit channel, parent channel, categories, roles, and optional
-application-thread welcome message. The welcome message is posted above the
-application summary and supports `{applicant}`, `{support_roles}`, and
-`{category}` placeholders. Existing applications without a game ID remain Hell
-Let Loose applications.
+Membership application settings and the Discord panel are shared by the whole
+workspace. Each category selects its target game, so one panel can contain
+multiple categories for the same game as well as categories for other games.
+Configure the shared submit channel, parent channel, roles, and optional
+application-thread welcome message once. The welcome message is posted above
+the application summary and supports `{applicant}`, `{support_roles}`, and
+`{category}` placeholders. Existing categories without a game ID remain Hell
+Let Loose categories.
 
-For each game, choose whether category support-role members are added to an
-application thread individually or invited by the support-role mention in the
+In the dashboard, each category groups its display label, emoji, target game,
+and application result before the category description.
+
+Choose whether category support-role members are added to an application thread
+individually or invited by the support-role mention in the
 opening message. Individual adds are the reliable default. Role mentions let
 Discord add eligible small roles, but Discord limits this to roles with fewer
 than 100 members and up to 10 mentioned roles; dashboard administrators remain

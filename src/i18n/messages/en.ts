@@ -799,6 +799,14 @@ export const enMessages = {
             "Hi {applicant}, thanks for applying. {support_roles} will be with you shortly.",
         image: "Thumbnail image",
         applicationThumbnail: "Application thumbnail",
+        specializationTitle: "Ask for specialization",
+        specializationDescription:
+            "Show Infantry and Armour as a step in the Discord application wizard. Wardogs never shows this step.",
+        categoryGame: "Game",
+        categoryDetails: "Category details",
+        categoryRoles: "Roles and access",
+        categoryRolesDescription:
+            "Choose the roles Logi manages after approval and the staff who can access the application thread.",
         categoriesTitle: "Application categories",
         categoriesDescription:
             "Each category becomes a button. Modal questions are optional and reuse the same pattern as tickets.",

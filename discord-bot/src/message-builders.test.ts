@@ -111,7 +111,7 @@ test("buildCompactV2FieldText removes legacy embed padding and compacts field co
     )
 })
 
-test("membership panel components keep Wardogs scoped while HLL stays legacy-compatible", () => {
+test("membership panel categories open the shared membership wizard", () => {
     const membershipConfig: DiscordConfig = {
         ...config,
         membershipSettings: {
@@ -137,22 +137,12 @@ test("membership panel components keep Wardogs scoped while HLL stays legacy-com
     const legacyButton =
         buildMembershipPanelComponents(membershipConfig)[0]?.toJSON()
             .components[0]
-    const wardogsButton = buildMembershipPanelComponents(
-        membershipConfig,
-        "wardogs"
-    )[0]?.toJSON().components[0]
 
     assert.equal(
         legacyButton && "custom_id" in legacyButton
             ? legacyButton.custom_id
             : undefined,
         "membership:recruit"
-    )
-    assert.equal(
-        wardogsButton && "custom_id" in wardogsButton
-            ? wardogsButton.custom_id
-            : undefined,
-        "membership:wardogs:recruit"
     )
 })
 

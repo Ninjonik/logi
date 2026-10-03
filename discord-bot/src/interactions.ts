@@ -79,6 +79,11 @@ import type {
     TicketThreadRecord,
 } from "./types"
 import {
+    buildMembershipFlowCancelledMessage,
+    buildMembershipFlowMessage,
+    type MembershipFlowStep,
+} from "./interactions/membership-flow"
+import {
     detectPlatformFromStatsId,
     extractPlayerSearchResults,
 } from "./interactions/player-search"
@@ -597,6 +602,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 return
             }
 
+            if (interaction.customId.startsWith("membership-flow:")) {
+                await handleMembershipFlowInteraction(interaction)
+                return
+            }
+
             if (interaction.customId.startsWith("membership-reuse:")) {
                 await handleMembershipPlatformReuseInteraction(interaction)
                 return
@@ -624,6 +634,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 await handleTicketModalSubmit(interaction)
             } else if (interaction.customId.startsWith("membership-modal:")) {
                 await handleMembershipModalSubmit(interaction)
+            } else if (
+                interaction.customId.startsWith("membership-flow-modal:")
+            ) {
+                await handleMembershipFlowModalSubmit(interaction)
             } else if (interaction.customId.startsWith("plink-modal:")) {
                 await handlePlatformLinkModalSubmit(interaction)
             } else if (interaction.customId.startsWith("plink-search:")) {
@@ -1316,6 +1330,456 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await createDiscordTicket(interaction, context.category, answers)
     }
 
+    async function getMembershipFlowDraft(
+        draftId: string,
+        guildId: string,
+        creatorId: string
+    ) {
+        return (await convex.query(references.getMembershipApplicationDraft, {
+            secret: env.internalSecret,
+            draftId: draftId as never,
+            guildId,
+            creatorId,
+        })) as {
+            id: string
+            categoryId: string
+            gameId?: GameId
+            specialization?: "infantry" | "armour"
+            answers: MembershipAnswer[]
+            step: MembershipFlowStep
+        }
+    }
+
+    async function renderMembershipFlow(
+        interaction:
+            | ButtonInteraction
+            | StringSelectMenuInteraction
+            | ModalSubmitInteraction,
+        draft: Awaited<ReturnType<typeof getMembershipFlowDraft>>,
+        language: ClanLanguage,
+        step: MembershipFlowStep,
+        category: MembershipCategory,
+        platformLinked: boolean,
+        mode: "update" | "reply" = "update"
+    ) {
+        const message = buildMembershipFlowMessage({
+            language,
+            draftId: draft.id,
+            step,
+            gameId: draft.gameId,
+            specialization: draft.specialization,
+            platformLinked,
+            answers: draft.answers,
+        })
+        const payload = {
+            ...message,
+            flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+        }
+        if (mode === "reply") {
+            await interaction.reply(payload)
+        } else if (interaction.isButton() || interaction.isStringSelectMenu()) {
+            await interaction.update(payload)
+        }
+    }
+
+    async function resumeMembershipDraftAfterPlatformLink(
+        interaction:
+            | ButtonInteraction
+            | StringSelectMenuInteraction
+            | ModalSubmitInteraction,
+        draftId: string
+    ) {
+        if (!interaction.guildId) return
+        const draft = await getMembershipFlowDraft(
+            draftId,
+            interaction.guildId,
+            interaction.user.id
+        ).catch(() => null)
+        if (!draft?.gameId) return
+        const context = await loadMembershipCategoryContext(
+            interaction.guildId,
+            draft.categoryId,
+            draft.gameId
+        )
+        if (!context) return
+        await convex.mutation(references.updateMembershipApplicationDraft, {
+            secret: env.internalSecret,
+            draftId: draftId as never,
+            guildId: interaction.guildId,
+            creatorId: interaction.user.id,
+            step: "questions",
+        })
+        const updatedDraft = await getMembershipFlowDraft(
+            draftId,
+            interaction.guildId,
+            interaction.user.id
+        )
+        const language = context.config.defaultLanguage as ClanLanguage
+        await renderMembershipFlow(
+            interaction,
+            updatedDraft,
+            language,
+            "questions",
+            context.category,
+            true,
+            interaction.isModalSubmit() ? "reply" : "update"
+        )
+    }
+
+    async function handleMembershipFlowInteraction(
+        interaction: ButtonInteraction
+    ) {
+        if (!interaction.guildId) return
+        const [, draftId, ...actionParts] = interaction.customId.split(":")
+        const action = actionParts.join(":")
+        if (!draftId || !action) return
+
+        let draft: Awaited<ReturnType<typeof getMembershipFlowDraft>>
+        try {
+            draft = await getMembershipFlowDraft(
+                draftId,
+                interaction.guildId,
+                interaction.user.id
+            )
+        } catch {
+            await interaction.reply({
+                content: "This application has expired. Please start again.",
+                flags: MessageFlags.Ephemeral,
+            })
+            return
+        }
+
+        const config = (await convex.query(
+            references.getConfigByDiscordGuildId,
+            {
+                guildId: interaction.guildId,
+            }
+        )) as EventInteractionContext["config"] | null
+        const language = getClanDiscordMessages(
+            config?.defaultLanguage
+        ).locale.startsWith("cs")
+            ? "cs"
+            : getClanDiscordMessages(config?.defaultLanguage).locale.startsWith(
+                    "de"
+                )
+              ? "de"
+              : "en"
+
+        if (action === "cancel") {
+            await convex.mutation(
+                references.discardMembershipApplicationDraft,
+                {
+                    secret: env.internalSecret,
+                    draftId: draftId as never,
+                    guildId: interaction.guildId,
+                    creatorId: interaction.user.id,
+                }
+            )
+            await interaction.update({
+                ...buildMembershipFlowCancelledMessage(language),
+                flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+            })
+            return
+        }
+
+        if (action.startsWith("game:")) {
+            const gameId = parseGameId(action.slice("game:".length))
+            if (!gameId) return
+            const context = await loadMembershipCategoryContext(
+                interaction.guildId,
+                draft.categoryId,
+                gameId
+            )
+            if (!context) {
+                await interaction.reply({
+                    content:
+                        getClanDiscordMessages(language).membership.unavailable,
+                    flags: MessageFlags.Ephemeral,
+                })
+                return
+            }
+            const step: MembershipFlowStep =
+                gameId !== "wardogs" &&
+                context.config.membershipSettings?.collectSpecialization !==
+                    false
+                    ? "specialization"
+                    : "account"
+            await convex.mutation(references.updateMembershipApplicationDraft, {
+                secret: env.internalSecret,
+                draftId: draftId as never,
+                guildId: interaction.guildId,
+                creatorId: interaction.user.id,
+                gameId,
+                step,
+            })
+            draft = await getMembershipFlowDraft(
+                draftId,
+                interaction.guildId,
+                interaction.user.id
+            )
+            const prereq = await loadMembershipApplicationPrereq(
+                interaction.guildId,
+                draft.categoryId,
+                interaction.user.id,
+                gameId
+            )
+            await renderMembershipFlow(
+                interaction,
+                draft,
+                language,
+                step,
+                context.category,
+                Boolean(prereq?.user?.platformIds?.length)
+            )
+            return
+        }
+
+        if (action.startsWith("specialization:")) {
+            const specialization = action.slice("specialization:".length)
+            if (specialization !== "infantry" && specialization !== "armour")
+                return
+            await convex.mutation(references.updateMembershipApplicationDraft, {
+                secret: env.internalSecret,
+                draftId: draftId as never,
+                guildId: interaction.guildId,
+                creatorId: interaction.user.id,
+                specialization,
+                step: "account",
+            })
+            draft = await getMembershipFlowDraft(
+                draftId,
+                interaction.guildId,
+                interaction.user.id
+            )
+        }
+
+        if (action === "back") {
+            await convex.mutation(references.updateMembershipApplicationDraft, {
+                secret: env.internalSecret,
+                draftId: draftId as never,
+                guildId: interaction.guildId,
+                creatorId: interaction.user.id,
+                step: "questions",
+            })
+            draft = await getMembershipFlowDraft(
+                draftId,
+                interaction.guildId,
+                interaction.user.id
+            )
+        }
+
+        if (action === "questions") {
+            const context = draft.gameId
+                ? await loadMembershipCategoryContext(
+                      interaction.guildId,
+                      draft.categoryId,
+                      draft.gameId
+                  )
+                : null
+            if (!context) return
+            if (!context.category.modalQuestions.length) {
+                await convex.mutation(
+                    references.updateMembershipApplicationDraft,
+                    {
+                        secret: env.internalSecret,
+                        draftId: draftId as never,
+                        guildId: interaction.guildId,
+                        creatorId: interaction.user.id,
+                        step: "review",
+                    }
+                )
+                draft = await getMembershipFlowDraft(
+                    draftId,
+                    interaction.guildId,
+                    interaction.user.id
+                )
+                const prereq = await loadMembershipApplicationPrereq(
+                    interaction.guildId,
+                    draft.categoryId,
+                    interaction.user.id,
+                    draft.gameId
+                )
+                await renderMembershipFlow(
+                    interaction,
+                    draft,
+                    language,
+                    "review",
+                    context.category,
+                    Boolean(prereq?.user?.platformIds?.length)
+                )
+                return
+            }
+            await interaction.showModal(
+                buildMembershipQuestionsModal(
+                    `membership-flow-modal:${draftId}`,
+                    context.category,
+                    getClanDiscordMessages(language).membership.modalTitle,
+                    5
+                )
+            )
+            return
+        }
+
+        if (action === "submit" && draft.gameId) {
+            const prereq = await loadMembershipApplicationPrereq(
+                interaction.guildId,
+                draft.categoryId,
+                interaction.user.id,
+                draft.gameId
+            )
+            if (
+                !prereq ||
+                prereq.assignment ||
+                prereq.hasOpenApplication ||
+                !prereq.user?.platformIds?.length
+            ) {
+                await interaction.reply({
+                    content:
+                        getClanDiscordMessages(language).membership.unavailable,
+                    flags: MessageFlags.Ephemeral,
+                })
+                return
+            }
+            const answers = draft.specialization
+                ? [
+                      {
+                          questionId: "specialization",
+                          label:
+                              language === "cs"
+                                  ? "Specializace"
+                                  : language === "de"
+                                    ? "Spezialisierung"
+                                    : "Specialization",
+                          value:
+                              draft.specialization === "infantry"
+                                  ? language === "cs"
+                                      ? "Pěchota"
+                                      : language === "de"
+                                        ? "Infanterie"
+                                        : "Infantry"
+                                  : language === "cs"
+                                    ? "Tank"
+                                    : language === "de"
+                                      ? "Panzer"
+                                      : "Armour",
+                      },
+                      ...draft.answers,
+                  ]
+                : draft.answers
+            await createDiscordMembershipApplication(
+                interaction,
+                prereq.category,
+                answers,
+                draft.gameId
+            )
+            return
+        }
+
+        if (action === "link") {
+            await interaction.update({
+                ...buildPlatformLinkStartMessage(language, {
+                    mode: "membership",
+                    categoryId: draft.categoryId,
+                    gameId: draft.gameId,
+                    draftId,
+                }),
+            })
+            return
+        }
+
+        const context = draft.gameId
+            ? await loadMembershipCategoryContext(
+                  interaction.guildId,
+                  draft.categoryId,
+                  draft.gameId
+              )
+            : null
+        if (!context) return
+        const prereq = await loadMembershipApplicationPrereq(
+            interaction.guildId,
+            draft.categoryId,
+            interaction.user.id,
+            draft.gameId
+        )
+        const nextStep: MembershipFlowStep = action.startsWith(
+            "specialization:"
+        )
+            ? "account"
+            : draft.step
+        await renderMembershipFlow(
+            interaction,
+            draft,
+            language,
+            nextStep,
+            context.category,
+            Boolean(prereq?.user?.platformIds?.length)
+        )
+    }
+
+    async function handleMembershipFlowModalSubmit(
+        interaction: ModalSubmitInteraction
+    ) {
+        if (!interaction.guildId) return
+        const draftId = interaction.customId.replace(
+            "membership-flow-modal:",
+            ""
+        )
+        const draft = await getMembershipFlowDraft(
+            draftId,
+            interaction.guildId,
+            interaction.user.id
+        ).catch(() => null)
+        if (!draft?.gameId) return
+        const context = await loadMembershipCategoryContext(
+            interaction.guildId,
+            draft.categoryId,
+            draft.gameId
+        )
+        if (!context) return
+        const answers = context.category.modalQuestions.map((question) => ({
+            questionId: question.id,
+            label: question.label,
+            value: interaction.fields.getTextInputValue(question.id).trim(),
+        }))
+        await convex.mutation(references.updateMembershipApplicationDraft, {
+            secret: env.internalSecret,
+            draftId: draftId as never,
+            guildId: interaction.guildId,
+            creatorId: interaction.user.id,
+            answers,
+            step: "review",
+        })
+        const updatedDraft = await getMembershipFlowDraft(
+            draftId,
+            interaction.guildId,
+            interaction.user.id
+        )
+        const prereq = await loadMembershipApplicationPrereq(
+            interaction.guildId,
+            updatedDraft.categoryId,
+            interaction.user.id,
+            updatedDraft.gameId
+        )
+        const language = getClanDiscordMessages(
+            context.config.defaultLanguage
+        ).locale.startsWith("cs")
+            ? "cs"
+            : getClanDiscordMessages(
+                    context.config.defaultLanguage
+                ).locale.startsWith("de")
+              ? "de"
+              : "en"
+        await renderMembershipFlow(
+            interaction,
+            updatedDraft,
+            language,
+            "review",
+            context.category,
+            Boolean(prereq?.user?.platformIds?.length),
+            "reply"
+        )
+    }
+
     async function handleMembershipButtonInteraction(
         interaction: ButtonInteraction
     ) {
@@ -1328,85 +1792,67 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const [gameIdOrCategoryId, categoryId] = interaction.customId
+        const [gameIdOrCategoryId, legacyCategoryId] = interaction.customId
             .replace("membership:", "")
             .split(":", 2)
-        const gameId = categoryId ? parseGameId(gameIdOrCategoryId) : undefined
+        const categoryId = legacyCategoryId ?? gameIdOrCategoryId
+
+        const draft = (await convex.mutation(
+            references.createMembershipApplicationDraft,
+            {
+                secret: env.internalSecret,
+                guildId: interaction.guildId,
+                creatorId: interaction.user.id,
+                categoryId,
+            }
+        )) as { id: string }
+        const storedDraft = await getMembershipFlowDraft(
+            draft.id,
+            interaction.guildId,
+            interaction.user.id
+        )
         const prereq = await loadMembershipApplicationPrereq(
             interaction.guildId,
-            categoryId ?? gameIdOrCategoryId,
+            categoryId,
             interaction.user.id,
-            gameId
+            storedDraft.gameId
         )
-        const messages = getClanDiscordMessages(prereq?.config.defaultLanguage)
-
+        const language = prereq?.config.defaultLanguage as ClanLanguage
         if (!prereq?.config.membershipSettings?.enabled) {
             await interaction.reply({
-                content: messages.membership.unavailable,
+                content: fallbackMessages.membership.unavailable,
                 flags: MessageFlags.Ephemeral,
             })
             return
         }
-
         if (prereq.assignment) {
             await interaction.reply({
-                content: messages.membership.alreadyInClan,
+                content:
+                    getClanDiscordMessages(language).membership.alreadyInClan,
                 flags: MessageFlags.Ephemeral,
             })
             return
         }
-
         if (prereq.hasOpenApplication) {
             await interaction.reply({
-                content: messages.membership.openApplicationExists,
+                content:
+                    getClanDiscordMessages(language).membership
+                        .openApplicationExists,
                 flags: MessageFlags.Ephemeral,
             })
             return
         }
-
-        if (!prereq.user || !prereq.user.platformIds?.length) {
-            await interaction.reply({
-                ...buildPlatformLinkStartMessage(
-                    prereq.config.defaultLanguage,
-                    {
-                        mode: "membership",
-                        categoryId: categoryId ?? gameIdOrCategoryId,
-                        gameId,
-                    }
-                ),
-                flags: MessageFlags.Ephemeral,
-            })
-            return
-        }
-
-        if (gameId && prereq.hasAssignmentInOtherGame) {
-            const copy = getMembershipPlatformReuseCopy(
-                prereq.config.defaultLanguage
-            )
-            await interaction.reply({
-                content: copy.prompt,
-                components: [
-                    new ActionRowBuilder<ButtonBuilder>().addComponents(
-                        new ButtonBuilder()
-                            .setCustomId(
-                                `membership-reuse:${gameId}:${categoryId}:yes`
-                            )
-                            .setLabel(copy.reuse)
-                            .setStyle(ButtonStyle.Primary),
-                        new ButtonBuilder()
-                            .setCustomId(
-                                `membership-reuse:${gameId}:${categoryId}:no`
-                            )
-                            .setLabel(copy.linkAnother)
-                            .setStyle(ButtonStyle.Secondary)
-                    ),
-                ],
-                flags: MessageFlags.Ephemeral,
-            })
-            return
-        }
-
-        await continueMembershipApplicationFlow(interaction, prereq, gameId)
+        await interaction.reply({
+            ...buildMembershipFlowMessage({
+                language,
+                draftId: draft.id,
+                step: storedDraft.step,
+                gameId: storedDraft.gameId,
+                platformLinked: Boolean(prereq.user?.platformIds?.length),
+            }),
+            flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+        })
+        return
     }
 
     async function handleMembershipPlatformReuseInteraction(
@@ -1792,6 +2238,13 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         )
 
         if (parsed.context.mode === "membership" && parsed.context.categoryId) {
+            if (parsed.context.draftId) {
+                await resumeMembershipDraftAfterPlatformLink(
+                    interaction,
+                    parsed.context.draftId
+                )
+                return
+            }
             const prereq = await loadMembershipApplicationPrereq(
                 interaction.guildId!,
                 parsed.context.categoryId,

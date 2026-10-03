@@ -1,9 +1,6 @@
 import type { Metadata } from "next"
 
-import { ConfigurationScopeIndicator } from "@/components/app/configuration-scope-indicator"
 import { MembershipSettingsForm } from "@/components/app/membership-settings-form"
-import { GameSelectionGate } from "@/components/app/game-selection-gate"
-import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { PageHeader } from "@/components/app/page-header"
 import { getGuildMetadata } from "@/lib/server-metadata"
 import { getServerContext } from "@/lib/server-context"
@@ -17,25 +14,13 @@ export const metadata: Metadata = {
 
 export default async function ServerMembershipsPage({
     params,
-    searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
-    searchParams: Promise<{ game?: string }>
 }) {
     const { locale, serverId } = await params
-    const { game } = await searchParams
-    const gameId = isGameId(game) ? game : undefined
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const context = await getServerContext(serverId, gameId ?? "all")
+    const context = await getServerContext(serverId, "all")
     if (!context?.canAdmin) return null
-    if (!gameId)
-        return (
-            <GameSelectionGate
-                enabledGames={context.server.enabledGames}
-                dictionary={dictionary}
-            />
-        )
-    const discordConfig = context.discordConfig
 
     return (
         <>
@@ -44,38 +29,9 @@ export default async function ServerMembershipsPage({
                 description={dictionary.membershipSettings.pageDescription}
             />
             <div className="space-y-6 px-4 lg:px-6">
-                <ConfigurationScopeIndicator
-                    enabledGames={context.server.enabledGames}
-                    gameId={gameId}
-                    dictionary={dictionary}
-                />
                 <MembershipSettingsForm
-                    // Client-side navigation between game query parameters
-                    // preserves component state. A key prevents one game's
-                    // unsaved form values from appearing in another game.
-                    key={gameId}
                     serverId={serverId}
-                    config={
-                        discordConfig
-                            ? {
-                                  ...discordConfig,
-                                  // Membership settings were historically
-                                  // global HLL settings. Other games must not
-                                  // inherit them before they are configured.
-                                  membershipSettings:
-                                      gameId === DEFAULT_GAME_ID
-                                          ? (discordConfig.gameOverrides?.[
-                                                gameId
-                                            ]?.membershipSettings ??
-                                            discordConfig.membershipSettings)
-                                          : discordConfig.gameOverrides?.[
-                                                gameId
-                                            ]?.membershipSettings,
-                              }
-                            : null
-                    }
-                    baseConfig={discordConfig}
-                    gameId={gameId}
+                    config={context.discordConfig}
                     dictionary={dictionary}
                 />
             </div>

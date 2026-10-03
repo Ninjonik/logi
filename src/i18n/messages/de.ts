@@ -804,6 +804,14 @@ export const deMessages = {
             "Hallo {applicant}, danke für deine Bewerbung. {support_roles} meldet sich in Kürze.",
         image: "Thumbnail-Bild",
         applicationThumbnail: "Bewerbungs-Thumbnail",
+        specializationTitle: "Spezialisierung abfragen",
+        specializationDescription:
+            "Zeigt Infanterie und Panzer als Schritt im Discord-Bewerbungsassistenten. Bei Wardogs wird dieser Schritt nie angezeigt.",
+        categoryGame: "Spiel",
+        categoryDetails: "Kategorie-Details",
+        categoryRoles: "Rollen und Zugriff",
+        categoryRolesDescription:
+            "Wähle die Rollen, die Logi nach der Genehmigung verwaltet, und das Team mit Zugriff auf den Bewerbungs-Thread.",
         categoriesTitle: "Bewerbungskategorien",
         categoriesDescription:
             "Jede Kategorie wird ein Button. Modal-Fragen sind optional und folgen demselben Muster wie Tickets.",
