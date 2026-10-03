@@ -94,28 +94,50 @@ const copy = {
     },
 } as const
 
-export function buildMembershipFlowHeading(
-    language: ClanLanguage,
-    step: "game" | "specialization" | "account" | "questions" | "review",
-    hasQuestions = true
-) {
-    const text = copy[language]
-    const steps = [
+function visibleFlowSteps(hasQuestions: boolean) {
+    return [
         "game",
         "specialization",
         "account",
         ...(hasQuestions ? ["questions"] : []),
         "review",
-    ]
-    const stepIndex = steps.indexOf(step)
-    const progress = text.steps
-        .filter((_, index) => hasQuestions || index !== 3)
-        .map(
-            (label, index) =>
-                `${index < stepIndex ? "✓" : index === stepIndex ? "●" : "○"} ${label}`
+    ] as const
+}
+
+export function buildMembershipFlowHeader(
+    language: ClanLanguage,
+    step: MembershipFlowStep,
+    hasQuestions = true
+) {
+    const text = copy[language]
+    const steps = visibleFlowSteps(hasQuestions)
+    const activeStep = step === "platform" ? "account" : step
+    const activeIndex = steps.indexOf(activeStep)
+    const container = new ContainerBuilder().setAccentColor(0x3f3f46)
+    container.addActionRowComponents(
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+            steps.map((flowStep, index) =>
+                new ButtonBuilder()
+                    .setCustomId(`membership-flow-step:${flowStep}`)
+                    .setLabel(
+                        `${index < activeIndex ? "✓ " : ""}${
+                            text.steps[
+                                hasQuestions || index < 3 ? index : index + 1
+                            ]
+                        }`
+                    )
+                    .setStyle(
+                        index < activeIndex
+                            ? ButtonStyle.Success
+                            : index === activeIndex
+                              ? ButtonStyle.Primary
+                              : ButtonStyle.Secondary
+                    )
+                    .setDisabled(true)
+            )
         )
-        .join("  →  ")
-    return `# ${text.title}\n${progress}`
+    )
+    return container
 }
 
 export function getMembershipFlowCancelLabel(language: ClanLanguage) {
@@ -145,14 +167,20 @@ export function buildMembershipFlowMessage(input: {
     answers?: FlowAnswer[]
 }) {
     const text = copy[input.language]
+    const hasQuestions = input.hasQuestions ?? true
+    const steps = visibleFlowSteps(hasQuestions)
+    const activeStep = input.step === "platform" ? "account" : input.step
+    const activeIndex = steps.indexOf(activeStep)
     const container = new ContainerBuilder().setAccentColor(0x5865f2)
     container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-            buildMembershipFlowHeading(
-                input.language,
-                input.step === "platform" ? "account" : input.step,
-                input.hasQuestions
-            )
+            `# ${
+                text.steps[
+                    hasQuestions || activeIndex < 3
+                        ? activeIndex
+                        : activeIndex + 1
+                ]
+            }`
         )
     )
     container.addSeparatorComponents(new SeparatorBuilder())
@@ -282,7 +310,13 @@ export function buildMembershipFlowMessage(input: {
                 .setStyle(ButtonStyle.Danger)
         )
     )
-    return { components: [container], flags: MessageFlags.IsComponentsV2 }
+    return {
+        components: [
+            buildMembershipFlowHeader(input.language, input.step, hasQuestions),
+            container,
+        ],
+        flags: MessageFlags.IsComponentsV2,
+    }
 }
 
 export function buildMembershipFlowCancelledMessage(language: ClanLanguage) {

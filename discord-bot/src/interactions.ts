@@ -68,7 +68,7 @@ import {
 } from "./interactions/shared"
 import {
     buildMembershipFlowCancelledMessage,
-    buildMembershipFlowHeading,
+    buildMembershipFlowHeader,
     buildMembershipFlowMessage,
     getMembershipFlowCancelLabel,
     type MembershipFlowStep,
@@ -1421,7 +1421,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const container = new ContainerBuilder().setAccentColor(0x5865f2)
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                buildMembershipFlowHeading(language, "account")
+                `# ${getClanDiscordMessages(language).membership.modalTitle}`
             )
         )
         container.addSeparatorComponents(new SeparatorBuilder())
@@ -1442,7 +1442,13 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     .setStyle(ButtonStyle.Danger)
             )
         )
-        return { components: [container], flags: MessageFlags.IsComponentsV2 }
+        return {
+            components: [
+                buildMembershipFlowHeader(language, "account"),
+                container,
+            ],
+            flags: MessageFlags.IsComponentsV2,
+        }
     }
 
     async function updateMembershipPlatformFlow(
@@ -2008,7 +2014,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             const reuseMessage = new ContainerBuilder().setAccentColor(0x5865f2)
             reuseMessage.addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(
-                    `${buildMembershipFlowHeading(membershipLanguage, "account")}\n${reuseCopy.prompt}`
+                    `# ${getClanDiscordMessages(membershipLanguage).membership.modalTitle}\n${reuseCopy.prompt}`
                 )
             )
             reuseMessage.addActionRowComponents(
@@ -2034,7 +2040,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 )
             )
             const reusePayload = {
-                components: [reuseMessage],
+                components: [
+                    buildMembershipFlowHeader(membershipLanguage, "account"),
+                    reuseMessage,
+                ],
                 flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
             }
             if (interaction.message.flags.has(MessageFlags.IsComponentsV2)) {
