@@ -3,6 +3,8 @@ import { z } from "zod"
 export const SCAN_MS = 10 * 60_000
 export const TRACK_MS = 5 * 60_000
 export const MAX_TRACKED = 500
+export const ADMIN_TRACKING_RESERVE = 50
+export const MAX_HUMAN_CANDIDATES = 50
 export const INDEX_URLS = [
     "https://wardogsleague.net/matches?tab=fixtures",
     "https://wardogsleague.net/matches?tab=results",

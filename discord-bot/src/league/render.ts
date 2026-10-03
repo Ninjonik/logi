@@ -23,12 +23,13 @@ export function humanLeagueInput(
         webhookId: string | null
         content: string
     },
-    inputChannelId: string | null
+    inputChannelId: string | null,
+    receivedEdit = false
 ) {
     return !message.guildId ||
         message.bot ||
         message.webhookId ||
-        message.channelId !== inputChannelId
+        (!receivedEdit && message.channelId !== inputChannelId)
         ? null
         : extractMatchUrls(message.content)
 }

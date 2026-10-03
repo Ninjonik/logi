@@ -4,17 +4,13 @@ import {
     leagueSnapshotSchema,
 } from "../src/domain/wardogs-league/contracts"
 import {
-    SCAN_MS,
-    TRACK_MS,
-    MAX_TRACKED,
-} from "../src/domain/wardogs-league/discovery"
-import {
-    ensureTracked,
+    trackingAdmission,
     trackingConfig,
     updateTracked,
 } from "./leagueTrackingStore"
 import { selectTrackedSnapshot } from "../src/application/wardogs-league/accept-snapshot"
 import { trackingDecision } from "../src/application/wardogs-league/tracking"
+import { SCAN_MS, TRACK_MS } from "../src/domain/wardogs-league/discovery"
 import { internalMutation, internalQuery } from "./_generated/server"
 import { matchUrl } from "../src/domain/wardogs-league/match-url"
 import { v } from "convex/values"
@@ -183,30 +179,15 @@ export const enqueueIndex = internalMutation({
             args.fixtureUrls.length > 500
         )
             return
-        const rows = await ctx.db
-            .query("leagueTrackedMatches")
-            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-            .take(MAX_TRACKED)
-        let size = rows.length
+        const pool = await trackingAdmission(ctx, args.guildId)
         let queueFull = false
         for (const url of args.urls) {
             const source = matchUrl(url)
-            // A full queue is observable through scan health; never evict an explicit pin or ignore.
-            const existing = await ctx.db
-                .query("leagueTrackedMatches")
-                .withIndex("identity", (q) =>
-                    q.eq("guildId", args.guildId).eq("matchId", source.id)
-                )
-                .unique()
-            // Keep 50 slots available for explicit admin/human additions. Capacity must
-            // never abort the action before existing tracked fixtures can refresh.
-            if (!existing && size >= MAX_TRACKED - 50) {
+            const row = await pool.admit(source.id, "index")
+            if (!row) {
                 queueFull = true
                 continue
             }
-            const row =
-                existing ?? (await ensureTracked(ctx, args.guildId, source.id))
-            if (!existing) size++
             if (
                 !row.ignored &&
                 !row.paused &&
@@ -244,7 +225,11 @@ export const claimDue = internalMutation({
             .sort((a, b) => a.nextRefreshAt - b.nextRefreshAt)
         for (const row of candidates) {
             if (row.leaseUntil > now || row.ignored || row.paused) continue
-            if (!row.snapshotJson && row.firstSeenAt + 14 * 86400_000 <= now) {
+            if (
+                !row.manualRefresh &&
+                !row.snapshotJson &&
+                row.firstSeenAt + 14 * 86400_000 <= now
+            ) {
                 await updateTracked(ctx, row, {
                     state: "archived",
                     leaseUntil: 0,
@@ -307,6 +292,7 @@ export const finishRead = internalMutation({
             : {}
         await updateTracked(ctx, row, {
             ...decision,
+            manualRefresh: false,
             ...(snapshot ? { snapshotJson: JSON.stringify(snapshot) } : {}),
             error: selected.rejected
                 ? "invalid_html"

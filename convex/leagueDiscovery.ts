@@ -1,14 +1,15 @@
 import {
+    ensureTracked,
+    trackedMatch,
+    trackingConfig,
+    trackingAdmission,
+    updateTracked,
+} from "./leagueTrackingStore"
+import {
     trackingSettingsSchema,
     DEFAULT_TRACKING_SETTINGS,
     MAX_TRACKED,
 } from "../src/domain/wardogs-league/discovery"
-import {
-    ensureTracked,
-    trackedMatch,
-    trackingConfig,
-    updateTracked,
-} from "./leagueTrackingStore"
 import { acceptMessageVersion } from "../src/application/wardogs-league/intake-policy"
 import { trackingDecision } from "../src/application/wardogs-league/tracking"
 import { leagueSnapshotSchema } from "../src/domain/wardogs-league/contracts"
@@ -188,19 +189,32 @@ export const manage = mutation({
             leaseUntil: 0,
             fence: row.fence + 1,
         }
-        if (args.operation === "add" || args.operation === "resume")
+        if (args.operation === "add" || args.operation === "resume") {
             Object.assign(patch, {
                 pinned: true,
+                intakeReserved: false,
+                manualRefresh: true,
                 ignored: false,
                 paused: false,
                 state: "pending",
                 nextRefreshAt: Date.now(),
             })
+            if (row.snapshotJson) {
+                const { tracked, automatic, announce } = trackingDecision(
+                    { ...row, ...patch },
+                    leagueSnapshotSchema.parse(JSON.parse(row.snapshotJson)),
+                    config.teamCodes,
+                    Date.now()
+                )
+                Object.assign(patch, { tracked, automatic, announce })
+            }
+        }
         if (args.operation === "pause")
             Object.assign(patch, { paused: true, state: "paused" })
         if (args.operation === "ignore")
             Object.assign(patch, {
                 ignored: true,
+                intakeReserved: false,
                 tracked: false,
                 announce: false,
                 state: "ignored",
@@ -316,17 +330,15 @@ export const ingestMessage = mutation({
             )
             .unique()
         if (!acceptMessageVersion(old, args.version, args.deleted)) return
-        if (
-            !config ||
-            !config.enabled ||
-            (config.inputChannelId !== args.channelId &&
-                (!old ||
-                    args.urls.length > 0 ||
-                    old.channelId !== args.channelId))
-        )
-            return
-        const ids = [...new Set(args.urls.map((url) => matchUrl(url).id))]
+        if (!config || (old && old.channelId !== args.channelId)) return
+        const admitsNew =
+            config.enabled && config.inputChannelId === args.channelId
+        if (!admitsNew && !old) return
+        let ids = [...new Set(args.urls.map((url) => matchUrl(url).id))]
         if (args.deleted && ids.length) return
+        // Received edits/deletes may remove known references even when intake is
+        // disabled or moved. They must never register new IDs through the old room.
+        if (!admitsNew) ids = ids.filter((id) => old!.matchIds.includes(id))
         if (!old && !ids.length) return
         const now = Date.now()
         if (ids.length) {
@@ -338,7 +350,8 @@ export const ingestMessage = mutation({
                 windowAt === config.intakeWindowAt
                     ? (config.intakeCount ?? 0)
                     : 0
-            if (count >= 20) return
+            if (count >= 20)
+                ids = ids.filter((id) => old?.matchIds.includes(id))
             if (
                 !old &&
                 (
@@ -351,18 +364,24 @@ export const ingestMessage = mutation({
                 ).length >= 2000
             )
                 return
-            await ctx.db.patch(config._id, {
-                intakeWindowAt: windowAt,
-                intakeCount: count + 1,
-            })
+            if (count < 20)
+                await ctx.db.patch(config._id, {
+                    intakeWindowAt: windowAt,
+                    intakeCount: count + 1,
+                })
         }
+        const pool = await trackingAdmission(ctx, args.guildId)
         const acceptedIds: string[] = []
         for (const id of new Set([...(old?.matchIds ?? []), ...ids])) {
-            const row = await ensureTracked(ctx, args.guildId, id)
+            const admitted = ids.includes(id)
+                ? await pool.admit(id, "discord")
+                : null
+            const row = admitted ?? pool.find(id)
+            if (!row) continue
             const refs = row.discordRefs.filter(
                 (r) => r.messageId !== args.messageId
             )
-            if (ids.includes(id) && refs.length < 20) {
+            if (admitted && refs.length < 20) {
                 refs.push({
                     channelId: args.channelId,
                     messageId: args.messageId,
@@ -391,6 +410,9 @@ export const ingestMessage = mutation({
                   }
             await updateTracked(ctx, row, {
                 ...decision,
+                ...(!config.enabled && !row.ignored
+                    ? { state: "paused" as const }
+                    : {}),
                 discordRefs: refs,
                 leaseUntil: 0,
                 fence: row.fence + 1,

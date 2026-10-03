@@ -65,3 +65,21 @@ test("human intake rejects bots, webhooks, DMs and unconfigured rooms", () => {
     assert.equal(humanLeagueInput({ ...source, guildId: null }, "room"), null)
     assert.equal(humanLeagueInput(source, "other"), null)
 })
+
+test("received human edits remain available for backend receipt cleanup after intake moves or disables", () => {
+    const edit = {
+        guildId: "guild",
+        channelId: "old-room",
+        bot: false,
+        webhookId: null,
+        content: "Removed the link",
+    }
+    assert.deepEqual(humanLeagueInput(edit, "new-room", true), [])
+    assert.deepEqual(humanLeagueInput(edit, null, true), [])
+    assert.equal(humanLeagueInput(edit, "new-room"), null)
+    assert.equal(humanLeagueInput({ ...edit, bot: true }, null, true), null)
+    assert.equal(
+        humanLeagueInput({ ...edit, webhookId: "hook" }, null, true),
+        null
+    )
+})

@@ -53,3 +53,21 @@ test("index fetch retains the query and rejects switching tabs on redirect", asy
         /unsafe_redirect/
     )
 })
+
+test("button pagination never claims complete coverage", () => {
+    assert.equal(
+        parseLeagueIndex(
+            html.replace(
+                "</main>",
+                '<button aria-label="Load more matches">Load more</button></main>'
+            ),
+            url
+        ).incomplete,
+        true
+    )
+})
+test("an unverified empty shell never claims complete coverage", () => {
+    const shell =
+        '<main><h1>Find your next match</h1><a href="/matches?tab=fixtures">Fixtures</a><a href="/matches?tab=results">Results</a></main>'
+    assert.throws(() => parseLeagueIndex(shell, url), /invalid_html/)
+})

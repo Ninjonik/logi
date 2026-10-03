@@ -425,19 +425,25 @@ export function LeagueTrackingForm({ serverId }: { serverId: string }) {
                                 onClick={() =>
                                     void action(
                                         record.id,
-                                        record.paused || record.ignored
+                                        record.paused ||
+                                            record.ignored ||
+                                            record.state === "archived"
                                             ? "resume"
                                             : "pause"
                                     )
                                 }
                             >
-                                {record.paused || record.ignored
+                                {record.state === "archived"
                                     ? cs
-                                        ? "Obnovit"
-                                        : "Resume"
-                                    : cs
-                                      ? "Pozastavit"
-                                      : "Pause"}
+                                        ? "Znovu načíst"
+                                        : "Refresh once"
+                                    : record.paused || record.ignored
+                                      ? cs
+                                          ? "Obnovit"
+                                          : "Resume"
+                                      : cs
+                                        ? "Pozastavit"
+                                        : "Pause"}
                             </Button>
                             <Button
                                 size="sm"

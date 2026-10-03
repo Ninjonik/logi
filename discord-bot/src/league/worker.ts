@@ -110,7 +110,11 @@ export function startLeagueWorker(client: Client) {
     if (env.leagueMessageContent) {
         const pending = new Map<string, Promise<void>>()
         let queued = 0
-        const ingest = (input: Message | PartialMessage, deleted = false) => {
+        const ingest = (
+            input: Message | PartialMessage,
+            deleted = false,
+            receivedEdit = false
+        ) => {
             if (stopped || !input.guildId || queued >= 100) return
             const key = `${input.guildId}:${input.id}`
             queued++
@@ -146,7 +150,6 @@ export function startLeagueWorker(client: Client) {
                                 guildId: message.guildId!,
                             }
                         )
-                    if (!settings?.enabled) return
                     const urls = humanLeagueInput(
                         {
                             guildId: message.guildId,
@@ -155,7 +158,8 @@ export function startLeagueWorker(client: Client) {
                             webhookId: message.webhookId,
                             content: message.content,
                         },
-                        settings.inputChannelId
+                        settings?.enabled ? settings.inputChannelId : null,
+                        receivedEdit
                     )
                     if (urls === null) return
                     await convex.mutation(
@@ -191,7 +195,7 @@ export function startLeagueWorker(client: Client) {
         const updated = (
             _old: Message | PartialMessage,
             m: Message | PartialMessage
-        ) => ingest(m)
+        ) => ingest(m, false, true)
         const deleted = (m: Message | PartialMessage) => ingest(m, true)
         const bulk = (
             messages: ReadonlyCollection<Snowflake, Message | PartialMessage>
