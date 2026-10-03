@@ -127,14 +127,15 @@ They are examples of the configured bot capabilities, not separate services.
 
 ## Slash commands
 
-Logi registers these six commands for cached guilds when the bot becomes ready.
+Logi registers these seven commands for cached guilds when the bot becomes ready.
 After installing it in a new guild, restart the bot when command registration is
 needed; this revision does not register commands separately on guild join.
-All six commands are guild-only. Names stay in English; descriptions/options
+All seven commands are guild-only. Names stay in English; descriptions/options
 support Czech and German localization.
 
 | Command | Purpose and access |
 | --- | --- |
+| `/stats game:wardogs` or `game:hll` | Private player statistics, optional linked member, period and explicit sharing |
 | `/server-status game:wardogs` or `game:hell_let_loose` | Private stored game-server status for Discord Manage Server / Administrator |
 | `/close_ticket [reason]` | Close the current tracked ticket thread; Administrator, configured dashboard-admin role or category support role |
 | `/close_application outcome:<choice> [reason]` | Close the current tracked application and request the corresponding membership state; authorized recruitment staff |
@@ -147,6 +148,37 @@ Application outcomes are `denied`, `pending`, `recruit`, `member` and `mercenary
 Event and player selections support autocomplete. Signup, attendance, ticket,
 application and recap-preference buttons are separate workflows, not additional
 slash commands. Verified Steam linking is available in your Logi account settings.
+
+## Player statistics
+
+Use `/stats game:wardogs` or `/stats game:hll` for your statistics. Select `member`
+to view another linked member of this Discord server. The command reuses the
+Steam ID from your Logi application; if it is missing, **Add / change Steam** opens
+a private form and reloads the statistics after saving. You can add an ID without
+submitting a clan application. Enter a Steam64 ID or numeric Steam profile URL.
+This declares the ID for public statistics; it does not prove ownership, grant
+clan membership or assign roles. Verified Steam linking stays in account settings.
+
+The default period is 30 days; choose 7, 90 or all recorded history with `period`.
+Wardogs additionally supports `player` search by nickname/Steam ID and a `server`
+filter. Select either a member or a recorded player. HLL is restricted to linked
+members and does not accept arbitrary IDs through the command.
+
+Cards offer an overview and recent games, plus factions for Wardogs or maps and
+weapons for HLL. Unknown values stay unknown. HLL's recent-form percentage has
+its own last-100-games scope, and `+` counters are lower bounds. Wardogs statistics
+cover games retained by this community's Warcon collection.
+
+Replies initially appear only to you. **Share** publishes the current view to the
+channel supplied in `channel`, or opens a channel picker. You and the bot need
+View Channel, Send Messages and Embed Links there, plus Attach Files for artwork.
+Private controls expire after 15 minutes or a restart; run `/stats` again. Shared
+cards are snapshots and are not automatically refreshed like server panels.
+
+If no games are found, the Steam link remains saved. If HLL Records blocks
+automated access, the bot explains this and links its public profile. A browser
+being able to open the page does not prove that the bot can fetch it. HLL Records
+only covers tracked community servers; it is not an all-server HLL record.
 
 ## Game-server status (server managers)
 

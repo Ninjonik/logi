@@ -24,6 +24,7 @@ import type * as dashboardSessions from "../dashboardSessions.js";
 import type * as discordConfig from "../discordConfig.js";
 import type * as discordMemberAccessStore from "../discordMemberAccessStore.js";
 import type * as discordMembership from "../discordMembership.js";
+import type * as discordPlayerStats from "../discordPlayerStats.js";
 import type * as discordPublicPanels from "../discordPublicPanels.js";
 import type * as discordPublicationTable from "../discordPublicationTable.js";
 import type * as discordPublications from "../discordPublications.js";
@@ -124,6 +125,7 @@ declare const fullApi: ApiFromModules<{
   discordConfig: typeof discordConfig;
   discordMemberAccessStore: typeof discordMemberAccessStore;
   discordMembership: typeof discordMembership;
+  discordPlayerStats: typeof discordPlayerStats;
   discordPublicPanels: typeof discordPublicPanels;
   discordPublicationTable: typeof discordPublicationTable;
   discordPublications: typeof discordPublications;

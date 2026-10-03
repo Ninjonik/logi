@@ -185,6 +185,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return
         }
 
+        if (interaction.isChannelSelectMenu()) {
+            await interactionHandler.handleChannelSelectMenuInteraction(
+                interaction
+            )
+            return
+        }
+
         if (interaction.isStringSelectMenu()) {
             await interactionHandler.handleStringSelectMenuInteraction(
                 interaction

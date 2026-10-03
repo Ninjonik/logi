@@ -35,6 +35,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Integration PR review guide](./docs/integrations/website/v0.10/review-guide.md) — cumulative architecture, review boundaries, findings, verification and remaining owner tasks
 - [Integration roadmap](./docs/integrations/website/roadmap/README.md) — proposed HLL/Wardogs collection, website synchronization, Discord membership and identity plans
 - [Discord public panels](./docs/integrations/website/discord-public-panels.md) — channel settings, durable message recovery, map artwork, application emoji, live scoreboards, reviewed results and activation limits
+- [Discord player statistics](./docs/integrations/website/discord-player-stats.md) — shared HLL/Wardogs command, self-declared Steam lookup, channel sharing, retained-history totals and HLL provider access limits
 - [Discord feature gallery](./docs/integrations/website/evidence/2026-10-03-discord-gallery/README.md) — 21 actual Discord screenshots, existing/new capability inventory, audiences and observed design gaps
 - [Discord League/report/HLL proposal](./docs/integrations/website/roadmap/discord-league-reports-hll.md) — scoped League discovery/manual tracking, requested channel routing, private report intake, live CRCON investigation and unimplemented follow-up scope
 - [Verified Steam identity](./docs/integrations/website/v0.9/README.md) — session-bound account proof, revocation, identity separation and synthetic acceptance evidence

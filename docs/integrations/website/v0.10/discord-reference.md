@@ -6,12 +6,13 @@ and German localization with an English path. Replies follow each workflow's
 configured language or the status command's interaction locale. See the
 [bot setup wiki](../../../../content/discord-bot-setup.mdx) for installation.
 
-## All six registered slash commands
+## All seven registered slash commands
 
 Square brackets below mean optional input, not literal Discord syntax.
 
 | Command and example | Who / context | Behavior and visibility |
 | --- | --- | --- |
+| `/stats game:wardogs` or `game:hll` | Current guild member; optional linked member, Wardogs-only recorded-player search | Private statistics, late Steam modal, 7/30/90/all periods, detail buttons, explicit share with channel picker; [contract and access limits](../discord-player-stats.md) |
 | `/server-status game:wardogs` or `game:hell_let_loose` | Invoking guild; current Discord Manage Server / Administrator | **New in this PR.** Ephemeral summary of at most five stored connections, counts, map, observation age, provider/freshness; ten-second backend wait |
 | `/close_ticket [reason:Resolved]` | Tracked ticket thread; Administrator, configured dashboard-admin role or category support role | Close ticket, optional reason up to 500 chars; private command acknowledgement plus configured thread/notification side effects |
 | `/close_application outcome:member [reason:Accepted]` | Tracked application thread; current Administrator, dashboard-admin role or category support role | Close application and record outcome/assignment; managed-role request uses authenticated recruitment actor and durable queue; private acknowledgement |
@@ -24,7 +25,7 @@ Square brackets below mean optional input, not literal Discord syntax.
 and `player.player` are required autocomplete strings. `server-status.game` is
 required and accepts only the two games shown above. `/link` takes no options.
 
-All six definitions disable DMs. Only `/server-status` declares the Manage Server
+All seven definitions disable DMs. Only `/server-status` declares the Manage Server
 default permission in command metadata; the ticket/application commands enforce
 their own contextual role checks in handlers. Command visibility alone is not an
 authorization guarantee. Application closure fetches the current actor, and I3's
@@ -34,7 +35,8 @@ The complete serialized definitions for `en-US`, `cs`, and `de`, including
 descriptions, option bounds, choices and permission defaults, are committed in
 [discord-commands.json](evidence/2026-09-29/discord-commands.json). They were captured
 by calling the production `registerGuildCommands` with a fake Discord guild. This
-proves emitted metadata, not a successful real registration or every command action.
+proves emitted metadata for the original six commands, not a successful real registration or every command action.
+The `/stats` addition has its own [current evidence](../evidence/2026-10-04-player-stats/README.md).
 
 The subsequent [runtime acceptance](runtime-review.md) verifies actual registration
 of all six commands in the authorized test guild and a user-confirmed private
@@ -64,7 +66,7 @@ blocked by the approved target's position above the test bot.
 Public server/score/result panels are now implemented in PR #158. See the
 [operator guide](../discord-public-panels.md) and
 [actual runtime acceptance](../evidence/2026-10-03-public-panels/README.md).
-They use automatic updates and buttons, so the slash-command count remains six.
+They use automatic updates and buttons. `/stats` is the separate seventh command.
 The [21-image feature gallery](../evidence/2026-10-03-discord-gallery/README.md)
 compares existing and new surfaces and records concrete design gaps.
 

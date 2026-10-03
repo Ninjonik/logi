@@ -1,0 +1,7 @@
+
+<repo>\discord-bot\src\interactions.ts
+   42:5   warning  'buildPlatformLinkCustomId' is defined but never used         @typescript-eslint/no-unused-vars
+  281:10  warning  'buildClanPlayerOptionDescription' is defined but never used  @typescript-eslint/no-unused-vars
+  333:10  warning  'buildClanPlayerProfileEmbed' is defined but never used       @typescript-eslint/no-unused-vars
+
+✖ 3 problems (0 errors, 3 warnings)

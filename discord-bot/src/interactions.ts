@@ -6,6 +6,7 @@ import {
     ButtonInteraction,
     ButtonStyle,
     ChannelType,
+    type ChannelSelectMenuInteraction,
     ChatInputCommandInteraction,
     EmbedBuilder,
     ContainerBuilder,
@@ -91,7 +92,9 @@ import {
 } from "./message-builders"
 import { buildMembershipApplicationWelcomeContent } from "./interactions/membership-welcome"
 import { handleMatchRecapPreference } from "./interactions/match-recap-preference"
+import { statsController } from "./interactions/stats-live"
 import { reportClanDiscordError } from "./error-reporting"
+import { buildStatsCommand } from "./interactions/stats"
 import { logError, logInfo, logWarn } from "./log"
 import { convex, references } from "./convex"
 import { slugifyTicketLabel } from "./utils"
@@ -524,6 +527,10 @@ function buildMembershipApplicationCloseEmbed(input: {
 export function createInteractionHandler(options: InteractionHandlerOptions) {
     return {
         async handleButtonInteraction(interaction: ButtonInteraction) {
+            if (interaction.customId.startsWith("stats:")) {
+                await statsController.button(interaction)
+                return
+            }
             if (interaction.customId.startsWith("match-recap:")) {
                 await handleMatchRecapPreference(interaction)
                 return
@@ -600,7 +607,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         },
 
         async handleModalSubmit(interaction: ModalSubmitInteraction) {
-            if (interaction.customId.startsWith("ticket-modal:")) {
+            if (interaction.customId.startsWith("stats:")) {
+                await statsController.modal(interaction)
+            } else if (interaction.customId.startsWith("ticket-modal:")) {
                 await handleTicketModalSubmit(interaction)
             } else if (interaction.customId.startsWith("membership-modal:")) {
                 await handleMembershipModalSubmit(interaction)
@@ -620,7 +629,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         async handleAutocompleteInteraction(
             interaction: AutocompleteInteraction
         ) {
-            if (interaction.commandName === "notice") {
+            if (interaction.commandName === "stats") {
+                await statsController.autocomplete(interaction)
+            } else if (interaction.commandName === "notice") {
                 await handleNoticeAutocomplete(interaction)
             } else if (interaction.commandName === "player") {
                 await handlePlayerAutocomplete(interaction)
@@ -628,7 +639,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         },
 
         async handleChatInputCommand(interaction: ChatInputCommandInteraction) {
-            if (interaction.commandName === "server-status") {
+            if (interaction.commandName === "stats") {
+                await statsController.command(interaction)
+            } else if (interaction.commandName === "server-status") {
                 await handleServerStatusCommand(interaction)
             } else if (interaction.commandName === "close_ticket") {
                 await handleCloseTicketCommand(interaction)
@@ -643,6 +656,13 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             }
         },
 
+        async handleChannelSelectMenuInteraction(
+            interaction: ChannelSelectMenuInteraction
+        ) {
+            if (interaction.customId.startsWith("stats:"))
+                await statsController.channel(interaction)
+        },
+
         async registerGuildCommands(guild: import("discord.js").Guild) {
             const messages = getClanDiscordMessages(
                 guild.preferredLocale === "cs"
@@ -652,6 +672,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                       : "en"
             )
             const commands = [
+                buildStatsCommand(),
                 buildServerStatusCommand(),
                 new SlashCommandBuilder()
                     .setName("close_ticket")

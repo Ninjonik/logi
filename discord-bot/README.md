@@ -40,6 +40,9 @@ npm run dev:all
   handle each account's own global recap preference
 - Handle `/server-status` for Discord server managers, with a private localized
   HLL/WDG summary from stored collector observations
+- Handle `/stats` for linked HLL/Wardogs players, late Steam registration,
+  recorded Wardogs player/server search and explicit sharing to a selected channel;
+  see [player statistics](../docs/integrations/website/discord-player-stats.md)
 - Refresh configured public server/score panels, optional player leaders and
   private Wardogs player pages; publish reviewed results with durable message
   ownership and restart recovery
@@ -69,7 +72,7 @@ There is no separate join-time command registration in this revision; restart th
 bot after installation in a new guild when registration is needed.
 
 The [complete Discord reference](../docs/integrations/website/v0.10/discord-reference.md)
-lists all six slash commands, options, permissions, visibility, button/automatic
+lists all seven slash commands, options, permissions, visibility, button/automatic
 workflows, rollout limits and reproducible registration payloads. The
 [PR handbook](../docs/integrations/website/v0.10/pr-handbook.md) links website
 capabilities, review, tests and visual proof.
