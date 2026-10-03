@@ -41,6 +41,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Actor-backed website event commands](./docs/integrations/website/event-commands.md) — current SSO actor and role policy, native event writes, durable receipts, revision conflicts and local HTTP proof
 - [Central login and connected website acceptance](./docs/integrations/website/v0.13/README.md) — paired SSO, roles, native event commands, local regression/browser proof and remaining activation
 - [Read-only people and player facts](./docs/integrations/website/v0.14/README.md) — scoped member directory, published roster/attendance, verified collected-session facts and bounded dependency resets
+- [PR #158 review and repaired-runtime proof](./docs/integrations/website/v0.14/evidence/2026-10-03-pr-review/README.md) — upstream integration fixes, security dispositions, exact runtime verification and activation limits
 
 ### User-facing and legal Markdown
 

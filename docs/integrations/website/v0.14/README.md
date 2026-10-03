@@ -177,7 +177,9 @@ node --import tsx --test src/domain/api/people-summaries.test.ts src/infrastruct
 npm run typecheck
 ```
 
-See the [3 October 2026 local acceptance evidence](evidence/2026-10-03/README.md)
-for the 725-test run, typecheck/build results, actual people and native roster
+See the [PR review and repaired-runtime verification](evidence/2026-10-03-pr-review/README.md)
+for 753 passing tests, 98 local HTTP assertions, CI, the security review and
+deployment boundaries. The [earlier 3 October local acceptance evidence](evidence/2026-10-03/README.md)
+records the 725-test run, typecheck/build results, actual people and native roster
 HTTP checklists, the 44-file SHA-256 manifest and the boundary between synthetic
 fixtures and live-provider acceptance.

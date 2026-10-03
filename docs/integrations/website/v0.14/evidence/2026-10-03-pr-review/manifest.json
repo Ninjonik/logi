@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "artifacts": [
+    {
+      "path": "README.md",
+      "sha256": "4ad7495b2e205384c28bd66a079e9965b0390fcfd71a2e6aefca4941828f1042",
+      "encoding": "utf8-lf"
+    },
+    {
+      "path": "http-checks.json",
+      "sha256": "52904e09b5e123c2e9fcdd929e8f906f1f5befd3b9671ae56cfca9e06b826a17",
+      "encoding": "utf8-lf"
+    },
+    {
+      "path": "verification.json",
+      "sha256": "2ed7b5bbed4b24c37fa4641656f907de7c32369d48d2a46b2766cebec1338f38",
+      "encoding": "utf8-lf"
+    },
+    {
+      "path": "source-manifest.json",
+      "sha256": "88d9acaf9d2d851496759ea5e62e1b56584fc91e783aeb3a19820f97037a7c26",
+      "encoding": "utf8-lf"
+    },
+    {
+      "path": "security-review.json",
+      "sha256": "cbab9f5e10ae3a8a3f4ecdec701cbf15abc713dcd1c08f6f1bcf4337abd48006",
+      "encoding": "utf8-lf"
+    },
+    {
+      "path": "verify.mjs",
+      "sha256": "2e974bb45e4b8160a99007b67526853223e708ea0b7b661ff2f23d7ad56ceedf",
+      "encoding": "utf8-lf"
+    }
+  ]
+}

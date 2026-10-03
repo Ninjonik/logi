@@ -1,0 +1,433 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-http-observation",
+  "sourceRevision": "550ec1b3fd8d36d292a567cfa4a765c0cd462f82",
+  "totalAssertions": 98,
+  "boundary": "Actual Next.js HTTP and isolated Convex. Synthetic central login, Discord observations, Steam ownership and game facts. Includes pagination and repeated checks, not 98 separate product features.",
+  "suites": [
+    {
+      "name": "event-commands",
+      "testedAt": "2026-10-03T02:32:26.148Z",
+      "sourceRevision": "550ec1b3fd8d36d292a567cfa4a765c0cd462f82",
+      "sourceStable": true,
+      "checks": [
+        {
+          "name": "local-SSO-authorize-0",
+          "passed": true
+        },
+        {
+          "name": "local-SSO-token-1",
+          "passed": true
+        },
+        {
+          "name": "default-no-write-grant",
+          "passed": true
+        },
+        {
+          "name": "actual-session-authorized-policy-setup",
+          "passed": true
+        },
+        {
+          "name": "policy-rejects-cross-origin",
+          "passed": true
+        },
+        {
+          "name": "concurrent-create-one-event-one-receipt",
+          "passed": true
+        },
+        {
+          "name": "actual-editor-revision-and-fields",
+          "passed": true
+        },
+        {
+          "name": "same-key-changed-body-conflict",
+          "passed": true
+        },
+        {
+          "name": "stale-revision-does-not-overwrite",
+          "passed": true
+        },
+        {
+          "name": "concurrent-update-one-winner-one-conflict",
+          "passed": true
+        },
+        {
+          "name": "editor-reports-committed-new-revision",
+          "passed": true
+        },
+        {
+          "name": "receipt-replay-denied-after-role-removal",
+          "passed": true
+        },
+        {
+          "name": "receipt-replay-denied-after-epoch-change",
+          "passed": true
+        },
+        {
+          "name": "actual-native-premeeting-cancellation",
+          "passed": true
+        },
+        {
+          "name": "cancelled-editor-readonly",
+          "passed": true
+        },
+        {
+          "name": "native-command-visible-through-summary-API",
+          "passed": true
+        },
+        {
+          "name": "receipt-replay-denied-after-central-revocation",
+          "passed": true
+        },
+        {
+          "name": "local-SSO-authorize-17",
+          "passed": true
+        },
+        {
+          "name": "local-SSO-token-18",
+          "passed": true
+        },
+        {
+          "name": "receipt-replay-denied-after-service-key-revocation",
+          "passed": true
+        },
+        {
+          "name": "replacement-key-explicit-policy",
+          "passed": true
+        },
+        {
+          "name": "retained-active-web-fixture",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "roster-writers-http",
+      "testedAt": "2026-10-03T02:32:27.594Z",
+      "sourceRevision": "550ec1b3fd8d36d292a567cfa4a765c0cd462f82",
+      "sourceStable": true,
+      "checks": [
+        {
+          "name": "anonymous-browser-write-denied",
+          "passed": true
+        },
+        {
+          "name": "cross-origin-browser-write-denied",
+          "passed": true
+        },
+        {
+          "name": "browser-selected-actor-rejected",
+          "passed": true
+        },
+        {
+          "name": "current-admin-session-saves-native-roster",
+          "passed": true
+        },
+        {
+          "name": "saved-native-roster-readable-as-current-identity",
+          "passed": true
+        },
+        {
+          "name": "changes-bootstrap-captured",
+          "passed": true
+        },
+        {
+          "name": "wrong-bot-secret-denied",
+          "passed": true
+        },
+        {
+          "name": "wrong-bot-guild-denied",
+          "passed": true
+        },
+        {
+          "name": "trusted-bot-acknowledgement-reaches-read-model",
+          "passed": true
+        },
+        {
+          "name": "trusted-bot-acknowledgement-emits-change",
+          "passed": true
+        },
+        {
+          "name": "foreign-event-write-blocked",
+          "passed": true
+        },
+        {
+          "name": "foreign-event-roster-remains-absent",
+          "passed": true
+        },
+        {
+          "name": "current-admin-removal-invalidates-live-cookie-write",
+          "passed": true
+        },
+        {
+          "name": "current-admin-restoration-reallows-same-session",
+          "passed": true
+        },
+        {
+          "name": "durable-session-revocation-denies-browser-write",
+          "passed": true
+        },
+        {
+          "name": "durable-session-revocation-rechecked-inside-mutation",
+          "passed": true
+        },
+        {
+          "name": "rejected-writes-preserve-native-roster",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "people-http",
+      "testedAt": "2026-10-03T02:32:31.265Z",
+      "sourceRevision": "550ec1b3fd8d36d292a567cfa4a765c0cd462f82",
+      "sourceStable": true,
+      "checks": [
+        {
+          "name": "unauthenticated-read-denied",
+          "passed": true
+        },
+        {
+          "name": "capture-current-generation-1",
+          "passed": true
+        },
+        {
+          "name": "list-member-summaries-page-1",
+          "passed": true
+        },
+        {
+          "name": "native-member-identity-current",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-1",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-2",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-3",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-4",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-5",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-6",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-7",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-8",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-9",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-10",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-11",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-12",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-13",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-14",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-15",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-16",
+          "passed": true
+        },
+        {
+          "name": "list-roster-summaries-page-17",
+          "passed": true
+        },
+        {
+          "name": "published-native-roster-and-acknowledgement",
+          "passed": true
+        },
+        {
+          "name": "list-player-stat-summaries-page-1",
+          "passed": true
+        },
+        {
+          "name": "list-player-stat-summaries-page-2",
+          "passed": true
+        },
+        {
+          "name": "verified-session-facts-and-coverage",
+          "passed": true
+        },
+        {
+          "name": "nullable-metrics-and-signed-cash",
+          "passed": true
+        },
+        {
+          "name": "reviewed-native-event-digest-association",
+          "passed": true
+        },
+        {
+          "name": "private-notes-guest-platform-identities-excluded",
+          "passed": true
+        },
+        {
+          "name": "scoped-detail-member-summaries",
+          "passed": true
+        },
+        {
+          "name": "atomic-revision-member-summaries",
+          "passed": true
+        },
+        {
+          "name": "scoped-detail-roster-summaries",
+          "passed": true
+        },
+        {
+          "name": "atomic-revision-roster-summaries",
+          "passed": true
+        },
+        {
+          "name": "scoped-detail-player-stat-summaries",
+          "passed": true
+        },
+        {
+          "name": "atomic-revision-player-stat-summaries",
+          "passed": true
+        },
+        {
+          "name": "wrong-game-denied",
+          "passed": true
+        },
+        {
+          "name": "unrelated-read-grant-denied",
+          "passed": true
+        },
+        {
+          "name": "legacy-full-key-does-not-enumerate-people",
+          "passed": true
+        },
+        {
+          "name": "unpublish-retained-tombstone",
+          "passed": true
+        },
+        {
+          "name": "unpublished-detail-hidden",
+          "passed": true
+        },
+        {
+          "name": "capture-current-generation-39",
+          "passed": true
+        },
+        {
+          "name": "native-attendance-sync-updated",
+          "passed": true
+        },
+        {
+          "name": "native-attendance-change-hint",
+          "passed": true
+        },
+        {
+          "name": "capture-current-generation-42",
+          "passed": true
+        },
+        {
+          "name": "Steam-proof-revocation-resets-generation",
+          "passed": true
+        },
+        {
+          "name": "revoked-proof-removes-current-personal-attribution",
+          "passed": true
+        },
+        {
+          "name": "capture-current-generation-45",
+          "passed": true
+        },
+        {
+          "name": "native-name-change-resets-generation",
+          "passed": true
+        },
+        {
+          "name": "current-immutable-member-has-new-name",
+          "passed": true
+        },
+        {
+          "name": "older-baseline-must-reset",
+          "passed": true
+        },
+        {
+          "name": "revoked-people-key-denied",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "admin-api",
+      "testedAt": "2026-10-03T02:33:59.621Z",
+      "sourceRevision": "550ec1b3fd8d36d292a567cfa4a765c0cd462f82",
+      "sourceStable": true,
+      "checks": [
+        {
+          "name": "anonymous-key-list-denied",
+          "passed": true
+        },
+        {
+          "name": "cross-origin-key-creation-denied",
+          "passed": true
+        },
+        {
+          "name": "current-admin-creates-key-through-HTTP",
+          "passed": true
+        },
+        {
+          "name": "current-admin-lists-redacted-key-policy",
+          "passed": true
+        },
+        {
+          "name": "current-admin-disables-synthetic-source-through-HTTP",
+          "passed": true
+        },
+        {
+          "name": "current-admin-revokes-key-through-HTTP",
+          "passed": true
+        },
+        {
+          "name": "revoked-session-cannot-list-keys",
+          "passed": true
+        },
+        {
+          "name": "revoked-session-cannot-create-key",
+          "passed": true
+        },
+        {
+          "name": "revoked-session-cannot-configure-source",
+          "passed": true
+        }
+      ]
+    }
+  ]
+}
