@@ -14,6 +14,11 @@ models. Extend the existing Logi dashboard, Convex backend and Discord bot.
 
 ## Read in this order
 
+The subsequent [Discord public-panel design](./discord-public-panels.md) records
+the 2026-10-03 requirements for selectable channels, restart recovery, automatic
+updates, map banners, faction emoji, live scoreboards and reviewed results.
+It is a proposal with pending acceptance, not delivered runtime functionality.
+
 1. [Research and verified baseline](./research.md): source revisions, capabilities,
    provider evidence and what remains unverified.
 2. [Proposed architecture and contracts](./design.md): ownership, data flow,

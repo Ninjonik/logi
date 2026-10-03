@@ -61,6 +61,10 @@ blocked by the approved target's position above the test bot.
 
 ## Buttons, modals and automatic behavior
 
+For the proposed next public server/score/result panels, see the
+[channel, appearance and restart-recovery design](../roadmap/discord-public-panels.md).
+Those panels and their new settings are not part of the current command inventory.
+
 These are existing or extended workflows, not additional slash commands:
 
 | Workflow | Entry point / configuration | Behavior and boundary |
