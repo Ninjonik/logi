@@ -800,6 +800,14 @@ export const csMessages = {
             "Ahoj {applicant}, děkujeme za přihlášku. {support_roles} se ti brzy ozvou.",
         image: "Náhledový obrázek",
         applicationThumbnail: "Náhled přihlášky",
+        specializationTitle: "Ptát se na specializaci",
+        specializationDescription:
+            "V Discord průvodci zobrazí krok Pěchota a Tank. Pro Wardogs se tento krok nikdy nezobrazí.",
+        categoryGame: "Hra",
+        categoryDetails: "Detaily kategorie",
+        categoryRoles: "Role a přístup",
+        categoryRolesDescription:
+            "Vyberte role, které Logi spravuje po schválení, a staff, který má přístup do vlákna přihlášky.",
         categoriesTitle: "Kategorie přihlášek",
         categoriesDescription:
             "Každá kategorie se stane tlačítkem. Modal otázky jsou volitelné a používají stejný vzor jako tickety.",

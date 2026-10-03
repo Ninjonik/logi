@@ -1,9 +1,13 @@
-import { ChannelType, type Client, type TextChannel } from "discord.js"
+import {
+    ChannelType,
+    MessageFlags,
+    type Client,
+    type TextChannel,
+} from "discord.js"
 
 import {
     buildCalendarPanelEmbed,
-    buildMembershipPanelComponents,
-    buildMembershipPanelEmbed,
+    buildMembershipPanelMessage,
     buildTicketPanelComponents,
     buildTicketPanelEmbed,
 } from "../message-builders"
@@ -147,54 +151,12 @@ export async function syncMembershipPanel(
     client: Client,
     payload: SyncPayload
 ) {
-    const gameIds = [
-        "hell_let_loose",
-        "hell_let_loose_vietnam",
-        "wardogs",
-    ] as const
-    const configuredGames = gameIds.filter(
-        (gameId) => payload.config.gameOverrides?.[gameId]?.membershipSettings
-    )
-
-    const panelSyncs: Promise<void>[] = []
-    // Root membership settings predate per-game overrides and therefore remain
-    // the Hell Let Loose panel until that game is explicitly configured.
-    if (
-        payload.config.membershipSettings &&
-        !payload.config.gameOverrides?.hell_let_loose?.membershipSettings
-    ) {
-        panelSyncs.push(
-            syncMembershipPanelForGame(client, payload, "hell_let_loose")
-        )
-    }
-
-    panelSyncs.push(
-        ...configuredGames.map((gameId) => {
-            const override = payload.config.gameOverrides?.[gameId]!
-            return syncMembershipPanelForGame(
-                client,
-                {
-                    ...payload,
-                    config: {
-                        ...payload.config,
-                        membershipSettings: override.membershipSettings,
-                        membershipPanelMessageId:
-                            override.membershipPanelMessageId,
-                        membershipPanelLastConfigUpdatedAt:
-                            override.membershipPanelLastConfigUpdatedAt,
-                    },
-                },
-                gameId
-            )
-        })
-    )
-    await Promise.all(panelSyncs)
+    await syncMembershipPanelForGame(client, payload)
 }
 
 async function syncMembershipPanelForGame(
     client: Client,
-    payload: SyncPayload,
-    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
+    payload: SyncPayload
 ) {
     const membershipSettings = payload.config.membershipSettings
     if (
@@ -249,11 +211,10 @@ async function syncMembershipPanelForGame(
               .fetch(payload.config.membershipPanelMessageId)
               .catch(() => null)
         : null
-    const embed = buildMembershipPanelEmbed(payload.config)
-    if (!embed) {
+    const membershipPanelMessage = buildMembershipPanelMessage(payload.config)
+    if (!membershipPanelMessage) {
         return
     }
-    const components = buildMembershipPanelComponents(payload.config, gameId)
 
     let membershipPanelMessageId = payload.config.membershipPanelMessageId
 
@@ -267,7 +228,11 @@ async function syncMembershipPanelForGame(
             }
         )
         await currentMessage
-            .edit({ embeds: [embed], components })
+            .edit({
+                embeds: [],
+                ...membershipPanelMessage,
+                flags: MessageFlags.IsComponentsV2,
+            })
             .catch(async (error) => {
                 await reportClanDiscordError({
                     client,
@@ -286,7 +251,10 @@ async function syncMembershipPanelForGame(
             })
     } else {
         const created = await textChannel
-            .send({ embeds: [embed], components })
+            .send({
+                ...membershipPanelMessage,
+                flags: MessageFlags.IsComponentsV2,
+            })
             .catch(async (error) => {
                 await reportClanDiscordError({
                     client,
@@ -318,7 +286,6 @@ async function syncMembershipPanelForGame(
         await convex.mutation(references.updateMembershipPanelState, {
             secret: env.internalSecret,
             guildId: payload.config.guildId,
-            gameId,
             membershipPanelMessageId,
             membershipPanelLastConfigUpdatedAt: payload.config.updatedAt,
         })

@@ -75,6 +75,18 @@ export const references = {
     createMembershipApplicationThread: makeFunctionReference<"mutation">(
         "discordMembership:createMembershipApplicationThread"
     ),
+    createMembershipApplicationDraft: makeFunctionReference<"mutation">(
+        "discordMembership:createMembershipApplicationDraft"
+    ),
+    updateMembershipApplicationDraft: makeFunctionReference<"mutation">(
+        "discordMembership:updateMembershipApplicationDraft"
+    ),
+    getMembershipApplicationDraft: makeFunctionReference<"query">(
+        "discordMembership:getMembershipApplicationDraft"
+    ),
+    discardMembershipApplicationDraft: makeFunctionReference<"mutation">(
+        "discordMembership:discardMembershipApplicationDraft"
+    ),
     createPlatformIdLinkToken: makeFunctionReference<"mutation">(
         "platformIdLinks:createPlatformIdLinkToken"
     ),

@@ -108,6 +108,9 @@ type ClanDiscordMessages = {
         ticketCategories: string
         membershipManagedFooter: string
         membershipApplications: string
+        membershipApply: string
+        membershipChooseGame: string
+        membershipChooseCategory: string
     }
     commands: {
         closeTicketDescription: string
@@ -256,7 +259,7 @@ type ClanDiscordMessages = {
             }
         }
     }
-    platformFlowCsFallback?: unknown
+    platformFlowCsFallback?: NonNullable<ClanDiscordMessages["platformFlow"]>
     ticket: {
         serverOnly: string
         unavailable: string
@@ -477,6 +480,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             ticketCategories: "Categories",
             membershipManagedFooter: "Managed by Logi memberships",
             membershipApplications: "Applications",
+            membershipApply: "Sign up",
+            membershipChooseGame: "Choose the game you want to join.",
+            membershipChooseCategory: "Choose a membership category.",
         },
         commands: {
             closeTicketDescription: "Close the current ticket thread.",
@@ -596,8 +602,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             playerSearchModalTitle: "Search player",
             playerSearchModalLabel: "Player name or code",
             playerSearchModalPlaceholder: "Type part of the name or player ID",
-            platformIntro:
-                "Choose your platform. I will show the same guide copy as the current website flow, then let you enter your platform ID.",
+            platformIntro: "Choose your platform.",
             platformPlaceholder: "Select your platform",
             platformSteam: "Steam",
             platformEpic: "Epic Games",
@@ -681,8 +686,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             playerSearchModalTitle: "Hledat hráče",
             playerSearchModalLabel: "Jméno hráče nebo kód",
             playerSearchModalPlaceholder: "Napište část jména nebo player ID",
-            platformIntro:
-                "Vyberte platformu. Ukážu stejný návod jako v dnešním webovém flow a pak zadáte platform ID.",
+            platformIntro: "Vyberte platformu.",
             platformPlaceholder: "Vyberte platformu",
             platformSteam: "Steam",
             platformEpic: "Epic Games",
@@ -982,6 +986,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             ticketCategories: "Kategorie",
             membershipManagedFooter: "Spravováno přes Logi přihlášky",
             membershipApplications: "Přihlášky",
+            membershipApply: "Přihlásit se",
+            membershipChooseGame: "Vyberte hru, do které se chcete přihlásit.",
+            membershipChooseCategory: "Vyberte členskou kategorii.",
         },
         commands: {
             closeTicketDescription: "Uzavře aktuální ticket vlákno.",
@@ -1317,6 +1324,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             ticketCategories: "Kategorien",
             membershipManagedFooter: "Verwaltet via Logi-Mitgliedschaften",
             membershipApplications: "Bewerbungen",
+            membershipApply: "Anmelden",
+            membershipChooseGame: "Wähle das Spiel, dem du beitreten möchtest.",
+            membershipChooseCategory: "Wähle eine Mitgliedschaftskategorie.",
         },
         commands: {
             closeTicketDescription: "Schließt den aktuellen Ticket-Thread.",
