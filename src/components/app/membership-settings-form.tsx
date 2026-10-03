@@ -726,6 +726,7 @@ export function MembershipSettingsForm({
                         </Label>
                         <DiscordChannelSelect
                             value={settings.applicationParentChannelId}
+                            purpose="private-thread"
                             onChange={(value) =>
                                 patchSettings({
                                     applicationParentChannelId: value ?? "",

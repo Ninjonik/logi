@@ -1,4 +1,8 @@
 "use client"
+import {
+    canUseChannelType,
+    type ChannelPurpose,
+} from "@/domain/discord-publications/channel-types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useId, useState } from "react"
@@ -16,6 +20,7 @@ export function DiscordChannelSelect({
     placeholder,
     noneLabel,
     allowNone = true,
+    purpose = "publication",
 }: {
     value?: string
     onChange(value?: string): void
@@ -23,6 +28,7 @@ export function DiscordChannelSelect({
     placeholder: string
     noneLabel?: string
     allowNone?: boolean
+    purpose?: ChannelPurpose
 }) {
     const cs = useLocale() === "cs",
         controlId = useId()
@@ -108,10 +114,12 @@ export function DiscordChannelSelect({
                                     <option
                                         key={c.id}
                                         value={c.id}
-                                        disabled={![0, 5].includes(c.type)}
+                                        disabled={
+                                            !canUseChannelType(purpose, c.type)
+                                        }
                                     >
                                         #{c.name}
-                                        {![0, 5].includes(c.type)
+                                        {!canUseChannelType(purpose, c.type)
                                             ? cs
                                                 ? " · nepodporovaný typ"
                                                 : " · unsupported type"
@@ -125,8 +133,8 @@ export function DiscordChannelSelect({
             {manual && (
                 <p className="text-muted-foreground text-xs">
                     {cs
-                        ? "ID se při uložení ověří na tomto Discord serveru."
-                        : "The ID is verified in this Discord server when saved."}
+                        ? "Použij ID místnosti z tohoto Discord serveru."
+                        : "Use a channel ID from this Discord server."}
                 </p>
             )}
         </div>

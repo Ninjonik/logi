@@ -5,6 +5,7 @@ import {
     buildTicketPanelComponents,
     buildTicketPanelEmbed,
 } from "../message-builders"
+import { membershipPanelConfig } from "../../../src/domain/discord-publications/legacy-bindings"
 import { publishManagedMessage } from "./publication"
 import { convex, references } from "../convex"
 import type { SyncPayload } from "../types"
@@ -61,7 +62,7 @@ export async function syncMembershipPanel(
         if (!override?.membershipSettings && gameId !== "hell_let_loose")
             continue
         const config = override?.membershipSettings
-            ? { ...payload.config, ...override }
+            ? membershipPanelConfig(payload.config, override)
             : payload.config
         const settings = config.membershipSettings
         const embed = buildMembershipPanelEmbed(config)

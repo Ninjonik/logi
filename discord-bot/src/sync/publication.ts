@@ -52,7 +52,7 @@ export async function publishManagedMessage(
             !found.isTextBased()
         )
             throw new Error("Unsupported publication channel.")
-        const me = await guild.members.fetchMe()
+        const me = await guild.members.fetchMe({ force: true })
         if (
             !found
                 .permissionsFor(me)

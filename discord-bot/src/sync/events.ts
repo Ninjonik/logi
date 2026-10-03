@@ -24,6 +24,7 @@ import {
     buildAnnouncementMessage,
     buildAnnouncementV2Message,
 } from "../message-builders"
+import { eventMessageIdentity } from "../../../src/domain/discord-publications/legacy-bindings"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
@@ -154,15 +155,23 @@ async function syncEventMessage(
     roster: Roster | undefined,
     guild: Guild,
     includeSignup = true,
-    forumChannelId?: string
+    forumChannelId?: string,
+    storedAnnouncementChannelId?: string
 ) {
+    const identity = eventMessageIdentity({
+        eventId: event.id,
+        kind: includeSignup ? "announcement" : "info",
+        destination: channel.id,
+        messageId,
+        storedAnnouncementChannelId,
+    })
     if (event.status === "concluded") {
         await retireEventMessage(
             guild.client,
             payload,
             event,
             includeSignup ? "announcement" : "info",
-            channel.id,
+            identity.legacyChannelId,
             messageId
         )
         return undefined
@@ -258,14 +267,12 @@ async function syncEventMessage(
     return (
         (await publishManagedMessage(guild.client, {
             guildId: guild.id,
-            key: `event:${event.id}:${includeSignup ? "announcement" : "info"}`,
+            ...identity,
             revision: Math.max(
                 Date.parse(payload.config.updatedAt),
                 Date.parse(event.updatedAt)
             ),
             channelId: channel.id,
-            legacyChannelId: channel.id,
-            legacyMessageId: messageId,
             message: {
                 ...message,
                 allowedMentions: { roles: pingRoleIds, parse: [] },
@@ -678,7 +685,8 @@ async function syncEvent(
                 roster,
                 guild,
                 true,
-                forumChannelId
+                forumChannelId,
+                state?.announcementChannelId
             )
         } else {
             await retireEventMessage(

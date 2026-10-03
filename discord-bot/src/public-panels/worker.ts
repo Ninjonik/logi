@@ -13,12 +13,21 @@ import type { WarconServed } from "../../../src/application/game-data/read-warco
 import { MessageFlags, type ButtonInteraction, type Client } from "discord.js"
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
 import type { Doc } from "../../../convex/_generated/dataModel"
+import { completePrivatePlayerReply } from "./private-reply"
 import { publishManagedMessage } from "../sync/publication"
 import { makeFunctionReference } from "convex/server"
+import { logWarn as writeWarning } from "../log"
 import { factionAssets } from "./assets"
 import { env } from "../environment"
 import { convex } from "../convex"
-import { logWarn } from "../log"
+
+function logWarn(...args: Parameters<typeof writeWarning>) {
+    try {
+        writeWarning(...args)
+    } catch {
+        console.warn(`[public-panels] ${args[1]}`)
+    }
+}
 type Panel = Doc<"discordPublicPanels"> & { snapshot: ServerSnapshot | null }
 const query = <T>(name: string, args: Record<string, unknown>): Promise<T> =>
     convex.query(makeFunctionReference<"query">(name), {
@@ -170,40 +179,45 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
     if (interaction.message.flags.has(MessageFlags.Ephemeral))
         await interaction.deferUpdate()
     else await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-    const parts = interaction.customId.split(":")
-    const panel = interaction.guildId
-        ? (await panels(interaction.guildId)).find((p) => p._id === parts[2])
-        : null
-    if (!panel?.enabled || !panel.showPlayers || panel.kind === "results") {
-        await interaction.editReply({
-            content: "Player details are disabled or unavailable.",
-            components: [],
-        })
-        return true
-    }
-    const data = await live(panel)
-    // Recheck after the provider call: privacy can change while that call runs.
-    const current = (await panels(panel.guildId)).find(
-        (p) => p._id === panel._id
-    )
-    if (
-        !data ||
-        !current?.enabled ||
-        !current.showPlayers ||
-        current.revision !== panel.revision
-    ) {
-        await interaction.editReply({
-            content: "Player details unavailable. Try again later.",
-            components: [],
-        })
-        return true
-    }
-    await interaction.editReply(
-        renderPlayers(
-            panel._id,
-            data,
-            /^\d{1,3}$/.test(parts[3] ?? "") ? Number(parts[3]) : 0
-        )
+    await completePrivatePlayerReply(
+        (reply) => interaction.editReply(reply),
+        async () => {
+            const parts = interaction.customId.split(":")
+            const panel = interaction.guildId
+                ? (await panels(interaction.guildId)).find(
+                      (p) => p._id === parts[2]
+                  )
+                : null
+            if (
+                !panel?.enabled ||
+                !panel.showPlayers ||
+                panel.kind === "results"
+            )
+                return {
+                    content: "Player details are disabled or unavailable.",
+                    components: [],
+                }
+            const data = await live(panel)
+            // Recheck after the provider call: privacy can change while it runs.
+            const current = (await panels(panel.guildId)).find(
+                (p) => p._id === panel._id
+            )
+            if (
+                !data ||
+                !current?.enabled ||
+                !current.showPlayers ||
+                current.revision !== panel.revision
+            )
+                return {
+                    content: "Player details unavailable. Try again later.",
+                    components: [],
+                }
+            return renderPlayers(
+                panel._id,
+                data,
+                /^\d{1,3}$/.test(parts[3] ?? "") ? Number(parts[3]) : 0
+            )
+        }
     )
     return true
 }

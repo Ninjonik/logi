@@ -2,6 +2,17 @@ import { warconLive } from "../../../src/infrastructure/testing/warcon"
 import { renderPanel, renderPlayers, factionIcon } from "./render"
 import assert from "node:assert/strict"
 import test from "node:test"
+test("a one-page private response has unique custom IDs even when both navigation buttons are disabled", () => {
+    const live = {
+        ...warconLive(),
+        freshness: "fresh" as const,
+        playersFreshness: "fresh" as const,
+    }
+    const ids = renderPlayers("panel", live, 0)
+        .components[0].toJSON()
+        .components.map((c) => ("custom_id" in c ? c.custom_id : undefined))
+    assert.equal(new Set(ids).size, ids.length)
+})
 test("compact live panel preserves zero, escapes source text, labels freshness and omits private identifiers", () => {
     const live = {
         ...warconLive(),

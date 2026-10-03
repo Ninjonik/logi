@@ -348,6 +348,7 @@ export function TicketSettingsForm({
                         <Label>{dictionary.ticketSettings.parentChannel}</Label>
                         <DiscordChannelSelect
                             value={ticketSettings.ticketParentChannelId}
+                            purpose="private-thread"
                             onChange={(value) =>
                                 patchTicketSettings({
                                     ticketParentChannelId: value ?? "",

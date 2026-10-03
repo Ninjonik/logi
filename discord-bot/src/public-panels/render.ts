@@ -143,13 +143,15 @@ export function renderPlayers(
         )
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
-            .setCustomId(`logi:players:${panelId}:${Math.max(0, page - 1)}`)
+            .setCustomId(
+                `logi:players:${panelId}:${Math.max(0, page - 1)}:previous`
+            )
             .setLabel("Previous")
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(page === 0),
         new ButtonBuilder()
             .setCustomId(
-                `logi:players:${panelId}:${Math.min(pages - 1, page + 1)}`
+                `logi:players:${panelId}:${Math.min(pages - 1, page + 1)}:next`
             )
             .setLabel("Next")
             .setStyle(ButtonStyle.Secondary)
