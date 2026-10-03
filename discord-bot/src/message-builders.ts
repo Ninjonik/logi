@@ -12,7 +12,7 @@ import {
     ThumbnailBuilder,
     type APIEmbedField,
 } from "discord.js"
-import { buildMembershipFlowHeading } from "./interactions/membership-flow"
+import { buildMembershipFlowHeader } from "./interactions/membership-flow"
 
 import { formatDiscordMarkdown } from "../../src/lib/discord-markdown"
 import { formatHllPresetLabel } from "../../src/lib/hll-map-presets"
@@ -1083,7 +1083,7 @@ function buildMembershipSelectionMessage(input: {
         ]
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                `${buildMembershipFlowHeading(input.config.defaultLanguage, "game")}\n${messages.panels.membershipChooseGame}`
+                messages.panels.membershipChooseGame
             )
         )
         container.addActionRowComponents(
@@ -1104,7 +1104,7 @@ function buildMembershipSelectionMessage(input: {
             ) ?? []
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                `${buildMembershipFlowHeading(input.config.defaultLanguage, "specialization")}\n${membershipGameLabel(input.gameId)}\n${messages.panels.membershipChooseCategory}`
+                `${membershipGameLabel(input.gameId)}\n${messages.panels.membershipChooseCategory}`
             )
         )
         for (let index = 0; index < categories.length; index += 5) {
@@ -1132,7 +1132,16 @@ function buildMembershipSelectionMessage(input: {
         }
     }
 
-    return { components: [container], flags: MessageFlags.IsComponentsV2 }
+    return {
+        components: [
+            buildMembershipFlowHeader(
+                input.config.defaultLanguage,
+                input.gameId ? "specialization" : "game"
+            ),
+            container,
+        ],
+        flags: MessageFlags.IsComponentsV2,
+    }
 }
 
 export function buildMembershipGameSelectionMessage(config: DiscordConfig) {

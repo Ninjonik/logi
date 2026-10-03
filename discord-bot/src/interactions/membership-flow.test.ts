@@ -13,8 +13,8 @@ test("membership flow renders a Wardogs review without specialization", () => {
         answers: [{ label: "Experience", value: "Experienced" }],
     })
 
-    const json = message.components[0]?.toJSON()
-    assert.equal(json?.type, 17)
+    const json = message.components.map((component) => component.toJSON())
+    assert.equal(json[0]?.type, 17)
     assert.match(JSON.stringify(json), /membership-flow:draft-1:submit/)
     assert.match(JSON.stringify(json), /Wardogs/)
 })
@@ -28,8 +28,18 @@ test("membership flow exposes localized specialization choices", () => {
         platformLinked: false,
     })
 
-    assert.match(JSON.stringify(message.components[0]?.toJSON()), /Pěchota/)
-    assert.match(JSON.stringify(message.components[0]?.toJSON()), /Tank/)
+    assert.match(
+        JSON.stringify(
+            message.components.map((component) => component.toJSON())
+        ),
+        /Pěchota/
+    )
+    assert.match(
+        JSON.stringify(
+            message.components.map((component) => component.toJSON())
+        ),
+        /Tank/
+    )
 })
 
 test("membership flow always renders the account action", () => {
@@ -42,7 +52,9 @@ test("membership flow always renders the account action", () => {
     })
 
     assert.match(
-        JSON.stringify(message.components[0]?.toJSON()),
+        JSON.stringify(
+            message.components.map((component) => component.toJSON())
+        ),
         /membership-flow:draft-1:link/
     )
 })
