@@ -1,4 +1,5 @@
 import { getServerContextUncached } from "@/lib/read-models/server-context"
+import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { gameDataHandlers } from "@/lib/api/game-data-route"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
@@ -14,12 +15,19 @@ const handlers = gameDataHandlers({
             secret: getInternalAuthSecret(),
             guildId,
         }),
-    configure: async (guildId, input) =>
-        fetchMutation(makeFunctionReference<"mutation">("gameData:configure"), {
-            secret: getInternalAuthSecret(),
-            guildId,
-            ...input,
-        }),
+    configure: async (guildId, input) => {
+        const actor = await currentDashboardActor()
+        if (!actor) throw new Error("Forbidden.")
+        return fetchMutation(
+            makeFunctionReference<"mutation">("gameData:configureForDashboard"),
+            {
+                secret: getInternalAuthSecret(),
+                guildId,
+                actor,
+                ...input,
+            }
+        )
+    },
 })
 type Context = { params: Promise<{ serverId: string }> }
 export async function GET(request: Request, context: Context) {

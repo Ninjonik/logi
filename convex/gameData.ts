@@ -9,8 +9,10 @@ import {
     projectHealth,
     projectSnapshot,
 } from "../src/domain/game-data/policy"
+import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { gameDataError, gameDataObservation } from "./gameDataValidators"
 import { mutation, internalMutation } from "./integrationMutation"
+import type { MutationCtx } from "./_generated/server"
 import { resetHistory } from "./gameDataHistory"
 import { query } from "./_generated/server"
 import { internal } from "./_generated/api"
@@ -30,90 +32,109 @@ function fingerprint(source: DataSource) {
     return JSON.stringify(source)
 }
 
-export const configure = mutation({
+const configurationArgs = {
+    secret: v.string(),
+    guildId: v.string(),
+    sourceRef: v.string(),
+    enabled: v.boolean(),
+}
+async function configureConnection(
+    ctx: MutationCtx,
     args: {
-        secret: v.string(),
-        guildId: v.string(),
-        sourceRef: v.string(),
-        enabled: v.boolean(),
-    },
-    handler: async (ctx, args): Promise<string> => {
-        assertSecret(args.secret)
-        const source = sources().find(
-            (value) =>
-                value.ref === args.sourceRef && value.guildId === args.guildId
+        secret: string
+        guildId: string
+        sourceRef: string
+        enabled: boolean
+    }
+): Promise<string> {
+    assertSecret(args.secret)
+    const source = sources().find(
+        (value) =>
+            value.ref === args.sourceRef && value.guildId === args.guildId
+    )
+    const existing = await ctx.db
+        .query("gameDataConnections")
+        .withIndex("sourceRef", (q) => q.eq("sourceRef", args.sourceRef))
+        .unique()
+    if (
+        (!source && args.enabled) ||
+        (existing && existing.guildId !== args.guildId) ||
+        (!source && !existing)
+    )
+        throw new Error("Configured source not found.")
+    if (
+        source &&
+        existing &&
+        (existing.gameId !== source.gameId ||
+            existing.provider !== source.provider ||
+            existing.providerServerId !== source.providerServerId)
+    )
+        throw new Error(
+            "Use a new source reference for a different provider identity."
         )
-        const existing = await ctx.db
-            .query("gameDataConnections")
-            .withIndex("sourceRef", (q) => q.eq("sourceRef", args.sourceRef))
-            .unique()
-        if (
-            (!source && args.enabled) ||
-            (existing && existing.guildId !== args.guildId) ||
-            (!source && !existing)
-        )
-            throw new Error("Configured source not found.")
-        if (
-            source &&
-            existing &&
-            (existing.gameId !== source.gameId ||
-                existing.provider !== source.provider ||
-                existing.providerServerId !== source.providerServerId)
-        )
-            throw new Error(
-                "Use a new source reference for a different provider identity."
-            )
-        const now = Date.now()
-        const state = {
-            enabled: args.enabled,
-            generation: (existing?.generation ?? 0) + 1,
-            leaseUntil: 0,
-            attempt: 0,
-            nextAttemptAt: args.enabled ? now : null,
-            errorCategory: null,
-            updatedAt: new Date(now).toISOString(),
-            pollAfterMs: 60_000,
-        }
-        if (existing) {
-            await ctx.db.patch(existing._id, {
-                ...state,
-                ...(source ? { sourceFingerprint: fingerprint(source) } : {}),
-                etag: null,
-            })
-            if (["hll_crcon", "wardogs_warcon"].includes(existing.provider))
-                await resetHistory(ctx, existing._id, args.enabled)
-            if (args.enabled)
-                await ctx.scheduler.runAfter(
-                    0,
-                    internal.gameDataCollector.collectDue,
-                    {}
-                )
-            return String(existing._id)
-        }
-        if (!source) throw new Error("Configured source not found.")
-        const id = await ctx.db.insert("gameDataConnections", {
+    const now = Date.now()
+    const state = {
+        enabled: args.enabled,
+        generation: (existing?.generation ?? 0) + 1,
+        leaseUntil: 0,
+        attempt: 0,
+        nextAttemptAt: args.enabled ? now : null,
+        errorCategory: null,
+        updatedAt: new Date(now).toISOString(),
+        pollAfterMs: 60_000,
+    }
+    if (existing) {
+        await ctx.db.patch(existing._id, {
             ...state,
-            sourceRef: source.ref,
-            guildId: source.guildId,
-            gameId: source.gameId,
-            provider: source.provider,
-            providerServerId: source.providerServerId,
-            sourceFingerprint: fingerprint(source),
-            fence: 0,
-            lastAttemptAt: null,
-            observation: null,
+            ...(source ? { sourceFingerprint: fingerprint(source) } : {}),
             etag: null,
-            createdAt: state.updatedAt,
         })
-        if (["hll_crcon", "wardogs_warcon"].includes(source.provider))
-            await resetHistory(ctx, id, args.enabled)
+        if (["hll_crcon", "wardogs_warcon"].includes(existing.provider))
+            await resetHistory(ctx, existing._id, args.enabled)
         if (args.enabled)
             await ctx.scheduler.runAfter(
                 0,
                 internal.gameDataCollector.collectDue,
                 {}
             )
-        return String(id)
+        return String(existing._id)
+    }
+    if (!source) throw new Error("Configured source not found.")
+    const id = await ctx.db.insert("gameDataConnections", {
+        ...state,
+        sourceRef: source.ref,
+        guildId: source.guildId,
+        gameId: source.gameId,
+        provider: source.provider,
+        providerServerId: source.providerServerId,
+        sourceFingerprint: fingerprint(source),
+        fence: 0,
+        lastAttemptAt: null,
+        observation: null,
+        etag: null,
+        createdAt: state.updatedAt,
+    })
+    if (["hll_crcon", "wardogs_warcon"].includes(source.provider))
+        await resetHistory(ctx, id, args.enabled)
+    if (args.enabled)
+        await ctx.scheduler.runAfter(
+            0,
+            internal.gameDataCollector.collectDue,
+            {}
+        )
+    return String(id)
+}
+
+/** Operator-only entrypoint; the dashboard uses the actor-fenced mutation below. */
+export const configure = internalMutation({
+    args: configurationArgs,
+    handler: configureConnection,
+})
+export const configureForDashboard = mutation({
+    args: { ...configurationArgs, actor: dashboardActor },
+    handler: async (ctx, args) => {
+        await authorizeDashboardAdmin(ctx, args)
+        return configureConnection(ctx, args)
     },
 })
 

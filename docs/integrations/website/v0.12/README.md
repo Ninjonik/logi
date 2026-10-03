@@ -67,7 +67,9 @@ and an optional fixed `error` category. Keep these alongside the snapshot.
 - With no prior snapshot, upstream/rate errors return 429 or 503 with retry metadata
   when known. 400 rejects input, 401 rejects authentication, 403 rejects grants.
 - HTTP 429 respects delta-seconds or HTTP-date `Retry-After` across all match IDs.
-  A missing/invalid value defaults to 60 seconds. Other fetch errors retry after 60 seconds.
+  A missing/invalid value defaults to 60 seconds. Delays are bounded to 24 hours;
+  legacy out-of-range cooldowns are repaired on access. Other fetch errors retry
+  after 60 seconds. Direct HTML text is read without cloning nested subtrees.
 - A 25-second fenced lease avoids duplicate concurrent refreshes. A shared budget
   permits 20 origin requests/minute. Cache capacity is 500 IDs with oldest inactive
   eviction and pruning after 14 days without reads.

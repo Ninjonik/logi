@@ -1,3 +1,4 @@
+import { readBoundedJson } from "./request-json"
 import { z } from "zod"
 type Ports = {
     authorize(serverId: string): Promise<string | null>
@@ -33,16 +34,12 @@ export function gameDataHandlers(ports: Ports) {
             const origin = request.headers.get("origin")
             if (origin && origin !== new URL(request.url).origin)
                 return json({ error: "Forbidden." }, 403)
-            const body = await request.text()
-            let input: unknown
-            try {
-                input = body.length <= 2048 ? JSON.parse(body) : null
-            } catch {
-                input = null
-            }
+            const input = await readBoundedJson(request, 2048)
             const parsed = configuration.safeParse(input)
             if (!parsed.success)
                 return json({ error: "Invalid source configuration." }, 400)
+            if ((await ports.authorize(server)) !== guild)
+                return json({ error: "Forbidden." }, 403)
             try {
                 await ports.configure(guild, parsed.data)
                 return json({ ok: true })

@@ -1,5 +1,6 @@
 import {
     LeagueError,
+    MAX_RETRY_AFTER_MS,
     type LeagueSnapshot,
 } from "../../domain/wardogs-league/contracts"
 import { matchUrl } from "../../domain/wardogs-league/match-url"
@@ -130,7 +131,7 @@ export async function fetchLeagueMatch(
                 throw new LeagueError(
                     "rate_limited",
                     Number.isFinite(delay) && delay >= 0
-                        ? Math.max(1000, delay)
+                        ? Math.min(MAX_RETRY_AFTER_MS, Math.max(1000, delay))
                         : 60000
                 )
             }

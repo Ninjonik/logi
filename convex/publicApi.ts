@@ -54,6 +54,7 @@ import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertCommand } from "../src/application/events/command-ports"
 import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
+import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
@@ -70,13 +71,14 @@ export const createKey = mutation({
     args: {
         secret: v.string(),
         guildId: v.string(),
+        actor: dashboardActor,
         name: v.string(),
         keyHash: v.string(),
         keyPrefix: v.string(),
         readAccess: v.optional(apiKeyReadAccess),
     },
     handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
+        await authorizeDashboardAdmin(ctx, args)
         if (
             args.readAccess !== undefined &&
             !isApiKeyReadAccess(args.readAccess)
@@ -98,9 +100,9 @@ export const createKey = mutation({
 })
 
 export const listKeys = query({
-    args: { secret: v.string(), guildId: v.string() },
+    args: { secret: v.string(), guildId: v.string(), actor: dashboardActor },
     handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
+        await authorizeDashboardAdmin(ctx, args)
         return (
             await ctx.db
                 .query("apiKeys")
@@ -121,9 +123,14 @@ export const listKeys = query({
 })
 
 export const revokeKey = mutation({
-    args: { secret: v.string(), guildId: v.string(), keyId: v.id("apiKeys") },
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        keyId: v.id("apiKeys"),
+        actor: dashboardActor,
+    },
     handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
+        await authorizeDashboardAdmin(ctx, args)
         const key = await ctx.db.get(args.keyId)
         if (!key || key.guildId !== args.guildId)
             throw new Error("API key not found.")

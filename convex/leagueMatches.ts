@@ -1,6 +1,7 @@
 import {
     CACHE_MS,
     LEASE_MS,
+    MAX_RETRY_AFTER_MS,
     leagueSnapshotSchema,
     leagueErrorSchema,
 } from "../src/domain/wardogs-league/contracts"
@@ -81,6 +82,16 @@ export const reserve = internalMutation({
             .withIndex("matchId", (q) => q.eq("matchId", source.id))
             .unique()
         const current = state(row)
+        if (
+            row &&
+            current.error &&
+            current.nextRefreshAt > now + MAX_RETRY_AFTER_MS
+        ) {
+            current.nextRefreshAt = now + MAX_RETRY_AFTER_MS
+            await ctx.db.patch(row._id, {
+                nextRefreshAt: current.nextRefreshAt,
+            })
+        }
         if (row) await ctx.db.patch(row._id, { accessedAt: now })
         if (
             current.snapshot &&
@@ -113,6 +124,12 @@ export const reserve = internalMutation({
                 cachedEntries: 0,
             })
             budget = (await ctx.db.get(id))!
+        }
+        if (budget.blockedUntil > now + MAX_RETRY_AFTER_MS) {
+            await ctx.db.patch(budget._id, {
+                blockedUntil: now + MAX_RETRY_AFTER_MS,
+            })
+            budget = { ...budget, blockedUntil: now + MAX_RETRY_AFTER_MS }
         }
         const windowAt = budget.windowAt + 60000 > now ? budget.windowAt : now
         const count = windowAt === budget.windowAt ? budget.count : 0
@@ -226,7 +243,7 @@ export const finish = internalMutation({
             const error = leagueErrorSchema.parse(args.error)
             const delay =
                 Number.isFinite(args.retryAfterMs) && args.retryAfterMs! >= 1000
-                    ? args.retryAfterMs!
+                    ? Math.min(MAX_RETRY_AFTER_MS, args.retryAfterMs!)
                     : 60000
             const until = Math.min(
                 Date.parse("9999-12-31T23:59:59.000Z"),

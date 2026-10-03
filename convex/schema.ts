@@ -524,6 +524,8 @@ export default defineSchema({
     platformLinkChallenges: defineTable({
         tokenHash: v.string(),
         sessionHash: v.string(),
+        // Old in-progress challenges without a durable session must restart.
+        sid: v.optional(v.string()),
         discordUserId: v.string(),
         userRecordId: v.id("users"),
         returnOrigin: v.string(),

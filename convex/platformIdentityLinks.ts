@@ -11,6 +11,7 @@ import {
     steamCallbackUrl,
     verifiedPlatformLinkSchema,
 } from "../src/domain/identity/platform-link"
+import { activeDashboardSession } from "./dashboardSessionStore"
 import { assertMembershipSecret } from "./membership_shared"
 import { mutation } from "./integrationMutation"
 import { getUserStableId } from "./identity"
@@ -26,6 +27,7 @@ const challengeArgs = {
 export const begin = mutation({
     args: {
         ...session,
+        sid: v.string(),
         tokenHash: v.string(),
         returnOrigin: v.string(),
         locale: v.union(v.literal("en"), v.literal("cs"), v.literal("de")),
@@ -35,6 +37,15 @@ export const begin = mutation({
         assertMembershipSecret(args.secret)
         steamCallbackUrl(args.returnOrigin, "check")
         const user = await platformLinkUser(ctx, args.discordUserId)
+        if (
+            !(await activeDashboardSession(
+                ctx,
+                args.sid,
+                args.discordUserId,
+                String(user._id)
+            ))
+        )
+            throw new Error("Session changed.")
         const now = Date.now()
         if (
             !/^[a-f0-9]{64}$/.test(args.tokenHash) ||
@@ -66,6 +77,7 @@ export const begin = mutation({
         await ctx.db.insert("platformLinkChallenges", {
             tokenHash: args.tokenHash,
             sessionHash: args.sessionHash,
+            sid: args.sid,
             discordUserId: args.discordUserId,
             returnOrigin: args.returnOrigin,
             locale: args.locale,

@@ -3,6 +3,7 @@ import {
     type LinkActorSession,
     type VerifiedPlatformLink,
 } from "../src/domain/identity/platform-link"
+import { activeDashboardSession } from "./dashboardSessionStore"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
 
@@ -41,6 +42,16 @@ export async function currentChallenge(
     const user = await platformLinkUser(ctx, actor.discordUserId)
     if (user._id !== challenge.userRecordId)
         throw new Error("Linked account changed.")
+    if (
+        !challenge.sid ||
+        !(await activeDashboardSession(
+            ctx,
+            challenge.sid,
+            actor.discordUserId,
+            String(challenge.userRecordId)
+        ))
+    )
+        throw new Error("Session changed.")
     return { challenge, user }
 }
 export async function cancelPlatformChallenges(

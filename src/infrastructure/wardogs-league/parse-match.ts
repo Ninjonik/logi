@@ -21,7 +21,12 @@ export function parseMatchHtml(html: string, sourceUrl: string): LeagueMatch {
     const header = main.children("header")
     const title = clean(header.find("h1").text())
     const direct = (node: typeof main) =>
-        clean(node.clone().children().remove().end().text())
+        clean(
+            node
+                .contents()
+                .filter((_, child) => child.type === "text")
+                .text()
+        )
     const fixture = header
         .find("span")
         .toArray()

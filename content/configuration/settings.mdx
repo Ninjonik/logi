@@ -406,6 +406,16 @@ and player observations remain unconfirmed and do not establish account ownershi
 The scoreboard and website API provide reads only. Ban lists, staff notes, private
 server configuration and administrative actions are outside this integration.
 
+Changing a data source and managing website API keys require a current signed-in
+administrator. Logi checks the session and workspace permission again when saving
+the change. A pending Warcon read also rechecks access before returning provider
+data. After signing out or losing administrator access, refresh the page and sign
+in with an authorized account before trying again.
+
+Wardogs League refreshes honor the provider's retry delay, up to 24 hours per
+response. Existing saved data remains visible with its age while refresh is
+unavailable; a provider error never replaces it with an empty match.
+
 ## Imports, performance, and helper data
 
 The **Imports** section is manager-only operational maintenance. Each action uses

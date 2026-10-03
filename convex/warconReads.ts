@@ -1,4 +1,9 @@
 import {
+    authorizeDashboardAdmin,
+    dashboardActor,
+    type DashboardActor,
+} from "./dashboardActor"
+import {
     warconQuerySchema,
     warconCacheMs,
 } from "../src/domain/game-data/warcon-query"
@@ -19,6 +24,7 @@ const accessArgs = {
     guildId: v.string(),
     connectionId: v.string(),
     keyHash: v.optional(v.string()),
+    actor: v.optional(dashboardActor),
     queryJson: v.string(),
 }
 type Access = {
@@ -26,6 +32,7 @@ type Access = {
     guildId: string
     connectionId: string
     keyHash?: string
+    actor?: DashboardActor
     queryJson: string
 }
 async function authorize(ctx: MutationCtx, args: Access) {
@@ -37,6 +44,7 @@ async function authorize(ctx: MutationCtx, args: Access) {
     if (args.queryJson.length > 1500) throw new Error("Invalid Warcon query.")
     const input = warconQuerySchema.parse(JSON.parse(args.queryJson))
     if (args.keyHash !== undefined) {
+        if (args.actor !== undefined) return null
         const key = await ctx.db
             .query("apiKeys")
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash!))
@@ -49,6 +57,13 @@ async function authorize(ctx: MutationCtx, args: Access) {
             !allowsApiKeyRead(key.readAccess, "warcon-data", "wardogs")
         )
             return null
+    } else {
+        if (!args.actor) return null
+        try {
+            await authorizeDashboardAdmin(ctx, { ...args, actor: args.actor })
+        } catch {
+            return null
+        }
     }
     const id = ctx.db.normalizeId("gameDataConnections", args.connectionId)
     const row = id ? await ctx.db.get(id) : null

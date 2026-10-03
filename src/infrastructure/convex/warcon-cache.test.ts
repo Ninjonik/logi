@@ -1,4 +1,5 @@
 import { warconLive, warconServerId, warconTime } from "../testing/warcon"
+import { seedDashboardActor } from "./testing/dashboard-actor"
 import * as history from "../../../convex/gameDataHistory"
 import * as reads from "../../../convex/warconReads"
 import * as gameData from "../../../convex/gameData"
@@ -143,6 +144,45 @@ type Claim = {
     kind: "claimed"
     claim: { cacheId: string; generation: number; fence: number }
 }
+
+test("dashboard Warcon reads recheck current actor rights and session before returning provider data", async (t) => {
+    for (const mode of ["rights", "session", "global"]) {
+        const { ctx, input, envelope } = await fixture(t)
+        const actor = seedDashboardActor(ctx.db, "guild")
+        const args = { ...input, keyHash: undefined, actor }
+        const pending = await handler<Claim>(reads.reserve)(ctx, args)
+        assert.equal(pending.kind, "claimed")
+        if (mode === "rights")
+            await ctx.db.patch("access:admin", {
+                isAdmin: false,
+                hasDashboardAccess: false,
+            })
+        if (mode === "session")
+            await ctx.db.patch("sessions:admin", { revokedAt: Date.now() })
+        if (mode === "global")
+            await ctx.db.patch(actor.userRecordId, { sessionVersion: 1 })
+        assert.equal(
+            await handler(reads.finish)(ctx, {
+                ...args,
+                ...pending.claim,
+                envelopeJson: JSON.stringify(envelope),
+            }),
+            false
+        )
+        assert.deepEqual(await handler(reads.reserve)(ctx, args), {
+            kind: "denied",
+        })
+    }
+})
+
+test("Warcon reads without either a scoped key or a dashboard actor are denied", async (t) => {
+    const { ctx, input } = await fixture(t)
+    assert.deepEqual(
+        await handler(reads.reserve)(ctx, { ...input, keyHash: undefined }),
+        { kind: "denied" }
+    )
+    assert.equal(ctx.db.tables.warconReadCache?.length ?? 0, 0)
+})
 test("Warcon cache enforces tenant/game/resource/legacy/revocation independently of Next", async (t) => {
     const { ctx, input, keyId } = await fixture(t)
     await assert.rejects(

@@ -8,6 +8,17 @@ const html = readFileSync(
     new URL("./fixtures/scheduled.html", import.meta.url),
     "utf8"
 )
+
+test("nested decorative spans do not change direct fixture and status text", () => {
+    const decorated = html.replace(
+        "</header>",
+        `${"<span>".repeat(200)}decoration${"</span>".repeat(200)}</header>`
+    )
+    const actual = parseMatchHtml(decorated, source)
+    assert.equal(actual.fixtureNumber, 38)
+    assert.equal(actual.status, "Scheduled")
+    assert.deepEqual(actual.teams, parseMatchHtml(html, source).teams)
+})
 test("impossible calendar dates are missing data, never rolled into another day", () => {
     const changed = html
         .split("2026-10-10T18:30:00.000Z")

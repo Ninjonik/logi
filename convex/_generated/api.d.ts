@@ -18,6 +18,7 @@ import type * as articles from "../articles.js";
 import type * as calendarFeed from "../calendarFeed.js";
 import type * as competitions from "../competitions.js";
 import type * as crons from "../crons.js";
+import type * as dashboardActor from "../dashboardActor.js";
 import type * as dashboardSessionStore from "../dashboardSessionStore.js";
 import type * as dashboardSessions from "../dashboardSessions.js";
 import type * as discordConfig from "../discordConfig.js";
@@ -106,6 +107,7 @@ declare const fullApi: ApiFromModules<{
   calendarFeed: typeof calendarFeed;
   competitions: typeof competitions;
   crons: typeof crons;
+  dashboardActor: typeof dashboardActor;
   dashboardSessionStore: typeof dashboardSessionStore;
   dashboardSessions: typeof dashboardSessions;
   discordConfig: typeof discordConfig;

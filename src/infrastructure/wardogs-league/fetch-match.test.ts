@@ -73,6 +73,8 @@ test("429 accepts delta seconds and HTTP-date Retry-After", async () => {
         ["120", 120000],
         ["Thu, 01 Jan 1970 00:03:00 GMT", 180000],
         ["invalid", 60000],
+        ["999999999999", 86_400_000],
+        ["Fri, 31 Dec 9999 23:59:59 GMT", 86_400_000],
     ] as const) {
         await assert.rejects(
             fetchLeagueMatch(source, {

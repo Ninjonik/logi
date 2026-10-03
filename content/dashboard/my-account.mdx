@@ -30,6 +30,12 @@ platform supplies rather than a display name.
 
 Use the Discord account that represents you in the community. If a platform ID needs linking, Logi may provide a secure linking flow. Do not share a linking token or a sign-in link with another person.
 
+Steam verification must finish while the same Logi session is still valid.
+Signing out of that session, signing out everywhere, or expiry stops a pending
+verification from creating a verified link. Start a new verification after signing
+in again. After a session-binding upgrade, older unfinished verification attempts
+also need to restart; existing verified links are retained.
+
 ## Privacy requests
 
 ### Platform-ID links

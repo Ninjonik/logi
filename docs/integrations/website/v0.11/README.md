@@ -76,6 +76,13 @@ return 400, a busy lease/budget/provider rate limit returns 429 with `Retry-Afte
 and other provider failures return 503 with a fixed error category. Consumers
 must honor `Retry-After` and display unavailable data honestly.
 
+Dashboard reads carry a gateway-attested durable session identity. Both cache
+reservation and completion recheck the current session and workspace manager
+permission. Integration reads instead use their independently rechecked scoped
+API key; neither caller can omit its credential. Source configuration uses the
+actor-bound `gameData:configureForDashboard` mutation. The lower-level
+`gameData:configure` function is internal and reserved for trusted operator work.
+
 The connection belongs to the key's guild and must be enabled, use
 `wardogs_warcon`, and match the current operator source configuration. Convex
 checks these conditions independently of Next.js, before and after network

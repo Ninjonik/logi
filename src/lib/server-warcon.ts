@@ -1,5 +1,6 @@
 import type { WarconServed } from "../application/game-data/read-warcon"
 import type { WarconQuery } from "../domain/game-data/warcon-query"
+import type { DashboardActor } from "../../convex/dashboardActor"
 import { makeFunctionReference } from "convex/server"
 import { getInternalAuthSecret } from "./env"
 import { fetchAction } from "convex/nextjs"
@@ -11,12 +12,13 @@ type Args = {
     connectionId: string
     queryJson: string
     keyHash?: string
+    actor?: DashboardActor
 }
 export function getWarconData(
     guildId: string,
     connectionId: string,
     query: WarconQuery,
-    key?: string
+    credential: string | DashboardActor
 ): Promise<WarconServed> {
     return fetchAction(
         makeFunctionReference<"action", Args, WarconServed>("warconData:read"),
@@ -25,7 +27,9 @@ export function getWarconData(
             guildId,
             connectionId,
             queryJson: JSON.stringify(query),
-            ...(key === undefined ? {} : { keyHash: hashApiKey(key) }),
+            ...(typeof credential === "string"
+                ? { keyHash: hashApiKey(credential) }
+                : { actor: credential }),
         }
     )
 }

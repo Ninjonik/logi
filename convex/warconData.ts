@@ -8,6 +8,7 @@ import { createProviderHttp } from "../src/infrastructure/game-data/provider-htt
 import { warconQuerySchema } from "../src/domain/game-data/warcon-query"
 import { readWarcon } from "../src/infrastructure/game-data/warcon"
 import { makeFunctionReference } from "convex/server"
+import { dashboardActor } from "./dashboardActor"
 import { action } from "./_generated/server"
 import { v } from "convex/values"
 
@@ -18,6 +19,7 @@ export const read = action({
         connectionId: v.string(),
         queryJson: v.string(),
         keyHash: v.optional(v.string()),
+        actor: v.optional(dashboardActor),
     },
     handler: async (ctx, args): Promise<WarconServed> => {
         if (

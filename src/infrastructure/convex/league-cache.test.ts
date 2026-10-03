@@ -2,6 +2,7 @@ import type {
     Prepared,
     CacheState,
 } from "../../application/wardogs-league/read-match"
+import { MAX_RETRY_AFTER_MS } from "../../domain/wardogs-league/contracts"
 import { parseMatchHtml } from "../wardogs-league/parse-match"
 import * as cache from "../../../convex/leagueMatches"
 import { test, type TestContext } from "node:test"
@@ -71,6 +72,54 @@ function handler<T>(value: unknown) {
 }
 const reserve = handler<Prepared>(cache.reserve),
     finish = handler<CacheState | null>(cache.finish)
+
+test("oversized Retry-After is bounded globally and refresh resumes after the bound", async (t) => {
+    const { ctx, args, advance } = await setup(t)
+    const claim = await reserve(ctx, args)
+    if (claim.kind !== "claimed") assert.fail("claim expected")
+    const start = Date.now()
+    await finish(ctx, {
+        ...args,
+        cacheId: claim.cacheId,
+        fence: claim.fence,
+        error: "rate_limited",
+        retryAfterMs: Number.MAX_SAFE_INTEGER,
+    })
+    assert.equal(
+        ctx.db.tables.leagueFetchBudget[0].blockedUntil,
+        start + MAX_RETRY_AFTER_MS
+    )
+    assert.equal(
+        (await ctx.db.get(claim.cacheId))?.nextRefreshAt,
+        start + MAX_RETRY_AFTER_MS
+    )
+    const other = { ...args, sourceUrl: url.replace(/[^/]+$/, "otherfixture") }
+    const blocked = await reserve(ctx, other)
+    assert.ok(
+        blocked.kind === "ready" && blocked.state.error === "rate_limited"
+    )
+    advance(MAX_RETRY_AFTER_MS + 1)
+    assert.equal((await reserve(ctx, other)).kind, "claimed")
+})
+
+test("legacy unbounded League cooldowns are repaired persistently", async (t) => {
+    const { ctx, args, advance } = await setup(t)
+    const claim = await reserve(ctx, args)
+    if (claim.kind !== "claimed") assert.fail("claim expected")
+    await ctx.db.patch(claim.cacheId, {
+        leaseUntil: 0,
+        error: "rate_limited",
+        nextRefreshAt: Number.MAX_SAFE_INTEGER,
+    })
+    await ctx.db.patch(ctx.db.tables.leagueFetchBudget[0]._id, {
+        blockedUntil: Number.MAX_SAFE_INTEGER,
+    })
+    await reserve(ctx, args)
+    const other = { ...args, sourceUrl: url.replace(/[^/]+$/, "otherfixture") }
+    await reserve(ctx, other)
+    advance(MAX_RETRY_AFTER_MS + 1)
+    assert.equal((await reserve(ctx, args)).kind, "claimed")
+})
 test("bounded cache evicts an inactive entry and pruning updates the shared count", async (t) => {
     const { ctx, args, advance } = await setup(t)
     await ctx.db.insert("leagueFetchBudget", {

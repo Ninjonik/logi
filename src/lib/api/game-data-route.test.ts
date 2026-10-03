@@ -83,3 +83,78 @@ test("game data management is session-admin-only and rejects origin or secret in
     assert.equal(response.headers.get("Cache-Control"), "no-store")
     assert.equal(writes, 1)
 })
+
+test("configuration rechecks authority after a streamed request body completes", async () => {
+    let allowed = true,
+        writes = 0
+    let authorized!: () => void
+    const firstCheck = new Promise<void>((resolve) => {
+        authorized = resolve
+    })
+    let body!: ReadableStreamDefaultController<Uint8Array>
+    const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+            body = controller
+        },
+    })
+    const handlers = gameDataHandlers({
+        authorize: async () => {
+            authorized()
+            return allowed ? "guild" : null
+        },
+        list: async () => [],
+        configure: async () => {
+            writes++
+        },
+    })
+    const response = handlers.POST(
+        new Request("https://logi.test/api", {
+            method: "POST",
+            body: stream,
+            duplex: "half",
+            headers: { origin: "https://logi.test" },
+        } as RequestInit),
+        "server"
+    )
+    await firstCheck
+    allowed = false
+    body.enqueue(
+        new TextEncoder().encode(
+            JSON.stringify({ sourceRef: "primary", enabled: true })
+        )
+    )
+    body.close()
+    assert.equal((await response).status, 403)
+    assert.equal(writes, 0)
+})
+
+test("configuration stops reading an oversized streamed body before allocating it", async () => {
+    let cancelled = false,
+        writes = 0
+    const handlers = gameDataHandlers({
+        authorize: async () => "guild",
+        list: async () => [],
+        configure: async () => {
+            writes++
+        },
+    })
+    const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+            controller.enqueue(new Uint8Array(2049))
+        },
+        cancel() {
+            cancelled = true
+        },
+    })
+    const response = await handlers.POST(
+        new Request("https://logi.test/api", {
+            method: "POST",
+            body,
+            duplex: "half",
+        } as RequestInit),
+        "server"
+    )
+    assert.equal(response.status, 400)
+    assert.equal(cancelled, true)
+    assert.equal(writes, 0)
+})

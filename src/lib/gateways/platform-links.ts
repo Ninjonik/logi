@@ -24,7 +24,11 @@ async function actor() {
     if (!token) return null
     const session = await verifySessionToken(token)
     return session
-        ? { discordUserId: session.sub, sessionHash: hash(token) }
+        ? {
+              discordUserId: session.sub,
+              sessionHash: hash(token),
+              sid: session.sid,
+          }
         : null
 }
 const challengeSchema = z
@@ -43,7 +47,13 @@ const links: PlatformLinkPorts = {
     randomState: () => randomBytes(32).toString("base64url"),
     hash,
     create: async (args) => {
-        await mutate("begin", args)
+        const current = await actor()
+        if (
+            current?.discordUserId !== args.discordUserId ||
+            current?.sessionHash !== args.sessionHash
+        )
+            throw new Error("Session changed.")
+        await mutate("begin", { ...args, sid: current.sid })
     },
     claim: async (args) => challengeSchema.parse(await mutate("claim", args)),
     verify: createSteamVerifier(),

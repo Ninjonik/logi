@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 
+import type { DashboardActor } from "../../convex/dashboardActor"
 import type { ApiKeyReadAccess } from "@/domain/api/key-access"
 import type { GameSelection } from "@/domain/games/game"
 import { getInternalAuthSecret } from "@/lib/env"
@@ -95,6 +96,7 @@ export function hashApiKey(value: string) {
 
 export async function createClanApiKey(
     guildId: string,
+    actor: DashboardActor,
     name: string,
     readAccess?: ApiKeyReadAccess
 ) {
@@ -102,6 +104,7 @@ export async function createClanApiKey(
     await fetchMutation(createKeyReference, {
         secret: getInternalAuthSecret(),
         guildId,
+        actor,
         name,
         keyHash: hashApiKey(value),
         keyPrefix: value.slice(0, 13),
@@ -110,10 +113,11 @@ export async function createClanApiKey(
     return value
 }
 
-export async function listClanApiKeys(guildId: string) {
+export async function listClanApiKeys(guildId: string, actor: DashboardActor) {
     return (await fetchQuery(listKeysReference, {
         secret: getInternalAuthSecret(),
         guildId,
+        actor,
     })) as Array<{
         id: string
         name: string
@@ -125,10 +129,15 @@ export async function listClanApiKeys(guildId: string) {
     }>
 }
 
-export async function revokeClanApiKey(guildId: string, keyId: string) {
+export async function revokeClanApiKey(
+    guildId: string,
+    actor: DashboardActor,
+    keyId: string
+) {
     await fetchMutation(revokeKeyReference, {
         secret: getInternalAuthSecret(),
         guildId,
+        actor,
         keyId: keyId as never,
     })
 }

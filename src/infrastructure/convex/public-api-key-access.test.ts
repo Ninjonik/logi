@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { seedDashboardActor, actorFixture } from "./testing/dashboard-actor"
 import * as publicApi from "../../../convex/publicApi"
+
+process.env.INTERNAL_AUTH_SECRET = "dev-internal-auth-secret"
 
 type Document = Record<string, unknown> & { _id: string }
 const readAccess = {
@@ -431,6 +434,12 @@ function invoke(
     db: Database,
     args: Record<string, unknown> = {}
 ) {
+    const management = [
+        publicApi.createKey,
+        publicApi.listKeys,
+        publicApi.revokeKey,
+    ].includes(value as never)
+    if (management && !db.tables.dashboardSessions) seedDashboardActor(db)
     return (
         value as {
             _handler: (
@@ -440,7 +449,12 @@ function invoke(
         }
     )._handler(
         { db },
-        { secret: "dev-internal-auth-secret", keyHash: "hash", ...args }
+        {
+            secret: "dev-internal-auth-secret",
+            keyHash: "hash",
+            ...(management ? { actor: actorFixture } : {}),
+            ...args,
+        }
     )
 }
 
@@ -696,6 +710,12 @@ test("scoped readers cannot use guild-wide metadata, settings, users or performa
 
 test("revocation is tenant-bound and blocks a resource read after prior authentication", async () => {
     const db = new Database()
+    seedDashboardActor(db)
+    db.tables.guilds.push({
+        _id: "guild-b-record",
+        discordId: "guild-b",
+        adminIds: [actorFixture.subject],
+    })
     assert.ok(await invoke(publicApi.authenticateKey, db))
     await assert.rejects(
         invoke(publicApi.revokeKey, db, { guildId: "guild-b", keyId: "key" }),
