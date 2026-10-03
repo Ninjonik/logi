@@ -195,6 +195,82 @@ function BoardLayers(props: {
             {activeSlide?.overlays.showGrid ? (
                 <GridOverlay width={canvas.width} height={canvas.height} />
             ) : null}
+            {!usesCustomImage
+                ? selectedMap?.staticPolygons?.map((polygon) => (
+                      <g key={polygon.id} pointerEvents="none">
+                          <polygon
+                              points={polygon.points
+                                  .map((point) => `${point.x},${point.y}`)
+                                  .join(" ")}
+                              fill={polygon.color}
+                              fillOpacity={polygon.fillOpacity}
+                              stroke={polygon.color}
+                              strokeWidth={polygon.strokeWidth}
+                              strokeDasharray={
+                                  polygon.dashed ? "12 8" : undefined
+                              }
+                          />
+                          <text
+                              x={
+                                  polygon.points.reduce(
+                                      (sum, point) => sum + point.x,
+                                      0
+                                  ) / polygon.points.length
+                              }
+                              y={
+                                  polygon.points.reduce(
+                                      (sum, point) => sum + point.y,
+                                      0
+                                  ) / polygon.points.length
+                              }
+                              fill={polygon.color}
+                              fontSize={20}
+                              fontWeight={700}
+                              textAnchor="middle"
+                              paintOrder="stroke"
+                              stroke="#09090b"
+                              strokeWidth={5}
+                          >
+                              {polygon.label}
+                          </text>
+                      </g>
+                  ))
+                : null}
+            {!usesCustomImage
+                ? selectedMap?.staticMarkers
+                      ?.filter(
+                          (marker) =>
+                              (marker.kind !== "hq" ||
+                                  activeSlide?.overlays.showWardogsHqs) &&
+                              (marker.kind !== "tower" ||
+                                  activeSlide?.overlays.showWardogsTowers)
+                      )
+                      .map((marker) => (
+                          <g key={marker.id} pointerEvents="none">
+                              <title>{marker.label}</title>
+                              <image
+                                  href={marker.iconPath}
+                                  x={marker.x - 16}
+                                  y={marker.y - 16}
+                                  width={32}
+                                  height={32}
+                              />
+                              <text
+                                  x={marker.x}
+                                  y={marker.y + 30}
+                                  fill="#f8fafc"
+                                  fontSize={16}
+                                  fontWeight={700}
+                                  textAnchor="middle"
+                                  paintOrder="stroke"
+                                  stroke="#09090b"
+                                  strokeWidth={4}
+                              >
+                                  {marker.label}
+                              </text>
+                          </g>
+                      ))
+                : null}
             {!usesCustomImage &&
                 selectedMap?.strongpoints
                     .filter((point) => overlayStrongpointIds.has(point.id))

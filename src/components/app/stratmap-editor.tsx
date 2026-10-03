@@ -64,6 +64,7 @@ export function StratmapEditor({
                     isPending={editor.isPending}
                     title={editor.title}
                     description={editor.description}
+                    gameId={props.initialStratmap.gameId}
                     baseMapId={editor.baseMapId}
                     side={editor.side}
                     strongpointId={editor.strongpointId}
@@ -81,6 +82,8 @@ export function StratmapEditor({
                             showArtillery: false,
                             showRepairStations: false,
                             showSpawnRanges: false,
+                            showWardogsHqs: true,
+                            showWardogsTowers: true,
                         }
                     }
                     onTitleChange={editor.setTitle}
@@ -98,6 +101,12 @@ export function StratmapEditor({
                     }
                     onDeleteSlide={editor.deleteSlide}
                     onToggleStrongpoint={editor.toggleStrongpoint}
+                    onToggleWardogsHqs={(showWardogsHqs) =>
+                        editor.handleOverlayChange({ showWardogsHqs })
+                    }
+                    onToggleWardogsTowers={(showWardogsTowers) =>
+                        editor.handleOverlayChange({ showWardogsTowers })
+                    }
                 />
             ) : null}
             <StratmapBoard

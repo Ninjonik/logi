@@ -5,7 +5,7 @@ import type { PointerEvent as ReactPointerEvent } from "react"
 import {
     type StratmapElement,
     type StratmapShapeElement,
-    getHllStratmapCatalog,
+    getStratmapCatalog,
 } from "@/lib/stratmaps"
 import { MAPS_LET_LOOSE_GREEN_COLOR } from "@/domain/stratmaps/maps-let-loose-colors"
 
@@ -55,7 +55,7 @@ export function RenderedElement({
               : undefined
     const icon =
         element.kind === "icon"
-            ? getHllStratmapCatalog().find((item) => item.id === element.iconId)
+            ? getStratmapCatalog().find((item) => item.id === element.iconId)
             : null
     const scale =
         element.kind === "icon"

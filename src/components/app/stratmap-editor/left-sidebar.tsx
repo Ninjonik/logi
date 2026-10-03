@@ -17,6 +17,7 @@ import type {
     StratmapSlide,
 } from "@/lib/stratmaps"
 import type { Dictionary } from "@/i18n/dictionaries"
+import type { GameId } from "@/domain/games/game"
 import { cn } from "@/lib/utils"
 
 import {
@@ -28,6 +29,7 @@ import {
     EditorSelect,
     EditorTextarea,
 } from "./editor-controls"
+import { ToggleRow } from "./toggle-row"
 
 type LeftSidebarProps = {
     dictionary: Dictionary
@@ -35,6 +37,7 @@ type LeftSidebarProps = {
     isPending: boolean
     title: string
     description: string
+    gameId?: GameId
     baseMapId: string
     side: string
     strongpointId: string
@@ -56,6 +59,8 @@ type LeftSidebarProps = {
     onMoveSlide: (slideId: string, direction: -1 | 1) => void
     onDeleteSlide: () => void
     onToggleStrongpoint: (pointId: string) => void
+    onToggleWardogsHqs: (checked: boolean) => void
+    onToggleWardogsTowers: (checked: boolean) => void
 }
 
 export function StratmapLeftSidebar(props: LeftSidebarProps) {
@@ -63,7 +68,11 @@ export function StratmapLeftSidebar(props: LeftSidebarProps) {
         <aside className="min-w-0 [scrollbar-width:thin] space-y-1 overflow-x-hidden overflow-y-auto pr-0.5">
             <MetaPanel {...props} />
             <SlidesPanel {...props} />
-            <StrongpointsPanel {...props} />
+            {props.gameId === "wardogs" ? (
+                <WardogsReferencesPanel {...props} />
+            ) : (
+                <StrongpointsPanel {...props} />
+            )}
         </aside>
     )
 }
@@ -76,6 +85,7 @@ function MetaPanel({
     description,
     baseMapId,
     side,
+    gameId,
     strongpointId,
     maps,
     selectedMap,
@@ -129,22 +139,24 @@ function MetaPanel({
                     />
                 </EditorField>
             </div>
-            <EditorField label={dictionary.stratmaps.point}>
-                <EditorSelect
-                    value={strongpointId}
-                    onChange={(event) =>
-                        onStrongpointChange(event.target.value)
-                    }
-                    disabled={!canAdmin}
-                >
-                    <option value="">{dictionary.shared.notSet}</option>
-                    {selectedMap?.strongpoints.map((point) => (
-                        <option key={point.id} value={point.id}>
-                            {point.label} · {point.grid}
-                        </option>
-                    ))}
-                </EditorSelect>
-            </EditorField>
+            {gameId !== "wardogs" ? (
+                <EditorField label={dictionary.stratmaps.point}>
+                    <EditorSelect
+                        value={strongpointId}
+                        onChange={(event) =>
+                            onStrongpointChange(event.target.value)
+                        }
+                        disabled={!canAdmin}
+                    >
+                        <option value="">{dictionary.shared.notSet}</option>
+                        {selectedMap?.strongpoints.map((point) => (
+                            <option key={point.id} value={point.id}>
+                                {point.label} · {point.grid}
+                            </option>
+                        ))}
+                    </EditorSelect>
+                </EditorField>
+            ) : null}
             {canAdmin ? (
                 <EditorButton
                     className="w-full"
@@ -159,6 +171,30 @@ function MetaPanel({
                     {dictionary.stratmaps.liveAccess}
                 </p>
             )}
+        </EditorPanel>
+    )
+}
+
+function WardogsReferencesPanel({
+    dictionary,
+    activeOverlays,
+    onToggleWardogsHqs,
+    onToggleWardogsTowers,
+}: LeftSidebarProps) {
+    return (
+        <EditorPanel title={dictionary.stratmaps.wardogsReferences}>
+            <div className="space-y-1.5">
+                <ToggleRow
+                    label={dictionary.stratmaps.wardogsHqs}
+                    checked={activeOverlays.showWardogsHqs}
+                    onCheckedChange={onToggleWardogsHqs}
+                />
+                <ToggleRow
+                    label={dictionary.stratmaps.wardogsTowers}
+                    checked={activeOverlays.showWardogsTowers}
+                    onCheckedChange={onToggleWardogsTowers}
+                />
+            </div>
         </EditorPanel>
     )
 }

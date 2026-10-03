@@ -60,6 +60,8 @@ export function importMapsLetLooseJson(input: unknown): MapsLetLooseImport {
                     false
                 ),
                 showSpawnRanges: !booleanValue(controls?.spawnRadius, false),
+                showWardogsHqs: true,
+                showWardogsTowers: true,
             },
             elements: converted,
             pings: [],

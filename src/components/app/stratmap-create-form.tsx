@@ -144,7 +144,11 @@ export function StratmapCreateForm({
                     ) : null}
                 </div>
                 <div className="space-y-2">
-                    <Label>{dictionary.stratmaps.mapAndPoint}</Label>
+                    <Label>
+                        {gameId === "wardogs"
+                            ? dictionary.stratmaps.baseMap
+                            : dictionary.stratmaps.mapAndPoint}
+                    </Label>
                     <HllMapSelector
                         gameId={gameId}
                         mapId={baseMapId}
@@ -158,7 +162,7 @@ export function StratmapCreateForm({
                         sideValue={side}
                         onSideValueChange={setSide}
                         includeVariants={false}
-                        includePoint={true}
+                        includePoint={gameId !== "wardogs"}
                         includeSide={true}
                         labels={{
                             map: dictionary.stratmaps.baseMap,

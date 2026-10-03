@@ -191,6 +191,8 @@ export function createDefaultOverlays(mapId: string): StratmapOverlaySettings {
         showArtillery: false,
         showRepairStations: false,
         showSpawnRanges: false,
+        showWardogsHqs: true,
+        showWardogsTowers: true,
     }
 }
 
