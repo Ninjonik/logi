@@ -1,14 +1,17 @@
 {
-    "capturedAt": "2026-10-03T20:54:52.270Z",
-    "localOnly": true,
-    "pageSizes": [20, 3],
-    "noDuplicateGames": true,
-    "replayRevisionStable": true,
-    "correctionReplacesContribution": true,
-    "staleCursor": 410,
-    "crossCallerCursor": 400,
-    "revokedKey": 401,
-    "disabledCollectorHistory": 200,
-    "restoredSyntheticDataset": true,
-    "productionWrites": false
+  "capturedAt": "2026-10-03T21:12:42.728Z",
+  "localOnly": true,
+  "pageSizes": [
+    20,
+    3
+  ],
+  "noDuplicateGames": true,
+  "replayRevisionStable": true,
+  "correctionReplacesContribution": true,
+  "staleCursor": 410,
+  "crossCallerCursor": 400,
+  "revokedKey": 401,
+  "disabledCollectorHistory": 200,
+  "restoredSyntheticDataset": true,
+  "productionWrites": false
 }

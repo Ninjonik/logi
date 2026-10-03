@@ -35,10 +35,10 @@
 
 **Interfaces:** `ProviderSession.warcon` is optional versioned provider metadata; player facts have optional name/faction/result. `archiveWarconHistory(ctx, connection, session)` transactionally upserts a retained record keyed by guild, stable source and external match ID, updates a guild history revision only when normalized facts change, and emits an integration change.
 
-- [ ] Add failing tests that retain winner/colors/player outcomes, preserve nulls, reject invalid identities and distinguish result-less games from decisions.
-- [ ] Add failing archive tests for replay, correction, source isolation, credential rotation and conflicting start times.
-- [ ] Implement pure validation/mapping and Convex storage; keep old HLL/session records compatible.
-- [ ] Run provider and real-handler tests; require zero failures. Commit this slice.
+- [x] Add failing tests that retain winner/colors/player outcomes, preserve nulls, reject invalid identities and distinguish result-less games from decisions.
+- [x] Add failing archive tests for replay, correction, source isolation, credential rotation and conflicting start times.
+- [x] Implement pure validation/mapping and Convex storage; keep old HLL/session records compatible.
+- [x] Run provider and real-handler tests; require zero failures. Commit this slice.
 
 ### Task 2: Scoped history reads and complete reports
 
@@ -46,11 +46,11 @@
 
 **Interfaces:** `HistoryRecord` includes normalized retained facts and opaque source ID. `HistoryPage` has `items`, `revision`, `nextCursor`, coverage timestamps. `buildHistoryReport(readPage)` consumes revision-consistent pages, replaces contributions by record ID and returns totals/faction shares/player metrics only at completion. `gameHistoryReads.read` rechecks current key/admin scope and supports detail ID, source/map and UTC from/until filters.
 
-- [ ] Add failing authorization, pagination/filter/cursor, correction/revision and nullable-metric tests.
-- [ ] Implement signed cursors bound to caller/workspace/filter/revision; stale pages return reset-required.
-- [ ] Implement deterministic report aggregation: known match outcomes, explicit player outcomes, eligibility thresholds, nullable K/D, numeric metric coverage and latest observed name.
-- [ ] Expose collection/detail reads and reconciliation projection with an explicit read grant. Document that an API consumer uses the shared bounded page-to-report helper for full rankings.
-- [ ] Generate OpenAPI, run scoped tests/typecheck and commit.
+- [x] Add failing authorization, pagination/filter/cursor, correction/revision and nullable-metric tests.
+- [x] Implement signed cursors bound to caller/workspace/filter/revision; stale pages return reset-required.
+- [x] Implement deterministic report aggregation: known match outcomes, explicit player outcomes, eligibility thresholds, nullable K/D, numeric metric coverage and latest observed name.
+- [x] Expose collection/detail reads and reconciliation projection with an explicit read grant. Document that an API consumer uses the shared bounded page-to-report helper for full rankings.
+- [x] Generate OpenAPI, run scoped tests/typecheck and commit.
 
 ### Task 3: Dashboard, local acceptance and review
 
@@ -58,11 +58,11 @@
 
 **Interfaces:** The panel uses the same read DTOs/report rules through an actor-authorized route. It shows collection coverage, faction win counts/shares and sortable eligible player rows, with history/detail navigation. It aborts pending loads and never labels a partial/failed scan complete.
 
-- [ ] Add relevant HTTP/report cancellation and boundary tests, then implement the dashboard panel and English/Czech copy.
-- [ ] Regenerate Convex bindings, run the full test suite/typecheck/build, and deploy only to the guarded local runtime.
-- [ ] Exercise actual Warcon -> local retained facts -> HTTP history/report reads; test replay/correction/revocation using synthetic local fixtures. Record source revisions and aggregate-only proof.
-- [ ] Verify the dashboard in the browser and capture actual screenshots without exposing real player identities in public evidence.
-- [ ] Run code/security review, fix actionable findings with regression tests, update docs and publish a visible PR comment with passed/unrun boundaries.
+- [x] Add relevant HTTP/report cancellation and boundary tests, then implement the dashboard panel and English/Czech copy.
+- [x] Regenerate Convex bindings, run the full test suite/typecheck/build, and deploy only to the guarded local runtime.
+- [x] Exercise actual Warcon -> local retained facts -> HTTP history/report reads; test replay/correction/revocation using synthetic local fixtures. Record source revisions and aggregate-only proof.
+- [x] Verify the dashboard in the browser and capture actual screenshots without exposing real player identities in public evidence.
+- [x] Run code/security review, fix actionable findings with regression tests, update docs and publish a visible PR comment with passed/unrun boundaries.
 
 ## Self-review decisions
 
