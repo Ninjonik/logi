@@ -5,6 +5,12 @@ import { internal } from "./_generated/api"
 
 const crons = cronJobs()
 crons.interval(
+    "discover and refresh League fixtures",
+    { minutes: 1 },
+    makeFunctionReference<"action">("leagueDiscoveryJobs:collectDue"),
+    {}
+)
+crons.interval(
     "reconcile people result relationships",
     { minutes: 5 },
     makeFunctionReference<"mutation">("peopleSummaries:reconcileResultLinks"),

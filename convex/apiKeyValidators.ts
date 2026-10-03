@@ -7,6 +7,7 @@ export const apiKeyReadAccess = v.object({
             v.literal("roster-summaries"),
             v.literal("player-stat-summaries"),
             v.literal("league-matches"),
+            v.literal("league-fixtures"),
             v.literal("warcon-data"),
             v.literal("membership-summaries"),
             v.literal("server-snapshots"),

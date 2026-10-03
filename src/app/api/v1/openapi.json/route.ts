@@ -18,6 +18,7 @@ import {
 import { membershipObservationSchema } from "@/domain/membership/observation"
 import { warconEnvelopeSchema } from "@/domain/game-data/warcon-contracts"
 import { clanResultSummarySchema } from "@/domain/api/result-summaries"
+import { leagueFixtureSchema } from "@/domain/wardogs-league/fixture"
 import { leagueReadSchema } from "@/domain/wardogs-league/contracts"
 import { warconQuerySchema } from "@/domain/game-data/warcon-query"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
@@ -31,6 +32,7 @@ import {
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
 const summaryResponseSchemas = {
+    LeagueFixture: z.toJSONSchema(leagueFixtureSchema),
     LeagueMatchRead: z.toJSONSchema(leagueReadSchema),
     WarconEnvelope: z.toJSONSchema(warconEnvelopeSchema),
     WarconQuery: z.toJSONSchema(warconQuerySchema),
@@ -1285,6 +1287,79 @@ paths["/clan/membership-summaries/{discordUserId}"] = {
     },
 }
 
+paths["/clan/league-fixtures"] = {
+    get: {
+        tags: ["Clan API — Matches"],
+        summary: "List this guild's tracked Wardogs League fixtures",
+        description:
+            "Requires explicit league-fixtures and wardogs grants. Bounded collection of automatically watched or explicitly included fixtures, with optional native event binding, source provenance and independent freshness. Unknown results remain null. Use changes and sync-records with resource league-fixtures for updates/removals. Bootstrap the change cursor before paging the collection and then replay changes. A fixture ID is the external League match ID, not a native event ID. Administration, channel selection and native-event binding require a current dashboard administrator; service keys cannot grant or alter tracking policy. Native event writes retain their separate actor-backed event-commands contract. Responses are no-store.",
+        security: [{ clanApiKey: [] }],
+        "x-logi-read-access": {
+            resource: "league-fixtures",
+            games: ["wardogs"],
+            explicitGrantRequired: true,
+        },
+        parameters: [
+            {
+                name: "game",
+                in: "query",
+                required: true,
+                schema: { type: "string", enum: ["wardogs"] },
+            },
+            {
+                name: "limit",
+                in: "query",
+                schema: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: 100,
+                    default: 50,
+                },
+            },
+            {
+                name: "cursor",
+                in: "query",
+                schema: { type: "string", maxLength: 4096 },
+            },
+        ],
+        responses: {
+            "200": {
+                description:
+                    "Tracked fixture page, including explicitly stale snapshots",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            properties: {
+                                data: {
+                                    type: "object",
+                                    required: ["items", "nextCursor"],
+                                    properties: {
+                                        items: {
+                                            type: "array",
+                                            items: {
+                                                $ref: "#/components/schemas/LeagueFixture",
+                                            },
+                                        },
+                                        nextCursor: {
+                                            type: ["string", "null"],
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "400": { description: "Invalid game or pagination" },
+            "401": { description: "Invalid or revoked key" },
+            "403": { description: "Missing explicit grant" },
+            "429": { description: "API rate limit" },
+            "503": { description: "Read unavailable" },
+        },
+    },
+}
 paths["/clan/league-matches"] = {
     get: {
         tags: ["Clan API — Matches"],
@@ -1573,7 +1648,11 @@ for (const [path, operations] of Object.entries(paths)) {
         operations as Record<string, Record<string, unknown>>
     )) {
         const resource = path.split("/")[2]
-        if (resource === "league-matches" && method === "get") continue
+        if (
+            ["league-matches", "league-fixtures"].includes(resource) &&
+            method === "get"
+        )
+            continue
         operation["x-logi-read-access"] =
             resource === "membership-summaries" && method === "get"
                 ? {

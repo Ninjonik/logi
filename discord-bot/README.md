@@ -2,6 +2,14 @@
 
 This workspace hosts the Discord.js bot for Logi.
 
+## Wardogs League cards and human links
+
+The League worker publishes the tracked fixtures configured under **Wardogs → System → Imports**. Input and output channels can differ. It reuses durable managed publications, bundled map artwork and application faction emojis. Scheduled discovery/manual pins run independently of gateway message access.
+
+Human-link ingestion additionally needs `LOGI_LEAGUE_MESSAGE_CONTENT=true` and **Message Content Intent** in the Discord Developer Portal, followed by a bot restart. It consumes human messages only; bot and webhook announcements are ignored. Edits/deletions remove that message's reference without removing other tracking reasons. It does not backfill messages missed during a full gateway outage.
+
+See the [operator wiki](../content/configuration/league-tracking.mdx) and [implementation/API contract](../docs/integrations/website/league-discovery.md) for activation, permissions, limits and freshness semantics.
+
 ## Run
 
 From the repository root:

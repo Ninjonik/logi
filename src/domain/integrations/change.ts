@@ -1,4 +1,5 @@
 export const SYNC_RESOURCES = [
+    "league-fixtures",
     "member-summaries",
     "roster-summaries",
     "player-stat-summaries",
@@ -37,6 +38,7 @@ export const syncRecordSchema = z.union([
     integrationChangeSchema.extend({
         operation: z.literal("upsert"),
         data: z.union([
+            leagueFixtureSchema,
             clanMemberSummarySchema,
             clanRosterSummarySchema,
             clanPlayerStatSummarySchema,
@@ -76,5 +78,6 @@ import {
 } from "../game-data/contracts"
 import { membershipObservationSchema } from "../membership/observation"
 import { clanResultSummarySchema } from "../api/result-summaries"
+import { leagueFixtureSchema } from "../wardogs-league/fixture"
 import { GAME_IDS } from "../games/game"
 import { z } from "zod"

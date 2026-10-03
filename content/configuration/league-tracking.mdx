@@ -1,0 +1,44 @@
+---
+title: Wardogs League tracking
+description: Discover watched teams' public fixtures and keep one Discord card per match.
+---
+
+# Wardogs League tracking
+
+Choose **Wardogs → System → Imports → Wardogs League tracking**. An administrator can enable discovery, enter watched team codes (initially `VLK`), and choose separate input and output Discord rooms. Each picker supports category/search and a pasted channel ID. Saving verifies the bot can publish in the selected rooms.
+
+Logi checks the public fixtures and results indexes every ten minutes. It reads discovered details and tracks exact team codes and profile links. A first scan is processed in batches, so matches can appear gradually. Already tracked details refresh every five minutes. The page shows the last successful scan, next attempt, incomplete index coverage and queue capacity warnings.
+
+## Three ways to add a match
+
+1. **Discovery:** matches for a configured team are tracked automatically. Historic matches are available to connected readers but do not flood Discord with old announcements.
+2. **Manual:** paste a public `https://wardogsleague.net/matches/...` URL, preview it, and select **Track match**. This pins that match independently of the team filter.
+3. **Discord:** a person posts a valid URL in the configured input room. Bots and webhooks are ignored. Editing or deleting the message removes only its reference; an admin pin, another human reference or the watched team can keep tracking active.
+
+The three inputs share one stored match and one managed Discord card. A restart edits or recovers that card. Changing the destination moves the managed publication; disabling tracking withdraws the Discord card and pauses collection. Existing snapshots remain readable and become stale. **Ignore** withdraws a match from the website collection and Discord; repeated scans do not restore it. **Resume** pins it again. **Pause** retains its card and snapshot while stopping detail refreshes.
+
+## Native Logi matches
+
+**Create a native Logi match** opens the normal match editor. For an existing Wardogs match in this workspace, enter its Logi record ID and save the link. Only one League fixture may link to a given native match. Clearing the ID unlinks it.
+
+This link does not fabricate registration, headcount or end times, overwrite rosters or attendance, or copy League statuses into the native workflow. The website can use the optional `eventId` to display the related native match.
+
+## Data and freshness
+
+Cards show the public kickoff time, teams and factions, map, voting/rules preparation, host and the source timestamp. Times in Discord adapt to the viewer; the dashboard uses Europe/Prague. Team member counts are not match attendance. Unknown fields remain unknown. Scores, finishing places, no-show and disputes are not inferred; completed-result extraction has not been accepted.
+
+Provider failures and incomplete HTML retain the last valid snapshot with a stale indicator. Rate limits respect `Retry-After`. Missing entries in an index never mean a fixture was cancelled. Tracking automatically archives seven days after a known kickoff, or fourteen days after first discovery when kickoff is unknown.
+
+## Activation and limits
+
+- Scheduled discovery and manual registration need the deployed Convex cron and dashboard.
+- Discord publication needs the running bot, selected output room, View Channel, Send Messages, Embed Links, Attach Files and Read Message History.
+- Human link intake additionally needs **Message Content Intent** in the Discord Developer Portal and `LOGI_LEAGUE_MESSAGE_CONTENT=true` in the bot environment, followed by a restart. Discovery/manual entry work independently of this optional intent.
+- Limits: 20 watched team codes; 500 retained matches per workspace, with the last 50 slots reserved from automatic discovery; three URLs per human message; 20 references per match; 20 link-bearing intake updates per minute per workspace; 2,000 retained message-reference records. Empty/deleted references expire after seven days. Capacity is bounded and reported rather than silently evicting pinned or ignored matches.
+- All League reads share a 20-request/minute origin budget. Source throttling or backlog can delay nominal intervals.
+
+## Connected website
+
+Grant the website key **Tracked Wardogs League fixtures** (`league-fixtures`) for **Wardogs**. The collection is `GET /api/v1/clan/league-fixtures?game=wardogs&limit=50`; follow `data.nextCursor` until null. Bootstrap a changes cursor before listing, then consume `league-fixtures` changes and hydrate the corresponding sync record. An older key does not gain this permission automatically.
+
+Website service keys cannot configure rooms, change watched teams, pin, ignore or link fixtures. Those actions require a current dashboard administrator. A website consumer must explicitly implement this new collection; enabling Logi alone does not add a fixture section to that site's UI.

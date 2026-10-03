@@ -34,6 +34,26 @@ export const claim = mutation({
             )
                 return null
         }
+        if (args.key.startsWith("league:")) {
+            const id = ctx.db.normalizeId(
+                    "leagueTrackedMatches",
+                    args.key.slice(7)
+                ),
+                row = id ? await ctx.db.get(id) : null
+            const settings = row
+                ? await ctx.db
+                      .query("leagueTrackingSettings")
+                      .withIndex("guildId", (q) => q.eq("guildId", row.guildId))
+                      .unique()
+                : null
+            if (
+                !row ||
+                !settings ||
+                row.guildId !== args.guildId ||
+                Math.max(settings.revision, row.revision) !== args.revision
+            )
+                return null
+        }
         let row = await ctx.db
             .query("discordPublications")
             .withIndex("guild_key", (q) =>

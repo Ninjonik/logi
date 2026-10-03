@@ -1,4 +1,10 @@
 import {
+    leagueTrackingSettings,
+    leagueTrackedMatches,
+    leagueIndexCache,
+    leagueMessageRefs,
+} from "./leagueDiscoveryTable"
+import {
     gameDataError,
     gameDataObservation,
     gameDataHistoryProgress,
@@ -1295,6 +1301,10 @@ export default defineSchema({
         .index("guildId", ["guildId"])
         .index("sourceRef", ["sourceRef"])
         .index("nextAttemptAt", ["nextAttemptAt"]),
+    leagueTrackingSettings,
+    leagueTrackedMatches,
+    leagueIndexCache,
+    leagueMessageRefs,
     leagueMatchCache: defineTable({
         matchId: v.string(),
         snapshotJson: v.optional(v.string()),

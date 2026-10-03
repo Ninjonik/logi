@@ -163,6 +163,7 @@ export const csMessages = {
         invalidPolicy: "Nerozpoznaná omezení; backend přístup zamítne.",
         resourceLabels: {
             "league-matches": "Veřejné zápasy Wardogs League",
+            "league-fixtures": "Sledované zápasy Wardogs League",
             "warcon-data": "Herní data Warconu (včetně jmen hráčů a Steam ID)",
             "member-summaries": "Seznam členů (pouze čtení)",
             "roster-summaries": "Publikované sestavy a účast (pouze čtení)",

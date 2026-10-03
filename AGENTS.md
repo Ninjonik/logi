@@ -41,6 +41,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Reviewed result handoff](./docs/integrations/website/v0.10/README.md) — immutable confirmation/correction, proof-based attribution, scoped result summaries, consumer fixtures and synthetic acceptance
 - [Warcon read integration](./docs/integrations/website/v0.11/README.md) — fifteen gameplay reads, live scoreboard, scoped website access, completed-match collection and provider/local proof
 - [Wardogs League public match reader](./docs/integrations/website/v0.12/README.md) — anonymous HTML parser, safe URL preview, shared stale cache, scoped website API and live/local proof
+- [League discovery and shared fixtures](./docs/integrations/website/league-discovery.md) — scheduled scanning, admin pins, human links, compact persistent Discord cards and scoped collection/change feed
 - [Actor-backed website event commands](./docs/integrations/website/event-commands.md) — current SSO actor and role policy, native event writes, durable receipts, revision conflicts and local HTTP proof
 - [Central login and connected website acceptance](./docs/integrations/website/v0.13/README.md) — paired SSO, roles, native event commands, local regression/browser proof and remaining activation
 - [Read-only people and player facts](./docs/integrations/website/v0.14/README.md) — scoped member directory, published roster/attendance, verified collected-session facts and bounded dependency resets

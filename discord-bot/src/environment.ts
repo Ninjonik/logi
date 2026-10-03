@@ -26,6 +26,7 @@ if (!convexUrl || !internalSecret || !botToken) {
 const appSiteUrl = process.env.SITE_URL ?? "http://localhost:3000"
 
 export const env = {
+    leagueMessageContent: process.env.LOGI_LEAGUE_MESSAGE_CONTENT === "true",
     appSiteUrl,
     // The public URL is embedded in Discord. A colocated bot can use a private
     // origin to pre-render images without relying on public hairpin routing.

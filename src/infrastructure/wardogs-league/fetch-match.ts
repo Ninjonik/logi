@@ -4,7 +4,9 @@ import {
     type LeagueSnapshot,
 } from "../../domain/wardogs-league/contracts"
 import { matchUrl } from "../../domain/wardogs-league/match-url"
+import { indexUrl } from "../../domain/wardogs-league/discovery"
 import { isAllowedAddress } from "../game-data/provider-http"
+import { parseLeagueIndex } from "./parse-index"
 import { parseMatchHtml } from "./parse-match"
 import { lookup } from "node:dns/promises"
 import { request } from "node:https"
@@ -27,7 +29,7 @@ const pinnedGet: typeof fetch = async (input, init) => {
                 family: addresses[0].family,
                 port: 443,
                 servername: url.hostname,
-                path: url.pathname,
+                path: url.pathname + url.search,
                 method: "GET",
                 agent: false,
                 headers: {
@@ -79,7 +81,30 @@ export async function fetchLeagueMatch(
     sourceUrl: string,
     deps: { fetch?: typeof fetch; now?: () => number; timeoutMs?: number } = {}
 ): Promise<LeagueSnapshot> {
-    const source = matchUrl(sourceUrl),
+    const html = await fetchLeagueHtml(sourceUrl, "match", deps)
+    return {
+        ...parseMatchHtml(html, matchUrl(sourceUrl).url),
+        fetchedAt: new Date((deps.now ?? Date.now)()).toISOString(),
+    }
+}
+
+export async function fetchLeagueIndex(
+    sourceUrl: string,
+    deps: { fetch?: typeof fetch; now?: () => number; timeoutMs?: number } = {}
+) {
+    return parseLeagueIndex(
+        await fetchLeagueHtml(sourceUrl, "index", deps),
+        sourceUrl
+    )
+}
+
+async function fetchLeagueHtml(
+    sourceUrl: string,
+    kind: "match" | "index",
+    deps: { fetch?: typeof fetch; now?: () => number; timeoutMs?: number }
+): Promise<string> {
+    const validate = kind === "match" ? matchUrl : indexUrl
+    const source = validate(sourceUrl),
         now = deps.now ?? Date.now
     const controller = new AbortController()
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -114,7 +139,7 @@ export async function fetchLeagueMatch(
                     const location = response.headers.get("location")
                     if (!location || redirects === 3) throw new Error()
                     const target = new URL(location, url)
-                    if (matchUrl(target.href).id !== source.id)
+                    if (validate(target.href).id !== source.id)
                         throw new Error()
                     url = target.href
                 } catch {
@@ -167,13 +192,7 @@ export async function fetchLeagueMatch(
                     }
                     chunks.push(value)
                 }
-                return {
-                    ...parseMatchHtml(
-                        Buffer.concat(chunks).toString("utf8"),
-                        source.url
-                    ),
-                    fetchedAt: new Date(now()).toISOString(),
-                }
+                return Buffer.concat(chunks).toString("utf8")
             } finally {
                 controller.signal.removeEventListener("abort", cancel)
                 reader.releaseLock()

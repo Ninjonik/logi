@@ -99,7 +99,7 @@ export async function authenticateClanRequestWith(
             { status: 401, headers }
         )
     const wardogsGrant =
-        /^\/api\/v1\/clan\/(warcon-data|league-matches)(\/|$)/.exec(
+        /^\/api\/v1\/clan\/(warcon-data|league-matches|league-fixtures)(\/|$)/.exec(
             new URL(request.url).pathname
         )?.[1]
     const peopleResource = new URL(request.url).pathname.split("/")[4]

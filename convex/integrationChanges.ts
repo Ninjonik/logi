@@ -21,6 +21,7 @@ import { query, internalMutation, type QueryCtx } from "./_generated/server"
 import { projectIntegrationRow } from "./integrationMutation"
 import { integrationRecord } from "./integrationChangeLog"
 import { readPeopleProjection } from "./peopleProjection"
+import { readLeagueFixture } from "./leagueFixtureReads"
 import { makeFunctionReference } from "convex/server"
 import { isGameId } from "../src/domain/games/game"
 import { peopleGeneration } from "./peopleChanges"
@@ -230,6 +231,18 @@ export const readSyncRecord = query({
                 args.id,
                 Date.now()
             )
+            return data
+                ? {
+                      ...identity,
+                      revision: stamp?.revision ?? "0",
+                      operation: "upsert" as const,
+                      data,
+                  }
+                : null
+        }
+        if (resource === "league-fixtures") {
+            if (args.gameId !== "wardogs") return null
+            const data = await readLeagueFixture(ctx, key.guildId, args.id)
             return data
                 ? {
                       ...identity,

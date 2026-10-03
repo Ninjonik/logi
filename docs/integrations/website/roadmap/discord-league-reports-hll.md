@@ -1,6 +1,6 @@
 # Discord follow-up: League cards, player reports and HLL live panels
 
-Status: **design and source/provider investigation, not implemented**.
+Status: **League discovery, manual tracking and compact cards implemented in PR #158; private reports and the HLL-specific extension remain follow-up work**. See [implementation and contract](../league-discovery.md).
 Baseline: `76ae1bcaffde08c3e80eb1fc60d473f75f774450` in PR #158.
 This document records the next increment discussed after the feature gallery.
 The owner confirmed reports must be private to the reporter and designated staff,
@@ -17,7 +17,7 @@ hard-coded channel identities or permission to write production messages.
 
 | Surface | Intended destination | Current implementation | Missing work |
 | --- | --- | --- | --- |
-| Wardogs League matches | Wardogs `wd-league` and website | Safe public match parser, shared cache, dashboard and scoped website reads | Scheduled discovery, manual registration, Discord link ingestion, match-card renderer, watched-match persistence and refresh |
+| Wardogs League matches | Wardogs `wd-league` and website | Safe parser/cache; scheduled discovery, manual registration, human-link ingestion, compact cards, durable persistence/refresh, explicit website collection/change feed | Production activation; website consumer UI for the new collection; verified completed-result extraction |
 | Wardogs server | Wardogs `server-info` | Live map/count/faction scores, opt-in leaders, private player pages, durable message recovery | Report-player entry point and visual refinements |
 | HLL servers | Hell Let Loose `server-info` | Basic current-map/count/score snapshot and shared public panels | Live player statistics, current-map artwork selection, HLL-specific layout and reporting |
 | Player reports | Configured private-thread parent and support roles | Existing private support-ticket workflow | Server/player context, report-specific intake, bounded duplicate/retry handling and panel entry point |

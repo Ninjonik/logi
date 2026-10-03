@@ -165,6 +165,7 @@ export const enMessages = {
         invalidPolicy: "Unrecognized restrictions; backend access is denied.",
         resourceLabels: {
             "league-matches": "Wardogs League",
+            "league-fixtures": "Tracked Wardogs League fixtures",
             "warcon-data":
                 "Warcon gameplay data (includes player names and Steam IDs)",
             "member-summaries": "Member directory (read-only)",

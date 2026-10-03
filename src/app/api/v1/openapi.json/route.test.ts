@@ -143,7 +143,7 @@ test("every clan operation documents runtime scope denial and its read-access re
                 `${method} ${path} must document insufficient_scope`
             )
             const resource = path.split("/")[2]
-            if (resource === "league-matches") {
+            if (["league-matches", "league-fixtures"].includes(resource)) {
                 assert.deepEqual(operation["x-logi-read-access"], {
                     resource,
                     games: ["wardogs"],

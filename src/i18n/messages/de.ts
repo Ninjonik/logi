@@ -172,6 +172,7 @@ export const deMessages = {
             "Unbekannte Einschränkungen; der Backend-Zugriff wird verweigert.",
         resourceLabels: {
             "league-matches": "Öffentliche Wardogs League Spiele",
+            "league-fixtures": "Verfolgte Wardogs League Spiele",
             "warcon-data": "Warcon-Spieldaten (mit Spielernamen und Steam-IDs)",
             "member-summaries": "Mitgliederverzeichnis (nur lesen)",
             "roster-summaries":
