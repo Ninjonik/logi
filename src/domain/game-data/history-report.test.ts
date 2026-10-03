@@ -3,6 +3,15 @@ import { aggregateHistory } from "./history-report"
 import assert from "node:assert/strict"
 import test from "node:test"
 
+test("duplicate faction metadata cannot inflate retained wins or appearances", () => {
+    const record = historyRecord()
+    const winningFaction = record.session.warcon!.factions.find(
+        (faction) => faction.name === record.session.warcon!.winner
+    )!
+    record.session.warcon!.factions.push({ ...winningFaction })
+    assert.throws(() => aggregateHistory([record]), /Duplicate Warcon faction/)
+})
+
 test("replay and correction replace contributions; no-result and unknown player results are not losses", () => {
     const first = historyRecord(),
         correction = structuredClone(first),

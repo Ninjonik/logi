@@ -8,6 +8,8 @@ The existing Warcon collector reads completed match details, then saves the norm
 
 Archive identity combines workspace, HTTPS origin, provider server ID and external match ID. It excludes credential references and nicknames. Replaying a game or rotating its key preserves the record ID. Changed facts replace that record and advance the workspace history revision; consumers rebuild its contribution instead of incrementing counters. A different start time under an existing provider match ID fails closed to protect the earlier game. This source-identity conflict requires operator investigation; it can block that history sweep until resolved.
 
+Duplicate faction names are rejected at both the provider detail and retained metadata boundaries. A malformed provider response cannot count one winner twice; a failed import preserves the previously retained facts.
+
 Disabling collection or removing its configuration does not delete retained history. Retention is currently indefinite. There is no new end-user deletion workflow in this increment. Operators must consider retention and player-ID visibility before granting website access.
 
 Stored facts include UTC start/end, map, final scores, explicit winner, provider outcome, faction names/colors, mode/lighting, feed flag and per-player platform ID, observed name, faction, result, time, kills/deaths, signed cash delta and available combat metrics. Timeline samples and presentation awards are available through the existing Warcon view, not duplicated in this archive.

@@ -8,6 +8,8 @@ These are in-game factions, not clan teams. A collected game does not confirm an
 
 History survives disabling collection and credential rotation. Repeated imports update the existing game, including corrections. Coverage starts with successfully imported games: Logi cannot reconstruct games that disappeared from Warcon before collection.
 
+Invalid provider data, including repeated faction names, is rejected. The last successfully retained games remain available; a failed import does not add wins or replace valid history.
+
 Administrators can give a website backend a read key with **Retained server games** and **Wardogs** access. This includes player names and platform IDs, so keep the key on the backend and choose which fields the public website displays. The `/api/v1/clan/server-game-history?game=wardogs` endpoint supplies revision-consistent pages. A website must finish all pages before showing totals, and restart a scan if the API returns `reset_required`.
 
 See the [API reference](/api-reference) for the structured contract. This feature currently supports Warcon completed games; official clan/League results and verified membership retain their separate workflows.

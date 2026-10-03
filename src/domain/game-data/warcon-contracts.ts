@@ -130,6 +130,8 @@ export const warconMatchDetailSchema = z
             v.match.endedAt !== null &&
             Date.parse(v.match.endedAt) >= Date.parse(v.match.startedAt) &&
             new Set(v.lines.map((p) => p.steamId)).size === v.lines.length &&
+            new Set(v.factions.map((faction) => faction.name)).size ===
+                v.factions.length &&
             v.timeline.every((point) => point.length === v.factions.length + 1)
     )
 

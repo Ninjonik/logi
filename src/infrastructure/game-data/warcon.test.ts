@@ -184,6 +184,16 @@ test("durable Warcon history retains explicit outcomes, names, factions and feed
     assert.equal(result.players[0].metrics.headshots, null)
 })
 
+test("completed-game import rejects duplicate faction metadata even with unique final scores", async () => {
+    const detail = warconMatchDetail()
+    detail.factions.push({ ...detail.factions[1] })
+    detail.timeline = []
+    await assert.rejects(
+        () => readWarconSession(source, "7", http(detail)),
+        invalid
+    )
+})
+
 test("ended games without final scores remain without a result and unknown player attribution stays null", async () => {
     const detail = {
         ...warconMatchDetail(),

@@ -17,7 +17,13 @@ export const warconHistoryMetadataSchema = z.strictObject({
                     .nullable(),
             })
         )
-        .max(16),
+        .max(16)
+        .refine(
+            (factions) =>
+                new Set(factions.map((faction) => faction.name)).size ===
+                factions.length,
+            { message: "Duplicate Warcon faction." }
+        ),
 })
 
 /** Mirror the observed provider's result vocabulary; never choose a winner from scores. */
