@@ -13,6 +13,13 @@ threads and forums are not public-panel destinations. Each feature has its own
 channel. A separate scoreboard cannot duplicate the combined server/score panel
 in the same channel for the same source.
 
+The shared picker also serves legacy publishing settings. Ticket and recruitment
+**private-thread parent** selectors accept ordinary text channels only; Discord
+announcement channels cannot be private-thread parents. The central settings API
+checks selected IDs against the current guild channel inventory and rejects
+unsupported types. This destination check does not replace the legacy endpoint's
+existing authorization with the new public-panel actor transaction.
+
 Save verifies current workspace administration and bot channel permissions:
 View Channel, Read Message History, Send Messages, Embed Links and Attach Files.
 The Convex write rechecks the durable dashboard session and current authority.
@@ -32,10 +39,25 @@ uses the existing shared cache, lease and provider budget.
 - Combined server/score and separate score panels show game/server, map,
   players/capacity, supported faction scores and an observation timestamp.
 - Missing counts are unknown, never fabricated zeroes. Old values are labeled.
+- Public Warcon leaders are a separate **off-by-default** setting (`showLeaders`):
+  top three by kills and cash overall, plus the best killer and cash holder for
+  each recognized faction. They use current connected players only. Cash means
+  provider-reported current balance, not cumulative earnings. Missing metrics
+  are excluded, zero remains valid, ties are deterministic, and unknown factions
+  may rank globally without being assigned to an invented team.
 - Warcon player details are optional, private, paginated (8 per page), and
   show names, faction, kills, deaths, cash and ping. Player freshness is separate
   from server freshness. HLL's current snapshot contract has no public player
   list; the panel does not invent one.
+- Player buttons acknowledge privately before loading. Each navigation button has
+  a distinct component ID, including a one-page list. Loading is bounded to 12
+  seconds; a failed read or response produces a private retry message. Current
+  guild, destination channel, configuration revision and enabled/privacy settings
+  must match before reading. Guild ownership, channel overwrites, member roles
+  and role permissions are fetched fresh; View Channel and Read Message History
+  are required before and after loading. Configuration is also rechecked after
+  loading. Retained controls from older revisions or destinations fail privately
+  and cannot query the new panel. Unversioned legacy controls expire.
 - No platform IDs, Discord identity links, provider credentials, administrative
   links or join secrets are rendered. Mentions are disabled. Authorized legacy
   event role pings remain limited to creation.
@@ -79,12 +101,32 @@ Existing stored message IDs are adopted. Historic messages whose IDs were alread
 lost are not guessed by title. A legacy ticket/recruitment ID does not record its
 old channel; reconcile any pre-migration move manually before enabling the new
 worker. New moves use the durable channel binding.
+Per-game recruitment configurations own their message IDs even before their first
+publication; they never inherit another game's ID. Legacy event announcements
+adopt the old channel recorded in their sync state before moving to a new one.
+
+A configuration change cannot cancel an already in-flight Discord HTTP request.
+The subsequent worker pass reconciles the durable binding with the new settings;
+do not interpret the lease as an atomic transaction across both services.
 
 ## Artwork
 
 Map selection uses a fixed local catalog (Wardogs Bakurani, Ozeti, Zestafona), then
-a game image, then text. Discord fetches artwork from the deployment's HTTPS
-`SITE_URL`; a loopback-only dashboard deliberately emits text-only panels.
+a game image, then text. Packaged assets are uploaded directly by the bot (8 MiB
+maximum) and shown as compact, clickable thumbnails. Filenames contain a content
+hash; updates and restarts retain the same attachment, while changed artwork
+uploads a new one. Only catalog paths enter the file reader. If packaged artwork
+is absent, a configured public HTTPS `SITE_URL` can provide the catalog URL;
+otherwise the panel uses text. A loopback dashboard does not prevent packaged
+artwork from displaying.
+
+Components V2 may consume an upload without listing it in `message.attachments`.
+The transport also reads the freshly fetched, bot-owned component's
+[`attachment_id`](https://docs.discord.com/developers/components/reference#unfurled-media-item).
+An exact catalog filename on Discord's attachment CDN is retained with both ID
+and filename; signed CDN query strings are not persisted. Disabling artwork clears
+the old attachment. Real Discord acceptance verified this update/restart path.
+
 Map images are the existing tactical artwork, not newly licensed promotional
 banners. Faction names are matched semantically; unknown/provider labels such as
 Alpha/Bravo/Charlie retain a neutral icon. Metric symbols use Unicode.
@@ -131,3 +173,7 @@ current actor/source scope, Warcon panel read restrictions, redaction/freshness,
 semantic faction mapping and idempotent emoji provisioning. Runtime evidence is
 recorded separately with the exact tested revision; do not reuse older PR test
 totals as evidence for these changes.
+
+See the [2026-10-03 acceptance and review record](evidence/2026-10-03-public-panels/README.md)
+for commands, assertions, genuine Discord web screenshots, the reported loading
+bug and its repair, security scope, and explicit deployment limitations.

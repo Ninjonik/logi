@@ -5,6 +5,7 @@ export const publicPanelSettingsSchema = z.strictObject({
     channelId: z.string().regex(/^\d{17,20}$/),
     enabled: z.boolean(),
     showPlayers: z.boolean(),
+    showLeaders: z.boolean().default(false),
     artwork: z.boolean(),
     refreshSeconds: z.union([z.literal(30), z.literal(60), z.literal(300)]),
 })

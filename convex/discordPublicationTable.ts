@@ -19,6 +19,7 @@ export const panelSettings = {
     channelId: v.string(),
     enabled: v.boolean(),
     showPlayers: v.boolean(),
+    showLeaders: v.optional(v.boolean()),
     artwork: v.boolean(),
     refreshSeconds: v.number(),
 }

@@ -31,6 +31,7 @@ const defaults: PublicPanelSettings = {
     channelId: "",
     enabled: true,
     showPlayers: false,
+    showLeaders: false,
     artwork: true,
     refreshSeconds: 60,
 }
@@ -225,7 +226,14 @@ export function DiscordPublicPanelsForm({
                 placeholder={cs ? "Cílová místnost" : "Destination channel"}
             />
             <div className="flex flex-wrap gap-4">
-                {(["enabled", "showPlayers", "artwork"] as const).map((key) => (
+                {(
+                    [
+                        "enabled",
+                        "showPlayers",
+                        "showLeaders",
+                        "artwork",
+                    ] as const
+                ).map((key) => (
                     <label key={key} className="flex gap-2">
                         <input
                             type="checkbox"
@@ -245,9 +253,13 @@ export function DiscordPublicPanelsForm({
                               ? cs
                                   ? "Soukromý detail hráčů (Warcon)"
                                   : "Private player details (Warcon)"
-                              : cs
-                                ? "Mapa / banner"
-                                : "Map / banner"}
+                              : key === "showLeaders"
+                                ? cs
+                                    ? "Veřejní TOP hráči (jména + statistiky)"
+                                    : "Public leaders (names + stats)"
+                                : cs
+                                  ? "Mapa / banner"
+                                  : "Map / banner"}
                     </label>
                 ))}
                 <label>

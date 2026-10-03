@@ -1,6 +1,6 @@
 # Discord public panels: design and implementation handoff
 
-Status: **implemented; local/test-guild acceptance in progress; production not activated**, 2026-10-03.
+Status: **implemented; local/test-guild acceptance passed within the recorded scope; production not activated**, 2026-10-03.
 The original design baseline was `f853c0ad2853edb1849c90c0ed6409924adf5dd2`.
 See the [implementation and operator guide](../discord-public-panels.md) for current behavior and limits.
 The priority chosen by the owner is public server panels, live scoreboards and
@@ -8,7 +8,19 @@ confirmed results. This document records the agreed requirements and suggested
 implementation. Existing commands remain described in the
 [Discord reference](../v0.10/discord-reference.md).
 
-## Current capabilities and gaps
+The owner subsequently approved the compact live layout: map thumbnail, player
+count and faction scores, overall top three kills/cash, and the best killer/cash
+holder per faction, with the full list behind a private button. Public leaders
+require an independent opt-in; existing panels keep it off. The implemented
+thumbnail uses the existing tactical map, and cash retains its current-balance
+meaning. Real Discord verified attachment reuse across restart and private
+pagination; the acceptance record distinguishes these checks from production.
+
+## Historical source baseline and planned gaps
+
+The table and requirements below preserve the design baseline, before the public
+panel implementation. Current outcomes and remaining activation work are in the
+[acceptance record](../evidence/2026-10-03-public-panels/README.md).
 
 | Area | Present in the source baseline | Remaining work |
 | --- | --- | --- |
@@ -25,7 +37,9 @@ errors are collapsed to `null` before sending a replacement, and recovery search
 legacy embed titles using the event name. This can mistake a transient error for
 a missing message and does not identify Components V2 messages reliably. Similar
 fetch fallbacks exist in [`sync/panels.ts`](../../../../discord-bot/src/sync/panels.ts).
-These are **open implementation items**, not fixes delivered by this design.
+These were open items at design time. The implementation now uses durable owned
+message bindings and uncached existence checks; its limits are documented in the
+operator guide and acceptance record.
 
 ## Public content
 

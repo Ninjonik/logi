@@ -9,15 +9,21 @@ import {
     synchronizeResults,
     type ResultEvent,
 } from "../../../src/application/discord-publications/results"
+import {
+    MessageFlags,
+    PermissionFlagsBits,
+    type ButtonInteraction,
+    type Client,
+} from "discord.js"
 import type { WarconServed } from "../../../src/application/game-data/read-warcon"
-import { MessageFlags, type ButtonInteraction, type Client } from "discord.js"
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
 import type { Doc } from "../../../convex/_generated/dataModel"
 import { completePrivatePlayerReply } from "./private-reply"
 import { publishManagedMessage } from "../sync/publication"
+import { factionAssets, panelArtwork } from "./assets"
 import { makeFunctionReference } from "convex/server"
+import { loadPlayerDetails } from "./player-details"
 import { logWarn as writeWarning } from "../log"
-import { factionAssets } from "./assets"
 import { env } from "../environment"
 import { convex } from "../convex"
 
@@ -94,18 +100,38 @@ export function startPublicPanelWorker(client: Client) {
                             await syncResults(client, panel, cachedIcons)
                         else {
                             const current = await live(panel)
+                            const artwork = panel.artwork
+                                ? await panelArtwork(
+                                      panel.gameId,
+                                      current?.status?.map ??
+                                          panel.snapshot?.map
+                                  )
+                                : null
                             await publishManagedMessage(client, {
                                 guildId: guild.id,
                                 key: `panel:${panel._id}`,
                                 revision: panel.revision,
                                 channelId: panel.channelId,
-                                message: renderPanel(
-                                    { ...panel, id: panel._id },
-                                    panel.snapshot,
-                                    current,
-                                    cachedIcons,
-                                    env.appSiteUrl
-                                ),
+                                message: {
+                                    ...renderPanel(
+                                        { ...panel, id: panel._id },
+                                        panel.snapshot,
+                                        current,
+                                        cachedIcons,
+                                        env.appSiteUrl,
+                                        artwork?.url
+                                    ),
+                                    ...(artwork
+                                        ? {
+                                              files: [
+                                                  {
+                                                      attachment: artwork.path,
+                                                      name: artwork.name,
+                                                  },
+                                              ],
+                                          }
+                                        : {}),
+                                },
                             })
                         }
                         due.set(panel._id, {
@@ -182,40 +208,57 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
     await completePrivatePlayerReply(
         (reply) => interaction.editReply(reply),
         async () => {
-            const parts = interaction.customId.split(":")
-            const panel = interaction.guildId
-                ? (await panels(interaction.guildId)).find(
-                      (p) => p._id === parts[2]
-                  )
-                : null
-            if (
-                !panel?.enabled ||
-                !panel.showPlayers ||
-                panel.kind === "results"
-            )
-                return {
-                    content: "Player details are disabled or unavailable.",
-                    components: [],
+            const result = await loadPlayerDetails<Panel, LiveData>(
+                interaction,
+                {
+                    readPanel: async (id) =>
+                        interaction.guildId
+                            ? ((await panels(interaction.guildId)).find(
+                                  (p) => p._id === id
+                              ) ?? null)
+                            : null,
+                    readLive: live,
+                    canView: async (panel) => {
+                        if (
+                            !interaction.guild ||
+                            interaction.guild.id !== panel.guildId
+                        )
+                            return false
+                        // Force fresh channel overwrites, member roles, role permissions,
+                        // and guild ownership. Cached interaction/member state is not proof.
+                        const guild = await interaction.guild.fetch()
+                        const [channel, member] = await Promise.all([
+                            guild.channels.fetch(panel.channelId, {
+                                force: true,
+                            }),
+                            guild.members.fetch({
+                                user: interaction.user.id,
+                                force: true,
+                            }),
+                            guild.roles.fetch(),
+                        ])
+                        return Boolean(
+                            channel &&
+                            channel
+                                .permissionsFor(member)
+                                ?.has([
+                                    PermissionFlagsBits.ViewChannel,
+                                    PermissionFlagsBits.ReadMessageHistory,
+                                ])
+                        )
+                    },
                 }
-            const data = await live(panel)
-            // Recheck after the provider call: privacy can change while it runs.
-            const current = (await panels(panel.guildId)).find(
-                (p) => p._id === panel._id
             )
-            if (
-                !data ||
-                !current?.enabled ||
-                !current.showPlayers ||
-                current.revision !== panel.revision
-            )
+            if (!result)
                 return {
-                    content: "Player details unavailable. Try again later.",
+                    content:
+                        "Player details unavailable or this panel changed. Open the current panel in its channel.",
                     components: [],
                 }
             return renderPlayers(
-                panel._id,
-                data,
-                /^\d{1,3}$/.test(parts[3] ?? "") ? Number(parts[3]) : 0
+                { id: result.panel._id, revision: result.panel.revision },
+                result.data,
+                result.page
             )
         }
     )

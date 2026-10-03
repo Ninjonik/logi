@@ -11,6 +11,7 @@ import {
     publish,
     PublicationNotSent,
 } from "../../../src/application/discord-publications/publish"
+import { publicationFiles, componentAttachments } from "./publication-files"
 import { fetchOwnedPublicationMessage } from "./owned-message"
 import { makeFunctionReference } from "convex/server"
 import { createHash } from "node:crypto"
@@ -188,7 +189,12 @@ export async function publishManagedMessage(
                 const { flags, ...body } = input.message
                 await message.edit({
                     ...body,
-                    attachments: [],
+                    ...publicationFiles(body.files, [
+                        ...message.attachments.values(),
+                        ...componentAttachments(
+                            message.components.map((c) => c.toJSON())
+                        ),
+                    ]),
                     ...(flags
                         ? {
                               content: null,
