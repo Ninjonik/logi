@@ -1,3 +1,4 @@
+import rawWardogsCatalog from "@/data/wardogs-stratmap-catalog.json"
 import rawCatalog from "@/data/hll-stratmap-catalog.json"
 import rawMaps from "@/data/hll-stratmap-maps.json"
 
@@ -18,6 +19,25 @@ export type HllStratmapStrongpoint = {
     spritePath: string
 }
 
+export type StratmapStaticMarker = {
+    id: string
+    label: string
+    iconPath: string
+    kind: "hq" | "tower" | "facility"
+    x: number
+    y: number
+}
+
+export type StratmapStaticPolygon = {
+    id: string
+    label: string
+    color: string
+    fillOpacity: number
+    strokeWidth: number
+    dashed: boolean
+    points: Array<{ x: number; y: number }>
+}
+
 export type HllStratmapMap = {
     id: string
     name: string
@@ -25,6 +45,8 @@ export type HllStratmapMap = {
     imagePath: string
     mapSize: number
     strongpoints: HllStratmapStrongpoint[]
+    staticMarkers?: StratmapStaticMarker[]
+    staticPolygons?: StratmapStaticPolygon[]
     defaultElements: {
         offensiveGarrisons: {
             a: StratmapDefaultElement[]
@@ -70,6 +92,8 @@ export type StratmapOverlaySettings = {
     showArtillery: boolean
     showRepairStations: boolean
     showSpawnRanges: boolean
+    showWardogsHqs: boolean
+    showWardogsTowers: boolean
 }
 
 export type StratmapStrokeStyle = "solid" | "dashed" | "dotted"
@@ -179,6 +203,8 @@ export type StratmapState = {
 
 export const HLL_STRATMAP_MAPS = rawMaps as HllStratmapMap[]
 export const HLL_STRATMAP_CATALOG = rawCatalog as HllStratmapCatalogItem[]
+export const WARDOGS_STRATMAP_CATALOG =
+    rawWardogsCatalog as HllStratmapCatalogItem[]
 
 export function getHllStratmapMaps() {
     return HLL_STRATMAP_MAPS
@@ -202,14 +228,32 @@ export function getHllStratmapCatalogGroups() {
     }, {})
 }
 
+export function getStratmapCatalog() {
+    return [...HLL_STRATMAP_CATALOG, ...WARDOGS_STRATMAP_CATALOG]
+}
+
+export function getWardogsStratmapCatalog() {
+    return WARDOGS_STRATMAP_CATALOG
+}
+
+export function getWardogsStratmapCatalogGroups() {
+    return WARDOGS_STRATMAP_CATALOG.reduce<
+        Record<string, HllStratmapCatalogItem[]>
+    >((groups, item) => {
+        groups[item.category] ??= []
+        groups[item.category].push(item)
+        return groups
+    }, {})
+}
+
 export function buildDefaultStratmapState(baseMapId: string): StratmapState {
-    const map = getHllStratmapMapById(baseMapId) ?? HLL_STRATMAP_MAPS[0]
+    const map = getHllStratmapMapById(baseMapId)
     const visibleStrongpointIds =
         map?.strongpoints.slice(0, 3).map((point) => point.id) ?? []
 
     return {
         version: 1,
-        baseMapId: map?.id ?? baseMapId,
+        baseMapId,
         slides: [
             {
                 id: crypto.randomUUID(),
@@ -224,6 +268,8 @@ export function buildDefaultStratmapState(baseMapId: string): StratmapState {
                     showArtillery: false,
                     showRepairStations: false,
                     showSpawnRanges: false,
+                    showWardogsHqs: true,
+                    showWardogsTowers: true,
                 },
                 elements: [],
                 pings: [],
@@ -285,6 +331,9 @@ export function parseStratmapState(
                     showRepairStations:
                         slide.overlays?.showRepairStations ?? false,
                     showSpawnRanges: slide.overlays?.showSpawnRanges ?? false,
+                    showWardogsHqs: slide.overlays?.showWardogsHqs ?? true,
+                    showWardogsTowers:
+                        slide.overlays?.showWardogsTowers ?? true,
                 },
                 elements: slide.elements.map((element) =>
                     element.kind === "icon"

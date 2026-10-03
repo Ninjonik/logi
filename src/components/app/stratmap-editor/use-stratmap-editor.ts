@@ -23,6 +23,9 @@ import {
     type StratmapSlide,
     getHllStratmapCatalog,
     getHllStratmapCatalogGroups,
+    getStratmapCatalog,
+    getWardogsStratmapCatalog,
+    getWardogsStratmapCatalogGroups,
     parseStratmapState,
     stringifyStratmapState,
 } from "@/lib/stratmaps"
@@ -122,7 +125,13 @@ export function useStratmapEditor(
         useState<StratmapArrowStyle>("arrow")
     const [showLineDistance, setShowLineDistance] = useState(false)
     const [iconId, setIconId] = useState(
-        getHllStratmapCatalog()[0]?.id ?? "garry"
+        (initialStratmap.gameId === "wardogs"
+            ? getWardogsStratmapCatalog()[0]
+            : getHllStratmapCatalog()[0]
+        )?.id ?? "garry"
+    )
+    const [iconSize, setIconSize] = useState(
+        initialStratmap.gameId === "wardogs" ? 25 : 50
     )
     const [textValue, setTextValue] = useState("Text")
     const [textSize, setTextSize] = useState(48)
@@ -183,7 +192,10 @@ export function useStratmapEditor(
     const canEdit = canAdmin && mode === "edit"
     const stratmap = liveData?.stratmap ?? initialStratmap
     const maps = getStratmapMaps(initialStratmap.gameId)
-    const catalogGroups = getHllStratmapCatalogGroups()
+    const catalogGroups =
+        initialStratmap.gameId === "wardogs"
+            ? getWardogsStratmapCatalogGroups()
+            : getHllStratmapCatalogGroups()
     const activeSlide = getActiveSlide(state, selectedSlideId)
     const selectedMap = getStratmapMapById(
         baseMapId || state.baseMapId,
@@ -928,7 +940,7 @@ export function useStratmapEditor(
         }
         if (!canEdit) return
         if (tool === "icon") {
-            const catalogItem = getHllStratmapCatalog().find(
+            const catalogItem = getStratmapCatalog().find(
                 (item) => item.id === iconId
             )
             if (!catalogItem) return
@@ -942,7 +954,7 @@ export function useStratmapEditor(
                             kind: "icon",
                             x: point.x,
                             y: point.y,
-                            size: 50,
+                            size: iconSize,
                             iconId: catalogItem.id,
                             color: strokeColor,
                             note: "",
@@ -1464,6 +1476,7 @@ export function useStratmapEditor(
         lineEndStyle,
         showLineDistance,
         iconId,
+        iconSize,
         textValue,
         textSize,
         selectedElementIds,
@@ -1499,6 +1512,7 @@ export function useStratmapEditor(
         setLineEndStyle,
         setShowLineDistance,
         setIconId,
+        setIconSize,
         setTextValue,
         setTextSize,
         setTitle,

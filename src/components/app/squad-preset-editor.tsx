@@ -15,16 +15,17 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import {
+    createHllStarterSquadPreset,
+    getRoleIconOptions,
+    getSquadIconOptions,
+} from "@/lib/squad-preset-templates"
+import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import {
-    createHllStarterSquadPreset,
-    getRoleIconOptions,
-} from "@/lib/squad-preset-templates"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Group, SquadPresetSquad } from "@/types/domain"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -45,20 +46,25 @@ function IconPreview({ src, alt }: { src: string; alt: string }) {
 const IconSelect = memo(function IconSelect({
     defaultValue,
     gameId,
+    iconScope,
     onChange,
 }: {
     defaultValue: string
     gameId: GameId
+    iconScope: "role" | "squad"
     onChange: (value: string) => void
 }) {
-    const roleIconOptions = getRoleIconOptions(gameId)
+    const iconOptions =
+        iconScope === "squad"
+            ? getSquadIconOptions(gameId)
+            : getRoleIconOptions(gameId)
     return (
         <Select defaultValue={defaultValue} onValueChange={onChange}>
             <SelectTrigger className="w-14 rounded-xl px-2">
                 <SelectValue />
             </SelectTrigger>
             <SelectContent>
-                {roleIconOptions.map((iconPath) => (
+                {iconOptions.map((iconPath) => (
                     <SelectItem key={iconPath} value={iconPath}>
                         <span>
                             <IconPreview src={iconPath} alt="" />
@@ -196,13 +202,13 @@ export function SquadPresetEditor({
                 group: dictionary.roster.defaultSquadGroup,
                 order: draftSquadsRef.current.length,
                 color: "#64748b",
-                icon: "/img/roles/icn_officer.png",
+                icon: getSquadIconOptions(gameId)[0],
                 roles: [
                     {
                         editorId: createEditorId(),
                         name: dictionary.presets.newRole,
                         color: "#64748b",
-                        icon: "/img/roles/icn_Rifleman.png",
+                        icon: getRoleIconOptions(gameId)[0],
                         count: 1,
                     },
                 ],
@@ -227,7 +233,7 @@ export function SquadPresetEditor({
                 editorId: createEditorId(),
                 name: dictionary.presets.newRole,
                 color: squad.color,
-                icon: "/img/roles/icn_Rifleman.png",
+                icon: getRoleIconOptions(gameId)[0],
                 count: 1,
             },
         ]
@@ -479,6 +485,7 @@ export function SquadPresetEditor({
                                         <IconSelect
                                             defaultValue={squad.icon}
                                             gameId={gameId}
+                                            iconScope="squad"
                                             onChange={(value) =>
                                                 updateSquad(
                                                     squadIndex,
@@ -568,6 +575,7 @@ export function SquadPresetEditor({
                                                     <IconSelect
                                                         defaultValue={role.icon}
                                                         gameId={gameId}
+                                                        iconScope="role"
                                                         onChange={(value) =>
                                                             updateRole(
                                                                 squadIndex,

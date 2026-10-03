@@ -8,7 +8,7 @@ import {
 import { DynamicMetadataMarker } from "@/components/public/dynamic-metadata-marker"
 import { StratmapEditor } from "@/components/app/stratmap-editor"
 import { getPublicStratmapDetail } from "@/lib/server-stratmaps"
-import { getHllStratmapMapById } from "@/lib/stratmaps"
+import { getStratmapMapById } from "@/lib/game-stratmaps"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getLocalizedCanonical } from "@/lib/seo"
 import { isLocale } from "@/i18n/config"
@@ -31,12 +31,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         }
     }
 
-    const mapDef = getHllStratmapMapById(stratmap.baseMapId)
+    const mapDef = getStratmapMapById(stratmap.baseMapId, stratmap.gameId)
     const mapName = mapDef?.name ?? stratmap.baseMapId
-    const strongpoint = stratmap.strongpointId
-        ? (mapDef?.strongpoints.find((sp) => sp.id === stratmap.strongpointId)
-              ?.label ?? stratmap.strongpointId)
-        : undefined
+    const strongpoint =
+        stratmap.gameId === "wardogs"
+            ? undefined
+            : stratmap.strongpointId
+              ? (mapDef?.strongpoints.find(
+                    (sp) => sp.id === stratmap.strongpointId
+                )?.label ?? stratmap.strongpointId)
+              : undefined
 
     const title = `${stratmap.title} · ${mapName} | ${dictionary.app.name}`
     const descriptionParts = [

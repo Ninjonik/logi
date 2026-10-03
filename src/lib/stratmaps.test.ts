@@ -3,9 +3,39 @@ import test from "node:test"
 
 import {
     buildDefaultStratmapState,
+    getStratmapCatalog,
+    getWardogsStratmapCatalog,
     parseStratmapState,
     stringifyStratmapState,
 } from "./stratmaps"
+
+test("Wardogs supplies its distinct tactical icon catalog", () => {
+    assert.deepEqual(
+        getWardogsStratmapCatalog()
+            .map((item) => item.id)
+            .slice(0, 4),
+        ["wd-fob", "wd-lonestar", "wd-manticore", "wd-valkyra"]
+    )
+    assert.equal(
+        getWardogsStratmapCatalog()[0]?.iconPath,
+        "/stratmap/icons/wardogs/fob.webp"
+    )
+    assert.ok(getStratmapCatalog().some((item) => item.id === "wd-helicopter"))
+    assert.equal(getWardogsStratmapCatalog().length, 32)
+    assert.ok(
+        getWardogsStratmapCatalog().some(
+            (item) => item.id === "wd-weapons-vendor"
+        )
+    )
+})
+
+test("preserves a Wardogs base map and defaults its reference overlays on", () => {
+    const state = buildDefaultStratmapState("bakurani")
+
+    assert.equal(state.baseMapId, "bakurani")
+    assert.equal(state.slides[0]?.overlays.showWardogsHqs, true)
+    assert.equal(state.slides[0]?.overlays.showWardogsTowers, true)
+})
 
 test("preserves the selected main attachment when stratmap state is serialized", () => {
     const state = buildDefaultStratmapState("carentan")

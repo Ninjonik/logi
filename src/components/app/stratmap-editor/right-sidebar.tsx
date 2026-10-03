@@ -42,6 +42,7 @@ type RightSidebarProps = {
     textValue: string
     textSize: number
     iconId: string
+    iconSize: number
     catalogGroups: Record<string, HllStratmapCatalogItem[]>
     selectedElement: StratmapElement | null
     isUploadingIconAttachments: boolean
@@ -60,6 +61,7 @@ type RightSidebarProps = {
     onTextValueChange: (value: string) => void
     onTextSizeChange: (value: number) => void
     onIconChange: (value: string) => void
+    onIconSizeChange: (value: number) => void
     onSelectedElementChange: (
         updater: (element: StratmapElement) => StratmapElement
     ) => void

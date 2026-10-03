@@ -3,21 +3,64 @@ import test from "node:test"
 
 import { getStratmapMapById, getStratmapMaps } from "./game-stratmaps"
 
-test("Vietnam exposes a placeholder map with capture points", () => {
-    const maps = getStratmapMaps("hell_let_loose_vietnam")
-
-    assert.equal(maps.length, 1)
-    assert.equal(maps[0]?.imagePath, "/maps/hllv-placeholder.svg")
-    assert.equal(maps[0]?.strongpoints.length, 5)
-    assert.equal(maps[0]?.strongpoints[0]?.label, "Alpha (placeholder)")
+test("Wardogs offers its three named base maps", () => {
+    assert.deepEqual(
+        getStratmapMaps("wardogs").map((map) => map.id),
+        ["bakurani", "ozeti", "zestafona"]
+    )
 })
 
-test("Wardogs exposes a separate placeholder map with capture points", () => {
-    const map = getStratmapMapById("wardogs-placeholder", "wardogs")
+test("Wardogs maps use their imported tactical basemaps", () => {
+    for (const map of getStratmapMaps("wardogs")) {
+        assert.equal(map.imagePath, `/maps/wardogs/${map.id}.webp`)
+    }
 
-    assert.equal(map?.imagePath, "/maps/wardogs-placeholder.svg")
-    assert.equal(map?.strongpoints.length, 5)
-    assert.equal(map?.strongpoints[4]?.label, "Echo (placeholder)")
+    assert.equal(
+        getStratmapMapById("bakurani", "wardogs")?.staticMarkers?.[0]?.iconPath,
+        "/stratmap/icons/wardogs/tower.webp"
+    )
+})
+
+test("Wardogs maps include calculator-derived fixed map facilities", () => {
+    const bakurani = getStratmapMapById("bakurani", "wardogs")
+
+    assert.ok(bakurani)
+    assert.equal(
+        bakurani.staticMarkers?.filter((marker) => marker.label === "Tower 1")
+            .length,
+        1
+    )
+    assert.equal(
+        bakurani.staticMarkers?.filter((marker) => marker.label === "Valkyra")
+            .length,
+        1
+    )
+    assert.equal(
+        bakurani.staticMarkers?.filter(
+            (marker) => marker.label === "Weapons Vendor"
+        ).length,
+        3
+    )
+    assert.equal(
+        bakurani.staticMarkers?.filter((marker) => marker.kind === "hq").length,
+        3
+    )
+    assert.equal(
+        bakurani.staticMarkers?.filter((marker) => marker.kind === "tower")
+            .length,
+        5
+    )
+    assert.deepEqual(
+        bakurani.staticPolygons?.map((polygon) => polygon.label),
+        ["VALKYRA Spawn", "MANTICORE Spawn", "LONESTAR Spawn"]
+    )
+})
+
+test("legacy Wardogs placeholder maps resolve to Bakurani", () => {
+    assert.equal(
+        getStratmapMapById("wardogs-placeholder", "wardogs")?.id,
+        "bakurani"
+    )
 })
 
 test("new Wardogs maps use the named catalog while saved generic stratmaps still resolve", () => {

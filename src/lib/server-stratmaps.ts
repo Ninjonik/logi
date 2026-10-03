@@ -2,6 +2,7 @@ import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 import { makeFunctionReference } from "convex/server"
 import { fetchQuery } from "convex/nextjs"
 
+import type { GameId } from "@/domain/games/game"
 import { getLoggedInUser } from "@/lib/auth"
 
 const getStratmapByIdReference =
@@ -19,7 +20,7 @@ export async function getStratmapDetail(stratmapId: string) {
         return null
     }
 
-    return (await fetchQuery(getStratmapByIdReference, {
+    const detail = (await fetchQuery(getStratmapByIdReference, {
         userId: user.discordId,
         stratmapId: stratmapId as never,
     })) as {
@@ -29,6 +30,7 @@ export async function getStratmapDetail(stratmapId: string) {
             id: string
             guildId: string
             eventId?: string
+            gameId?: GameId
             title: string
             description?: string
             baseMapId: string
@@ -40,6 +42,8 @@ export async function getStratmapDetail(stratmapId: string) {
             updatedAt: string
         }
     } | null
+
+    return detail ? { ...detail, userId: user.discordId } : null
 }
 
 export async function getPublicStratmapDetail(stratmapId: string) {
@@ -53,6 +57,7 @@ export async function getPublicStratmapDetail(stratmapId: string) {
                 id: string
                 guildId: string
                 eventId?: string
+                gameId?: GameId
                 title: string
                 description?: string
                 baseMapId: string
@@ -82,6 +87,7 @@ export async function listServerStratmaps(serverId: string) {
             id: string
             guildId: string
             eventId?: string
+            gameId?: GameId
             title: string
             description?: string
             baseMapId: string

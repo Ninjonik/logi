@@ -1,0 +1,194 @@
+[
+    {
+        "id": "wd-fob",
+        "label": "FOB",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/fob.webp"
+    },
+    {
+        "id": "wd-lonestar",
+        "label": "Lonestar",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/lonestar.webp"
+    },
+    {
+        "id": "wd-manticore",
+        "label": "Manticore",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/manticore.webp"
+    },
+    {
+        "id": "wd-valkyra",
+        "label": "Valkyra",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/valkyra.webp"
+    },
+    {
+        "id": "wd-wardogs",
+        "label": "Wardogs",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/wardogs.webp"
+    },
+    {
+        "id": "wd-bulkhead",
+        "label": "Bulkhead",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/bulkhead.webp"
+    },
+    {
+        "id": "wd-like",
+        "label": "Like",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/like.webp"
+    },
+    {
+        "id": "wd-warning",
+        "label": "Warning",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/warning.webp"
+    },
+    {
+        "id": "wd-hill-warning",
+        "label": "Hill warning",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/hill_warning.webp"
+    },
+    {
+        "id": "wd-last-hit",
+        "label": "Last hit",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/lasthit.webp"
+    },
+    {
+        "id": "wd-spotted",
+        "label": "Spotted",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/spotted.webp"
+    },
+    {
+        "id": "wd-quad",
+        "label": "Quad",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/quad.webp"
+    },
+    {
+        "id": "wd-kodiak",
+        "label": "Kodiak",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/kodiak.webp"
+    },
+    {
+        "id": "wd-dune",
+        "label": "Dune",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/dune.webp"
+    },
+    {
+        "id": "wd-ural",
+        "label": "Ural",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/ural.webp"
+    },
+    {
+        "id": "wd-havoc",
+        "label": "Havoc",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/havoc.webp"
+    },
+    {
+        "id": "wd-helicopter",
+        "label": "Helicopter",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/heli.webp"
+    },
+    {
+        "id": "wd-vehicle-spawn",
+        "label": "Vehicle spawn",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/spawn_vehicle.webp"
+    },
+    {
+        "id": "wd-artillery",
+        "label": "Artillery",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/artillery.webp"
+    },
+    {
+        "id": "wd-assault",
+        "label": "Assault",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/assault.webp"
+    },
+    {
+        "id": "wd-driver",
+        "label": "Driver",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/driver.webp"
+    },
+    {
+        "id": "wd-garage-vendor",
+        "label": "Garage vendor",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/garage_vendor.webp"
+    },
+    {
+        "id": "wd-medic",
+        "label": "Medic",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/medic.webp"
+    },
+    {
+        "id": "wd-pilot",
+        "label": "Pilot",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/pilot.webp"
+    },
+    {
+        "id": "wd-recon",
+        "label": "Recon",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/recon.webp"
+    },
+    {
+        "id": "wd-spawn-board",
+        "label": "Spawn board",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/spawn_board.webp"
+    },
+    {
+        "id": "wd-deploy-spawn",
+        "label": "Deploy spawn",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/spawn_deploy.webp"
+    },
+    {
+        "id": "wd-support",
+        "label": "Support",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/support.webp"
+    },
+    {
+        "id": "wd-tank",
+        "label": "Tank",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/tank.webp"
+    },
+    {
+        "id": "wd-tower",
+        "label": "Tower",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/tower.webp"
+    },
+    {
+        "id": "wd-vendor",
+        "label": "Vendor",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/vendor.webp"
+    },
+    {
+        "id": "wd-weapons-vendor",
+        "label": "Weapons vendor",
+        "category": "Wardogs",
+        "iconPath": "/stratmap/icons/wardogs/weapons_vendor.webp"
+    }
+]

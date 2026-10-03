@@ -16,6 +16,14 @@ export async function POST(
 
     const body = (await request.json()) as { gameId?: string }
     const gameId = isGameId(body.gameId) ? body.gameId : DEFAULT_GAME_ID
+    if (gameId !== DEFAULT_GAME_ID) {
+        return NextResponse.json(
+            {
+                error: "Player-stat deduplication is only available for Hell Let Loose.",
+            },
+            { status: 400 }
+        )
+    }
     const context = await getServerContext(serverId, gameId)
     if (!context?.canAdmin) {
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })

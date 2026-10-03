@@ -196,6 +196,17 @@ function SearchableSelect({
 
 type SelectorField = "map" | "time" | "mode" | "point" | "side"
 
+const DEFAULT_SIDE_OPTIONS = [
+    { value: "Allies", label: "Allies" },
+    { value: "Axis", label: "Axis" },
+]
+
+const WARDOGS_SIDE_OPTIONS = [
+    { value: "Valkyra", label: "Valkyra" },
+    { value: "Lonestar", label: "Lonestar" },
+    { value: "Manticore", label: "Manticore" },
+]
+
 export function HllMapSelector({
     gameId,
     mapId,
@@ -491,10 +502,11 @@ export function HllMapSelector({
                         searchPlaceholder={labels.side ?? "Side"}
                         noneLabel={labels.optional}
                         noResults={labels.noResults}
-                        options={[
-                            { value: "Allies", label: "Allies" },
-                            { value: "Axis", label: "Axis" },
-                        ]}
+                        options={
+                            gameId === "wardogs"
+                                ? WARDOGS_SIDE_OPTIONS
+                                : DEFAULT_SIDE_OPTIONS
+                        }
                     />
                 </div>
             ) : null}

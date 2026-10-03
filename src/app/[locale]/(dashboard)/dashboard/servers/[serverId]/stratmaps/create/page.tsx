@@ -46,7 +46,7 @@ export default async function CreateStratmapPage({
                     userId={context.user.discordId}
                     dictionary={dictionary}
                     defaultTitle={dictionary.stratmaps.createTitle}
-                    gameId={isGameId(game) ? game : undefined}
+                    gameId={game}
                 />
             </div>
         </>
