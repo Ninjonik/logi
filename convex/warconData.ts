@@ -20,6 +20,7 @@ export const read = action({
         queryJson: v.string(),
         keyHash: v.optional(v.string()),
         actor: v.optional(dashboardActor),
+        panelId: v.optional(v.id("discordPublicPanels")),
     },
     handler: async (ctx, args): Promise<WarconServed> => {
         if (

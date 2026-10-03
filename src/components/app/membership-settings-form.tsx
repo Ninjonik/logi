@@ -18,16 +18,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import {
-    DiscordEntitySelect,
-    type DiscordSelectOption,
-} from "@/components/app/discord-entity-select"
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
+import type { DiscordSelectOption } from "@/components/app/discord-entity-select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MemberRoleOperations } from "@/components/app/member-role-operations"
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
 import { ExpandableItemCard } from "@/components/app/expandable-item-card"
 import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
+import { DiscordChannelSelect } from "./discord-channel-select"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -210,8 +208,6 @@ export function MembershipSettingsForm({
     }, [serverId])
 
     const roles = metadata?.roles ?? []
-    const textChannels =
-        metadata?.channels?.filter((channel) => channel.type === 0) ?? []
     const emojiOptions = metadata?.emojis ?? []
     const preview = useMemo(
         () => buildFieldPreview(settings.categories),
@@ -713,12 +709,12 @@ export function MembershipSettingsForm({
                         <Label>
                             {dictionary.membershipSettings.submitChannel}
                         </Label>
-                        <DiscordEntitySelect
+                        <DiscordChannelSelect
                             value={settings.submitChannelId}
                             onChange={(value) =>
                                 patchSettings({ submitChannelId: value ?? "" })
                             }
-                            options={textChannels}
+                            channels={metadata?.channels ?? []}
                             placeholder={
                                 dictionary.membershipSettings.submitChannel
                             }
@@ -728,14 +724,14 @@ export function MembershipSettingsForm({
                         <Label>
                             {dictionary.membershipSettings.parentChannel}
                         </Label>
-                        <DiscordEntitySelect
+                        <DiscordChannelSelect
                             value={settings.applicationParentChannelId}
                             onChange={(value) =>
                                 patchSettings({
                                     applicationParentChannelId: value ?? "",
                                 })
                             }
-                            options={textChannels}
+                            channels={metadata?.channels ?? []}
                             placeholder={
                                 dictionary.membershipSettings.parentChannel
                             }

@@ -144,6 +144,38 @@ type Claim = {
     kind: "claimed"
     claim: { cacheId: string; generation: number; fence: number }
 }
+test("public panels can read only their enabled guild/source live view, including final authorization", async (t) => {
+    const { ctx, input, id, envelope } = await fixture(t)
+    const panelId = await ctx.db.insert("discordPublicPanels", {
+        guildId: "guild",
+        connectionId: id,
+        enabled: true,
+        kind: "server",
+    })
+    const { keyHash: _key, ...publicInput } = input
+    assert.equal(_key, "hash")
+    const args = { ...publicInput, panelId }
+    const claim = await handler<Claim>(reads.reserve)(ctx, args)
+    assert.equal(claim.kind, "claimed")
+    await ctx.db.patch(panelId, { enabled: false })
+    assert.equal(
+        await handler<boolean>(reads.finish)(ctx, {
+            ...args,
+            ...claim.claim,
+            envelopeJson: JSON.stringify(envelope),
+        }),
+        false
+    )
+    await ctx.db.patch(panelId, { enabled: true })
+    for (const bad of [
+        { ...args, guildId: "other" },
+        { ...args, keyHash: "hash" },
+        { ...args, queryJson: JSON.stringify({ view: "matches" }) },
+    ])
+        assert.deepEqual(await handler<unknown>(reads.reserve)(ctx, bad), {
+            kind: "denied",
+        })
+})
 
 test("dashboard Warcon reads recheck current actor rights and session before returning provider data", async (t) => {
     for (const mode of ["rights", "session", "global"]) {

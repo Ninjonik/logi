@@ -63,6 +63,7 @@ import {
 } from "@/components/ui/popover"
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DiscordChannelSelect } from "@/components/app/discord-channel-select"
 import { eventSchema, type EventInput } from "@/lib/validation/event"
 import { HllMapSelector } from "@/components/app/hll-map-selector"
 import { getEventCategoryLabel } from "@/lib/event-categories"
@@ -676,10 +677,6 @@ export function EventFormPanel({
         ) ?? []
     const categoryChannels =
         metadata?.channels?.filter((channel) => channel.type === 4) ?? []
-    const announcementChannels =
-        metadata?.channels?.filter(
-            (channel) => channel.type === 0 || channel.type === 5
-        ) ?? []
     const roleNameById = useMemo(
         () =>
             new Map(
@@ -2412,7 +2409,7 @@ export function EventFormPanel({
                                             control={form.control}
                                             name="announcementChannelId"
                                             render={({ field }) => (
-                                                <DiscordEntitySelect
+                                                <DiscordChannelSelect
                                                     value={
                                                         field.value || undefined
                                                     }
@@ -2421,8 +2418,8 @@ export function EventFormPanel({
                                                             value ?? ""
                                                         )
                                                     }
-                                                    options={
-                                                        announcementChannels
+                                                    channels={
+                                                        metadata?.channels ?? []
                                                     }
                                                     placeholder={
                                                         dictionary.event.fields
@@ -2447,7 +2444,7 @@ export function EventFormPanel({
                                                 control={form.control}
                                                 name="eventInfoChannelId"
                                                 render={({ field }) => (
-                                                    <DiscordEntitySelect
+                                                    <DiscordChannelSelect
                                                         value={
                                                             field.value ||
                                                             undefined
@@ -2457,8 +2454,9 @@ export function EventFormPanel({
                                                                 value ?? ""
                                                             )
                                                         }
-                                                        options={
-                                                            announcementChannels
+                                                        channels={
+                                                            metadata?.channels ??
+                                                            []
                                                         }
                                                         placeholder={
                                                             dictionary.event

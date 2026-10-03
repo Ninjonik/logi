@@ -34,7 +34,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Integration PR delivery handbook](./docs/integrations/website/v0.10/pr-handbook.md) — web/API capabilities, complete Discord command inventory, stored test/build/lint proof, visual evidence, activation and remaining work
 - [Integration PR review guide](./docs/integrations/website/v0.10/review-guide.md) — cumulative architecture, review boundaries, findings, verification and remaining owner tasks
 - [Integration roadmap](./docs/integrations/website/roadmap/README.md) — proposed HLL/Wardogs collection, website synchronization, Discord membership and identity plans
-- [Discord public-panel design](./docs/integrations/website/roadmap/discord-public-panels.md) — proposed channel settings, durable message recovery, map banners, faction emoji, live scoreboards and result publication; not implemented
+- [Discord public panels](./docs/integrations/website/discord-public-panels.md) — channel settings, durable message recovery, map artwork, application emoji, live scoreboards, reviewed results and activation limits
 - [Verified Steam identity](./docs/integrations/website/v0.9/README.md) — session-bound account proof, revocation, identity separation and synthetic acceptance evidence
 - [Reviewed result handoff](./docs/integrations/website/v0.10/README.md) — immutable confirmation/correction, proof-based attribution, scoped result summaries, consumer fixtures and synthetic acceptance
 - [Warcon read integration](./docs/integrations/website/v0.11/README.md) — fifteen gameplay reads, live scoreboard, scoped website access, completed-match collection and provider/local proof

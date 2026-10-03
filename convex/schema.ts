@@ -4,6 +4,10 @@ import {
     gameDataHistoryProgress,
     gameDataSession,
 } from "./gameDataValidators"
+import {
+    discordPublications,
+    discordPublicPanels,
+} from "./discordPublicationTable"
 import { resultPublicPayload, resultRevision } from "./resultValidators"
 import { defineSchema, defineTable } from "convex/server"
 import { apiKeyReadAccess } from "./apiKeyValidators"
@@ -499,6 +503,8 @@ const guildGames = defineTable({
 }).index("guildId_gameId", ["guildId", "gameId"])
 
 export default defineSchema({
+    discordPublications,
+    discordPublicPanels,
     peopleIntegrationState: defineTable({
         key: v.literal("global"),
         generation: v.string(),

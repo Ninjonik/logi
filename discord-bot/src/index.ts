@@ -140,7 +140,12 @@ function startFallbackWorker() {
     return fallbackWorker
 }
 
+import {
+    startPublicPanelWorker,
+    handlePublicPanelButton,
+} from "./public-panels/worker"
 client.once(Events.ClientReady, async (readyClient) => {
+    startPublicPanelWorker(client)
     startManagedRoleWorker(client)
     try {
         logInfo("bot", "Discord bot ready", {
@@ -173,6 +178,7 @@ client.once(Events.ClientReady, async (readyClient) => {
 client.on(Events.InteractionCreate, async (interaction) => {
     try {
         if (interaction.isButton()) {
+            if (await handlePublicPanelButton(interaction)) return
             await interactionHandler.handleButtonInteraction(interaction)
             return
         }

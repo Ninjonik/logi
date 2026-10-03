@@ -1,7 +1,8 @@
 # Discord public panels: design and implementation handoff
 
-Status: **proposal, not implemented or deployed**, 2026-10-03.
-The current source baseline is `f853c0ad2853edb1849c90c0ed6409924adf5dd2`.
+Status: **implemented; local/test-guild acceptance in progress; production not activated**, 2026-10-03.
+The original design baseline was `f853c0ad2853edb1849c90c0ed6409924adf5dd2`.
+See the [implementation and operator guide](../discord-public-panels.md) for current behavior and limits.
 The priority chosen by the owner is public server panels, live scoreboards and
 confirmed results. This document records the agreed requirements and suggested
 implementation. Existing commands remain described in the
@@ -134,7 +135,9 @@ Record source/provenance for selected map and faction assets. Accept approved
 uploaded raster files through bounded type/dimension validation, rather than
 letting the bot fetch arbitrary external image URLs. The interactive discussion
 preview uses the existing faction icons and a general game banner, not a verified
-screenshot of the named map. The icons have not been uploaded to Discord.
+screenshot of the named map. Implementation provisioned the three faction icons
+into the authorized test application and verified idempotent reuse; production
+applications require their own guarded provisioning step.
 
 ## Restart, retries and ownership
 
@@ -189,10 +192,11 @@ Discord transport/builders in `discord-bot`; settings in the dashboard. Update
 the matching public wiki and API/OpenAPI contracts with implementation. Keep
 public UI examples clearly separate from runtime acceptance.
 
-This documentation pass inspected the current callers and Discord documentation
+The original design-only documentation pass inspected the current callers and Discord documentation
 and exercised an interactive local design preview. It did **not** send Discord
 messages, upload emoji, deploy Convex, change provider configuration or test the
-proposed durable publisher. The acceptance rows above remain pending.
+proposed durable publisher. Implementation acceptance is recorded separately in
+the linked operator guide; those original design-only checks are not runtime proof.
 
 Upstream merged Wardogs stratmap work into the PR at `f853c0a` during this design
 pass. Its [GitHub checks passed](https://github.com/Ninjonik/logi/actions/runs/37107907954).

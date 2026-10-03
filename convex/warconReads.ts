@@ -25,6 +25,7 @@ const accessArgs = {
     connectionId: v.string(),
     keyHash: v.optional(v.string()),
     actor: v.optional(dashboardActor),
+    panelId: v.optional(v.id("discordPublicPanels")),
     queryJson: v.string(),
 }
 type Access = {
@@ -33,6 +34,7 @@ type Access = {
     connectionId: string
     keyHash?: string
     actor?: DashboardActor
+    panelId?: import("./_generated/dataModel").Id<"discordPublicPanels">
     queryJson: string
 }
 async function authorize(ctx: MutationCtx, args: Access) {
@@ -43,7 +45,22 @@ async function authorize(ctx: MutationCtx, args: Access) {
         throw new Error("Unauthorized.")
     if (args.queryJson.length > 1500) throw new Error("Invalid Warcon query.")
     const input = warconQuerySchema.parse(JSON.parse(args.queryJson))
-    if (args.keyHash !== undefined) {
+    if (args.panelId !== undefined) {
+        if (
+            args.keyHash !== undefined ||
+            args.actor !== undefined ||
+            input.view !== "live"
+        )
+            return null
+        const panel = await ctx.db.get(args.panelId)
+        if (
+            !panel?.enabled ||
+            panel.kind === "results" ||
+            panel.guildId !== args.guildId ||
+            panel.connectionId !== args.connectionId
+        )
+            return null
+    } else if (args.keyHash !== undefined) {
         if (args.actor !== undefined) return null
         const key = await ctx.db
             .query("apiKeys")

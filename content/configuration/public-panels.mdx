@@ -1,0 +1,35 @@
+---
+title: Public Discord panels
+description: Automatically updated server, scoreboard and reviewed result messages.
+---
+
+# Public Discord panels
+
+In workspace Discord settings, open **Public panels**, select a configured data
+source and choose **Server + score**, **Separate scoreboard** or **Confirmed
+results**. Search the channel list by name or ID, or switch to ID entry. Use
+**Verify channel** to check the bot's permissions before saving.
+
+One compact server panel includes map, player count and supported scores. A
+separate scoreboard needs another channel. Refresh can run every 30, 60 or 300
+seconds. Saving again requests an update; the bot checks changes every 15 seconds.
+
+**Private player details** enables a button for Warcon player names, factions,
+kills, deaths, cash and ping. Its response is visible only to the person pressing
+the button. HLL currently provides server counts and scores without this player
+list. Stale data is labeled; missing counts are not shown as zero.
+
+Confirmed results publish only after review in Logi. Corrections edit the original
+message. Historical reviews are not posted when first enabling the feature.
+Disabling result publication removes its owned result messages. Pausing a server
+panel keeps a paused card in the selected channel.
+
+The bot retains message IDs across restarts and edits the same message. Changing
+channels waits for removal of the old message. If Discord's response to a send
+is lost, the bot searches for its exact marker. A pending recovery that cannot be
+resolved from recent history needs operator attention; repeatedly saving does
+not send a duplicate.
+
+Map artwork requires a publicly reachable HTTPS Logi deployment. Application
+emoji are installed once by the operator; workspace administrators do not need
+to upload faction logos. Missing icons have a readable fallback.

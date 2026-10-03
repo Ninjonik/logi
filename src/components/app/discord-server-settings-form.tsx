@@ -18,6 +18,8 @@ import {
 import { ResyncDashboardAdminsButton } from "@/components/app/resync-dashboard-admins-button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { supportedClanLanguages, type ClanLanguage } from "@/lib/clan-language"
+import { DiscordPublicPanelsForm } from "./discord-public-panels-form"
+import { DiscordChannelSelect } from "./discord-channel-select"
 import { supportedTimezones } from "@/lib/discord-timezones"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -166,10 +168,6 @@ export function DiscordServerSettingsForm({
             .catch(() => setMetadata(null))
     }, [serverId])
 
-    const announcementChannels =
-        metadata?.channels?.filter(
-            (channel) => channel.type === 0 || channel.type === 5
-        ) ?? []
     const categoryChannels =
         metadata?.channels?.filter((channel) => channel.type === 4) ?? []
     const meetingChannels =
@@ -287,10 +285,10 @@ export function DiscordServerSettingsForm({
                     <Label>
                         {dictionary.serverSettings.announcementsChannelId}
                     </Label>
-                    <DiscordEntitySelect
+                    <DiscordChannelSelect
                         value={announcementsChannelId}
                         onChange={setAnnouncementsChannelId}
-                        options={announcementChannels}
+                        channels={metadata?.channels ?? []}
                         placeholder={
                             dictionary.serverSettings.announcementsChannelId
                         }
@@ -300,10 +298,10 @@ export function DiscordServerSettingsForm({
                     <Label>
                         {dictionary.serverSettings.eventInfoChannelId}
                     </Label>
-                    <DiscordEntitySelect
+                    <DiscordChannelSelect
                         value={eventInfoChannelId}
                         onChange={setEventInfoChannelId}
-                        options={announcementChannels}
+                        channels={metadata?.channels ?? []}
                         placeholder={
                             dictionary.serverSettings.eventInfoChannelId
                         }
@@ -311,19 +309,19 @@ export function DiscordServerSettingsForm({
                 </div>
                 <div className="space-y-2">
                     <Label>{dictionary.serverSettings.errorsChannelId}</Label>
-                    <DiscordEntitySelect
+                    <DiscordChannelSelect
                         value={errorsChannelId}
                         onChange={setErrorsChannelId}
-                        options={announcementChannels}
+                        channels={metadata?.channels ?? []}
                         placeholder={dictionary.serverSettings.errorsChannelId}
                     />
                 </div>
                 <div className="space-y-2">
                     <Label>{dictionary.serverSettings.calendarChannelId}</Label>
-                    <DiscordEntitySelect
+                    <DiscordChannelSelect
                         value={calendarChannelId}
                         onChange={setCalendarChannelId}
-                        options={announcementChannels}
+                        channels={metadata?.channels ?? []}
                         placeholder={
                             dictionary.serverSettings.calendarChannelId
                         }
@@ -536,6 +534,7 @@ export function DiscordServerSettingsForm({
                 >
                     {dictionary.serverSettings.saveDiscordSettings}
                 </Button>
+                <DiscordPublicPanelsForm serverId={serverId} gameId={gameId} />
             </CardContent>
         </Card>
     )
