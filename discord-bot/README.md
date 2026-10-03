@@ -32,6 +32,9 @@ npm run dev:all
   handle each account's own global recap preference
 - Handle `/server-status` for Discord server managers, with a private localized
   HLL/WDG summary from stored collector observations
+- Refresh configured public server/score panels, optional player leaders and
+  private Wardogs player pages; publish reviewed results with durable message
+  ownership and restart recovery
 - Write sync state back to Convex
 - Reconcile actor-backed membership roles through a durable queue, including
   independent recovery after reconnect. `src/sync/managed-member-roles.ts` owns
@@ -62,6 +65,11 @@ lists all six slash commands, options, permissions, visibility, button/automatic
 workflows, rollout limits and reproducible registration payloads. The
 [PR handbook](../docs/integrations/website/v0.10/pr-handbook.md) links website
 capabilities, review, tests and visual proof.
+
+The [Discord feature gallery](../docs/integrations/website/evidence/2026-10-03-discord-gallery/README.md)
+compares 21 actual Discord screenshots of existing and new surfaces, with normal
+audiences, synthetic-data boundaries and concrete design gaps. Configure public
+panels using the [operator guide](../docs/integrations/website/discord-public-panels.md).
 
 ## Source layout
 

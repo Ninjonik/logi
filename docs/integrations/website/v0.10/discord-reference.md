@@ -61,9 +61,12 @@ blocked by the approved target's position above the test bot.
 
 ## Buttons, modals and automatic behavior
 
-For the proposed next public server/score/result panels, see the
-[channel, appearance and restart-recovery design](../roadmap/discord-public-panels.md).
-Those panels and their new settings are not part of the current command inventory.
+Public server/score/result panels are now implemented in PR #158. See the
+[operator guide](../discord-public-panels.md) and
+[actual runtime acceptance](../evidence/2026-10-03-public-panels/README.md).
+They use automatic updates and buttons, so the slash-command count remains six.
+The [21-image feature gallery](../evidence/2026-10-03-discord-gallery/README.md)
+compares existing and new surfaces and records concrete design gaps.
 
 These are existing or extended workflows, not additional slash commands:
 
@@ -78,7 +81,9 @@ These are existing or extended workflows, not additional slash commands:
 | Managed roles | Dashboard assignment/access workflow and recruitment | Fenced durable retry, explicit role ownership, exact Discord target, fresh actor checks and operator-visible outcomes |
 | Membership observations | Member add/update/remove, lifecycle invalidation and full reconciliation | Freshness-aware website lookup; unavailable Discord evidence does not become an empty guild |
 | Match recaps and notification preference | Personal DM plus Subscribe/Unsubscribe buttons; own-account settings | Exact Discord binding and opt-out recheck; preference is account-global, not per event/game |
-| Game-server status | `/server-status` | On-demand read of stored HLL/WDG data; no RCON action, polling trigger or automatic public status panel |
+| Game-server status | `/server-status` | Private on-demand read of stored HLL/WDG data; no RCON action or polling trigger |
+| Public live panels | Dashboard-selected source/game/channel, dropdown or pasted ID | Automatic stored-data server/score updates, map artwork, faction icons, opt-in leaders and durable message recovery; separate private Wardogs player pages |
+| Reviewed results | Configured results panel and authenticated result review | Publish confirmed results; correction edits the same message, withdrawal removes the owned message; no historical backfill |
 | Logi platform-service status | Superadmin-selected platform status channel | Existing dashboard/Convex/service degradation/recovery reporting; a different feature from game-server status |
 
 Detailed wiki guides cover [events](../../../../content/operations/events.mdx),

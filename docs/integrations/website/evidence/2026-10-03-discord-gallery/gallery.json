@@ -1,0 +1,382 @@
+{
+  "capturedAt": "2026-10-03",
+  "sourceRevision": "1ad09ddb454c440ac3f8eae85b3aef914c6660bf",
+  "previousRuntimeSourceRevision": "fc5eb8696942adedbd5009d3e47ccca98e98b868",
+  "scope": "19 new real Discord renderer captures, plus 2 referenced earlier runtime captures; all synthetic data.",
+  "noProductionBackendAccess": true,
+  "noRealProviderReads": true,
+  "noDirectMessagesSent": true,
+  "noApplicationBehaviorChanges": true,
+  "newCaptureTransformations": [
+    "Synthetic fixture text and URLs; mentions disabled and fixture mentions replaced with synthetic labels.",
+    "All action custom IDs replaced with an isolated gallery prefix; no real application actions or persistence.",
+    "Roster and recap OG images omitted because they require a private data/image endpoint.",
+    "Faithful rectangular JPEG crops excluding unrelated Discord sidebar and account UI; no redraw or compositing.",
+    "Late-arrival modal opened via a gallery-only interaction and cancelled without submitting."
+  ],
+  "entries": [
+    {
+      "id": "live",
+      "title": "Live server and public leaders",
+      "origin": "New",
+      "normalAudience": "Configured channel",
+      "evidence": "prior-runtime-acceptance",
+      "screenshot": "../2026-10-03-public-panels/discord-scoreboard.jpg",
+      "bytes": 80261,
+      "sha256": "27e5b6692c82b4e6f37632dc07e2697ce9add5710a2a2ea7233d8407bce0e360",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/public-panels/render.ts",
+          "sha256": "fe1b7e7a58195de1a9be0ef538b48507858d305213424590ef2a5c6aab3a8b3e"
+        }
+      ]
+    },
+    {
+      "id": "players",
+      "title": "Private live player details",
+      "origin": "New",
+      "normalAudience": "Ephemeral",
+      "evidence": "prior-runtime-acceptance",
+      "screenshot": "../2026-10-03-public-panels/discord-private-players.jpg",
+      "bytes": 45225,
+      "sha256": "aead6d2ad2c3eea12cc41d1615d93db524b1839945cb82b5ebc2d36232091781",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/public-panels/player-details.ts",
+          "sha256": "a181edca7cbbe0ac4fbd5043a1bde228c1a5151c93a1c4035d6de88c73ff9486"
+        }
+      ]
+    },
+    {
+      "id": "match",
+      "title": "Match announcement and signups",
+      "origin": "Existing, reliability extended",
+      "normalAudience": "Configured event channel",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "match.jpg",
+      "bytes": 43932,
+      "sha256": "b7dfbf10b953f8e0efbdb0ac673b09ca2d57f9a0dc80d6e7312692b8d2d3b206",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/message-builders.ts",
+          "sha256": "f7fc8f63f4c7648db7a25a08ee5aab5c5aff0e69568230f88bfe0b8f66a2d5f1"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946464134430721"
+    },
+    {
+      "id": "training",
+      "title": "Training announcement",
+      "origin": "Existing",
+      "normalAudience": "Configured event channel",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "training.jpg",
+      "bytes": 32096,
+      "sha256": "33f8cd475d50f037d79b5a04c7c90631e1cd055a8c6007eb54d3fb977527d751",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/message-builders.ts",
+          "sha256": "f7fc8f63f4c7648db7a25a08ee5aab5c5aff0e69568230f88bfe0b8f66a2d5f1"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946464901992511"
+    },
+    {
+      "id": "roster",
+      "title": "Published roster",
+      "origin": "Existing, reliability extended",
+      "normalAudience": "Configured event channel",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "roster.jpg",
+      "bytes": 32572,
+      "sha256": "066ef761d9f35e6c634ba36e46854b99048b7c782af09cb1fbb2f75ad9acbc4d",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/message-builders.ts",
+          "sha256": "f7fc8f63f4c7648db7a25a08ee5aab5c5aff0e69568230f88bfe0b8f66a2d5f1"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946466361479193"
+    },
+    {
+      "id": "briefing",
+      "title": "Event forum briefing",
+      "origin": "Existing",
+      "normalAudience": "Configured event forum",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "briefing.jpg",
+      "bytes": 17205,
+      "sha256": "f1abef723441bb73f0fa1a3c55380efc0762f7842a35cc3b565ed2ff5c9db230",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/message-builders.ts",
+          "sha256": "f7fc8f63f4c7648db7a25a08ee5aab5c5aff0e69568230f88bfe0b8f66a2d5f1"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946467821223957"
+    },
+    {
+      "id": "calendar",
+      "title": "Event calendar",
+      "origin": "Existing, recovery extended",
+      "normalAudience": "Configured calendar channel",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "calendar.jpg",
+      "bytes": 16179,
+      "sha256": "79fd5c9ef1f915c2c3f028186c4a75a2bc3ca6eae4dfe59e226a6432ac0503f0",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/message-builders.ts",
+          "sha256": "f7fc8f63f4c7648db7a25a08ee5aab5c5aff0e69568230f88bfe0b8f66a2d5f1"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946468962078811"
+    },
+    {
+      "id": "recruitment",
+      "title": "Recruitment panel",
+      "origin": "Existing, role queue extended",
+      "normalAudience": "Configured recruitment channel",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "recruitment.jpg",
+      "bytes": 17486,
+      "sha256": "e8e9316b52c6e56f440ee9e806d244ecb1b8873491c9dc4429a612ed106117ed",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/message-builders.ts",
+          "sha256": "f7fc8f63f4c7648db7a25a08ee5aab5c5aff0e69568230f88bfe0b8f66a2d5f1"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946490222870609"
+    },
+    {
+      "id": "application",
+      "title": "Application and staff closure",
+      "origin": "Existing, role queue extended",
+      "normalAudience": "Restricted application thread",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "application.jpg",
+      "bytes": 24476,
+      "sha256": "d7f20f6e4f70545b44417f2034c67e2df8248665fa1814e851d61d39db93c71d",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/message-builders.ts",
+          "sha256": "f7fc8f63f4c7648db7a25a08ee5aab5c5aff0e69568230f88bfe0b8f66a2d5f1"
+        },
+        {
+          "path": "discord-bot/src/interactions.ts",
+          "sha256": "058b9e4e3f729330a73fd3ca2541504ab29f736b7d2e07fc6b965e4f7c19b65f"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946491414188095"
+    },
+    {
+      "id": "tickets",
+      "title": "Ticket panel",
+      "origin": "Existing, recovery extended",
+      "normalAudience": "Configured ticket channel",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "tickets.jpg",
+      "bytes": 17832,
+      "sha256": "85e7c74906ca0974a71b24393845a62c299f21bb689070b52e1078df2a21e241",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/message-builders.ts",
+          "sha256": "f7fc8f63f4c7648db7a25a08ee5aab5c5aff0e69568230f88bfe0b8f66a2d5f1"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946492613759027"
+    },
+    {
+      "id": "ticket-thread",
+      "title": "Ticket and staff closure",
+      "origin": "Existing",
+      "normalAudience": "Restricted ticket thread",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "ticket-thread.jpg",
+      "bytes": 19343,
+      "sha256": "fb04fefc1f83023b9d0f5888f1a3b59f3dccc8d9f8c6b150fbcaef3f3ad048c8",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/message-builders.ts",
+          "sha256": "f7fc8f63f4c7648db7a25a08ee5aab5c5aff0e69568230f88bfe0b8f66a2d5f1"
+        },
+        {
+          "path": "discord-bot/src/interactions.ts",
+          "sha256": "058b9e4e3f729330a73fd3ca2541504ab29f736b7d2e07fc6b965e4f7c19b65f"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946493184053293"
+    },
+    {
+      "id": "player",
+      "title": "Player profile",
+      "origin": "Existing",
+      "normalAudience": "Public slash response",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "player.jpg",
+      "bytes": 17161,
+      "sha256": "90ecbfe203cc24bb3971104794919d7355d07a871277c1dce1e1d77d98fb4f40",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/interactions.ts",
+          "sha256": "058b9e4e3f729330a73fd3ca2541504ab29f736b7d2e07fc6b965e4f7c19b65f"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946497785466892"
+    },
+    {
+      "id": "link",
+      "title": "Platform identity entry",
+      "origin": "Existing",
+      "normalAudience": "Ephemeral",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "link.jpg",
+      "bytes": 10266,
+      "sha256": "85917542785eb9c5d3d3a4a330b653d21b484fa808fe4bc18be9bdb094018699",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/interactions/platform-link.ts",
+          "sha256": "257d1a004599a96eddddc143bd81ca1da5f27a25d6913e76ac6d6f41e3d97281"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946498892632127"
+    },
+    {
+      "id": "platform",
+      "title": "Platform selection",
+      "origin": "Existing",
+      "normalAudience": "Ephemeral",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "platform.jpg",
+      "bytes": 11803,
+      "sha256": "57bc0d53738af8571ef40a04cb4af4234639390ff6101061491237ba82e73198",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/interactions/platform-link.ts",
+          "sha256": "257d1a004599a96eddddc143bd81ca1da5f27a25d6913e76ac6d6f41e3d97281"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946500171894805"
+    },
+    {
+      "id": "attendance",
+      "title": "Attendance reminder",
+      "origin": "Existing, fixes extended",
+      "normalAudience": "Personal DM",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "attendance.jpg",
+      "bytes": 16853,
+      "sha256": "f406bfd464b2b72832b2b4ce7ec71758b1904fe3146b47f78bfb57e59959a4df",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/sync/attendance-reminders.ts",
+          "sha256": "ce3c8d6160337a6e07c80ed084a0b22cd8bd2b2d6678aeeebd507fa97b807b1f"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946521051144295"
+    },
+    {
+      "id": "recap",
+      "title": "Personal match recap",
+      "origin": "Existing, identity and consent extended",
+      "normalAudience": "Personal DM",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "recap.jpg",
+      "bytes": 15021,
+      "sha256": "e36c69c95a5a767b69dbd43a20294fa5886b307d7e8450889326b003ee68da39",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/sync/match-recaps.ts",
+          "sha256": "879a89c0cf3ff30a9241e065f79e3f86a8c6828386900e39a1c94b0e4155a514"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946522036932750"
+    },
+    {
+      "id": "recap-consent",
+      "title": "Recap subscription preference",
+      "origin": "Extended",
+      "normalAudience": "Ephemeral",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "recap-consent.jpg",
+      "bytes": 4543,
+      "sha256": "86410340a27112ac6cf7bae561652f424eba172ea4acc7b7cb45981f52893e93",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/interactions/match-recap-preference.ts",
+          "sha256": "253e51402773f7f1c6ae43dd96f40f23e4ffd0965340a8004cf14838875c0b9d"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946523056013313"
+    },
+    {
+      "id": "status",
+      "title": "Stored HLL and Wardogs status",
+      "origin": "New",
+      "normalAudience": "Ephemeral manager response",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "status.jpg",
+      "bytes": 37827,
+      "sha256": "dbbb7c2653420074d8aa73165218e1a9f8db2844667b5259f4f09808a400c12b",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/interactions/server-status.ts",
+          "sha256": "18a0c9d8100570279aa9b842248305c3e0cba141ecb65a0291bf4cb853bcb23a"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946524285079745"
+    },
+    {
+      "id": "results",
+      "title": "Reviewed result publication",
+      "origin": "New",
+      "normalAudience": "Configured results channel",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "results.jpg",
+      "bytes": 10240,
+      "sha256": "ab4c3365a167f4b53e08b0862594dd9caeb29d30514d9314238ee27409863c0d",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/public-panels/render.ts",
+          "sha256": "fe1b7e7a58195de1a9be0ef538b48507858d305213424590ef2a5c6aab3a8b3e"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946524909764733"
+    },
+    {
+      "id": "service",
+      "title": "Logi service health",
+      "origin": "Existing",
+      "normalAudience": "Superadmin-selected channel",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "service.jpg",
+      "bytes": 9946,
+      "sha256": "29036cc53e6fbe4135c5dfbbc14b0cdacd856373880156fbe9248ce0d07497e7",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/platform-status.ts",
+          "sha256": "0aa6edf06c51dfd03f6d4f03e084ac59c7e40a12f490f21e72bf9c72a8cc870f"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946543817953373"
+    },
+    {
+      "id": "notice",
+      "title": "Late-arrival modal",
+      "origin": "Existing",
+      "normalAudience": "Own-account modal",
+      "evidence": "current-renderer-appearance",
+      "screenshot": "notice.jpg",
+      "bytes": 23583,
+      "sha256": "daf61f164415e90bdb638842dfc20b100abccfd2c42968d0dbb22c9159b84996",
+      "sourceFiles": [
+        {
+          "path": "discord-bot/src/interactions.ts",
+          "sha256": "058b9e4e3f729330a73fd3ca2541504ab29f736b7d2e07fc6b965e4f7c19b65f"
+        }
+      ],
+      "testMessageUrl": "https://discord.com/channels/1191044555844370492/1554615183106904074/1555946545218846841"
+    }
+  ]
+}
