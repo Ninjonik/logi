@@ -1,0 +1,51 @@
+{
+  "mode": "actual production-build browser on localhost; synthetic local reviewer and synthetic player rows",
+  "checks": [
+    {
+      "name": "expanded scoreboard",
+      "passed": true,
+      "player": "Synthetic Ranger",
+      "kills": 0,
+      "deaths": 2,
+      "kd": "0.00",
+      "cash": 350,
+      "ping": 42,
+      "scores": [
+        0,
+        12,
+        7
+      ]
+    },
+    {
+      "name": "automatic polling",
+      "passed": true,
+      "firstPlayerObservation": "2026-10-02T20:06:02+02:00",
+      "nextPlayerObservation": "2026-10-02T20:06:17+02:00"
+    },
+    {
+      "name": "disable plus manual refresh",
+      "passed": true,
+      "playerTableRemoved": true,
+      "errorDisplayed": true
+    },
+    {
+      "name": "resume from dashboard",
+      "passed": true,
+      "tableReturned": true
+    },
+    {
+      "name": "explicit resource in key UI",
+      "passed": true,
+      "label": "Warcon gameplay data (includes player names and Steam IDs)",
+      "selectedByDefault": false
+    },
+    {
+      "name": "successful-state browser console",
+      "passed": true,
+      "warnings": 0,
+      "errors": 0
+    }
+  ],
+  "oauthTested": false,
+  "realPlayerRowsPublished": false
+}

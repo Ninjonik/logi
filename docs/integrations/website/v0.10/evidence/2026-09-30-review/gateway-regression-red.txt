@@ -1,0 +1,188 @@
+Expected failing regression captured before the corresponding fix. Final passing suite: tests.txt.
+
+✖ gateway require: cancel closes owned sockets without a crash or duplicate reconnect (124.5064ms)
+✖ gateway require: recover closes owned sockets without a crash or duplicate reconnect (120.4795ms)
+✔ gateway require: open closes owned sockets without a crash or duplicate reconnect (830.3907ms)
+✖ gateway import: cancel closes owned sockets without a crash or duplicate reconnect (126.685ms)
+✖ gateway import: recover closes owned sockets without a crash or duplicate reconnect (127.7601ms)
+✔ gateway import: open closes owned sockets without a crash or duplicate reconnect (839.0833ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 2
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2267.3878
+
+✖ failing tests:
+
+test at discord-bot\src\gateway-lifecycle.test.ts:2:1100
+✖ gateway require: cancel closes owned sockets without a crash or duplicate reconnect (124.5064ms)
+  AssertionError [ERR_ASSERTION]: node:events:505
+      throw er; // Unhandled 'error' event
+      ^
+
+  Error: socket hang up
+      at Socket.socketOnEnd (node:_http_client:790:25)
+      at Socket.emit (node:events:526:24)
+      at endReadableNT (node:internal/streams/readable:1764:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+  Emitted 'error' event on WebSocket instance at:
+      at emitErrorAndClose (<repository>\node_modules\ws\lib\websocket.js:1060:13)
+      at ClientRequest.<anonymous> (<repository>\node_modules\ws\lib\websocket.js:898:5)
+      at ClientRequest.emit (node:events:514:28)
+      at emitErrorEvent (node:_http_client:114:11)
+      at Socket.socketOnEnd (node:_http_client:790:5)
+      at Socket.emit (node:events:526:24)
+      at endReadableNT (node:internal/streams/readable:1764:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'ECONNRESET'
+  }
+
+  Node.js v24.21.0
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (<repository>\discord-bot\src\gateway-lifecycle.test.ts:21:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at discord-bot\src\gateway-lifecycle.test.ts:2:1100
+✖ gateway require: recover closes owned sockets without a crash or duplicate reconnect (120.4795ms)
+  AssertionError [ERR_ASSERTION]: node:events:505
+      throw er; // Unhandled 'error' event
+      ^
+
+  Error: socket hang up
+      at Socket.socketOnEnd (node:_http_client:790:25)
+      at Socket.emit (node:events:526:24)
+      at endReadableNT (node:internal/streams/readable:1764:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+  Emitted 'error' event on WebSocket instance at:
+      at emitErrorAndClose (<repository>\node_modules\ws\lib\websocket.js:1060:13)
+      at ClientRequest.<anonymous> (<repository>\node_modules\ws\lib\websocket.js:898:5)
+      at ClientRequest.emit (node:events:514:28)
+      at emitErrorEvent (node:_http_client:114:11)
+      at Socket.socketOnEnd (node:_http_client:790:5)
+      at Socket.emit (node:events:526:24)
+      at endReadableNT (node:internal/streams/readable:1764:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'ECONNRESET'
+  }
+
+  Node.js v24.21.0
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (<repository>\discord-bot\src\gateway-lifecycle.test.ts:21:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at discord-bot\src\gateway-lifecycle.test.ts:2:1100
+✖ gateway import: cancel closes owned sockets without a crash or duplicate reconnect (126.685ms)
+  AssertionError [ERR_ASSERTION]: node:events:505
+      throw er; // Unhandled 'error' event
+      ^
+
+  Error: socket hang up
+      at Socket.socketOnEnd (node:_http_client:790:25)
+      at Socket.emit (node:events:526:24)
+      at endReadableNT (node:internal/streams/readable:1764:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+  Emitted 'error' event on WebSocket instance at:
+      at emitErrorAndClose (<repository>\node_modules\ws\lib\websocket.js:1060:13)
+      at ClientRequest.<anonymous> (<repository>\node_modules\ws\lib\websocket.js:898:5)
+      at ClientRequest.emit (node:events:514:28)
+      at emitErrorEvent (node:_http_client:114:11)
+      at Socket.socketOnEnd (node:_http_client:790:5)
+      at Socket.emit (node:events:526:24)
+      at endReadableNT (node:internal/streams/readable:1764:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'ECONNRESET'
+  }
+
+  Node.js v24.21.0
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (<repository>\discord-bot\src\gateway-lifecycle.test.ts:21:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at discord-bot\src\gateway-lifecycle.test.ts:2:1100
+✖ gateway import: recover closes owned sockets without a crash or duplicate reconnect (127.7601ms)
+  AssertionError [ERR_ASSERTION]: node:events:505
+      throw er; // Unhandled 'error' event
+      ^
+
+  Error: socket hang up
+      at Socket.socketOnEnd (node:_http_client:790:25)
+      at Socket.emit (node:events:526:24)
+      at endReadableNT (node:internal/streams/readable:1764:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+  Emitted 'error' event on WebSocket instance at:
+      at emitErrorAndClose (<repository>\node_modules\ws\lib\websocket.js:1060:13)
+      at ClientRequest.<anonymous> (<repository>\node_modules\ws\lib\websocket.js:898:5)
+      at ClientRequest.emit (node:events:514:28)
+      at emitErrorEvent (node:_http_client:114:11)
+      at Socket.socketOnEnd (node:_http_client:790:5)
+      at Socket.emit (node:events:526:24)
+      at endReadableNT (node:internal/streams/readable:1764:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'ECONNRESET'
+  }
+
+  Node.js v24.21.0
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (<repository>\discord-bot\src\gateway-lifecycle.test.ts:21:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

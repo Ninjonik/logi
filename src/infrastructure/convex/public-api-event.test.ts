@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import test from "node:test"
 
 import * as publicApi from "../../../convex/publicApi"
@@ -36,6 +37,10 @@ class FakeQuery {
         return this.matching()
     }
 
+    async take(limit: number) {
+        return this.matching().slice(0, limit)
+    }
+
     private matching() {
         return this.documents.filter(
             (document) => !this.field || document[this.field] === this.value
@@ -44,6 +49,9 @@ class FakeQuery {
 }
 
 class FakeDb {
+    normalizeId(table: string, id: string) {
+        return this.tables[table]?.has(id) ? id : null
+    }
     readonly tables: Record<string, Map<string, Document>> = {
         apiKeys: new Map([
             ["key-1", { _id: "key-1", keyHash: "key", guildId: "guild-a" }],
@@ -110,15 +118,17 @@ class FakeDb {
     }
 }
 
-const handler = (value: unknown) =>
-    (
-        value as {
-            _handler: (
-                ctx: { db: FakeDb },
-                args: Record<string, unknown>
-            ) => Promise<{ status: number; body: string } | null>
-        }
-    )._handler
+const handler =
+    (value: unknown) =>
+    (ctx: { db: FakeDb; scheduler?: unknown }, args: Record<string, unknown>) =>
+        (
+            value as {
+                _handler: (
+                    ctx: { db: FakeDb; scheduler?: unknown },
+                    args: Record<string, unknown>
+                ) => Promise<{ status: number; body: string } | null>
+            }
+        )._handler({ ...ctx, scheduler: { runAfter: async () => null } }, args)
 
 function event(overrides: Record<string, unknown> = {}) {
     return {
@@ -150,6 +160,53 @@ function deliveryPayload(db: FakeDb) {
     const delivery = [...db.tables.webhookDeliveries.values()][0]
     return JSON.parse(delivery?.payload as string) as Record<string, unknown>
 }
+
+test("generic event mutation responses and webhook payloads exclude review storage", async () => {
+    const db = new FakeDb()
+    const created = await handler(publicApi.mutateClanEvent)({ db }, request())
+    const eventId = JSON.parse(created!.body).data.id
+    const reviewedResult = JSON.parse(
+        readFileSync(
+            new URL(
+                "../../../docs/integrations/website/v0.10/fixtures/confirmed.json",
+                import.meta.url
+            ),
+            "utf8"
+        )
+    ).data.result
+    await db.patch(eventId, {
+        reviewedResult,
+        reviewedResultGameId: "hell_let_loose",
+    })
+    db.tables.webhookSubscriptions.get("hook-1")!.eventTypes = ["event.updated"]
+    for (const operation of ["update", "conclude"]) {
+        db.tables.webhookDeliveries.clear()
+        if (operation === "conclude")
+            await db.patch(eventId, {
+                meetingStart: new Date(Date.now() - 60_000).toISOString(),
+            })
+        const result = await handler(publicApi.mutateClanEvent)(
+            { db },
+            request({
+                eventId,
+                operation,
+                idempotencyKey: operation,
+                bodyHash: operation,
+                methodPath: operation,
+                event: event({ name: "Reviewed event" }),
+            })
+        )
+        assert.equal(result?.status, 200)
+        for (const document of [
+            JSON.parse(result!.body).data,
+            deliveryPayload(db).resource as Record<string, unknown>,
+        ]) {
+            assert.equal("reviewedResult" in document, false)
+            assert.equal("reviewedResultGameId" in document, false)
+        }
+    }
+    assert.deepEqual((await db.get(eventId))?.reviewedResult, reviewedResult)
+})
 
 test("event API rejects cross-guild references without creating an event", async () => {
     const db = new FakeDb()

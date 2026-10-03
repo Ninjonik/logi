@@ -1,3 +1,5 @@
+import { registerMembershipInvalidationEvents } from "./sync/membership-events"
+import { startManagedRoleWorker } from "./sync/managed-member-roles"
 import { Worker } from "node:worker_threads"
 import { createRequire } from "node:module"
 import { Events } from "discord.js"
@@ -5,6 +7,7 @@ import { Events } from "discord.js"
 import {
     removeGuildMemberAccess,
     syncGuildMemberAccessMember,
+    invalidateMembershipGuild,
 } from "./sync/member-access"
 import { MeetingAttendanceRequestService } from "./meeting-attendance"
 import { startPlatformStatusMonitor } from "./platform-status"
@@ -137,7 +140,15 @@ function startFallbackWorker() {
     return fallbackWorker
 }
 
+import {
+    startPublicPanelWorker,
+    handlePublicPanelButton,
+} from "./public-panels/worker"
+import { startLeagueWorker } from "./league/worker"
 client.once(Events.ClientReady, async (readyClient) => {
+    startLeagueWorker(client)
+    startPublicPanelWorker(client)
+    startManagedRoleWorker(client)
     try {
         logInfo("bot", "Discord bot ready", {
             user: readyClient.user.tag,
@@ -145,6 +156,7 @@ client.once(Events.ClientReady, async (readyClient) => {
         })
 
         for (const guild of readyClient.guilds.cache.values()) {
+            await invalidateMembershipGuild(guild.id)
             await interactionHandler
                 .registerGuildCommands(guild)
                 .catch((error) => {
@@ -168,6 +180,7 @@ client.once(Events.ClientReady, async (readyClient) => {
 client.on(Events.InteractionCreate, async (interaction) => {
     try {
         if (interaction.isButton()) {
+            if (await handlePublicPanelButton(interaction)) return
             await interactionHandler.handleButtonInteraction(interaction)
             return
         }
@@ -222,6 +235,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 })
 
+registerMembershipInvalidationEvents(client, {
+    invalidate: invalidateMembershipGuild,
+    reconcile: () => syncService.requestFullResync(),
+    failed: (guildId, error) =>
+        logWarn("member-access", "Membership invalidation failed", {
+            guildId,
+            error,
+        }),
+})
 client.on(Events.GuildMemberAdd, (member) => {
     const config = syncService.getGuildConfig(member.guild.id)
     void syncGuildMemberAccessMember(

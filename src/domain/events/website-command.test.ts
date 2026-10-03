@@ -1,0 +1,197 @@
+import {
+    allowsWebsiteEventWrite,
+    canonicalWebsiteCommand,
+    websiteEventCommandSchema,
+    websiteEventMembershipError,
+    websiteEventStateError,
+} from "./website-command"
+import assert from "node:assert/strict"
+import test from "node:test"
+
+const event = {
+    kind: "match" as const,
+    name: "Three-faction friendly",
+    registrationEnd: "2030-01-01T17:00:00Z",
+    meetingStart: "2030-01-01T18:00:00Z",
+    gameStart: "2030-01-01T18:30:00Z",
+    gameEnd: "2030-01-01T20:00:00Z",
+}
+test("website event commands accept native schedule fields, reject implicit admin/Discord/score fields and invalid timelines", () => {
+    assert.equal(
+        websiteEventCommandSchema.safeParse({ operation: "create", event })
+            .success,
+        true
+    )
+    for (const field of [
+        "serverPassword",
+        "requiredRoleIds",
+        "rewardRoleIds",
+        "announcementChannelId",
+        "pingClan",
+        "eventResult",
+        "actorId",
+    ])
+        assert.equal(
+            websiteEventCommandSchema.safeParse({
+                operation: "create",
+                event: { ...event, [field]: "untrusted" },
+            }).success,
+            false
+        )
+    assert.equal(
+        websiteEventCommandSchema.safeParse({
+            operation: "create",
+            event: { ...event, gameStart: "2030-01-01T16:00:00Z" },
+        }).success,
+        false
+    )
+    assert.equal(
+        websiteEventCommandSchema.safeParse({
+            operation: "update",
+            eventId: "one",
+            expectedRevision: "01",
+            event,
+        }).success,
+        false
+    )
+    assert.equal(
+        websiteEventCommandSchema.safeParse({
+            operation: "create",
+            gameId: "wardogs",
+            event,
+        }).success,
+        false
+    )
+})
+test("write permission is explicit and game scoped; legacy/read-only keys fail closed", () => {
+    for (const access of [
+        undefined,
+        null,
+        {},
+        { resources: ["event-summaries"], gameIds: ["wardogs"] },
+        { resources: ["event-commands"], gameIds: ["hell_let_loose"] },
+    ])
+        assert.equal(allowsWebsiteEventWrite(access, "wardogs"), false)
+    assert.equal(
+        allowsWebsiteEventWrite(
+            { resources: ["event-commands"], gameIds: ["wardogs"] },
+            "wardogs"
+        ),
+        true
+    )
+})
+test("membership requires current epoch and an observed permitted role, never a later received timestamp", () => {
+    const now = Date.parse("2026-10-02T12:00:00Z")
+    const observation = {
+        state: "present",
+        roleIds: ["333333333333333333"],
+        observedAt: "2026-10-02T11:59:10Z",
+        epoch: "3",
+    }
+    const input = {
+        now,
+        epoch: "3",
+        allowedRoles: ["333333333333333333"],
+        observation,
+    }
+    assert.equal(websiteEventMembershipError(input), null)
+    assert.equal(
+        websiteEventMembershipError({ ...input, now: now + 11_000 }),
+        "membership_stale"
+    )
+    assert.equal(
+        websiteEventMembershipError({ ...input, epoch: "4" }),
+        "membership_stale"
+    )
+    assert.equal(
+        websiteEventMembershipError({
+            ...input,
+            observation: { ...observation, observedAt: "2026-10-02T12:00:01Z" },
+        }),
+        "membership_stale"
+    )
+    assert.equal(
+        websiteEventMembershipError({
+            ...input,
+            observation: { ...observation, unavailable: true },
+        }),
+        "membership_stale"
+    )
+    assert.equal(
+        websiteEventMembershipError({ ...input, allowedRoles: [] }),
+        "membership_denied"
+    )
+    assert.equal(
+        websiteEventMembershipError({
+            ...input,
+            observation: { ...observation, state: "left" },
+        }),
+        "membership_denied"
+    )
+})
+test("cancellation is only pre-meeting conclusion; no historical creation or kind changes", () => {
+    const cancel = {
+        operation: "cancel" as const,
+        eventId: "one",
+        expectedRevision: "0",
+    }
+    assert.equal(
+        websiteEventStateError(
+            cancel,
+            { ...event, status: "starting" },
+            Date.parse("2030-01-01T17:30:00Z")
+        ),
+        null
+    )
+    assert.equal(
+        websiteEventStateError(
+            cancel,
+            { ...event, status: "starting" },
+            Date.parse(event.meetingStart)
+        ),
+        "invalid_state"
+    )
+    assert.equal(
+        websiteEventStateError(
+            cancel,
+            { ...event, status: "concluded" },
+            Date.parse("2030-01-01T17:30:00Z")
+        ),
+        "invalid_state"
+    )
+    assert.equal(
+        websiteEventStateError(
+            { operation: "create", event },
+            null,
+            Date.parse("2031-01-01T00:00:00Z")
+        ),
+        "invalid_state"
+    )
+    assert.equal(
+        websiteEventStateError(
+            {
+                ...cancel,
+                operation: "update",
+                event: { ...event, kind: "training" },
+            },
+            event,
+            0
+        ),
+        "invalid_state"
+    )
+})
+test("canonical command digest input binds game and semantic body, independent of JSON key ordering", () => {
+    const a = websiteEventCommandSchema.parse({ operation: "create", event })
+    const b = websiteEventCommandSchema.parse({
+        event: Object.fromEntries(Object.entries(event).reverse()),
+        operation: "create",
+    })
+    assert.equal(
+        canonicalWebsiteCommand("wardogs", a),
+        canonicalWebsiteCommand("wardogs", b)
+    )
+    assert.notEqual(
+        canonicalWebsiteCommand("wardogs", a),
+        canonicalWebsiteCommand("hell_let_loose", a)
+    )
+})

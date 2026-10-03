@@ -1,0 +1,35 @@
+{
+    "failed": false,
+    "error": null,
+    "result": {
+        "id": 42,
+        "server_number": 1,
+        "start": "2030-01-01T00:00:00",
+        "end": null,
+        "map": { "pretty_name": "Foy Warfare" },
+        "result": { "allied": 0, "axis": 5 },
+        "player_stats": [
+            {
+                "player_id": "76561198000000001",
+                "player": "Same nickname",
+                "kills": 5,
+                "deaths": 0,
+                "combat": 12,
+                "offense": 0,
+                "defense": 1,
+                "support": 0,
+                "steaminfo": { "country": "private" }
+            },
+            {
+                "player_id": "76561198000000002",
+                "player": "Same nickname",
+                "kills": 0,
+                "deaths": 2,
+                "combat": 0,
+                "offense": 1,
+                "defense": 0,
+                "support": 0
+            }
+        ]
+    }
+}

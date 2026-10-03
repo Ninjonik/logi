@@ -1,4 +1,192 @@
 export const enMessages = {
+    leagueMatch: {
+        title: "Wardogs League match",
+        description:
+            "Paste a public match link to preview its schedule, teams and preparation. Reading a link does not create an event.",
+        url: "Public match URL",
+        load: "Load match",
+        loading: "Loading…",
+        unknown: "Not available",
+        error: "Unable to read the match. Check the public Wardogs League URL and try again.",
+        unavailable:
+            "The source is temporarily unavailable. No saved match is available.",
+        nextCheck: "Next refresh allowed",
+        source: "Open source match",
+        stale: "Showing a saved match that may be out of date. Load the link again when a refresh is allowed.",
+        fetched: "Fetched",
+        scheduled: "Match time (Prague)",
+        map: "Map",
+        zone: "Zone",
+        lighting: "Lighting",
+        hosting: "Hosting",
+        moderator: "Moderator",
+        ready: "Ready check",
+        points: "Scoring rule",
+        membersNote:
+            "Displayed team membership, not the match roster or player count.",
+        team: "Team",
+        faction: "Faction",
+        nations: "Nations",
+        members: "Team members",
+        teamsUnavailable: "The source did not provide team details.",
+        vote: "Map vote",
+        closes: "Voting closes (Prague)",
+        rules: "Rules",
+        progress: "Match progress",
+        resultsNote:
+            "Results and placements are not imported. Scoring rules are not awarded points.",
+        partial:
+            "Some fields or this match state could not be verified. Check the source page.",
+        age: "Snapshot age: {seconds} seconds",
+        timezone:
+            "Times shown in Europe/Prague. Reads are cached for five minutes.",
+        done: "Done",
+        current: "Current step",
+        not_started: "Not started",
+    },
+    membershipIntegration: {
+        title: "Discord membership integrations",
+        description:
+            "Choose which Discord roles each integration may read. Access also requires a read-only key with the Discord membership grant. The website decides how to use these observations.",
+        enabled: "Allow membership lookups with this key",
+        roles: "Allowed role IDs",
+        rolesHelp:
+            "Enter one role ID per line. An empty list shares presence and Logi assignment only. Save to apply changes.",
+        empty: "Create a read-only API key with the Discord membership grant, then refresh this list.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        saving: "Saving…",
+        save: "Save policy",
+        saved: "Membership policy saved.",
+        error: "Unable to load or save membership policies. Refresh and retry.",
+        invalid: "Use valid Discord role IDs, with at most 100 roles per game.",
+    },
+    gameData: {
+        liveScoreboard: "Warcon live scoreboard",
+        scoreboardPolling:
+            "Refreshes every 15 seconds while open. Provider updates may lag.",
+        scoreboardError:
+            "The live scoreboard is unavailable. Retry after the provider recovers.",
+        scoreboardEmpty: "No players in the latest observation.",
+        scoreboardUnavailable: "No recent player observation is available.",
+        playerObservation: "Player observation",
+        joinCode: "Game join code",
+        player: "Player",
+        faction: "Faction",
+        kills: "Kills",
+        deaths: "Deaths",
+        cash: "Cash",
+        ping: "Ping (ms)",
+        collectedSessions: "Collected sessions",
+        historyObserved: "Last history import",
+        historyError: "History collection",
+        title: "Game server data",
+        description:
+            "Collect server data in Logi and share selected fields with your website. Connections must first be configured by the Logi operator.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        saving: "Saving…",
+        enable: "Enable / resume",
+        disable: "Disable",
+        disabled: "Disabled",
+        error: "Unable to load or save connections. Retry or contact the operator.",
+        empty: "No data sources are configured for this workspace.",
+        state: "Data status",
+        players: "Players",
+        map: "Map",
+        observed: "Last observation",
+        unknown: "Unknown",
+        never: "Not collected",
+        unconfirmed: "live scores, unconfirmed",
+        historySupported:
+            "Match history collection supported. Imported data requires review before result confirmation.",
+        historyUnsupported:
+            "No historical match collection is available from this source.",
+        freshness: {
+            fresh: "Fresh",
+            stale: "Stale",
+            unavailable: "Unavailable",
+        },
+        errors: {
+            not_listed: "The server is not listed; its state is unknown.",
+            timeout: "The provider did not respond in time.",
+            network: "The provider is unreachable.",
+            rate_limited: "Waiting for the provider rate limit.",
+            unauthorized: "Collection paused: provider access was denied.",
+            invalid_response: "The provider returned an unsupported response.",
+            unsupported:
+                "Collection paused: the required capability is unavailable.",
+            configuration:
+                "Collection paused: the operator must review this source.",
+        },
+    },
+    apiKeys: {
+        description:
+            "Create an integration key and keep it on your server. Choose only the data and games the integration needs.",
+        name: "Key name",
+        namePlaceholder: "Website name, e.g. main site",
+        access: "Access",
+        readOnly: "Read-only",
+        fullAccess: "Full access (legacy)",
+        readOnlyHelp:
+            "Can read only the selected resources and games. Cannot create, update or delete data.",
+        fullAccessHelp:
+            "Can read and modify all clan data across all games. Use only for integrations that need write access.",
+        resources: "Resources",
+        games: "Games",
+        selectScope: "Select at least one resource and one game.",
+        privateData:
+            "Complete records may contain private operational details. Review data before publishing it.",
+        createReadOnly: "Create read-only key",
+        createFullAccess: "Create full-access key",
+        copyNow:
+            "Copy this key now. It cannot be shown again. Keep it on your server.",
+        copy: "Copy API key",
+        copied: "API key copied.",
+        copyFailed:
+            "Unable to copy the key. Copy it manually before hiding it.",
+        hide: "Hide key",
+        createFailed:
+            "Unable to create the key. Check your selection and try again.",
+        invalidKey: "The server returned an invalid API key.",
+        revoke: "Revoke",
+        revokeFailed: "Unable to revoke the key. Try again.",
+        revoked: "revoked",
+        created: "created",
+        existingKeys: "Existing keys",
+        rotateHelp:
+            "To change permissions, create a replacement key, switch the integration, then revoke the old key.",
+        allGames: "all games; read and write",
+        loading: "Loading keys…",
+        loadFailed:
+            "Unable to refresh keys. Displayed permissions may be out of date.",
+        retry: "Retry",
+        empty: "No API keys have been created.",
+        invalidPolicy: "Unrecognized restrictions; backend access is denied.",
+        resourceLabels: {
+            "league-matches": "Wardogs League",
+            "league-fixtures": "Tracked Wardogs League fixtures",
+            "warcon-data":
+                "Warcon gameplay data (includes player names and Steam IDs)",
+            "member-summaries": "Member directory (read-only)",
+            "roster-summaries": "Published rosters and attendance (read-only)",
+            "player-stat-summaries":
+                "Verified player facts from collected sessions",
+            "membership-summaries":
+                "Discord membership (separate policy required)",
+            "server-snapshots": "Game server snapshots",
+            "integration-health": "Collection health",
+            "event-summaries": "Event summaries",
+            "match-summaries": "Match summaries",
+            "result-summaries": "Reviewed result summaries",
+            events: "Events (complete records)",
+            matches: "Matches (raw statistics)",
+            groups: "Groups",
+            rosters: "Rosters",
+            assignments: "Member assignments",
+            stratmaps: "Tactical maps",
+        },
+    },
     publicProfiles: {
         communityTitle: "Community",
         communityDescription:
@@ -569,6 +757,66 @@ export const enMessages = {
         symbolsCategory: "Symbols",
         flagsCategory: "Flags",
     },
+    resultReview: {
+        title: "Review result",
+        dialogHelp: "Review the event's scores and sources before confirming.",
+        description:
+            "Imports stay provisional until a reviewer confirms this version. Corrections preserve the earlier result and require a reason.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        error: "Could not load or save the result. Refresh, check permissions and source changes, then review again. Incomplete sessions cannot be confirmed.",
+        status: {
+            unknown: "No reviewed result",
+            provisional: "Provisional",
+            confirmed: "Confirmed",
+            corrected: "Corrected",
+        },
+        revision: "Revision",
+        unknownScore: "Unknown",
+        attribution: "Player attribution",
+        verified: "verified",
+        unresolved: "unresolved",
+        reviewedAt: "Reviewed",
+        reviewer: "Reviewer",
+        complete: "Complete",
+        incomplete: "Incomplete",
+        source: "Result source",
+        manual: "Manual scores",
+        keepSources: "Keep linked sessions",
+        scoreHelp:
+            "An empty score means unknown. Zero is a known score. Selecting a session never confirms its result automatically.",
+        participant: "Participant",
+        score: "Score",
+        remove: "Remove participant",
+        addParticipant: "Add participant",
+        reason: "Correction reason",
+        stage: "Save provisional result",
+        confirm: "Confirm displayed revision",
+        useImport: "Use latest legacy import",
+        correct: "Save reviewed correction",
+        unsaved:
+            "There are unsaved edits. Save and review the provisional version before confirming.",
+        history: "Recent revision history",
+        importer: "Import",
+    },
+    verifiedPlatformLinks: {
+        title: "Verified Steam account",
+        description:
+            "Verify control of your Steam account by signing in on Steam. IDs entered in your profile are unverified claims.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        error: "Steam linking is unavailable. Refresh or try again shortly.",
+        callbackFailed:
+            "Steam verification did not complete. Start a new link attempt.",
+        verified: "Verified through Steam",
+        empty: "No verified Steam account",
+        verifiedAt: "Verified",
+        revokedAt: "Unlinked",
+        link: "Verify with Steam",
+        unlink: "Unlink Steam",
+        history: "Recent link history",
+        effect: "Unlinking stops future player attribution. This proof does not grant Discord roles, confirm game ownership, or publish your profile on the website.",
+    },
     userSettings: {
         privacyTitle: "Privacy and data",
         privacyDescription:
@@ -602,7 +850,7 @@ export const enMessages = {
         platformConnection: "Platform identity",
         platformConnected: "Platform ID set",
         platformDisconnected: "Platform ID not set",
-        platformId: "Platform ID",
+        platformId: "Platform ID (unverified)",
         platformIdPlaceholder: "Steam64 or Epic player ID",
         currentPlatformId: "Current platform ID",
         platformIdHelp:
@@ -774,6 +1022,53 @@ export const enMessages = {
         routingInfoDescription:
             "Category support roles are invited into new ticket threads automatically. Users with the dashboard admin role are also treated as support staff for ticket handling.",
     },
+    memberRoleOperations: {
+        unlinkedTarget: "Logi ID (Discord not linked)",
+        title: "Membership role operations",
+        refresh: "Refresh",
+        loading: "Loading…",
+        description:
+            "Latest 100 staff or application operations across games. Saving a member queues a change; only a verified Discord result is marked applied.",
+        error: "Role operations are unavailable. Refresh to try again.",
+        empty: "No managed role operations yet.",
+        target: "Member Discord ID",
+        actor: "Actor Discord ID",
+        origin: "Source",
+        version: "Version",
+        updated: "Updated",
+        audit: "Attempt history",
+        auditDescription:
+            "Latest 5 attempts shown; up to 20 retained per operation. Times are UTC. Reason codes help diagnose failures.",
+        reason: "Reason",
+        status: {
+            pending: "Pending",
+            running: "In progress",
+            retry_scheduled: "Retry scheduled",
+            applied: "Applied",
+            denied: "Denied",
+            superseded: "Superseded",
+            failed: "Failed",
+        },
+        provenance: {
+            dashboard: "Administrator",
+            recruitment: "Recruitment staff",
+            application: "Member application",
+            rollback: "Application rollback",
+        },
+        hint: {
+            pending: "The bot will check permissions before changing roles.",
+            running:
+                "The bot is checking Discord and applying the current request.",
+            retry_scheduled:
+                "The bot will retry automatically after the waiting period.",
+            applied:
+                "Discord roles matched this request at the last check. The bot checks again periodically.",
+            denied: "Check staff access, membership, bot permissions and role hierarchy, then save a new member request.",
+            superseded:
+                "The assignment or policy changed. Only a new authorized request can apply the updated state.",
+            failed: "Automatic retries stopped. Resolve the cause and save a new member request.",
+        },
+    },
     membershipSettings: {
         title: "Membership settings",
         pageDescription:
@@ -825,7 +1120,7 @@ export const enMessages = {
             "Applications are enabled, but the Discord membership panel will not be posted and application threads cannot open until you set {items}.",
         roleSyncTitle: "How membership role sync works",
         roleSyncDescription:
-            "Pending applications do not assign membership roles. Recruit status uses the clan role plus the category recruit role, and active status uses the clan role plus the category final role when those roles are configured.",
+            "Pending applications do not assign membership roles. Recruit status uses the clan role plus the category recruit role, and active status uses the clan role plus the category final role when those roles are configured. Membership changes are queued; verify the result in Membership settings → Membership role operations.",
         rosterScoreDescription:
             "Set per-server score changes after the event concludes. Leaving everything at 0 disables automatic score movement.",
         rosterScoreNoCategory: "No category / no reaction",
@@ -1012,7 +1307,7 @@ export const enMessages = {
             "Reserve members cannot use the recruit status.",
         roleSyncTitle: "How membership role sync works",
         roleSyncDescription:
-            "Group-linked Discord roles sync from the selected primary and secondary groups. Membership roles only sync for non-pending members, and recruit or active status depends on the clan role plus the linked membership category roles when available.",
+            "Group-linked Discord roles sync from the selected primary and secondary groups. Membership roles only sync for non-pending members, and recruit or active status depends on the clan role plus the linked membership category roles when available. Membership changes are queued; verify the result in Membership settings → Membership role operations.",
         missingClanRoleTitle: "Clan role is not configured",
         missingClanRoleDescription:
             "This player can still be marked as recruit or active in Logi, but no base clan role will be added in Discord until the clan role is set in clan settings.",

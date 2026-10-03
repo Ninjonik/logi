@@ -1,0 +1,10 @@
+Command: node --import tsx docs/integrations/website/v0.10/evidence/2026-09-29/capture-commands.mjs
+Runtime source: 46fd6a0d06d48b923ad558b76d0a107cf2caa5af
+Exit: 0
+
+STDOUT
+◇ injected env (0) from .env.local // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+Captured six command definitions in each of en-US, cs and de; no network.
+
+STDERR

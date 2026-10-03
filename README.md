@@ -14,8 +14,15 @@ Our goal is to make running a community less manual: give players a clear place 
 - Publish community, clan, player, match, and competition information for visitors.
 - Support Hell Let Loose, Hell Let Loose: Vietnam, and Wardogs in a shared community workspace.
 - Provide an authenticated `/api/v1` integration surface, OpenAPI documentation, API keys, idempotent writes, and webhooks.
+- Collect configured HLL CRCON and Wardogs server data for scoped website reads; see the [collector handoff](./docs/integrations/website/v0.5/README.md) for setup and verification limits.
+- Read Warcon live scoreboards, analytics, player statistics, kills, catalogs and completed matches; see [Warcon handoff 0.11](./docs/integrations/website/v0.11/README.md) for all fifteen views and the explicit website grant.
+- Preview public Wardogs League match links in System / Imports and through the scoped website API; see [League handoff 0.12](./docs/integrations/website/v0.12/README.md) for parsing, freshness and verification limits.
+- Synchronize scoped changes and observe Discord membership with per-key role policies; see [handoff 0.7](./docs/integrations/website/v0.7/README.md) for freshness, revocation and offline evidence.
+- Queue, verify and audit managed membership roles with current actor and hierarchy checks; see [handoff 0.8](./docs/integrations/website/v0.8/README.md) for ownership, retries and activation limits.
 
 The [wiki](./content/index.mdx) has practical guides for players, managers, events, rosters, settings, and [Discord bot setup](./content/discord-bot-setup.mdx).
+
+The cumulative website/Discord integration has a [delivery handbook](./docs/integrations/website/v0.10/pr-handbook.md) with the complete web/API and Discord command catalogs, stored verification output, captioned screenshots, review, activation requirements and remaining owner tasks.
 
 ## Architecture
 
@@ -65,15 +72,27 @@ Create a private `.env.local` file at the repository root. Do not commit it. The
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Discord OAuth sign-in                                           |
 | `DISCORD_REDIRECT_URI` or `SITE_URL`         | OAuth callback and public site URLs                             |
 | `JWT_SECRET`                                 | Dashboard session signing                                       |
+| `SITE_URL`                                   | Fixed dashboard/OIDC issuer origin, without a trailing slash    |
+| `LOGI_SSO_ENABLED`                           | Explicit opt-in for the optional SSO provider in Next.js and Convex; disabled unless `true` |
+| `LOGI_SSO_PRIVATE_JWK`                       | Operator-managed private RSA JWK with a `kid`, only in Next.js; its public counterpart is exposed at `/api/sso/jwks` |
+| `LOGI_SSO_ALLOW_LOOPBACK_HTTP`               | Development-only opt-in for explicit localhost/127.0.0.1/IPv6 loopback issuer and callbacks; ordinary HTTP remains rejected |
 | `INTERNAL_AUTH_SECRET`                       | Shared secret for trusted dashboard/bot-to-Convex operations    |
 | `DISCORD_BOT_TOKEN`                          | Required when running the Discord bot                           |
 | `DISCORD_SUPPORT_URL`                         | Public Discord support-server invite shown in Logi navigation   |
+| `LOGI_GAME_DATA_SOURCES`                      | Optional operator-owned provider catalog in Convex; defaults to no sources |
+| `LOGI_GAME_DATA_<NAME>_TOKEN`                 | Provider token in Convex, referenced by catalog name only |
 
 Start the dashboard:
 
 ```bash
 npm run dev
 ```
+
+Dashboard sign-in now creates a durable session in Convex. `SITE_URL`, `JWT_SECRET`
+and matching `INTERNAL_AUTH_SECRET` must be configured before sign-in. A coordinated
+upgrade requires one re-login for existing dashboard users. The optional SSO
+provider remains disabled until separately configured and qualified; see the
+[provider contract and rollout](./docs/integrations/website/sso-provider-contract.md).
 
 Start the dashboard and bot together:
 

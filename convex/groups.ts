@@ -1,6 +1,8 @@
 import { matchesGameScope, resolveGameScope } from "../src/domain/games/game"
+import { assertManagedRoleGroupLink } from "./managedRolePolicy"
 import { getGuildById, getGuildDiscordId } from "./identity"
-import { mutation, query } from "./_generated/server"
+import { mutation } from "./integrationMutation"
+import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 const INTERNAL_AUTH_SECRET =
@@ -90,6 +92,12 @@ export const upsert = mutation({
             throw new Error("Server not found.")
         }
         const guildDiscordId = getGuildDiscordId(guild)
+
+        await assertManagedRoleGroupLink(
+            ctx,
+            guildDiscordId,
+            args.discordRoleId
+        )
 
         if (args.parentId) {
             const parent = await ctx.db.get(args.parentId)

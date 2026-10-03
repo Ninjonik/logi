@@ -1,26 +1,70 @@
 # Single sign-on
 
-Logi can act as the Discord-backed identity provider for websites owned by a clan. Each application belongs to one clan and any clan administrator can create credentials in **Clan settings → Single sign-on applications**.
+The optional Logi identity provider lets a clan website reuse the member's Logi
+sign-in. Each site keeps its own secure session cookie. A website redirects the
+browser to Logi; an active Logi session completes the redirect without another
+Discord sign-in. Cookies and signing secrets are never shared between sites.
 
-## Create an application
+The provider is disabled by default. An operator must configure it and verify the
+target website before enabling it. Dashboard users need to sign in once after the
+durable-session upgrade. See the [operator contract](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/sso-provider-contract.md)
+for configuration, rollout, and validation requirements.
 
-Enter an application name, its HTTPS website URL, and every exact HTTPS callback URL. Copy the client secret at creation time: it is never shown again. When a user has no Logi session, authorization starts Discord sign-in immediately and then creates a normal Logi session before returning to the website.
+## Register a website
+
+A workspace administrator can create an application in **Clan settings → Single
+sign-on applications**. Give it a recognizable name, its HTTPS website URL, and
+the exact HTTPS callback URL supplied by the website backend. Fragments,
+credentials in URLs, and wildcard callbacks are rejected. The client secret is
+shown once; store it in the website backend's secret configuration.
+
+Register the website only with the minimum required access. SSO authenticates the
+person; it does not grant an administrator role. Website authorization uses the
+separately configured membership API and its current game-specific role policy.
+An unavailable, stale or removed membership must not leave a cached admin grant.
+
+When a user has no Logi session, authorization starts Discord sign-in immediately
+and creates a normal Logi session before returning to the website.
 
 ## Website integration
 
-Logi implements OpenID Connect authorization-code flow with required PKCE (`S256`).
+| Purpose | Endpoint |
+| --- | --- |
+| OIDC discovery | `/.well-known/openid-configuration` |
+| Authorization | `/api/sso/authorize` |
+| Token exchange | `/api/sso/token` |
+| Userinfo | `/api/sso/userinfo` |
+| Public signing keys | `/api/sso/jwks` |
 
-| Setting       | Value                                                     |
-| ------------- | --------------------------------------------------------- |
-| Discovery     | `https://YOUR-LOGI-HOST/.well-known/openid-configuration` |
-| Authorization | `/api/sso/authorize`                                      |
-| Token         | `/api/sso/token`                                          |
-| Userinfo      | `/api/sso/userinfo`                                       |
+Use authorization code flow with PKCE **S256**, `openid profile` scopes, and fresh
+state and nonce values for each attempt. A maintained OIDC client should verify
+the RS256 signature against discovery/JWKS, the fixed issuer, audience, expiry,
+nonce and state, and compare userinfo with the verified identity. Client
+authentication uses `client_secret_post` from the backend. There is no refresh
+grant; after the one-hour access token expires, start another authorization
+redirect to reuse the still-active Logi session.
 
-Send `response_type=code`, `client_id`, one registered `redirect_uri`, a random `state`, `code_challenge`, and `code_challenge_method=S256` to authorization. Verify `state`. Exchange the returned code using `client_secret_post` and the original `code_verifier`.
+Userinfo contains only `sub` (the exact Discord account ID), `name`, `picture`,
+`guild_id` (the canonical Discord guild ID), and `sid` (the central Logi session ID).
+Role grants, platform IDs, private notes and storage records are not identity
+claims. The website must bind its local session to the same `sub`, `sid` and
+`guild_id` in the verified ID token and userinfo.
 
-Userinfo returns Logi's API-equivalent user record, `sub` (Discord ID), `guild_id`, and `sso.membership`. It is `member` for people in the application's clan and `guest` otherwise; the website decides what guests can do.
+## Logout and access changes
 
-## Logout
+Signing out of Logi revokes that central session, including its outstanding SSO
+grants. Global Logi logout also revokes the user's other central sessions. User
+identity changes, application deletion and central session expiry invalidate the
+affected access tokens. Websites enforce these changes by checking userinfo on
+protected requests and denying access if it cannot be validated.
 
-Local logout is owned by the connected website. `POST /api/sso/logout` ends the Logi session and revokes every issued SSO access token. Connected websites should validate userinfo on each authenticated request, or at a short cache interval, so global logout is honored across domains. Never put a client secret in browser code or accept unregistered redirect URLs.
+Use the sign-out button in Logi to end a session. Logout requires a same-origin
+POST; visiting a logout link does not change sessions. A successful logout
+redirects to the sign-in page.
+
+Signing out on a website ends that website's local session. It does not silently
+sign the person out of Logi. Logi does not advertise RP-initiated or back-channel
+logout; connected websites must not rely on an unimplemented notification.
+
+If Logi cannot persist a logout, it reports a failure and retains the cookie so
+the user can retry. It does not claim that other sessions were revoked.

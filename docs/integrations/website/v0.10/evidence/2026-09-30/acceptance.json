@@ -1,0 +1,381 @@
+{
+  "httpInitialAttempt": {
+    "source": "b5b452ce40ffda609b0c06e3114a35dbd0498ab1",
+    "executedAt": "2026-09-29T22:12:25.170Z",
+    "sessionKind": "synthetic-local-not-OAuth",
+    "results": [
+      {
+        "name": "Czech public application renders",
+        "status": "pass",
+        "durationMs": 42
+      },
+      {
+        "name": "Competitions renders against real local Convex",
+        "status": "pass",
+        "durationMs": 15
+      },
+      {
+        "name": "API rejects missing bearer",
+        "status": "pass",
+        "durationMs": 3
+      },
+      {
+        "name": "API rejects invalid bearer",
+        "status": "pass",
+        "durationMs": 91
+      },
+      {
+        "name": "HLL summary contains only its scoped event",
+        "status": "pass",
+        "durationMs": 144
+      },
+      {
+        "name": "WDG summary contains only its scoped event",
+        "status": "pass",
+        "durationMs": 176
+      },
+      {
+        "name": "HLL key rejects WDG game",
+        "status": "pass",
+        "durationMs": 138
+      },
+      {
+        "name": "Restricted key rejects all-game widening",
+        "status": "pass",
+        "durationMs": 119
+      },
+      {
+        "name": "Restricted key rejects raw user resource",
+        "status": "pass",
+        "durationMs": 153
+      },
+      {
+        "name": "Restricted key rejects writes",
+        "status": "pass",
+        "durationMs": 176
+      },
+      {
+        "name": "Other guild cannot fetch scoped event",
+        "status": "pass",
+        "durationMs": 142
+      },
+      {
+        "name": "Result summaries need their own grant",
+        "status": "pass",
+        "durationMs": 134
+      },
+      {
+        "name": "Changes start captures real database watermark",
+        "status": "pass",
+        "durationMs": 253
+      },
+      {
+        "name": "Committed update appears in changes feed",
+        "status": "pass",
+        "durationMs": 294
+      },
+      {
+        "name": "Cursor is bound to the service key and tenant",
+        "status": "pass",
+        "durationMs": 135
+      },
+      {
+        "name": "Sync refetch returns current projection",
+        "status": "pass",
+        "durationMs": 170
+      },
+      {
+        "name": "Revocation takes effect on next real HTTP request",
+        "status": "pass",
+        "durationMs": 299
+      },
+      {
+        "name": "Role audit requires a dashboard session",
+        "status": "pass",
+        "durationMs": 5
+      },
+      {
+        "name": "Actor can read local game connection settings",
+        "status": "pass",
+        "durationMs": 12
+      },
+      {
+        "name": "Steam link status rejects anonymous caller",
+        "status": "pass",
+        "durationMs": 5
+      },
+      {
+        "name": "Steam link status is empty for local actor",
+        "status": "pass",
+        "durationMs": 15
+      },
+      {
+        "name": "Steam unlink rejects cross-origin request",
+        "status": "pass",
+        "durationMs": 2
+      },
+      {
+        "name": "Result review rejects anonymous caller",
+        "status": "pass",
+        "durationMs": 6
+      },
+      {
+        "name": "Result write rejects cross-origin request",
+        "status": "pass",
+        "durationMs": 2
+      },
+      {
+        "name": "Result rejects malformed command",
+        "status": "pass",
+        "durationMs": 6
+      },
+      {
+        "name": "Stage stores a provisional result with zero and unknown scores",
+        "status": "pass",
+        "durationMs": 207
+      },
+      {
+        "name": "Confirm creates a reviewed immutable version",
+        "status": "pass",
+        "durationMs": 151
+      },
+      {
+        "name": "Concurrent corrections allow one winner and one conflict",
+        "status": "pass",
+        "durationMs": 241
+      },
+      {
+        "name": "Result history preserves all three versions",
+        "status": "pass",
+        "durationMs": 36
+      },
+      {
+        "name": "Result HTTP summary reports corrected state",
+        "status": "fail",
+        "durationMs": 137,
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'corrected'\n"
+      },
+      {
+        "name": "Live Discord has the six production slash commands",
+        "status": "fail",
+        "durationMs": 225,
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- false\n"
+      },
+      {
+        "name": "Live Discord contains the production event messages",
+        "status": "fail",
+        "durationMs": 213,
+        "error": "The expression evaluated to a falsy value:\n\n  assert(owned.some(x=>x.embeds?.length))\n"
+      }
+    ]
+  },
+  "httpCorrectedContractReadback": {
+    "source": "b5b452ce40ffda609b0c06e3114a35dbd0498ab1",
+    "note": "Corrected three harness assumptions after inspecting the published DTO and Discord response contract. No application code change.",
+    "results": [
+      {
+        "name": "Result HTTP summary reports corrected state",
+        "status": "pass",
+        "contract": "resultState and result.status; not a top-level status"
+      },
+      {
+        "name": "Live Discord has the six production slash commands",
+        "status": "pass",
+        "commandCount": 6,
+        "contract": "guild_id readback; guild command API omits dm_permission"
+      },
+      {
+        "name": "Live Discord contains the production event messages",
+        "status": "pass",
+        "componentV2Messages": 2,
+        "contract": "Components V2 message bodies; not legacy embeds"
+      }
+    ]
+  },
+  "collectors": {
+    "source": "b5b452ce40ffda609b0c06e3114a35dbd0498ab1",
+    "executedAt": "2026-09-29T22:31:52.510Z",
+    "transport": "real HTTPS with locally scoped CA trust and normal certificate verification",
+    "providerData": "synthetic local fixtures, not live game servers",
+    "backend": "actual local Convex SQLite",
+    "results": [
+      {
+        "name": "Real HLL HTTPS collector persists the snapshot and scoped HTTP API preserves zeros",
+        "status": "pass",
+        "players": 0,
+        "scores": [
+          0,
+          5
+        ],
+        "privateProviderConfigAbsent": true
+      },
+      {
+        "name": "Real WDG HTTPS collector preserves all three factions",
+        "status": "pass",
+        "players": 0,
+        "scores": [
+          0,
+          12,
+          7
+        ]
+      },
+      {
+        "name": "HLL history is imported once and exposes healthy status",
+        "status": "pass",
+        "collectedSessions": 1
+      },
+      {
+        "name": "WDG reports unsupported history as null, not fabricated zero sessions",
+        "status": "pass",
+        "collectedSessions": null
+      },
+      {
+        "name": "Another guild cannot list the test guild snapshots",
+        "status": "pass"
+      },
+      {
+        "name": "HLL-only key cannot widen to WDG snapshots",
+        "status": "pass"
+      },
+      {
+        "name": "Game-data administration rejects an anonymous request",
+        "status": "pass"
+      },
+      {
+        "name": "Authenticated settings return safe configured-source metadata",
+        "status": "pass",
+        "credentialsAndProviderAddressAbsent": true
+      },
+      {
+        "name": "Collected history remains separate from an event result until explicitly staged",
+        "status": "pass",
+        "resultBeforeReview": null,
+        "availableSessions": 1
+      },
+      {
+        "name": "Staging collected session preserves source digest, zero score and two unlinked platform identities",
+        "status": "pass",
+        "version": 1,
+        "players": 2,
+        "unverifiedPlayersNotAttributed": true,
+        "sourceDigestPreserved": true
+      },
+      {
+        "name": "Explicit reviewer confirmation creates immutable second revision from collected data",
+        "status": "pass",
+        "version": 2,
+        "priorProvisionalPreserved": true
+      },
+      {
+        "name": "Restricted web consumer sees the confirmed collected result",
+        "status": "pass",
+        "resultState": "confirmed"
+      },
+      {
+        "name": "Provider requests use only allowed GET routes and WDG credentials stay server-side",
+        "status": "pass",
+        "noRconControlRequests": true,
+        "observedRequests": 25
+      }
+    ]
+  },
+  "membership": {
+    "source": "b5b452ce40ffda609b0c06e3114a35dbd0498ab1",
+    "executedAt": "2026-09-29T22:36:00.895Z",
+    "realDiscord": true,
+    "localConvex": true,
+    "results": [
+      {
+        "name": "Exact-member refresh uses live Discord and exposes only allowlisted roles",
+        "status": "pass",
+        "state": "present",
+        "completeness": "verified_member",
+        "returnedRoleCount": 0
+      },
+      {
+        "name": "Key without membership resource grant is denied",
+        "status": "pass"
+      },
+      {
+        "name": "Membership read cannot widen the key game scope",
+        "status": "pass"
+      }
+    ]
+  },
+  "discord": {
+    "source": "b5b452ce40ffda609b0c06e3114a35dbd0498ab1",
+    "executedAt": "2026-09-29T22:26:17.667Z",
+    "realDiscord": true,
+    "localConvex": true,
+    "results": [
+      {
+        "name": "Actual managed-role worker denies an ineligible target",
+        "status": "pass",
+        "reason": "target_not_eligible",
+        "attempts": 1,
+        "auditCaptured": true,
+        "actorHighestPosition": 102,
+        "botHighestPosition": 100,
+        "testRolesApplied": 0
+      },
+      {
+        "name": "Real slash-command private response",
+        "status": "pass",
+        "evidenceKind": "manual user confirmation",
+        "command": "/server-status game:wardogs",
+        "reportedResult": "Private response: source not configured"
+      },
+      {
+        "name": "Positive managed-role add/replace/remove acceptance",
+        "status": "blocked",
+        "reason": "Approved member highest role is above bot; no hierarchy or unrelated roles changed"
+      }
+    ]
+  },
+  "browser": {
+    "source": "b5b452ce40ffda609b0c06e3114a35dbd0498ab1",
+    "sessionKind": "synthetic-local-not-OAuth",
+    "control": "Codex browser automation against actual Next production server",
+    "results": [
+      {
+        "name": "Local dashboard and administration pages render actual local Convex data",
+        "status": "pass"
+      },
+      {
+        "name": "Game-data panel shows HLL history count and WDG three-faction scores",
+        "status": "pass"
+      },
+      {
+        "name": "Browser disables WDG source and persisted readback confirms enabled=false",
+        "status": "pass",
+        "readback": {
+          "at": "2026-09-29T22:32:23.316Z",
+          "sourceRef": "local-wdg",
+          "enabled": false,
+          "nextAttemptAt": null
+        }
+      },
+      {
+        "name": "Browser resumes WDG source and collector readback is healthy",
+        "status": "pass",
+        "readback": {
+          "at": "2026-09-29T22:33:32.365Z",
+          "sourceRef": "local-wdg",
+          "enabled": true,
+          "players": 0,
+          "scores": [
+            0,
+            12,
+            7
+          ],
+          "error": null
+        }
+      },
+      {
+        "name": "Browser concludes the synthetic event and review dialog displays versions 1, 2 and 3",
+        "status": "pass"
+      }
+    ],
+    "artifacts": "Screenshots and DOM capture retained privately to avoid publishing guild/member identifiers."
+  }
+}

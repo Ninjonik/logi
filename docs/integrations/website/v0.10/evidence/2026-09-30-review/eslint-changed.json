@@ -1,0 +1,305 @@
+{
+  "command": "eslint --no-warn-ignored <eslint-files.txt>",
+  "exitCode": 0,
+  "files": 192,
+  "errors": 0,
+  "warnings": 17,
+  "diagnostics": [
+    {
+      "file": "convex/migrations.ts",
+      "messages": [
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'_legacyRecruitRoleId' is assigned a value but never used.",
+          "line": 199,
+          "column": 40,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 199,
+          "endColumn": 60
+        },
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'_legacyFinalRoleId' is assigned a value but never used.",
+          "line": 200,
+          "column": 38,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 200,
+          "endColumn": 56
+        }
+      ]
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "messages": [
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'_playerStatsServers' is assigned a value but never used.",
+          "line": 1698,
+          "column": 43,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 1698,
+          "endColumn": 62
+        },
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'_tokens' is assigned a value but never used.",
+          "line": 1711,
+          "column": 69,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 1711,
+          "endColumn": 76
+        },
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'_playerStatsServers' is assigned a value but never used.",
+          "line": 1879,
+          "column": 51,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 1879,
+          "endColumn": 70
+        },
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'_tokens' is assigned a value but never used.",
+          "line": 1893,
+          "column": 61,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 1893,
+          "endColumn": 68
+        }
+      ]
+    },
+    {
+      "file": "convex/userAssignments.ts",
+      "messages": [
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'validateAssignmentGroupIds' is defined but never used.",
+          "line": 15,
+          "column": 10,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 15,
+          "endColumn": 36,
+          "suggestions": [
+            {
+              "messageId": "removeUnusedImportDeclaration",
+              "data": {
+                "varName": "validateAssignmentGroupIds"
+              },
+              "fix": {
+                "range": [
+                  853,
+                  933
+                ],
+                "text": ""
+              },
+              "desc": "Remove unused import declaration."
+            }
+          ]
+        },
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'AssignmentType' is defined but never used.",
+          "line": 36,
+          "column": 6,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 36,
+          "endColumn": 20
+        },
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'AssignmentStatus' is defined but never used.",
+          "line": 37,
+          "column": 6,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 37,
+          "endColumn": 22
+        }
+      ]
+    },
+    {
+      "file": "convex/webhooks.ts",
+      "messages": [
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'_secret' is defined but never used.",
+          "line": 24,
+          "column": 26,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 24,
+          "endColumn": 33
+        }
+      ]
+    },
+    {
+      "file": "discord-bot/src/interactions.ts",
+      "messages": [
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'buildPlatformLinkCustomId' is defined but never used.",
+          "line": 38,
+          "column": 5,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 38,
+          "endColumn": 30,
+          "suggestions": [
+            {
+              "messageId": "removeUnusedVar",
+              "data": {
+                "varName": "buildPlatformLinkCustomId"
+              },
+              "fix": {
+                "range": [
+                  820,
+                  851
+                ],
+                "text": ""
+              },
+              "desc": "Remove unused variable \"buildPlatformLinkCustomId\"."
+            }
+          ]
+        },
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'buildClanPlayerOptionDescription' is defined but never used.",
+          "line": 243,
+          "column": 10,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 243,
+          "endColumn": 42
+        },
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'buildClanPlayerProfileEmbed' is defined but never used.",
+          "line": 295,
+          "column": 10,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 295,
+          "endColumn": 37
+        }
+      ]
+    },
+    {
+      "file": "discord-bot/src/message-builders.ts",
+      "messages": [
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'formatCalendarTime' is defined but never used.",
+          "line": 1055,
+          "column": 10,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 1055,
+          "endColumn": 28
+        }
+      ]
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx",
+      "messages": [
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'getEventMetadata' is defined but never used.",
+          "line": 10,
+          "column": 10,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 10,
+          "endColumn": 26,
+          "suggestions": [
+            {
+              "messageId": "removeUnusedImportDeclaration",
+              "data": {
+                "varName": "getEventMetadata"
+              },
+              "fix": {
+                "range": [
+                  544,
+                  601
+                ],
+                "text": ""
+              },
+              "desc": "Remove unused import declaration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/app/api/v1/openapi.json/route.ts",
+      "messages": [
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'_genericSuccessResponse' is assigned a value but never used.",
+          "line": 167,
+          "column": 16,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 167,
+          "endColumn": 39
+        }
+      ]
+    },
+    {
+      "file": "src/lib/server-user-management.ts",
+      "messages": [
+        {
+          "ruleId": "@typescript-eslint/no-unused-vars",
+          "severity": 1,
+          "message": "'AppUser' is defined but never used.",
+          "line": 22,
+          "column": 15,
+          "nodeType": "Identifier",
+          "messageId": "unusedVar",
+          "endLine": 22,
+          "endColumn": 22,
+          "suggestions": [
+            {
+              "messageId": "removeUnusedVar",
+              "data": {
+                "varName": "AppUser"
+              },
+              "fix": {
+                "range": [
+                  687,
+                  695
+                ],
+                "text": ""
+              },
+              "desc": "Remove unused variable \"AppUser\"."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

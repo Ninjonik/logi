@@ -1,0 +1,50 @@
+{
+    "schemaVersion": 1,
+    "date": "2026-10-03",
+    "dateTimeZone": "Europe/Prague",
+    "sourceManifest": "source-manifest.json",
+    "checks": {
+        "tests": {
+            "command": "node --import tsx --test \"src/**/*.test.ts\" \"discord-bot/src/**/*.test.ts\"",
+            "exitCode": 0,
+            "durationMs": 9279,
+            "tests": 725,
+            "passed": 725,
+            "failed": 0,
+            "skipped": 0
+        },
+        "typecheck": {
+            "command": "node node_modules/typescript/bin/tsc --noEmit",
+            "exitCode": 0,
+            "durationMs": 16756
+        },
+        "productionBuild": {
+            "command": "node node_modules/next/dist/bin/next build --webpack",
+            "exitCode": 0,
+            "durationMs": 54686
+        },
+        "peopleHttp": {
+            "passed": 46,
+            "failed": 0,
+            "evidence": "people-http-checks.json"
+        },
+        "nativeWriterHttp": {
+            "passed": 17,
+            "failed": 0,
+            "evidence": "native-writer-http-checks.json"
+        }
+    },
+    "limitations": {
+        "productionUsed": false,
+        "liveDiscordUsed": false,
+        "liveSteamUsed": false,
+        "hostedAcceptance": false,
+        "fullRepositoryLintClaimed": false,
+        "privateRuntimeHelpersIncluded": false,
+        "rawLogsIncluded": false
+    },
+    "documentationAddedAfterExecution": [
+        "docs/integrations/website/v0.14/README.md evidence link",
+        "docs/integrations/website/v0.14/evidence/2026-10-03/"
+    ]
+}

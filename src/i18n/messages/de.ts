@@ -1,4 +1,199 @@
 export const deMessages = {
+    leagueMatch: {
+        title: "Wardogs League Spiel",
+        description:
+            "Füge einen öffentlichen Spiellink ein, um Termin, Teams und Vorbereitung anzuzeigen. Das Lesen erstellt kein Ereignis.",
+        url: "Öffentliche Spiel-URL",
+        load: "Spiel laden",
+        loading: "Wird geladen…",
+        unknown: "Nicht verfügbar",
+        error: "Das Spiel konnte nicht geladen werden. Prüfe die öffentliche Wardogs League URL.",
+        unavailable:
+            "Die Quelle ist vorübergehend nicht verfügbar. Kein gespeichertes Spiel vorhanden.",
+        nextCheck: "Nächste Aktualisierung ab",
+        source: "Quellspiel öffnen",
+        stale: "Das gespeicherte Spiel ist möglicherweise veraltet. Lade den Link erneut, sobald eine Aktualisierung erlaubt ist.",
+        fetched: "Abgerufen",
+        scheduled: "Spieltermin (Prag)",
+        map: "Karte",
+        zone: "Zone",
+        lighting: "Beleuchtung",
+        hosting: "Hosting",
+        moderator: "Moderator",
+        ready: "Ready Check",
+        points: "Punkteregel",
+        membersNote:
+            "Angezeigte Teammitglieder, nicht die Aufstellung oder Spielerzahl des Spiels.",
+        team: "Team",
+        faction: "Fraktion",
+        nations: "Nationen",
+        members: "Teammitglieder",
+        teamsUnavailable: "Die Quelle hat keine Teamdetails bereitgestellt.",
+        vote: "Kartenabstimmung",
+        closes: "Abstimmungsende (Prag)",
+        rules: "Regeln",
+        progress: "Spielablauf",
+        resultsNote:
+            "Ergebnisse und Platzierungen werden nicht importiert. Punkteregeln sind keine vergebenen Punkte.",
+        partial:
+            "Einige Felder oder dieser Spielstatus konnten nicht geprüft werden. Prüfe die Quellseite.",
+        age: "Alter des Datensatzes: {seconds} Sekunden",
+        timezone:
+            "Zeiten in Europe/Prague. Daten werden fünf Minuten zwischengespeichert.",
+        done: "Erledigt",
+        current: "Aktueller Schritt",
+        not_started: "Nicht begonnen",
+    },
+    membershipIntegration: {
+        title: "Integrationen für Discord-Mitgliedschaft",
+        description:
+            "Wähle die Discord-Rollen, die jede Integration lesen darf. Zusätzlich ist ein schreibgeschützter Schlüssel mit der Freigabe für Discord-Mitgliedschaft erforderlich. Die Website entscheidet über die Nutzung dieser Angaben.",
+        enabled: "Mitgliedschaftsabfragen mit diesem Schlüssel erlauben",
+        roles: "Erlaubte Rollen-IDs",
+        rolesHelp:
+            "Eine Rollen-ID pro Zeile. Eine leere Liste gibt nur Anwesenheit und Logi-Zuordnung frei. Änderungen werden beim Speichern wirksam.",
+        empty: "Erstelle einen schreibgeschützten API-Schlüssel mit der Freigabe für Discord-Mitgliedschaft und aktualisiere die Liste.",
+        loading: "Wird geladen…",
+        refresh: "Aktualisieren",
+        saving: "Wird gespeichert…",
+        save: "Freigabe speichern",
+        saved: "Freigabe für Mitgliedschaft gespeichert.",
+        error: "Die Freigaben konnten nicht geladen oder gespeichert werden. Bitte aktualisieren und erneut versuchen.",
+        invalid:
+            "Verwende gültige Discord-Rollen-IDs, höchstens 100 Rollen pro Spiel.",
+    },
+    gameData: {
+        liveScoreboard: "Warcon Live-Scoreboard",
+        scoreboardPolling:
+            "Aktualisierung alle 15 Sekunden bei geöffneter Ansicht. Die Quelle kann verzögert sein.",
+        scoreboardError:
+            "Das Live-Scoreboard ist nicht verfügbar. Bitte später erneut versuchen.",
+        scoreboardEmpty:
+            "Bei der letzten Beobachtung waren keine Spieler verbunden.",
+        scoreboardUnavailable: "Keine aktuellen Spielerdaten verfügbar.",
+        playerObservation: "Spielerdaten vom",
+        joinCode: "Beitrittscode",
+        player: "Spieler",
+        faction: "Fraktion",
+        kills: "Kills",
+        deaths: "Tode",
+        cash: "Geld",
+        ping: "Ping (ms)",
+        collectedSessions: "Erfasste Spiele",
+        historyObserved: "Letzter Verlaufimport",
+        historyError: "Verlauferfassung",
+        title: "Spielserver-Daten",
+        description:
+            "Logi sammelt Serverdaten und stellt ausgewählte Felder Ihrer Website bereit. Der Logi-Betreiber muss die Verbindungen zuerst konfigurieren.",
+        loading: "Wird geladen…",
+        refresh: "Aktualisieren",
+        saving: "Wird gespeichert…",
+        enable: "Aktivieren / fortsetzen",
+        disable: "Deaktivieren",
+        disabled: "Deaktiviert",
+        error: "Verbindungen konnten nicht geladen oder gespeichert werden. Erneut versuchen oder den Betreiber kontaktieren.",
+        empty: "Für diesen Arbeitsbereich sind keine Datenquellen konfiguriert.",
+        state: "Datenstatus",
+        players: "Spieler",
+        map: "Karte",
+        observed: "Letzte Beobachtung",
+        unknown: "Unbekannt",
+        never: "Noch nicht erfasst",
+        unconfirmed: "laufender Spielstand, unbestätigt",
+        historySupported:
+            "Die Quelle unterstützt Spielhistorie. Importierte Daten müssen vor der Ergebnisbestätigung geprüft werden.",
+        historyUnsupported:
+            "Diese Quelle bietet keine Erfassung der Spielhistorie.",
+        freshness: {
+            fresh: "Aktuell",
+            stale: "Veraltet",
+            unavailable: "Nicht verfügbar",
+        },
+        errors: {
+            not_listed:
+                "Der Server ist nicht gelistet; sein Zustand ist unbekannt.",
+            timeout: "Die Quelle hat nicht rechtzeitig geantwortet.",
+            network: "Die Quelle ist nicht erreichbar.",
+            rate_limited: "Warten auf das Anfragelimit der Quelle.",
+            unauthorized: "Erfassung pausiert: Zugriff verweigert.",
+            invalid_response:
+                "Die Quelle hat eine nicht unterstützte Antwort geliefert.",
+            unsupported:
+                "Erfassung pausiert: Die erforderliche Funktion ist nicht verfügbar.",
+            configuration:
+                "Erfassung pausiert: Der Betreiber muss die Quelle prüfen.",
+        },
+    },
+    apiKeys: {
+        description:
+            "Erstelle einen Integrationsschlüssel und bewahre ihn auf deinem Server auf. Wähle nur die benötigten Daten und Spiele.",
+        name: "Schlüsselname",
+        namePlaceholder: "Name der Website, z. B. Hauptseite",
+        access: "Berechtigung",
+        readOnly: "Nur lesen",
+        fullAccess: "Vollzugriff (bisheriger Modus)",
+        readOnlyHelp:
+            "Kann nur ausgewählte Ressourcen und Spiele lesen. Kann keine Daten erstellen, ändern oder löschen.",
+        fullAccessHelp:
+            "Kann alle Clan-Daten für alle Spiele lesen und ändern. Nur für Integrationen verwenden, die Schreibzugriff benötigen.",
+        resources: "Ressourcen",
+        games: "Spiele",
+        selectScope: "Wähle mindestens eine Ressource und ein Spiel.",
+        privateData:
+            "Vollständige Datensätze können private Betriebsdaten enthalten. Prüfe die Daten vor der Veröffentlichung.",
+        createReadOnly: "Leseschlüssel erstellen",
+        createFullAccess: "Schlüssel mit Vollzugriff erstellen",
+        copyNow:
+            "Kopiere den Schlüssel jetzt. Er kann nicht erneut angezeigt werden. Bewahre ihn auf deinem Server auf.",
+        copy: "API-Schlüssel kopieren",
+        copied: "API-Schlüssel kopiert.",
+        copyFailed:
+            "Kopieren fehlgeschlagen. Kopiere den Schlüssel manuell, bevor du ihn ausblendest.",
+        hide: "Schlüssel ausblenden",
+        createFailed:
+            "Der Schlüssel konnte nicht erstellt werden. Prüfe deine Auswahl und versuche es erneut.",
+        invalidKey:
+            "Der Server hat einen ungültigen API-Schlüssel zurückgegeben.",
+        revoke: "Widerrufen",
+        revokeFailed:
+            "Der Schlüssel konnte nicht widerrufen werden. Versuche es erneut.",
+        revoked: "widerrufen",
+        created: "erstellt",
+        existingKeys: "Vorhandene Schlüssel",
+        rotateHelp:
+            "Erstelle zum Ändern der Berechtigungen einen Ersatzschlüssel, stelle die Integration um und widerrufe dann den alten Schlüssel.",
+        allGames: "alle Spiele; Lesen und Schreiben",
+        loading: "Schlüssel werden geladen…",
+        loadFailed:
+            "Schlüssel konnten nicht aktualisiert werden. Angezeigte Berechtigungen sind möglicherweise veraltet.",
+        retry: "Erneut versuchen",
+        empty: "Es wurden noch keine API-Schlüssel erstellt.",
+        invalidPolicy:
+            "Unbekannte Einschränkungen; der Backend-Zugriff wird verweigert.",
+        resourceLabels: {
+            "league-matches": "Öffentliche Wardogs League Spiele",
+            "league-fixtures": "Verfolgte Wardogs League Spiele",
+            "warcon-data": "Warcon-Spieldaten (mit Spielernamen und Steam-IDs)",
+            "member-summaries": "Mitgliederverzeichnis (nur lesen)",
+            "roster-summaries":
+                "Veröffentlichte Aufstellungen und Teilnahme (nur lesen)",
+            "player-stat-summaries":
+                "Verifizierte Spielerdaten aus erfassten Runden",
+            "membership-summaries":
+                "Discord-Mitgliedschaft (separate Freigabe erforderlich)",
+            "server-snapshots": "Spielserver-Status",
+            "integration-health": "Erfassungsstatus",
+            "event-summaries": "Ereignisübersichten",
+            "match-summaries": "Match-Übersichten",
+            "result-summaries": "Übersichten geprüfter Ergebnisse",
+            events: "Ereignisse (vollständige Datensätze)",
+            matches: "Matches (Rohstatistiken)",
+            groups: "Gruppen",
+            rosters: "Aufstellungen",
+            assignments: "Mitgliedszuordnungen",
+            stratmaps: "Taktikkarten",
+        },
+    },
     publicProfiles: {
         communityTitle: "Community",
         communityDescription:
@@ -573,6 +768,67 @@ export const deMessages = {
         symbolsCategory: "Symbole",
         flagsCategory: "Flaggen",
     },
+    resultReview: {
+        title: "Ergebnis prüfen",
+        dialogHelp:
+            "Prüfe die Punktzahlen und Quellen des Events vor der Bestätigung.",
+        description:
+            "Importe bleiben vorläufig, bis ein Prüfer diese Version bestätigt. Korrekturen bewahren das vorherige Ergebnis und benötigen eine Begründung.",
+        loading: "Laden…",
+        refresh: "Aktualisieren",
+        error: "Das Ergebnis konnte nicht geladen oder gespeichert werden. Aktualisiere die Ansicht und prüfe Berechtigungen sowie Quellenänderungen. Unvollständige Sitzungen können nicht bestätigt werden.",
+        status: {
+            unknown: "Kein geprüftes Ergebnis",
+            provisional: "Vorläufig",
+            confirmed: "Bestätigt",
+            corrected: "Korrigiert",
+        },
+        revision: "Version",
+        unknownScore: "Unbekannt",
+        attribution: "Spielerzuordnung",
+        verified: "verifiziert",
+        unresolved: "ungeklärt",
+        reviewedAt: "Geprüft",
+        reviewer: "Prüfer",
+        complete: "Vollständig",
+        incomplete: "Unvollständig",
+        source: "Ergebnisquelle",
+        manual: "Manuelle Punktzahlen",
+        keepSources: "Verknüpfte Sitzungen behalten",
+        scoreHelp:
+            "Ein leeres Feld bedeutet unbekannt. Null ist eine bekannte Punktzahl. Die Auswahl einer Sitzung bestätigt kein Ergebnis automatisch.",
+        participant: "Teilnehmer",
+        score: "Punkte",
+        remove: "Teilnehmer entfernen",
+        addParticipant: "Teilnehmer hinzufügen",
+        reason: "Korrekturgrund",
+        stage: "Vorläufiges Ergebnis speichern",
+        confirm: "Angezeigte Version bestätigen",
+        useImport: "Letzten bisherigen Import verwenden",
+        correct: "Geprüfte Korrektur speichern",
+        unsaved:
+            "Es gibt ungespeicherte Änderungen. Speichere und prüfe die vorläufige Version vor der Bestätigung.",
+        history: "Letzte Ergebnisversionen",
+        importer: "Import",
+    },
+    verifiedPlatformLinks: {
+        title: "Verifiziertes Steam-Konto",
+        description:
+            "Bestätige den Zugriff auf dein Steam-Konto durch eine Anmeldung bei Steam. Manuell eingetragene Profil-IDs sind nicht verifiziert.",
+        loading: "Laden…",
+        refresh: "Aktualisieren",
+        error: "Die Steam-Verknüpfung ist nicht verfügbar. Aktualisiere die Übersicht oder versuche es später erneut.",
+        callbackFailed:
+            "Die Steam-Verifizierung wurde nicht abgeschlossen. Starte einen neuen Versuch.",
+        verified: "Über Steam verifiziert",
+        empty: "Kein verifiziertes Steam-Konto",
+        verifiedAt: "Verifiziert",
+        revokedAt: "Getrennt",
+        link: "Mit Steam verifizieren",
+        unlink: "Steam trennen",
+        history: "Letzte Verknüpfungsänderungen",
+        effect: "Das Trennen beendet zukünftige Spielerzuordnungen. Dieser Nachweis vergibt keine Discord-Rollen, bestätigt keinen Spielbesitz und veröffentlicht dein Profil nicht auf der Website.",
+    },
     userSettings: {
         privacyTitle: "Privatsphäre und Daten",
         privacyDescription:
@@ -606,7 +862,7 @@ export const deMessages = {
         platformConnection: "Plattform-Identität",
         platformConnected: "Plattform-ID gesetzt",
         platformDisconnected: "Plattform-ID nicht gesetzt",
-        platformId: "Plattform-ID",
+        platformId: "Plattform-ID (nicht verifiziert)",
         platformIdPlaceholder: "Steam64- oder Epic-Spieler-ID",
         currentPlatformId: "Aktuelle Plattform-ID",
         platformIdHelp:
@@ -779,6 +1035,53 @@ export const deMessages = {
         routingInfoDescription:
             "Kategorie-Support-Rollen werden automatisch in neue Ticket-Threads eingeladen. Nutzer mit der Dashboard-Admin-Rolle gelten ebenfalls als Support-Personal für die Ticket-Bearbeitung.",
     },
+    memberRoleOperations: {
+        unlinkedTarget: "Logi-ID (Discord nicht verknüpft)",
+        title: "Änderungen der Mitgliedsrollen",
+        refresh: "Aktualisieren",
+        loading: "Laden…",
+        description:
+            "Die letzten 100 Verwaltungs- oder Bewerbungsvorgänge für alle Spiele. Das Speichern stellt eine Änderung in die Warteschlange; erst die Discord-Prüfung bestätigt sie.",
+        error: "Rollenvorgänge sind nicht verfügbar. Bitte erneut aktualisieren.",
+        empty: "Noch keine Änderungen verwalteter Rollen.",
+        target: "Discord-ID des Mitglieds",
+        actor: "Discord-ID des Auftraggebers",
+        origin: "Quelle",
+        version: "Version",
+        updated: "Aktualisiert",
+        audit: "Versuchsverlauf",
+        auditDescription:
+            "Die letzten 5 Versuche werden angezeigt; maximal 20 je Vorgang gespeichert. Zeiten in UTC. Grundcodes helfen bei der Fehlerdiagnose.",
+        reason: "Grund",
+        status: {
+            pending: "Ausstehend",
+            running: "In Bearbeitung",
+            retry_scheduled: "Wiederholung geplant",
+            applied: "Angewendet",
+            denied: "Abgelehnt",
+            superseded: "Ersetzt",
+            failed: "Fehlgeschlagen",
+        },
+        provenance: {
+            dashboard: "Administrator",
+            recruitment: "Rekrutierungsteam",
+            application: "Mitgliedsbewerbung",
+            rollback: "Bewerbung zurückgenommen",
+        },
+        hint: {
+            pending: "Der Bot prüft vor der Rollenänderung die Berechtigungen.",
+            running:
+                "Der Bot prüft Discord und bearbeitet den aktuellen Auftrag.",
+            retry_scheduled:
+                "Der Bot wiederholt den Versuch nach der Wartezeit automatisch.",
+            applied:
+                "Die Discord-Rollen entsprachen beim letzten Prüfen dem Auftrag. Der Bot prüft regelmäßig erneut.",
+            denied: "Zugang des Auftraggebers, Mitgliedschaft, Bot-Rechte und Rollenhierarchie prüfen, dann einen neuen Mitgliedsauftrag speichern.",
+            superseded:
+                "Zuweisung oder Regeln wurden geändert. Der neue Zustand benötigt einen neuen berechtigten Auftrag.",
+            failed: "Automatische Versuche wurden beendet. Ursache beheben und einen neuen Mitgliedsauftrag speichern.",
+        },
+    },
     membershipSettings: {
         title: "Mitgliedschaftseinstellungen",
         pageDescription:
@@ -830,7 +1133,7 @@ export const deMessages = {
             "Bewerbungen sind aktiviert, aber das Discord-Mitglieds-Panel wird nicht gepostet und Bewerbungs-Threads können nicht geöffnet werden, bis du {items} setzt.",
         roleSyncTitle: "So funktioniert Mitglieds-Rollen-Sync",
         roleSyncDescription:
-            "Ausstehende Bewerbungen weisen keine Mitgliedsrollen zu. Rekruten-Status nutzt die Clan-Rolle plus die Kategorie-Rekruten-Rolle, und Aktiv-Status nutzt die Clan-Rolle plus die Kategorie-Finalrolle, wenn diese Rollen konfiguriert sind.",
+            "Ausstehende Bewerbungen weisen keine Mitgliedsrollen zu. Rekruten-Status nutzt die Clan-Rolle plus die Kategorie-Rekruten-Rolle, und Aktiv-Status nutzt die Clan-Rolle plus die Kategorie-Finalrolle, wenn diese Rollen konfiguriert sind. Mitgliedsrollen werden über eine Warteschlange geändert; das Ergebnis steht in den Mitgliedschaftseinstellungen unter Rollenvorgänge.",
         rosterScoreDescription:
             "Lege Score-Änderungen pro Server nach Event-Abschluss fest. Alles auf 0 lassen deaktiviert automatische Score-Bewegung.",
         rosterScoreNoCategory: "Keine Kategorie / keine Reaktion",
@@ -1024,7 +1327,7 @@ export const deMessages = {
             "Reservemitglieder können den Rekruten-Status nicht nutzen.",
         roleSyncTitle: "So funktioniert Mitglieds-Rollen-Sync",
         roleSyncDescription:
-            "Gruppenverknüpfte Discord-Rollen syncen aus den gewählten primären und sekundären Gruppen. Mitgliedsrollen syncen nur für nicht-ausstehende Mitglieder, und Rekruten- oder Aktiv-Status hängt von Clan-Rolle plus verknüpften Mitglieds-Kategorierollen ab, wenn verfügbar.",
+            "Gruppenverknüpfte Discord-Rollen syncen aus den gewählten primären und sekundären Gruppen. Mitgliedsrollen syncen nur für nicht-ausstehende Mitglieder, und Rekruten- oder Aktiv-Status hängt von Clan-Rolle plus verknüpften Mitglieds-Kategorierollen ab, wenn verfügbar. Mitgliedsrollen werden über eine Warteschlange geändert; das Ergebnis steht in den Mitgliedschaftseinstellungen unter Rollenvorgänge.",
         missingClanRoleTitle: "Clan-Rolle ist nicht konfiguriert",
         missingClanRoleDescription:
             "Dieser Spieler kann in Logi weiterhin als Rekrut oder aktiv markiert werden, aber in Discord wird keine Basis-Clan-Rolle hinzugefügt, bis die Clan-Rolle in den Clan-Einstellungen gesetzt ist.",

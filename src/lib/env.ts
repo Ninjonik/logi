@@ -59,3 +59,13 @@ export function getJwtSecret() {
 export function getInternalAuthSecret() {
     return process.env.INTERNAL_AUTH_SECRET ?? getJwtSecret()
 }
+
+export function getSsoProviderEnvironment() {
+    if (process.env.LOGI_SSO_ENABLED !== "true")
+        throw new Error("Provider unavailable.")
+    return {
+        issuer: requireEnv("SITE_URL"),
+        privateJwk: requireEnv("LOGI_SSO_PRIVATE_JWK"),
+        allowLoopbackHttp: process.env.LOGI_SSO_ALLOW_LOOPBACK_HTTP === "true",
+    }
+}

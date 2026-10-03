@@ -1,0 +1,63 @@
+Expected failing regression captured before the corresponding fix. Final passing suite: tests.txt.
+
+✔ actual bot event mutation appends all event summary invalidations (51.861ms)
+✔ assignment changes and identity relinks invalidate the exact Discord subjects, never imported IDs (1.0332ms)
+✖ creating a Discord profile invalidates its pre-existing legacy assignment (11.9834ms)
+✖ relinking to a legacy assignment alias invalidates the newly visible membership (0.3265ms)
+✔ dashboard upsert, API upsert, result import and legacy migration emit transactional changes (38.3087ms)
+✔ registered authoritative writers keep transaction tracking at their Convex entrypoints (2.2393ms)
+✔ assignment create and removal advance the exact membership projection (10.6378ms)
+✔ actual user merge invalidates both reassigned subjects and event projections (1.5807ms)
+✔ actual user merge invalidates deleted duplicate assignment and event projections (0.8359ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 7
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 449.4776
+
+✖ failing tests:
+
+test at src\infrastructure\convex\integration-change-coverage.test.ts:2:3328
+✖ creating a Discord profile invalidates its pre-existing legacy assignment (11.9834ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + undefined
+  - [
+  -   'discord-new'
+  - ]
+
+      at TestContext.<anonymous> (<repository>\src\infrastructure\convex\integration-change-coverage.test.ts:104:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: [ 'discord-new' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at src\infrastructure\convex\integration-change-coverage.test.ts:2:4080
+✖ relinking to a legacy assignment alias invalidates the newly visible membership (0.3265ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + undefined
+  - [
+  -   'discord-new'
+  - ]
+
+      at TestContext.<anonymous> (<repository>\src\infrastructure\convex\integration-change-coverage.test.ts:117:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: [ 'discord-new' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

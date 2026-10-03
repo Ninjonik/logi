@@ -1,6 +1,20 @@
+import {
+    omitResultStorage,
+    projectResultSummary,
+} from "../src/domain/api/result-summaries"
+import {
+    projectEventSummary,
+    projectMatchSummary,
+} from "../src/domain/api/event-summaries"
+import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
+import { managedRolePolicy } from "../src/domain/membership/managed-roles"
+import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
+import { assertManagedRoleGroupLink } from "./managedRolePolicy"
 import type { MutationCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
-import { mutation, query } from "./_generated/server"
+import { GAME_IDS } from "../src/domain/games/game"
+import { mutation } from "./integrationMutation"
+import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 import {
@@ -17,6 +31,11 @@ import {
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories"
+import {
+    isGameId,
+    matchesGameScope,
+    resolveGameScope,
+} from "../src/domain/games/game"
 import { UpsertAssignmentUseCase } from "../src/application/assignments/upsert-assignment.use-case"
 import { RemoveAssignmentUseCase } from "../src/application/assignments/remove-assignment.use-case"
 import {
@@ -24,6 +43,10 @@ import {
     stringifyStratmapState,
 } from "../src/lib/stratmaps"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
+import {
+    allowsApiKeyRead,
+    isApiKeyReadAccess,
+} from "../src/domain/api/key-access"
 import { UpsertRosterUseCase } from "../src/application/rosters/roster-commands.use-case"
 import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case"
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case"
@@ -31,10 +54,11 @@ import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertCommand } from "../src/application/events/command-ports"
 import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
-import { matchesGameScope, resolveGameScope } from "../src/domain/games/game"
+import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
+import { apiKeyReadAccess } from "./apiKeyValidators"
 import { getGuildByDiscordId } from "./identity"
 
 const INTERNAL_AUTH_SECRET =
@@ -47,12 +71,19 @@ export const createKey = mutation({
     args: {
         secret: v.string(),
         guildId: v.string(),
+        actor: dashboardActor,
         name: v.string(),
         keyHash: v.string(),
         keyPrefix: v.string(),
+        readAccess: v.optional(apiKeyReadAccess),
     },
     handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
+        await authorizeDashboardAdmin(ctx, args)
+        if (
+            args.readAccess !== undefined &&
+            !isApiKeyReadAccess(args.readAccess)
+        )
+            throw new Error("Invalid API key read access.")
         if (!(await getGuildByDiscordId(ctx, args.guildId)))
             throw new Error("Clan not found.")
         return await ctx.db.insert("apiKeys", {
@@ -60,15 +91,18 @@ export const createKey = mutation({
             name: args.name.trim().slice(0, 80) || "Website",
             keyHash: args.keyHash,
             keyPrefix: args.keyPrefix,
+            ...(args.readAccess !== undefined
+                ? { readAccess: args.readAccess }
+                : {}),
             createdAt: new Date().toISOString(),
         })
     },
 })
 
 export const listKeys = query({
-    args: { secret: v.string(), guildId: v.string() },
+    args: { secret: v.string(), guildId: v.string(), actor: dashboardActor },
     handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
+        await authorizeDashboardAdmin(ctx, args)
         return (
             await ctx.db
                 .query("apiKeys")
@@ -81,14 +115,22 @@ export const listKeys = query({
             createdAt: key.createdAt,
             lastUsedAt: key.lastUsedAt,
             revokedAt: key.revokedAt,
+            ...(key.readAccess !== undefined
+                ? { readAccess: key.readAccess }
+                : {}),
         }))
     },
 })
 
 export const revokeKey = mutation({
-    args: { secret: v.string(), guildId: v.string(), keyId: v.id("apiKeys") },
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        keyId: v.id("apiKeys"),
+        actor: dashboardActor,
+    },
     handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
+        await authorizeDashboardAdmin(ctx, args)
         const key = await ctx.db.get(args.keyId)
         if (!key || key.guildId !== args.guildId)
             throw new Error("API key not found.")
@@ -170,6 +212,20 @@ async function startIdempotentMutation(
         .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
         .unique()
     if (!key || key.revokedAt) return { kind: "unauthorized" }
+    // Enforce before reading cached responses, reserving idempotency or writing.
+    if (key.readAccess !== undefined)
+        return {
+            kind: "complete",
+            result: {
+                status: 403,
+                body: JSON.stringify({
+                    error: {
+                        code: "insufficient_scope",
+                        message: "This API key does not allow this operation.",
+                    },
+                }),
+            },
+        }
 
     const existing = await ctx.db
         .query("apiIdempotencyKeys")
@@ -366,8 +422,9 @@ async function enqueueClanWebhook(
         .query("webhookSubscriptions")
         .withIndex("guildId", (q) => q.eq("guildId", input.guildId))
         .collect()
+    let enqueued = false
     for (const hook of hooks)
-        if (hook.enabled && hook.eventTypes.includes(input.eventType))
+        if (hook.enabled && hook.eventTypes.includes(input.eventType)) {
             await ctx.db.insert("webhookDeliveries", {
                 webhookId: hook._id,
                 guildId: input.guildId,
@@ -378,6 +435,12 @@ async function enqueueClanWebhook(
                 nextAttemptAt: Date.now(),
                 createdAt: input.createdAt,
             })
+            enqueued = true
+        }
+    if (enqueued) {
+        await wakeWebhookGuild(ctx, input.guildId)
+        await scheduleWebhookDrain(ctx)
+    }
 }
 
 async function applyEventScore(ctx: MutationCtx, eventId: string) {
@@ -698,6 +761,23 @@ export const mutateClanGroup = mutation({
                             error: {
                                 code: "validation_error",
                                 message: "Parent group not found.",
+                            },
+                        }
+                    }
+                }
+                if (!response!) {
+                    try {
+                        await assertManagedRoleGroupLink(
+                            ctx,
+                            key.guildId,
+                            args.discordRoleId
+                        )
+                    } catch {
+                        status = 400
+                        response = {
+                            error: {
+                                code: "validation_error",
+                                message: "Conflicting managed role owner.",
                             },
                         }
                     }
@@ -1507,6 +1587,9 @@ export const authenticateKey = mutation({
         await ctx.db.patch(key._id, { lastUsedAt: new Date().toISOString() })
         return {
             guildId: key.guildId,
+            ...(key.readAccess !== undefined
+                ? { readAccess: key.readAccess }
+                : {}),
         }
     },
 })
@@ -1521,6 +1604,7 @@ export const getClanMeta = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, "meta")) return null
         const guild = await getGuildByDiscordId(ctx, key.guildId)
         if (!guild) return null
         const guildId = key.guildId
@@ -1623,6 +1707,7 @@ export const getClanSettings = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, "settings")) return null
         const [guild, discordConfig] = await Promise.all([
             getGuildByDiscordId(ctx, key.guildId),
             ctx.db
@@ -1734,6 +1819,46 @@ export const mutateClanSettings = mutation({
                 }
             }
             const guildPatch: Record<string, string | undefined> = {}
+            if (
+                config &&
+                (args.clanRoleId !== undefined ||
+                    args.dashboardAdminRoleId !== undefined)
+            ) {
+                const prospective = {
+                    ...config,
+                    clanRoleId:
+                        args.clanRoleId === undefined
+                            ? config.clanRoleId
+                            : args.clanRoleId?.trim() || undefined,
+                    dashboardAdminRoleId:
+                        args.dashboardAdminRoleId === undefined
+                            ? config.dashboardAdminRoleId
+                            : args.dashboardAdminRoleId?.trim() || undefined,
+                }
+                const groups = await ctx.db
+                    .query("groups")
+                    .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
+                    .collect()
+                try {
+                    for (const gameId of GAME_IDS)
+                        managedRolePolicy(
+                            prospective,
+                            gameId,
+                            groups.flatMap((group) =>
+                                group.discordRoleId ? [group.discordRoleId] : []
+                            )
+                        )
+                } catch {
+                    status = 400
+                    response = {
+                        error: {
+                            code: "validation_error",
+                            message:
+                                "Managed role ownership conflicts with another policy.",
+                        },
+                    }
+                }
+            }
             if (args.name !== undefined) guildPatch.name = args.name.trim()
             if (args.avatar !== undefined)
                 guildPatch.avatar = args.avatar.trim()
@@ -1832,6 +1957,11 @@ export const mutateClanSettings = mutation({
 })
 
 const apiResource = v.union(
+    v.literal("server-snapshots"),
+    v.literal("integration-health"),
+    v.literal("event-summaries"),
+    v.literal("match-summaries"),
+    v.literal("result-summaries"),
     v.literal("events"),
     v.literal("groups"),
     v.literal("rosters"),
@@ -1874,6 +2004,8 @@ export const getClanPerformanceHistory = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, "performance-history", args.game))
+            return null
         const history = await ctx.db
             .query("guildPerformanceHistory")
             .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
@@ -1900,12 +2032,31 @@ export const getClanMatchByEvent = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, "matches")) return null
         const event = await ctx.db.get(args.eventId)
         if (!event || event.guildId !== key.guildId) return null
+        if (
+            !allowsApiKeyRead(
+                key.readAccess,
+                "matches",
+                resolveGameScope(event.gameId)
+            )
+        )
+            return null
         const match = await ctx.db
             .query("matchStats")
             .withIndex("eventId", (q) => q.eq("eventId", event._id))
             .unique()
+        if (
+            match &&
+            (match.guildId !== key.guildId ||
+                !allowsApiKeyRead(
+                    key.readAccess,
+                    "matches",
+                    resolveGameScope(match.gameId)
+                ))
+        )
+            return null
         return match
             ? {
                   ...apiDocument(match),
@@ -1925,6 +2076,7 @@ export const getClanUser = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, "users")) return null
         const assignment = await ctx.db
             .query("userAssignments")
             .withIndex("serverId_userId", (q) =>
@@ -1944,7 +2096,7 @@ function apiDocument<T extends { _id: unknown; gameId?: unknown }>(
     document: T
 ) {
     return {
-        ...document,
+        ...omitResultStorage(document),
         id: String(document._id),
         ...(Object.prototype.hasOwnProperty.call(document, "gameId")
             ? { gameId: resolveGameScope(document.gameId as never) }
@@ -1989,8 +2141,39 @@ export const getClanResourcePage = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, args.resource, args.game))
+            return null
         const guildId = key.guildId
         const options = { cursor: args.cursor, numItems: args.limit }
+        if (
+            args.resource === "server-snapshots" ||
+            args.resource === "integration-health"
+        ) {
+            const page = await ctx.db
+                .query("gameDataConnections")
+                .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                .paginate(options)
+            return {
+                items: page.page
+                    .filter(
+                        (row) =>
+                            matchesGameScope(row.gameId, args.game) &&
+                            (!args.updatedSince ||
+                                Date.parse(row.updatedAt) >=
+                                    Date.parse(args.updatedSince))
+                    )
+                    .map((row) =>
+                        (args.resource === "server-snapshots"
+                            ? projectSnapshot
+                            : projectHealth)(
+                            { ...row, id: String(row._id) },
+                            Date.now()
+                        )
+                    ),
+                nextCursor: page.isDone ? null : page.continueCursor,
+                limit: args.limit,
+            }
+        }
         const pageFor = async (query: {
             paginate: (value: typeof options) => Promise<{
                 page: Array<Record<string, unknown>>
@@ -2020,6 +2203,38 @@ export const getClanResourcePage = query({
             }
         }
         switch (args.resource) {
+            case "event-summaries":
+            case "result-summaries":
+            case "match-summaries": {
+                const events = ctx.db
+                    .query("events")
+                    .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                const result = await (
+                    args.updatedSince
+                        ? events.filter((q) =>
+                              q.gte(q.field("updatedAt"), args.updatedSince!)
+                          )
+                        : events
+                ).paginate(options)
+                return {
+                    items: result.page
+                        .filter(
+                            (event) =>
+                                matchesGameScope(event.gameId, args.game) &&
+                                (args.resource === "event-summaries" ||
+                                    (event.kind ?? "match") === "match")
+                        )
+                        .map((event) =>
+                            args.resource === "result-summaries"
+                                ? projectResultSummary(event)
+                                : args.resource === "event-summaries"
+                                  ? projectEventSummary(event)
+                                  : projectMatchSummary(event)
+                        ),
+                    nextCursor: result.isDone ? null : result.continueCursor,
+                    limit: args.limit,
+                }
+            }
             case "events":
                 return await pageFor(
                     args.updatedSince
@@ -2222,7 +2437,11 @@ export const getClanResourcePage = query({
                 return {
                     items: rosterPage.page.flatMap((roster, index) => {
                         const event = events[index]
-                        if (!event || !belongsToGame(event as never, args.game))
+                        if (
+                            !event ||
+                            event.guildId !== guildId ||
+                            !belongsToGame(event as never, args.game)
+                        )
                             return []
                         return [
                             {
@@ -2292,11 +2511,91 @@ export const getClanResource = query({
             .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
             .unique()
         if (!key || key.revokedAt) return null
+        if (!allowsApiKeyRead(key.readAccess, args.resource)) return null
+        if (
+            args.resource === "server-snapshots" ||
+            args.resource === "integration-health"
+        ) {
+            const id = ctx.db.normalizeId("gameDataConnections", args.id)
+            const row = id ? await ctx.db.get(id) : null
+            if (
+                !row ||
+                row.guildId !== key.guildId ||
+                !allowsApiKeyRead(key.readAccess, args.resource, row.gameId)
+            )
+                return null
+            return (
+                args.resource === "server-snapshots"
+                    ? projectSnapshot
+                    : projectHealth
+            )({ ...row, id: String(row._id) }, Date.now())
+        }
+        if (
+            args.resource === "event-summaries" ||
+            args.resource === "result-summaries" ||
+            args.resource === "match-summaries"
+        ) {
+            const eventId = ctx.db.normalizeId("events", args.id)
+            if (!eventId) return null
+            const event = await ctx.db.get(eventId)
+            if (
+                !event ||
+                event.guildId !== key.guildId ||
+                !allowsApiKeyRead(
+                    key.readAccess,
+                    args.resource,
+                    resolveGameScope(event.gameId)
+                ) ||
+                ((args.resource === "match-summaries" ||
+                    args.resource === "result-summaries") &&
+                    (event.kind ?? "match") !== "match")
+            )
+                return null
+            return args.resource === "result-summaries"
+                ? projectResultSummary(event)
+                : args.resource === "event-summaries"
+                  ? projectEventSummary(event)
+                  : projectMatchSummary(event)
+        }
         const item = (await ctx.db.get(args.id as never)) as
             (Record<string, unknown> & { _id: unknown }) | null
         if (!item) return null
         if (!isClanApiResourceDocument(args.resource, item)) return null
         const guildId = key.guildId
+        // Rosters inherit game ownership from their event, including records
+        // whose own guildId was populated by the read-projection migration.
+        if (args.resource === "rosters") {
+            const event = await ctx.db.get(item.eventId as Id<"events">)
+            if (
+                !event ||
+                event.guildId !== guildId ||
+                (item.guildId !== undefined && item.guildId !== guildId) ||
+                !allowsApiKeyRead(
+                    key.readAccess,
+                    args.resource,
+                    resolveGameScope(event.gameId)
+                )
+            )
+                return null
+            return {
+                ...apiDocument(item),
+                gameId: resolveGameScope(event.gameId),
+            }
+        }
+        const itemGame = item.gameId
+        if (
+            itemGame !== undefined &&
+            (typeof itemGame !== "string" || !isGameId(itemGame))
+        )
+            return null
+        if (
+            !allowsApiKeyRead(
+                key.readAccess,
+                args.resource,
+                resolveGameScope(itemGame)
+            )
+        )
+            return null
         const directGuildId =
             typeof item.guildId === "string"
                 ? item.guildId
@@ -2304,14 +2603,6 @@ export const getClanResource = query({
                   ? item.serverId
                   : undefined
         if (directGuildId !== guildId) {
-            if (args.resource === "rosters") {
-                const event = await ctx.db.get(item.eventId as Id<"events">)
-                if (!event || event.guildId !== guildId) return null
-                return {
-                    ...apiDocument(item),
-                    gameId: resolveGameScope(event.gameId),
-                }
-            }
             if (args.resource === "users") {
                 const userId =
                     typeof item.discordId === "string"

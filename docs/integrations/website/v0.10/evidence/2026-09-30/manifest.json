@@ -1,0 +1,127 @@
+{
+  "capturedAt": "2026-09-30T07:15:44.538Z",
+  "localDate": "2026-09-30",
+  "timezone": "Europe/Prague",
+  "source": {
+    "repository": "Ninjonik/logi",
+    "commit": "b5b452ce40ffda609b0c06e3114a35dbd0498ab1",
+    "runtimeUnchanged": true
+  },
+  "runtime": {
+    "node": "v24.21.0",
+    "platform": "win32",
+    "next": "^16.3.4",
+    "convex": "^1.45.0",
+    "backendRelease": "precompiled-2026-09-28-5c7cb5b",
+    "backendZipSha256": "fdf30fa67a8b5709ce21ec35dbe7c17ab0e1918495b4f02661a68137f391fe56",
+    "database": "separate native self-hosted Convex, SQLite on loopback"
+  },
+  "scope": {
+    "productionConvexUsed": false,
+    "productionCredentialsLoaded": false,
+    "discord": "user-approved test bot and guild; temporary zero-permission test roles/channel",
+    "providers": "local HTTPS fixtures; certificate verification enabled; process-local extra CA",
+    "browserIdentity": "synthetic local session, not OAuth proof"
+  },
+  "commands": [
+    {
+      "command": "node --import tsx --test src/**/*.test.ts discord-bot/src/**/*.test.ts",
+      "exitCode": 0,
+      "durationMs": 4664
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit",
+      "exitCode": 0,
+      "durationMs": 14401
+    },
+    {
+      "command": "convex dev --once --typecheck try --codegen disable --env-file <private-local-env>",
+      "exitCode": 0,
+      "durationMs": 3204
+    },
+    {
+      "command": "node node_modules/next/dist/bin/next build",
+      "exitCode": 0,
+      "durationMs": 32526
+    },
+    {
+      "command": "eslint <committed 2026-09-29/eslint-files.txt list>",
+      "exitCode": 1,
+      "durationMs": 5430
+    },
+    {
+      "command": "eslint .",
+      "exitCode": 1,
+      "durationMs": 39998
+    },
+    {
+      "command": "next lint",
+      "exitCode": 1,
+      "durationMs": 193
+    }
+  ],
+  "results": {
+    "unitAndAdapterTests": {
+      "pass": 551,
+      "fail": 0,
+      "skipped": 0
+    },
+    "httpAcceptance": {
+      "passAfterCorrectedReadback": 32,
+      "initialHarnessAssertionFailures": 3
+    },
+    "collectorAcceptance": {
+      "pass": 13,
+      "fail": 0
+    },
+    "membershipAcceptance": {
+      "pass": 3,
+      "fail": 0
+    },
+    "discordGuardAndManualSlash": {
+      "pass": 2,
+      "blocked": 1
+    },
+    "browserChecks": {
+      "pass": 5
+    },
+    "changedFileEslint": {
+      "errors": 3,
+      "warnings": 17
+    },
+    "repositoryEslint": {
+      "errors": 143,
+      "warnings": 142
+    },
+    "sustainedBotRun": {
+      "exitCode": 1,
+      "durationMs": 32219827,
+      "error": "Unhandled WebSocket ECONNRESET",
+      "dependencyFailureReproducedOnLoopback": true,
+      "fixQualified": false
+    }
+  },
+  "limitations": [
+    "Release blocker: bot exited after about 8h57m with an unhandled WebSocket ECONNRESET; the installed SDK teardown failure is reproduced, not fixed",
+    "No live HLL/WDG server credentials or production collector parity test",
+    "Positive managed-role add/replace/remove blocked by approved target above bot",
+    "Configured-source slash response requires a second manual user confirmation",
+    "No real Discord OAuth or Steam OpenID browser sign-in; supplied OAuth app differs from test bot",
+    "No live webhook receiver, opt-in recap DM, member join/leave lifecycle, website consumer, deployment/rollback or load acceptance",
+    "Lint is not green; repository-wide and changed-file scopes differ"
+  ],
+  "artifacts": {
+    "tests.txt": "15a9ffa3d693fa139f8c08dab6a506247c0d8f570a0f4501693468552427db22",
+    "typecheck.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.txt": "5953ec6bc8d45ab9f2da32021e09439f5259633f5c00648f80934884cabb5c79",
+    "convex-push.txt": "04a5801d0f45e7c630cffa74524cfd0bdf7971a49013cfc3551b5c249344d4b3",
+    "eslint-changed.txt": "8cf406a942859489198fe02489294679aa931e553fae1c05753a2425c3d9a715",
+    "lint-script.txt": "340f8c5d5509077166bfb0a5bb6c6d7eff51d8146dc80c899cfa6607e6a59225",
+    "eslint-repository-summary.txt": "846b0743205b7ea54260bf078e0a7c0916ddb0eb747dfac1783ceb1953dc0181",
+    "acceptance.json": "852a7ca02c79807a83d948452fb25a465511e69c612aff8b3a7084c2761192a9",
+    "websocket-reproduction.json": "f1581d56f0f7f8a85b39d6a523abc5cd05226f49b58231e713a0200ac73b651c",
+    "discord-cleanup.json": "97fd1b44bde7bbc8e38d061b11fb4c3deb7e2c8eae440b5964f277238365e3fd",
+    "runtime-cleanup.json": "af1ea935f3e310e88b0cb20ec377615de800c675d8c1471c95b922bdc2ff9534",
+    "reproduce-websocket-reset.mjs": "a5d5c9cf7acc4caada6c8792f784a4168de5fb39844a98755f8026be081d30ad"
+  }
+}

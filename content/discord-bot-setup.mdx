@@ -108,6 +108,7 @@ They are examples of the configured bot capabilities, not separate services.
 | Ticket panel                                    | Enable ticket settings, submit channel, ticket parent channel, and at least one category          | Confirm the panel appears and a test request creates a ticket in the intended private location.                   |
 | Membership application panel                    | Enable membership settings, submit channel, application parent channel, and at least one category | Confirm the panel appears and a test application reaches the intended private location.                           |
 | Player-stat servers                             | Player-stat token and URL entries                                                                 | Verify against a non-production test if possible. Treat tokens as secrets.                                        |
+| Game-server status command                      | HLL/WDG game data sources under System settings                                                   | Run `/server-status` with a game; check the private response, source and observation age.                           |
 
 <Callout type="info">
     Event-level channel choices can override a workspace default. When a test
@@ -123,6 +124,47 @@ They are examples of the configured bot capabilities, not separate services.
 4. Create a draft roster, publish only to the test audience, and check any notification option before enabling it for real members.
 5. If you use role automation, test it with a disposable role and account before connecting real membership roles.
 6. Inspect the bot dashboard/logs for errors, then remove the test event and any test channels or roles when finished.
+
+## Slash commands
+
+Logi registers these six commands for cached guilds when the bot becomes ready.
+After installing it in a new guild, restart the bot when command registration is
+needed; this revision does not register commands separately on guild join.
+All six commands are guild-only. Names stay in English; descriptions/options
+support Czech and German localization.
+
+| Command | Purpose and access |
+| --- | --- |
+| `/server-status game:wardogs` or `game:hell_let_loose` | Private stored game-server status for Discord Manage Server / Administrator |
+| `/close_ticket [reason]` | Close the current tracked ticket thread; Administrator, configured dashboard-admin role or category support role |
+| `/close_application outcome:<choice> [reason]` | Close the current tracked application and request the corresponding membership state; authorized recruitment staff |
+| `/notice event:<selection>` | Open your notice/reason modal for a matching eligible event |
+| `/link` | Privately manage your claimed platform identifiers; this is not verified Steam ownership |
+| `/player player:<selection>` | Show the selected clan player's profile/statistics in the channel |
+
+Brackets mark optional input. Closing reasons are limited to 500 characters.
+Application outcomes are `denied`, `pending`, `recruit`, `member` and `mercenary`.
+Event and player selections support autocomplete. Signup, attendance, ticket,
+application and recap-preference buttons are separate workflows, not additional
+slash commands. Verified Steam linking is available in your Logi account settings.
+
+## Game-server status (server managers)
+
+Use `/server-status` and choose **Hell Let Loose** or **Wardogs**. You need Discord
+**Manage Server** permission on that server; the response is visible only to you.
+The command shows up to five stored connections for that game, including state,
+player count, map, source and observation age. The footer reports the full count;
+open Logi settings for the complete list. Replies follow your Discord language
+(Czech, English or German, with English fallback).
+
+This reads the existing game-data collection. It does not contact or control the
+game server. Zero players is a known value; `?` or unknown means data is missing.
+Stale or disabled collection shows an unknown state, even when older counts and
+map names remain visible. A timeout does not mean the server is offline. If no
+source is configured, the command explains that instead of inventing a status.
+
+The operator must deploy the compatible bot/backend and configure the collection
+first. A Logi-only dashboard role does not grant Discord Manage Server permission.
 
 ## Platform status channel (superadmins)
 

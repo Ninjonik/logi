@@ -1,0 +1,52 @@
+{
+  "executedAt": "2026-09-30T11:10:12.9568844Z",
+  "applicationProcesses": [
+    {
+      "name": "bot",
+      "stopped": true,
+      "observedRunSeconds": 1400
+    },
+    {
+      "name": "start",
+      "stopped": true,
+      "observedRunSeconds": 1373
+    }
+  ],
+  "localHelpers": [
+    {
+      "process": "node.exe",
+      "ports": [
+        32192
+      ],
+      "stopped": true
+    },
+    {
+      "process": "convex-local-backend.exe",
+      "ports": [
+        32191,
+        32190
+      ],
+      "stopped": true
+    },
+    {
+      "process": "node.exe",
+      "ports": [
+        30159
+      ],
+      "stopped": true
+    }
+  ],
+  "testListenersRemaining": 0,
+  "discord": {
+    "executedAt": "2026-09-30T11:08:03.199Z",
+    "botStoppedBeforeRestore": true,
+    "priorCommandDefinitionsRestored": 19,
+    "definitionEqualityReadback": true,
+    "commandIds": "Discord-generated IDs may differ after recreation",
+    "perCommandPermissionOverrides": "Not captured or verified; definition-level default permissions restored",
+    "testChannelAndZeroPermissionRoles": "retained for owner inspection",
+    "existingMemberRolesModified": false
+  },
+  "privateDatabaseAndSecrets": "retained outside repository",
+  "productionTouched": false
+}

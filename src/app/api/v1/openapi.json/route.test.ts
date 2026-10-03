@@ -1,7 +1,231 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+test("League match preview documents stale snapshots, explicit grants and nullable results", async () => {
+    const document = await (await GET()).json()
+    const operation = document.paths["/clan/league-matches"].get
+    assert.equal(operation["x-logi-read-access"].resource, "league-matches")
+    assert.match(operation.description, /stale=true/)
+    assert.equal(
+        operation.parameters.find((p: { name: string }) => p.name === "game")
+            .schema.enum[0],
+        "wardogs"
+    )
+    assert.ok(document.components.schemas.LeagueMatchRead)
+    for (const code of ["200", "400", "401", "403", "429", "503"])
+        assert.ok(operation.responses[code])
+})
+
+test("Warcon reads document every view, an explicit grant and typed player data", async () => {
+    const document = await (await GET()).json()
+    const endpoint = document.paths["/clan/warcon-data/{connectionId}"]
+    assert.ok(endpoint?.get)
+    assert.deepEqual(Object.keys(endpoint), ["get"])
+    assert.match(endpoint.get.description, /Legacy keys are denied/)
+    assert.ok(
+        endpoint.get.parameters
+            .find((p: { name: string }) => p.name === "view")
+            .schema.enum.includes("live")
+    )
+    assert.equal(
+        document.components.schemas.WarconEnvelope.properties.result.oneOf
+            ?.length ??
+            document.components.schemas.WarconEnvelope.properties.result.anyOf
+                ?.length,
+        15
+    )
+})
+
 import { GET } from "./route"
+
+test("actor event commands document two simultaneous credentials and durable revision-safe writes", async () => {
+    const document = await (await GET()).json()
+    const command = document.paths["/clan/event-commands"].post
+    assert.deepEqual(command.security, [{ clanApiKey: [], ssoActorToken: [] }])
+    assert.match(command.description, /at most 60 seconds/)
+    assert.match(command.description, /without a time expiry/)
+    assert.match(command.description, /unknown outcome/)
+    for (const code of [
+        "200",
+        "201",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409",
+        "429",
+        "503",
+    ])
+        assert.ok(command.responses[code])
+    assert.equal(
+        document.components.securitySchemes.ssoActorToken.name,
+        "X-Logi-Actor-Token"
+    )
+    assert.equal(
+        document.components.schemas.WebsiteEventReceipt.additionalProperties,
+        false
+    )
+    assert.equal(
+        document.components.schemas.WebsiteEventEditor.additionalProperties,
+        false
+    )
+    assert.ok(document.paths["/clan/event-commands/{eventId}"].get)
+})
+
+test("generic event schemas exclude internal reviewed result storage", async () => {
+    const document = await (await GET()).json()
+    const schema = document.components.schemas.ClanEventsDocument
+    for (const field of ["reviewedResult", "reviewedResultGameId"]) {
+        assert.equal(field in schema.properties, false)
+        assert.equal(field in schema.example, false)
+        assert.equal(schema.required.includes(field), false)
+    }
+})
+
+test("OpenAPI exposes read-only summary routes with closed minimal response schemas", async () => {
+    const document = await (await GET()).json()
+    for (const [resource, schemaName, field] of [
+        ["server-snapshots", "ClanServerSnapshotsDocument", "freshness"],
+        [
+            "integration-health",
+            "ClanIntegrationHealthDocument",
+            "lastSuccessAt",
+        ],
+        ["event-summaries", "ClanEventSummariesDocument", "startsAt"],
+        ["match-summaries", "ClanMatchSummariesDocument", "resultState"],
+        ["result-summaries", "ClanResultSummariesDocument", "resultState"],
+    ]) {
+        const operations = document.paths[`/clan/${resource}`]
+        assert.ok(operations?.get, `${resource} list is documented`)
+        assert.deepEqual(Object.keys(operations), ["get"])
+        assert.ok(
+            operations.get.parameters.some(
+                (parameter: { name: string }) => parameter.name === "game"
+            )
+        )
+        assert.equal(
+            operations.get.responses["200"].content["application/json"].schema
+                .properties.data.items.$ref,
+            `#/components/schemas/${schemaName}`
+        )
+        const schema = document.components.schemas[schemaName]
+        assert.ok(schema.properties[field])
+        assert.equal(schema.additionalProperties, false)
+        for (const excluded of [
+            "notes",
+            "serverPassword",
+            "participants",
+            "signUps",
+            "raw",
+            "sourceUrl",
+        ])
+            assert.equal(excluded in schema.properties, false)
+    }
+    assert.ok(document.paths["/clan/match-summaries/{eventId}"]?.get)
+    assert.ok(document.paths["/clan/event-summaries/{id}"]?.get)
+})
+
+test("every clan operation documents runtime scope denial and its read-access resource", async () => {
+    const document = await (await GET()).json()
+    for (const [path, operations] of Object.entries(document.paths)) {
+        if (!path.startsWith("/clan/")) continue
+        for (const [method, operation] of Object.entries(
+            operations as Record<
+                string,
+                {
+                    responses: Record<string, unknown>
+                    "x-logi-read-access"?: unknown
+                }
+            >
+        )) {
+            assert.ok(
+                operation.responses["403"],
+                `${method} ${path} must document insufficient_scope`
+            )
+            const resource = path.split("/")[2]
+            if (["league-matches", "league-fixtures"].includes(resource)) {
+                assert.deepEqual(operation["x-logi-read-access"], {
+                    resource,
+                    games: ["wardogs"],
+                    explicitGrantRequired: true,
+                })
+                continue
+            }
+            if (resource === "membership-summaries") {
+                assert.deepEqual(operation["x-logi-read-access"], {
+                    resource,
+                    gameSelection: "one-explicit-game",
+                    policy: "enabled-per-key-role-allowlist",
+                    subject: "exact-discord-user-id",
+                })
+                continue
+            }
+            if (["changes", "sync-records"].includes(resource)) {
+                assert.deepEqual(operation["x-logi-read-access"], {
+                    resources: "underlying-explicit-grants",
+                    gameSelection: "one-explicit-game",
+                })
+                continue
+            }
+            const allowed =
+                method === "get" &&
+                [
+                    "member-summaries",
+                    "roster-summaries",
+                    "player-stat-summaries",
+                    "warcon-data",
+                    "server-snapshots",
+                    "integration-health",
+                    "events",
+                    "groups",
+                    "rosters",
+                    "assignments",
+                    "stratmaps",
+                    "matches",
+                    "event-summaries",
+                    "match-summaries",
+                    "result-summaries",
+                ].includes(resource)
+            assert.deepEqual(
+                operation["x-logi-read-access"],
+                allowed
+                    ? {
+                          resource,
+                          gameSelection: path.includes("{")
+                              ? "persisted-record"
+                              : "explicit-permitted-games",
+                      }
+                    : null,
+                `${method} ${path}`
+            )
+        }
+    }
+})
+test("membership OpenAPI exposes only exact-subject reads and required policy/freshness rules", async () => {
+    const document = await (await GET()).json()
+    assert.equal(document.paths["/clan/membership-summaries"], undefined)
+    const operation =
+        document.paths["/clan/membership-summaries/{discordUserId}"]?.get
+    assert.ok(operation)
+    assert.ok(
+        operation.parameters.some(
+            (value: { name: string; required?: boolean }) =>
+                value.name === "game" && value.required
+        )
+    )
+    assert.ok(
+        operation.parameters.some(
+            (value: { name: string; schema: { maximum?: number } }) =>
+                value.name === "maxAgeMs" && value.schema.maximum === 300000
+        )
+    )
+    assert.ok(document.components.schemas.MembershipObservation)
+    assert.ok(
+        document.paths["/clan/changes"].get.parameters.some(
+            (value: { name: string }) => value.name === "subject"
+        )
+    )
+})
 
 test("OpenAPI advertises every implemented clan write endpoint", async () => {
     const response = await GET()
@@ -137,6 +361,7 @@ test("OpenAPI groups operations by their clan resource", async () => {
     assert.deepEqual(
         document.tags.map((tag) => tag.name),
         [
+            "Clan API — People",
             "Public API — no key required",
             "Clan API — Overview",
             "Clan API — Settings",

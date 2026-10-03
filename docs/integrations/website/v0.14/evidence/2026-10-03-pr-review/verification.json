@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-03",
+  "timezone": "Europe/Prague",
+  "sourceRevision": "550ec1b3fd8d36d292a567cfa4a765c0cd462f82",
+  "suite": {
+    "passed": 753,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "kind": "synthetic unit and adapter regression",
+    "durationMs": 7310.9299
+  },
+  "typecheck": {
+    "exitCode": 0
+  },
+  "focusedRegression": {
+    "passed": 70,
+    "failed": 0
+  },
+  "operations": [
+    {
+      "name": "Next.js production webpack build",
+      "exitCode": 0,
+      "durationMs": 35681,
+      "productionConvexLoaded": false
+    },
+    {
+      "name": "isolated local Convex push and code generation",
+      "exitCode": 0,
+      "durationMs": 1723,
+      "productionConvexLoaded": false
+    }
+  ],
+  "httpAssertions": 98,
+  "ci": {
+    "url": "https://github.com/Ninjonik/logi/actions/runs/37090034133",
+    "headRevision": "550ec1b3fd8d36d292a567cfa4a765c0cd462f82",
+    "checkoutMergeRevision": "0250b8fab9fed535f317627e1b9d919e1617cbd6",
+    "baseRevision": "b2606d98282eac12e1649f62d47a55595d3acf05",
+    "conclusion": "success",
+    "checks": [
+      "frozen lockfile install",
+      "generated contract parity",
+      "TypeScript",
+      "753 tests"
+    ]
+  },
+  "lint": {
+    "fixDelta": {
+      "errors": 0,
+      "warnings": 4
+    },
+    "classifiedPrSource": {
+      "files": 310,
+      "errors": 4,
+      "warnings": 18,
+      "allErrorsPresentAtBaseline": true
+    },
+    "cleanRepositoryLintClaimed": false
+  },
+  "knownWarnings": [
+    "Existing webpack module.createRequire import trace",
+    "Nextra Git timestamp warnings",
+    "Existing lint debt"
+  ],
+  "cleanup": {
+    "localNextStopped": true,
+    "localConvexStopped": true
+  },
+  "excluded": [
+    "Production deployment and Convex",
+    "Hosted authentication and real Steam ownership",
+    "Real Discord/provider writes",
+    "New live provider acceptance",
+    "Load or soak acceptance"
+  ]
+}

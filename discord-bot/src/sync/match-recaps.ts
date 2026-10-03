@@ -27,6 +27,7 @@ type MatchRecap = {
         kd: number
     }
 }
+type PendingMatchRecap = MatchRecap & { recapId: string; discordUserId: string }
 
 function replaceValues(template: string, values: Record<string, string>) {
     return Object.entries(values).reduce(
@@ -71,12 +72,36 @@ export async function processMatchRecaps(
     const recaps = (await convex.query(references.getPendingMatchRecaps, {
         secret: env.internalSecret,
         eventId: eventId as never,
-    })) as MatchRecap[]
-    for (const recap of recaps) {
-        const user = await client.users.fetch(recap.userId).catch(() => null)
+        deliveryVersion: 2,
+    })) as PendingMatchRecap[]
+    for (const candidate of recaps) {
+        if (!candidate.recapId || !/^\d{17,20}$/.test(candidate.discordUserId))
+            continue
+        const user = await client.users
+            .fetch(candidate.discordUserId)
+            .catch(() => null)
         if (!user) continue
-        const link = `${env.appSiteUrl}/${language}/players/${recap.userId}/matches/${eventId}`
-        const image = `${env.appSiteUrl}/api/og/player-match/${recap.userId}/${eventId}`
+        // Fetching Discord can take time. Re-read the binding and opt-out immediately before sending.
+        const recap = (await convex.query(
+            references.prepareMatchRecapDelivery,
+            {
+                secret: env.internalSecret,
+                recapId: candidate.recapId,
+                eventId,
+                discordUserId: candidate.discordUserId,
+            }
+        )) as PendingMatchRecap | null
+        if (
+            !recap ||
+            recap.recapId !== candidate.recapId ||
+            recap.discordUserId !== candidate.discordUserId ||
+            recap.userId !== candidate.userId
+        )
+            continue
+        const playerPath = encodeURIComponent(recap.userId),
+            eventPath = encodeURIComponent(eventId)
+        const link = `${env.appSiteUrl}/${language}/players/${playerPath}/matches/${eventPath}`
+        const image = `${env.appSiteUrl}/api/og/player-match/${playerPath}/${eventPath}`
         const copy = buildMatchRecapCopy(language, recap)
         const sent = await user
             .send({
@@ -110,8 +135,8 @@ export async function processMatchRecaps(
         if (sent)
             await convex.mutation(references.markMatchRecapSent, {
                 secret: env.internalSecret,
-                eventId: eventId as never,
-                userId: recap.userId,
+                recapId: recap.recapId,
+                discordUserId: recap.discordUserId,
             })
     }
 }

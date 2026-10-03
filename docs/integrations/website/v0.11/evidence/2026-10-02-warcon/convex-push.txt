@@ -1,0 +1,5 @@
+▌ Developing against deployment:
+▌ └─ http://127.0.0.1:32190
+- Preparing Convex functions...
+
+√ 20:01:44 Convex functions ready! (749.78ms)

@@ -28,11 +28,13 @@ import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
 import { getGuildById, getGuildDiscordId } from "./identity"
+import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import type { MutationCtx } from "./_generated/server"
-import { mutation, query } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
+import { mutation } from "./integrationMutation"
+import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 const INTERNAL_AUTH_SECRET =
@@ -458,6 +460,7 @@ export const setResult = mutation({
                 updatedAt: new Date().toISOString(),
             })
         }
+        await recordImportedResult(ctx, args.eventId, args.eventResult)
         return result
     },
 })

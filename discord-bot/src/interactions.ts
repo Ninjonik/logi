@@ -2,8 +2,8 @@ import {
     ActionRowBuilder,
     type APIMessageComponentEmoji,
     AutocompleteInteraction,
-    ButtonInteraction,
     ButtonBuilder,
+    ButtonInteraction,
     ButtonStyle,
     ChannelType,
     ChatInputCommandInteraction,
@@ -63,7 +63,6 @@ import {
     loadTicketCategoryContext,
     resolveSupportMemberIds,
     rollbackMembershipApplicationSetup,
-    syncMembershipRoles,
 } from "./interactions/shared"
 import {
     handleEventButtonInteraction,
@@ -83,10 +82,15 @@ import {
     extractPlayerSearchResults,
 } from "./interactions/player-search"
 import {
+    buildServerStatusCommand,
+    handleServerStatusCommand,
+} from "./interactions/server-status"
+import {
     buildMembershipApplicationThreadEmbed,
     buildTicketThreadEmbed,
 } from "./message-builders"
 import { buildMembershipApplicationWelcomeContent } from "./interactions/membership-welcome"
+import { handleMatchRecapPreference } from "./interactions/match-recap-preference"
 import { reportClanDiscordError } from "./error-reporting"
 import { logError, logInfo, logWarn } from "./log"
 import { convex, references } from "./convex"
@@ -521,31 +525,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     return {
         async handleButtonInteraction(interaction: ButtonInteraction) {
             if (interaction.customId.startsWith("match-recap:")) {
-                const enabled = interaction.customId.endsWith("subscribe")
-                await convex.mutation(references.setMatchRecapNotifications, {
-                    secret: env.internalSecret,
-                    userId: interaction.user.id,
-                    enabled,
-                })
-                await interaction.update({
-                    content: enabled
-                        ? "You are subscribed to match recaps again."
-                        : "You are unsubscribed from match recaps.",
-                    components: [
-                        new ActionRowBuilder<ButtonBuilder>().addComponents(
-                            new ButtonBuilder()
-                                .setStyle(ButtonStyle.Secondary)
-                                .setLabel(
-                                    enabled
-                                        ? "Unsubscribe from recaps"
-                                        : "Subscribe to recaps"
-                                )
-                                .setCustomId(
-                                    `match-recap:${enabled ? "unsubscribe" : "subscribe"}`
-                                )
-                        ),
-                    ],
-                })
+                await handleMatchRecapPreference(interaction)
                 return
             }
             if (interaction.customId.startsWith("attendance-late:")) {
@@ -648,7 +628,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         },
 
         async handleChatInputCommand(interaction: ChatInputCommandInteraction) {
-            if (interaction.commandName === "close_ticket") {
+            if (interaction.commandName === "server-status") {
+                await handleServerStatusCommand(interaction)
+            } else if (interaction.commandName === "close_ticket") {
                 await handleCloseTicketCommand(interaction)
             } else if (interaction.commandName === "close_application") {
                 await handleCloseApplicationCommand(interaction)
@@ -670,6 +652,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                       : "en"
             )
             const commands = [
+                buildServerStatusCommand(),
                 new SlashCommandBuilder()
                     .setName("close_ticket")
                     .setDescription(messages.commands.closeTicketDescription)
@@ -2690,6 +2673,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const assignmentId = (await convex
             .mutation(references.upsertAssignment, {
                 secret: env.internalSecret,
+                roleActor: { userId: interaction.user.id, kind: "application" },
                 serverDiscordId: interaction.guildId,
                 userId: interaction.user.id,
                 gameId,
@@ -2730,17 +2714,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             assignmentId,
         })
 
-        await syncMembershipRoles(
-            interaction.guild,
-            interaction.user.id,
-            categoryContext.config,
-            undefined,
-            undefined,
-            undefined,
-            category.assignmentType,
-            initialStatus,
-            category.id
-        )
         await interaction.guild.members.fetch().catch(() => null)
 
         const thread = await (parentChannel as TextChannel).threads
@@ -3218,7 +3191,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const member = interaction.member as GuildMember | null
+        const member = await guild.members
+            .fetch({ user: interaction.user.id, force: true })
+            .catch(() => null)
         if (!member) {
             await interaction.editReply({
                 content: messages.membership.unableToVerifyPermissions,
@@ -3254,12 +3229,15 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         if (outcome === "denied") {
             if (context.application.assignmentId) {
-                await convex
-                    .mutation(references.removeAssignment, {
-                        secret: env.internalSecret,
-                        assignmentId: context.application.assignmentId as never,
-                    })
-                    .catch(() => null)
+                await convex.mutation(references.removeAssignment, {
+                    secret: env.internalSecret,
+                    assignmentId: context.application.assignmentId as never,
+                    roleActor: {
+                        userId: interaction.user.id,
+                        kind: "recruitment",
+                    },
+                    roleGuildId: interaction.guildId,
+                })
                 await revalidateAppData({
                     type: "assignment-changed",
                     serverId: interaction.guildId,
@@ -3267,18 +3245,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     assignmentId: context.application.assignmentId,
                 })
             }
-            await syncMembershipRoles(
-                guild,
-                context.application.creatorId,
-                context.config,
-                context.assignment?.type,
-                context.assignment?.status,
-                context.assignment?.membershipCategoryId ??
-                    context.application.categoryId,
-                undefined,
-                undefined,
-                undefined
-            )
         } else {
             const nextType = outcome === "mercenary" ? "mercenary" : "member"
             const nextStatus =
@@ -3296,8 +3262,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     secret: env.internalSecret,
                     serverDiscordId: interaction.guildId,
                     assignmentId: context.application.assignmentId as never,
-                    userId: context.application.creatorId,
+                    roleActor: {
+                        userId: interaction.user.id,
+                        kind: "recruitment",
+                    },
                     gameId: context.application.gameId,
+                    userId: context.application.creatorId,
                     type: nextType,
                     status: nextStatus,
                     membershipCategoryId: nextCategoryId,
@@ -3313,18 +3283,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 userId: context.application.creatorId,
                 assignmentId,
             })
-            await syncMembershipRoles(
-                guild,
-                context.application.creatorId,
-                context.config,
-                context.assignment?.type,
-                context.assignment?.status,
-                context.assignment?.membershipCategoryId ??
-                    context.application.categoryId,
-                nextType,
-                nextStatus,
-                nextCategoryId
-            )
         }
 
         await convex.mutation(references.closeMembershipApplicationThread, {

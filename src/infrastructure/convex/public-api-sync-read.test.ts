@@ -72,6 +72,9 @@ class FakeQuery {
 }
 
 class FakeDb {
+    normalizeId(table: string, id: string) {
+        return this.tables[table]?.has(id) ? id : null
+    }
     readonly tables: Record<string, Map<string, Document>> = {
         apiKeys: new Map([
             ["key", { _id: "key", keyHash: "key-hash", guildId: "guild-a" }],

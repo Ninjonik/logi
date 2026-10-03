@@ -4,7 +4,11 @@ import {
     normalizeDoc,
     normalizeUserDoc,
 } from "./discord_shared"
-import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
+import {
+    matchesGameScope,
+    resolveGameScope,
+    withGameOverrides,
+} from "../src/domain/games/game"
 import { mutation, query } from "./_generated/server"
 import { getUserByDiscordId } from "./identity"
 import { v } from "convex/values"
@@ -319,17 +323,17 @@ export const getMembershipApplicationThreadContext = query({
                 : null,
         ])
         if (!config) return null
-        const effectiveConfig = withGameOverrides(
+        const scopedConfig = withGameOverrides(
             config,
             config.gameOverrides,
-            application.gameId
+            resolveGameScope(application.gameId)
         )
         const category =
-            effectiveConfig.membershipSettings?.categories.find(
+            scopedConfig.membershipSettings?.categories.find(
                 (item) => item.id === application.categoryId
             ) ?? null
         return {
-            config: normalizeConfigDoc(effectiveConfig),
+            config: normalizeConfigDoc(scopedConfig),
             application: normalizeDoc(application),
             assignment: assignment ? normalizeDoc(assignment) : null,
             category,

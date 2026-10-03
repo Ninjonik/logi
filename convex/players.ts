@@ -1,8 +1,11 @@
 import { getDefaultWorkspaceCandidatesFromMemberships } from "../src/domain/workspaces/default-workspace"
+import { revokePlatformIdentity } from "./platformIdentityStore"
+import { invalidateUserSessions } from "./dashboardSessionStore"
 import { matchesGameScope } from "../src/domain/games/game"
 import type { MutationCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
-import { mutation, query } from "./_generated/server"
+import { mutation } from "./integrationMutation"
+import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 import {
@@ -958,7 +961,11 @@ export const setMatchRecapNotifications = mutation({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const user = await getUserByIdentifier(ctx, args.userId)
+        // Both callers supply the authenticated Discord subject, never a player ID.
+        const user = await ctx.db
+            .query("users")
+            .withIndex("discordId", (q) => q.eq("discordId", args.userId))
+            .unique()
         if (!user) throw new Error("Player not found.")
         await ctx.db.patch(user._id, {
             matchRecapNotificationsEnabled: args.enabled,
@@ -1229,6 +1236,19 @@ export const linkImportedDiscordProfile = mutation({
         ]
 
         if (
+            importedUser.discordId !== args.discordId ||
+            (existingDiscordUser &&
+                existingDiscordUser._id !== importedUser._id)
+        ) {
+            await revokePlatformIdentity(ctx, importedUser._id)
+            await invalidateUserSessions(ctx, importedUser._id)
+            if (existingDiscordUser)
+                await revokePlatformIdentity(ctx, existingDiscordUser._id)
+            if (existingDiscordUser)
+                await invalidateUserSessions(ctx, existingDiscordUser._id)
+        }
+
+        if (
             existingDiscordUser &&
             existingDiscordUser._id !== importedUser._id
         ) {
@@ -1310,6 +1330,10 @@ export const mergeUsers = mutation({
 
         const primaryStableId = getUserStableId(primaryUser)
         const secondaryStableId = getUserStableId(secondaryUser)
+        await revokePlatformIdentity(ctx, primaryUser._id)
+        await revokePlatformIdentity(ctx, secondaryUser._id)
+        await invalidateUserSessions(ctx, primaryUser._id)
+        await invalidateUserSessions(ctx, secondaryUser._id)
 
         const mergedPlatformIds = mergeUniqueStrings(
             normalizePlatformIds(primaryUser.platformIds),

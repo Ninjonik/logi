@@ -24,9 +24,11 @@ import {
     buildAnnouncementMessage,
     buildAnnouncementV2Message,
 } from "../message-builders"
+import { eventMessageIdentity } from "../../../src/domain/discord-publications/legacy-bindings"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
+import { publishManagedMessage, isUnknownMessage } from "./publication"
 import { reportClanDiscordError } from "../error-reporting"
 import { logError, logInfo, logWarn } from "../log"
 import { syncEventRoles } from "../event-roles"
@@ -153,15 +155,35 @@ async function syncEventMessage(
     roster: Roster | undefined,
     guild: Guild,
     includeSignup = true,
-    forumChannelId?: string
+    forumChannelId?: string,
+    storedAnnouncementChannelId?: string
 ) {
-    const existing = messageId
-        ? await channel.messages.fetch(messageId).catch(() => null)
-        : null
+    const identity = eventMessageIdentity({
+        eventId: event.id,
+        kind: includeSignup ? "announcement" : "info",
+        destination: channel.id,
+        messageId,
+        storedAnnouncementChannelId,
+    })
     if (event.status === "concluded") {
-        await existing?.delete().catch(() => null)
+        await retireEventMessage(
+            guild.client,
+            payload,
+            event,
+            includeSignup ? "announcement" : "info",
+            identity.legacyChannelId,
+            messageId
+        )
         return undefined
     }
+    const existing = messageId
+        ? await channel.messages
+              .fetch({ message: messageId, force: true, cache: false })
+              .catch((error) => {
+                  if (isUnknownMessage(error)) return null
+                  throw error
+              })
+        : null
     if (
         !includeSignup &&
         shouldShowPublishedRosterImage(event, roster?.updatedAt)
@@ -209,84 +231,76 @@ async function syncEventMessage(
         displayEvent,
         guild
     )
-    if (existing) {
-        if (existing.flags.has(MessageFlags.IsComponentsV2)) {
-            await existing.edit(
-                buildAnnouncementV2Message(
-                    displayPayload,
-                    displayEvent,
-                    names,
-                    {
-                        showPublishedRosterImage: !includeSignup,
-                        forumChannelId,
-                    }
-                )
-            )
-        } else {
-            const { embed, components } = buildAnnouncementMessage(
-                displayPayload,
-                displayEvent,
-                names,
-                {
-                    showPublishedRosterImage: !includeSignup,
-                    forumChannelId,
-                }
-            )
-            await existing.edit({
-                embeds: [embed],
-                components: includeSignup ? components : [],
-            })
-        }
-        return existing.id
-    }
     const pingRoleIds = includeSignup
         ? getAnnouncementPingRoleIds(payload, event)
         : []
+    const message =
+        existing && !existing.flags.has(MessageFlags.IsComponentsV2)
+            ? (() => {
+                  const { embed, components } = buildAnnouncementMessage(
+                      displayPayload,
+                      displayEvent,
+                      names,
+                      {
+                          showPublishedRosterImage: !includeSignup,
+                          forumChannelId,
+                      }
+                  )
+                  return {
+                      embeds: [embed],
+                      components: includeSignup ? components : [],
+                  }
+              })()
+            : {
+                  ...buildAnnouncementV2Message(
+                      displayPayload,
+                      displayEvent,
+                      names,
+                      {
+                          showPublishedRosterImage: !includeSignup,
+                          forumChannelId,
+                          pingRoleIds,
+                      }
+                  ),
+                  flags: MessageFlags.IsComponentsV2 as const,
+              }
     return (
-        await channel.send({
-            ...buildAnnouncementV2Message(displayPayload, displayEvent, names, {
-                showPublishedRosterImage: !includeSignup,
-                forumChannelId,
-                pingRoleIds,
-            }),
-            allowedMentions: { roles: pingRoleIds, parse: [] },
-            flags: MessageFlags.IsComponentsV2,
-        })
-    ).id
+        (await publishManagedMessage(guild.client, {
+            guildId: guild.id,
+            ...identity,
+            revision: Math.max(
+                Date.parse(payload.config.updatedAt),
+                Date.parse(event.updatedAt)
+            ),
+            channelId: channel.id,
+            message: {
+                ...message,
+                allowedMentions: { roles: pingRoleIds, parse: [] },
+            },
+        })) ?? messageId
+    )
 }
 
-async function recoverEventMessageId(
-    channel: TextChannel,
-    messageId: string | undefined,
+async function retireEventMessage(
+    client: Client,
+    payload: SyncPayload,
     event: EventRecord,
-    botUserId?: string
+    kind: "announcement" | "info",
+    legacyChannelId?: string,
+    legacyMessageId?: string
 ) {
-    const stored = messageId
-        ? await channel.messages.fetch(messageId).catch(() => null)
-        : null
-    const messages = await channel.messages
-        .fetch({ limit: 100 })
-        .catch(() => null)
-    const matches = messages
-        ? [...messages.values()]
-              .filter(
-                  (message) =>
-                      (!botUserId || message.author.id === botUserId) &&
-                      message.embeds.some((embed) =>
-                          embed.title?.includes(event.name)
-                      )
-              )
-              .sort(
-                  (left, right) =>
-                      right.createdTimestamp - left.createdTimestamp
-              )
-        : []
-    const primary = stored ?? matches[0]
-    const duplicates = matches.filter((message) => message.id !== primary?.id)
-    await Promise.all(
-        duplicates.map((message) => message.delete().catch(() => null))
-    )
-    return primary?.id
+    await publishManagedMessage(client, {
+        guildId: payload.config.guildId,
+        key: `event:${event.id}:${kind}`,
+        revision: Math.max(
+            Date.parse(payload.config.updatedAt),
+            Date.parse(event.updatedAt)
+        ),
+        channelId: null,
+        legacyChannelId,
+        legacyMessageId,
+        message: {},
+    })
 }
 
 async function syncSquadVoiceChannels(
@@ -596,27 +610,31 @@ async function syncEvent(
         rosterPublished: Boolean(roster?.published),
     })
     const registrationChannel = announcementChannelId
-        ? await guild.channels.fetch(announcementChannelId).catch(() => null)
+        ? await guild.channels.fetch(announcementChannelId)
         : null
     const infoChannel =
         splitChannels && eventInfoChannelId
-            ? await guild.channels.fetch(eventInfoChannelId).catch(() => null)
+            ? await guild.channels.fetch(eventInfoChannelId)
             : null
     if (!registrationAnnouncementDue) {
-        if (registrationChannel?.isTextBased() && announcementMessageId) {
-            await registrationChannel.messages
-                .fetch(announcementMessageId)
-                .then((message) => message.delete())
-                .catch(() => null)
-            announcementMessageId = undefined
-        }
-        if (infoChannel?.isTextBased() && eventInfoMessageId) {
-            await infoChannel.messages
-                .fetch(eventInfoMessageId)
-                .then((message) => message.delete())
-                .catch(() => null)
-            eventInfoMessageId = undefined
-        }
+        await retireEventMessage(
+            client,
+            payload,
+            event,
+            "announcement",
+            state?.announcementChannelId ?? announcementChannelId,
+            announcementMessageId
+        )
+        await retireEventMessage(
+            client,
+            payload,
+            event,
+            "info",
+            eventInfoChannelId,
+            eventInfoMessageId
+        )
+        announcementMessageId = undefined
+        eventInfoMessageId = undefined
     }
     if (
         splitChannels &&
@@ -629,12 +647,6 @@ async function syncEvent(
         const registrationText = registrationChannel as TextChannel
         const infoText = infoChannel as TextChannel
         if (roster?.published) {
-            eventInfoMessageId = await recoverEventMessageId(
-                infoText,
-                eventInfoMessageId,
-                event,
-                guild.client.user?.id
-            )
             eventInfoMessageId = await syncEventMessage(
                 infoText,
                 eventInfoMessageId,
@@ -645,11 +657,15 @@ async function syncEvent(
                 false,
                 forumChannelId
             )
-        } else if (eventInfoMessageId) {
-            const existingInfo = await infoText.messages
-                .fetch(eventInfoMessageId)
-                .catch(() => null)
-            await existingInfo?.delete().catch(() => null)
+        } else {
+            await retireEventMessage(
+                client,
+                payload,
+                event,
+                "info",
+                infoText.id,
+                eventInfoMessageId
+            )
             eventInfoMessageId = undefined
         }
         logInfo("event-sync", "Synchronized event info message", {
@@ -660,12 +676,6 @@ async function syncEvent(
                 event.kind === "match" && roster?.published
             ),
         })
-        announcementMessageId = await recoverEventMessageId(
-            registrationText,
-            announcementMessageId,
-            event,
-            guild.client.user?.id
-        )
         if (event.status === "registration") {
             announcementMessageId = await syncEventMessage(
                 registrationText,
@@ -675,20 +685,44 @@ async function syncEvent(
                 roster,
                 guild,
                 true,
-                forumChannelId
+                forumChannelId,
+                state?.announcementChannelId
             )
         } else {
-            const registrationMessage = announcementMessageId
-                ? await registrationText.messages
-                      .fetch(announcementMessageId)
-                      .catch(() => null)
-                : null
-            await registrationMessage?.delete().catch(() => null)
+            await retireEventMessage(
+                client,
+                payload,
+                event,
+                "announcement",
+                state?.announcementChannelId ?? registrationText.id,
+                announcementMessageId
+            )
             announcementMessageId = undefined
         }
     }
-    const shouldUseEventInfoChannel = false
     const displayChannelId = splitChannels ? undefined : announcementChannelId
+    if (!splitChannels && registrationAnnouncementDue) {
+        await retireEventMessage(
+            client,
+            payload,
+            event,
+            "info",
+            eventInfoChannelId,
+            eventInfoMessageId
+        )
+        eventInfoMessageId = undefined
+    }
+    if (!splitChannels && event.status === "concluded") {
+        await retireEventMessage(
+            client,
+            payload,
+            event,
+            "announcement",
+            state?.announcementChannelId ?? announcementChannelId,
+            announcementMessageId
+        )
+        announcementMessageId = undefined
+    }
     // Discord's media gallery can be unreliable when it has to fetch a
     // generated image from our public URL. Upload the PNG with the message so
     // Discord renders an attachment it already owns instead.
@@ -715,9 +749,7 @@ async function syncEvent(
         registrationAnnouncementDue &&
         !(event.status === "concluded" && !announcementMessageId)
     ) {
-        const channel = await guild.channels
-            .fetch(displayChannelId)
-            .catch(() => null)
+        const channel = await guild.channels.fetch(displayChannelId)
         if (
             channel?.isTextBased() &&
             (channel.type === ChannelType.GuildText ||
@@ -729,74 +761,18 @@ async function syncEvent(
                 event,
                 guild
             )
-            const previousChannel =
-                state?.announcementChannelId &&
-                state.announcementChannelId !== textChannel.id
-                    ? await guild.channels
-                          .fetch(state.announcementChannelId)
-                          .catch(() => null)
-                    : null
-            const existingMessage =
-                announcementMessageId &&
-                state?.announcementChannelId === textChannel.id
-                    ? await textChannel.messages
-                          .fetch(announcementMessageId)
-                          .catch(() => null)
-                    : null
-            if (previousChannel?.isTextBased() && announcementMessageId)
-                await previousChannel.messages
-                    .fetch(announcementMessageId)
-                    .then((message) => message.delete())
-                    .catch(() => null)
-            if (event.status === "concluded") {
-                if (existingMessage) {
-                    await existingMessage.delete().catch(() => null)
-                    logInfo(
-                        "announcement",
-                        "Deleted event announcement for concluded event",
-                        {
-                            eventId: event.id,
-                            guildId: payload.config.guildId,
-                            messageId: existingMessage.id,
-                        }
-                    )
-                    announcementMessageId = undefined
-                }
-            } else if (existingMessage) {
-                if (existingMessage.flags.has(MessageFlags.IsComponentsV2)) {
-                    await existingMessage.edit({
-                        ...buildAnnouncementV2Message(
-                            payload,
-                            event,
-                            userDisplayNames,
-                            {
-                                forumChannelId,
-                                rosterImageUrl: rosterImageAttachment?.mediaUrl,
-                            }
-                        ),
-                        attachments: [],
-                        files: rosterImageAttachment
-                            ? [rosterImageAttachment.attachment]
-                            : [],
-                    })
-                } else {
-                    const { embed, components } = buildAnnouncementMessage(
-                        payload,
-                        event,
-                        userDisplayNames,
-                        { forumChannelId }
-                    )
-                    await existingMessage.edit({ embeds: [embed], components })
-                }
-                logInfo("announcement", "Updated event announcement", {
-                    eventId: event.id,
-                    guildId: payload.config.guildId,
-                    channelId: textChannel.id,
-                    messageId: existingMessage.id,
-                })
-            } else {
-                const pingRoleIds = getAnnouncementPingRoleIds(payload, event)
-                const created = await textChannel.send({
+            const pingRoleIds = getAnnouncementPingRoleIds(payload, event)
+            const result = await publishManagedMessage(client, {
+                guildId: guild.id,
+                key: `event:${event.id}:announcement`,
+                revision: Math.max(
+                    Date.parse(payload.config.updatedAt),
+                    Date.parse(event.updatedAt)
+                ),
+                channelId: event.status === "concluded" ? null : textChannel.id,
+                legacyChannelId: state?.announcementChannelId ?? textChannel.id,
+                legacyMessageId: announcementMessageId,
+                message: {
                     ...buildAnnouncementV2Message(
                         payload,
                         event,
@@ -812,15 +788,10 @@ async function syncEvent(
                         : [],
                     allowedMentions: { roles: pingRoleIds, parse: [] },
                     flags: MessageFlags.IsComponentsV2,
-                })
-                announcementMessageId = created.id
-                logInfo("announcement", "Created event announcement", {
-                    eventId: event.id,
-                    guildId: payload.config.guildId,
-                    channelId: textChannel.id,
-                    messageId: created.id,
-                })
-            }
+                },
+            })
+            if (result) announcementMessageId = result
+            if (event.status === "concluded") announcementMessageId = undefined
         } else {
             logWarn(
                 "announcement",

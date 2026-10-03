@@ -1,0 +1,30 @@
+{
+    "data": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "serverId": "00012345",
+        "serverIdUpdatedAt": "2030-01-01T00:00:00Z",
+        "observedAt": "2030-01-01T00:00:00Z",
+        "name": "Synthetic directory server",
+        "nativeName": "Synthetic directory server",
+        "type": "community",
+        "region": "eu-central",
+        "players": 0,
+        "maxPlayers": 100,
+        "reservedPlayers": 2,
+        "passwordProtected": false,
+        "serverNumber": 0,
+        "map": { "variant": "Fortress_day", "base": "Fortress" },
+        "mode": { "experience": "KOTH", "gameMode": "KOTH", "modifiers": [] },
+        "rulesets": ["standard"]
+    },
+    "meta": {
+        "fetchedAt": "2030-01-01T00:00:30Z",
+        "snapshotId": "synthetic-snapshot",
+        "refreshSeconds": 120,
+        "stale": false,
+        "requestedRegions": ["eu-central"],
+        "observedRegions": ["eu-central"],
+        "complete": true,
+        "partial": []
+    }
+}

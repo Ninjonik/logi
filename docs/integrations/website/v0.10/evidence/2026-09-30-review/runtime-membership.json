@@ -1,0 +1,23 @@
+{
+  "source": "review working tree; see source-manifest.json",
+  "executedAt": "2026-09-30T10:47:50.750Z",
+  "realDiscord": true,
+  "localConvex": true,
+  "results": [
+    {
+      "name": "Exact-member refresh uses live Discord and exposes only allowlisted roles",
+      "status": "pass",
+      "state": "present",
+      "completeness": "verified_member",
+      "returnedRoleCount": 0
+    },
+    {
+      "name": "Key without membership resource grant is denied",
+      "status": "pass"
+    },
+    {
+      "name": "Membership read cannot widen the key game scope",
+      "status": "pass"
+    }
+  ]
+}

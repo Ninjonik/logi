@@ -1,3 +1,4 @@
+import { publicPlatformLink } from "./platformIdentityStore"
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
@@ -88,6 +89,15 @@ export const exportForUser = query({
                 includesUser(entry.userId)
             ),
             platformLinkTokens: tokens,
+            verifiedPlatformLinks: (
+                await ctx.db
+                    .query("platformIdentityLinks")
+                    .withIndex("userRecordId_verifiedAt", (q) =>
+                        q.eq("userRecordId", user._id)
+                    )
+                    .order("desc")
+                    .take(20)
+            ).map(publicPlatformLink),
             privacyRequests: requests,
             eventParticipation: events.flatMap((event) => {
                 const participants = (event.participants ?? []).filter(

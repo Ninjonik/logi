@@ -681,6 +681,19 @@ export const generatedOpenApiSchemas = {
             "guildId": {
                 "type": "string"
             },
+            "gameId": {
+                "anyOf": [
+                    {
+                        "const": "hell_let_loose"
+                    },
+                    {
+                        "const": "hell_let_loose_vietnam"
+                    },
+                    {
+                        "const": "wardogs"
+                    }
+                ]
+            },
             "eventId": {
                 "type": "string",
                 "description": "Convex ID for events"
@@ -813,6 +826,7 @@ export const generatedOpenApiSchemas = {
         ],
         "example": {
             "guildId": "string",
+            "gameId": "hell_let_loose",
             "eventId": "string",
             "squadPresetId": "string",
             "squads": [
@@ -1278,6 +1292,19 @@ export const generatedOpenApiSchemas = {
             "guildId": {
                 "type": "string"
             },
+            "gameId": {
+                "anyOf": [
+                    {
+                        "const": "hell_let_loose"
+                    },
+                    {
+                        "const": "hell_let_loose_vietnam"
+                    },
+                    {
+                        "const": "wardogs"
+                    }
+                ]
+            },
             "name": {
                 "type": "string"
             },
@@ -1362,6 +1389,7 @@ export const generatedOpenApiSchemas = {
         ],
         "example": {
             "guildId": "string",
+            "gameId": "hell_let_loose",
             "name": "string",
             "squads": [
                 {
@@ -2178,6 +2206,9 @@ export const generatedOpenApiSchemas = {
     "ClanUsersDocument": {
         "type": "object",
         "properties": {
+            "sessionVersion": {
+                "type": "number"
+            },
             "discordId": {
                 "type": "string"
             },
@@ -2317,6 +2348,7 @@ export const generatedOpenApiSchemas = {
             "id"
         ],
         "example": {
+            "sessionVersion": 0,
             "discordId": "string",
             "id": "string",
             "name": "string",

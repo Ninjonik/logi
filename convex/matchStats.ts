@@ -1,7 +1,8 @@
 import { rebuildGuildPerformanceHistory } from "./performanceHistory"
 import type { MutationCtx } from "./_generated/server"
-import { query, mutation } from "./_generated/server"
 import type { Doc } from "./_generated/dataModel"
+import { mutation } from "./integrationMutation"
+import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 const INTERNAL_AUTH_SECRET =
