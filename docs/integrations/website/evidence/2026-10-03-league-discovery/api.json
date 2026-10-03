@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-03T19:11:37.696Z",
+  "localDatabaseOnly": true,
+  "collection": 200,
+  "missing": 401,
+  "legacyGrant": 403,
+  "wrongGame": 403,
+  "crossGuildDenied": true,
+  "revoked": 401
+}

@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-10-03T17:36:40.510Z",
+  "pages": [
+    {
+      "url": "https://wardogsleague.net/matches?tab=fixtures",
+      "count": 20,
+      "incomplete": false,
+      "referenceFound": true
+    },
+    {
+      "url": "https://wardogsleague.net/matches?tab=results",
+      "count": 17,
+      "incomplete": false,
+      "referenceFound": false
+    }
+  ],
+  "match": {
+    "id": "cmuqt8ep605e1lf018w2nlywu",
+    "status": "Scheduled",
+    "scheduledAt": "2026-10-10T18:30:00.000Z",
+    "teams": [
+      {
+        "code": "VLK",
+        "faction": "Valkyra"
+      },
+      {
+        "code": "ROG",
+        "faction": "Manticore"
+      },
+      {
+        "code": "BAMC",
+        "faction": "Lonestar"
+      }
+    ],
+    "results": null
+  }
+}

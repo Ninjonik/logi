@@ -1,0 +1,67 @@
+{
+  "testedCodeRevision": "2ae44f5c000f0fbc5eb6ef446dbae767208c3c51",
+  "implementationRevision": "ad0951ac01a2c2c2f12086eaf79c05fd35bc43dc",
+  "fullSuite": {
+    "command": "npm test",
+    "exitCode": 0,
+    "tests": 831,
+    "passed": 831,
+    "failed": 0,
+    "durationMs": 31899.4455
+  },
+  "typecheck": {
+    "command": "npm run typecheck",
+    "exitCode": 0
+  },
+  "build": {
+    "command": "next build --webpack",
+    "exitCode": 0,
+    "durationMs": 82234,
+    "isolatedCredentialFreeSourceCopy": true
+  },
+  "localConvexDeploy": {
+    "origin": "http://127.0.0.1:32290",
+    "exitCode": 0,
+    "durationMs": 5968,
+    "production": false
+  },
+  "generatedContractParity": {
+    "openapi": true,
+    "convex": true
+  },
+  "prettierChangedTypeScript": true,
+  "securityScan": {
+    "id": "eb5ae138-5330-4249-aaeb-af28f960b998",
+    "immutableHead": "ad0951ac01a2c2c2f12086eaf79c05fd35bc43dc",
+    "mediumFindings": 1,
+    "sealedBeforeRepairs": true
+  },
+  "evidenceSha256": {
+    "api.json": "d4b5ffb5a618c1aaf7dd7bb648886a867dc994a71e9d7f629c6f9722e4b5441b",
+    "dashboard.jpg": "0e97521fbac82927571a36d2d827513851ad994a2e7bd4e9e3d6d10a8c6264a1",
+    "discord-first.json": "2ffbf657e0546f585de2ebfb6c93d60db33355128ec173ad2b830eb1cbcff9e0",
+    "discord-restart.json": "18463106c93cdf02196a541a957af871b67ffac2bf17145b243baf7b7b1e2f63",
+    "discord.jpg": "ce3a0345995a74a7b40bba04ee44a187bb0e25c556aecdad76faa756db95ac75",
+    "edit-after-move.json": "83742aabd8e6e12dda1e1586171bf6576d20679516cd167bffc3cd4ca1552261",
+    "edit-before-move.json": "dfb496817c5d77638d6e573d39c11da8a4b5b370dc0ede7bb99958d023e4084c",
+    "human-create.json": "3f68713a3e95583508f09833fc934cba256733c8aff60ee49d9da074175de45d",
+    "human-edit.json": "bc66e8e81ef1e8fc5e1c74fbc69f557aebfec746d624598ea1cbb283b8d9b399",
+    "intake-edit-red.log": "0d80f6a31e2fb8d6df5674e87dba6dab7ea3917eee6aac9ac563015ea40fbf8f",
+    "live-source-final.json": "b46d3c7d82a14e2a88251ddd01bdbd3bd3b42eb5a0761ec5f4a584911ae98bc7",
+    "live-source.json": "49809e8da985a144225d14be46338fc3926c5e50468d34b5d31caf22962adea9",
+    "race.json": "24cbb05065644720a2618fc6fd0d0bbf5033ee86f4a9182062bad6c654cc0747",
+    "README.md": "750eb4045653c578fdbc97aa5bdd81904c33b49d4f45765026afc111bbaaffbc",
+    "reconcile.json": "1f9f1517f517a01fad8ab5a15f4be0b2e3fffd2d8a22d1b76dcf664da80218db",
+    "resume-green.log": "961de1c18f62099ea6047e5f137df3d5b5a059de0401e5d093d89a5c13bc2cd1",
+    "resume-red.log": "03e26db13d1b69be3661589554680dd61e37074baf7939218d380c53c728865b",
+    "review-red.log": "093341af1f2ef0ca3caffc389915321b066b45e24d88a83d5313ff8509fac1e7",
+    "review.md": "9133211ee18fd0a9dfc1b4abbe630b8692f7e204403a349b0c753c02160225e1",
+    "screenshot-provenance.json": "d6152c47d34629ea3fbe93cd7019f25be96743a0ee3885821a5698a484f400f5",
+    "sync.json": "16361bbd82edf3d622a6365de9314210f33c0cc138271d461e055dbb080c4b8d",
+    "tests.log": "557934834eb949f9443305b5e4a8125c074ea2c670d2aa86938a3f7422f8646a"
+  },
+  "knownCredentialScan": {
+    "checkedChangedFiles": 78,
+    "matches": 0
+  }
+}

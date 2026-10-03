@@ -1,0 +1,24 @@
+[
+  {
+    "name": "discord",
+    "operation": "Faithful rectangular crop only; no generated/replaced pixels",
+    "rectangle": {
+      "left": 385,
+      "top": 677,
+      "width": 550,
+      "height": 408
+    },
+    "originalSha256": "da58cbfbc7ba96e6474706fad408bf00612cbefe096d333c44a4790824fefa7b"
+  },
+  {
+    "name": "dashboard",
+    "operation": "Faithful rectangular crop only; no generated/replaced pixels",
+    "rectangle": {
+      "left": 268,
+      "top": 55,
+      "width": 796,
+      "height": 907
+    },
+    "originalSha256": "6a25c5cce07365f57b16ee487f5df4c383cee11ec1815946921933e24fe9e112"
+  }
+]

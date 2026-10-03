@@ -1,0 +1,20 @@
+✔ manual registration and scanner resolve to the same durable identity (12.3199ms)
+✔ resuming a stored fixture restores its readable snapshot while a fresh read waits in the queue (15.617ms)
+✔ settings change fences pending reads and rejects old publication snapshots (1.9212ms)
+✔ deleting a human reference preserves pin and automatic reasons; delayed edits cannot resurrect it (6.8141ms)
+✔ native event binding is same-guild, Wardogs match-only and one-to-one (3.2001ms)
+✔ dashboard revocation prevents tracking changes and foreign guild publication claims (2.4955ms)
+✔ bounded human-link bursts cannot consume discovery and administrator capacity (114.1854ms)
+✔ full discovery reclaims only disposable candidates, preserving leases, references and publication recovery (13.171ms)
+✔ human references cannot protect unlimited existing scanner candidates or reset their quota by editing (97.2759ms)
+✔ existing references can be removed after disabling intake without admitting new links (1.2915ms)
+✔ existing references can be removed after moving intake without admitting new links (0.8631ms)
+✔ explicitly refreshing an archived unresolved match attempts one read without extending the archive horizon (3.0673ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2302.0993

@@ -76,8 +76,9 @@ activated; it is not equivalent to automatic link detection. See
 
 ## Proposed League discovery system
 
-This section is the concrete design for the owner's later request, not an
-implemented scanner or an approved production activation.
+This section preserves the approved design. The League scanner is implemented;
+see [acceptance and documented deviations](../evidence/2026-10-03-league-discovery/README.md).
+Production activation is a separate step.
 
 ### Approach and inputs
 
@@ -144,8 +145,8 @@ Room choice always uses the existing channel picker or pasted exact channel ID.
 ### Scheduling and failure behavior
 
 Refresh active tracked details every **5 minutes**, subject to the shared cache
-and origin-wide cooldown. Reuse the existing 20 requests/minute ceiling for
-both index and detail requests, spread work through a bounded queue and let
+and origin-wide cooldown. Reuse the existing 20 logical fetches/minute ceiling for
+both indexes and details (each may follow up to three validated redirects), spread work through a bounded queue and let
 manual requests share the same budget. Persist the queue, next due time, fenced
 lease and publication identity; restarting must resume work without duplicating
 fixtures or Discord messages.
@@ -311,5 +312,5 @@ References: [CRCON API guide](https://github.com/MarechJ/hll_rcon_tool/wiki/Deve
 6. Review the implementation and run the final code-security review. Add proof
    and outstanding production-activation prerequisites to the same PR #158.
 
-This sequence is a proposal, not evidence that these additions have been built,
-deployed or security-reviewed.
+The HLL/report portions remain a proposal. League implementation, local runtime
+proof, review findings and repairs are linked in the dated acceptance above.
