@@ -58,7 +58,8 @@
     "review.md": "9133211ee18fd0a9dfc1b4abbe630b8692f7e204403a349b0c753c02160225e1",
     "screenshot-provenance.json": "d6152c47d34629ea3fbe93cd7019f25be96743a0ee3885821a5698a484f400f5",
     "sync.json": "16361bbd82edf3d622a6365de9314210f33c0cc138271d461e055dbb080c4b8d",
-    "tests.log": "557934834eb949f9443305b5e4a8125c074ea2c670d2aa86938a3f7422f8646a"
+    "tests.log": "557934834eb949f9443305b5e4a8125c074ea2c670d2aa86938a3f7422f8646a",
+    "ci.json": "a618442cf66ab19c8c342878efa62271c1a498cfcf4e3c61a400f6b101350cfc"
   },
   "knownCredentialScan": {
     "checkedChangedFiles": 78,

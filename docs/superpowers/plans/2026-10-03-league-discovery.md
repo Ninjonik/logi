@@ -78,7 +78,7 @@
 - [x] Run changed-file Prettier, all tests, typecheck, build, generated API parity and secret/diff checks; expect successful commands.
 - [x] Deploy Convex only to the verified isolated loopback instance, then exercise real source discovery, manual duplicate, settings revocation, API/change feed and Discord restart.
 - [x] Complete independent review and code-security review, fix supported findings and rerun affected acceptance. Fresh-context spawn was unavailable; the documented existing-reviewer fallback was used.
-- [ ] Record source revision, synthetic versus live checks, screenshots and production activation prerequisites. Push and publish a visible PR comment; do not merge/deploy production.
+- [x] Record source revision, synthetic versus live checks, screenshots and production activation prerequisites. Push and publish a visible PR comment; do not merge/deploy production.
 
 ## Execution notes
 
@@ -93,3 +93,5 @@ are authoritative for completion. Historical pre-implementation RED runs were
 not retained for every checklist item and are not retroactively claimed. Review
 regressions retain explicit RED/GREEN output. The website's new external-fixture
 consumer and completed-result extraction remain separate acceptance work.
+
+Remote handoff: [visible PR comment](https://github.com/Ninjonik/logi/pull/158#issuecomment-5972690887). [GitHub Verify](https://github.com/Ninjonik/logi/actions/runs/37147719228) passed on proof head `6ff40b9`; application code is unchanged from tested `2ae44f5`. Unchecked historical RED steps above denote missing historical evidence, not pending implementation.
