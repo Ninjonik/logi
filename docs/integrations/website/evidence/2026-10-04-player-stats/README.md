@@ -1,8 +1,9 @@
 # Player statistics acceptance — 2026-10-04
 
 This evidence covers the `/stats` addition after `72946e3915af2216f97f8c167ea02ea20308555c`.
-The containing implementation commit fixes the source snapshot. The subsequent
-PR delivery comment and security review identify its full revision explicitly.
+Tested implementation: `8b07862a077a6d25a4005e69dbc8ca9bdeaa88f6`. The follow-up
+delivery changes add security evidence and clarify one gateway comment; they do
+not change executable behavior.
 
 ## Boundary
 
@@ -57,6 +58,33 @@ stale membership proof rejection, duplicate/self-only linking, immutable history
 revision handling, finite read budgets, forbidden destinations and permissions,
 concurrent share clicks, expired controls, provider redirects, response limits,
 HTTP 403/429 backoff and retention of the last successful profile.
+
+## Security review
+
+Codex Security diff scan `a16d07a2-3311-49a8-ae1a-a5a02bfc4cb3` completed for
+`72946e3915af2216f97f8c167ea02ea20308555c..8b07862a077a6d25a4005e69dbc8ca9bdeaa88f6`.
+All **23 authoritative changed source paths**, the synthetic HTML fixture and
+supporting authorization/history/artwork consumers were reviewed. There were
+**0 reportable findings**. An independent architecture pass preceded the parent's
+complete source review. This covers the new stats increment, not a repeated audit
+of all preceding PR #158 changes.
+
+[Generated review report](security-review.md) · [SARIF](security-results.sarif) ·
+[Exact scan receipt](security-receipt.json).
+
+Editorial correction to the immutable generated report: its phrase "ten changed
+test files" is a counting typo. The exact 23-path inventory contains **nine test
+files**; all were reviewed. This does not change the source coverage or outcome.
+
+The review clarified a source comment: bot membership evidence may be reused for
+less than five seconds and Convex accepts observations up to ten seconds old.
+Pre/post statistics reads still reauthorize. The follow-up comment correction
+does not change this behavior. HLL's transport deadline is not a separate CPU
+sandbox for synchronous HTML parsing; provider input is capped at 2 MiB.
+
+Workbench rollout accounting reports 7,660,074 total tokens, including 7,337,344
+cached input tokens and 29,503 output tokens across three threads. This is the
+tool's rollout telemetry, not a price estimate or a count of unique source tokens.
 
 ## Screenshots
 

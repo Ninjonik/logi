@@ -22,7 +22,7 @@ type Scope = {
     requesterId: string
     observedAt: number
 }
-/** The trusted Discord gateway must freshly fetch guild membership before each call. */
+/** The trusted Discord gateway supplies bounded-age membership evidence for each call. */
 async function authorize(ctx: Pick<QueryCtx, "db">, args: Scope) {
     assertSessionGateway(args.secret)
     if (
