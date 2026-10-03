@@ -17,7 +17,12 @@ models. Extend the existing Logi dashboard, Convex backend and Discord bot.
 The subsequent [Discord public-panel design](./discord-public-panels.md) records
 the 2026-10-03 requirements for selectable channels, restart recovery, automatic
 updates, map banners, faction emoji, live scoreboards and reviewed results.
-It is a proposal with pending acceptance, not delivered runtime functionality.
+That increment is now implemented in PR #158; see its
+[runtime acceptance](../evidence/2026-10-03-public-panels/README.md).
+The next [League cards, player reports and HLL live-panel proposal](./discord-league-reports-hll.md)
+records the owner's production-channel references, private-report preference,
+Valkyria-only League discovery with manual additions, fresh provider investigation
+and remaining implementation/acceptance work.
 
 1. [Research and verified baseline](./research.md): source revisions, capabilities,
    provider evidence and what remains unverified.
