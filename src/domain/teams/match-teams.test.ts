@@ -189,6 +189,48 @@ test("an existing assignment keeps its snapshot through slot/side edits and arch
     )
 })
 
+test("a kept assignment is rejected when the event moves to another game", () => {
+    const previous: MatchTeamAssignment[] = [
+        {
+            teamId: "a",
+            slot: "a",
+            side: null,
+            snapshot: {
+                name: "Team a",
+                shortCode: "A",
+                logoAssetId: null,
+                logoUrl: null,
+                teamRevision: 2,
+                capturedAt: now,
+            },
+        },
+    ]
+    assert.deepEqual(
+        resolveMatchTeams({
+            guildId: "guild",
+            gameId: "wardogs",
+            inputs: [{ teamId: "a", slot: "a", side: null }],
+            previous,
+            teams,
+            now,
+        }),
+        { ok: false, error: "team_game_mismatch" }
+    )
+    // A kept entry whose directory row no longer exists keeps its snapshot.
+    const deleted = new Map(teams)
+    deleted.delete("a")
+    assert.ok(
+        resolveMatchTeams({
+            guildId: "guild",
+            gameId: "wardogs",
+            inputs: [{ teamId: "a", slot: "a", side: null }],
+            previous,
+            teams: deleted,
+            now,
+        }).ok
+    )
+})
+
 test("refresh re-captures only from an active entry and concluded matches are frozen", () => {
     const assignment: MatchTeamAssignment = {
         teamId: "a",

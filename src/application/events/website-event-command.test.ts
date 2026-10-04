@@ -106,16 +106,29 @@ test("a team refresh follows update rules: expected revision, receipt and refres
     assert.equal(missing.applied.length, 0)
 })
 
-test("trainings and concluded matches are rejected before any write", async () => {
+test("trainings and concluded matches are rejected before any write; a started match can still refresh", async () => {
     const training = fakes({ event: { ...stored, kind: "training" } })
     assert.deepEqual(await training.run(), {
         error: { code: "invalid_match_teams" },
     })
     const concluded = fakes({ event: { ...stored, status: "concluded" } })
     assert.deepEqual(await concluded.run(), {
-        error: { code: "invalid_state" },
+        error: { code: "invalid_match_teams" },
     })
     assert.equal(training.applied.length + concluded.applied.length, 0)
+
+    // After meeting start but before conclusion the refresh window is open.
+    const started = fakes({
+        event: {
+            ...stored,
+            status: "starting",
+            meetingStart: "2029-12-31T11:00:00Z",
+            registrationEnd: "2029-12-31T10:00:00Z",
+            gameEnd: "2029-12-31T14:00:00Z",
+        },
+    })
+    assert.equal("data" in (await started.run()), true)
+    assert.equal(started.applied.length, 1)
 })
 
 test("a rejected team selection returns its code and records no receipt", async () => {

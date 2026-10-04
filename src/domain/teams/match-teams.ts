@@ -120,8 +120,9 @@ export type MatchTeamResolution =
 
 /**
  * Builds the stored assignments for a save. A team already assigned keeps its
- * snapshot (even if since archived) when only its slot or side changes; a newly
- * selected team must be an active directory entry of the same workspace and game.
+ * snapshot (even if since archived) when only its slot or side changes, as long
+ * as its directory entry still belongs to the event's game; a newly selected
+ * team must be an active directory entry of the same workspace and game.
  */
 export function resolveMatchTeams(input: {
     guildId: string
@@ -142,11 +143,14 @@ export function resolveMatchTeams(input: {
     const assignments: MatchTeamAssignment[] = []
     for (const entry of input.inputs) {
         const existing = kept.get(entry.teamId)
+        const team = input.teams.get(entry.teamId)
         if (existing) {
+            // A game change must not silently relabel a kept selection.
+            if (team && team.gameId !== input.gameId)
+                return { ok: false, error: "team_game_mismatch" }
             assignments.push({ ...entry, snapshot: existing.snapshot })
             continue
         }
-        const team = input.teams.get(entry.teamId)
         const denied = selectable(team, input.guildId, input.gameId)
         if (denied || !team)
             return { ok: false, error: denied ?? "team_not_found" }

@@ -777,15 +777,44 @@ test("refresh re-captures one assigned team with audit, change feed, receipt and
     assert.equal(event.matchTeams[1].snapshot.name, "Bravo")
     assert.equal(f.ctx.db.tables.teamDirectoryAudit.length, 1)
 
+    // Unlike an update, a refresh stays available after meeting start until
+    // the match concludes.
+    const minutes = (value: number) =>
+        new Date(Date.now() + value * 60_000).toISOString()
+    Object.assign(event, {
+        registrationEnd: minutes(-20),
+        meetingStart: minutes(-10),
+        gameStart: minutes(-5),
+        gameEnd: minutes(60),
+    })
+    const started = await f.run({
+        idempotencyKey: "refresh-started-001",
+        command: { ...command, expectedRevision: refreshed.data.revision },
+    })
+    assert.equal(started.data.operation, "refresh_match_team")
+    assert.equal(started.data.replayed, false)
+    assert.equal(f.ctx.db.tables.teamDirectoryAudit.length, 2)
+
     // Concluded matches keep their snapshots.
     event.status = "concluded"
     assert.deepEqual(
         await f.run({
             idempotencyKey: "refresh-concluded01",
-            command: { ...command, expectedRevision: refreshed.data.revision },
+            command: { ...command, expectedRevision: started.data.revision },
         }),
-        { error: { code: "invalid_state" } }
+        { error: { code: "invalid_match_teams" } }
     )
-    assert.equal(f.ctx.db.tables.teamDirectoryAudit.length, 1)
-    assert.equal(f.ctx.db.tables.websiteEventCommandReceipts.length, 2)
+    assert.equal(f.ctx.db.tables.teamDirectoryAudit.length, 2)
+    assert.equal(f.ctx.db.tables.websiteEventCommandReceipts.length, 3)
+})
+
+test("a match created with an explicit [] reads as an empty selection, not a legacy null", async (t) => {
+    const f = fixture(t)
+    const created = await f.run({
+        command: { operation: "create", event: { ...fields, matchTeams: [] } },
+    })
+    assert.equal(created.data.operation, "create")
+    const editor = await editorFor(f, created.data.eventId)
+    assert.deepEqual(editor.data.matchTeams, [])
+    assert.deepEqual(editor.data.event.matchTeams, [])
 })

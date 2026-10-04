@@ -305,8 +305,9 @@ export function canEditWebsiteEvent(
 
 /**
  * Existing Logi pre-meeting conclusion semantics; no new cancelled status or
- * result. A team snapshot refresh is an edit: it has the same window as an
- * update, and a training never carries team assignments.
+ * result. A team snapshot refresh stays available until the match concludes,
+ * like the dashboard refresh, so it may follow meeting start; a concluded
+ * match or a training is a team-assignment rule violation.
  */
 export function websiteEventStateError(
     command: WebsiteEventCommand,
@@ -323,7 +324,7 @@ export function websiteEventStateError(
         return Date.parse(command.event.meetingStart) > now
             ? null
             : "invalid_state"
-    if (!existing || !canEditWebsiteEvent(existing, now)) return "invalid_state"
+    if (!existing) return "invalid_state"
     if (command.operation === "refresh_match_team")
         return matchTeamsEditability({
             kind: existing.kind === "training" ? "training" : "match",
@@ -331,6 +332,7 @@ export function websiteEventStateError(
         })
             ? "invalid_match_teams"
             : null
+    if (!canEditWebsiteEvent(existing, now)) return "invalid_state"
     if (
         command.operation === "update" &&
         ((existing.kind ?? "match") !== command.event.kind ||

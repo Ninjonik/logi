@@ -12,6 +12,10 @@ test("event command OpenAPI documents team selections, the refresh operation and
     assert.match(post.description, /Omitting matchTeams preserves/)
     assert.match(post.description, /explicit \[\] clears/)
     assert.match(post.description, /refresh_match_team/)
+    assert.match(
+        post.description,
+        /after meeting start until the match concludes/
+    )
     assert.match(post.responses["200"].description, /team snapshot refresh/)
     const schema = JSON.stringify(
         websiteEventCommandSchemas.WebsiteEventCommand

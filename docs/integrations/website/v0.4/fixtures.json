@@ -48,7 +48,28 @@
           "status": "concluded",
           "startsAt": "2026-09-27T18:00:00.000Z",
           "endsAt": "2026-09-27T20:00:00.000Z",
-          "matchTeams": null
+          "matchTeams": [
+            {
+              "teamId": "fixture-team-alpha",
+              "slot": "a",
+              "side": "Valkyra",
+              "name": "Alpha Company",
+              "shortCode": "ALP",
+              "logoUrl": "https://logi.example/api/image-assets/00000000000000000000000000000001.png",
+              "teamRevision": 3,
+              "capturedAt": "2026-09-26T12:00:00.000Z"
+            },
+            {
+              "teamId": "fixture-team-bravo",
+              "slot": "b",
+              "side": null,
+              "name": "Bravo Squadron",
+              "shortCode": null,
+              "logoUrl": null,
+              "teamRevision": 1,
+              "capturedAt": "2026-09-26T12:00:00.000Z"
+            }
+          ]
         }
       }
     },
@@ -67,7 +88,28 @@
           "updatedAt": "2026-09-28T10:00:00.000Z",
           "resultState": "unknown",
           "result": null,
-          "matchTeams": null
+          "matchTeams": [
+            {
+              "teamId": "fixture-team-alpha",
+              "slot": "a",
+              "side": "Valkyra",
+              "name": "Alpha Company",
+              "shortCode": "ALP",
+              "logoUrl": "https://logi.example/api/image-assets/00000000000000000000000000000001.png",
+              "teamRevision": 3,
+              "capturedAt": "2026-09-26T12:00:00.000Z"
+            },
+            {
+              "teamId": "fixture-team-bravo",
+              "slot": "b",
+              "side": null,
+              "name": "Bravo Squadron",
+              "shortCode": null,
+              "logoUrl": null,
+              "teamRevision": 1,
+              "capturedAt": "2026-09-26T12:00:00.000Z"
+            }
+          ]
         }
       }
     },

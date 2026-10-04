@@ -263,3 +263,58 @@ test("concluded matches freeze assignments; trainings, cross-game, foreign and a
     )
     assert.equal(ctx.db.tables.events.length, 1)
 })
+
+test("an explicit [] on a new match stores an empty selection; omission keeps the legacy shape", async () => {
+    const ctx = setup()
+    await upsert(ctx, { gameId: "hell_let_loose", matchTeams: [] })
+    assert.deepEqual(ctx.db.tables.events[0].matchTeams, [])
+    await upsert(ctx, {
+        gameId: "hell_let_loose",
+        kind: "training",
+        name: "Fixture training",
+        matchTeams: [],
+    })
+    assert.equal("matchTeams" in ctx.db.tables.events[1], false)
+})
+
+test("a match that becomes a training drops its selection and logo references", async () => {
+    for (const matchTeams of [[], undefined]) {
+        const ctx = setup()
+        const alpha = await createTeam(ctx, "hell_let_loose", "Alpha", {
+            logoAssetId: "imageAssets:logo",
+        })
+        const eventId = await upsert(ctx, {
+            gameId: "hell_let_loose",
+            matchTeams: [{ teamId: alpha, slot: "a", side: "Allies" }],
+        })
+        assert.equal(eventReferences(ctx, eventId).length, 1)
+        await upsert(ctx, {
+            eventId,
+            kind: "training",
+            ...(matchTeams ? { matchTeams } : {}),
+        })
+        assert.equal(eventRow(ctx).kind, "training")
+        assert.deepEqual(eventRow(ctx).matchTeams, [])
+        assert.equal(eventReferences(ctx, eventId).length, 0)
+    }
+})
+
+test("moving an event to another game rejects a resent team of the former game", async () => {
+    const ctx = setup()
+    const alpha = await createTeam(ctx, "hell_let_loose", "Alpha")
+    const eventId = await upsert(ctx, {
+        gameId: "hell_let_loose",
+        matchTeams: [{ teamId: alpha, slot: "a", side: null }],
+    })
+    const saved = structuredClone(eventRow(ctx))
+    for (const args of [
+        { matchTeams: [{ teamId: alpha, slot: "a", side: null }] },
+        {},
+    ])
+        await assert.rejects(
+            upsert(ctx, { eventId, gameId: "wardogs", ...args }),
+            /match_teams:team_game_mismatch/
+        )
+    assert.equal(eventRow(ctx).gameId, "hell_let_loose")
+    assert.deepEqual(eventRow(ctx).matchTeams, saved.matchTeams)
+})

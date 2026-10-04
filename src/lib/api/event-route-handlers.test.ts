@@ -35,12 +35,18 @@ function createDeps() {
         }>,
         requestedMetadata: [] as string[],
         logged: [] as Array<{ scope: string; error: unknown }>,
+        accessChecks: [] as string[],
+        admin: true,
     }
 
     return {
         calls,
         deps: {
             eventSchema,
+            canAdminServer: async (serverId: string) => {
+                calls.accessChecks.push(serverId)
+                return calls.admin
+            },
             saveServerEvent: async (input: Record<string, unknown>) => {
                 calls.savedEvents.push(input)
                 return String(input.eventId ?? "event-1")
@@ -140,6 +146,19 @@ function createDeps() {
     }
 }
 
+const origin = "https://logi.test"
+/** A same-origin dashboard request; other origins are denied before parsing. */
+function jsonRequest(
+    body: unknown,
+    headers: Record<string, string> = { origin }
+) {
+    return new Request(`${origin}/api/servers/guild-1/events`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...headers },
+        body: JSON.stringify(body),
+    })
+}
+
 function createEventBody(overrides: Record<string, unknown> = {}) {
     return {
         kind: "match",
@@ -158,7 +177,7 @@ test("server events POST saves validated events and revalidates cache tags", asy
     const handler = createServerEventsPostHandler(deps)
 
     const response = await handler(
-        { json: async () => createEventBody({ topicPresetId: "" }) },
+        jsonRequest(createEventBody({ topicPresetId: "" })),
         { params: Promise.resolve({ serverId: "guild-1" }) }
     )
 
@@ -179,12 +198,11 @@ test("server events POST preserves an optional registration announcement start",
     const handler = createServerEventsPostHandler(deps)
 
     const response = await handler(
-        {
-            json: async () =>
-                createEventBody({
-                    registrationStart: "2026-07-22T10:00:00.000Z",
-                }),
-        },
+        jsonRequest(
+            createEventBody({
+                registrationStart: "2026-07-22T10:00:00.000Z",
+            })
+        ),
         { params: Promise.resolve({ serverId: "guild-1" }) }
     )
 
@@ -200,12 +218,11 @@ test("server events POST rejects a registration announcement start after registr
     const handler = createServerEventsPostHandler(deps)
 
     const response = await handler(
-        {
-            json: async () =>
-                createEventBody({
-                    registrationStart: "2026-07-24T10:00:00.000Z",
-                }),
-        },
+        jsonRequest(
+            createEventBody({
+                registrationStart: "2026-07-24T10:00:00.000Z",
+            })
+        ),
         { params: Promise.resolve({ serverId: "guild-1" }) }
     )
 
@@ -217,12 +234,10 @@ test("server events POST imports events and revalidates imported entity tags", a
     const handler = createServerEventsPostHandler(deps)
 
     const response = await handler(
-        {
-            json: async () => ({
-                action: "importEvents",
-                links: "https://example.com/games/123",
-            }),
-        },
+        jsonRequest({
+            action: "importEvents",
+            links: "https://example.com/games/123",
+        }),
         { params: Promise.resolve({ serverId: "guild-1" }) }
     )
 
@@ -258,13 +273,11 @@ test("server events POST rejects imports for games other than Hell Let Loose", a
     const handler = createServerEventsPostHandler(deps)
 
     const response = await handler(
-        {
-            json: async () => ({
-                action: "importEvents",
-                gameId: "wardogs",
-                links: "https://example.com/games/123",
-            }),
-        },
+        jsonRequest({
+            action: "importEvents",
+            gameId: "wardogs",
+            links: "https://example.com/games/123",
+        }),
         { params: Promise.resolve({ serverId: "guild-1" }) }
     )
 
@@ -280,7 +293,7 @@ test("server events POST returns a safe validation error response", async () => 
     const handler = createServerEventsPostHandler(deps)
 
     const response = await handler(
-        { json: async () => createEventBody({ meetingStart: "bad-date" }) },
+        jsonRequest(createEventBody({ meetingStart: "bad-date" })),
         { params: Promise.resolve({ serverId: "guild-1" }) }
     )
 
@@ -297,7 +310,7 @@ test("server event PATCH updates an event and revalidates the updated tags", asy
     const handler = createServerEventPatchHandler(deps)
 
     const response = await handler(
-        { json: async () => createEventBody({ name: "Updated Event" }) },
+        jsonRequest(createEventBody({ name: "Updated Event" })),
         { params: Promise.resolve({ serverId: "guild-1", eventId: "event-9" }) }
     )
 
@@ -316,10 +329,9 @@ test("server event POST concludes an event", async () => {
     const { deps, calls } = createDeps()
     const handler = createServerEventPostHandler(deps)
 
-    const response = await handler(
-        { json: async () => ({ action: "conclude" }) },
-        { params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }) }
-    )
+    const response = await handler(jsonRequest({ action: "conclude" }), {
+        params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }),
+    })
 
     assert.equal(response.status, 200)
     assert.deepEqual(await response.json(), { ok: true })
@@ -331,15 +343,13 @@ test("server event POST completes a training and revalidates related caches", as
     const handler = createServerEventPostHandler(deps)
 
     const response = await handler(
-        {
-            json: async () => ({
-                action: "completeTraining",
-                participants: [
-                    { userId: "user-1", completed: "passed" },
-                    { userId: "user-2", completed: "failed" },
-                ],
-            }),
-        },
+        jsonRequest({
+            action: "completeTraining",
+            participants: [
+                { userId: "user-1", completed: "passed" },
+                { userId: "user-2", completed: "failed" },
+            ],
+        }),
         { params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }) }
     )
 
@@ -379,12 +389,10 @@ test("server event POST submits match results and revalidates related caches", a
     const handler = createServerEventPostHandler(deps)
 
     const response = await handler(
-        {
-            json: async () => ({
-                action: "submitMatchResults",
-                matchLink: "https://example.com/games/123",
-            }),
-        },
+        jsonRequest({
+            action: "submitMatchResults",
+            matchLink: "https://example.com/games/123",
+        }),
         { params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }) }
     )
 
@@ -424,19 +432,17 @@ test("server event POST returns 404 for missing metadata and 400 for unsupported
     const handler = createServerEventPostHandler(deps)
 
     const notFound = await handler(
-        {
-            json: async () => ({
-                action: "submitMatchResults",
-                matchLink: "https://example.com/games/123",
-            }),
-        },
+        jsonRequest({
+            action: "submitMatchResults",
+            matchLink: "https://example.com/games/123",
+        }),
         { params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }) }
     )
     assert.equal(notFound.status, 404)
     assert.deepEqual(await notFound.json(), { error: "Event not found." })
 
     const unsupported = await handler(
-        { json: async () => ({ action: "somethingElse" }) },
+        jsonRequest({ action: "somethingElse" }),
         { params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }) }
     )
     assert.equal(unsupported.status, 400)
@@ -450,33 +456,56 @@ test("server event saves forward team selections unchanged and surface team sele
         { teamId: "teamDirectory:bravo", slot: "b", side: null },
     ]
     const created = await createServerEventsPostHandler(deps)(
-        { json: async () => createEventBody({ matchTeams }) },
+        jsonRequest(createEventBody({ matchTeams })),
         { params: Promise.resolve({ serverId: "guild-1" }) }
     )
     assert.equal(created.status, 200)
     assert.deepEqual(calls.savedEvents[0]?.matchTeams, matchTeams)
     const cleared = await createServerEventPatchHandler(deps)(
-        { json: async () => createEventBody({ matchTeams: [] }) },
+        jsonRequest(createEventBody({ matchTeams: [] })),
         { params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }) }
     )
     assert.equal(cleared.status, 200)
     assert.deepEqual(calls.savedEvents[1]?.matchTeams, [])
     const omitted = await createServerEventPatchHandler(deps)(
-        { json: async () => createEventBody() },
+        jsonRequest(createEventBody()),
         { params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }) }
     )
     assert.equal(omitted.status, 200)
     assert.equal("matchTeams" in (calls.savedEvents[2] ?? {}), false)
-    const invalid = await createServerEventsPostHandler(deps)(
-        {
-            json: async () =>
-                createEventBody({
-                    matchTeams: [{ teamId: "x", slot: "d", side: null }],
-                }),
-        },
+    // Selections that fail the request schema get the same team code.
+    const entry = { teamId: "teamDirectory:x", slot: "a", side: null }
+    for (const selection of [
+        [{ ...entry, slot: "d" }],
+        ["a", "b", "c", "a"].map((slot, index) => ({
+            ...entry,
+            teamId: `teamDirectory:${index}`,
+            slot,
+        })),
+        [{ ...entry, side: "x".repeat(33) }],
+        [{ ...entry, snapshot: { name: "Forged" } }],
+    ]) {
+        const invalid = await createServerEventsPostHandler(deps)(
+            jsonRequest(createEventBody({ matchTeams: selection })),
+            { params: Promise.resolve({ serverId: "guild-1" }) }
+        )
+        assert.equal(invalid.status, 400)
+        assert.deepEqual(await invalid.json(), {
+            error: "invalid_match_teams",
+        })
+    }
+    // Other invalid fields keep their existing message.
+    const mixed = await createServerEventsPostHandler(deps)(
+        jsonRequest(
+            createEventBody({
+                name: "",
+                matchTeams: [{ ...entry, slot: "d" }],
+            })
+        ),
         { params: Promise.resolve({ serverId: "guild-1" }) }
     )
-    assert.equal(invalid.status, 400)
+    assert.equal(mixed.status, 400)
+    assert.notEqual((await mixed.json()).error, "invalid_match_teams")
     assert.equal(calls.savedEvents.length, 3)
 
     deps.saveServerEvent = async () => {
@@ -486,11 +515,11 @@ test("server event saves forward team selections unchanged and surface team sele
     }
     for (const response of [
         await createServerEventsPostHandler(deps)(
-            { json: async () => createEventBody({ matchTeams }) },
+            jsonRequest(createEventBody({ matchTeams })),
             { params: Promise.resolve({ serverId: "guild-1" }) }
         ),
         await createServerEventPatchHandler(deps)(
-            { json: async () => createEventBody({ matchTeams }) },
+            jsonRequest(createEventBody({ matchTeams })),
             {
                 params: Promise.resolve({
                     serverId: "guild-1",
@@ -506,10 +535,57 @@ test("server event saves forward team selections unchanged and surface team sele
         throw new Error("match_teams:not_a_known_code")
     }
     const unknown = await createServerEventsPostHandler(deps)(
-        { json: async () => createEventBody() },
+        jsonRequest(createEventBody()),
         { params: Promise.resolve({ serverId: "guild-1" }) }
     )
     assert.deepEqual(await unknown.json(), {
         error: "match_teams:not_a_known_code",
     })
+})
+
+test("event writes require a same-origin request from a current server admin", async () => {
+    const { deps, calls } = createDeps()
+    const params = { params: Promise.resolve({ serverId: "guild-1" }) }
+    const eventParams = {
+        params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }),
+    }
+    const writes = [
+        (request: Request) =>
+            createServerEventsPostHandler(deps)(request, params),
+        (request: Request) =>
+            createServerEventPatchHandler(deps)(request, eventParams),
+        (request: Request) =>
+            createServerEventPostHandler(deps)(request, eventParams),
+    ]
+    const bodies = [
+        createEventBody({ matchTeams: [] }),
+        createEventBody({ matchTeams: [] }),
+        { action: "conclude" },
+    ]
+    for (const [index, write] of writes.entries()) {
+        for (const headers of [
+            { origin: "https://attacker.test" },
+            {} as Record<string, string>,
+        ]) {
+            const response = await write(jsonRequest(bodies[index], headers))
+            assert.equal(response.status, 403)
+            assert.deepEqual(await response.json(), { error: "forbidden" })
+        }
+    }
+    assert.equal(calls.accessChecks.length, 0, "origin is checked first")
+
+    calls.admin = false
+    for (const [index, write] of writes.entries()) {
+        const response = await write(jsonRequest(bodies[index]))
+        assert.equal(response.status, 403)
+    }
+    assert.deepEqual(calls.accessChecks, ["guild-1", "guild-1", "guild-1"])
+
+    deps.canAdminServer = async () => {
+        throw new Error("Convex unavailable")
+    }
+    assert.equal((await writes[0]!(jsonRequest(bodies[0]))).status, 403)
+    assert.equal(calls.savedEvents.length, 0)
+    assert.equal(calls.concluded.length, 0)
+    assert.equal(calls.revalidated.length, 0)
 })

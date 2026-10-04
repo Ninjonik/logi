@@ -629,3 +629,129 @@ test("roster API rejects a roster whose parent event belongs to another guild", 
     assert.equal(result?.status, 404)
     assert.equal(db.tables.rosters.size, 1)
 })
+
+function seedAssignedTeam(db: FakeDb, eventId: string) {
+    db.tables.teamDirectory = new Map([
+        [
+            "teamDirectory:alpha",
+            {
+                _id: "teamDirectory:alpha",
+                guildId: "guild-a",
+                gameId: "hell_let_loose",
+                name: "Alpha",
+                shortCode: null,
+                logoAssetId: "imageAssets:logo",
+                revision: 1,
+                archivedAt: null,
+            },
+        ],
+    ])
+    db.tables.imageAssets = new Map([
+        [
+            "imageAssets:logo",
+            {
+                _id: "imageAssets:logo",
+                guildId: "guild-a",
+                publicUrl: "https://logi.test/logo.png",
+            },
+        ],
+    ])
+    db.tables.imageAssetReferences = new Map([
+        [
+            "imageAssetReferences:one",
+            {
+                _id: "imageAssetReferences:one",
+                assetId: "imageAssets:logo",
+                guildId: "guild-a",
+                owner: "event",
+                ownerId: eventId,
+            },
+        ],
+    ])
+    const matchTeams = [
+        {
+            teamId: "teamDirectory:alpha",
+            slot: "a",
+            side: "Allies",
+            snapshot: {
+                name: "Alpha",
+                shortCode: null,
+                logoAssetId: "imageAssets:logo",
+                logoUrl: "https://logi.test/logo.png",
+                teamRevision: 1,
+                capturedAt: "2026-10-01T00:00:00.000Z",
+            },
+        },
+    ]
+    return matchTeams
+}
+
+function eventUpdate(eventId: string, key: string, body: object) {
+    return request({
+        eventId,
+        operation: "update",
+        idempotencyKey: key,
+        bodyHash: key,
+        methodPath: "PATCH /clan/events/{eventId}",
+        event: event(body as Record<string, unknown>),
+    })
+}
+
+test("bearer-key event writes never change team selections", async () => {
+    const db = new FakeDb()
+    const selection = [
+        { teamId: "teamDirectory:alpha", slot: "a", side: "Allies" },
+    ]
+    const created = await handler(publicApi.mutateClanEvent)(
+        { db },
+        request({ event: event({ matchTeams: selection }) })
+    )
+    assert.equal(created?.status, 201)
+    const eventId = JSON.parse(created!.body).data.id
+    assert.equal("matchTeams" in (await db.get(eventId))!, false)
+
+    // A concluded match keeps its selection and logo reference when a client
+    // sends [] (or a changed selection) through this API.
+    const matchTeams = seedAssignedTeam(db, eventId)
+    await db.patch(eventId, { matchTeams, status: "concluded" })
+    for (const [key, sent] of [
+        ["clear", []],
+        ["replace", selection],
+    ] as const) {
+        const result = await handler(publicApi.mutateClanEvent)(
+            { db },
+            eventUpdate(eventId, key, { name: key, matchTeams: sent })
+        )
+        assert.equal(result?.status, 200)
+        assert.deepEqual((await db.get(eventId))?.matchTeams, matchTeams)
+        assert.equal(db.tables.imageAssetReferences.size, 1)
+    }
+})
+
+test("bearer-key event writes re-validate a kept selection on game and kind changes", async () => {
+    const db = new FakeDb()
+    const created = await handler(publicApi.mutateClanEvent)({ db }, request())
+    const eventId = JSON.parse(created!.body).data.id
+    const matchTeams = seedAssignedTeam(db, eventId)
+    await db.patch(eventId, { matchTeams })
+
+    const moved = await handler(publicApi.mutateClanEvent)(
+        { db },
+        eventUpdate(eventId, "game", { gameId: "wardogs" })
+    )
+    assert.equal(moved?.status, 400)
+    assert.match(moved!.body, /match_teams:team_game_mismatch/)
+    assert.equal(
+        (await db.get(eventId))?.gameId ?? "hell_let_loose",
+        "hell_let_loose"
+    )
+    assert.deepEqual((await db.get(eventId))?.matchTeams, matchTeams)
+
+    const training = await handler(publicApi.mutateClanEvent)(
+        { db },
+        eventUpdate(eventId, "training", { kind: "training" })
+    )
+    assert.equal(training?.status, 200)
+    assert.deepEqual((await db.get(eventId))?.matchTeams, [])
+    assert.equal(db.tables.imageAssetReferences.size, 0)
+})
