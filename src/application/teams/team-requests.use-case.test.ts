@@ -341,3 +341,72 @@ test("only the requesting workspace can cancel, only while pending, without a DM
         { error: "not_pending" }
     )
 })
+
+test("approval keeps the target's own logo and moves the requester's logo only on success", async () => {
+    const { ports, directory, logos } = fixture()
+    // A team from before the global catalogue whose logo another workspace owns.
+    logos.owned["logo-legacy"] = "guild-b"
+    directory.teams.push({
+        id: "team-z",
+        gameId: "hell_let_loose",
+        name: "Legacy",
+        shortCode: null,
+        logoAssetId: "logo-legacy",
+        description: null,
+        links: [],
+        linkedGuildId: null,
+        mergedIntoTeamId: null,
+        normalizedName: "legacy",
+        archivedAt: null,
+        revision: 1,
+        createdAt: "2026-10-01T00:00:00.000Z",
+        updatedAt: "2026-10-01T00:00:00.000Z",
+    })
+    const change = await submitTeamRequest(ports, workspace, {
+        kind: "update",
+        teamId: "team-z",
+        proposal: {
+            name: "Legacy",
+            shortCode: "LGC",
+            logoAssetId: "logo-legacy",
+            description: null,
+            links: [],
+        },
+        note: null,
+        idempotencyKey: "change-key-0201",
+    })
+    assert.ok("ok" in change)
+    assert.deepEqual(
+        await decideTeamRequest(ports, admin, change.requestId, {
+            decision: "approve",
+        }),
+        { error: "invalid_decision" }
+    )
+    assert.deepEqual(
+        await decideTeamRequest(ports, admin, change.requestId, {
+            decision: "approve",
+            targetRevision: 1,
+        }),
+        { ok: true, status: "approved", teamId: "team-z" }
+    )
+    // Kept as it is: no ownership move.
+    assert.equal(logos.owned["logo-legacy"], "guild-b")
+    assert.equal(directory.teams[0]?.shortCode, "LGC")
+    // A refused approval leaves the requester's upload in its workspace.
+    directory.teams.push({
+        ...directory.teams[0]!,
+        id: "team-v",
+        name: "Valkyria",
+        normalizedName: "valkyria",
+        logoAssetId: null,
+    })
+    const created = await submitTeamRequest(ports, workspace, createRequest)
+    assert.ok("ok" in created)
+    assert.deepEqual(
+        await decideTeamRequest(ports, admin, created.requestId, {
+            decision: "approve",
+        }),
+        { error: "duplicate_name", existingId: "team-v" }
+    )
+    assert.equal(logos.owned["logo-a"], "guild-a")
+})

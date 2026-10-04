@@ -338,3 +338,37 @@ test("teams that played each other in a competition cannot be merged", async () 
     assert.deepEqual(repository.teams, before)
     assert.deepEqual(repository.repoints, [])
 })
+
+test("teams registered in one competition cannot be merged; an unchanged legacy duplicate name stays editable", async () => {
+    const { repository, ports } = fixture()
+    await createTeam(ports, scope, createInput)
+    await createTeam(ports, scope, {
+        ...createInput,
+        name: "Valkyria Main",
+        logoAssetId: null,
+        idempotencyKey: "create-main-0001",
+    })
+    repository.registrations.push(["cup", "team-1"], ["cup", "team-2"])
+    assert.deepEqual(
+        await mergeTeam(ports, scope, "team-1", {
+            expectedRevision: 1,
+            targetTeamId: "team-2",
+            targetRevision: 1,
+        }),
+        { error: "invalid_merge" }
+    )
+    // Two active rows with one name, as legacy workspace directories left them.
+    repository.teams[1]!.name = repository.teams[0]!.name
+    repository.teams[1]!.normalizedName = repository.teams[0]!.normalizedName
+    const updated = await updateTeam(ports, scope, "team-2", {
+        expectedRevision: 1,
+        shortCode: "VLK2",
+    })
+    assert.equal("ok" in updated && updated.ok, true)
+    // Renaming into another team's name is still refused.
+    const renamed = await updateTeam(ports, scope, "team-1", {
+        expectedRevision: 1,
+        name: "Somebody Else",
+    })
+    assert.equal("ok" in renamed, true)
+})

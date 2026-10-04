@@ -63,19 +63,26 @@ async function authorizeAssetScope(
  * global administrator approves it. Only a live team logo of that workspace
  * (or one the platform already owns) can be adopted.
  */
+export async function adoptablePlatformLogo(
+    ctx: Pick<MutationCtx, "db">,
+    input: { assetId: string; fromGuildId: string }
+): Promise<Doc<"imageAssets"> | null> {
+    const id = ctx.db.normalizeId("imageAssets", input.assetId)
+    const row = id ? await ctx.db.get(id) : null
+    return row &&
+        row.kind === "team-logo" &&
+        row.state === "ready" &&
+        (row.guildId === input.fromGuildId || row.guildId === PLATFORM_SCOPE)
+        ? row
+        : null
+}
+
 export async function adoptPlatformLogo(
     ctx: MutationCtx,
     input: { assetId: string; fromGuildId: string }
 ): Promise<Id<"imageAssets"> | null> {
-    const id = ctx.db.normalizeId("imageAssets", input.assetId)
-    const row = id ? await ctx.db.get(id) : null
-    if (
-        !row ||
-        row.kind !== "team-logo" ||
-        row.state !== "ready" ||
-        (row.guildId !== input.fromGuildId && row.guildId !== PLATFORM_SCOPE)
-    )
-        return null
+    const row = await adoptablePlatformLogo(ctx, input)
+    if (!row) return null
     if (row.guildId !== PLATFORM_SCOPE)
         await ctx.db.patch(row._id, { guildId: PLATFORM_SCOPE })
     return row._id
@@ -190,6 +197,9 @@ export const reserveUpload = mutation({
     args: { ...access, kind: imageAssetKind },
     handler: async (ctx, args) => {
         const admin = await authorizeAssetScope(ctx, args)
+        // The platform scope holds catalogue team logos only.
+        if (args.guildId === PLATFORM_SCOPE && args.kind !== "team-logo")
+            return { error: "invalid_kind" as const }
         const attempt = await consumeUploadAttempt(
             ctx,
             `image-upload:${args.guildId}:${admin.subject}`

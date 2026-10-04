@@ -37,6 +37,8 @@ export class InMemoryTeamDirectory implements TeamDirectoryRepository {
     repoints: { from: string; to: string }[] = []
     /** Competition fixtures as [side A, side B] team IDs. */
     fixtures: [string, string][] = []
+    /** Competition registrations as [competition ID, team ID]. */
+    registrations: [string, string][] = []
     private sequence = 0
 
     async findCreate(idempotencyKey: string) {
@@ -103,11 +105,21 @@ export class InMemoryTeamDirectory implements TeamDirectoryRepository {
     async repoint(from: string, to: string) {
         this.repoints.push({ from, to })
     }
-    async playedEachOther(teamId: string, otherTeamId: string) {
-        return this.fixtures.some(
-            ([a, b]) =>
-                (a === teamId && b === otherTeamId) ||
-                (a === otherTeamId && b === teamId)
+    async competedTogether(teamId: string, otherTeamId: string) {
+        const competitions = (id: string) =>
+            new Set(
+                this.registrations
+                    .filter(([, team]) => team === id)
+                    .map(([competition]) => competition)
+            )
+        const other = competitions(otherTeamId)
+        return (
+            [...competitions(teamId)].some((id) => other.has(id)) ||
+            this.fixtures.some(
+                ([a, b]) =>
+                    (a === teamId && b === otherTeamId) ||
+                    (a === otherTeamId && b === teamId)
+            )
         )
     }
 }
@@ -122,9 +134,12 @@ export class InMemoryTeamLogos implements TeamLogoPort {
     async attachable(assetId: string) {
         return this.owned[assetId] === "platform" ? assetId : null
     }
-    async adopt(assetId: string, fromGuildId: string) {
+    async adoptable(assetId: string, fromGuildId: string) {
         const owner = this.owned[assetId]
-        if (owner !== fromGuildId && owner !== "platform") return null
+        return owner === fromGuildId || owner === "platform" ? assetId : null
+    }
+    async adopt(assetId: string, fromGuildId: string) {
+        if (!(await this.adoptable(assetId, fromGuildId))) return null
         this.owned[assetId] = "platform"
         return assetId
     }

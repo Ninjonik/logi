@@ -18,12 +18,11 @@ export const legacyCollisionReport = internalQuery({
             Math.max(args.limit ?? LEGACY_SCAN, 1),
             LEGACY_SCAN
         )
-        const legacy = (
-            await ctx.db
-                .query("teamDirectory")
-                .withIndex("guildId", (q) => q.gt("guildId", ""))
-                .take(limit)
-        ).filter((row) => !row.mergedIntoTeamId)
+        const scanned = await ctx.db
+            .query("teamDirectory")
+            .withIndex("guildId", (q) => q.gt("guildId", ""))
+            .take(limit)
+        const legacy = scanned.filter((row) => !row.mergedIntoTeamId)
         const collisions = new Map<
             string,
             { gameId: string; normalizedName: string; teamIds: string[] }
@@ -50,7 +49,8 @@ export const legacyCollisionReport = internalQuery({
         }
         return {
             legacyTeams: legacy.length,
-            truncated: legacy.length === limit,
+            // The scan limit counts merged rows too.
+            truncated: scanned.length === limit,
             collisions: [...collisions.values()],
         }
     },

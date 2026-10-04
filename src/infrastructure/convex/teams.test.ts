@@ -785,3 +785,67 @@ test("cancel is limited to the requesting workspace and a sent DM is recorded on
         { ok: false }
     )
 })
+
+test("an unrecorded DM outcome is retried a bounded number of times; closed DMs are final", async (t) => {
+    let now = Date.parse("2026-10-04T12:00:00.000Z")
+    t.mock.method(Date, "now", () => now)
+    const ctx = setup()
+    const decided = []
+    for (const key of ["request-key-0101", "request-key-0102"]) {
+        const submitted = await invoke(teamRequests.submit, ctx, {
+            ...workspace,
+            input: {
+                kind: "create",
+                gameId: "wardogs",
+                proposal: { name: `Team ${key}` },
+                idempotencyKey: key,
+            },
+        })
+        await invoke(teamRequests.decide, ctx, {
+            ...platform,
+            requestId: submitted.requestId,
+            input: { decision: "reject", reason: "Not a team" },
+        })
+        decided.push(submitted.requestId)
+    }
+    // The bot sends but never manages to record the outcome: each lease expires.
+    for (let claim = 1; claim <= 5; claim++) {
+        assert.equal(
+            (await invoke(teamRequests.claimNotifications, ctx, { secret }))
+                .length,
+            claim === 1 ? 2 : 1
+        )
+        if (claim === 1)
+            await invoke(teamRequests.markNotified, ctx, {
+                secret,
+                requestId: decided[1],
+                outcome: "undeliverable",
+            })
+        now += 3 * 60_000
+    }
+    assert.deepEqual(
+        await invoke(teamRequests.claimNotifications, ctx, { secret }),
+        []
+    )
+    const [first, second] = ctx.db.tables.teamRequests
+    assert.equal(first.notificationStatus, "failed")
+    assert.equal(first.notificationAttempts, 5)
+    assert.equal(second.notificationStatus, "failed")
+    assert.equal(second.notificationAttempts, 1)
+})
+
+test("the bot endpoints refuse everything when no internal secret is configured", async (t) => {
+    const ctx = setup()
+    const previous = process.env.INTERNAL_AUTH_SECRET
+    delete process.env.INTERNAL_AUTH_SECRET
+    t.after(() => {
+        process.env.INTERNAL_AUTH_SECRET = previous
+    })
+    for (const candidate of ["", "dev-internal-auth-secret"])
+        await assert.rejects(
+            invoke(teamRequests.claimNotifications, ctx, {
+                secret: candidate,
+            }),
+            /Unauthorized/
+        )
+})

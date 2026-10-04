@@ -13,6 +13,7 @@ import {
     decideTeamUpdate,
     normalizeTeamName,
     type TeamCommandError,
+    type TeamEntity,
 } from "../../domain/teams/team"
 import type {
     TeamDirectoryRepository,
@@ -203,15 +204,44 @@ export async function decideTeamRequest(
     }
 
     const proposal = decision.proposal ?? request.proposal
-    // A logo the administrator replaced must already belong to the platform;
-    // the requester's own logo moves from the workspace to the platform.
+    // A change request is approved against the target's reviewed revision.
+    let target: TeamEntity | null = null
+    if (request.kind === "update") {
+        if (decision.targetRevision === undefined)
+            return fail("invalid_decision")
+        target = request.teamId
+            ? await ports.directory.get(request.teamId)
+            : null
+        const targetDenied = changeRequestTargetError(target)
+        if (targetDenied || !target) return fail(targetDenied ?? "not_found")
+    }
+    // The target's current logo is kept as it is, whoever owns it. The
+    // requester's own upload moves to the platform only after every check
+    // passed; a logo the administrator chose must already be a platform asset.
+    // Checks only read, so a refused approval moves nothing.
+    const keptLogo =
+        target !== null &&
+        proposal.logoAssetId !== null &&
+        proposal.logoAssetId === target.logoAssetId
+    const requesterLogo =
+        !keptLogo &&
+        proposal.logoAssetId !== null &&
+        proposal.logoAssetId === request.proposal.logoAssetId
     let logo: string | null = null
     if (proposal.logoAssetId) {
-        logo =
-            proposal.logoAssetId === request.proposal.logoAssetId
-                ? await ports.logos.adopt(proposal.logoAssetId, request.guildId)
-                : await ports.logos.attachable(proposal.logoAssetId)
+        logo = keptLogo
+            ? proposal.logoAssetId
+            : requesterLogo
+              ? await ports.logos.adoptable(
+                    proposal.logoAssetId,
+                    request.guildId
+                )
+              : await ports.logos.attachable(proposal.logoAssetId)
         if (!logo) return fail("asset_unavailable")
+    }
+    const adoptLogo = async () => {
+        if (!requesterLogo || !logo) return true
+        return (await ports.logos.adopt(logo, request.guildId)) !== null
     }
     const now = ports.now()
 
@@ -238,6 +268,7 @@ export async function decideTeamRequest(
             now,
         })
         if (!created.ok) return fail(created.error, created.existingId)
+        if (!(await adoptLogo())) return fail("asset_unavailable")
         const team = await ports.directory.insert(created.team, scope.actor)
         await ports.logos.syncReferences(team.id, logo ? [logo] : [])
         await ports.directory.audit(team, "request_approved", scope.actor, {
@@ -253,11 +284,9 @@ export async function decideTeamRequest(
         return { ok: true, status: "approved", teamId: team.id }
     }
 
-    const team = request.teamId
-        ? await ports.directory.get(request.teamId)
-        : null
-    const targetDenied = changeRequestTargetError(team)
-    if (targetDenied || !team) return fail(targetDenied ?? "not_found")
+    if (!target || decision.targetRevision === undefined)
+        return fail("invalid_decision")
+    const team = target
     const conflicting = await ports.directory.findByNormalizedName(
         team.gameId,
         normalizeTeamName(proposal.name)
@@ -265,7 +294,7 @@ export async function decideTeamRequest(
     const updated = decideTeamUpdate({
         team,
         input: {
-            expectedRevision: decision.targetRevision ?? team.revision,
+            expectedRevision: decision.targetRevision,
             name: proposal.name,
             shortCode: proposal.shortCode,
             logoAssetId: logo,
@@ -276,6 +305,7 @@ export async function decideTeamRequest(
         now,
     })
     if (!updated.ok) return fail(updated.error, updated.existingId)
+    if (!(await adoptLogo())) return fail("asset_unavailable")
     const saved = await ports.directory.update(team, updated.patch, scope.actor)
     await ports.logos.syncReferences(team.id, logo ? [logo] : [])
     await ports.directory.audit(saved, "request_approved", scope.actor, {

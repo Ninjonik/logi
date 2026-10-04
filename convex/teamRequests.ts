@@ -7,6 +7,7 @@ import {
 } from "../src/infrastructure/convex/team-directory-repositories"
 import {
     notificationRetryDelayMs,
+    TEAM_REQUEST_NOTIFICATION_ATTEMPTS,
     TEAM_REQUEST_PAGE_MAX,
     teamRequestStatusSchema,
     type TeamRequestRecord,
@@ -30,10 +31,10 @@ import { getGuildByDiscordId } from "./identity"
 import { assetPublicUrl } from "./imageAssets"
 import { v } from "convex/values"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
+/** The bot's internal secret; without one configured, nothing is accepted. */
 function assertBotSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized.")
+    const expected = process.env.INTERNAL_AUTH_SECRET
+    if (!expected || secret !== expected) throw new Error("Unauthorized.")
 }
 const workspaceAccess = {
     secret: v.string(),
@@ -225,7 +226,19 @@ export const claimNotifications = mutation({
         const claimed = []
         for (const row of due) {
             if ((row.notificationLeaseUntil ?? 0) > now) continue
+            // Every claim is a delivery attempt, so a DM whose outcome is never
+            // recorded is retried a bounded number of times, not forever.
+            const attempts = row.notificationAttempts + 1
+            if (attempts > TEAM_REQUEST_NOTIFICATION_ATTEMPTS) {
+                await ctx.db.patch(row._id, {
+                    notificationStatus: "failed",
+                    notificationNextAttemptAt: null,
+                    notificationLeaseUntil: null,
+                })
+                continue
+            }
             await ctx.db.patch(row._id, {
+                notificationAttempts: attempts,
                 notificationLeaseUntil: now + NOTIFICATION_LEASE_MS,
                 notificationNextAttemptAt: now + NOTIFICATION_LEASE_MS,
             })
@@ -257,12 +270,19 @@ export const claimNotifications = mutation({
     },
 })
 
-/** Confirms a sent DM, or schedules a retry with backoff until the attempts run out. */
+/**
+ * Confirms a sent DM, or schedules a retry with backoff until the attempts
+ * run out. `undeliverable` (the user does not accept DMs from the bot) is final.
+ */
 export const markNotified = mutation({
     args: {
         secret: v.string(),
         requestId: v.string(),
-        outcome: v.union(v.literal("sent"), v.literal("failed")),
+        outcome: v.union(
+            v.literal("sent"),
+            v.literal("failed"),
+            v.literal("undeliverable")
+        ),
     },
     handler: async (ctx, args) => {
         assertBotSecret(args.secret)
@@ -278,10 +298,12 @@ export const markNotified = mutation({
             })
             return { ok: true }
         }
-        const attempts = row.notificationAttempts + 1
-        const delay = notificationRetryDelayMs(attempts)
+        // The claim already counted this attempt.
+        const delay =
+            args.outcome === "undeliverable"
+                ? null
+                : notificationRetryDelayMs(row.notificationAttempts)
         await ctx.db.patch(row._id, {
-            notificationAttempts: attempts,
             notificationLeaseUntil: null,
             ...(delay === null
                 ? {

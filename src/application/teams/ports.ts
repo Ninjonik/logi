@@ -70,14 +70,20 @@ export interface TeamDirectoryRepository {
     emit(team: TeamEntity, operation: "upsert" | "remove"): Promise<void>
     /** Moves competition registrations, fixtures and pending requests from one team to another. */
     repoint(sourceTeamId: string, targetTeamId: string): Promise<void>
-    /** Whether a competition fixture has these two teams on opposite sides. */
-    playedEachOther(teamId: string, otherTeamId: string): Promise<boolean>
+    /**
+     * Whether both teams take part in one competition (both registered, or a
+     * fixture between them): merging them would corrupt its divisions,
+     * fixtures or standings.
+     */
+    competedTogether(teamId: string, otherTeamId: string): Promise<boolean>
 }
 
 /** Team-logo ownership: platform attach checks and the references that keep assets alive. */
 export interface TeamLogoPort {
     /** The asset ID when the platform may attach it as a team logo; null otherwise. */
     attachable(assetId: string): Promise<string | null>
+    /** Whether `adopt` would succeed; reads only, so a refused decision moves nothing. */
+    adoptable(assetId: string, fromGuildId: string): Promise<string | null>
     /** Transfers a requesting workspace's logo to the platform on approval; null when not allowed. */
     adopt(assetId: string, fromGuildId: string): Promise<string | null>
     /** Replaces the team's logo references with exactly these assets. */

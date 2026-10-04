@@ -58,6 +58,15 @@ test("the platform upload scope needs a superadmin session; workspaces keep thei
         }),
         { ok: true }
     )
+    // The platform scope holds catalogue logos only.
+    assert.deepEqual(
+        await invoke(imageAssets.reserveUpload, ctx, {
+            ...platform,
+            guildId: "platform",
+            kind: "panel-banner",
+        }),
+        { error: "invalid_kind" }
+    )
     const listed = await invoke(imageAssets.list, ctx, {
         ...platform,
         guildId: "platform",

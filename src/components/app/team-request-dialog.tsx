@@ -240,6 +240,7 @@ function TeamRequestBody({
                             accept={ACCEPT}
                             className="sr-only"
                             tabIndex={-1}
+                            aria-hidden
                             disabled={busy}
                             aria-describedby={`${id}-logo-help`}
                             onChange={(event) => {

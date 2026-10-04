@@ -311,7 +311,12 @@ export function decideTeamUpdate(input: {
     if (input.team.archivedAt) return { ok: false, error: "archived" }
     const name = input.input.name ?? input.team.name
     const normalizedName = normalizeTeamName(name)
-    if (input.conflicting && input.conflicting.id !== input.team.id)
+    // Keeping the name never conflicts, so a legacy same-name duplicate stays editable.
+    if (
+        normalizedName !== normalizeTeamName(input.team.name) &&
+        input.conflicting &&
+        input.conflicting.id !== input.team.id
+    )
         return {
             ok: false,
             error: "duplicate_name",

@@ -113,8 +113,14 @@ export type TeamRequestNotificationPorts = {
     fetchUser(discordUserId: string): Promise<{
         send(message: TeamRequestDecisionMessage): Promise<unknown>
     } | null>
-    /** `failed` schedules a retry with backoff until the attempts run out. */
-    mark(requestId: string, outcome: "sent" | "failed"): Promise<unknown>
+    /**
+     * `failed` schedules a retry with backoff until the attempts run out;
+     * `undeliverable` (DMs closed) is final.
+     */
+    mark(
+        requestId: string,
+        outcome: "sent" | "failed" | "undeliverable"
+    ): Promise<unknown>
     /** Operational log; receives IDs and Discord error codes only. */
     warn(message: string, context: Record<string, string | number>): void
 }
@@ -159,7 +165,7 @@ export async function deliverTeamRequestNotifications(
             ? parsed.data.requestId
             : requestIdOf(raw)
         if (!requestId) continue
-        let outcome: "sent" | "failed" = "failed"
+        let outcome: "sent" | "failed" | "undeliverable" = "failed"
         if (!parsed.success)
             ports.warn("Team request notification is malformed", {
                 requestId,
@@ -180,16 +186,19 @@ export async function deliverTeamRequestNotifications(
                         requestId,
                     })
             } catch (error) {
-                // 50007: the user does not accept DMs from this bot.
+                const code = discordErrorCode(error)
+                // 50007: the user does not accept DMs from this bot; retrying
+                // cannot help, so the decision stays recorded as undelivered.
+                if (code === 50007) outcome = "undeliverable"
                 ports.warn("Team request DM could not be delivered", {
                     requestId,
-                    code: discordErrorCode(error),
+                    code,
                 })
             }
         }
         try {
             await ports.mark(requestId, outcome)
-            totals[outcome] += 1
+            totals[outcome === "sent" ? "sent" : "failed"] += 1
         } catch {
             ports.warn("Team request DM outcome could not be recorded", {
                 requestId,

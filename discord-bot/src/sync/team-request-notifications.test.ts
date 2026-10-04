@@ -193,7 +193,7 @@ test("a pass sends each claimed DM and confirms it", async () => {
     ])
 })
 
-test("unknown users, closed DMs and malformed claims are marked failed", async () => {
+test("unknown users and malformed claims are retried; closed DMs are final", async () => {
     const closed: FakeUser = {
         sent: [],
         fail: Object.assign(new Error("Cannot send messages to this user"), {
@@ -220,7 +220,7 @@ test("unknown users, closed DMs and malformed claims are marked failed", async (
     })
     assert.deepEqual(marks, [
         ["req-gone", "failed"],
-        ["req-closed", "failed"],
+        ["req-closed", "undeliverable"],
         ["req-bad-id", "failed"],
         ["req-malformed", "failed"],
         ["req-pending", "failed"],
