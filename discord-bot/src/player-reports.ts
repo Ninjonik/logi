@@ -402,6 +402,13 @@ export async function deliverReport(
                 fence: claim.fence,
             })
         },
+        release: async (claim) => {
+            await mutation("release", {
+                ...scope,
+                reportId,
+                fence: claim.fence,
+            })
+        },
     })
 }
 

@@ -610,11 +610,11 @@ async function syncEvent(
         rosterPublished: Boolean(roster?.published),
     })
     const registrationChannel = announcementChannelId
-        ? await guild.channels.fetch(announcementChannelId)
+        ? await guild.channels.fetch(announcementChannelId).catch(() => null)
         : null
     const infoChannel =
         splitChannels && eventInfoChannelId
-            ? await guild.channels.fetch(eventInfoChannelId)
+            ? await guild.channels.fetch(eventInfoChannelId).catch(() => null)
             : null
     if (!registrationAnnouncementDue) {
         await retireEventMessage(
@@ -749,7 +749,9 @@ async function syncEvent(
         registrationAnnouncementDue &&
         !(event.status === "concluded" && !announcementMessageId)
     ) {
-        const channel = await guild.channels.fetch(displayChannelId)
+        const channel = await guild.channels
+            .fetch(displayChannelId)
+            .catch(() => null)
         if (
             channel?.isTextBased() &&
             (channel.type === ChannelType.GuildText ||

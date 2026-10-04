@@ -36,6 +36,7 @@ const copy = {
         back: "Back",
         cancel: "Cancel",
         cancelled: "Application cancelled. Nothing was submitted.",
+        expired: "This application has expired. Please start again.",
         game: "Game",
         specialization: "Specialization",
         account: "Platform account",
@@ -61,6 +62,7 @@ const copy = {
         back: "Zpět",
         cancel: "Zrušit",
         cancelled: "Přihláška byla zrušena. Nic nebylo odesláno.",
+        expired: "Tato přihláška vypršela. Začněte prosím znovu.",
         game: "Hra",
         specialization: "Specializace",
         account: "Platformní účet",
@@ -86,6 +88,7 @@ const copy = {
         back: "Zurück",
         cancel: "Abbrechen",
         cancelled: "Bewerbung abgebrochen. Es wurde nichts eingereicht.",
+        expired: "Diese Bewerbung ist abgelaufen. Bitte beginne erneut.",
         game: "Spiel",
         specialization: "Spezialisierung",
         account: "Plattformkonto",
@@ -142,6 +145,11 @@ export function buildMembershipFlowHeader(
 
 export function getMembershipFlowCancelLabel(language: ClanLanguage) {
     return copy[language].cancel
+}
+
+export function getMembershipFlowExpiredMessage(language?: string) {
+    return copy[language === "cs" || language === "de" ? language : "en"]
+        .expired
 }
 
 function flowId(draftId: string, action: string) {

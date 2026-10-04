@@ -492,8 +492,10 @@ export function warconFreshness(
     now: number,
     ok = true
 ): z.infer<typeof freshness> {
-    const age = timestamp === null ? Infinity : now - Date.parse(timestamp)
-    return age < 0 || age >= 180_000
+    // The panel stamps these with its own clock; a slightly ahead clock is not staleness.
+    const parsed = timestamp === null ? NaN : Date.parse(timestamp)
+    const age = Number.isNaN(parsed) ? Infinity : Math.max(0, now - parsed)
+    return age >= 180_000
         ? "unavailable"
         : !ok || age >= 45_000
           ? "stale"

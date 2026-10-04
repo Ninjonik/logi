@@ -19,6 +19,14 @@ import { env } from "../environment"
 import { convex } from "../convex"
 export { isUnknownMessage } from "./owned-message"
 
+const discordCode = (error: unknown) =>
+    typeof error === "object" && error !== null && "code" in error
+        ? error.code
+        : undefined
+/** Unknown Channel (10003): the previous channel was deleted. Permission errors
+ * keep the binding so a restored channel never receives a duplicate. */
+const isUnknownChannel = (error: unknown) => discordCode(error) === 10003
+
 function hasMarker(value: unknown, marker: string): boolean {
     if (!value || typeof value !== "object") return false
     if ("custom_id" in value && value.custom_id === marker) return true
@@ -54,6 +62,7 @@ export async function publishManagedMessage(
         )
             throw new Error("Unsupported publication channel.")
         const me = await guild.members.fetchMe({ force: true })
+        // Only demand what this message needs; text-only panels must not fail on Attach Files.
         if (
             !found
                 .permissionsFor(me)
@@ -61,8 +70,12 @@ export async function publishManagedMessage(
                     PermissionFlagsBits.ViewChannel,
                     PermissionFlagsBits.ReadMessageHistory,
                     PermissionFlagsBits.SendMessages,
-                    PermissionFlagsBits.EmbedLinks,
-                    PermissionFlagsBits.AttachFiles,
+                    ...(input.message.embeds?.length
+                        ? [PermissionFlagsBits.EmbedLinks]
+                        : []),
+                    ...(input.message.files?.length
+                        ? [PermissionFlagsBits.AttachFiles]
+                        : []),
                 ])
         )
             throw new Error("Publication channel permissions missing.")
@@ -74,6 +87,16 @@ export async function publishManagedMessage(
             messageId,
             client.user?.id
         )
+    }
+    // A deleted previous channel means the old message is gone; the publication
+    // must move on instead of failing every later sync.
+    const previousGone = async (id: string, messageId: string) => {
+        try {
+            return await owned(id, messageId)
+        } catch (error) {
+            if (isUnknownChannel(error)) return null
+            throw error
+        }
     }
     // Serialize builders before hashing; counts/timestamps come from observation data.
     const hash = createHash("sha256")
@@ -117,7 +140,7 @@ export async function publishManagedMessage(
         },
         {
             exists: async (id, messageId) =>
-                Boolean(await owned(id, messageId)),
+                Boolean(await previousGone(id, messageId)),
             recover: async (id, marker) => {
                 const matches = [
                     ...(
@@ -206,7 +229,7 @@ export async function publishManagedMessage(
                 })
             },
             remove: async (id, messageId) => {
-                const message = await owned(id, messageId)
+                const message = await previousGone(id, messageId)
                 if (message) await message.delete()
             },
         },

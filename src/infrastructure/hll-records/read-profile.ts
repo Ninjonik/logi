@@ -9,6 +9,8 @@ import { lookup } from "node:dns/promises"
 import { request } from "node:https"
 
 const MAX_BYTES = 2 * 1024 * 1024
+/** A provider Retry-After may not park the whole process until restart. */
+const MAX_RETRY_AFTER_MS = 24 * 60 * 60_000
 export type HllRead = {
     status: "ok" | "stale" | "empty" | "unavailable"
     profile: HllProfile | null
@@ -152,7 +154,10 @@ export function createHllRecordsReader(
                                         ? Number(header) * 1000
                                         : Date.parse(header) - now()
                                 retry = Number.isFinite(delay)
-                                    ? Math.max(1000, delay)
+                                    ? Math.min(
+                                          MAX_RETRY_AFTER_MS,
+                                          Math.max(1000, delay)
+                                      )
                                     : 60_000
                                 blockedUntil = now() + retry
                                 blockedReason = "rate_limited"

@@ -33,6 +33,9 @@ test("report creation records binding before private content and completion", as
         uncertain: async () => {
             calls.push("uncertain")
         },
+        release: async () => {
+            calls.push("release")
+        },
     })
     assert.deepEqual(result, { kind: "open", threadId: "thread" })
     assert.deepEqual(calls, [
@@ -69,6 +72,9 @@ test("ambiguous report thread creation is never repeated after a restart", async
         uncertain: async () => {
             uncertain++
         },
+        release: async () => {
+            throw Error("release must not follow an attempted create")
+        },
     }
     assert.equal((await deliverPlayerReport(ports)).kind, "uncertain")
     claim.canCreate = false
@@ -104,6 +110,9 @@ test("failed privacy setup never posts a report body", async () => {
         },
         complete: async () => {},
         uncertain: async () => {},
+        release: async () => {
+            throw Error("a created thread is never released")
+        },
     })
     assert.equal(result.kind, "uncertain")
     assert.equal(content, 0)
@@ -122,7 +131,39 @@ test("an already completed report returns its original thread without side effec
             starter: unexpected,
             complete: unexpected,
             uncertain: unexpected,
+            release: unexpected,
         }),
         { kind: "open", threadId: "original" }
     )
+})
+test("a failure before any thread create returns the report to pending instead of uncertain", async () => {
+    const calls: string[] = []
+    const result = await deliverPlayerReport({
+        claim: async () => ({
+            kind: "claimed",
+            canCreate: true,
+            fence: 1,
+            threadId: null,
+            marker: "report-one",
+        }),
+        find: async () => {
+            throw Error("staff_access_unavailable")
+        },
+        create: async () => {
+            calls.push("create")
+            return "thread"
+        },
+        bind: async () => {},
+        preparePrivateThread: async () => {},
+        starter: async () => "message",
+        complete: async () => {},
+        uncertain: async () => {
+            calls.push("uncertain")
+        },
+        release: async () => {
+            calls.push("release")
+        },
+    })
+    assert.deepEqual(result, { kind: "busy" })
+    assert.deepEqual(calls, ["release"])
 })

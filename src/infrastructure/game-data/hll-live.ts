@@ -52,7 +52,8 @@ const playerSchema = z.object({
 const statsSchema = z.object({
     snapshot_timestamp: z.number().finite().positive(),
     refresh_interval_sec: z.number().finite().min(1).max(86400),
-    stats: z.array(playerSchema).max(300),
+    // Rows include players who left during the match; only online rows are kept.
+    stats: z.array(playerSchema).max(2000),
 })
 function timestamp(seconds: number | null | undefined, now: number) {
     return seconds && seconds > 0 && seconds * 1000 <= now + 5000
@@ -163,6 +164,7 @@ export async function readHllLive(
             result.playersFreshness = "fresh"
             result.players = data.stats
                 .filter((p) => p.status === "online")
+                .slice(0, 300)
                 .map((p) => ({
                     playerId: p.player_id ?? null,
                     name: p.player,

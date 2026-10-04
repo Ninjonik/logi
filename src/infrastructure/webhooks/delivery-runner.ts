@@ -1,5 +1,8 @@
 import { signWebhookPayload } from "@/domain/webhooks/signature"
 
+/** A consumer's Retry-After may delay a delivery, never park it for years. */
+const MAX_WEBHOOK_RETRY_AFTER_MS = 24 * 60 * 60_000
+
 export type ClaimedWebhookDelivery = {
     id: string
     url: string
@@ -89,7 +92,9 @@ export function parseRetryAfter(
     const delay = /^\d{1,9}$/.test(value)
         ? Number(value) * 1000
         : Date.parse(value) - now
-    return Number.isFinite(delay) && delay >= 0 ? delay : undefined
+    return Number.isFinite(delay) && delay >= 0
+        ? Math.min(delay, MAX_WEBHOOK_RETRY_AFTER_MS)
+        : undefined
 }
 
 export async function drainWebhookDeliveries(ports: {

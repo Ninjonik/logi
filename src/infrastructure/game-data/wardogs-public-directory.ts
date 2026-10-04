@@ -1,4 +1,5 @@
 import {
+    CLOCK_SKEW_TOLERANCE_MS,
     ProviderError,
     observationSchema,
     type GameDataProvider,
@@ -58,14 +59,16 @@ export const wardogsDirectoryProvider: GameDataProvider = {
         if (
             data.serverId !== source.providerServerId ||
             Date.parse(data.observedAt) > Date.parse(meta.fetchedAt) ||
-            Date.parse(meta.fetchedAt) > now()
+            Date.parse(meta.fetchedAt) > now() + CLOCK_SKEW_TOLERANCE_MS
         )
             throw new ProviderError("invalid_response")
         return {
             etag: response.etag,
             pollAfterMs: meta.refreshSeconds * 1000,
             observation: observationSchema.parse({
-                observedAt: new Date(data.observedAt).toISOString(),
+                observedAt: new Date(
+                    Math.min(Date.parse(data.observedAt), now())
+                ).toISOString(),
                 providerUpdatedAt: new Date(meta.fetchedAt).toISOString(),
                 displayName: data.name || null,
                 state:

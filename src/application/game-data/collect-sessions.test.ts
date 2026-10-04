@@ -1,5 +1,8 @@
+import {
+    ProviderError,
+    type ProviderSession,
+} from "../../domain/game-data/contracts"
 import { collectSessions, type HistoryProgress } from "./collect-sessions"
-import type { ProviderSession } from "../../domain/game-data/contracts"
 import assert from "node:assert/strict"
 import test from "node:test"
 const session: ProviderSession = {
@@ -104,4 +107,41 @@ test("new head and overlapping pages cannot overwrite identities or skip the nex
     })
     assert.ok(collected.has("43"))
     assert.equal(collected.size, 4)
+})
+test("a session the provider no longer serves is skipped instead of blocking newer history", async () => {
+    let saved: unknown
+    const result = await collectSessions(
+        { page: 1, pendingIds: ["gone", "43"], nextPage: null },
+        {
+            readPage: async () => {
+                throw new Error("Page should not be read")
+            },
+            readSession: async () => {
+                throw new ProviderError("invalid_response")
+            },
+            commit: async (value) => {
+                saved = value
+                return true
+            },
+        }
+    )
+    assert.equal(result, "continued")
+    assert.deepEqual(saved, {
+        session: null,
+        progress: { page: 1, pendingIds: ["43"], nextPage: null },
+        completed: false,
+    })
+    await assert.rejects(
+        collectSessions(
+            { page: 1, pendingIds: ["42"], nextPage: null },
+            {
+                readPage: async () => ({ ids: [], nextPage: null }),
+                readSession: async () => {
+                    throw new ProviderError("rate_limited", 1000)
+                },
+                commit: async () => true,
+            }
+        ),
+        /rate_limited/
+    )
 })

@@ -35,11 +35,12 @@ export async function serveHllLive(
         prepared.kind === "cached"
             ? prepared.data
             : await ports.read(prepared.source, prepared.previous)
+    // An expired lease or a moved fence is a timing collision, not a scope failure.
     if (
         prepared.kind === "claimed" &&
         !(await ports.finish(prepared.claim, data))
     )
-        return { kind: "denied" }
+        return { kind: "busy", retryAfterMs: 5000 }
     return {
         kind: "ready",
         envelope: {

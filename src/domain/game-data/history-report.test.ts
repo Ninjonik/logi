@@ -41,7 +41,7 @@ test("replay and correction replace contributions; no-result and unknown player 
     assert.equal(player.metrics.kills.value, 24)
     assert.equal(player.metrics.cashDelta.value, -40)
     assert.deepEqual(player.metrics.headshots, { value: null, knownGames: 0 })
-    assert.equal(player.kd, null)
+    assert.equal(player.kd, 24)
 })
 
 test("eligibility is playtime based, identity is platform ID, incomplete metrics never become full ratios", () => {

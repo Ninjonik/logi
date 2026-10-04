@@ -6,14 +6,14 @@ clan profile command) or the live `/server-status` and public scoreboard panels.
 
 ## Usage
 
-| Input | Behavior |
-| --- | --- |
-| `/stats game:wardogs` | Your Steam player in this Discord community's retained Warcon games; default last 30 days |
-| `/stats game:hll member:@player` | A current guild member's linked Steam profile on HLL Records |
-| `period:7d`, `30d`, `90d`, `all` | Rolling UTC window for Wardogs; matching public profile period for HLL |
-| `player:<autocomplete>` | Wardogs only: search recorded names or a Steam ID; selection retains exact Steam identity across renames |
-| `server:<autocomplete>` | Wardogs only: narrow history to one recorded source; identical display names retain different source IDs |
-| `channel:#room` | Optional destination for later explicit sharing; the initial reply stays private |
+| Input                            | Behavior                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `/stats game:wardogs`            | Your Steam player in this Discord community's retained Warcon games; default last 30 days                |
+| `/stats game:hll member:@player` | A current guild member's linked Steam profile on HLL Records                                             |
+| `period:7d`, `30d`, `90d`, `all` | Rolling UTC window for Wardogs; matching public profile period for HLL                                   |
+| `player:<autocomplete>`          | Wardogs only: search recorded names or a Steam ID; selection retains exact Steam identity across renames |
+| `server:<autocomplete>`          | Wardogs only: narrow history to one recorded source; identical display names retain different source IDs |
+| `channel:#room`                  | Optional destination for later explicit sharing; the initial reply stays private                         |
 
 `member` and `player` are mutually exclusive. HLL rejects raw player IDs and server
 filters. No nickname-based account linking is performed. Other platforms are not
@@ -25,7 +25,7 @@ includes recent games, maps, weapons, team kills and infantry ELO. Existing map
 artwork supplies a compact map thumbnail. Controls and descriptions support CS/EN/DE.
 
 Missing metrics remain unknown. Wardogs sums retain per-metric coverage, and K/D
-requires complete kills/deaths coverage with a nonzero death denominator. Unknown
+requires complete kills/deaths coverage; a flawless record divides by one death. Unknown
 results are disclosed. HLL's `+` counters remain lower bounds. Its recent-form win
 rate is explicitly scoped to the last 100 games with at least 20 minutes played;
 it is not relabeled as the requested period's overall win rate.

@@ -148,11 +148,13 @@ export function aggregateHistory(
         const { seconds, kills, deaths } = player.metrics
         player.eligible =
             seconds.value !== null && seconds.value >= minMinutes * 60
+        // A flawless record is a ratio against one death, as on the live scoreboard.
         player.kd =
             kills.knownGames === player.matches &&
             deaths.knownGames === player.matches &&
-            deaths.value! > 0
-                ? kills.value! / deaths.value!
+            kills.value !== null &&
+            deaths.value !== null
+                ? kills.value / Math.max(1, deaths.value)
                 : null
         const decided = player.wins + player.losses + player.draws
         player.winRate = decided ? player.wins / decided : null

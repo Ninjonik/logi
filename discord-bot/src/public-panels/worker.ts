@@ -64,19 +64,30 @@ async function live(panel: Panel): Promise<LiveData | null> {
         ? result.envelope.result.data
         : null
 }
-async function hllLive(panel: Panel): Promise<HllLive | null> {
+async function hllLiveRead(panel: Panel): Promise<HllServed | null> {
     if (!panel.enabled || panel.snapshot?.provider !== "hll_crcon") return null
-    const result: HllServed = await convex.action(
-        makeFunctionReference<"action">("hllLiveData:read"),
-        {
-            secret: env.internalSecret,
-            guildId: panel.guildId,
-            connectionId: panel.connectionId,
-            panelId: panel._id,
-            panelRevision: panel.revision,
-        }
-    )
-    return result.kind === "ready" ? result.envelope.data : null
+    return convex.action(makeFunctionReference<"action">("hllLiveData:read"), {
+        secret: env.internalSecret,
+        guildId: panel.guildId,
+        connectionId: panel.connectionId,
+        panelId: panel._id,
+        panelRevision: panel.revision,
+    })
+}
+async function hllLive(panel: Panel): Promise<HllLive | null> {
+    const result = await hllLiveRead(panel)
+    return result?.kind === "ready" ? result.envelope.data : null
+}
+/** Blank provider names or factions must not invalidate the whole report picker. */
+function reportChoice(input: {
+    name: string
+    playerId: string | null
+    team: string | null
+}) {
+    const name = input.name.trim(),
+        team = input.team?.trim() || null,
+        playerId = input.playerId?.trim() || null
+    return name ? [{ name, playerId, team }] : []
 }
 export async function readReportObservation(
     guildId: string,
@@ -106,11 +117,13 @@ export async function readReportObservation(
                   observedAt: data.playersAt,
                   players:
                       data.playersFreshness === "fresh"
-                          ? data.players.map((p) => ({
-                                name: p.name,
-                                playerId: p.playerId,
-                                team: p.team,
-                            }))
+                          ? data.players.flatMap((p) =>
+                                reportChoice({
+                                    name: p.name,
+                                    playerId: p.playerId,
+                                    team: p.team,
+                                })
+                            )
                           : [],
               }
             : empty
@@ -123,11 +136,13 @@ export async function readReportObservation(
               observedAt: data.playersAt,
               players:
                   data.playersFreshness === "fresh"
-                      ? data.players.map((p) => ({
-                            name: p.name,
-                            playerId: p.steamId,
-                            team: p.faction,
-                        }))
+                      ? data.players.flatMap((p) =>
+                            reportChoice({
+                                name: p.name,
+                                playerId: p.steamId,
+                                team: p.faction,
+                            })
+                        )
                       : [],
           }
         : empty
@@ -172,7 +187,22 @@ export function startPublicPanelWorker(client: Client) {
                             await syncResults(client, panel, cachedIcons)
                         else {
                             const current = await live(panel)
-                            const hll = await hllLive(panel)
+                            const hllRead = await hllLiveRead(panel)
+                            if (hllRead?.kind === "busy") {
+                                // Another reader holds the lease; keep the current card
+                                // rather than flickering to the generic layout.
+                                due.set(panel._id, {
+                                    at:
+                                        Date.now() +
+                                        Math.min(hllRead.retryAfterMs, 15_000),
+                                    revision: panel.revision,
+                                })
+                                continue
+                            }
+                            const hll =
+                                hllRead?.kind === "ready"
+                                    ? hllRead.envelope.data
+                                    : null
                             const artwork = panel.artwork
                                 ? await panelArtwork(
                                       panel.gameId,

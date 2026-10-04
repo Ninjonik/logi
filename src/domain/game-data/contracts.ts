@@ -1,6 +1,8 @@
 import { warconHistoryMetadataSchema } from "./warcon-history-facts"
 import { z } from "zod"
 
+/** Provider clocks may run slightly ahead of ours without being an invalid response. */
+export const CLOCK_SKEW_TOLERANCE_MS = 5000
 export const providerSchema = z.enum([
     "hll_crcon",
     "wardogs_rcon",

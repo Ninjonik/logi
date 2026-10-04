@@ -436,6 +436,23 @@ export const uncertain = mutation({
             })
     },
 })
+/** Nothing reached Discord yet: return the report to pending with a short backoff. */
+export const release = mutation({
+    args: { ...reportArgs, fence: v.number() },
+    handler: async (ctx, args) => {
+        const report = await owned(ctx, args)
+        if (
+            report.fence === args.fence &&
+            report.state === "creating" &&
+            !report.threadId
+        )
+            await ctx.db.patch(report._id, {
+                state: "pending",
+                leaseUntil: Date.now() + 30_000,
+                updatedAt: Date.now(),
+            })
+    },
+})
 export const pending = query({
     args: { secret: v.string(), guildId: v.string() },
     handler: async (ctx, args) => {

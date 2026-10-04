@@ -58,6 +58,14 @@ import {
     parsePlatformLinkSearchModalId,
 } from "./interactions/platform-link"
 import {
+    buildMembershipFlowCancelledMessage,
+    buildMembershipFlowHeader,
+    buildMembershipFlowMessage,
+    getMembershipFlowCancelLabel,
+    getMembershipFlowExpiredMessage,
+    type MembershipFlowStep,
+} from "./interactions/membership-flow"
+import {
     cleanupThread,
     formatTemplate,
     getOutcomeLabel,
@@ -66,13 +74,6 @@ import {
     resolveSupportMemberIds,
     rollbackMembershipApplicationSetup,
 } from "./interactions/shared"
-import {
-    buildMembershipFlowCancelledMessage,
-    buildMembershipFlowHeader,
-    buildMembershipFlowMessage,
-    getMembershipFlowCancelLabel,
-    type MembershipFlowStep,
-} from "./interactions/membership-flow"
 import {
     handleEventButtonInteraction,
     handleCheckSignupInteraction,
@@ -1507,19 +1508,40 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             interaction.guildId,
             interaction.user.id
         ).catch(() => null)
-        if (!draft?.gameId) return
-        const context = await loadMembershipCategoryContext(
-            interaction.guildId,
-            draft.categoryId,
-            draft.gameId
-        )
-        if (!context) return
+        const context = draft?.gameId
+            ? await loadMembershipCategoryContext(
+                  interaction.guildId,
+                  draft.categoryId,
+                  draft.gameId
+              )
+            : null
+        if (!draft?.gameId || !context) {
+            // The platform ID is already saved; tell the applicant why the wizard stopped.
+            const config = (await convex.query(
+                references.getConfigByDiscordGuildId,
+                { guildId: interaction.guildId }
+            )) as { defaultLanguage?: string } | null
+            await interaction
+                .reply({
+                    content: getMembershipFlowExpiredMessage(
+                        config?.defaultLanguage
+                    ),
+                    flags: MessageFlags.Ephemeral,
+                })
+                .catch(() => null)
+            return
+        }
+        // The account step is complete; a category without questions goes straight to review.
+        const nextStep: MembershipFlowStep = context.category.modalQuestions
+            .length
+            ? "questions"
+            : "review"
         await convex.mutation(references.updateMembershipApplicationDraft, {
             secret: env.internalSecret,
             draftId: draftId as never,
             guildId: interaction.guildId,
             creatorId: interaction.user.id,
-            step: "questions",
+            step: nextStep,
         })
         const updatedDraft = await getMembershipFlowDraft(
             draftId,
@@ -1531,7 +1553,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             interaction,
             updatedDraft,
             language,
-            "questions",
+            nextStep,
             context.category,
             true,
             "update"
@@ -1554,8 +1576,14 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 interaction.user.id
             )
         } catch {
+            const config = (await convex.query(
+                references.getConfigByDiscordGuildId,
+                { guildId: interaction.guildId }
+            )) as { defaultLanguage?: string } | null
             await interaction.reply({
-                content: "This application has expired. Please start again.",
+                content: getMembershipFlowExpiredMessage(
+                    config?.defaultLanguage
+                ),
                 flags: MessageFlags.Ephemeral,
             })
             return

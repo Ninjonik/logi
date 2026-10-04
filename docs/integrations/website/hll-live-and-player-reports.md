@@ -44,7 +44,9 @@ kills overall and a leading killer per team; `showPlayers` adds private paginate
 player details with current-round combat scores. Both privacy switches default
 off. HLL has no Wardogs cash field. Empty and unavailable data are explicit.
 The existing durable publication binding edits the same owned message after a
-restart; a missing/uncertain create is reconciled conservatively.
+restart; a missing/uncertain create is reconciled conservatively. A report whose
+staff lookup or parent fetch fails before any thread create returns to pending
+with a short backoff instead of becoming uncertain.
 
 ## Configure Report Player
 

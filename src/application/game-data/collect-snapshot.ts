@@ -1,4 +1,5 @@
 import {
+    CLOCK_SKEW_TOLERANCE_MS,
     observationSchema,
     ProviderError,
     type ClaimedConnection,
@@ -33,8 +34,19 @@ export async function collectSnapshot(
             ports.now
         )
         const parsed = observationSchema.safeParse(read.observation)
-        if (!parsed.success || Date.parse(parsed.data.observedAt) > ports.now())
+        const skewMs = parsed.success
+            ? Date.parse(parsed.data.observedAt) - ports.now()
+            : NaN
+        // Provider clocks may run slightly ahead; clamp instead of failing the poll.
+        if (!parsed.success || skewMs > CLOCK_SKEW_TOLERANCE_MS)
             throw new ProviderError("invalid_response")
+        const observation =
+            skewMs > 0
+                ? {
+                      ...parsed.data,
+                      observedAt: new Date(ports.now()).toISOString(),
+                  }
+                : parsed.data
         const interval =
             read.pollAfterMs === undefined
                 ? 60_000
@@ -42,7 +54,7 @@ export async function collectSnapshot(
         if (!Number.isFinite(interval))
             throw new ProviderError("invalid_response")
         result = {
-            observation: parsed.data,
+            observation,
             etag: read.etag ?? null,
             ...(read.pollAfterMs === undefined
                 ? {}

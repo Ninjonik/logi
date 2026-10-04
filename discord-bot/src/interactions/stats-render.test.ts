@@ -22,7 +22,8 @@ test("stats card escapes player text, preserves zero and unknown KD, and exposes
     const json = JSON.stringify(card),
         embed = card.embeds[0].toJSON()
     assert.match(json, /12/)
-    assert.match(json, /K\/D \*\*—/)
+    // 12 kills without a death is a ratio against one death, not an unknown value.
+    assert.match(json, /K\/D \*\*12/)
     assert.ok(!json.includes("76561198199051397"))
     assert.deepEqual(card.allowedMentions, { parse: [] })
     assert.ok((embed.fields ?? []).every((f) => f.value.length <= 1024))

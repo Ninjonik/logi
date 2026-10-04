@@ -50,7 +50,7 @@ The **System → Game server data** section shows retained history, filters, fac
 - Player identity = platform + platform ID. Renames do not create another player. The latest nonempty observed name is displayed.
 - Default ranking floor is 60 observed minutes, configurable from 0 to 100,000. It does not exclude games from faction totals.
 - Win rate = wins / (wins + losses + draws). Unknown player results are excluded and retained as an explicit count.
-- K/D requires complete kills and deaths for every included player-game and a positive death count; otherwise it is null.
+- K/D requires complete kills and deaths for every included player-game; otherwise it is null. A flawless record divides kills by one death, matching the live scoreboard.
 - Numeric totals sum known values only. Each metric exposes `knownGames`; feed-only values without provider feed capability remain unknown. Cash can be negative.
 - Rankings cover **retained completed games**, not Warcon's session-based/live leaderboard. Their eligibility totals can differ because provider session playtime includes different coverage.
 
