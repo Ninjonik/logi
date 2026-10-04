@@ -116,18 +116,7 @@ export const upsertConfig = mutation({
             .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
             .unique()
 
-        const groups = await ctx.db
-            .query("groups")
-            .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
-            .collect()
-        for (const gameId of GAME_IDS)
-            managedRolePolicy(
-                payload,
-                gameId,
-                groups.flatMap((group) =>
-                    group.discordRoleId ? [group.discordRoleId] : []
-                )
-            )
+        for (const gameId of GAME_IDS) managedRolePolicy(payload, gameId)
 
         if (existing) {
             await ctx.db.patch(existing._id, payload)

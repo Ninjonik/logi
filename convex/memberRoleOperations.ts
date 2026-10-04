@@ -76,17 +76,7 @@ async function policyFor(ctx: Context, guildId: string, gameId: GameId) {
         .query("discordConfigs")
         .withIndex("guildId", (q) => q.eq("guildId", guildId))
         .unique()
-    const groups = await ctx.db
-        .query("groups")
-        .withIndex("guildId", (q) => q.eq("guildId", guildId))
-        .collect()
-    return managedRolePolicy(
-        config ?? {},
-        gameId,
-        groups.flatMap((group) =>
-            group.discordRoleId ? [group.discordRoleId] : []
-        )
-    )
+    return managedRolePolicy(config ?? {}, gameId)
 }
 async function assignmentFor(
     ctx: Context,
