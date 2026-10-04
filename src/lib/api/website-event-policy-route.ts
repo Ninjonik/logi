@@ -8,6 +8,7 @@ import {
 import { readWebsiteCommandBody } from "./website-event-command-route"
 
 type Ports = {
+    origin: string
     session(): Promise<{ sid: string } | null>
     configure(
         sid: string,
@@ -87,7 +88,7 @@ export function websiteEventPolicyHandlers(ports: Ports) {
             try {
                 const url = new URL(request.url)
                 if (
-                    request.headers.get("origin") !== url.origin ||
+                    request.headers.get("origin") !== ports.origin ||
                     request.headers.get("sec-fetch-site") === "cross-site"
                 )
                     return failure("policy_denied", 403)

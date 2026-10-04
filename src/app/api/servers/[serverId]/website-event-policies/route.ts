@@ -1,11 +1,12 @@
 import { websiteEventPolicyHandlers } from "@/lib/api/website-event-policy-route"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
-import { getInternalAuthSecret } from "@/lib/env"
 import { getSession } from "@/lib/auth"
 
 export const runtime = "nodejs"
 const handlers = websiteEventPolicyHandlers({
+    origin: new URL(getSiteUrl()).origin,
     session: getSession,
     configure: (sid, workspaceId, input) =>
         fetchMutation(

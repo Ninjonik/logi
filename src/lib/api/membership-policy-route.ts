@@ -3,6 +3,7 @@ import {
     type MembershipPolicyInput,
 } from "@/domain/membership/policy"
 type Ports = {
+    origin: string
     authorize(serverId: string): Promise<string | null>
     list(guildId: string): Promise<unknown>
     configure(guildId: string, input: MembershipPolicyInput): Promise<unknown>
@@ -46,10 +47,7 @@ export function membershipPolicyHandlers(ports: Ports) {
         },
         POST: async (request: Request, serverId: string) => {
             const guildId = await ports.authorize(serverId)
-            if (
-                !guildId ||
-                request.headers.get("origin") !== new URL(request.url).origin
-            )
+            if (!guildId || request.headers.get("origin") !== ports.origin)
                 return json({ error: "Forbidden." }, 403)
             const parsed = membershipPolicyInputSchema.safeParse(
                 await readPolicyBody(request)

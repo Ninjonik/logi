@@ -5,6 +5,7 @@ import test from "node:test"
 test("game data management is session-admin-only and rejects origin or secret injection", async () => {
     let writes = 0
     const denied = gameDataHandlers({
+        origin: "https://logi.test",
         authorize: async () => null,
         list: async () => {
             throw new Error()
@@ -32,6 +33,7 @@ test("game data management is session-admin-only and rejects origin or secret in
         403
     )
     const allowed = gameDataHandlers({
+        origin: "https://logi.test",
         authorize: async () => "trusted-guild",
         list: async () => [],
         configure: async (guild, value) => {
@@ -72,7 +74,7 @@ test("game data management is session-admin-only and rejects origin or secret in
         403
     )
     const response = await allowed.POST(
-        new Request("https://logi.test/api", {
+        new Request("http://127.0.0.1:3000/api", {
             method: "POST",
             headers: { origin: "https://logi.test" },
             body: valid,
@@ -98,6 +100,7 @@ test("configuration rechecks authority after a streamed request body completes",
         },
     })
     const handlers = gameDataHandlers({
+        origin: "https://logi.test",
         authorize: async () => {
             authorized()
             return allowed ? "guild" : null
@@ -132,6 +135,7 @@ test("configuration stops reading an oversized streamed body before allocating i
     let cancelled = false,
         writes = 0
     const handlers = gameDataHandlers({
+        origin: "https://logi.test",
         authorize: async () => "guild",
         list: async () => [],
         configure: async () => {

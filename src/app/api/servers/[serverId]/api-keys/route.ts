@@ -7,6 +7,7 @@ import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { isApiKeyReadAccess } from "@/domain/api/key-access"
 import { readBoundedJson } from "@/lib/api/request-json"
+import { getSiteUrl } from "@/lib/env"
 
 const json = (body: unknown, status = 200) =>
     Response.json(body, {
@@ -22,7 +23,7 @@ async function managementContext(serverId: string) {
         : null
 }
 const sameOrigin = (request: Request) =>
-    request.headers.get("origin") === new URL(request.url).origin
+    request.headers.get("origin") === new URL(getSiteUrl()).origin
 
 export async function GET(_request: Request, { params }: Context) {
     const context = await managementContext((await params).serverId)

@@ -45,6 +45,7 @@ function createDeps() {
     return {
         calls,
         deps: {
+            origin: "https://logi.test",
             eventSchema,
             canAdminServer: async (serverId: string) => {
                 calls.accessChecks.push(serverId)
@@ -153,9 +154,10 @@ const origin = "https://logi.test"
 /** A same-origin dashboard request; other origins are denied before parsing. */
 function jsonRequest(
     body: unknown,
-    headers: Record<string, string> = { origin }
+    headers: Record<string, string> = { origin },
+    requestOrigin = origin
 ) {
-    return new Request(`${origin}/api/servers/guild-1/events`, {
+    return new Request(`${requestOrigin}/api/servers/guild-1/events`, {
         method: "POST",
         headers: { "content-type": "application/json", ...headers },
         body: JSON.stringify(body),
@@ -563,6 +565,24 @@ test("server event saves forward team selections unchanged and surface team sele
     })
 })
 
+test("Wardogs and HLL registrations accept the configured public origin behind a proxy", async () => {
+    for (const gameId of ["wardogs", "hell_let_loose"]) {
+        const { deps, calls } = createDeps()
+        const response = await createServerEventsPostHandler(deps)(
+            jsonRequest(
+                createEventBody({ gameId }),
+                { origin },
+                "http://127.0.0.1:3000"
+            ),
+            { params: Promise.resolve({ serverId: "guild-1" }) }
+        )
+        assert.equal(response.status, 200)
+        assert.deepEqual(calls.accessChecks, ["guild-1"])
+        assert.equal(calls.savedEvents[0]?.gameId, gameId)
+        assert.equal(calls.savedEvents[0]?.serverId, "guild-1")
+    }
+})
+
 test("event writes require a same-origin request from a current server admin", async () => {
     const { deps, calls } = createDeps()
     const params = { params: Promise.resolve({ serverId: "guild-1" }) }
@@ -585,18 +605,47 @@ test("event writes require a same-origin request from a current server admin", a
     for (const [index, write] of writes.entries()) {
         for (const headers of [
             { origin: "https://attacker.test" },
+            { origin: "http://127.0.0.1:3000" },
+            { origin: "null" },
+            { origin: "https://logi.test.attacker.test" },
+            { origin: "https://logi.test:444" },
+            { origin: "https://logi.test/" },
+            {
+                origin: "https://attacker.test",
+                host: "attacker.test",
+                "x-forwarded-host": "attacker.test",
+                "x-forwarded-proto": "https",
+                forwarded: "host=attacker.test;proto=https",
+            },
             {} as Record<string, string>,
         ]) {
-            const response = await write(jsonRequest(bodies[index], headers))
+            const response = await write(
+                jsonRequest(bodies[index], headers, "http://127.0.0.1:3000")
+            )
             assert.equal(response.status, 403)
             assert.deepEqual(await response.json(), { error: "forbidden" })
         }
+        // Even matching request/Origin values cannot replace configured trust.
+        assert.equal(
+            (
+                await write(
+                    jsonRequest(
+                        bodies[index],
+                        { origin: "https://attacker.test" },
+                        "https://attacker.test"
+                    )
+                )
+            ).status,
+            403
+        )
     }
     assert.equal(calls.accessChecks.length, 0, "origin is checked first")
 
     calls.admin = false
     for (const [index, write] of writes.entries()) {
-        const response = await write(jsonRequest(bodies[index]))
+        const response = await write(
+            jsonRequest(bodies[index], { origin }, "http://127.0.0.1:3000")
+        )
         assert.equal(response.status, 403)
     }
     assert.deepEqual(calls.accessChecks, ["guild-1", "guild-1", "guild-1"])
@@ -608,4 +657,56 @@ test("event writes require a same-origin request from a current server admin", a
     assert.equal(calls.savedEvents.length, 0)
     assert.equal(calls.concluded.length, 0)
     assert.equal(calls.revalidated.length, 0)
+})
+
+test("event updates and actions use the configured public origin behind a proxy", async () => {
+    const { deps, calls } = createDeps()
+    const context = {
+        params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }),
+    }
+    const headers = {
+        origin,
+        host: "internal:3000",
+        "x-forwarded-host": "untrusted.test",
+    }
+    assert.equal(
+        (
+            await createServerEventPatchHandler(deps)(
+                jsonRequest(
+                    createEventBody({ gameId: "wardogs" }),
+                    headers,
+                    "http://internal:3000"
+                ),
+                context
+            )
+        ).status,
+        200
+    )
+    assert.equal(
+        (
+            await createServerEventPostHandler(deps)(
+                jsonRequest(
+                    { action: "conclude" },
+                    headers,
+                    "http://internal:3000"
+                ),
+                context
+            )
+        ).status,
+        200
+    )
+    assert.equal(calls.savedEvents.length, 1)
+    assert.equal(calls.concluded.length, 1)
+
+    deps.origin = "https://another-deployment.test"
+    assert.equal(
+        (
+            await createServerEventPatchHandler(deps)(
+                jsonRequest(createEventBody(), { origin }),
+                context
+            )
+        ).status,
+        403
+    )
+    assert.equal(calls.savedEvents.length, 1)
 })

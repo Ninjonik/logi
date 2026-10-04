@@ -1,11 +1,12 @@
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { gameDataHandlers } from "@/lib/api/game-data-route"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
-import { getInternalAuthSecret } from "@/lib/env"
 
 const handlers = gameDataHandlers({
+    origin: new URL(getSiteUrl()).origin,
     authorize: async (serverId) => {
         const context = await getServerContextUncached(serverId)
         return context?.canAdmin ? context.server.discordId : null

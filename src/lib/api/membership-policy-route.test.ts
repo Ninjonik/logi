@@ -1,7 +1,7 @@
 import { membershipPolicyHandlers } from "./membership-policy-route"
 import assert from "node:assert/strict"
 import test from "node:test"
-test("membership policy management requires an admin session and binds the trusted guild", async () => {
+test("membership policy management behind a proxy requires an admin session and binds the trusted guild", async () => {
     let admin = false,
         writes = 0
     const input = {
@@ -10,6 +10,7 @@ test("membership policy management requires an admin session and binds the trust
         games: [{ gameId: "wardogs", roleIds: ["333333333333333333"] }],
     }
     const handlers = membershipPolicyHandlers({
+        origin: "https://logi.test",
         authorize: async () => (admin ? "trusted-guild" : null),
         list: async () => [],
         configure: async (guild, value) => {
@@ -19,7 +20,7 @@ test("membership policy management requires an admin session and binds the trust
         },
     })
     const request = (body: unknown, origin = "https://logi.test") =>
-        new Request("https://logi.test/api", {
+        new Request("http://127.0.0.1:3000/api", {
             method: "POST",
             headers: { origin, Authorization: "Bearer cannot-admin" },
             body: JSON.stringify(body),

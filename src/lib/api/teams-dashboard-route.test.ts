@@ -163,6 +163,7 @@ function dashboardFixture(limited = false) {
         actor: { subject: "123456789" },
     }
     const handlers = teamsDashboardHandlers({
+        origin: "https://logi.test",
         access: async (serverId) => {
             calls.push({ access: serverId })
             return serverId === "server-1" ? access : null
@@ -188,7 +189,7 @@ function dashboardFixture(limited = false) {
     })
     const origin = "https://logi.test"
     const post = (body: unknown, headers: HeadersInit = { origin }) =>
-        new Request(`${origin}/api/servers/server-1/teams`, {
+        new Request("http://127.0.0.1:3000/api/servers/server-1/teams", {
             method: "POST",
             headers: { "content-type": "application/json", ...headers },
             body: JSON.stringify(body),
@@ -206,7 +207,7 @@ const createBody = {
     },
 }
 
-test("directory reads and writes consume the actor's workspace bucket before Convex", async () => {
+test("directory reads and writes behind a proxy consume the actor's workspace bucket before Convex", async () => {
     const f = dashboardFixture()
     const list = await f.handlers.GET(f.get("game=wardogs"), "server-1")
     assert.equal(list.status, 200)

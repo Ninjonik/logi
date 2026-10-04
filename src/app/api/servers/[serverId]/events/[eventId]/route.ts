@@ -23,6 +23,7 @@ import { importEventMatchResults } from "@/lib/server-match-results"
 import { getUsersByIds } from "@/lib/server-user-management"
 import { getClanDiscordMessages } from "@/lib/clan-language"
 import { eventSchema } from "@/lib/validation/event"
+import { getSiteUrl } from "@/lib/env"
 
 /** Current server admin with a live dashboard session. */
 async function canAdminServer(serverId: string) {
@@ -34,6 +35,7 @@ async function canAdminServer(serverId: string) {
 }
 
 const patchHandler = createServerEventPatchHandler({
+    origin: new URL(getSiteUrl()).origin,
     eventSchema,
     canAdminServer,
     saveServerEvent,
@@ -52,6 +54,7 @@ const patchHandler = createServerEventPatchHandler({
 })
 
 const postHandler = createServerEventPostHandler({
+    origin: new URL(getSiteUrl()).origin,
     eventSchema,
     canAdminServer,
     saveServerEvent,
