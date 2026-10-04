@@ -1,0 +1,19 @@
+{
+    "data": {
+        "revision": "41",
+        "guildId": "910000000000000001",
+        "gameId": "hell_let_loose",
+        "resource": "teams",
+        "id": "kh7synthetic0hll0team00000000a1",
+        "operation": "upsert",
+        "data": {
+            "id": "kh7synthetic0hll0team00000000a1",
+            "gameId": "hell_let_loose",
+            "name": "Synthetic Armoured Division",
+            "shortCode": "SAD",
+            "logoUrl": "https://logi.example/api/image-assets/0123456789abcdef0123456789abcdef.png",
+            "revision": 3,
+            "updatedAt": "2026-10-03T10:00:00.000Z"
+        }
+    }
+}

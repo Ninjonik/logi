@@ -120,6 +120,12 @@ export const membershipSettingsValidator = v.object({
 
 export const calendarCategoriesValidator = v.array(v.string())
 
+export const statsSettingsValidator = v.object({
+    enabled: v.boolean(),
+    games: v.object({ hell_let_loose: v.boolean(), wardogs: v.boolean() }),
+    defaultShareChannelId: v.optional(v.string()),
+})
+
 export const playerStatsServerValidator = v.object({
     token: v.string(),
     url: v.string(),

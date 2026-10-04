@@ -14,7 +14,6 @@ import { buildDiscordMessageUrl } from "../../../src/lib/discord"
 
 import { reportClanDiscordError } from "../error-reporting"
 import type { EventInteractionContext } from "../types"
-import { resolveMembershipRoleIds } from "./rules"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
@@ -213,96 +212,6 @@ async function sendPlatformIdDmWithCopy(
     }
 }
 
-export async function syncMembershipRoles(
-    guild: Guild,
-    userId: string,
-    config: EventInteractionContext["config"],
-    beforeType?: "member" | "mercenary",
-    beforeStatus?: "pending" | "recruit" | "active",
-    beforeCategoryId?: string,
-    afterType?: "member" | "mercenary",
-    afterStatus?: "pending" | "recruit" | "active",
-    afterCategoryId?: string
-) {
-    const member = await guild.members.fetch(userId).catch(() => null)
-    if (!member) {
-        logWarn(
-            "interaction",
-            "Skipping membership role sync because member could not be fetched",
-            {
-                guildId: guild.id,
-                userId,
-            }
-        )
-        return
-    }
-
-    const beforeRoles = new Set(
-        resolveMembershipRoleIds(
-            config,
-            beforeType,
-            beforeStatus,
-            beforeCategoryId
-        )
-    )
-    const afterRoles = new Set(
-        resolveMembershipRoleIds(
-            config,
-            afterType,
-            afterStatus,
-            afterCategoryId
-        )
-    )
-
-    for (const roleId of afterRoles) {
-        if (!beforeRoles.has(roleId)) {
-            await member.roles.add(roleId).catch((error) => {
-                logWarn("interaction", "Failed to add membership role", {
-                    guildId: guild.id,
-                    userId,
-                    roleId,
-                    error,
-                })
-                void reportClanDiscordError({
-                    client: guild.client,
-                    guildId: guild.id,
-                    error,
-                    action: "Add a membership role to a user",
-                    location: "Member roles",
-                    scope: "interaction",
-                    target: `<@${userId}>`,
-                    details: { roleId },
-                })
-                return null
-            })
-        }
-    }
-
-    for (const roleId of beforeRoles) {
-        if (!afterRoles.has(roleId)) {
-            await member.roles.remove(roleId).catch((error) => {
-                logWarn("interaction", "Failed to remove membership role", {
-                    guildId: guild.id,
-                    userId,
-                    roleId,
-                    error,
-                })
-                void reportClanDiscordError({
-                    client: guild.client,
-                    guildId: guild.id,
-                    error,
-                    action: "Remove a membership role from a user",
-                    location: "Member roles",
-                    scope: "interaction",
-                    target: `<@${userId}>`,
-                    details: { roleId },
-                })
-                return null
-            })
-        }
-    }
-}
-
 export async function cleanupThread(thread: ThreadChannel, reason: string) {
     await thread.delete(reason).catch(async (error) => {
         logWarn("interaction", "Failed to delete thread during cleanup", {
@@ -338,19 +247,13 @@ export async function rollbackMembershipApplicationSetup(input: {
     assignmentStatus: "pending" | "recruit" | "active"
     membershipCategoryId: string
 }) {
-    const {
-        guild,
-        userId,
-        config,
-        assignmentId,
-        assignmentType,
-        assignmentStatus,
-        membershipCategoryId,
-    } = input
+    const { guild, userId, assignmentId } = input
     await convex
         .mutation(references.removeAssignment, {
             secret: env.internalSecret,
             assignmentId: assignmentId as never,
+            roleActor: { userId, kind: "rollback" },
+            roleGuildId: guild.id,
         })
         .catch((error) => {
             logWarn(
@@ -372,16 +275,4 @@ export async function rollbackMembershipApplicationSetup(input: {
         userId,
         assignmentId,
     })
-
-    await syncMembershipRoles(
-        guild,
-        userId,
-        config,
-        assignmentType,
-        assignmentStatus,
-        membershipCategoryId,
-        undefined,
-        undefined,
-        undefined
-    )
 }

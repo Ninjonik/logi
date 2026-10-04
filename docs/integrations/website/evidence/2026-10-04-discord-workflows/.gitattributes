@@ -1,0 +1,4 @@
+# Preserve the recorded bytes and digests of sealed artifacts and test logs.
+security/** -text
+security/**/*.log whitespace=-blank-at-eol,-blank-at-eof
+security-*.txt -text whitespace=-blank-at-eol,-blank-at-eof

@@ -1,0 +1,451 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "fc5eb8696942adedbd5009d3e47ccca98e98b868",
+  "sourceVerification": "Tests/runtime ran against working-tree source bytes subsequently committed at this revision. Later commits add documentation/evidence only.",
+  "boundary": {
+    "localDatabaseOnly": true,
+    "realDiscord": true,
+    "syntheticGameData": true,
+    "productionChanged": false,
+    "externalProvidersQueried": false
+  },
+  "tests": {
+    "command": "npm run test",
+    "passed": 800,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 8674.0345,
+    "environment": ".github/workflows/verify.yml synthetic CI values"
+  },
+  "typecheck": {
+    "command": "npm run typecheck",
+    "passed": true
+  },
+  "build": {
+    "command": "next build --webpack",
+    "passed": true,
+    "durationMs": 32112,
+    "cleanCopy": true,
+    "privateFixtureCodeExcluded": true,
+    "existingWarnings": [
+      "system-log module.createRequire",
+      "Nextra metadata cannot resolve git history in clean copy"
+    ]
+  },
+  "generatedContracts": {
+    "openapi": true,
+    "convexApiModules": 82,
+    "trackedDiff": false
+  },
+  "formatting": {
+    "changedTypeScriptPrettier": true,
+    "diffCheck": true
+  },
+  "changedTypeScriptLint": {
+    "errors": 0,
+    "existingWarnings": 5
+  },
+  "deployment": {
+    "target": "http://127.0.0.1:32290",
+    "passed": true,
+    "durationMs": 1700,
+    "production": false,
+    "privateFixtureFunctions": "Included only in isolated backend acceptance copy; excluded from committed source and clean build."
+  },
+  "discord": {
+    "first": {
+      "evidenceRevision": "fc5eb8696942adedbd5009d3e47ccca98e98b868",
+      "localOnly": true,
+      "realDiscord": true,
+      "syntheticGameData": true,
+      "panelId": "v17brtxvs28d5vwwnmfff8rkjd8fj49e",
+      "messageId": "1555919877573705860",
+      "channelId": "1554615183106904074",
+      "guildId": "1191044555844370492",
+      "score": 0,
+      "attachmentId": "1555938699022442626",
+      "checks": [
+        {
+          "name": "anonymous-management-denied",
+          "passed": true
+        },
+        {
+          "name": "cross-origin-write-denied",
+          "passed": true
+        },
+        {
+          "name": "actor-backed-channel-verified-save",
+          "passed": true
+        },
+        {
+          "name": "selected-test-bot",
+          "passed": true
+        },
+        {
+          "name": "worker-persisted-message",
+          "passed": true
+        },
+        {
+          "name": "worker-completed-current-delivery",
+          "passed": true
+        },
+        {
+          "name": "native-components-v2",
+          "passed": true
+        },
+        {
+          "name": "current-count-and-score",
+          "passed": true
+        },
+        {
+          "name": "three-application-faction-icons",
+          "passed": true
+        },
+        {
+          "name": "private-player-button",
+          "passed": true
+        },
+        {
+          "name": "opt-in-public-leaders",
+          "passed": true
+        },
+        {
+          "name": "local-catalog-artwork-attached",
+          "passed": true
+        },
+        {
+          "name": "no-platform-id-or-mention",
+          "passed": true
+        }
+      ]
+    },
+    "restart": {
+      "evidenceRevision": "fc5eb8696942adedbd5009d3e47ccca98e98b868",
+      "localOnly": true,
+      "realDiscord": true,
+      "syntheticGameData": true,
+      "panelId": "v17brtxvs28d5vwwnmfff8rkjd8fj49e",
+      "messageId": "1555919877573705860",
+      "channelId": "1554615183106904074",
+      "guildId": "1191044555844370492",
+      "score": 23,
+      "attachmentId": "1555938699022442626",
+      "checks": [
+        {
+          "name": "anonymous-management-denied",
+          "passed": true
+        },
+        {
+          "name": "cross-origin-write-denied",
+          "passed": true
+        },
+        {
+          "name": "actor-backed-channel-verified-save",
+          "passed": true
+        },
+        {
+          "name": "selected-test-bot",
+          "passed": true
+        },
+        {
+          "name": "worker-persisted-message",
+          "passed": true
+        },
+        {
+          "name": "worker-completed-current-delivery",
+          "passed": true
+        },
+        {
+          "name": "native-components-v2",
+          "passed": true
+        },
+        {
+          "name": "current-count-and-score",
+          "passed": true
+        },
+        {
+          "name": "three-application-faction-icons",
+          "passed": true
+        },
+        {
+          "name": "private-player-button",
+          "passed": true
+        },
+        {
+          "name": "opt-in-public-leaders",
+          "passed": true
+        },
+        {
+          "name": "local-catalog-artwork-attached",
+          "passed": true
+        },
+        {
+          "name": "no-platform-id-or-mention",
+          "passed": true
+        },
+        {
+          "name": "restart-edited-original-message",
+          "passed": true
+        },
+        {
+          "name": "restart-retained-artwork",
+          "passed": true
+        }
+      ]
+    },
+    "results": {
+      "evidenceRevision": "fc5eb8696942adedbd5009d3e47ccca98e98b868",
+      "localOnly": true,
+      "realDiscord": true,
+      "syntheticGameData": true,
+      "checks": [
+        {
+          "name": "selected-test-bot",
+          "passed": true
+        },
+        {
+          "name": "confirmed-acknowledged-current-run",
+          "passed": true
+        },
+        {
+          "name": "confirmed-native-v2",
+          "passed": true
+        },
+        {
+          "name": "confirmed-version-visible",
+          "passed": true
+        },
+        {
+          "name": "confirmed-no-platform-identifiers",
+          "passed": true
+        },
+        {
+          "name": "corrected-acknowledged-current-run",
+          "passed": true
+        },
+        {
+          "name": "corrected-native-v2",
+          "passed": true
+        },
+        {
+          "name": "corrected-version-visible",
+          "passed": true
+        },
+        {
+          "name": "corrected-no-platform-identifiers",
+          "passed": true
+        },
+        {
+          "name": "correction-edits-original-id",
+          "passed": true
+        },
+        {
+          "name": "provisional-acknowledged-current-run",
+          "passed": true
+        },
+        {
+          "name": "withdrawn-binding-cleared",
+          "passed": true
+        },
+        {
+          "name": "withdrawn-owned-message-removed",
+          "passed": true
+        }
+      ],
+      "originalMessageId": "1555940132702658674"
+    },
+    "knownDeletion": {
+      "evidenceRevision": "154704af916dca5c4b6ca24439c449460bd029db",
+      "localOnly": true,
+      "realDiscord": true,
+      "syntheticGameData": true,
+      "panelId": "v17brtxvs28d5vwwnmfff8rkjd8fj49e",
+      "messageId": "1555919877573705860",
+      "channelId": "1554615183106904074",
+      "guildId": "1191044555844370492",
+      "score": 0,
+      "checks": [
+        {
+          "name": "anonymous-management-denied",
+          "passed": true
+        },
+        {
+          "name": "cross-origin-write-denied",
+          "passed": true
+        },
+        {
+          "name": "actor-backed-channel-verified-save",
+          "passed": true
+        },
+        {
+          "name": "selected-test-bot",
+          "passed": true
+        },
+        {
+          "name": "delete-only-owned-test-message",
+          "passed": true
+        },
+        {
+          "name": "worker-persisted-message",
+          "passed": true
+        },
+        {
+          "name": "native-components-v2",
+          "passed": true
+        },
+        {
+          "name": "current-count-and-score",
+          "passed": true
+        },
+        {
+          "name": "three-application-faction-icons",
+          "passed": true
+        },
+        {
+          "name": "private-player-button",
+          "passed": true
+        },
+        {
+          "name": "no-platform-id-or-mention",
+          "passed": true
+        },
+        {
+          "name": "confirmed-deleted-message-replaced",
+          "passed": true
+        }
+      ]
+    },
+    "interactions": [
+      {
+        "realDiscord": true,
+        "syntheticGameData": true,
+        "localOnly": true,
+        "at": "2026-10-03T13:51:19.547Z",
+        "privateReply": true,
+        "showsSyntheticPlayer": false,
+        "noPlatformIds": true,
+        "showsFreshness": false,
+        "page": null,
+        "realUserSessionInteraction": true,
+        "operatedBy": "Assistant through owner-authorized logged-in Discord web session"
+      },
+      {
+        "realDiscord": true,
+        "syntheticGameData": true,
+        "localOnly": true,
+        "at": "2026-10-03T13:51:57.438Z",
+        "privateReply": true,
+        "showsSyntheticPlayer": true,
+        "noPlatformIds": true,
+        "showsFreshness": true,
+        "page": "1/3",
+        "realUserSessionInteraction": true,
+        "operatedBy": "Assistant through owner-authorized logged-in Discord web session"
+      },
+      {
+        "realDiscord": true,
+        "syntheticGameData": true,
+        "localOnly": true,
+        "at": "2026-10-03T13:52:21.060Z",
+        "privateReply": true,
+        "showsSyntheticPlayer": true,
+        "noPlatformIds": true,
+        "showsFreshness": true,
+        "page": "2/3",
+        "realUserSessionInteraction": true,
+        "operatedBy": "Assistant through owner-authorized logged-in Discord web session"
+      },
+      {
+        "realDiscord": true,
+        "syntheticGameData": true,
+        "localOnly": true,
+        "at": "2026-10-03T13:56:31.876Z",
+        "privateReply": true,
+        "showsSyntheticPlayer": true,
+        "noPlatformIds": true,
+        "showsFreshness": true,
+        "page": "3/3",
+        "realUserSessionInteraction": true,
+        "operatedBy": "Assistant through owner-authorized logged-in Discord web session"
+      },
+      {
+        "realDiscord": true,
+        "syntheticGameData": true,
+        "localOnly": true,
+        "at": "2026-10-03T13:56:50.180Z",
+        "privateReply": true,
+        "showsSyntheticPlayer": true,
+        "noPlatformIds": true,
+        "showsFreshness": true,
+        "page": "2/3",
+        "realUserSessionInteraction": true,
+        "operatedBy": "Assistant through owner-authorized logged-in Discord web session"
+      }
+    ],
+    "oldControlDenial": "Retained unversioned control returned generic private rejection with no player data. Moved/reconfigured/revoked permission cases additionally covered offline.",
+    "emoji": {
+      "applicationId": "1469479733694562416",
+      "emoji": {
+        "logi_valkyra_b7775e08": "1555911040653590670",
+        "logi_manticore_1e9e0bd4": "1555911041676873859",
+        "logi_lonestar_4d040007": "1555911042603810827"
+      },
+      "idempotentRerun": true
+    },
+    "attachment": "Map thumbnail visibly loaded; update/restart retained both messageId and nested component attachmentId."
+  },
+  "dashboard": {
+    "savedSourceAndChannelReadBack": true,
+    "privatePlayersChecked": true,
+    "publicLeadersChecked": true,
+    "artworkChecked": true,
+    "refreshSeconds": 30,
+    "managementWrites": "Authorized isolated local fixture administrator, with actual test Discord channel verification."
+  },
+  "screenshots": [
+    {
+      "name": "dashboard.jpg",
+      "sha256": "774cedf112e94d80c15e68c6cb7826e61064fa43aa5f12f9a4d485bc4799c5e8",
+      "genuineScreenshot": true,
+      "discordCrop": false
+    },
+    {
+      "name": "discord-scoreboard.jpg",
+      "sha256": "27e5b6692c82b4e6f37632dc07e2697ce9add5710a2a2ea7233d8407bce0e360",
+      "genuineScreenshot": true,
+      "discordCrop": true
+    },
+    {
+      "name": "discord-private-players.jpg",
+      "sha256": "aead6d2ad2c3eea12cc41d1615d93db524b1839945cb82b5ebc2d36232091781",
+      "genuineScreenshot": true,
+      "discordCrop": true
+    }
+  ],
+  "logDigests": [
+    {
+      "label": "full-test-log",
+      "sha256": "a5391d2b0da35ad92b5ff98f471481b334b322a74340a5191e876f0eb14d7b41",
+      "retainedPrivately": true
+    },
+    {
+      "label": "production-build-log",
+      "sha256": "0127ef42e267f6c3d1ec6a19824071cfa068212e48db5ca61ee7d5c50d2f1b2f",
+      "retainedPrivately": true
+    },
+    {
+      "label": "isolated-deploy-log",
+      "sha256": "681d635d696f2182e861441e33145e5937284813389453858b8fee1afe8c874c",
+      "retainedPrivately": true
+    }
+  ],
+  "limitations": [
+    "No production activation",
+    "No real provider acceptance for this increment",
+    "No native desktop/mobile client acceptance",
+    "No real Discord rate-limit injection",
+    "Known deletion run is at the initial revision",
+    "Full repository lint remains failing; see scoped lint-comparison.json",
+    "Sealed security scan ends at e281495; separate focused repair verification ends at this source revision"
+  ]
+}

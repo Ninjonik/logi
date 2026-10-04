@@ -6,6 +6,7 @@ import {
     savePlayerPlatformId,
     saveServerUserAssignment,
 } from "@/lib/server-user-management"
+import { getServerContextUncached as getServerContext } from "@/lib/read-models/server-context"
 import {
     getUserSafeErrorMessage,
     logRouteError,
@@ -15,7 +16,6 @@ import { userAssignmentSchema } from "@/lib/validation/user-assignment"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { getServerUserAssignment } from "@/lib/server-user-management"
 import { syncDiscordRolesForAssignment } from "@/lib/discord"
-import { getServerContext } from "@/lib/server-context"
 
 function getAssignmentErrorCode(error: unknown) {
     if (!(error instanceof Error)) return "UNKNOWN"
@@ -65,6 +65,10 @@ export async function PATCH(
             serverId,
             ...normalizedBody,
             membershipCategoryId: effectiveMembershipCategoryId,
+            roleActor: {
+                userId: serverContext.user.discordId,
+                kind: "dashboard",
+            },
         })
         await savePlayerPlatformId({
             userId: normalizedBody.userId,
@@ -135,7 +139,13 @@ export async function DELETE(
         const effectiveMembershipCategoryId =
             existingAssignment?.membershipCategoryId ??
             linkedApplication?.categoryId
-        await deleteServerUserAssignment(assignmentId)
+        await deleteServerUserAssignment(assignmentId, {
+            roleActor: {
+                userId: serverContext.user.discordId,
+                kind: "dashboard",
+            },
+            roleGuildId: serverContext.server.discordId,
+        })
         if (existingAssignment) {
             await syncRolesSafely({
                 serverId,

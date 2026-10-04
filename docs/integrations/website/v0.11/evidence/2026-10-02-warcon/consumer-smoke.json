@@ -1,0 +1,110 @@
+{
+  "mode": "GET-only Logi consumer; no deployment or provider mutations",
+  "proof": [
+    {
+      "view": "live",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:10:58.516Z"
+    },
+    {
+      "view": "analytics",
+      "range": "24h",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:10:58.769Z"
+    },
+    {
+      "view": "analytics",
+      "range": "7d",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:10:58.991Z"
+    },
+    {
+      "view": "analytics",
+      "range": "30d",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:10:59.298Z"
+    },
+    {
+      "view": "cash",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:10:59.510Z"
+    },
+    {
+      "view": "leaderboard",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:10:59.739Z"
+    },
+    {
+      "view": "players",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:10:59.946Z"
+    },
+    {
+      "view": "kills",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:11:00.148Z"
+    },
+    {
+      "view": "rotation",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:11:00.385Z"
+    },
+    {
+      "view": "health",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:11:00.693Z"
+    },
+    {
+      "view": "capabilities",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:11:00.949Z"
+    },
+    {
+      "view": "catalog",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:11:01.209Z"
+    },
+    {
+      "view": "experiences",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:11:01.489Z"
+    },
+    {
+      "view": "alternators",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:11:01.738Z"
+    },
+    {
+      "view": "matches",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:11:01.932Z"
+    },
+    {
+      "view": "match",
+      "ok": true,
+      "available": false,
+      "at": "2026-10-02T18:11:02.135Z"
+    },
+    {
+      "view": "career",
+      "ok": true,
+      "available": true,
+      "at": "2026-10-02T18:11:02.427Z"
+    }
+  ]
+}

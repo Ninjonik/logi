@@ -1,4 +1,390 @@
 export const csMessages = {
+    gameHistory: {
+        title: "Historie her Warconu",
+        description:
+            "Dokončené serverové hry uchované v Logim. Frakce jsou herní strany, nikoli klanové týmy.",
+        load: "Načíst / obnovit historii",
+        retentionTitle: "Uchovávání historie",
+        retentionDescription:
+            "Zvolte, jak dlouho zůstanou uložené hry serveru v tomto pracovním prostoru. Hry ukončené před tímto oknem se v nočním úklidu trvale smažou a revize historie se posune, takže weby přepočítají své součty.",
+        retentionWindow: "Uchovávat uložené hry po dobu",
+        retentionIndefinite: "Neomezeně (výchozí)",
+        retentionDays: "{days} dní",
+        retentionSave: "Uložit uchovávání",
+        retentionSaving: "Ukládání…",
+        retentionSaved:
+            "Uchovávání uloženo. Prošlé hry se odstraňují na pozadí.",
+        retentionError:
+            "Okno uchovávání nelze načíst nebo uložit. Obnovte stránku a zkuste to znovu.",
+        loading: "Načítám celé období…",
+        error: "Historii se nepodařilo načíst celou. Zkus to znovu nebo vyber kratší období. Částečný žebříček se nezobrazuje.",
+        period: "Období",
+        all: "Všechny uložené hry",
+        week: "7 dní",
+        month: "30 dní",
+        quarter: "90 dní",
+        map: "Mapa (přesný název, nepovinné)",
+        source: "Server",
+        allSources: "Všechny uložené servery",
+        minimum: "Minimum minut pro žebříček",
+        games: "Hry",
+        decided: "S vítězem",
+        draw: "Remízy",
+        no_result: "Bez výsledku",
+        unknown: "Neznámé",
+        feed: "Hry s combat feedem",
+        faction: "Frakce",
+        factions: "Výhry frakcí",
+        share: "Podíl rozhodnutých her",
+        players: "Žebříček hráčů",
+        coverage: "Pokrytí",
+        lastCollected: "Poslední import hry v tomto workspace",
+        empty: "V tomto období zatím nejsou uložené dokončené hry. Zapni sběr historie u zdroje Warconu výše.",
+        player: "Hráč",
+        matches: "Hry",
+        wins: "Výhry",
+        losses: "Prohry",
+        kills: "Kills",
+        deaths: "Deaths",
+        cash: "Změna cash",
+        winRate: "Úspěšnost",
+        kd: "K/D",
+        sort: "Řadit podle",
+        history: "Uložené hry",
+        previous: "Předchozí",
+        next: "Další",
+        details: "Detaily hráčů",
+        ended: "Konec",
+        unavailable: "Neznámé",
+        ratioHelp:
+            "K/D vyžaduje úplné kills/deaths a alespoň jedno úmrtí. Úspěšnost nezapočítává neznámé výsledky. Součty zahrnují pouze známé hodnoty; x/y uvádí pokrytí statistiky.",
+        retentionHelp:
+            "Přehled zahrnuje pouze úspěšně převzaté dokončené hry. Chybějící historie poskytovatele ani probíhající hry nejsou zahrnuty. Čas sběru nepotvrzuje převzetí všech her poskytovatele.",
+    },
+    leagueMatch: {
+        title: "Zápas Wardogs League",
+        description:
+            "Vlož veřejný odkaz na zápas a zobraz termín, týmy a přípravu. Načtením odkazu nevznikne událost.",
+        url: "Veřejná URL zápasu",
+        load: "Načíst zápas",
+        loading: "Načítání…",
+        unknown: "Není k dispozici",
+        error: "Zápas se nepodařilo načíst. Zkontroluj veřejnou URL Wardogs League a zkus to znovu.",
+        unavailable:
+            "Zdroj je dočasně nedostupný. Uložený zápas není k dispozici.",
+        nextCheck: "Další obnovení od",
+        source: "Otevřít zdrojový zápas",
+        stale: "Uložený zápas už nemusí být aktuální. Až bude povolené obnovení, načti odkaz znovu.",
+        fetched: "Načteno",
+        scheduled: "Termín zápasu (Praha)",
+        map: "Mapa",
+        zone: "Zóna",
+        lighting: "Osvětlení",
+        hosting: "Hostování",
+        moderator: "Moderátor",
+        ready: "Ready check",
+        points: "Pravidlo bodování",
+        membersNote:
+            "Zobrazené členství v týmu, nikoli soupiska nebo počet účastníků zápasu.",
+        team: "Tým",
+        faction: "Frakce",
+        nations: "Národy",
+        members: "Členové týmu",
+        teamsUnavailable: "Zdroj neposkytl podrobnosti o týmech.",
+        vote: "Hlasování o mapě",
+        closes: "Uzávěrka hlasování (Praha)",
+        rules: "Pravidla",
+        progress: "Průběh zápasu",
+        resultsNote:
+            "Výsledky a umístění se neimportují. Pravidlo bodování není udělený počet bodů.",
+        partial:
+            "Některé údaje nebo tento stav zápasu se nepodařilo ověřit. Zkontroluj zdrojovou stránku.",
+        age: "Stáří záznamu: {seconds} s",
+        timezone:
+            "Časy jsou v Europe/Prague. Čerstvá data se načítají nejdříve po pěti minutách.",
+        done: "Hotovo",
+        current: "Aktuální krok",
+        not_started: "Nezahájeno",
+    },
+    membershipIntegration: {
+        title: "Integrace členství Discordu",
+        description:
+            "Vyberte, které role Discordu smí jednotlivé integrace číst. Přístup vyžaduje také klíč pouze pro čtení s oprávněním ke členství Discordu. O využití těchto údajů rozhoduje web.",
+        enabled: "Povolit tomuto klíči ověřování členství",
+        roles: "Povolená ID rolí",
+        rolesHelp:
+            "Zadejte jedno ID role na řádek. Prázdný seznam zpřístupní jen přítomnost a zařazení v Logi. Změny použijete uložením.",
+        empty: "Vytvořte API klíč pouze pro čtení s oprávněním ke členství Discordu a obnovte seznam.",
+        loading: "Načítání…",
+        refresh: "Obnovit",
+        saving: "Ukládání…",
+        save: "Uložit pravidla",
+        saved: "Pravidla přístupu ke členství byla uložena.",
+        error: "Pravidla členství nelze načíst nebo uložit. Obnovte seznam a zkuste to znovu.",
+        invalid: "Použijte platná ID rolí Discordu, nejvýše 100 rolí na hru.",
+    },
+    websiteEventPolicies: {
+        title: "Příkazy webu pro události",
+        description:
+            "Umožněte připojenému webu vytvářet, upravovat nebo rušit události přes jeho servisní klíč. Pravidlo spojuje jednu registrovanou aplikaci jednotného přihlášení s jedním omezeným API klíčem a pro každou hru uvádí role Discordu, jejichž členové smí příkazy používat.",
+        application: "Aplikace jednotného přihlášení",
+        applicationPlaceholder: "Vyberte aplikaci",
+        noApplications:
+            "Nejdřív zaregistrujte aplikaci jednotného přihlášení. Pravidlo váže příkazy webu na tuto aplikaci.",
+        noKeys: "Vytvořte omezený API klíč pro backend webu a obnovte seznam. Starší neomezené klíče pravidlo pro příkazy nést nemohou.",
+        enabled: "Povolit tomuto klíči příkazy pro události",
+        roles: "Povolená ID rolí",
+        rolesHelp:
+            "Zadejte jedno ID role Discordu na řádek. Hra bez rolí zůstává jen pro čtení. Uložení zapnutého pravidla udělí zápis příkazů pro uvedené hry; vypnutí oprávnění odebere.",
+        granted: "Zápis udělen pro: {games}",
+        notGranted: "Zápis příkazů pro události není udělen.",
+        loading: "Načítání…",
+        refresh: "Obnovit",
+        saving: "Ukládání…",
+        save: "Uložit pravidlo",
+        saved: "Pravidlo příkazů pro události bylo uloženo.",
+        error: "Pravidlo příkazů pro události nelze načíst nebo uložit. Obnovte seznam a zkuste to znovu.",
+        denied: "Pravidlo bylo odmítnuto. Použijte platný omezený klíč tohoto pracovního prostoru a aplikaci v něm registrovanou.",
+        invalid:
+            "Použijte platná ID rolí Discordu, nejvýše 64 na hru, pro hry zapnuté v tomto pracovním prostoru.",
+    },
+    publicPanelAppearance: {
+        title: "Vzhled",
+        description:
+            "Rozvržení, barva zvýraznění, banner a emoji frakcí tohoto panelu. Panely uložené před zavedením těchto nastavení si ponechají dosavadní vzhled, dokud je zde nezměníš.",
+        mapArtwork: "Obrázek mapy",
+        layout: "Rozvržení",
+        showMap: "Zobrazit název a obrázek mapy",
+        showScoreboard: "Zobrazit skóre",
+        showPlayerCount: "Zobrazit počet hráčů",
+        compact: "Kompaktní záhlaví",
+        layoutHelp:
+            "Kompaktní režim používá dvouřádkové záhlaví, skóre na jednom řádku a žádné oddělovače. Obrázek mapy navíc vyžaduje zapnutý Obrázek mapy.",
+        resultsLayoutHelp:
+            "Oznámení výsledků používají nastavení mapy a kompaktního režimu; skóre a počet hráčů platí pro živé panely.",
+        accentColor: "Barva zvýraznění",
+        accentColorPicker: "Vybrat barvu zvýraznění",
+        accentColorPlaceholder: "#77B255",
+        accentColorHelp:
+            "#RRGGBB. Nahrazuje zelenou barvu živého panelu; zastaralé nebo pozastavené panely si ponechají oranžové varování. Prázdné pole použije výchozí barvu.",
+        accentColorReset: "Výchozí barva",
+        accentColorInvalid: "Zadej barvu ve formátu #RRGGBB.",
+        banner: "Banner",
+        bannerHelp:
+            "PNG, JPEG nebo WebP do 2 MiB a 4096 × 4096 px. Logi jej převede na WebP o velikosti nejvýše 1920 × 1080 px. Banner nahrazuje náhled mapy.",
+        bannerUpload: "Nahrát banner",
+        bannerUploading: "Nahrávám…",
+        bannerRemove: "Odebrat banner",
+        bannerPreview: "Náhled banneru",
+        bannerNone:
+            "Bez banneru. Panel zobrazí obrázek mapy, pokud je zapnutý.",
+        bannerUploaded: "Banner je nahraný. Ulož panel, aby se zveřejnil.",
+        bannerSelected: "Banner je vybraný. Ulož panel, aby se zveřejnil.",
+        bannerLibrary: "Nahrané bannery",
+        bannerLibraryShow: "Vybrat nahraný banner",
+        bannerLibraryHide: "Skrýt nahrané bannery",
+        bannerLibraryLoading: "Načítám nahrané bannery…",
+        bannerLibraryEmpty:
+            "V tomto workspace zatím nikdo nenahrál žádný banner.",
+        bannerLibraryError: "Nahrané bannery nelze načíst. Zkus to později.",
+        bannerLibraryItem: "Použít banner {width} × {height} px nahraný {date}",
+        factionEmoji: "Emoji frakcí",
+        factionEmojiHelp:
+            "Jedno Unicode emoji, nebo vlastní Discord emoji ve tvaru <:nazev:id> (animované: <a:nazev:id>). Vlastní emoji musí patřit serveru, na kterém je bot, nebo aplikaci bota. Prázdné pole ponechá výchozí hodnotu zobrazenou jako nápověda.",
+        factionEmojiInvalid: "Zadej jedno emoji nebo <:nazev:id>.",
+        noDefaultEmoji: "Žádné",
+        factions: {
+            allies: "Spojenci",
+            axis: "Osa",
+            valkyra: "Valkyra",
+            manticore: "Manticore",
+            lonestar: "Lonestar",
+        },
+        invalid: "Před uložením oprav zvýrazněná nastavení vzhledu.",
+        errors: {
+            invalid_kind: "Tento typ obrázku nelze použít jako banner.",
+            unsupported_type: "Použij obrázek PNG, JPEG nebo WebP.",
+            type_mismatch:
+                "Obsah souboru neodpovídá jeho typu. Exportuj jej znovu jako PNG, JPEG nebo WebP.",
+            bad_dimensions: "Obrázek smí mít nejvýše 4096 × 4096 pixelů.",
+            animated: "Animované obrázky nejsou podporované.",
+            undecodable:
+                "Obrázek nelze přečíst. Exportuj jej znovu a zkus to znovu.",
+            invalid_asset:
+                "Obrázek se nepodařilo uložit. Zkus nahrání zopakovat.",
+            forbidden: "Bannery mohou nahrávat jen správci workspace.",
+            too_large: "Obrázek je větší než 2 MiB.",
+            upload_limited:
+                "Příliš mnoho nahrání. Zkus to znovu za {seconds} s.",
+            unavailable: "Nahrávání obrázků není dostupné. Zkus to později.",
+            asset_unavailable:
+                "Banner už pro tento workspace není dostupný. Nahraj jej znovu nebo jej odeber a pak ulož.",
+        },
+    },
+    gameData: {
+        sourcesTitle: "Zdroje poskytovatelů",
+        sourcesDescription:
+            "Zaregistrujte herní servery, ze kterých tento pracovní prostor sbírá data. Zdroj uvádí poskytovatele, jeho HTTPS adresu, ID serveru u poskytovatele a proměnnou prostředí Convexu, která drží token. Tokeny se tu nikdy nezadávají ani nezobrazují: operátor je uloží v Convexu a vy jen odkážete na název proměnné. Token obměníte uložením nové hodnoty pod novou proměnnou a úpravou odkazu.",
+        sourceRef: "Reference",
+        sourceProvider: "Poskytovatel",
+        sourceProviders: {
+            hll_crcon: "Hell Let Loose CRCON",
+            wardogs_warcon: "Panel Wardogs Warcon",
+            wardogs_rcon: "Wardogs RCON",
+            wardogs_public_directory: "Adresář Wardog Servers",
+        },
+        sourceServerId: "ID serveru u poskytovatele",
+        sourceOrigin: "HTTPS adresa",
+        sourceSecretRef: "Proměnná s tokenem",
+        sourceSecretRefHelp:
+            "Použijte tvar LOGI_GAME_DATA_<NAZEV>_TOKEN. Warcon a RCON vyžadují proměnnou s tokenem a Warcon potřebuje UUID serveru z panelu; adresář Wardog Servers žádnou nemá. Allowlist obsahuje volitelné IP adresy nebo hostitele, které smí kolektor kontaktovat.",
+        sourceAllowlist: "Síťový allowlist (volitelné)",
+        sourceRegister: "Zaregistrovat zdroj",
+        sourceRotate: "Upravit odkaz",
+        sourceRemove: "Odebrat",
+        sourceSaving: "Ukládání…",
+        sourceSaved: "Zdroje uloženy. Sběr spustíte zapnutím připojení níže.",
+        sourceNone:
+            "Pro tento pracovní prostor zatím není zaregistrován žádný zdroj.",
+        sourceOperatorManaged: "Katalog operátora (jen pro čtení)",
+        sourceWorkspaceManaged: "Zaregistrováno v tomto prostoru",
+        sourceErrors: {
+            invalid_source:
+                "Zkontrolujte pole: HTTPS adresa bez cesty, pravidla poskytovatele pro ID serveru a proměnnou s tokenem a reference malými písmeny.",
+            duplicate_ref: "Tato reference se už používá. Zvolte jinou.",
+            duplicate_identity:
+                "Tento server poskytovatele je v tomto prostoru už zaregistrován.",
+            limit_reached: "Tento prostor už má 20 zaregistrovaných zdrojů.",
+            not_found: "Tento zdroj už neexistuje. Obnovte seznam.",
+            unavailable:
+                "Zdroje poskytovatelů nelze načíst nebo uložit. Obnovte stránku a zkuste to znovu.",
+        },
+        liveScoreboard: "Živý scoreboard Warconu",
+        scoreboardPolling:
+            "Při otevření se obnovuje každých 15 sekund. Zdroj může mít zpoždění.",
+        scoreboardError:
+            "Živý scoreboard není dostupný. Zkuste to po obnovení zdroje.",
+        scoreboardEmpty: "Při posledním měření nebyli připojeni žádní hráči.",
+        scoreboardUnavailable: "Aktuální údaje o hráčích nejsou dostupné.",
+        playerObservation: "Údaje o hráčích z",
+        joinCode: "Kód pro připojení do hry",
+        player: "Hráč",
+        faction: "Frakce",
+        kills: "Zabití",
+        deaths: "Úmrtí",
+        cash: "Peníze",
+        ping: "Ping (ms)",
+        collectedSessions: "Načtené zápasy",
+        historyObserved: "Poslední import historie",
+        historyError: "Sběr historie",
+        title: "Data herních serverů",
+        description:
+            "Logi sbírá data serverů a vybrané údaje poskytuje vašemu webu. Připojení nejdříve připraví provozovatel Logi.",
+        loading: "Načítání…",
+        refresh: "Obnovit",
+        saving: "Ukládání…",
+        enable: "Zapnout / pokračovat",
+        disable: "Vypnout",
+        disabled: "Vypnuto",
+        error: "Připojení se nepodařilo načíst nebo uložit. Zkuste to znovu nebo kontaktujte provozovatele.",
+        empty: "Pro tento prostor zatím nejsou nastavené zdroje dat.",
+        state: "Stav dat",
+        players: "Hráči",
+        map: "Mapa",
+        observed: "Poslední pozorování",
+        unknown: "Neznámé",
+        never: "Zatím nenačteno",
+        unconfirmed: "průběžné skóre, nepotvrzené",
+        historySupported:
+            "Zdroj podporuje sběr historie zápasů. Importovaná data vyžadují kontrolu před potvrzením výsledku.",
+        historyUnsupported: "Tento zdroj neposkytuje sběr historie zápasů.",
+        freshness: {
+            fresh: "Aktuální",
+            stale: "Zastaralá",
+            unavailable: "Nedostupná",
+        },
+        errors: {
+            not_listed: "Server není ve výpisu zdroje; jeho stav není známý.",
+            timeout: "Zdroj neodpověděl včas.",
+            network: "Zdroj není dostupný.",
+            rate_limited: "Čeká se na uvolnění limitu požadavků.",
+            unauthorized: "Sběr pozastaven: zdroj odmítl přístup.",
+            invalid_response: "Zdroj vrátil nepodporovanou odpověď.",
+            unsupported: "Sběr pozastaven: požadovaná funkce není dostupná.",
+            configuration:
+                "Sběr pozastaven: provozovatel musí zkontrolovat nastavení zdroje.",
+        },
+    },
+    apiKeys: {
+        description:
+            "Vytvořte klíč pro integraci a uchovávejte ho na svém serveru. Vyberte jen potřebná data a hry.",
+        name: "Název klíče",
+        namePlaceholder: "Název webu, např. hlavní web",
+        access: "Oprávnění",
+        readOnly: "Pouze pro čtení",
+        fullAccess: "Plný přístup (původní režim)",
+        readOnlyHelp:
+            "Může číst pouze vybrané zdroje a hry. Nemůže vytvářet, měnit ani mazat data.",
+        fullAccessHelp:
+            "Může číst a měnit všechna klanová data napříč hrami. Použijte jen pro integrace, které potřebují zápis.",
+        resources: "Zdroje dat",
+        games: "Hry",
+        selectScope: "Vyberte alespoň jeden zdroj dat a jednu hru.",
+        privateData:
+            "Úplné záznamy mohou obsahovat neveřejné provozní údaje. Před zveřejněním data zkontrolujte.",
+        createReadOnly: "Vytvořit klíč pro čtení",
+        createFullAccess: "Vytvořit klíč s plným přístupem",
+        copyNow:
+            "Nyní klíč zkopírujte. Znovu ho nelze zobrazit. Uchovávejte ho na svém serveru.",
+        copy: "Zkopírovat API klíč",
+        copied: "API klíč zkopírován.",
+        copyFailed:
+            "Klíč se nepodařilo zkopírovat. Před skrytím ho zkopírujte ručně.",
+        hide: "Skrýt klíč",
+        createFailed:
+            "Klíč se nepodařilo vytvořit. Zkontrolujte výběr a zkuste to znovu.",
+        invalidKey: "Server vrátil neplatný API klíč.",
+        revoke: "Zneplatnit",
+        revokeFailed: "Klíč se nepodařilo zneplatnit. Zkuste to znovu.",
+        revoked: "zneplatněný",
+        created: "vytvořeno",
+        existingKeys: "Existující klíče",
+        rotateHelp:
+            "Oprávnění změníte vytvořením nového klíče. Přepojte na něj integraci a pak zneplatněte starý klíč.",
+        allGames: "všechny hry; čtení i zápis",
+        loading: "Načítání klíčů…",
+        loadFailed:
+            "Seznam klíčů se nepodařilo obnovit. Zobrazená oprávnění nemusí být aktuální.",
+        retry: "Zkusit znovu",
+        empty: "Zatím nebyly vytvořeny žádné API klíče.",
+        invalidPolicy: "Nerozpoznaná omezení; backend přístup zamítne.",
+        resourceLabels: {
+            "server-game-history":
+                "Historie serverových her (jména hráčů a Steam ID)",
+            "league-matches": "Veřejné zápasy Wardogs League",
+            "league-fixtures": "Sledované zápasy Wardogs League",
+            "hll-live": "Živý HLL scoreboard (včetně jmen hráčů a platform ID)",
+            "warcon-data": "Herní data Warconu (včetně jmen hráčů a Steam ID)",
+            "member-summaries": "Seznam členů (pouze čtení)",
+            "roster-summaries": "Publikované sestavy a účast (pouze čtení)",
+            "player-stat-summaries":
+                "Ověřené statistiky hráčů ze serverových kol",
+            "membership-summaries":
+                "Členství Discordu (vyžaduje samostatná pravidla)",
+            "server-snapshots": "Stav herních serverů",
+            "integration-health": "Stav sběru dat",
+            "event-summaries": "Souhrny událostí",
+            "match-summaries": "Souhrny zápasů",
+            "result-summaries": "Souhrny posouzených výsledků",
+            events: "Události (úplné záznamy)",
+            matches: "Zápasy (surové statistiky)",
+            groups: "Skupiny",
+            rosters: "Soupisky",
+            assignments: "Zařazení členů",
+            stratmaps: "Taktické mapy",
+            teams: "Adresář týmů (aktivní týmy, názvy a loga)",
+        },
+    },
     publicProfiles: {
         communityTitle: "Komunita",
         communityDescription:
@@ -424,6 +810,126 @@ export const csMessages = {
         articles: "Články",
         logiComms: "LogiComms",
         signupActivity: "Historie přihlášek",
+        teams: "Týmy",
+    },
+    teams: {
+        title: "Týmy",
+        description:
+            "Udržujte pro každou hru adresář týmů, proti kterým hrajete zápasy. Názvy, zkratky a loga používá výběr týmů v zápase i připojené weby.",
+        add: "Přidat tým",
+        edit: "Upravit",
+        archive: "Archivovat",
+        restore: "Obnovit",
+        save: "Uložit tým",
+        saving: "Ukládání…",
+        cancel: "Zrušit",
+        createTitle: "Nový tým",
+        editTitle: "Upravit tým",
+        name: "Název",
+        shortCode: "Zkratka",
+        shortCodeHelp:
+            "Nepovinné, nejvýše 16 znaků; zobrazuje se tam, kde je málo místa.",
+        logo: "Logo",
+        logoHelp:
+            "PNG, JPEG nebo WebP do 2 MiB. Obrázek se upraví na čtverec 512×512.",
+        upload: "Nahrát logo",
+        uploading: "Nahrávání…",
+        removeLogo: "Odebrat logo",
+        search: "Hledat týmy…",
+        loadMore: "Načíst další",
+        showArchived: "Zobrazit archivované",
+        archivedBadge: "Archivováno",
+        empty: "V tomto adresáři zatím nejsou žádné týmy.",
+        emptySearch: "Tomuto hledání neodpovídá žádný tým.",
+        loading: "Načítání týmů…",
+        notAvailableForGame: "Adresář týmů není pro tuto hru dostupný.",
+        gameDisabled: "Před přidáním týmů zapněte tuto hru v nastavení klanu.",
+        saved: "Tým byl uložen.",
+        archivedNotice:
+            "Tým byl archivován. Historické zápasy si jeho snímek ponechají.",
+        restoredNotice: "Tým byl obnoven.",
+        retry: "Zkusit znovu",
+        editTeam: "Upravit tým {name}",
+        archiveTeam: "Archivovat tým {name}",
+        restoreTeam: "Obnovit tým {name}",
+        conflictReloadFailed:
+            "Tým byl mezitím změněn a nejnovější verzi se nepodařilo načíst. Zavřete dialog a zkuste to znovu.",
+        duplicateActive:
+            "Tým s tímto názvem pro tuto hru již existuje. Místo vytvoření druhého použijte tento tým.",
+        duplicateArchived:
+            "Tento název už používá archivovaný tým. Obnovte ho, abyste ho mohli znovu použít.",
+        useExisting: "Použít existující tým",
+        restoreExisting: "Obnovit a použít",
+        errors: {
+            invalid_team: "Zkontrolujte údaje týmu a zkuste to znovu.",
+            game_disabled: "Tato hra není v pracovním prostoru zapnutá.",
+            duplicate_name: "Tým s tímto názvem pro tuto hru již existuje.",
+            revision_conflict:
+                "Tým byl mezitím změněn. Načetla se nejnovější verze; zkontrolujte ji a zkuste to znovu.",
+            idempotency_conflict:
+                "Tento požadavek už byl použit s jinými údaji. Zavřete dialog a začněte znovu.",
+            not_found: "Tým již neexistuje.",
+            archived: "Tým je archivován. Před úpravou ho obnovte.",
+            not_archived: "Tým není archivován.",
+            asset_unavailable:
+                "Nahrané logo již není dostupné. Nahrajte ho znovu.",
+            limit_reached: "Adresář této hry dosáhl limitu 500 týmů.",
+            forbidden: "Nemáte oprávnění zde spravovat týmy.",
+            unavailable: "Adresář týmů je dočasně nedostupný.",
+            rate_limited:
+                "Příliš mnoho požadavků; chvíli počkejte a zkuste to znovu.",
+        },
+        uploadErrors: {
+            unsupported_type: "Přijímají se pouze obrázky PNG, JPEG a WebP.",
+            type_mismatch: "Obsah souboru neodpovídá jeho typu obrázku.",
+            bad_dimensions:
+                "Obrázek musí mít alespoň 1×1 a nejvýše 4096×4096 pixelů.",
+            animated: "Animované obrázky nejsou podporovány.",
+            undecodable: "Obrázek se nepodařilo načíst.",
+            invalid_kind: "Toto nahrání není logo týmu.",
+            invalid_asset: "Nahraný obrázek se nepodařilo uložit.",
+            too_large: "Obrázek přesahuje 2 MiB.",
+            upload_limited:
+                "Příliš mnoho nahrávání. Zkuste to znovu za {seconds} s.",
+            forbidden: "Nemáte oprávnění zde nahrávat loga.",
+            unavailable: "Nahrávání je dočasně nedostupné.",
+        },
+        picker: {
+            title: "Týmy",
+            description:
+                "Vyberte týmy, které tento zápas hrají. Každý tým si ponechá název a logo z doby výběru, dokud ho neobnovíte.",
+            slots: { a: "Tým A", b: "Tým B", c: "Tým C" },
+            team: "Tým",
+            side: "Strana",
+            noTeam: "Bez týmu",
+            noSide: "Bez strany",
+            search: "Hledat týmy…",
+            noResults: "Nebyly nalezeny žádné aktivní týmy.",
+            unknownTeam: "Údaje o týmu nejsou dostupné",
+            savedSelections: "Uloženo u tohoto zápasu",
+            addTeam: "Přidat tým",
+            refreshSnapshot: "Obnovit snímek",
+            refreshing: "Obnovování…",
+            snapshotRefreshed: "Snímek byl obnoven z adresáře.",
+            archivedSelection:
+                "Archivovaný tým; uložený snímek u tohoto zápasu zůstává.",
+            duplicateTeam: "Každý tým může být zařazen jen do jednoho slotu.",
+            duplicateSide: "Každou stranu lze přiřadit jen jednomu týmu.",
+            errors: {
+                invalid_match_teams: "Přiřazení týmů je neplatné.",
+                team_not_found: "Tým v adresáři již neexistuje.",
+                team_archived:
+                    "Tým je archivován; vyberte jiný tým nebo ho obnovte v adresáři týmů.",
+                team_game_mismatch: "Tým patří k jiné hře.",
+                match_concluded:
+                    "Ukončené zápasy si své snímky týmů ponechávají.",
+                training_event: "Tréninky nemají zápasové týmy.",
+                forbidden: "Nemáte oprávnění měnit týmy zápasu.",
+                unavailable: "Adresář týmů je dočasně nedostupný.",
+                rate_limited:
+                    "Příliš mnoho požadavků; chvíli počkejte a zkuste to znovu.",
+            },
+        },
     },
     signupActivity: {
         title: "Historie přihlášek",
@@ -570,6 +1076,67 @@ export const csMessages = {
         symbolsCategory: "Symboly",
         flagsCategory: "Vlajky",
     },
+    resultReview: {
+        title: "Posoudit výsledek",
+        dialogHelp:
+            "Před potvrzením zkontrolujte skóre události a jeho zdroje.",
+        description:
+            "Import zůstává předběžný, dokud hodnotitel nepotvrdí tuto verzi. Oprava zachová původní výsledek a vyžaduje důvod.",
+        loading: "Načítání…",
+        refresh: "Obnovit",
+        error: "Výsledek nelze načíst nebo uložit. Obnovte přehled, zkontrolujte oprávnění a změny zdroje a proveďte nové posouzení. Nedokončenou herní relaci nelze potvrdit.",
+        status: {
+            unknown: "Žádný posouzený výsledek",
+            provisional: "Předběžný",
+            confirmed: "Potvrzený",
+            corrected: "Opravený",
+        },
+        revision: "Verze",
+        unknownScore: "Neznámé",
+        attribution: "Přiřazení hráčů",
+        verified: "ověřených",
+        unresolved: "nepřiřazených",
+        reviewedAt: "Posouzeno",
+        reviewer: "Hodnotitel",
+        complete: "Dokončeno",
+        incomplete: "Nedokončeno",
+        source: "Zdroj výsledku",
+        manual: "Ručně zadané skóre",
+        keepSources: "Ponechat propojené relace",
+        scoreHelp:
+            "Prázdné skóre znamená neznámou hodnotu. Nula je známé skóre. Výběr herní relace výsledek automaticky nepotvrzuje.",
+        participant: "Účastník",
+        score: "Skóre",
+        remove: "Odebrat účastníka",
+        addParticipant: "Přidat účastníka",
+        reason: "Důvod opravy",
+        stage: "Uložit předběžný výsledek",
+        confirm: "Potvrdit zobrazenou verzi",
+        useImport: "Použít poslední původní import",
+        correct: "Uložit posouzenou opravu",
+        unsaved:
+            "Máte neuložené změny. Před potvrzením uložte a zkontrolujte předběžnou verzi.",
+        history: "Poslední verze výsledku",
+        importer: "Import",
+    },
+    verifiedPlatformLinks: {
+        title: "Ověřený účet Steam",
+        description:
+            "Vlastnictví účtu ověříte přihlášením na Steamu. ID ručně zadaná do profilu nejsou ověřená.",
+        loading: "Načítání…",
+        refresh: "Obnovit",
+        error: "Propojení se Steamem není dostupné. Obnovte přehled nebo to zkuste za chvíli.",
+        callbackFailed:
+            "Ověření přes Steam se nepodařilo dokončit. Zahajte nový pokus.",
+        verified: "Ověřeno přes Steam",
+        empty: "Žádný ověřený účet Steam",
+        verifiedAt: "Ověřeno",
+        revokedAt: "Odpojeno",
+        link: "Ověřit přes Steam",
+        unlink: "Odpojit Steam",
+        history: "Poslední změny propojení",
+        effect: "Odpojení zastaví budoucí přiřazování hráče. Ověření nepřidává role na Discordu, nepotvrzuje vlastnictví hry ani nezveřejňuje profil na webu.",
+    },
     userSettings: {
         privacyTitle: "Soukromí a data",
         privacyDescription:
@@ -603,7 +1170,7 @@ export const csMessages = {
         platformConnection: "Platformní identita",
         platformConnected: "Platform ID nastaveno",
         platformDisconnected: "Platform ID není nastaveno",
-        platformId: "Platform ID",
+        platformId: "Platform ID (neověřené)",
         platformIdPlaceholder: "Steam64 nebo Epic player ID",
         currentPlatformId: "Aktuální platform ID",
         platformIdHelp:
@@ -648,6 +1215,14 @@ export const csMessages = {
         playerStatsServerUrl: "URL stats serveru",
         playerStatsServerUrlPlaceholder: "https://.../api/get_players_history",
         addPlayerStatsServer: "Přidat stats server",
+        statsCommandTitle: "Příkaz statistik hráčů",
+        statsCommandDescription:
+            "Rozhodněte, zda členové smí v tomto serveru používat /stats, pro které hry, a kam Sdílet standardně publikuje. Vlastní oprávnění příkazů v Discordu platí dál.",
+        statsCommandEnabled: "Povolit /stats",
+        statsCommandGame: "Statistiky {game}",
+        statsCommandDefaultChannel: "Výchozí kanál pro sdílení",
+        statsCommandDefaultChannelHelp:
+            "Použije se, když je příkaz spuštěn bez volby kanálu. Bez výchozího kanálu si Sdílet vyžádá kanál. Sdílené karty stále vyžadují, aby člen i bot mohli do kanálu psát.",
         removePlayerStatsServer: "Odebrat stats server",
         rosterScoreTitle: "Pravidla skóre soupisky",
         rosterScoreDescription:
@@ -775,6 +1350,52 @@ export const csMessages = {
         routingInfoDescription:
             "Support role z kategorií se do nových ticket threadů přidávají automaticky. Uživatelé s dashboard admin rolí se také berou jako support staff pro zpracování ticketů.",
     },
+    memberRoleOperations: {
+        unlinkedTarget: "Logi ID (Discord není propojen)",
+        title: "Změny členských rolí",
+        refresh: "Obnovit",
+        loading: "Načítání…",
+        description:
+            "Posledních 100 operací správce nebo přihlášek napříč hrami. Uložení člena zařadí změnu do fronty; stav Provedeno vyžaduje ověření na Discordu.",
+        error: "Přehled změn rolí není dostupný. Zkuste jej obnovit.",
+        empty: "Zatím nejsou žádné změny spravovaných rolí.",
+        target: "Discord ID člena",
+        actor: "Discord ID zadavatele",
+        origin: "Zdroj",
+        version: "Verze",
+        updated: "Aktualizace",
+        audit: "Historie pokusů",
+        auditDescription:
+            "Zobrazeno posledních 5 pokusů; uchovává se nejvýše 20 na operaci. Časy jsou v UTC. Kódy důvodů pomáhají při řešení chyb.",
+        reason: "Důvod",
+        status: {
+            pending: "Čeká",
+            running: "Probíhá",
+            retry_scheduled: "Čeká na opakování",
+            applied: "Provedeno",
+            denied: "Zamítnuto",
+            superseded: "Nahrazeno",
+            failed: "Selhalo",
+        },
+        provenance: {
+            dashboard: "Správce",
+            recruitment: "Náborový tým",
+            application: "Přihláška člena",
+            rollback: "Vrácení přihlášky",
+        },
+        hint: {
+            pending: "Bot před změnou rolí ověří oprávnění.",
+            running: "Bot kontroluje Discord a zpracovává aktuální požadavek.",
+            retry_scheduled:
+                "Bot požadavek automaticky zopakuje po uplynutí čekací doby.",
+            applied:
+                "Při poslední kontrole role na Discordu odpovídaly požadavku. Bot je pravidelně kontroluje.",
+            denied: "Ověřte přístup zadavatele, členství, oprávnění bota a pořadí rolí, poté uložte nový požadavek na člena.",
+            superseded:
+                "Přiřazení nebo pravidla se změnila. Nový stav vyžaduje nový oprávněný požadavek.",
+            failed: "Automatické pokusy skončily. Odstraňte příčinu a uložte nový požadavek na člena.",
+        },
+    },
     membershipSettings: {
         title: "Nastavení členství",
         pageDescription:
@@ -834,7 +1455,7 @@ export const csMessages = {
             "Přihlášky jsou zapnuté, ale Discord membership panel se nezveřejní a application thready nepůjde otevírat, dokud nenastavíte: {items}.",
         roleSyncTitle: "Jak funguje synchronizace membership rolí",
         roleSyncDescription:
-            "Pending přihlášky nepřidělují membership role. Status recruit používá klanovou roli plus recruit roli kategorie a active status používá klanovou roli plus finální roli kategorie, pokud jsou tyto role nastavené.",
+            "Pending přihlášky nepřidělují membership role. Status recruit používá klanovou roli plus recruit roli kategorie a active status používá klanovou roli plus finální roli kategorie, pokud jsou tyto role nastavené. Změny členských rolí se zpracovávají ve frontě; výsledek ověřte v nastavení členství v přehledu změn rolí.",
         rosterScoreDescription:
             "Nastavte změny skóre pro tento server po ukončení akce. Pokud vše necháte na 0, automatické skórování bude vypnuté.",
         rosterScoreNoCategory: "Mimo všechny kategorie / bez reakce",
@@ -1013,7 +1634,7 @@ export const csMessages = {
             "Rezervní členové nemohou používat recruit status.",
         roleSyncTitle: "Jak funguje synchronizace membership rolí",
         roleSyncDescription:
-            "Discord role navázané na skupiny se synchronizují podle vybrané hlavní a vedlejší skupiny. Membership role se synchronizují jen pro členy mimo pending stav a recruit nebo active status závisí na klanové roli plus rolích navázaných na membership kategorii, pokud jsou dostupné.",
+            "Discord role navázané na skupiny se synchronizují podle vybrané hlavní a vedlejší skupiny. Membership role se synchronizují jen pro členy mimo pending stav a recruit nebo active status závisí na klanové roli plus rolích navázaných na membership kategorii, pokud jsou dostupné. Změny členských rolí se zpracovávají ve frontě; výsledek ověřte v nastavení členství v přehledu změn rolí.",
         missingClanRoleTitle: "Klanová role není nastavená",
         missingClanRoleDescription:
             "Hráč může být v Logi i tak označen jako recruit nebo active, ale dokud se v nastavení klanu nenastaví klanová role, nepřidá se mu na Discordu základní klanová role.",
@@ -1064,6 +1685,7 @@ export const csMessages = {
         submit: "Odeslat platform ID",
         success:
             "Platform ID bylo uloženo. Tuto stránku můžete zavřít a vrátit se na Discord.",
+        closePage: "Tuto stránku můžete nyní zavřít.",
         genericError: "Platform ID se nepodařilo uložit.",
         guideLabel: "Otevřít návod",
         steam: {
@@ -1357,6 +1979,8 @@ export const csMessages = {
         saveHelp:
             "Název a čtyři časová pole jsou povinné. Všechno ostatní je volitelné.",
         saveError: "Akci se nepodařilo uložit.",
+        writeForbidden:
+            "Tuto akci mohou měnit jen správci pracovního prostoru. Pokud vám vypršelo přihlášení, přihlaste se znovu.",
         notices: {
             announcementsTitle: "Kanál pro oznámení není nastavený",
             announcementsDescription:

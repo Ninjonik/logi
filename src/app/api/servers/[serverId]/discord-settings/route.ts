@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server"
 
+import { invalidPublicationDestination } from "@/domain/discord-publications/destinations"
 import { discordSettingsSchema } from "@/lib/validation/discord-settings"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { saveDiscordConfig } from "@/lib/server-discord-settings"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
+import { fetchDiscordGuildChannels } from "@/lib/discord"
 import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
 
@@ -33,6 +35,21 @@ export async function POST(
                 { status: 400 }
             )
         }
+
+        const invalidChannel = invalidPublicationDestination(
+            parsed.data,
+            await fetchDiscordGuildChannels(serverContext.server.discordId)
+        )
+        if (invalidChannel)
+            return NextResponse.json(
+                {
+                    error:
+                        invalidChannel.purpose === "private-thread"
+                            ? "Ticket and application parents must be text channels in this Discord server."
+                            : "Select a text or announcement channel in this Discord server.",
+                },
+                { status: 400 }
+            )
 
         await saveDiscordConfig({
             guildId: serverId,

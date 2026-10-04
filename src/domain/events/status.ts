@@ -39,6 +39,31 @@ export function deriveEventStatus(
     return "registration"
 }
 
+/**
+ * The stored status advanced by the schedule, so a match past its end reads as
+ * concluded before the bot records the conclusion. Without a complete schedule
+ * the stored status stands.
+ */
+export function currentEventStatus(
+    event: {
+        status?: EventStatus
+        registrationEnd?: string
+        meetingStart?: string
+        gameEnd?: string
+    },
+    now: Date = new Date()
+): EventStatus | undefined {
+    const { registrationEnd, meetingStart, gameEnd } = event
+    return registrationEnd !== undefined &&
+        meetingStart !== undefined &&
+        gameEnd !== undefined
+        ? deriveEventStatus(
+              { status: event.status, registrationEnd, meetingStart, gameEnd },
+              now
+          )
+        : event.status
+}
+
 export function isTrainingRegistrationStillOpen(
     event: {
         kind?: EventKind

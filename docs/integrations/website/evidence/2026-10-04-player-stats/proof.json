@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-04",
+  "timezone": "Europe/Prague",
+  "baseRevision": "72946e3915af2216f97f8c167ea02ea20308555c",
+  "testedRevision": "8b07862a077a6d25a4005e69dbc8ca9bdeaa88f6",
+  "revisionPolicy": "Follow-up delivery changes contain documentation, security proof and one comment clarification only; executable behavior is unchanged.",
+  "tests": { "passed": 875, "failed": 0, "skipped": 0, "durationMs": 14526.0661 },
+  "typecheck": "passed",
+  "scopedLint": { "errors": 0, "existingWarnings": 3 },
+  "productionBuild": { "exitCode": 0, "durationMs": 62316, "credentialFreeCopy": true },
+  "convexDeployment": { "exitCode": 0, "durationMs": 2247, "loopbackOnly": true, "production": false },
+  "discord": {
+    "realInteractions": true,
+    "authorizedTestGuildOnly": true,
+    "syntheticWardogsHistory": true,
+    "steamModalSavedAndReloaded": true,
+    "steamBindingSurvivedRestart": true,
+    "expiredControlsRejected": true,
+    "recentAndFactionTabs": true,
+    "channelPickerAndPublicShare": true,
+    "publicMessageId": "1556078388048039957",
+    "temporaryTestProcessStopped": true
+  },
+  "hllRecords": {
+    "publicUnauthenticatedHttp": true,
+    "cookies": false,
+    "status": "unavailable",
+    "reason": "blocked",
+    "httpStatus": 403,
+    "liveSuccess": false,
+    "realDiscordFallbackVerified": true
+  }
+}

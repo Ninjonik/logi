@@ -4,7 +4,7 @@ import {
     normalizeDoc,
     normalizeUserDoc,
 } from "./discord_shared"
-import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
+import { matchesGameScope } from "../src/domain/games/game"
 import { mutation, query } from "./_generated/server"
 import { getUserByDiscordId } from "./identity"
 import { v } from "convex/values"
@@ -475,13 +475,12 @@ export const getMembershipApplicationThreadContext = query({
                 : null,
         ])
         if (!config) return null
-        const effectiveConfig = config
         const category =
-            effectiveConfig.membershipSettings?.categories.find(
+            config.membershipSettings?.categories.find(
                 (item) => item.id === application.categoryId
             ) ?? null
         return {
-            config: normalizeConfigDoc(effectiveConfig),
+            config: normalizeConfigDoc(config),
             application: normalizeDoc(application),
             assignment: assignment ? normalizeDoc(assignment) : null,
             category,
@@ -526,6 +525,16 @@ export const closeTicketThread = mutation({
             closeReason: args.closeReason?.trim() || undefined,
             updatedAt: now,
         })
+        const report = await ctx.db
+            .query("playerReports")
+            .withIndex("ticketId", (q) => q.eq("ticketId", ticket._id))
+            .unique()
+        if (report)
+            await ctx.db.patch(report._id, {
+                state: "closed",
+                leaseUntil: 0,
+                updatedAt: Date.now(),
+            })
         return { ok: true }
     },
 })

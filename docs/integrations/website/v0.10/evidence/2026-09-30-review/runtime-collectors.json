@@ -1,0 +1,87 @@
+{
+  "source": "review working tree; see source-manifest.json",
+  "executedAt": "2026-09-30T10:47:49.533Z",
+  "transport": "real HTTPS with locally scoped CA trust and normal certificate verification",
+  "providerData": "synthetic local fixtures, not live game servers",
+  "backend": "actual local Convex SQLite",
+  "results": [
+    {
+      "name": "Real HLL HTTPS collector persists the snapshot and scoped HTTP API preserves zeros",
+      "status": "pass",
+      "players": 0,
+      "scores": [
+        0,
+        5
+      ],
+      "privateProviderConfigAbsent": true
+    },
+    {
+      "name": "Real WDG HTTPS collector preserves all three factions",
+      "status": "pass",
+      "players": 0,
+      "scores": [
+        0,
+        12,
+        7
+      ]
+    },
+    {
+      "name": "HLL history is imported once and exposes healthy status",
+      "status": "pass",
+      "collectedSessions": 1
+    },
+    {
+      "name": "WDG reports unsupported history as null, not fabricated zero sessions",
+      "status": "pass",
+      "collectedSessions": null
+    },
+    {
+      "name": "Another guild cannot list the test guild snapshots",
+      "status": "pass"
+    },
+    {
+      "name": "HLL-only key cannot widen to WDG snapshots",
+      "status": "pass"
+    },
+    {
+      "name": "Game-data administration rejects an anonymous request",
+      "status": "pass"
+    },
+    {
+      "name": "Authenticated settings return safe configured-source metadata",
+      "status": "pass",
+      "credentialsAndProviderAddressAbsent": true
+    },
+    {
+      "name": "Collected history remains separate from an event result until explicitly staged",
+      "status": "pass",
+      "resultBeforeReview": null,
+      "availableSessions": 1
+    },
+    {
+      "name": "Staging collected session preserves source digest, zero score and two unlinked platform identities",
+      "status": "pass",
+      "version": 1,
+      "players": 2,
+      "unverifiedPlayersNotAttributed": true,
+      "sourceDigestPreserved": true
+    },
+    {
+      "name": "Explicit reviewer confirmation creates immutable second revision from collected data",
+      "status": "pass",
+      "version": 2,
+      "priorProvisionalPreserved": true
+    },
+    {
+      "name": "Restricted web consumer sees the confirmed collected result",
+      "status": "pass",
+      "resultState": "confirmed"
+    },
+    {
+      "name": "Provider requests use only allowed GET routes and WDG credentials stay server-side",
+      "status": "pass",
+      "noRconControlRequests": true,
+      "observedRequests": 88
+    }
+  ]
+}

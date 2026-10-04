@@ -1,0 +1,25 @@
+{
+  "baselineRevision": "c42ea770c307793494ae159a924f86e3c6ced50d",
+  "comparedRevision": "e281495acf6f680ed1fc5ebdf23ceb49758f4a7e",
+  "baseline": {
+    "errors": 143,
+    "warnings": 141
+  },
+  "fullRun": {
+    "errors": 142,
+    "warnings": 143
+  },
+  "trackedOnly": {
+    "errors": 142,
+    "warnings": 140
+  },
+  "ignoredLocalHelperWarnings": 3,
+  "introducedTrackedDiagnostics": 0,
+  "comparison": "Normalized repository-relative file, rule, message and severity; counts compared against baseline.",
+  "currentSourceRevision": "fc5eb8696942adedbd5009d3e47ccca98e98b868",
+  "currentChangedTypeScript": {
+    "errors": 0,
+    "existingWarnings": 5
+  },
+  "limitation": "Whole-repository lint was not repeated after the final layout/security repair. Final changed TypeScript passed; this is not a green full-repository lint claim."
+}

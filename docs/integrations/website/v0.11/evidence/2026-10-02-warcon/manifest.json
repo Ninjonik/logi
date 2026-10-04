@@ -1,0 +1,102 @@
+{
+  "packagedAt": "2026-10-02T18:24:10.856Z",
+  "runtimeCommit": "5c494e869429b97dfebb663253593d5ef5014353",
+  "sourceContract": "warcon-app/warcon@600c32b02212c7815dda842f33a3d096fd835fd1",
+  "artifacts": [
+    {
+      "path": "README.md",
+      "encoding": "utf8-lf",
+      "sha256": "f2180d24c3ab1e4becccef161860ed14e0d3e7364c71942e6b0e5a8c03dc0382"
+    },
+    {
+      "path": "adapter.json",
+      "encoding": "utf8-lf",
+      "sha256": "8c3a550d23ca57fe8afe01082e5a4091f9614eb9a566511a49b2a3c34508f4e4"
+    },
+    {
+      "path": "build.txt",
+      "encoding": "utf8-lf",
+      "sha256": "7ad7a17625f410403fd855c8aa9febfa3f3760b82e26889e3d916a8ad41401ac"
+    },
+    {
+      "path": "checks.json",
+      "encoding": "utf8-lf",
+      "sha256": "70fc691a59f7d34264090d0af8e76f5324b499c22a5f6bb8c11a0fd8c30fa988"
+    },
+    {
+      "path": "cleanup.json",
+      "encoding": "utf8-lf",
+      "sha256": "4cbde9f89df429f7513145ae520d28df7b3982221ec81c4186dc48e8c870be26"
+    },
+    {
+      "path": "collector-acceptance.json",
+      "encoding": "utf8-lf",
+      "sha256": "48e1db71105c9a9424f2fd96e2eaaff5943c1860402faa6f46487006e4806b86"
+    },
+    {
+      "path": "consumer-smoke.json",
+      "encoding": "utf8-lf",
+      "sha256": "61a658a50745e256b3a8e7ca6feeb589967e0e3e5a18940c9499de15b54e0819"
+    },
+    {
+      "path": "convex-push.txt",
+      "encoding": "utf8-lf",
+      "sha256": "261e83cfba4566b299596cab70eb35c9e219190b12b82a7632b708024936c7f5"
+    },
+    {
+      "path": "http-acceptance.json",
+      "encoding": "utf8-lf",
+      "sha256": "37a143ff21b1c08c7efd1112199576564a75c6722fa5ffff8e57d3527b3f8b45"
+    },
+    {
+      "path": "lint.txt",
+      "encoding": "utf8-lf",
+      "sha256": "fa6f7157c2a90d96165006a211a3242811a09de10067422e4400511c7860c89c"
+    },
+    {
+      "path": "publication-scan.json",
+      "encoding": "utf8-lf",
+      "sha256": "baf79e47b0daf931879cf0253d2bb1f69aace7fe7562984a85c0df5ffb795274"
+    },
+    {
+      "path": "scoreboard-disabled.jpg",
+      "encoding": "binary",
+      "sha256": "956504a7396f659accab2cac34107a34f20d1b863d8c65f6b956d2728f11cedf"
+    },
+    {
+      "path": "scoreboard-resumed.jpg",
+      "encoding": "binary",
+      "sha256": "c445be3b478ac69491e9bb053974a48a1b55fb9794380029b9413927b54c09ec"
+    },
+    {
+      "path": "scoreboard-synthetic.jpg",
+      "encoding": "binary",
+      "sha256": "a5987b793a4ded9986afc274391b779cbf21d7aed518e9ea92edd8a48314b5ce"
+    },
+    {
+      "path": "source-manifest.json",
+      "encoding": "utf8-lf",
+      "sha256": "e4cc1061b2089bc7c0931d3b19a484488ec5de2eb69c72da15ba4193696f7bb3"
+    },
+    {
+      "path": "tests.txt",
+      "encoding": "utf8-lf",
+      "sha256": "11bf60d07d08c218570d3958fa4cd2635bd01259d3c712bc3364344b5e765b28"
+    },
+    {
+      "path": "typecheck.txt",
+      "encoding": "utf8-lf",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "ui-readback.json",
+      "encoding": "utf8-lf",
+      "sha256": "6743acb4949992a0f9bce05f2b366bce2aa29c590b9f9f2e7d00d43302f1ee47"
+    },
+    {
+      "path": "verify.mjs",
+      "encoding": "utf8-lf",
+      "sha256": "413e9c8017a1148c44ecf91dca628b708cad543cd7ea4ee4a7330067393ddf45"
+    }
+  ]
+}

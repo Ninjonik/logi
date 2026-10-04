@@ -21,6 +21,15 @@ const imageUrlField = z
         "Image URLs must start with http:// or https://."
     )
 
+const statsSettingsSchema = z.object({
+    enabled: z.boolean(),
+    games: z.object({ hell_let_loose: z.boolean(), wardogs: z.boolean() }),
+    defaultShareChannelId: discordIdField.refine(
+        (value) => !value || /^\d{17,20}$/.test(value),
+        "Channel IDs must be 17 to 20 digits."
+    ),
+})
+
 const playerStatsServerSchema = z.object({
     token: z.string().trim().min(1, "Server stats token is required."),
     url: z.string().trim().url("Server stats URL must be a valid URL."),
@@ -335,6 +344,7 @@ export const discordSettingsSchema = z.object({
         .default([]),
     ticketSettings: ticketSettingsSchema.optional(),
     membershipSettings: membershipSettingsSchema.optional(),
+    statsSettings: statsSettingsSchema.optional(),
     gameOverrides: z
         .object({
             hell_let_loose: gameDiscordOverridesSchema.optional(),

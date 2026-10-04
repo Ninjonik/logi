@@ -9,6 +9,39 @@ import { Callout, Steps, Tabs } from "nextra/components"
 
 Events are the central schedule for a server. They can represent a general community event, a match, or another planned activity. Managers create and edit events; members use them to understand timing and respond when sign-up is enabled.
 
+Saving, importing, concluding and submitting results for an event in the
+dashboard require current workspace administrator access. If your session has
+expired or your administrator access was removed, Logi shows a message asking
+you to sign in again instead of saving.
+
+## Connected clan websites
+
+A configured clan website can create and update the same native Logi event.
+Changes made in Logi or Discord are then available to the website through its
+event synchronization. Website publication remains a separate editorial choice.
+
+Website event editing requires a current Logi sign-in and an explicitly allowed
+Discord role for the selected game. Signing in alone does not grant access. If
+membership cannot be verified or another editor changed the event, the website
+must refresh the information before accepting a new edit.
+
+The website command supports match or training names, descriptions, maps, sides
+and schedule times. Updates and cancellation are available before meeting start.
+For matches, the website can also select active workspace teams for each slot
+with an optional side or faction, and explicitly refresh one selected team's
+saved name, short code and logo from the team directory. That refresh stays
+available after meeting start until the match concludes. Logi records each
+team's presentation when it is selected; an edit that leaves teams out keeps
+the current selection, and a concluded match keeps its teams unchanged.
+Trainings never carry team selections.
+Cancelling records an early conclusion through a separate cancellation action and awards no attendance
+points. Discord settings, rosters and result confirmation remain managed in
+their dedicated Logi workflows. An event created from a website does not enable
+clan pings or forum creation automatically.
+
+Operators can use the [website event command contract](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/event-commands.md)
+to configure a dedicated application/key policy and per-game role allowlist.
+
 ## Create an event (manager)
 
 <Steps>
@@ -91,6 +124,11 @@ active, completed, or cancelled, Logi discards that Discord event and creates a
 new scheduled event instead.
 
 ### Discord behavior per event
+
+Match signup names are sorted within each group using the server's configured
+Discord language, independently of the bot host's language. Legacy embeds read
+left to right across each row; compact Components V2 messages keep that same
+order. Czech sorting treats **Ch** as a letter after **H**.
 
 Discord output needs the bot running and the relevant server or event-level
 channel configuration. The event's announcement and event-info channels are

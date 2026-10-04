@@ -120,3 +120,31 @@ test("membership categories retain their selected game", () => {
 
     assert.equal(parsed.membershipSettings?.categories[0]?.gameId, "wardogs")
 })
+
+test("Discord settings accept /stats command switches and drop a blank default room", () => {
+    const parsed = discordSettingsSchema.parse({
+        timezone: "UTC",
+        defaultLanguage: "en",
+        statsSettings: {
+            enabled: true,
+            games: { hell_let_loose: false, wardogs: true },
+            defaultShareChannelId: "",
+        },
+    })
+    assert.deepEqual(parsed.statsSettings, {
+        enabled: true,
+        games: { hell_let_loose: false, wardogs: true },
+        defaultShareChannelId: undefined,
+    })
+    assert.ok(
+        !discordSettingsSchema.safeParse({
+            timezone: "UTC",
+            defaultLanguage: "en",
+            statsSettings: {
+                enabled: true,
+                games: { hell_let_loose: true, wardogs: true },
+                defaultShareChannelId: "general",
+            },
+        }).success
+    )
+})

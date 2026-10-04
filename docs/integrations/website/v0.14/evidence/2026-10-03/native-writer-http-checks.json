@@ -1,0 +1,90 @@
+{
+    "schemaVersion": 1,
+    "kind": "authenticated_native_roster_write",
+    "testedAt": "2026-10-02T23:43:49.658Z",
+    "passed": true,
+    "checkCount": 17,
+    "sourceStable": true,
+    "sourceManifest": "source-manifest.json",
+    "environment": {
+        "http": "actual local Next.js",
+        "persistence": "isolated local Convex",
+        "identities": "synthetic records",
+        "accountOwnership": "not exercised; roster management requires no Steam account link",
+        "centralLogin": "synthetic durable central session; no live Discord OAuth",
+        "productionUsed": false,
+        "liveDiscordUsed": false,
+        "liveSteamUsed": false,
+        "hostedAcceptance": false
+    },
+    "checks": [
+        {
+            "name": "anonymous-browser-write-denied",
+            "passed": true
+        },
+        {
+            "name": "cross-origin-browser-write-denied",
+            "passed": true
+        },
+        {
+            "name": "browser-selected-actor-rejected",
+            "passed": true
+        },
+        {
+            "name": "current-admin-session-saves-native-roster",
+            "passed": true
+        },
+        {
+            "name": "saved-native-roster-readable-as-current-identity",
+            "passed": true
+        },
+        {
+            "name": "changes-bootstrap-captured",
+            "passed": true
+        },
+        {
+            "name": "wrong-bot-secret-denied",
+            "passed": true
+        },
+        {
+            "name": "wrong-bot-guild-denied",
+            "passed": true
+        },
+        {
+            "name": "trusted-bot-acknowledgement-reaches-read-model",
+            "passed": true
+        },
+        {
+            "name": "trusted-bot-acknowledgement-emits-change",
+            "passed": true
+        },
+        {
+            "name": "foreign-event-write-blocked",
+            "passed": true
+        },
+        {
+            "name": "foreign-event-roster-remains-absent",
+            "passed": true
+        },
+        {
+            "name": "current-admin-removal-invalidates-live-cookie-write",
+            "passed": true
+        },
+        {
+            "name": "current-admin-restoration-reallows-same-session",
+            "passed": true
+        },
+        {
+            "name": "durable-session-revocation-denies-browser-write",
+            "passed": true
+        },
+        {
+            "name": "durable-session-revocation-rechecked-inside-mutation",
+            "passed": true
+        },
+        {
+            "name": "rejected-writes-preserve-native-roster",
+            "passed": true
+        }
+    ]
+}

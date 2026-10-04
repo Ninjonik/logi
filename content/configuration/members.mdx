@@ -11,6 +11,21 @@ These pages are for server managers. They control the server’s working data; t
 
 ## Members
 
+### Connected websites
+
+A website can read a minimized member directory using its own explicitly scoped
+`member-summaries` API grant. Member types, status, paused state and groups remain
+managed in Logi. This read does not authorize website administration or public
+publication. Websites must obtain their own profile/publication consent and
+bind it to the exact member and native user IDs; matching a nickname is not a
+valid identity link. Notes, pause reasons and Discord role IDs are excluded.
+
+Collected player facts have a separate `player-stat-summaries` grant. They cover
+stored HLL/Warcon server sessions and only attribute a player through a current
+verified Steam account and matching game membership. Unknown metrics remain
+unknown, and the displayed collection is not a career total. Disconnecting the
+verified account or changing membership invalidates website synchronization.
+
 The **Members** page lists people known to the workspace. Managers can view a person, create a record where the workflow allows it, and manage server-specific assignments. Carefully distinguish the person’s identity from their roles and groups in this one server.
 
 The available maintenance actions can include importing Discord members, linking missing Discord IDs, linking platform IDs, merging duplicate records, and cleaning duplicate player statistics. Use these only after checking the affected records: they change or combine real server data.
@@ -41,15 +56,31 @@ Changing or removing an assignment rebuilds the workspace membership summary and
 
 ### Bulk member tools: what they do and do not do
 
+Authenticated assignment changes and the membership-status migration now queue
+durable membership-role operations. Check **Membership settings → Membership role
+operations** for the actual Discord outcome, current reason and recent attempts.
+Retries recheck the original actor's current permissions; saving assignment data
+does not mean the roles have been applied. Unlinked players remain editable, with
+an explicit denied role operation until their Discord identity is linked. Legacy
+API assignments and imports remain data-only and cannot mint role authority.
+
+Attempt history records an interrupted attempt as **Superseded** when a newer
+request replaces it. When the bot recovers an expired attempt, that attempt shows
+**Retry scheduled** with `lease_expired`; exhausting six attempts shows **Failed**
+with `attempt_limit`. These labels describe the attempt's outcome, not a promise
+that another attempt is still waiting. Check the operation's current status above
+the history. A previously verified attempt keeps its **Applied** result even if
+the overall request is later superseded. Attempt times are start times in UTC.
+
 The server **Settings** page contains bulk tools for managers. These tools apply to the game selected in the configuration scope; the Discord-member import has its own target-game selector. Treat the selected Discord role as a filter, not as a permanent relationship between Logi and Discord.
 
-| Tool                          | Exact effect                                                                                                                                                                                                                                                                                                 | Important limits and checks                                                                                                                                                                                                                                                                                                                           |
+| Tool                           | Exact effect                                                                                                                                                                                                                                                                                                 | Important limits and checks                                                                                                                                                                                                                                                                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Import Discord members**    | Finds non-bot Discord members with the selected role, creates or updates their Logi profile, and creates or updates an assignment as a recruit, regular member, reserve member, or mercenary for the selected game. It also imports every linked group role the person currently has as a _secondary_ group. | A source role is required. A person can be imported as a member only if they have no primary workspace elsewhere, are already primary here, or already have an assignment here. The tool skips bots and reports ineligible people. It reads the role once; removing or adding the role later does not update the assignment.                          |
-| **Migrate membership status** | Changes existing assignments for non-bot Discord members with the selected role to recruit, active member, reserve member, or mercenary. It attempts the normal membership-role sync for every changed assignment.                                                                                           | It never creates an assignment. Members who match the role but have no assignment are skipped; already matching assignments are also skipped. Group selections and membership category stay as they were. A Discord role-sync error does not roll back the Logi assignment, so verify both systems afterward.                                         |
-| **Link missing Discord IDs**  | Attempts to connect imported/statistics-only people to a Discord profile from the selected role. If that Discord profile already exists in Logi, the records can be merged.                                                                                                                                  | It considers only server people referenced by this server's event player statistics and only profiles without a Discord link. Matching is based on a normalized display name, so it is not proof of identity. Check every match, especially common names. Bots are ignored.                                                                           |
+| **Import Discord members**    | Finds non-bot Discord members with the selected role, creates or updates their Logi profile, and creates or updates an assignment as a recruit, regular member, reserve member, or mercenary for the selected game. It also imports every linked group role the person currently has as a _secondary_ group. | A source role is required. A person can be imported as a member only if they have no primary workspace elsewhere, are already primary here, or already have an assignment here. The tool skips bots and reports ineligible people. It reads the role once; removing or adding the role later does not update the assignment.                         |
+| **Migrate membership status** | Changes existing assignments for non-bot Discord members with the selected role to recruit, active member, reserve member, or mercenary. It queues an actor-backed membership-role operation for each changed assignment.                                                                                | It never creates an assignment. Missing or already matching assignments are skipped. Groups and category are preserved. Check the role-operation audit for Discord success; transient errors retry and denied/failed requests require a new authorized staff action after correction.                                                             |
+| **Link missing Discord IDs**  | Attempts to connect imported/statistics-only people to a Discord profile from the selected role. If that Discord profile already exists in Logi, the records can be merged.                                                                                                                             | It considers only server people referenced by this server's event player statistics and only profiles without a Discord link. Matching is based on a normalized display name, so it is not proof of identity. Check every match, especially common names. Bots are ignored.                                                                       |
 | **Import events**             | Imports Hell Let Loose events from supported scoreboard links.                                                                                                                                                                                                                                               | Available only while the Hell Let Loose configuration scope is selected.                                                                                                                                                                                                                                                                              |
-| **Auto-link platform IDs**    | Reads Hell Let Loose scoreboards referenced by this server's saved event results, strips the clan tag supplied by the manager, and adds a matching platform ID to an assigned user.                                                                                                                          | Available only for Hell Let Loose. It does nothing if there are no saved result source URLs. A name must identify exactly one assigned user; one user must produce exactly one candidate ID; and that ID must not already belong to another Logi user. The tool reports ambiguous names, conflicts, and unreadable source events instead of guessing. |
+| **Auto-link platform IDs**    | Reads scoreboards referenced by this server's saved event results, strips the clan tag supplied by the manager, and adds a matching platform ID to an assigned user.                                                                                                                                     | Available only for Hell Let Loose. It does nothing if there are no saved result source URLs. A name must identify exactly one assigned user; one user must produce exactly one candidate ID; and that ID must not already belong to another Logi user. The tool reports ambiguous names, conflicts, and unreadable source events instead of guessing. |
 
 ### Merging duplicate people and statistics
 
@@ -111,4 +142,46 @@ Discord emoji for its sign-up option.
 
 When deleting a group, Logi removes that group from affected primary and secondary assignments before deleting the group. It does not delete the Discord role itself.
 
+Group-linked roles must not overlap managed membership roles or the dashboard
+administrator/clan role. Settings and group writers reject those ownership conflicts.
+
 > **Screenshot placeholder — members and groups:** Show the Members table with a member detail/assignment action and the Groups list with name, usage count, and description columns.
+
+## Sharing membership with a website
+
+System → Discord membership integrations lets an administrator allow an integration
+to read one member's current presence, selected Discord role IDs and Logi assignment.
+Create a read-only API key with the Discord membership grant first, then enable its
+policy and enter the allowed roles for each game. Empty role lists share no roles.
+No integration gains access until both gates are configured.
+
+Imported players keep their Logi identity separate from their Discord identity.
+Their assignment is included only after an explicit Discord link; a matching
+imported ID alone is not a link. Relinking refreshes the old and new membership
+projections. Conflicting legacy assignments require an administrator to repair
+the duplicate records before an assignment can be shared.
+
+Managed role updates recheck Discord evidence around backend authorization.
+If that evidence becomes older than ten seconds, Logi schedules a fresh attempt
+instead of applying roles with stale permissions. The operation history shows
+the retry; Discord hierarchy restrictions still apply.
+
+Unavailable or stale Discord data is explicitly unknown. The website must enforce
+freshness and its own permissions; successful OAuth login, Logi assignment or guild
+presence alone does not grant website administration. Disabling the policy or revoking
+the key denies subsequent reads. See the [membership handoff](https://github.com/Ninjonik/logi/blob/feat/valkyria-integration/docs/integrations/website/v0.7/README.md)
+for the exact-subject API, freshness windows and consumer responsibilities.
+
+## Verified Steam accounts
+
+Open **User settings → Verified Steam account → Verify with Steam** while signed
+into Logi. Sign in on Steam and return within ten minutes using the same browser
+session. No Steam API key is required. If verification fails, start a new attempt;
+wait 30 seconds between attempts. A Steam account can be linked to only one Logi
+account at a time. Unlink the current verified account before linking a different one.
+
+Platform IDs typed into the profile or recruitment form remain unverified. The
+separate verified account card records proof and the verification time. **Unlink
+Steam** stops future attribution while keeping recent link history. Merging
+accounts or changing the associated Discord identity requires fresh verification.
+This does not grant Discord roles, confirm game ownership or publish a website profile.

@@ -1,0 +1,158 @@
+{
+  "documentType": "codex-security.findings",
+  "findings": [
+    {
+      "attackPath": {
+        "dataflow": {
+          "outcome": "Private report closure and subsequent thread lock/archive",
+          "sink": "closeTicketThread",
+          "source": "Discord interaction actor and tracked thread",
+          "summary": "Discord close_ticket interaction -> getTicketThreadContext -> member-only REST refresh -> GuildMember.permissions derives cached role flags/owner -> closeTicketThread mutation -> associated playerReports state becomes closed -> bot locks/archives the private thread."
+        },
+        "evidenceRefs": [
+          "permission-check",
+          "persist-closure",
+          "report-closure"
+        ],
+        "impact": {
+          "level": "low",
+          "why": "Low impact and low likelihood: same-guild unauthorized ticket/report closure by a formerly privileged viewer, conditional on stale Discord state. No confidentiality breach, punishment, cross-tenant access or production exploit is demonstrated."
+        },
+        "likelihood": {
+          "level": "low",
+          "why": "Guild role/owner gateway updates normally refresh caches; fresh member fetch already blocks membership removal. This limits the opportunity to stale or missed cache state and does not allow arbitrary outsiders, cross-guild access or secret extraction. Legacy ticket behavior predates the diff, but the new report lifecycle newly consumes the same authorization."
+        },
+        "reachability": {
+          "attacker": "Formerly privileged guild member retaining thread visibility",
+          "entrypoint": "/close_ticket",
+          "outcome": "Unauthorized same-guild report closure",
+          "summary": "A previously privileged community member who still sees the tracked thread can invoke the registered command after loss of Administrator bit or guild ownership. A stale role/owner cache preserves the authority although fresh member role assignments alone are correct. Synthetic handler execution with the actual Discord.js permission getter confirms closure reaches persistence. New reports reuse this pre-existing legacy sink."
+        },
+        "summary": "A previously privileged community member who still sees the tracked thread can invoke the registered command after loss of Administrator bit or guild ownership. A stale role/owner cache preserves the authority although fresh member role assignments alone are correct. Synthetic handler execution with the actual Discord.js permission getter confirms closure reaches persistence. New reports reuse this pre-existing legacy sink."
+      },
+      "codeEvidence": [
+        {
+          "code": "        const member = await interaction.guild?.members\n            .fetch({ user: interaction.user.id, force: true })\n            .catch(() => null)\n        if (!member) {\n            await interaction.editReply({\n                content: messages.ticket.unableToVerifyPermissions,\n            })\n            return\n        }\n\n        const roleIds = [...member.roles.cache.keys()]\n        const supportRoleIds = context.category?.supportRoleIds ?? []\n        const canClose =\n            member.permissions.has(\"Administrator\") ||\n            (context.config.dashboardAdminRoleId\n                ? roleIds.includes(context.config.dashboardAdminRoleId)\n                : false) ||\n            supportRoleIds.some((roleId) => roleIds.includes(roleId))\n\n        if (!canClose) {\n            await interaction.editReply({",
+          "endLine": 3098,
+          "explanation": "Interaction user selects the actor. Member REST refresh updates role assignments; the Administrator decision also needs guild ownership and role permissions, which are not refreshed.",
+          "id": "permission-check",
+          "label": "Fresh member still uses cached guild permissions",
+          "language": "typescript",
+          "path": "discord-bot/src/interactions.ts",
+          "role": "root_control",
+          "startLine": 3078
+        },
+        {
+          "code": "        await convex.mutation(references.closeTicketThread, {\n            secret: env.internalSecret,\n            threadId: interaction.channelId,\n            closedByUserId: interaction.user.id,\n            closeReason: reason,\n        })",
+          "endLine": 3113,
+          "explanation": "Passing the stale permission decision forwards the interaction thread and actor to the privileged closure mutation.",
+          "id": "persist-closure",
+          "label": "Authorization permits the ticket closure mutation",
+          "language": "typescript",
+          "path": "discord-bot/src/interactions.ts",
+          "role": "sink",
+          "startLine": 3108
+        },
+        {
+          "code": "        const report = await ctx.db\n            .query(\"playerReports\")\n            .withIndex(\"ticketId\", (q) => q.eq(\"ticketId\", ticket._id))\n            .unique()\n        if (report)\n            await ctx.db.patch(report._id, {\n                state: \"closed\",\n                leaseUntil: 0,\n                updatedAt: Date.now(),",
+          "endLine": 389,
+          "explanation": "The newly added shared ticket consumer closes the associated player report, extending the inherited control to this increment's workflow.",
+          "id": "report-closure",
+          "label": "New reports inherit the ticket authorization decision",
+          "language": "typescript",
+          "path": "convex/discordMembership.ts",
+          "role": "outcome",
+          "startLine": 381
+        }
+      ],
+      "confidence": {
+        "level": "high",
+        "rationale": "Actual unchanged close_ticket handler invoked through its existing regression harness and actual Discord.js GuildMember permission getter. Four unauthorized/unavailable-state cases each reached the mutation; current-admin control passed."
+      },
+      "extensions": {
+        "candidateId": "candidate-98b35b7ecc0c8507",
+        "discoveryWorker": "security_provider_discovery"
+      },
+      "findingId": "csf_c46979d15b6f0f4167ba0a88",
+      "fingerprints": {
+        "algorithm": "codex-security/v1",
+        "primary": "codex-security/v1:sha256:e60a01640227bd78fa7a1c7741f59dd42c79ac8b58a36f4cd91ca3f319f1817a"
+      },
+      "identity": {
+        "anchor": "candidate-98b35b7ecc0c8507"
+      },
+      "locations": [
+        {
+          "endLine": 3098,
+          "path": "discord-bot/src/interactions.ts",
+          "role": "root_control",
+          "startLine": 3078
+        },
+        {
+          "endLine": 3113,
+          "path": "discord-bot/src/interactions.ts",
+          "role": "sink",
+          "startLine": 3108
+        },
+        {
+          "endLine": 389,
+          "path": "convex/discordMembership.ts",
+          "role": "concrete_implementation",
+          "startLine": 381
+        }
+      ],
+      "occurrenceId": "occ_f373a0ee10e79d3a24cb6866",
+      "provenance": {
+        "source": "local_plugin"
+      },
+      "remediation": "Refresh guild ownership and the full guild role definitions before fetching the member and evaluating closure authority. Fail closed if any refresh is unavailable.",
+      "remediationTests": [
+        "Reject a retained role assignment whose Administrator bit was revoked.",
+        "Reject a former guild owner with no remaining staff grant.",
+        "Reject unavailable guild or role refresh, while allowing a current administrator."
+      ],
+      "rootCause": {
+        "evidenceRefs": [
+          "permission-check",
+          "persist-closure",
+          "report-closure"
+        ],
+        "summary": "Current staff authority must govern report closure. Fetching only the member does not refresh the guild owner or assigned roles' permission bitfields, so Discord.js can derive Administrator from obsolete authority. The guarded mutation trusts the bot's decision and closes the new report as well."
+      },
+      "ruleId": "authorization-bypass.stale-discord-permissions",
+      "severity": {
+        "changeConditions": "Raise severity only with evidence of broad durable exploitation or additional sensitive side effects; reduce risk by refreshing guild ownership and roles before the member permission decision, failing closed on refresh failure.",
+        "level": "low",
+        "rationale": "Low impact and low likelihood: same-guild unauthorized ticket/report closure by a formerly privileged viewer, conditional on stale Discord state. No confidentiality breach, punishment, cross-tenant access or production exploit is demonstrated."
+      },
+      "summary": "Invoke `/close_ticket` after the actor loses a role's Administrator bit or guild ownership while the bot retains the older guild cache. The handler refreshes member assignments but still authorizes through cached role/owner data, allowing closure of the new private player report. This shared legacy permission check predates the increment; player reports newly consume it.",
+      "taxonomy": {
+        "category": "Authorization bypass",
+        "cwe": [
+          "CWE-863"
+        ]
+      },
+      "title": "Former administrators can close reports while guild permissions remain cached",
+      "validation": {
+        "assertions": [
+          "Baseline handler 20b52805 remained unchanged during reproduction.",
+          "9 focused tests: 5 pass, 4 fail. revoked-admin-role, former-owner, roles-unavailable and guild-unavailable each observed one closure mutation when zero was expected.",
+          "Current Administrator closure passed, confirming reachability of the real handler and negative control."
+        ],
+        "evidenceRefs": [
+          "permission-check",
+          "persist-closure",
+          "report-closure"
+        ],
+        "limitations": [
+          "Legacy tickets already used this cached permission path before the diff; this increment newly attaches player-report closure to it. Normal gateway guild/role updates reduce likelihood. Reproduction intentionally injects stale cache; it does not establish frequency or hosted exploitability.",
+          "Live timing and cache-staleness duration not measured. No production exploit or role change performed."
+        ],
+        "method": "Synthetic handler reproduction against unchanged implementation at 20b52805; test source added locally solely for regression and retained in scan artifacts. No Discord/provider/production calls.",
+        "summary": "Four synthetic stale/revoked/unavailable-state cases each performed one unauthorized closure mutation against the unchanged implementation. Current-admin and original regressions passed."
+      }
+    }
+  ],
+  "scanId": "0b7fbe18-c2f1-4d13-bac9-06ee2cdb05db",
+  "schemaVersion": "1.0"
+}

@@ -1,0 +1,34 @@
+{
+  "at": "2026-10-03T18:01:10.834Z",
+  "localDatabaseOnly": true,
+  "counts": {
+    "candidates": 37,
+    "tracked": 1
+  },
+  "messages": [
+    {
+      "deleted": false,
+      "matchIds": [
+        "cmuqt8ep605e1lf018w2nlywu"
+      ],
+      "messageId": "1556002882975956995",
+      "version": 1791050396437
+    }
+  ],
+  "reference": [
+    {
+      "automatic": true,
+      "discordRefs": [
+        {
+          "channelId": "1554615183106904074",
+          "messageId": "1556002882975956995"
+        }
+      ],
+      "eventId": null,
+      "id": "vh7452zmgjd1d0th676ethqzas8fkgdq",
+      "pinned": true,
+      "revision": 1791050443465,
+      "state": "tracked"
+    }
+  ]
+}

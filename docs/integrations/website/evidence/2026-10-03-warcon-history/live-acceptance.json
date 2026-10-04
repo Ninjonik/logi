@@ -1,0 +1,50 @@
+{
+    "capturedAt": "2026-10-03T20:42:19.745Z",
+    "localOnly": true,
+    "providerWrites": false,
+    "rawPlayerDataPublished": false,
+    "synthetic": {
+        "games": 23,
+        "players": 24,
+        "revision": "23"
+    },
+    "live": {
+        "games": 5,
+        "outcomes": {
+            "decided": 4,
+            "draw": 0,
+            "no_result": 1,
+            "unknown": 0
+        },
+        "factions": [
+            {
+                "name": "Manticore",
+                "colorHex": "#1DD65C",
+                "wins": 2,
+                "appearances": 5,
+                "winShare": 0.5
+            },
+            {
+                "name": "Lonestar",
+                "colorHex": "#4CB1EF",
+                "wins": 1,
+                "appearances": 5,
+                "winShare": 0.25
+            },
+            {
+                "name": "Valkyra",
+                "colorHex": "#FA503E",
+                "wins": 1,
+                "appearances": 5,
+                "winShare": 0.25
+            }
+        ],
+        "players": 322,
+        "eligiblePlayers": 196,
+        "feedGames": 5,
+        "firstEndedAt": "2026-10-02T19:07:58.652Z",
+        "lastEndedAt": "2026-10-02T23:14:05.100Z",
+        "revision": "5"
+    },
+    "httpStatus": 200
+}

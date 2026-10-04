@@ -1,3 +1,5 @@
+import type { MatchTeamAssignment } from "../teams/match-teams"
+
 export type EventStatus = "registration" | "closed" | "starting" | "concluded"
 export type EventKind = "match" | "training"
 export type MatchTypeCategory = string
@@ -92,4 +94,6 @@ export type EventLike = {
     pingClan?: boolean
     pingMode?: "none" | "clan" | "roles"
     pingRoleIds?: string[]
+    /** Directory team selections with server-captured snapshots; absent on legacy events. */
+    matchTeams?: MatchTeamAssignment[]
 }

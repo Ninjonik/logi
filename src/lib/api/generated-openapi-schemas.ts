@@ -458,6 +458,98 @@ export const generatedOpenApiSchemas = {
                     ]
                 }
             },
+            "matchTeams": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "teamId": {
+                            "type": "string"
+                        },
+                        "slot": {
+                            "anyOf": [
+                                {
+                                    "const": "a"
+                                },
+                                {
+                                    "const": "b"
+                                },
+                                {
+                                    "const": "c"
+                                }
+                            ]
+                        },
+                        "side": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
+                        "snapshot": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "shortCode": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                },
+                                "logoAssetId": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                },
+                                "logoUrl": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                },
+                                "teamRevision": {
+                                    "type": "number"
+                                },
+                                "capturedAt": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "shortCode",
+                                "logoAssetId",
+                                "logoUrl",
+                                "teamRevision",
+                                "capturedAt"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "teamId",
+                        "slot",
+                        "side",
+                        "snapshot"
+                    ]
+                }
+            },
             "createdAt": {
                 "type": "string"
             },
@@ -594,6 +686,21 @@ export const generatedOpenApiSchemas = {
                     "createdAt": "string"
                 }
             ],
+            "matchTeams": [
+                {
+                    "teamId": "string",
+                    "slot": "a",
+                    "side": "string",
+                    "snapshot": {
+                        "name": "string",
+                        "shortCode": "string",
+                        "logoAssetId": "string",
+                        "logoUrl": "string",
+                        "teamRevision": 0,
+                        "capturedAt": "string"
+                    }
+                }
+            ],
             "createdAt": "string",
             "updatedAt": "string",
             "id": "string"
@@ -680,6 +787,19 @@ export const generatedOpenApiSchemas = {
         "properties": {
             "guildId": {
                 "type": "string"
+            },
+            "gameId": {
+                "anyOf": [
+                    {
+                        "const": "hell_let_loose"
+                    },
+                    {
+                        "const": "hell_let_loose_vietnam"
+                    },
+                    {
+                        "const": "wardogs"
+                    }
+                ]
             },
             "eventId": {
                 "type": "string",
@@ -813,6 +933,7 @@ export const generatedOpenApiSchemas = {
         ],
         "example": {
             "guildId": "string",
+            "gameId": "hell_let_loose",
             "eventId": "string",
             "squadPresetId": "string",
             "squads": [
@@ -1278,6 +1399,19 @@ export const generatedOpenApiSchemas = {
             "guildId": {
                 "type": "string"
             },
+            "gameId": {
+                "anyOf": [
+                    {
+                        "const": "hell_let_loose"
+                    },
+                    {
+                        "const": "hell_let_loose_vietnam"
+                    },
+                    {
+                        "const": "wardogs"
+                    }
+                ]
+            },
             "name": {
                 "type": "string"
             },
@@ -1362,6 +1496,7 @@ export const generatedOpenApiSchemas = {
         ],
         "example": {
             "guildId": "string",
+            "gameId": "hell_let_loose",
             "name": "string",
             "squads": [
                 {
@@ -2178,6 +2313,9 @@ export const generatedOpenApiSchemas = {
     "ClanUsersDocument": {
         "type": "object",
         "properties": {
+            "sessionVersion": {
+                "type": "number"
+            },
             "discordId": {
                 "type": "string"
             },
@@ -2317,6 +2455,7 @@ export const generatedOpenApiSchemas = {
             "id"
         ],
         "example": {
+            "sessionVersion": 0,
             "discordId": "string",
             "id": "string",
             "name": "string",

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "550ec1b3fd8d36d292a567cfa4a765c0cd462f82",
+  "runtimeInputs": [
+    {
+      "path": "src",
+      "gitObject": "abc1bc6863426c180d50e5240b14ea0d24f1efa8"
+    },
+    {
+      "path": "convex",
+      "gitObject": "0437f236d542d617908d2548357d23c856164d91"
+    },
+    {
+      "path": "discord-bot",
+      "gitObject": "938b49ffbe7381c6ad008c92bd729f86cf10f7ef"
+    },
+    {
+      "path": "package.json",
+      "gitObject": "2747ea105c06f4da4950b5aa3973f5f83db6ff30"
+    },
+    {
+      "path": "bun.lock",
+      "gitObject": "409116dd1747735926597e290dcc302c4298e115"
+    },
+    {
+      "path": "patches",
+      "gitObject": "8cdf71e38a9e0b9fd9c782256e0fb43c6ae13e33"
+    },
+    {
+      "path": "config",
+      "gitObject": "3c73581c9b546fa0cddc4d3c1b9fc0f09fc85db2"
+    },
+    {
+      "path": "next.config.ts",
+      "gitObject": "9f9ddc53a9b6432c84e1f1a37895238736d739cf"
+    },
+    {
+      "path": "tsconfig.json",
+      "gitObject": "4f5a4fb7905bdd931eb0d0864012af4078c37c11"
+    },
+    {
+      "path": "postcss.config.mjs",
+      "gitObject": "7059fe95adc36c465aed2b0e65920c34060c06a0"
+    },
+    {
+      "path": "scripts/generate-openapi-schemas.ts",
+      "gitObject": "d94d17d6e5a8f6ea27499a1b29f1a3ce04eae896"
+    },
+    {
+      "path": "scripts/generate-convex-api-offline.mjs",
+      "gitObject": "0ae3f198c1d6fff201b9da8e7bae486ce079f462"
+    },
+    {
+      "path": ".github/workflows/verify.yml",
+      "gitObject": "258be2a0e5bb3821377f30db1573f5eaf2b2b6b7"
+    }
+  ],
+  "observedTypeScriptSnapshot": {
+    "fileCount": 956,
+    "sha256": "f5bd704f96a8197ffd723925457b74bcda181a9804632771502dc9f8f975c841",
+    "selection": "Tracked .ts/.tsx/.mts/.cts files under convex, src and discord-bot, excluding /_generated/. Sort paths ordinally; SHA-256 each UTF-8 file after CRLF to LF normalization, then SHA-256 JSON.stringify([{path,sha256},...])."
+  },
+  "note": "Tree objects bind the complete committed runtime inputs. The 956-file digest binds the application TypeScript observed before and after HTTP checks. Private fixture modules and local generated fixture bindings are excluded and are not production code."
+}

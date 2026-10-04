@@ -6,6 +6,7 @@ import type {
     EventStatus,
     SignupMembershipStatus,
 } from "./types"
+import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import { normalizeParticipants } from "./participants"
 import type { GameId } from "@/domain/games/game"
 import { deriveEventStatus } from "./status"
@@ -56,6 +57,8 @@ export type EventUpsertInput = {
         nth?: number
         weekday?: number
     }
+    /** Resolved at the write boundary; never raw client input. Undefined preserves, [] clears. */
+    matchTeams?: MatchTeamAssignment[]
 }
 
 function trimOptional(value: string | undefined) {
@@ -175,6 +178,9 @@ export function buildCreateEventRecord(input: EventUpsertInput, now: Date) {
         absenceNotices: [],
         eventResult: undefined,
         matchStatsId: undefined,
+        ...(input.matchTeams !== undefined
+            ? { matchTeams: input.matchTeams }
+            : {}),
         createdAt: nowIso,
         updatedAt: nowIso,
     }
@@ -231,6 +237,8 @@ export function buildUpdateEventPatch(
         scoreAppliedAt: existing.scoreAppliedAt,
         scoreResolution: existing.scoreResolution,
         absenceNotices: normalizeOptionalArray(existing.absenceNotices),
+        // Omitted assignments preserve the saved selection; an explicit [] clears it.
+        matchTeams: input.matchTeams ?? existing.matchTeams,
         updatedAt: nowIso,
     }
 }

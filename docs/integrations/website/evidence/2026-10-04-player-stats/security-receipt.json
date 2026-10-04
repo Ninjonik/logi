@@ -1,0 +1,29 @@
+{
+  "scanId": "a16d07a2-3311-49a8-ae1a-a5a02bfc4cb3",
+  "completedAt": "2026-10-03T23:20:59.223357Z",
+  "baseRevision": "72946e3915af2216f97f8c167ea02ea20308555c",
+  "reviewedRevision": "8b07862a077a6d25a4005e69dbc8ca9bdeaa88f6",
+  "reportableFindings": 0,
+  "sourceFilesReviewed": 23,
+  "supplementalFixtureReviewed": "src/infrastructure/testing/hll-profile.ts",
+  "coverage": "complete",
+  "preflight": "ready",
+  "architectureReview": "independent",
+  "discoveryReview": "parent, all source inventory entries",
+  "runtimeLimits": [
+    "No production database/deployment test",
+    "Wardogs Discord acceptance used synthetic retained games",
+    "Live HLL Records backend read blocked by HTTP 403"
+  ],
+  "rolloutUsage": {
+    "cacheWriteInputTokens": 0,
+    "cachedInputTokens": 7337344,
+    "coverage": "complete",
+    "inputTokens": 7630571,
+    "outputTokens": 29503,
+    "reasoningOutputTokens": 8698,
+    "source": "codex_rollout",
+    "threadCount": 3,
+    "totalTokens": 7660074
+  }
+}
