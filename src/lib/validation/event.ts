@@ -1,3 +1,4 @@
+import { matchTeamInputsSchema } from "@/domain/teams/match-teams"
 import { GAME_IDS } from "@/domain/games/game"
 import { z } from "zod"
 
@@ -73,6 +74,7 @@ export const eventSchema = z
                 weekday: z.coerce.number().int().min(0).max(6).optional(),
             })
             .optional(),
+        matchTeams: matchTeamInputsSchema.optional(),
     })
     .superRefine((value, ctx) => {
         const registrationEnd = new Date(value.registrationEnd)

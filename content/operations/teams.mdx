@@ -1,0 +1,97 @@
+---
+title: Teams
+description: Keep a per-game directory of opponents with names, short codes and logos, and reuse it in matches.
+---
+
+import { Callout, Steps } from "nextra/components"
+
+# Teams
+
+The team directory stores the teams your workspace plays against, once, so
+managers can pick them when preparing a match instead of retyping names. Each
+workspace owns its own directory, and Hell Let Loose and Wardogs keep separate
+lists: a team called the same in both games is two separate entries. Teams do
+not need a Logi account or a Discord community.
+
+Open **Configuration → Teams** in the workspace navigation. The page is
+available to workspace administrators only.
+
+## Choose the game
+
+The page follows the game selector in the sidebar:
+
+- **All games** shows one section for Hell Let Loose and one for Wardogs. The
+  two lists are never mixed.
+- **Hell Let Loose** or **Wardogs** shows only that game's directory.
+- **Hell Let Loose: Vietnam** has no team directory; the page says so.
+
+**Add team** appears only for games enabled in the workspace's clan settings.
+A section for a disabled game still lists its existing teams, which can be
+edited, archived and restored, and links to the settings where the game can be
+enabled.
+
+## Add or edit a team (administrator)
+
+<Steps>
+
+### Open the form
+
+Select **Add team** in the game's section, or **Edit** on an existing row.
+
+### Enter the name and short code
+
+The name is required and may have up to 120 characters. The optional short
+code (up to 16 characters) is shown where space is tight. Leading, trailing
+and repeated spaces are removed when the team is saved.
+
+### Upload a logo (optional)
+
+Choose a PNG, JPEG or WebP image of at most 2 MiB and at most 4096×4096
+pixels. Animated images are rejected. Logi stores a normalized copy no larger
+than 512×512 and shows it as a preview. **Remove logo** detaches it. Without a
+logo, Logi shows the short code or the initials of the first two words of the
+name.
+
+### Save
+
+**Save team** stores the entry. If the connection fails, select **Save team**
+again in the same form: the retry is recognised and does not create a second
+team.
+
+</Steps>
+
+Names are unique per workspace and game, ignoring letter case and repeated
+spaces; accents still count. Archived teams keep their names, so a duplicate
+name usually means the team exists already — show archived teams and restore
+it instead of creating a new one. Short codes do not need to be unique. Each
+game's directory holds at most 500 teams.
+
+If another administrator changed the team while you were editing, saving shows
+a message and loads the latest version; review it and save again.
+
+## Find teams
+
+Search matches names and short codes. Lists load 50 teams at a time; use
+**Load more** for the next page. A search shows the 50 best matches. Turn on
+**Show archived** to include archived teams, which carry an **Archived** badge.
+
+## Archive and restore
+
+**Archive** removes a team from new match selection and from the active
+directory shared with connected websites. Nothing is deleted: matches that
+already used the team keep the name and logo they saved. **Restore** brings
+the same entry back. An archived team must be restored before it can be
+edited. There is no permanent deletion and no automatic merging of similar
+names.
+
+<Callout type="info">
+    A connected website can read the active directory only when its key has the
+    separate **Team directory** (`teams`) grant. That grant never allows the
+    website to change the directory.
+</Callout>
+
+## Use teams in a match
+
+The match editor has a **Teams** section for Hell Let Loose and Wardogs
+matches. See [Matches → Teams](/wiki/operations/matches#teams) for slots, sides, snapshots and
+when the selection is frozen.

@@ -8,6 +8,12 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import {
+    matchTeamsEditability,
+    validateMatchTeamInputs,
+    type MatchTeamAssignment,
+    type MatchTeamInput,
+} from "@/domain/teams/match-teams"
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -61,11 +67,17 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+    matchTeamGame,
+    toMatchTeamInputs,
+} from "@/lib/teams/match-team-selection"
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DiscordChannelSelect } from "@/components/app/discord-channel-select"
 import { eventSchema, type EventInput } from "@/lib/validation/event"
+import { MatchTeamPicker } from "@/components/app/match-team-picker"
 import { HllMapSelector } from "@/components/app/hll-map-selector"
+import { matchTeamSaveErrorCode } from "@/lib/teams/team-client"
 import { getEventCategoryLabel } from "@/lib/event-categories"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
@@ -578,6 +590,14 @@ export function EventFormPanel({
         () => new Set(eventGroups.map((group) => group.id)),
         [eventGroups]
     )
+    // Match teams live beside the form values so the payload carries them only when the section is editable.
+    const teamGameId = matchTeamGame(event.gameId)
+    const [matchTeams, setMatchTeams] = useState<MatchTeamInput[]>(() =>
+        toMatchTeamInputs(event.matchTeams)
+    )
+    const [savedMatchTeams, setSavedMatchTeams] = useState<
+        MatchTeamAssignment[]
+    >(() => event.matchTeams ?? [])
 
     const form = useForm<EventInput>({
         resolver: zodResolver(eventSchema),
@@ -637,6 +657,13 @@ export function EventFormPanel({
         },
     })
     const eventKind = form.watch("kind")
+    const showMatchTeams = eventKind === "match" && teamGameId !== null
+    const matchTeamsLocked = matchTeamsEditability({
+        kind: eventKind,
+        status: event.status,
+    })
+    const matchTeamsEditable =
+        showMatchTeams && canEdit && matchTeamsLocked === null
     const detailBasePath = eventKind === "training" ? "trainings" : "matches"
     const eventName = form.watch("name")
     const eventCategoryValue = form.watch("matchType")
@@ -892,6 +919,16 @@ export function EventFormPanel({
     }
 
     async function submit(values: EventInput) {
+        if (
+            matchTeamsEditable &&
+            teamGameId &&
+            validateMatchTeamInputs(teamGameId, matchTeams)
+        ) {
+            form.setError("root", {
+                message: dictionary.teams.picker.errors.invalid_match_teams,
+            })
+            return
+        }
         const payload = {
             gameId: event.gameId,
             ...values,
@@ -956,6 +993,8 @@ export function EventFormPanel({
             squadVoiceCategoryId: values.squadVoiceCategoryId || undefined,
             pingClan: values.pingMode === "clan",
             pingRoleIds: values.pingMode === "roles" ? values.pingRoleIds : [],
+            // Omitted keeps the saved assignments; an empty array clears them.
+            ...(matchTeamsEditable ? { matchTeams } : {}),
         }
 
         const response = await fetch(
@@ -973,10 +1012,12 @@ export function EventFormPanel({
 
         const body = await response.json()
         if (!response.ok) {
-            toast.error(body.error ?? dictionary.event.saveError)
-            form.setError("root", {
-                message: body.error ?? dictionary.event.saveError,
-            })
+            const matchTeamError = matchTeamSaveErrorCode(body)
+            const message = matchTeamError
+                ? dictionary.teams.picker.errors[matchTeamError]
+                : (body.error ?? dictionary.event.saveError)
+            toast.error(message)
+            form.setError("root", { message })
             return
         }
 
@@ -1374,6 +1415,30 @@ export function EventFormPanel({
                                         emptyLabel={dictionary.shared.notSet}
                                     />
                                 )}
+                            </div>
+                        ) : null}
+                        {showMatchTeams && teamGameId ? (
+                            <div className="space-y-2 md:col-span-2">
+                                <MatchTeamPicker
+                                    serverId={serverId}
+                                    gameId={teamGameId}
+                                    dictionary={dictionary}
+                                    value={matchTeams}
+                                    onChange={setMatchTeams}
+                                    existing={savedMatchTeams}
+                                    eventId={createMode ? null : event.id}
+                                    disabled={!matchTeamsEditable}
+                                    onRefreshed={setSavedMatchTeams}
+                                />
+                                {canEdit && matchTeamsLocked ? (
+                                    <p className="text-muted-foreground text-xs">
+                                        {
+                                            dictionary.teams.picker.errors[
+                                                matchTeamsLocked
+                                            ]
+                                        }
+                                    </p>
+                                ) : null}
                             </div>
                         ) : null}
                         {eventKind === "match" ? (
