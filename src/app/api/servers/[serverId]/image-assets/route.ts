@@ -1,11 +1,11 @@
 import type { DashboardActor } from "../../../../../../convex/dashboardActor"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
+import { fetchAction, fetchMutation, fetchQuery } from "convex/nextjs"
 import { imageAssetDtoSchema } from "@/domain/assets/image-asset"
 import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { imageAssetHandlers } from "@/lib/api/image-upload"
 import { readBoundedBytes } from "@/lib/api/request-bytes"
-import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 import { randomBytes } from "node:crypto"
 import { z } from "zod"
@@ -14,18 +14,17 @@ export const runtime = "nodejs"
 type Context = { params: Promise<{ serverId: string }> }
 type Access = { secret: string; guildId: string; actor: DashboardActor }
 const reserveResult = z.union([
-    z.object({ ok: z.literal(true), uploadUrl: z.url() }),
+    z.object({ ok: z.literal(true) }),
     z.object({
         error: z.literal("upload_limited"),
         retryAfterMs: z.number().nonnegative(),
     }),
 ])
-const createResult = z.union([
+const storeResult = z.union([
     z.object({ ok: z.literal(true), asset: imageAssetDtoSchema }),
     z.object({ error: z.string() }),
 ])
 const listResult = z.object({ assets: z.array(imageAssetDtoSchema) })
-const storageReceipt = z.object({ storageId: z.string().min(1) })
 
 const handlers = imageAssetHandlers<Access>({
     authorize: async (serverId) => {
@@ -47,20 +46,20 @@ const handlers = imageAssetHandlers<Access>({
             )
         ),
     readBody: readBoundedBytes,
-    upload: async (uploadUrl, bytes, contentType) => {
-        const response = await fetch(uploadUrl, {
-            method: "POST",
-            headers: { "Content-Type": contentType },
-            body: bytes,
-        })
-        if (!response.ok) throw new Error("Storage upload failed.")
-        return storageReceipt.parse(await response.json()).storageId
-    },
-    create: async (access, asset) =>
-        createResult.parse(
-            await fetchMutation(
-                makeFunctionReference<"mutation">("imageAssets:create"),
-                { ...access, asset }
+    // Convex stores and records the bytes together and deletes the file again
+    // when recording fails, so no stored upload is left without a record.
+    store: async (access, asset, bytes) =>
+        storeResult.parse(
+            await fetchAction(
+                makeFunctionReference<"action">("imageAssets:storeNormalized"),
+                {
+                    ...access,
+                    asset,
+                    bytes: bytes.buffer.slice(
+                        bytes.byteOffset,
+                        bytes.byteOffset + bytes.byteLength
+                    ),
+                }
             )
         ),
     list: async (access, kind) =>

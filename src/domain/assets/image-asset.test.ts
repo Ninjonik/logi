@@ -1,7 +1,9 @@
 import {
     canAttachImageAsset,
     cleanupDue,
+    IMAGE_MAX_INPUT_BYTES,
     imageAssetPath,
+    isStorableNormalizedImage,
     parseImageAssetFile,
     sniffImageType,
     validateImageSource,
@@ -170,4 +172,58 @@ test("public paths are immutable and strictly parsed", () => {
     })
     assert.equal(parseImageAssetFile(`${id}.svg`), null)
     assert.equal(parseImageAssetFile(`../${id}.png`), null)
+})
+
+test("only the kind's normalized format within the byte bound is storable", () => {
+    assert.equal(
+        isStorableNormalizedImage({
+            kind: "team-logo",
+            contentType: "image/png",
+            bytes: png,
+        }),
+        true
+    )
+    assert.equal(
+        isStorableNormalizedImage({
+            kind: "panel-banner",
+            contentType: "image/webp",
+            bytes: webp,
+        }),
+        true
+    )
+    // A logo is always published as PNG; a declared type must match the bytes.
+    assert.equal(
+        isStorableNormalizedImage({
+            kind: "team-logo",
+            contentType: "image/webp",
+            bytes: webp,
+        }),
+        false
+    )
+    assert.equal(
+        isStorableNormalizedImage({
+            kind: "team-logo",
+            contentType: "image/png",
+            bytes: jpeg,
+        }),
+        false
+    )
+    assert.equal(
+        isStorableNormalizedImage({
+            kind: "team-logo",
+            contentType: "image/png",
+            bytes: new Uint8Array(),
+        }),
+        false
+    )
+    const oversized = new Uint8Array(IMAGE_MAX_INPUT_BYTES + 1)
+    oversized.set(png)
+    assert.equal(
+        isStorableNormalizedImage({
+            kind: "team-logo",
+            contentType: "image/png",
+            bytes: oversized,
+        }),
+        false
+    )
 })

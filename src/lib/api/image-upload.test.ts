@@ -1,7 +1,7 @@
 import {
     imageAssetHandlers,
     type ImageAssetPorts,
-    type StoredImageAsset,
+    type NormalizedImageUpload,
 } from "./image-upload"
 import { sniffImageType } from "@/domain/assets/image-asset"
 import { readBoundedBytes } from "./request-bytes"
@@ -43,32 +43,27 @@ function fakePorts(overrides: Partial<ImageAssetPorts<string>> = {}) {
     const calls = {
         reserve: 0,
         read: 0,
-        upload: 0,
-        create: 0,
-        uploaded: [] as { bytes: Uint8Array; contentType: string }[],
-        stored: [] as StoredImageAsset[],
+        store: 0,
+        stored: [] as {
+            asset: NormalizedImageUpload
+            bytes: Uint8Array
+        }[],
     }
     const ports: ImageAssetPorts<string> = {
         authorize: async (serverId) =>
             serverId === "server-1" ? "guild-1" : null,
         reserve: async () => {
             calls.reserve++
-            return { ok: true, uploadUrl: "https://storage.test/upload" }
+            return { ok: true }
         },
         readBody: async (request, maxBytes) => {
             calls.read++
             return readBoundedBytes(request, maxBytes)
         },
-        upload: async (uploadUrl, bytes, contentType) => {
-            calls.upload++
-            assert.equal(uploadUrl, "https://storage.test/upload")
-            calls.uploaded.push({ bytes, contentType })
-            return "storage-1"
-        },
-        create: async (access, asset) => {
-            calls.create++
+        store: async (access, asset, bytes) => {
+            calls.store++
             assert.equal(access, "guild-1")
-            calls.stored.push(asset)
+            calls.stored.push({ asset, bytes })
             return {
                 ok: true,
                 asset: {
@@ -77,7 +72,7 @@ function fakePorts(overrides: Partial<ImageAssetPorts<string>> = {}) {
                     contentType: asset.contentType,
                     width: asset.width,
                     height: asset.height,
-                    bytes: asset.bytes,
+                    bytes: bytes.byteLength,
                     url: asset.publicUrl,
                     createdAt: "2026-10-04T00:00:00.000Z",
                 },
@@ -137,8 +132,7 @@ test("a limited attempt answers before any body byte is read", async () => {
         retryAfterMs: 61_500,
     })
     assert.equal(calls.read, 0)
-    assert.equal(calls.upload, 0)
-    assert.equal(calls.create, 0)
+    assert.equal(calls.store, 0)
 })
 
 test("oversized bodies stop at 413 and never reach storage", async () => {
@@ -150,8 +144,7 @@ test("oversized bodies stop at 413 and never reach storage", async () => {
     assert.equal(response.status, 413)
     assert.deepEqual(await response.json(), { error: "too_large" })
     assert.equal(calls.reserve, 1)
-    assert.equal(calls.upload, 0)
-    assert.equal(calls.create, 0)
+    assert.equal(calls.store, 0)
 })
 
 test("the declared type must match the bytes and the decoder", async () => {
@@ -175,8 +168,7 @@ test("the declared type must match the bytes and the decoder", async () => {
         assert.equal(response.status, 400)
         assert.deepEqual(await response.json(), { error })
     }
-    assert.equal(calls.upload, 0)
-    assert.equal(calls.create, 0)
+    assert.equal(calls.store, 0)
 })
 
 test("animated and oversized-dimension sources are rejected before storage", async () => {
@@ -237,8 +229,7 @@ test("animated and oversized-dimension sources are rejected before storage", asy
         assert.equal(response.status, 400)
         assert.deepEqual(await response.json(), { error })
     }
-    assert.equal(calls.upload, 0)
-    assert.equal(calls.create, 0)
+    assert.equal(calls.store, 0)
 })
 
 test("a valid logo is normalized, stored, recorded and returned", async () => {
@@ -253,50 +244,44 @@ test("a valid logo is normalized, stored, recorded and returned", async () => {
         body.asset.url,
         `${origin}/api/image-assets/${"a".repeat(32)}.png`
     )
-    assert.equal(calls.upload, 1)
-    assert.equal(calls.create, 1)
-    const [sent] = calls.uploaded,
-        [stored] = calls.stored
-    assert.ok(sent && stored)
-    assert.equal(sent.contentType, "image/png")
-    assert.equal(sniffImageType(sent.bytes), "image/png")
-    assert.equal(stored.kind, "team-logo")
-    assert.equal(stored.publicId, "a".repeat(32))
-    assert.equal(stored.storageId, "storage-1")
-    assert.equal(stored.contentType, "image/png")
-    assert.equal(stored.width, 512)
-    assert.ok(stored.height <= 512)
-    assert.equal(stored.bytes, sent.bytes.byteLength)
-    assert.match(stored.sha256, /^[a-f0-9]{64}$/)
-    assert.equal(stored.publicUrl, body.asset.url)
+    assert.equal(calls.store, 1)
+    const [stored] = calls.stored
+    assert.ok(stored)
+    assert.equal(sniffImageType(stored.bytes), "image/png")
+    assert.equal(stored.bytes.byteOffset, 0)
+    assert.equal(stored.bytes.byteLength, stored.bytes.buffer.byteLength)
+    assert.deepEqual(Object.keys(stored.asset).sort(), [
+        "contentType",
+        "height",
+        "kind",
+        "publicId",
+        "publicUrl",
+        "width",
+    ])
+    assert.equal(stored.asset.kind, "team-logo")
+    assert.equal(stored.asset.publicId, "a".repeat(32))
+    assert.equal(stored.asset.contentType, "image/png")
+    assert.equal(stored.asset.width, 512)
+    assert.ok(stored.asset.height <= 512)
+    assert.equal(stored.asset.publicUrl, body.asset.url)
 })
 
 test("storage and persistence failures map to unavailable", async () => {
     const png = await pngBytes()
-    const storage = fakePorts({
-        upload: async () => {
-            throw new Error("storage down")
-        },
-    })
-    const stored = await storage.handlers.POST(
-        upload(png, "image/png"),
-        "server-1"
-    )
-    assert.equal(stored.status, 503)
-    assert.deepEqual(await stored.json(), { error: "unavailable" })
-    assert.equal(storage.calls.create, 0)
     const persistence = fakePorts({
-        create: async () => {
+        store: async () => {
             throw new Error("convex down")
         },
     })
-    assert.equal(
-        (await persistence.handlers.POST(upload(png, "image/png"), "server-1"))
-            .status,
-        503
+    const failed = await persistence.handlers.POST(
+        upload(png, "image/png"),
+        "server-1"
     )
+    assert.equal(failed.status, 503)
+    assert.deepEqual(await failed.json(), { error: "unavailable" })
+    // Convex already removed the stored file when it rejects the record.
     const rejected = fakePorts({
-        create: async () => ({ error: "invalid_asset" }),
+        store: async () => ({ error: "invalid_asset" }),
     })
     const response = await rejected.handlers.POST(
         upload(png, "image/png"),
@@ -315,6 +300,7 @@ test("storage and persistence failures map to unavailable", async () => {
         503
     )
     assert.equal(reservation.calls.read, 0)
+    assert.equal(reservation.calls.store, 0)
 })
 
 test("listing is admin-only, kind-scoped and reports outages", async () => {

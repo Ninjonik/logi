@@ -3,6 +3,7 @@ import {
     cleanupDue,
     IMAGE_CLEANUP_BATCH,
     IMAGE_OUTPUT,
+    IMAGE_UNATTACHED_TTL_MS,
     IMAGE_UPLOAD_LIMIT,
     imagePublicIdSchema,
     projectImageAsset,
@@ -10,13 +11,22 @@ import {
     type ImageAssetKind,
 } from "../src/domain/assets/image-asset"
 import {
+    action,
     internalMutation,
     mutation,
     query,
     type MutationCtx,
     type QueryCtx,
 } from "./_generated/server"
-import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
+import {
+    storeImageAsset,
+    type StoreImageAssetResult,
+} from "../src/application/assets/store-image-asset"
+import {
+    authorizeDashboardAdmin,
+    dashboardActor,
+    type DashboardActor,
+} from "./dashboardActor"
 import { imageAssetKind, imageContentType } from "./teamValidators"
 import { assertSessionGateway } from "./dashboardSessionStore"
 import type { Doc, Id } from "./_generated/dataModel"
@@ -131,7 +141,11 @@ async function consumeUploadAttempt(ctx: MutationCtx, bucket: string) {
     return { allowed: true as const, retryAfterMs: 0 }
 }
 
-/** Counts one upload attempt per actor and workspace before any bytes are accepted. */
+/**
+ * Counts one upload attempt per actor and workspace before any bytes are
+ * accepted. No upload URL is issued: bytes reach storage only through
+ * `storeNormalized`, which records them or removes them again.
+ */
 export const reserveUpload = mutation({
     args: { ...access, kind: imageAssetKind },
     handler: async (ctx, args) => {
@@ -145,15 +159,86 @@ export const reserveUpload = mutation({
                 error: "upload_limited" as const,
                 retryAfterMs: attempt.retryAfterMs,
             }
-        return {
-            ok: true as const,
-            uploadUrl: await ctx.storage.generateUploadUrl(),
-        }
+        return { ok: true as const }
     },
 })
 
-/** Records a normalized image the gateway has already validated and stored. */
-export const create = mutation({
+/** Presentation facts the gateway derived while normalizing; size and digest are derived here. */
+const normalizedAsset = v.object({
+    kind: imageAssetKind,
+    publicId: v.string(),
+    contentType: imageContentType,
+    width: v.number(),
+    height: v.number(),
+    publicUrl: v.string(),
+})
+const recordReference = makeFunctionReference<
+    "mutation",
+    {
+        secret: string
+        guildId: string
+        actor: DashboardActor
+        asset: {
+            kind: ImageAssetKind
+            publicId: string
+            storageId: Id<"_storage">
+            contentType: Doc<"imageAssets">["contentType"]
+            width: number
+            height: number
+            bytes: number
+            sha256: string
+            publicUrl: string
+        }
+    },
+    StoreImageAssetResult
+>("imageAssets:record")
+
+async function sha256Hex(bytes: ArrayBuffer) {
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))
+    return Array.from(digest, (byte) =>
+        byte.toString(16).padStart(2, "0")
+    ).join("")
+}
+
+/**
+ * Stores a normalized image the gateway produced and records it for the
+ * current workspace administrator. The record re-authorizes the actor in its
+ * own transaction; when it is rejected or fails, exactly the blob stored here
+ * is deleted, so no stored file is ever left without a record.
+ */
+export const storeNormalized = action({
+    args: { ...access, asset: normalizedAsset, bytes: v.bytes() },
+    handler: async (ctx, args): Promise<StoreImageAssetResult> => {
+        assertSessionGateway(args.secret)
+        const { secret, guildId, actor, asset } = args
+        return await storeImageAsset(
+            {
+                kind: asset.kind,
+                contentType: asset.contentType,
+                bytes: args.bytes,
+            },
+            {
+                digest: sha256Hex,
+                store: async (bytes, contentType) =>
+                    await ctx.storage.store(
+                        new Blob([bytes], { type: contentType })
+                    ),
+                record: async (stored) =>
+                    await ctx.runMutation(recordReference, {
+                        secret,
+                        guildId,
+                        actor,
+                        asset: { ...asset, ...stored },
+                    }),
+                remove: async (storageId) =>
+                    await ctx.storage.delete(storageId),
+            }
+        )
+    },
+})
+
+/** Records a stored normalized image; internal, reached only through `storeNormalized`. */
+export const record = internalMutation({
     args: {
         ...access,
         asset: v.object({
@@ -168,7 +253,7 @@ export const create = mutation({
             publicUrl: v.string(),
         }),
     },
-    handler: async (ctx, args) => {
+    handler: async (ctx, args): Promise<StoreImageAssetResult> => {
         const admin = await authorizeDashboardAdmin(ctx, args)
         const asset = args.asset,
             bounds = IMAGE_OUTPUT[asset.kind]
@@ -247,20 +332,30 @@ export const list = query({
 /**
  * Claims unreferenced uploads older than the retention window, then removes the
  * blob and the record. Referenced assets are never touched; batches are bounded.
+ * One sweep pages through every old ready asset with a cursor and a fixed
+ * cutoff, so referenced assets never block the uploads behind them; it
+ * schedules its next batch only while the scan is unfinished.
  */
 export const cleanupUnattached = internalMutation({
-    args: {},
-    handler: async (ctx) => {
+    args: {
+        cursor: v.optional(v.string()),
+        cutoff: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
         const now = Date.now()
-        const cutoff = new Date(now - 24 * 60 * 60_000).toISOString()
-        const candidates = await ctx.db
+        const cutoff =
+            args.cutoff ?? new Date(now - IMAGE_UNATTACHED_TTL_MS).toISOString()
+        const page = await ctx.db
             .query("imageAssets")
             .withIndex("state_createdAt", (q) =>
                 q.eq("state", "ready").lte("createdAt", cutoff)
             )
-            .take(IMAGE_CLEANUP_BATCH)
+            .paginate({
+                cursor: args.cursor ?? null,
+                numItems: IMAGE_CLEANUP_BATCH,
+            })
         let deleted = 0
-        for (const row of candidates) {
+        for (const row of page.page) {
             if (!cleanupDue(row, await referenced(ctx, row._id), now)) continue
             // Claim first so a concurrent attach observes a non-attachable state.
             await ctx.db.patch(row._id, { state: "deleting" })
@@ -268,14 +363,14 @@ export const cleanupUnattached = internalMutation({
             await ctx.db.delete(row._id)
             deleted++
         }
-        if (candidates.length === IMAGE_CLEANUP_BATCH)
+        if (!page.isDone)
             await ctx.scheduler.runAfter(
                 0,
                 makeFunctionReference<"mutation">(
                     "imageAssets:cleanupUnattached"
                 ),
-                {}
+                { cursor: page.continueCursor, cutoff }
             )
-        return { deleted }
+        return { deleted, done: page.isDone }
     },
 })

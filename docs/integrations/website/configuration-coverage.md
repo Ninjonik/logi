@@ -47,14 +47,23 @@ Stored images are served from the immutable public URL
 `/api/image-assets/{publicId}.{png|webp}` with the recorded content type,
 `X-Content-Type-Options: nosniff`, a one-year immutable cache header and
 `Content-Disposition: inline`; the extension must match the recorded type.
-An hourly Convex job removes recorded uploads that are still not attached to a
-team, event or panel 24 hours after they were created. The normalized file is
-stored before its record is created, so a file whose record creation then fails
-(a Convex error, access revoked between reservation and recording, or a
-rejected record) has no record and is not yet removed by that job; sweeping
-those files needs a follow-up Convex change. No dashboard screen uses the route
-yet, and no `/api/v1` operation exposes uploads; that exclusion is deliberate
-until the team catalogue editor exists.
+The reservation only counts the attempt; it issues no upload URL. The gateway
+hands the normalized bytes to one Convex action (`imageAssets:storeNormalized`)
+that checks them again (the kind's output format by magic number, at most
+2 MiB), stores them, derives size and SHA-256 from the stored bytes and records
+the asset through an internal mutation that re-checks the current workspace
+administrator in its own transaction. When recording is rejected or fails (for
+example an invalid public URL from a misconfigured `SITE_URL`, or access revoked
+since the reservation), the action deletes exactly the file it just stored, so
+no stored upload is left without a record. An hourly Convex job removes recorded
+uploads that are still not attached to a team, event or panel 24 hours after
+they were created; each run pages through every expired asset with a cursor, so
+referenced logos and banners never block the uploads behind them, and it stops
+when the scan is complete. The route backs the **Teams** form (team logos) and
+the panel **Appearance** editor (banners). No `/api/v1` operation exposes
+uploads: that is the permanent API-parity exception recorded in the
+[v0.15 handoff](v0.15/README.md#api-parity-exception-catalogue-writes-and-logo-uploads)
+and in [Discord public panels](discord-public-panels.md#api-and-activation).
 
 ## Settings gaps and deployment prerequisites
 

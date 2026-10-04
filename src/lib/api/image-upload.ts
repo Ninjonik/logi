@@ -11,38 +11,36 @@ import {
 import { inspectImage, normalizeImage } from "./image-normalization"
 
 export type ReserveUploadResult =
-    | { ok: true; uploadUrl: string }
-    | { error: "upload_limited"; retryAfterMs: number }
-/** The normalized record handed to persistence after the bytes are stored. */
-export type StoredImageAsset = {
+    { ok: true } | { error: "upload_limited"; retryAfterMs: number }
+/**
+ * Presentation facts of a normalized image handed to persistence with its
+ * bytes. Byte size and digest are derived by persistence from the bytes.
+ */
+export type NormalizedImageUpload = {
     kind: ImageAssetKind
     publicId: string
-    storageId: string
     contentType: ImageInputType
     width: number
     height: number
-    bytes: number
-    sha256: string
     publicUrl: string
 }
-export type CreateImageAssetResult =
+export type StoreImageAssetResult =
     { ok: true; asset: ImageAssetDto } | { error: string }
 export type ImageAssetPorts<Access> = {
     /** Admin access to the workspace behind this dashboard server, or null. */
     authorize(serverId: string): Promise<Access | null>
-    /** Counts the attempt and reserves an upload URL before any body is read. */
+    /** Counts the attempt before any body is read. */
     reserve(access: Access, kind: ImageAssetKind): Promise<ReserveUploadResult>
     readBody(request: Request, maxBytes: number): Promise<Uint8Array | null>
-    /** Stores the normalized bytes at the reserved URL; resolves to the storage ID. */
-    upload(
-        uploadUrl: string,
-        bytes: Uint8Array<ArrayBuffer>,
-        contentType: ImageInputType
-    ): Promise<string>
-    create(
+    /**
+     * Stores and records the normalized bytes in one persistence call that
+     * removes the stored file again when recording fails.
+     */
+    store(
         access: Access,
-        asset: StoredImageAsset
-    ): Promise<CreateImageAssetResult>
+        asset: NormalizedImageUpload,
+        bytes: Uint8Array<ArrayBuffer>
+    ): Promise<StoreImageAssetResult>
     list(
         access: Access,
         kind: ImageAssetKind
@@ -69,9 +67,8 @@ const kindOf = (request: Request) =>
 
 /**
  * Dashboard image upload and listing. Order matters on POST: the attempt is
- * counted and the upload URL reserved before a single body byte is read, the
- * declared type is checked before decoding, and only the normalized output is
- * ever stored or published.
+ * counted before a single body byte is read, the declared type is checked
+ * before decoding, and only the normalized output is ever stored or published.
  */
 export function imageAssetHandlers<Access>(ports: ImageAssetPorts<Access>) {
     return {
@@ -134,27 +131,25 @@ export function imageAssetHandlers<Access>(ports: ImageAssetPorts<Access>) {
             } catch {
                 return json({ error: "undecodable" }, 400)
             }
+            if (normalized.bytes.byteLength > IMAGE_MAX_INPUT_BYTES)
+                return json({ error: "too_large" }, 400)
             try {
-                const storageId = await ports.upload(
-                    reserved.uploadUrl,
-                    normalized.bytes,
-                    normalized.contentType
-                )
                 const publicId = ports.randomId()
-                const created = await ports.create(access, {
-                    kind: kind.data,
-                    publicId,
-                    storageId,
-                    contentType: normalized.contentType,
-                    width: normalized.width,
-                    height: normalized.height,
-                    bytes: normalized.bytes.byteLength,
-                    sha256: normalized.sha256,
-                    publicUrl: `${ports.siteUrl().replace(/\/+$/, "")}${imageAssetPath(publicId, normalized.contentType)}`,
-                })
-                return "error" in created
-                    ? json({ error: created.error }, 400)
-                    : json({ asset: created.asset })
+                const stored = await ports.store(
+                    access,
+                    {
+                        kind: kind.data,
+                        publicId,
+                        contentType: normalized.contentType,
+                        width: normalized.width,
+                        height: normalized.height,
+                        publicUrl: `${ports.siteUrl().replace(/\/+$/, "")}${imageAssetPath(publicId, normalized.contentType)}`,
+                    },
+                    normalized.bytes
+                )
+                return "error" in stored
+                    ? json({ error: stored.error }, 400)
+                    : json({ asset: stored.asset })
             } catch {
                 return json({ error: "unavailable" }, 503)
             }

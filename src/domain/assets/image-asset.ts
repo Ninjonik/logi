@@ -117,6 +117,24 @@ export function validateImageSource(input: {
     return null
 }
 
+/**
+ * Defence in depth at the storage boundary: only the kind's normalized format,
+ * confirmed by its magic number, within the source byte bound, is ever stored.
+ */
+export function isStorableNormalizedImage(input: {
+    kind: ImageAssetKind
+    contentType: string
+    bytes: Uint8Array
+}): boolean {
+    const expected = IMAGE_OUTPUT_TYPES[IMAGE_OUTPUT[input.kind].format]
+    return (
+        input.bytes.byteLength > 0 &&
+        input.bytes.byteLength <= IMAGE_MAX_INPUT_BYTES &&
+        input.contentType === expected &&
+        sniffImageType(input.bytes) === expected
+    )
+}
+
 export type ImageAssetEntity = {
     id: string
     guildId: string
