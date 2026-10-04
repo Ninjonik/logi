@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { eventSchema } from "@/lib/validation/event"
+import { eventSchema, type EventParsedInput } from "@/lib/validation/event"
 
 import {
     createServerEventPatchHandler,
@@ -9,10 +9,13 @@ import {
     createServerEventsPostHandler,
 } from "./event-route-handlers"
 
+/** What the handlers save: the validated body plus the route's scope. */
+type SavedEvent = EventParsedInput & { serverId: string; eventId?: string }
+
 function createDeps() {
     const calls = {
         revalidated: [] as string[][],
-        savedEvents: [] as Array<Record<string, unknown>>,
+        savedEvents: [] as SavedEvent[],
         concluded: [] as Array<{ eventId: string }>,
         completedTrainings: [] as Array<{
             eventId: string
@@ -47,9 +50,9 @@ function createDeps() {
                 calls.accessChecks.push(serverId)
                 return calls.admin
             },
-            saveServerEvent: async (input: Record<string, unknown>) => {
+            saveServerEvent: async (input: SavedEvent) => {
                 calls.savedEvents.push(input)
-                return String(input.eventId ?? "event-1")
+                return input.eventId ?? "event-1"
             },
             concludeServerEvent: async (input: { eventId: string }) => {
                 calls.concluded.push(input)
@@ -177,7 +180,13 @@ test("server events POST saves validated events and revalidates cache tags", asy
     const handler = createServerEventsPostHandler(deps)
 
     const response = await handler(
-        jsonRequest(createEventBody({ topicPresetId: "" })),
+        jsonRequest(
+            createEventBody({
+                topicPresetId: "",
+                serverId: "guild-2",
+                eventId: "event-from-body",
+            })
+        ),
         { params: Promise.resolve({ serverId: "guild-1" }) }
     )
 
@@ -185,6 +194,9 @@ test("server events POST saves validated events and revalidates cache tags", asy
     assert.deepEqual(await response.json(), { eventId: "event-1" })
     assert.equal(calls.savedEvents.length, 1)
     assert.deepEqual(calls.savedEvents[0]?.topicPresetId, undefined)
+    // The save is scoped by the route; body scope fields are never forwarded.
+    assert.equal(calls.savedEvents[0]?.serverId, "guild-1")
+    assert.equal(calls.savedEvents[0]?.eventId, undefined)
     assert.deepEqual(calls.revalidated[0], [
         "server-context:guild-1",
         "events:guild-1",
@@ -310,13 +322,21 @@ test("server event PATCH updates an event and revalidates the updated tags", asy
     const handler = createServerEventPatchHandler(deps)
 
     const response = await handler(
-        jsonRequest(createEventBody({ name: "Updated Event" })),
+        jsonRequest(
+            createEventBody({
+                name: "Updated Event",
+                serverId: "guild-2",
+                eventId: "event-from-body",
+            })
+        ),
         { params: Promise.resolve({ serverId: "guild-1", eventId: "event-9" }) }
     )
 
     assert.equal(response.status, 200)
     assert.deepEqual(await response.json(), { eventId: "event-9" })
     assert.equal(calls.savedEvents[0]?.eventId, "event-9")
+    assert.equal(calls.savedEvents[0]?.serverId, "guild-1")
+    assert.equal(calls.savedEvents[0]?.name, "Updated Event")
     assert.deepEqual(calls.revalidated[0], [
         "server-context:guild-1",
         "events:guild-1",

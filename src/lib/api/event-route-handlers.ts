@@ -5,11 +5,19 @@ import { z } from "zod"
 
 type JsonRequest = Pick<Request, "json" | "headers" | "url">
 
-type EventRouteDeps<TEventInput> = {
+/** The validated body fields the create and update handlers read themselves. */
+type EventBody = { topicPresetId?: string }
+/** The validated body plus the route's server scope and, for updates, the event ID. */
+type EventSaveInput<TEventInput extends EventBody> = TEventInput & {
+    serverId: string
+    eventId?: string
+}
+
+type EventRouteDeps<TEventInput extends EventBody> = {
     eventSchema: ZodType<TEventInput>
     /** Whether the current dashboard user administers this server; never derived from the request body. */
     canAdminServer: (serverId: string) => Promise<boolean>
-    saveServerEvent: (input: any) => Promise<string>
+    saveServerEvent: (input: EventSaveInput<TEventInput>) => Promise<string>
     concludeServerEvent: (input: { eventId: string }) => Promise<void>
     completeServerTraining: (input: {
         eventId: string
@@ -118,7 +126,7 @@ export function matchTeamErrorCode(error: unknown): string | null {
  * the body is read.
  */
 async function eventWriteDenied(
-    deps: Pick<EventRouteDeps<unknown>, "canAdminServer">,
+    deps: Pick<EventRouteDeps<EventBody>, "canAdminServer">,
     request: JsonRequest,
     serverId: string
 ) {
@@ -130,7 +138,7 @@ async function eventWriteDenied(
         : NextResponse.json({ error: "forbidden" }, { status: 403 })
 }
 function saveErrorResponse(
-    deps: Pick<EventRouteDeps<unknown>, "getUserSafeErrorMessage">,
+    deps: Pick<EventRouteDeps<EventBody>, "getUserSafeErrorMessage">,
     error: unknown
 ) {
     return NextResponse.json(
@@ -160,7 +168,7 @@ const trainingCompletionSchema = z.object({
 
 function buildImportedUserTags(
     importedUserIds: string[],
-    appCacheTags: EventRouteDeps<unknown>["appCacheTags"]
+    appCacheTags: EventRouteDeps<EventBody>["appCacheTags"]
 ) {
     return importedUserIds.flatMap((userId) => [
         appCacheTags.player(userId),
@@ -171,7 +179,14 @@ function buildImportedUserTags(
 }
 
 function createImportEventsStream(
-    deps: EventRouteDeps<unknown>,
+    deps: Pick<
+        EventRouteDeps<EventBody>,
+        | "appCacheTags"
+        | "getUserSafeErrorMessage"
+        | "importServerEventsFromLinks"
+        | "logRouteError"
+        | "revalidateCacheEntries"
+    >,
     input: {
         serverId: string
         gameId: GameId
@@ -247,7 +262,7 @@ function createImportEventsStream(
     )
 }
 
-export function createServerEventsPostHandler<TEventInput>(
+export function createServerEventsPostHandler<TEventInput extends EventBody>(
     deps: EventRouteDeps<TEventInput>
 ) {
     return async function POST(
@@ -338,13 +353,11 @@ export function createServerEventsPostHandler<TEventInput>(
                 return NextResponse.json(result)
             }
 
-            const body = deps.eventSchema.parse(rawBody) as Record<
-                string,
-                unknown
-            >
+            const body = deps.eventSchema.parse(rawBody)
+            // The route's scope is applied last so a body field can never redirect the save.
             const eventId = await deps.saveServerEvent({
-                serverId,
                 ...body,
+                serverId,
                 topicPresetId: body.topicPresetId || undefined,
             })
 
@@ -363,7 +376,7 @@ export function createServerEventsPostHandler<TEventInput>(
     }
 }
 
-export function createServerEventPatchHandler<TEventInput>(
+export function createServerEventPatchHandler<TEventInput extends EventBody>(
     deps: EventRouteDeps<TEventInput>
 ) {
     return async function PATCH(
@@ -374,14 +387,11 @@ export function createServerEventPatchHandler<TEventInput>(
         const denied = await eventWriteDenied(deps, request, serverId)
         if (denied) return denied
         try {
-            const body = deps.eventSchema.parse(await request.json()) as Record<
-                string,
-                unknown
-            >
+            const body = deps.eventSchema.parse(await request.json())
             const updatedEventId = await deps.saveServerEvent({
+                ...body,
                 eventId,
                 serverId,
-                ...body,
                 topicPresetId: body.topicPresetId || undefined,
             })
 
@@ -400,7 +410,7 @@ export function createServerEventPatchHandler<TEventInput>(
     }
 }
 
-export function createServerEventPostHandler<TEventInput>(
+export function createServerEventPostHandler<TEventInput extends EventBody>(
     deps: EventRouteDeps<TEventInput>
 ) {
     return async function POST(
