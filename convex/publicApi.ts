@@ -9,7 +9,6 @@ import {
 import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
 import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
-import { assertManagedRoleGroupLink } from "./managedRolePolicy"
 import type { MutationCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
 import { GAME_IDS } from "../src/domain/games/game"
@@ -784,23 +783,6 @@ export const mutateClanGroup = mutation({
                             error: {
                                 code: "validation_error",
                                 message: "Parent group not found.",
-                            },
-                        }
-                    }
-                }
-                if (!response!) {
-                    try {
-                        await assertManagedRoleGroupLink(
-                            ctx,
-                            key.guildId,
-                            args.discordRoleId
-                        )
-                    } catch {
-                        status = 400
-                        response = {
-                            error: {
-                                code: "validation_error",
-                                message: "Conflicting managed role owner.",
                             },
                         }
                     }
@@ -1858,26 +1840,15 @@ export const mutateClanSettings = mutation({
                             ? config.dashboardAdminRoleId
                             : args.dashboardAdminRoleId?.trim() || undefined,
                 }
-                const groups = await ctx.db
-                    .query("groups")
-                    .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
-                    .collect()
                 try {
                     for (const gameId of GAME_IDS)
-                        managedRolePolicy(
-                            prospective,
-                            gameId,
-                            groups.flatMap((group) =>
-                                group.discordRoleId ? [group.discordRoleId] : []
-                            )
-                        )
+                        managedRolePolicy(prospective, gameId)
                 } catch {
                     status = 400
                     response = {
                         error: {
                             code: "validation_error",
-                            message:
-                                "Managed role ownership conflicts with another policy.",
+                            message: "Managed role scope exceeds 100 roles.",
                         },
                     }
                 }

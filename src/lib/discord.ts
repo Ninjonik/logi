@@ -4,10 +4,7 @@ import {
     getDiscordClientSecret,
     getDiscordRedirectUri,
 } from "@/lib/env"
-import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
-import { managedRolePolicy } from "@/domain/membership/managed-roles"
 import { getServerGroups } from "@/lib/server-groups"
-import { GAME_IDS } from "@/domain/games/game"
 
 const ADMINISTRATOR_PERMISSION = BigInt(8)
 const MANAGE_ROLES_PERMISSION = BigInt(1) << BigInt(28)
@@ -381,16 +378,8 @@ export async function syncDiscordRolesForAssignment(input: {
         return { addedRoleIds: [], removedRoleIds: [] }
     }
 
-    const [groups, config] = await Promise.all([
-        getServerGroups(input.serverId),
-        getDiscordConfigByGuild(input.serverId),
-    ])
+    const groups = await getServerGroups(input.serverId)
     const roleIdByGroupId = buildLinkedRoleIdsByGroupId(groups)
-    // Membership outcomes are handled by the durable queue. This existing
-    // group-only path must never become a second writer for a managed role.
-    for (const gameId of GAME_IDS)
-        managedRolePolicy(config ?? {}, gameId, [...roleIdByGroupId.values()])
-
     const beforeRoleIds = new Set(
         [input.beforePrimaryGroupId, ...(input.beforeSecondaryGroupIds ?? [])]
             .filter((groupId): groupId is string => Boolean(groupId))

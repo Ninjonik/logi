@@ -60,7 +60,7 @@ test("unmanaged roles and other games are preserved by the role difference", () 
     )
 })
 test("pending recruit active reserve and mercenary transitions preserve current outcome policy", () => {
-    const policy = managedRolePolicy(config, "hell_let_loose", [])
+    const policy = managedRolePolicy(config, "hell_let_loose")
     for (const type of ["member", "reserve_member", "mercenary"] as const) {
         assert.deepEqual(
             desiredMembershipRoles(policy, {
@@ -89,8 +89,8 @@ test("pending recruit active reserve and mercenary transitions preserve current 
     }
     assert.deepEqual(desiredMembershipRoles(policy, null), [])
 })
-test("cross-game role ownership and group/dashboard role collisions are rejected", () => {
-    assert.deepEqual(managedRolePolicy(config, "wardogs", []).roleIds, [
+test("roles can be shared between policies and games", () => {
+    assert.deepEqual(managedRolePolicy(config, "wardogs").roleIds, [
         "clan",
         "wdg-member",
         "wdg-recruit",
@@ -98,13 +98,13 @@ test("cross-game role ownership and group/dashboard role collisions are rejected
     const conflicting = structuredClone(config)
     conflicting.gameOverrides.wardogs.membershipSettings.categories[0].finalRoleIds =
         ["member"]
-    assert.throws(() => managedRolePolicy(conflicting, "wardogs", []), /owner/i)
-    assert.throws(
-        () => managedRolePolicy(config, "hell_let_loose", ["member"]),
-        /owner/i
-    )
+    assert.deepEqual(managedRolePolicy(conflicting, "wardogs").roleIds, [
+        "clan",
+        "member",
+        "wdg-recruit",
+    ])
     assert.deepEqual(
-        managedRolePolicy(config, "hell_let_loose_vietnam", []).roleIds,
+        managedRolePolicy(config, "hell_let_loose_vietnam").roleIds,
         []
     )
 })
@@ -174,12 +174,12 @@ test("shared categories are owned by the game they name", () => {
             ],
         },
     }
-    assert.deepEqual(managedRolePolicy(shared, "hell_let_loose", []).roleIds, [
+    assert.deepEqual(managedRolePolicy(shared, "hell_let_loose").roleIds, [
         "clan",
         "hll-member",
         "hll-recruit",
     ])
-    const wardogs = managedRolePolicy(shared, "wardogs", [])
+    const wardogs = managedRolePolicy(shared, "wardogs")
     assert.deepEqual(wardogs.roleIds, ["clan", "wdg-member", "wdg-recruit"])
     assert.deepEqual(
         desiredMembershipRoles(wardogs, {
@@ -198,10 +198,14 @@ test("shared categories are owned by the game they name", () => {
         ["clan"]
     )
     assert.deepEqual(
-        managedRolePolicy(shared, "hell_let_loose_vietnam", []).roleIds,
+        managedRolePolicy(shared, "hell_let_loose_vietnam").roleIds,
         []
     )
     const reused = structuredClone(shared)
     reused.membershipSettings.categories[1]!.finalRoleIds = ["hll-member"]
-    assert.throws(() => managedRolePolicy(reused, "wardogs", []), /owner/i)
+    assert.deepEqual(managedRolePolicy(reused, "wardogs").roleIds, [
+        "clan",
+        "hll-member",
+        "wdg-recruit",
+    ])
 })

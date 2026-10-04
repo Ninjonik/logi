@@ -1,4 +1,4 @@
-import { GAME_IDS, type GameId } from "../games/game"
+import { type GameId } from "../games/game"
 
 export type RoleActorKind =
     "dashboard" | "recruitment" | "application" | "rollback"
@@ -29,12 +29,7 @@ export type RoleAssignment = {
 }
 const unique = (values: string[]) => [...new Set(values)].sort()
 
-/** The shared clan role has one guild owner; each category role has one game owner. */
-export function managedRolePolicy(
-    config: ManagedRoleConfig,
-    gameId: GameId,
-    groupRoleIds: string[]
-) {
+export function managedRolePolicy(config: ManagedRoleConfig, gameId: GameId) {
     // Shared settings hold every game's categories; each category names its game.
     const settingsFor = (game: GameId): Settings | undefined => {
         const override = config.gameOverrides?.[game]?.membershipSettings
@@ -47,23 +42,6 @@ export function managedRolePolicy(
         if (game !== "hell_let_loose" && !categories.length) return undefined
         return { ...shared, categories }
     }
-    const owners = new Map<string, string>()
-    const own = (id: string | undefined, owner: string) => {
-        if (!id) return
-        if (owners.has(id) && owners.get(id) !== owner)
-            throw new Error("Conflicting managed role owner.")
-        owners.set(id, owner)
-    }
-    own(config.dashboardAdminRoleId, "dashboard")
-    for (const role of groupRoleIds) own(role, "group")
-    own(config.clanRoleId, "clan")
-    for (const game of GAME_IDS)
-        for (const category of settingsFor(game)?.categories ?? [])
-            for (const role of [
-                ...category.recruitRoleIds,
-                ...category.finalRoleIds,
-            ])
-                own(role, game)
     const settings = settingsFor(gameId)
     const roleIds = settings?.enabled
         ? unique([
