@@ -52,7 +52,9 @@ Each slot has a searchable picker that lists the game's active teams with logo,
 name and short code. Open it with the keyboard or mouse, type to search, and
 choose with the arrow keys and Enter. **No team** empties the slot. **Add team**
 opens the team form; the new team is selected into that slot and the rest of
-the unsaved match form is kept. **No side** leaves the side open.
+the unsaved match form is kept. If the name belongs to a team that already
+exists, the form offers **Use existing team**, or **Restore and use** for an
+archived team, and selects it into the slot. **No side** leaves the side open.
 
 A team can occupy only one slot, and a side can be given to only one team; the
 editor marks such conflicts before saving. A match can be saved with empty or
@@ -78,6 +80,8 @@ immediately without saving other changes in the form.
 
 Once a match is concluded, its teams and snapshots are frozen: the Teams
 section becomes read-only and saving other match fields leaves them unchanged.
+A match counts as concluded from 15 minutes after its game end, even before
+Logi records the conclusion.
 Result corrections continue through the reviewed-result workflow below.
 
 ## Competition links

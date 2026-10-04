@@ -61,10 +61,17 @@ team.
 </Steps>
 
 Names are unique per workspace and game, ignoring letter case and repeated
-spaces; accents still count. Archived teams keep their names, so a duplicate
-name usually means the team exists already — show archived teams and restore
-it instead of creating a new one. Short codes do not need to be unique. Each
-game's directory holds at most 500 teams.
+spaces; accents still count. When you add a team whose name is already used in
+that game, the form shows the existing team instead of creating a second one:
+**Use existing team** closes the form and keeps that entry, and for an archived
+team **Restore and use** restores it first. When you add the team from a
+match's Teams section, the existing team is then selected into the slot.
+Short codes do not need to be unique. Each game's directory holds at most 500
+teams.
+
+Directory searches, saves and snapshot refreshes are limited to 120 requests
+per minute for each administrator in a workspace. Above that, Logi asks you to
+wait a moment and try again.
 
 If another administrator changed the team while you were editing, saving shows
 a message and loads the latest version. Fields you did not change now show the
