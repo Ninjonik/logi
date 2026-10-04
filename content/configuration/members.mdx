@@ -57,7 +57,7 @@ Changing or removing an assignment rebuilds the workspace membership summary and
 ### Bulk member tools: what they do and do not do
 
 Authenticated assignment changes and the membership-status migration now queue
-durable membership-role operations. Check **Membership settings → Membership role
+durable membership-role operations. Check **Settings → Membership → Membership role
 operations** for the actual Discord outcome, current reason and recent attempts.
 Retries recheck the original actor's current permissions; saving assignment data
 does not mean the roles have been applied. Unlinked players remain editable, with
@@ -149,7 +149,7 @@ shared role selections.
 
 ## Sharing membership with a website
 
-System → Discord membership integrations lets an administrator allow an integration
+**Settings → Clan website and API → Discord membership integrations** lets an administrator allow an integration
 to read one member's current presence, selected Discord role IDs and Logi assignment.
 Create a read-only API key with the Discord membership grant first, then enable its
 policy and enter the allowed roles for each game. Empty role lists share no roles.

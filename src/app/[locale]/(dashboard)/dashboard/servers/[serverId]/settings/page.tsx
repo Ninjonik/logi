@@ -1,20 +1,15 @@
 import type { Metadata } from "next"
 
-import { ConfigurationScopeIndicator } from "@/components/app/configuration-scope-indicator"
-import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
-import { DiscordServerSettingsForm } from "@/components/app/discord-server-settings-form"
-import { GameSettingsForm } from "@/components/app/game-settings-form"
-import { isGameId, withGameOverrides } from "@/domain/games/game"
-import { PageHeader } from "@/components/app/page-header"
-import { getGuildMetadata } from "@/lib/server-metadata"
+import { settingsSnapshot } from "@/components/app/settings/settings-snapshot"
+import { SettingsOverview } from "@/components/app/settings/settings-overview"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
+import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
-import { getSiteUrl } from "@/lib/env"
 
 export const metadata: Metadata = {
-    title: "Server settings | Logi",
-    description: "Manage server and Discord settings.",
+    title: "Clan settings",
+    description: "Manage your clan, Discord and integration settings.",
 }
 
 export default async function ServerSettingsPage({
@@ -29,58 +24,17 @@ export default async function ServerSettingsPage({
     const gameId = isGameId(game) ? game : undefined
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
     const context = await getServerContext(serverId, gameId ?? "all")
-    if (!context) return null
-    const { server, canAdmin } = context
-    const guildLoginUrl = `${getSiteUrl()}/${locale}/guild-login/${server.discordId}`
-
+    if (!context?.canAdmin) return null
     return (
-        <>
-            <PageHeader
-                title={dictionary.serverSettings.title}
-                description={dictionary.serverSettings.pageDescription}
-            />
-            <div className="space-y-6 px-4 lg:px-6">
-                <ConfigurationScopeIndicator
-                    enabledGames={server.enabledGames}
-                    gameId={gameId}
-                    dictionary={dictionary}
-                />
-                {canAdmin ? (
-                    <GameSettingsForm
-                        serverId={serverId}
-                        userId={context.user.discordId}
-                        enabledGames={server.enabledGames}
-                        dictionary={dictionary}
-                    />
-                ) : null}
-                {canAdmin ? (
-                    <ServerFrontendSettingsForm
-                        server={server}
-                        dictionary={dictionary}
-                        guildLoginUrl={guildLoginUrl}
-                        showLoginLink={false}
-                    />
-                ) : null}
-                {canAdmin ? (
-                    <DiscordServerSettingsForm
-                        serverId={serverId}
-                        userId={context.user.discordId}
-                        dictionary={dictionary}
-                        config={
-                            context.discordConfig
-                                ? withGameOverrides(
-                                      context.discordConfig,
-                                      context.discordConfig.gameOverrides,
-                                      gameId
-                                  )
-                                : null
-                        }
-                        baseConfig={context.discordConfig}
-                        gameId={gameId}
-                        showSystemOperations={false}
-                    />
-                ) : null}
-            </div>
-        </>
+        <SettingsOverview
+            locale={locale}
+            serverId={serverId}
+            gameId={gameId}
+            snapshot={settingsSnapshot(
+                context.server.enabledGames,
+                context.discordConfig
+            )}
+            dictionary={dictionary}
+        />
     )
 }

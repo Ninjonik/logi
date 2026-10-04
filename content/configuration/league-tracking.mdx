@@ -5,7 +5,7 @@ description: Discover watched teams' public fixtures and keep one Discord card p
 
 # Wardogs League tracking
 
-Choose **Wardogs → System → Imports → Wardogs League tracking**. An administrator can enable discovery, enter watched team codes (initially `VLK`), and choose separate input and output Discord rooms. Each picker supports category/search and a pasted channel ID. Saving verifies the bot can publish in the selected rooms.
+Open **Settings → Wardogs League**; the page appears when the clan plays Wardogs. An administrator can enable discovery, enter watched team codes (initially `VLK`), and choose separate input and output Discord rooms. Each picker supports category/search and a pasted channel ID. Saving verifies the bot can publish in the selected rooms.
 
 Logi checks the public fixtures and results indexes on the cadence chosen in League tracking (every 10, 15, 30 or 60 minutes; 10 by default). The shared index scan runs at the fastest cadence any enabled workspace asks for, and a workspace takes a fresh index only after its own interval has elapsed. It reads discovered details and tracks exact team codes and profile links. A first scan is processed in batches, so matches can appear gradually. Already tracked details refresh on the chosen detail cadence (every 5, 10, 15 or 30 minutes; 5 by default). The page shows the last successful scan, next attempt, incomplete index coverage and queue capacity warnings.
 

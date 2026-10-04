@@ -51,7 +51,7 @@ export default async function ServerTeamsPage({
                         serverId={serverId}
                         locale={resolvedLocale}
                         dictionary={dictionary}
-                        settingsHref={`/${locale}/dashboard/servers/${serverId}/settings`}
+                        settingsHref={`/${locale}/dashboard/servers/${serverId}/settings/games`}
                         sections={games.flatMap((gameId) =>
                             gameId
                                 ? [

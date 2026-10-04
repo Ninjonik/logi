@@ -14,7 +14,6 @@ import {
     Bot,
     Radio,
     Trophy,
-    ServerCog,
     UsersRound,
     Inbox,
 } from "lucide-react"
@@ -226,11 +225,6 @@ export function AppSidebar({
                                             },
                                             {
                                                 title: dictionary.sidebar
-                                                    .memberships,
-                                                url: `${base}/memberships`,
-                                            },
-                                            {
-                                                title: dictionary.sidebar
                                                     .groups,
                                                 url: `${base}/groups`,
                                             },
@@ -242,20 +236,13 @@ export function AppSidebar({
                                         icon: Swords,
                                     },
                                     {
-                                        title: dictionary.sidebar.tickets,
-                                        url: `${base}/tickets`,
-                                        icon: ListTodo,
-                                    },
-                                    {
                                         title: dictionary.sidebar
                                             .serverSettings,
                                         url: `${base}/settings`,
                                         icon: Settings,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.system,
-                                        url: `${base}/system`,
-                                        icon: ServerCog,
+                                        isActive: pathname?.startsWith(
+                                            `${base}/settings`
+                                        ),
                                     },
                                 ],
                             },

@@ -1,18 +1,53 @@
 ---
-title: Server settings
+title: Clan settings
 description: Configure the selected workspace without exposing sensitive information.
 ---
 
 import { Callout, Steps } from "nextra/components"
 
-# Server settings
+# Clan settings
 
-Server settings belong to the active workspace. Only managers should change them, and changes can affect how the dashboard, Discord coordination, events, and membership features behave.
+Clan settings belong to the active workspace. Only managers should change them, and changes can affect how the dashboard, Discord coordination, events, and membership features behave.
+
+## How settings are organised
+
+**Settings** in the sidebar opens an overview. While the clan still lacks a
+required setting, **First setup** at the top shows the remaining steps (the
+games the clan plays, the announcements channel and the clan role) and
+**Continue** opens the next one. Below it every settings page is a card with a
+short description and its state: **Set up**, **Needs attention** when a required
+setting is missing, or **Off** for an optional feature that is not switched on.
+
+Each card opens its own page with the settings menu beside it (above it on a
+phone). Every page saves only its own settings, so saving one page never resets
+another.
+
+| Group                    | Page                  | What it contains                                                                        |
+| ------------------------ | --------------------- | --------------------------------------------------------------------------------------- |
+| Clan                     | Clan profile          | Name, logo, description, event categories and calendar items                            |
+| Clan                     | Games                 | The games the clan plays                                                                |
+| Matches                  | Discord messages      | Public panels, live scoreboards and message appearance; links to squad and topic presets |
+| Discord                  | Channels and language | Time zone, bot language, announcement, event info, error, calendar, forum and voice rooms |
+| Discord                  | Roles and access      | Clan role, dashboard admin role and the dashboard-access resync                         |
+| Discord                  | /stats command        | `/stats` availability per game, default sharing room and player-stat servers            |
+| Discord                  | Membership            | Membership applications, categories, roles and roster scores                            |
+| Discord                  | Tickets               | The ticket panel, categories, support roles and questions                               |
+| Game data                | Game servers          | Game servers, provider keys and data collection                                         |
+| Game data                | Wardogs League        | League tracking and match preview; shown when the clan plays Wardogs                    |
+| Website and integrations | Clan website and API  | Website API keys, website event commands and Discord membership integrations            |
+| Website and integrations | Sign-in               | The clan sign-in page and single sign-on applications                                   |
+| Website and integrations | Google Calendar       | The private calendar subscription link                                                  |
+| Website and integrations | Webhooks              | Signed webhook subscriptions                                                            |
+| Maintenance              | Imports and repairs   | Event and Discord member imports, ID linking and statistics refresh                     |
+| Maintenance              | Helper data           | Reference data used when importing and matching players                                 |
+
+The former **System**, **Membership settings** and **Ticket settings** addresses
+still work and open the matching settings page.
 
 Every configuration screen shows its scope above the editor. One game icon means
 the change applies only to that selected game; a row of active game icons means
 the change is clan-wide. Confirm that scope before saving settings, ticket
-panels, membership workflows, or System operations.
+panels, membership workflows, or maintenance tools.
 
 ## Change settings carefully
 
@@ -32,13 +67,13 @@ For example, after a scheduling or Discord-related change, inspect an event or t
 
 </Steps>
 
-## System area, API keys, and Discord metadata
+## Integrations, API keys, and Discord metadata
 
 ### Preview a Wardogs League match
 
 For scheduled discovery, manual tracking and persistent Discord cards, see [Wardogs League tracking](/wiki/configuration/league-tracking). The standalone preview below remains available without registering a match.
 
-Select **Wardogs**, then open **System → Imports → Wardogs League match**.
+Open **Settings → Wardogs League**; the **Wardogs League match** preview is below the tracking form.
 Paste a public `https://wardogsleague.net/matches/{id}` link and choose **Load match**.
 The preview shows the schedule in Europe/Prague, teams with their factions,
 map/zone/lighting, public hosting, moderator, map voting, rules and preparation steps.
@@ -74,7 +109,7 @@ links to this settings section. When exactly one is active, creation pages
 select it automatically. With multiple games active, starting a game-owned
 creation flow from **All games** first asks the manager to choose a game.
 
-The manager-only **System** area groups Website API keys, Google Calendar sync, single sign-on applications, website event commands, Imports, Helper data, and Webhooks into collapsed sections. Normal Clan settings contains game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
+Integrations have their own manager-only settings pages: **Clan website and API** (website API keys, website event commands and Discord membership integrations), **Sign-in**, **Google Calendar** and **Webhooks**; imports and helper data are under **Maintenance**. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
 Each website API key belongs to the currently selected workspace. Its permissions
 determine which data it can read or change. Give it a recognisable name of at most 80
@@ -85,7 +120,7 @@ create and deploy a replacement key before revoking one used by a live site.
 
 #### Read-only integration keys
 
-In **System → Website API**, the form starts with **Read-only** access and
+In **Settings → Clan website and API → Website API**, the form starts with **Read-only** access and
 only **Event summaries** and **Match summaries** selected. Choose the required
 games explicitly; an empty resource or game selection cannot create a restricted
 key. Review the selection, enter a name and press **Create read-only key**.
@@ -270,7 +305,7 @@ unchanged.
 
 ### Webhooks
 
-System administrators can add an HTTPS webhook endpoint and send a test event.
+Workspace administrators can add an HTTPS webhook endpoint in **Settings → Webhooks** and send a test event.
 Logi signs the exact JSON payload using `X-Logi-Signature` as
 `sha256=<HMAC_SHA256(timestamp + "." + rawBody)>`; use `X-Logi-Timestamp` to
 reject stale requests. The signing secret is revealed only when a subscription
@@ -361,7 +396,7 @@ not access control or a Discord role mapping.
 ### Google Calendar sync
 
 Clan managers can create a separate private iCalendar subscription link in the
-manager-only **System** area. Add it in Google Calendar through **Other calendars → From URL**.
+manager-only **Settings → Google Calendar** page. Add it in Google Calendar through **Other calendars → From URL**.
 The subscription includes every scheduled Logi event and every manual calendar
 item, including recurring items. The URL is a secret capability: anyone who has
 it can read that clan's calendar. Rotate the link to immediately disable an old
@@ -369,7 +404,7 @@ subscription; add the newly generated URL in Google Calendar afterward.
 
 ## Game server data
 
-In **System → Game server data**, workspace administrators connect their own game
+In **Settings → Game servers**, workspace administrators connect their own game
 servers under **Game servers**. For each server enter a name, the game, the
 provider, the HTTPS address without a path, the server ID at the provider (the
 CRCON server number, usually `1`, or the Warcon panel's server UUID) and the API
@@ -564,7 +599,7 @@ subscriptions do not gain member access automatically.
 ## Website event commands
 
 A connected website may create, update or cancel events through its own service
-key only when a manager enables a policy for it. Open **System → Website event
+key only when a manager enables a policy for it. Open **Settings → Clan website and API → Website event
 commands**, choose the registered single sign-on application, and for each live
 restricted API key enter the allowed Discord role IDs per game (one ID per line),
 tick **Allow event commands with this key** and save. Saving grants event-command

@@ -7,8 +7,8 @@
   collectors and live reads that use them. Login/SSO and website permissions are
   unchanged and out of scope.
 
-A workspace administrator connects a game server in **System → Game server
-data** with a name, the game, the provider, the HTTPS address, the server ID at
+A workspace administrator connects a game server in **Settings → Game
+servers** with a name, the game, the provider, the HTTPS address, the server ID at
 the provider and the real API key. Logi tests the connection, stores the key
 encrypted and only then starts collection. No environment variable per team or
 server is needed, and no operator involvement after the one-time activation.

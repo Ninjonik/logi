@@ -4,7 +4,7 @@ PR #158 adds a durable guild-scoped external fixture collection alongside the ex
 
 ## Operator workflow
 
-Use **Wardogs → System → Imports → Wardogs League tracking**. Save the enabled flag, watched codes (default `VLK`), input channel and output channel. Both pickers support category/search and pasted IDs. Saving verifies bot access and requires a current durable dashboard admin session. Blank output collects without publishing. The Czech form is localized; other locales intentionally use English copy.
+Use **Settings → Wardogs League**. Save the enabled flag, watched codes (default `VLK`), input channel and output channel. Both pickers support category/search and pasted IDs. Saving verifies bot access and requires a current durable dashboard admin session. Blank output collects without publishing. The Czech form is localized; other locales intentionally use English copy.
 
 A URL preview does not register a match. **Track match** pins it independently of the filter. **Pause** stops refresh but retains the snapshot/card. **Ignore** withdraws it and persists through scans. **Resume** pins it again. An archived record offers **Refresh once**: attempt a fresh read, then apply the original archive horizon. Removing a human reference preserves a pin or watched-team eligibility. Native binding accepts only a Wardogs match in this workspace, one-to-one; blank unlinks. It never changes registration, meeting/end times, rosters, attendance or confirmed results.
 

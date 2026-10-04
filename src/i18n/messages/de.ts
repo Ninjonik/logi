@@ -2391,6 +2391,128 @@ export const deMessages = {
         manualItemAdminHint:
             "Manager können diesen Kalendereintrag in seinen Kalenderdetails bearbeiten oder entfernen.",
     },
+    settingsHub: {
+        title: "Clan-Einstellungen",
+        description:
+            "Alles, was Logi über euren Clan wissen muss, nach Themen geordnet. Öffne eine Karte, um etwas zu ändern.",
+        setupTitle: "Ersteinrichtung",
+        setupProgress: "{done} von {total} Pflichteinstellungen erledigt",
+        setupNext: "Nächster Schritt: {item}",
+        setupDone:
+            "Die Pflichteinstellungen sind erledigt. Optionale Funktionen lassen sich jederzeit einschalten.",
+        continueSetup: "Weiter",
+        backToOverview: "Alle Einstellungen",
+        sectionNavLabel: "Bereiche der Einstellungen",
+        openSection: "Öffnen",
+        clanWideFieldsNote:
+            "Zeitzone, Sprache sowie Fehler- und Kalenderkanal gelten für den ganzen Clan. Nur die Kanäle unten können für dieses Spiel abweichen.",
+        clanWideOnly: "Diese Einstellungen gelten für den ganzen Clan.",
+        resyncHelp:
+            "Ein Superadministrator kann den Dashboard-Zugriff anhand der aktuellen Mitglieder der Dashboard-Rolle neu laden.",
+        saved: "Einstellungen gespeichert.",
+        groups: {
+            clan: "Clan",
+            matches: "Matches",
+            discord: "Discord",
+            gameData: "Spieldaten",
+            web: "Website und Integrationen",
+            maintenance: "Wartung",
+        },
+        status: {
+            ready: "Eingerichtet",
+            attention: "Fehlt noch",
+            off: "Aus",
+        },
+        requirements: {
+            enabledGames: "Wähle die Spiele, die euer Clan spielt",
+            announcements: "Wähle den Ankündigungskanal",
+            clanRole: "Wähle die Clan-Rolle",
+        },
+        presetLinks: {
+            squadPresets: "Trupp-Vorlagen",
+            topicPresets: "Themen-Vorlagen",
+        },
+        sections: {
+            profile: {
+                title: "Clan-Profil",
+                description:
+                    "Name, Logo, Beschreibung, Event-Kategorien und Kalendereinträge.",
+            },
+            games: {
+                title: "Spiele",
+                description: "Welche Spiele der Clan spielt.",
+            },
+            messages: {
+                title: "Discord-Nachrichten",
+                description:
+                    "Öffentliche Panels, Live-Scoreboards und das Aussehen der Bot-Nachrichten.",
+            },
+            channels: {
+                title: "Kanäle und Sprache",
+                description:
+                    "Zeitzone, Bot-Sprache und die Kanäle für Ankündigungen, Event-Infos, Fehler und Sprachräume.",
+            },
+            roles: {
+                title: "Rollen und Zugriff",
+                description:
+                    "Die Clan-Rolle und die Rolle, die das Logi-Dashboard öffnet.",
+            },
+            stats: {
+                title: "/stats-Befehl",
+                description:
+                    "Für welche Spiele /stats antwortet, wo Ergebnisse geteilt werden und welche Statistik-Server gelesen werden.",
+            },
+            membership: {
+                title: "Mitgliedschaft",
+                description:
+                    "Clan-Bewerbungen, Kategorien, Rekruten- und Mitgliederrollen, Roster-Punkte.",
+            },
+            tickets: {
+                title: "Tickets",
+                description:
+                    "Das Ticket-Panel, Kategorien, Support-Rollen und Fragen.",
+            },
+            "game-servers": {
+                title: "Spielserver",
+                description:
+                    "Server, Anbieterschlüssel und die Daten, die Logi von ihnen sammelt.",
+            },
+            league: {
+                title: "Wardogs League",
+                description:
+                    "Verfolgte Liga-Matches und ihre Verknüpfung mit euren Events.",
+            },
+            website: {
+                title: "Clan-Website und API",
+                description:
+                    "API-Schlüssel, Event-Befehle von eurer Website und Mitglieder-Synchronisierung.",
+            },
+            login: {
+                title: "Anmeldung",
+                description:
+                    "Die Anmeldeseite eures Clans und Single-Sign-on-Anwendungen.",
+            },
+            calendar: {
+                title: "Google Kalender",
+                description:
+                    "Den Clan-Kalender in Google oder einer anderen Kalender-App abonnieren.",
+            },
+            webhooks: {
+                title: "Webhooks",
+                description: "Logi-Ereignisse an eure eigenen Dienste senden.",
+            },
+            imports: {
+                title: "Importe und Reparaturen",
+                description:
+                    "Events und Discord-Mitglieder importieren, IDs verknüpfen und Statistiken neu berechnen.",
+            },
+            "helper-data": {
+                title: "Hilfsdaten",
+                description:
+                    "Referenzdaten, die Logi beim Import und Abgleich von Spielern nutzt.",
+            },
+        },
+    },
     configurationScope: {
         clanWide: "Clanweite Konfiguration",
         clanWideDescription:

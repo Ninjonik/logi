@@ -1093,7 +1093,7 @@ export function EventFormPanel({
                             title={dictionary.event.notices.announcementsTitle}
                             href={
                                 canEdit
-                                    ? `/${locale}/dashboard/servers/${serverId}/settings`
+                                    ? `/${locale}/dashboard/servers/${serverId}/settings/channels`
                                     : undefined
                             }
                             ctaLabel={
@@ -1112,7 +1112,7 @@ export function EventFormPanel({
                             title={dictionary.event.notices.forumTitle}
                             href={
                                 canEdit
-                                    ? `/${locale}/dashboard/servers/${serverId}/settings`
+                                    ? `/${locale}/dashboard/servers/${serverId}/settings/channels`
                                     : undefined
                             }
                             ctaLabel={
@@ -1132,7 +1132,7 @@ export function EventFormPanel({
                             }
                             href={
                                 canEdit
-                                    ? `/${locale}/dashboard/servers/${serverId}/settings`
+                                    ? `/${locale}/dashboard/servers/${serverId}/settings/channels`
                                     : undefined
                             }
                             ctaLabel={

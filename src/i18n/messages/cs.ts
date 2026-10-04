@@ -2314,6 +2314,125 @@ export const csMessages = {
         manualItemAdminHint:
             "Správci mohou tuto položku kalendáře odstranit nebo upravit v jejích detailech kalendáře.",
     },
+    settingsHub: {
+        title: "Nastavení klanu",
+        description:
+            "Vše, co Logi potřebuje vědět o vašem klanu, rozdělené podle témat. Otevřete kartu a změňte, co potřebujete.",
+        setupTitle: "První nastavení",
+        setupProgress: "Hotovo {done} z {total} povinných nastavení",
+        setupNext: "Další krok: {item}",
+        setupDone:
+            "Povinná nastavení jsou hotová. Volitelné funkce můžete zapnout kdykoli.",
+        continueSetup: "Pokračovat",
+        backToOverview: "Všechna nastavení",
+        sectionNavLabel: "Části nastavení",
+        openSection: "Otevřít",
+        clanWideFieldsNote:
+            "Časové pásmo, jazyk a kanály pro chyby a kalendář platí pro celý klan. Pro tuto hru se mohou lišit jen kanály níže.",
+        clanWideOnly: "Tato nastavení platí pro celý klan.",
+        resyncHelp:
+            "Superadministrátor může znovu načíst přístup do správy podle aktuálních členů role pro správu.",
+        saved: "Nastavení uloženo.",
+        groups: {
+            clan: "Klan",
+            matches: "Zápasy",
+            discord: "Discord",
+            gameData: "Herní data",
+            web: "Web a integrace",
+            maintenance: "Údržba",
+        },
+        status: {
+            ready: "Nastaveno",
+            attention: "Chybí nastavení",
+            off: "Vypnuto",
+        },
+        requirements: {
+            enabledGames: "Vyberte hry, které klan hraje",
+            announcements: "Vyberte kanál pro oznámení",
+            clanRole: "Vyberte roli klanu",
+        },
+        presetLinks: {
+            squadPresets: "Předvolby čet",
+            topicPresets: "Předvolby témat",
+        },
+        sections: {
+            profile: {
+                title: "Profil klanu",
+                description:
+                    "Název, logo, popis, kategorie akcí a položky kalendáře.",
+            },
+            games: {
+                title: "Hry",
+                description: "Které hry klan hraje.",
+            },
+            messages: {
+                title: "Zprávy v Discordu",
+                description: "Veřejné panely, živé skóre a vzhled zpráv bota.",
+            },
+            channels: {
+                title: "Kanály a jazyk",
+                description:
+                    "Časové pásmo, jazyk bota a kanály pro oznámení, informace o akcích, chyby a hlasové místnosti.",
+            },
+            roles: {
+                title: "Role a přístup",
+                description: "Role klanu a role, která otevírá správu v Logi.",
+            },
+            stats: {
+                title: "Příkaz /stats",
+                description:
+                    "Pro které hry /stats odpovídá, kam se výsledky sdílejí a ze kterých serverů čte statistiky.",
+            },
+            membership: {
+                title: "Členství",
+                description:
+                    "Přihlášky do klanu, kategorie, role nováčků a členů, body za soupisky.",
+            },
+            tickets: {
+                title: "Tickety",
+                description: "Panel ticketů, kategorie, role podpory a otázky.",
+            },
+            "game-servers": {
+                title: "Herní servery",
+                description:
+                    "Servery, klíče poskytovatelů a data, která z nich Logi sbírá.",
+            },
+            league: {
+                title: "Wardogs League",
+                description:
+                    "Sledované ligové zápasy a jejich propojení s vašimi akcemi.",
+            },
+            website: {
+                title: "Web klanu a API",
+                description:
+                    "API klíče, příkazy z vašeho webu a synchronizace členů.",
+            },
+            login: {
+                title: "Přihlášení",
+                description:
+                    "Přihlašovací stránka klanu a aplikace jednotného přihlášení.",
+            },
+            calendar: {
+                title: "Google Kalendář",
+                description:
+                    "Odběr kalendáře klanu v Googlu nebo jiné kalendářové aplikaci.",
+            },
+            webhooks: {
+                title: "Webhooky",
+                description: "Posílání událostí z Logi do vašich služeb.",
+            },
+            imports: {
+                title: "Importy a opravy",
+                description:
+                    "Import akcí a členů z Discordu, propojení ID a přepočet statistik.",
+            },
+            "helper-data": {
+                title: "Pomocná data",
+                description:
+                    "Referenční data, která Logi používá při importu a párování hráčů.",
+            },
+        },
+    },
     configurationScope: {
         clanWide: "Nastavení pro celý klan",
         clanWideDescription:
