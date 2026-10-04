@@ -150,6 +150,47 @@ export const deMessages = {
             "Verwende gültige Discord-Rollen-IDs, höchstens 64 pro Spiel, für in diesem Arbeitsbereich aktivierte Spiele.",
     },
     gameData: {
+        sourcesTitle: "Anbieterquellen",
+        sourcesDescription:
+            "Registriere die Spielserver, von denen dieser Arbeitsbereich Daten sammelt. Eine Quelle nennt den Anbieter, seinen HTTPS-Ursprung, die Server-ID beim Anbieter und die Convex-Umgebungsvariable mit dem Token. Tokens werden hier nie eingegeben oder angezeigt: Der Betreiber speichert sie in Convex, du verweist nur auf den Variablennamen. Ein Token rotierst du, indem du den neuen Wert unter einer neuen Variablen speicherst und den Verweis änderst.",
+        sourceRef: "Referenz",
+        sourceProvider: "Anbieter",
+        sourceProviders: {
+            hll_crcon: "Hell Let Loose CRCON",
+            wardogs_warcon: "Wardogs-Warcon-Panel",
+            wardogs_rcon: "Wardogs RCON",
+            wardogs_public_directory: "Wardog-Servers-Verzeichnis",
+        },
+        sourceServerId: "Server-ID beim Anbieter",
+        sourceOrigin: "HTTPS-Ursprung",
+        sourceSecretRef: "Token-Variable",
+        sourceSecretRefHelp:
+            "Verwende die Form LOGI_GAME_DATA_<NAME>_TOKEN. Warcon und RCON benötigen eine Token-Variable, Warcon zusätzlich die Server-UUID des Panels; das Wardog-Servers-Verzeichnis braucht keine. Die Allowlist enthält optionale IP-Adressen oder Hosts, die der Collector kontaktieren darf.",
+        sourceAllowlist: "Netzwerk-Allowlist (optional)",
+        sourceRegister: "Quelle registrieren",
+        sourceRotate: "Verweis aktualisieren",
+        sourceRemove: "Entfernen",
+        sourceSaving: "Wird gespeichert…",
+        sourceSaved:
+            "Quellen gespeichert. Aktiviere unten die Verbindung, um die Erfassung zu starten.",
+        sourceNone:
+            "Für diesen Arbeitsbereich ist noch keine Anbieterquelle registriert.",
+        sourceOperatorManaged: "Betreiberkatalog (schreibgeschützt)",
+        sourceWorkspaceManaged: "In diesem Arbeitsbereich registriert",
+        sourceErrors: {
+            invalid_source:
+                "Prüfe die Felder: HTTPS-Ursprung ohne Pfad, Anbieterregeln für Server-ID und Token-Variable sowie eine Referenz in Kleinbuchstaben.",
+            duplicate_ref:
+                "Diese Referenz wird bereits verwendet. Wähle eine andere.",
+            duplicate_identity:
+                "Dieser Anbieterserver ist in diesem Arbeitsbereich bereits registriert.",
+            limit_reached:
+                "Dieser Arbeitsbereich hat bereits 20 registrierte Quellen.",
+            not_found:
+                "Diese Quelle existiert nicht mehr. Aktualisiere die Liste.",
+            unavailable:
+                "Anbieterquellen konnten nicht geladen oder gespeichert werden. Bitte aktualisieren und erneut versuchen.",
+        },
         liveScoreboard: "Warcon Live-Scoreboard",
         scoreboardPolling:
             "Aktualisierung alle 15 Sekunden bei geöffneter Ansicht. Die Quelle kann verzögert sein.",

@@ -1393,6 +1393,27 @@ export default defineSchema({
         .index("guildId", ["guildId"])
         .index("sourceRef", ["sourceRef"])
         .index("nextAttemptAt", ["nextAttemptAt"]),
+    // Workspace-registered provider sources; tokens stay in Convex environment variables.
+    gameDataSources: defineTable({
+        ref: v.string(),
+        guildId: v.string(),
+        gameId: v.union(v.literal("hell_let_loose"), v.literal("wardogs")),
+        provider: v.union(
+            v.literal("hll_crcon"),
+            v.literal("wardogs_rcon"),
+            v.literal("wardogs_warcon"),
+            v.literal("wardogs_public_directory")
+        ),
+        providerServerId: v.string(),
+        origin: v.string(),
+        secretRef: v.union(v.string(), v.null()),
+        allowedAddresses: v.array(v.string()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+        updatedBy: v.string(),
+    })
+        .index("guildId", ["guildId"])
+        .index("ref", ["ref"]),
     leagueTrackingSettings,
     leagueTrackedMatches,
     leagueIndexCache,

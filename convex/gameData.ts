@@ -5,7 +5,6 @@ import {
 } from "../src/domain/game-data/contracts"
 import {
     acceptsRun,
-    parseSources,
     projectHealth,
     projectSnapshot,
 } from "../src/domain/game-data/policy"
@@ -13,6 +12,7 @@ import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { gameDataError, gameDataObservation } from "./gameDataValidators"
 import { mutation, internalMutation } from "./integrationMutation"
 import type { MutationCtx } from "./_generated/server"
+import { catalogSources } from "./gameDataCatalog"
 import { resetHistory } from "./gameDataHistory"
 import { query } from "./_generated/server"
 import { internal } from "./_generated/api"
@@ -24,9 +24,6 @@ function assertSecret(secret: string) {
         secret !== process.env.INTERNAL_AUTH_SECRET
     )
         throw new Error("Unauthorized.")
-}
-function sources() {
-    return parseSources(process.env.LOGI_GAME_DATA_SOURCES)
 }
 function fingerprint(source: DataSource) {
     return JSON.stringify(source)
@@ -48,7 +45,14 @@ async function configureConnection(
     }
 ): Promise<string> {
     assertSecret(args.secret)
-    const source = sources().find(
+    return applyConnectionSource(ctx, args)
+}
+/** Binds a connection to the current catalog entry for its reference; callers authorize. */
+export async function applyConnectionSource(
+    ctx: MutationCtx,
+    args: { guildId: string; sourceRef: string; enabled: boolean }
+): Promise<string> {
+    const source = (await catalogSources(ctx)).find(
         (value) =>
             value.ref === args.sourceRef && value.guildId === args.guildId
     )
@@ -142,7 +146,7 @@ export const listConnections = query({
     args: { secret: v.string(), guildId: v.string() },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
-        const configured = sources().filter(
+        const configured = (await catalogSources(ctx)).filter(
             (source) => source.guildId === args.guildId
         )
         const rows = await ctx.db
@@ -181,7 +185,7 @@ export const claimNext = internalMutation({
                 q.gte("nextAttemptAt", 0).lte("nextAttemptAt", now)
             )
             .take(10)
-        const catalog = sources()
+        const catalog = await catalogSources(ctx)
         for (const row of due) {
             if (!row.enabled || row.leaseUntil > now) continue
             const source = catalog.find(
@@ -238,7 +242,7 @@ export const finishSnapshot = internalMutation({
         const row = await ctx.db.get(args.id)
         const now = Date.now()
         if (!row || !acceptsRun(row, args, now)) return false
-        const source = sources().find(
+        const source = (await catalogSources(ctx)).find(
             (value) =>
                 value.ref === row.sourceRef && value.guildId === row.guildId
         )

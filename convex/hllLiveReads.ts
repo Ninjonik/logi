@@ -5,8 +5,8 @@ import {
 import type { HllPrepared } from "../src/application/game-data/read-hll-live"
 import { internalMutation, type MutationCtx } from "./_generated/server"
 import { hllLiveSchema } from "../src/domain/game-data/hll-live"
-import { parseSources } from "../src/domain/game-data/policy"
 import { makeFunctionReference } from "convex/server"
+import { catalogSources } from "./gameDataCatalog"
 import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
@@ -67,7 +67,7 @@ async function authorize(ctx: MutationCtx, args: Access) {
         row.gameId !== "hell_let_loose"
     )
         return null
-    const source = parseSources(process.env.LOGI_GAME_DATA_SOURCES).find(
+    const source = (await catalogSources(ctx)).find(
         (s) => s.ref === row.sourceRef && s.guildId === args.guildId
     )
     if (

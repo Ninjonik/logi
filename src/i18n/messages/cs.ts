@@ -149,6 +149,43 @@ export const csMessages = {
             "Použijte platná ID rolí Discordu, nejvýše 64 na hru, pro hry zapnuté v tomto pracovním prostoru.",
     },
     gameData: {
+        sourcesTitle: "Zdroje poskytovatelů",
+        sourcesDescription:
+            "Zaregistrujte herní servery, ze kterých tento pracovní prostor sbírá data. Zdroj uvádí poskytovatele, jeho HTTPS adresu, ID serveru u poskytovatele a proměnnou prostředí Convexu, která drží token. Tokeny se tu nikdy nezadávají ani nezobrazují: operátor je uloží v Convexu a vy jen odkážete na název proměnné. Token obměníte uložením nové hodnoty pod novou proměnnou a úpravou odkazu.",
+        sourceRef: "Reference",
+        sourceProvider: "Poskytovatel",
+        sourceProviders: {
+            hll_crcon: "Hell Let Loose CRCON",
+            wardogs_warcon: "Panel Wardogs Warcon",
+            wardogs_rcon: "Wardogs RCON",
+            wardogs_public_directory: "Adresář Wardog Servers",
+        },
+        sourceServerId: "ID serveru u poskytovatele",
+        sourceOrigin: "HTTPS adresa",
+        sourceSecretRef: "Proměnná s tokenem",
+        sourceSecretRefHelp:
+            "Použijte tvar LOGI_GAME_DATA_<NAZEV>_TOKEN. Warcon a RCON vyžadují proměnnou s tokenem a Warcon potřebuje UUID serveru z panelu; adresář Wardog Servers žádnou nemá. Allowlist obsahuje volitelné IP adresy nebo hostitele, které smí kolektor kontaktovat.",
+        sourceAllowlist: "Síťový allowlist (volitelné)",
+        sourceRegister: "Zaregistrovat zdroj",
+        sourceRotate: "Upravit odkaz",
+        sourceRemove: "Odebrat",
+        sourceSaving: "Ukládání…",
+        sourceSaved: "Zdroje uloženy. Sběr spustíte zapnutím připojení níže.",
+        sourceNone:
+            "Pro tento pracovní prostor zatím není zaregistrován žádný zdroj.",
+        sourceOperatorManaged: "Katalog operátora (jen pro čtení)",
+        sourceWorkspaceManaged: "Zaregistrováno v tomto prostoru",
+        sourceErrors: {
+            invalid_source:
+                "Zkontrolujte pole: HTTPS adresa bez cesty, pravidla poskytovatele pro ID serveru a proměnnou s tokenem a reference malými písmeny.",
+            duplicate_ref: "Tato reference se už používá. Zvolte jinou.",
+            duplicate_identity:
+                "Tento server poskytovatele je v tomto prostoru už zaregistrován.",
+            limit_reached: "Tento prostor už má 20 zaregistrovaných zdrojů.",
+            not_found: "Tento zdroj už neexistuje. Obnovte seznam.",
+            unavailable:
+                "Zdroje poskytovatelů nelze načíst nebo uložit. Obnovte stránku a zkuste to znovu.",
+        },
         liveScoreboard: "Živý scoreboard Warconu",
         scoreboardPolling:
             "Při otevření se obnovuje každých 15 sekund. Zdroj může mít zpoždění.",

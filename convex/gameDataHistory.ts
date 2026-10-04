@@ -8,10 +8,10 @@ import {
     type DataSource,
 } from "../src/domain/game-data/contracts"
 import type { HistoryProgress } from "../src/application/game-data/collect-sessions"
-import { parseSources } from "../src/domain/game-data/policy"
 import { archiveWarconHistory } from "./gameHistoryStore"
 import { internalMutation } from "./integrationMutation"
 import { type MutationCtx } from "./_generated/server"
+import { catalogSources } from "./gameDataCatalog"
 import type { Id } from "./_generated/dataModel"
 import { internal } from "./_generated/api"
 import { v } from "convex/values"
@@ -69,7 +69,7 @@ export const claimNext = internalMutation({
                 q.gte("nextAttemptAt", 0).lte("nextAttemptAt", now)
             )
             .take(10)
-        const catalog = parseSources(process.env.LOGI_GAME_DATA_SOURCES)
+        const catalog = await catalogSources(ctx)
         for (const row of rows) {
             if (row.leaseUntil > now) continue
             const connection = await ctx.db.get(row.connectionId)
@@ -155,7 +155,7 @@ async function currentRun(
         !["hll_crcon", "wardogs_warcon"].includes(connection.provider)
     )
         return null
-    const source = parseSources(process.env.LOGI_GAME_DATA_SOURCES).find(
+    const source = (await catalogSources(ctx)).find(
         (entry) =>
             entry.ref === connection.sourceRef &&
             entry.guildId === connection.guildId

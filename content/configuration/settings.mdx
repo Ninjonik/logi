@@ -343,10 +343,17 @@ subscription; add the newly generated URL in Google Calendar afterward.
 
 ## Game server data
 
-In **System → Game server data**, managers can enable, disable and resume sources
-prepared by the Logi operator for this workspace. With no configured sources,
-the section shows an empty state. The form never asks for a server password.
-The operator supplies the provider address and token privately before activation.
+In **System → Game server data**, managers can register provider sources and then
+enable, disable and resume them. **Provider sources** takes a lowercase reference,
+the provider, the provider's server ID (a panel UUID for Warcon), the HTTPS origin
+without a path, the name of the Convex environment variable that holds the token
+(`LOGI_GAME_DATA_<NAME>_TOKEN`) and an optional network allowlist. Logi never asks
+for, stores or shows the token itself: the operator sets the variable in Convex
+first, and you point the source at its name. To rotate a token, the operator
+stores the new value under a new variable and you update the reference; the
+connection picks the new reference up immediately. Removing a registration
+disables its connection but keeps retained history. Sources from the operator's
+own catalog appear read-only alongside workspace registrations.
 
 HLL CRCON supports current server data and historical match collection. Wardogs
 RCON supports current server data after checking its available functions. An

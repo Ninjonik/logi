@@ -14,9 +14,9 @@ import {
 import { warconEnvelopeSchema } from "../src/domain/game-data/warcon-contracts"
 import type { WarconPrepared } from "../src/application/game-data/read-warcon"
 import { internalMutation, type MutationCtx } from "./_generated/server"
-import { parseSources } from "../src/domain/game-data/policy"
 import { makeFunctionReference } from "convex/server"
 import { gameDataError } from "./gameDataValidators"
+import { catalogSources } from "./gameDataCatalog"
 import { v } from "convex/values"
 
 const accessArgs = {
@@ -91,7 +91,7 @@ async function authorize(ctx: MutationCtx, args: Access) {
         row.gameId !== "wardogs"
     )
         return null
-    const source = parseSources(process.env.LOGI_GAME_DATA_SOURCES).find(
+    const source = (await catalogSources(ctx)).find(
         (s) => s.ref === row.sourceRef && s.guildId === args.guildId
     )
     if (

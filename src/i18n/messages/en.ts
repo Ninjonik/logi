@@ -149,6 +149,43 @@ export const enMessages = {
             "Use valid Discord role IDs, at most 64 per game, for games enabled in this workspace.",
     },
     gameData: {
+        sourcesTitle: "Provider sources",
+        sourcesDescription:
+            "Register the game servers this workspace collects from. A source names the provider, its HTTPS origin, the provider's server ID and the Convex environment variable that holds the token. Tokens are never entered or shown here: the operator stores them in Convex, and you only point at the variable name. Rotate a token by storing the new value under a new variable and updating the reference.",
+        sourceRef: "Reference",
+        sourceProvider: "Provider",
+        sourceProviders: {
+            hll_crcon: "Hell Let Loose CRCON",
+            wardogs_warcon: "Wardogs Warcon panel",
+            wardogs_rcon: "Wardogs RCON",
+            wardogs_public_directory: "Wardog Servers directory",
+        },
+        sourceServerId: "Provider server ID",
+        sourceOrigin: "HTTPS origin",
+        sourceSecretRef: "Token variable",
+        sourceSecretRefHelp:
+            "Use the form LOGI_GAME_DATA_<NAME>_TOKEN. Warcon and RCON require a token variable and Warcon needs the panel server UUID; the Wardog Servers directory takes none. The allowlist holds optional IP addresses or hosts the collector may contact.",
+        sourceAllowlist: "Network allowlist (optional)",
+        sourceRegister: "Register source",
+        sourceRotate: "Update reference",
+        sourceRemove: "Remove",
+        sourceSaving: "Saving…",
+        sourceSaved:
+            "Sources saved. Enable the connection below to start collecting.",
+        sourceNone: "No provider source is registered for this workspace yet.",
+        sourceOperatorManaged: "Operator catalog (read-only)",
+        sourceWorkspaceManaged: "Registered in this workspace",
+        sourceErrors: {
+            invalid_source:
+                "Check the fields: HTTPS origin without a path, provider rules for the server ID and token variable, and a lowercase reference.",
+            duplicate_ref: "This reference is already used. Choose another.",
+            duplicate_identity:
+                "This provider server is already registered in this workspace.",
+            limit_reached: "This workspace already has 20 registered sources.",
+            not_found: "This source no longer exists. Refresh the list.",
+            unavailable:
+                "Unable to load or save provider sources. Refresh and retry.",
+        },
         liveScoreboard: "Warcon live scoreboard",
         scoreboardPolling:
             "Refreshes every 15 seconds while open. Provider updates may lag.",

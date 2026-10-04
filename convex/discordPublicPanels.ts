@@ -1,8 +1,9 @@
 import { publicPanelSettingsSchema } from "../src/domain/discord-publications/settings"
-import { projectSnapshot, parseSources } from "../src/domain/game-data/policy"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
+import { projectSnapshot } from "../src/domain/game-data/policy"
 import { panelSettings } from "./discordPublicationTable"
 import { mutation, query } from "./_generated/server"
+import { catalogSources } from "./gameDataCatalog"
 import { getGuildByDiscordId } from "./identity"
 import { v } from "convex/values"
 
@@ -163,7 +164,7 @@ export const forGuild = query({
             .query("discordPublicPanels")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .take(20)
-        const sources = parseSources(process.env.LOGI_GAME_DATA_SOURCES)
+        const sources = await catalogSources(ctx)
         return Promise.all(
             panels.map(async (panel) => {
                 const id = ctx.db.normalizeId(

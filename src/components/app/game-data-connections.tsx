@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react"
 import { GameHistoryPanel } from "./game-history-panel"
 import { WarconScoreboard } from "./warcon-scoreboard"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { GameDataSources } from "./game-data-sources"
 import { Button } from "@/components/ui/button"
 import type { z } from "zod"
 
@@ -91,6 +92,7 @@ function Connections({ serverId, dictionary }: Props) {
                     {t.error}
                 </p>
             )}
+            <GameDataSources serverId={serverId} dictionary={dictionary} />
             {!loading && data && refs.length === 0 && (
                 <p className="rounded-lg border p-4 text-sm">{t.empty}</p>
             )}
