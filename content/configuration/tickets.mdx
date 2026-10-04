@@ -99,8 +99,9 @@ The category's **recruit roles** apply only to recruit, and its **final roles**
 apply only to active member/mercenary outcomes. Pending has no managed roles.
 The bot compares actual Discord roles with the authorized desired state and
 changes only roles in that game's managed set. Unmanaged roles and another game's
-roles are preserved. Root settings own HLL; other games require explicit settings.
-Do not reuse category roles as group roles or the dashboard administrator role.
+roles are preserved. A category's game decides which game owns its roles;
+categories without a game remain Hell Let Loose. Do not reuse one category
+role for another game, as a group role, or as the dashboard administrator role.
 
 **Membership role operations** shows pending, in-progress, retry, applied, denied,
 superseded and failed requests, their actor/target and recent attempts. Each attempt

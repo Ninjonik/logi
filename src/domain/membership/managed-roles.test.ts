@@ -151,3 +151,57 @@ test("actor authority is current and recruitment permission cannot authorize gen
         false
     )
 })
+test("shared categories are owned by the game they name", () => {
+    const shared = {
+        clanRoleId: "clan",
+        membershipSettings: {
+            enabled: true,
+            autoAssignRecruitOnApply: false,
+            categories: [
+                {
+                    id: "hll",
+                    recruitRoleIds: ["hll-recruit"],
+                    finalRoleIds: ["hll-member"],
+                    supportRoleIds: [],
+                },
+                {
+                    id: "wdg",
+                    gameId: "wardogs" as const,
+                    recruitRoleIds: ["wdg-recruit"],
+                    finalRoleIds: ["wdg-member"],
+                    supportRoleIds: [],
+                },
+            ],
+        },
+    }
+    assert.deepEqual(managedRolePolicy(shared, "hell_let_loose", []).roleIds, [
+        "clan",
+        "hll-member",
+        "hll-recruit",
+    ])
+    const wardogs = managedRolePolicy(shared, "wardogs", [])
+    assert.deepEqual(wardogs.roleIds, ["clan", "wdg-member", "wdg-recruit"])
+    assert.deepEqual(
+        desiredMembershipRoles(wardogs, {
+            type: "member",
+            status: "recruit",
+            membershipCategoryId: "wdg",
+        }),
+        ["clan", "wdg-recruit"]
+    )
+    assert.deepEqual(
+        desiredMembershipRoles(wardogs, {
+            type: "member",
+            status: "active",
+            membershipCategoryId: "hll",
+        }),
+        ["clan"]
+    )
+    assert.deepEqual(
+        managedRolePolicy(shared, "hell_let_loose_vietnam", []).roleIds,
+        []
+    )
+    const reused = structuredClone(shared)
+    reused.membershipSettings.categories[1]!.finalRoleIds = ["hll-member"]
+    assert.throws(() => managedRolePolicy(reused, "wardogs", []), /owner/i)
+})

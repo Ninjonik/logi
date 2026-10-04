@@ -5,6 +5,8 @@ export type RoleActorKind =
 export type RoleActor = { userId: string; kind: RoleActorKind }
 type Category = {
     id: string
+    /** Missing values are legacy Hell Let Loose categories. */
+    gameId?: GameId
     recruitRoleIds: string[]
     finalRoleIds: string[]
     supportRoleIds: string[]
@@ -33,9 +35,18 @@ export function managedRolePolicy(
     gameId: GameId,
     groupRoleIds: string[]
 ) {
-    const settingsFor = (game: GameId) =>
-        config.gameOverrides?.[game]?.membershipSettings ??
-        (game === "hell_let_loose" ? config.membershipSettings : undefined)
+    // Shared settings hold every game's categories; each category names its game.
+    const settingsFor = (game: GameId): Settings | undefined => {
+        const override = config.gameOverrides?.[game]?.membershipSettings
+        if (override) return override
+        const shared = config.membershipSettings
+        if (!shared) return undefined
+        const categories = shared.categories.filter(
+            (category) => (category.gameId ?? "hell_let_loose") === game
+        )
+        if (game !== "hell_let_loose" && !categories.length) return undefined
+        return { ...shared, categories }
+    }
     const owners = new Map<string, string>()
     const own = (id: string | undefined, owner: string) => {
         if (!id) return

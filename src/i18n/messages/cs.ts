@@ -1409,6 +1409,7 @@ export const csMessages = {
         submit: "Odeslat platform ID",
         success:
             "Platform ID bylo uloženo. Tuto stránku můžete zavřít a vrátit se na Discord.",
+        closePage: "Tuto stránku můžete nyní zavřít.",
         genericError: "Platform ID se nepodařilo uložit.",
         guideLabel: "Otevřít návod",
         steam: {
