@@ -847,6 +847,11 @@ export default defineSchema({
         scoreResolution: v.optional(
             v.union(v.literal("applied"), v.literal("skipped"))
         ),
+        // A conclusion snapshots the eligible members and processes them in
+        // small, independently committed batches. This keeps a large roster
+        // from exceeding a single mutation's execution budget.
+        scorePendingUserIds: v.optional(v.array(v.string())),
+        scorePendingIndex: v.optional(v.number()),
         absenceNotices: v.optional(v.array(eventNotice)),
         // Directory team selections with immutable presentation snapshots; absent on legacy events.
         matchTeams: v.optional(v.array(matchTeamAssignment)),

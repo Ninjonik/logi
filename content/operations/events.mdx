@@ -191,8 +191,10 @@ excluded from their first reminder.
 ## Event status and conclusion
 
 Managers can conclude an event when it is finished and record relevant results.
-At conclusion, Logi applies the configured event-score rules once. A match that
-was concluded before its meeting time is treated as cancelled for scoring.
+At conclusion, Logi snapshots the eligible members and resolves the configured
+event-score rules once in the background. This keeps conclusion reliable for
+large rosters; the scores can take a short time to appear. A match that was
+concluded before its meeting time is treated as cancelled for scoring.
 
 <Callout type="warning">
     Changing core scheduling or capacity information after people have signed up
