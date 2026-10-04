@@ -1,5 +1,7 @@
 import {
+    openTeamCursor,
     parseTeamCollectionQuery,
+    sealTeamCursor,
     teamErrorResponse,
     type TeamCollectionQuery,
 } from "@/lib/api/teams-route"
@@ -34,17 +36,40 @@ export async function GET(request: Request) {
             headers,
             "One supported game and bounded pagination are required."
         )
+    const secret = getInternalAuthSecret(),
+        binding = { secret, guildId: auth.guildId, gameId: input.gameId }
+    // Only a cursor this route issued for the same workspace and game reaches Convex.
+    const cursor =
+        input.cursor === null ? null : openTeamCursor(binding, input.cursor)
+    if (input.cursor !== null && cursor === null)
+        return teamErrorResponse(
+            "invalid_query",
+            headers,
+            "The cursor was not issued for this game."
+        )
     try {
         const page = await fetchQuery(listTeams, {
-            secret: getInternalAuthSecret(),
+            secret,
             keyHash: hashApiKey(auth.key),
             guildId: auth.guildId,
             ...input,
+            cursor,
         })
         // null means Convex refused the key, workspace or game grant.
-        return page
-            ? Response.json({ data: teamPageSchema.parse(page) }, { headers })
-            : teamErrorResponse("insufficient_scope", headers)
+        if (!page) return teamErrorResponse("insufficient_scope", headers)
+        const data = teamPageSchema.parse(page)
+        return Response.json(
+            {
+                data: {
+                    ...data,
+                    nextCursor:
+                        data.nextCursor === null
+                            ? null
+                            : sealTeamCursor(binding, data.nextCursor),
+                },
+            },
+            { headers }
+        )
     } catch {
         return teamErrorResponse("unavailable", headers)
     }

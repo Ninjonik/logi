@@ -76,8 +76,9 @@ Authorization: Bearer <restricted service key>
 ```
 
 Exactly one `game` is required; `limit` is 1–100 (default 50); `cursor` is the
-non-empty opaque value from the previous page, at most 4,096 characters, and is
-valid only for the same game. The gateway checks the requested games against
+non-empty opaque `nextCursor` from the previous page, at most 4,096 characters.
+Logi signs it for the workspace and game it was issued for, so a forged cursor
+or one reused with another game is `400 invalid_query` before any read. The gateway checks the requested games against
 the key first: a missing or empty `game`, `game=all`, an unknown game value, or
 any game (alone or in a combination) the key does not grant is
 `403 insufficient_scope`. A request the grant allows is then validated by the
@@ -142,7 +143,9 @@ Actor identifiers, asset IDs, archive state and audit data are never included.
 
 `teams` is a registered `SYNC_RESOURCES` entry, so the existing
 [synchronization protocol](../v0.6/README.md) applies with the same grants as
-the collection:
+the collection. As on the collection, a game without a directory (Hell Let
+Loose: Vietnam) is `400 invalid_query` for `resources` that include `teams` and
+for `sync-records/teams/…`, never an empty page:
 
 ```http
 GET /api/v1/clan/changes?game=hell_let_loose&resources=teams&start=now

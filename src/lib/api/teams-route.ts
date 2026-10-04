@@ -4,6 +4,7 @@ import {
     teamGameSchema,
     type TeamGame,
 } from "@/domain/teams/team"
+import { createHmac, timingSafeEqual } from "node:crypto"
 
 export type TeamCollectionQuery = {
     gameId: TeamGame
@@ -48,6 +49,45 @@ export function parseTeamCollectionQuery(
     )
         return null
     return { gameId, cursor, limit: Number(raw) }
+}
+
+/** What a collection cursor is issued for: one workspace and one directory game. */
+export type TeamCursorBinding = {
+    secret: string
+    guildId: string
+    gameId: TeamGame
+}
+function teamCursorSignature(binding: TeamCursorBinding, body: string) {
+    return createHmac("sha256", binding.secret)
+        .update(
+            `logi-teams-cursor-v1:${JSON.stringify([binding.guildId, binding.gameId])}:${body}`
+        )
+        .digest()
+}
+/**
+ * Wraps a Convex page cursor so it is valid only for the workspace and game
+ * it was issued for; a forged or reused cursor is a client error, never a
+ * Convex failure.
+ */
+export function sealTeamCursor(
+    binding: TeamCursorBinding,
+    cursor: string
+): string {
+    const body = Buffer.from(cursor, "utf8").toString("base64url")
+    return `${body}.${teamCursorSignature(binding, body).toString("base64url")}`
+}
+/** The Convex cursor inside a sealed value, or null when this binding did not issue it. */
+export function openTeamCursor(
+    binding: TeamCursorBinding,
+    sealed: string
+): string | null {
+    const [body, signature, ...rest] = sealed.split(".")
+    if (!body || !signature || rest.length) return null
+    const given = Buffer.from(signature, "base64url"),
+        expected = teamCursorSignature(binding, body)
+    if (given.length !== expected.length || !timingSafeEqual(given, expected))
+        return null
+    return Buffer.from(body, "base64url").toString("utf8") || null
 }
 
 export function parseTeamDetailQuery(request: Request): TeamDetailQuery | null {

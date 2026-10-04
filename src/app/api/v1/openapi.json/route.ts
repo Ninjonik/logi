@@ -1134,7 +1134,7 @@ paths["/clan/changes"] = {
         security: [{ clanApiKey: [] }],
         summary: "Read scoped transactional invalidations",
         description:
-            "Requires explicit underlying read grants. First obtain start=now before a baseline sweep, then replay the signed cursor. Keep resources and game fixed. Revisions are canonical decimal strings (compare as integers). Empty pages may have hasMore=true. The cursor remains usable for polling when hasMore=false. Retention is seven days; 410 reset_required requires a new bootstrap. Polling backstops webhook loss. Existing records have revision zero.",
+            "Requires explicit underlying read grants. First obtain start=now before a baseline sweep, then replay the signed cursor. Keep resources and game fixed. Revisions are canonical decimal strings (compare as integers). Empty pages may have hasMore=true. The cursor remains usable for polling when hasMore=false. Retention is seven days; 410 reset_required requires a new bootstrap. Polling backstops webhook loss. Existing records have revision zero. The teams resource exists only for hell_let_loose and wardogs; requesting it with another game (alone or with other resources) is 400 invalid_query, not an empty page.",
         parameters: [
             ...syncParameters,
             {
@@ -1443,7 +1443,7 @@ paths["/clan/teams"] = {
                 name: "cursor",
                 in: "query",
                 description:
-                    "Opaque value from the previous page; reuse only with the same game.",
+                    "Opaque nextCursor from the previous page, signed for this workspace and game. A cursor Logi did not issue for the same workspace and game is 400 invalid_query.",
                 schema: { type: "string", maxLength: 4096 },
             },
         ],

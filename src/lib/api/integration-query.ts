@@ -1,5 +1,12 @@
 import { SYNC_RESOURCES, type SyncResource } from "@/domain/integrations/change"
+import { teamGameSchema } from "@/domain/teams/team"
 import { isGameId } from "@/domain/games/game"
+
+/** The team directory exists only for its own games; another game is invalid, not empty. */
+const outsideTeamDirectory = (
+    resources: readonly SyncResource[],
+    gameId: string
+) => resources.includes("teams") && !teamGameSchema.safeParse(gameId).success
 
 /** Strict single-game, explicit-resource contract shared by the guard and handler. */
 export function parseIntegrationQuery(request: Request) {
@@ -23,6 +30,7 @@ export function parseIntegrationQuery(request: Request) {
             !(SYNC_RESOURCES as readonly string[]).includes(path[2]) ||
             (path[2] === "membership-summaries" &&
                 !/^\d{17,20}$/.test(path[3])) ||
+            outsideTeamDirectory([path[2] as SyncResource], gameId) ||
             [...params.keys()].some((key) => key !== "game")
         )
             return null
@@ -66,7 +74,8 @@ export function parseIntegrationQuery(request: Request) {
         !resources.length ||
         resources.length > SYNC_RESOURCES.length ||
         new Set(resources).size !== resources.length ||
-        resources.some((resource) => !SYNC_RESOURCES.includes(resource))
+        resources.some((resource) => !SYNC_RESOURCES.includes(resource)) ||
+        outsideTeamDirectory(resources, gameId)
     )
         return null
     const limitText = params.get("limit") ?? "25",

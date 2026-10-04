@@ -5,9 +5,11 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    openTeamCursor,
     parseTeamCollectionQuery,
     parseTeamDetailQuery,
     parseTeamIdSegment,
+    sealTeamCursor,
     teamErrorResponse,
 } from "./teams-route"
 
@@ -61,6 +63,35 @@ test("team detail query accepts only one directory game and no other parameters"
         "game=wardogs&cursor=x",
     ])
         assert.equal(parseTeamDetailQuery(detail(query)), null, query)
+})
+
+test("team cursors open only for the workspace and game they were sealed for", () => {
+    const binding = {
+        secret: "synthetic-team-secret",
+        guildId: "910000000000000001",
+        gameId: "hell_let_loose" as const,
+    }
+    const sealed = sealTeamCursor(binding, "convex|cursor:1")
+    assert.notEqual(sealed, "convex|cursor:1")
+    assert.equal(openTeamCursor(binding, sealed), "convex|cursor:1")
+    for (const other of [
+        { ...binding, gameId: "wardogs" as const },
+        { ...binding, guildId: "910000000000000002" },
+        { ...binding, secret: "rotated-secret" },
+    ])
+        assert.equal(openTeamCursor(other, sealed), null)
+    const [body, signature] = sealed.split(".")
+    for (const forged of [
+        "opaque",
+        "",
+        ".",
+        `${body}.`,
+        `.${signature}`,
+        `${body}.${signature}.x`,
+        `${Buffer.from("other").toString("base64url")}.${signature}`,
+        `${body}.${"A".repeat(signature!.length)}`,
+    ])
+        assert.equal(openTeamCursor(binding, forged), null, forged)
 })
 
 test("team ID path segments are bounded opaque identifiers", () => {
@@ -157,6 +188,7 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
     let legacy = false,
         granted = true,
         failing = false,
+        paged = false,
         grantedGames = ["hell_let_loose"]
     const calls: Array<{ path: string; args: Record<string, unknown> }> = []
     t.mock.method(
@@ -191,7 +223,11 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
                         errorMessage: "offline",
                     })
                 value = granted
-                    ? { items: args.cursor ? [] : [team], nextCursor: null }
+                    ? {
+                          items: args.cursor ? [] : [team],
+                          nextCursor:
+                              paged && !args.cursor ? "convex|page:2" : null,
+                      }
                     : null
             } else if (request.path === "teamReads:get") {
                 calls.push({ path: request.path, args })
@@ -325,6 +361,36 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
     assert.equal(calls.at(-1)?.path, "teamReads:list")
     legacy = false
     granted = true
+
+    // Next pages travel as sealed cursors bound to the workspace and game.
+    paged = true
+    grantedGames = ["hell_let_loose", "wardogs"]
+    const first = (await (await list("game=hell_let_loose")).json()) as {
+        data: { nextCursor: string }
+    }
+    assert.notEqual(first.data.nextCursor, "convex|page:2")
+    const cursor = encodeURIComponent(first.data.nextCursor)
+    const second = await list(`game=hell_let_loose&cursor=${cursor}`)
+    assert.equal(second.status, 200)
+    assert.equal(calls.at(-1)!.args.cursor, "convex|page:2")
+    assert.deepEqual(await second.json(), {
+        data: { items: [], nextCursor: null },
+    })
+    const sealedReads = calls.length
+    for (const [response, label] of [
+        [await list(`game=wardogs&cursor=${cursor}`), "cursor of another game"],
+        [await list("game=hell_let_loose&cursor=opaque"), "forged cursor"],
+        [
+            await list("game=hell_let_loose&cursor=convex%7Cpage%3A2"),
+            "raw Convex cursor",
+        ],
+    ] as const) {
+        assert.equal(response.status, 400, label)
+        assert.equal((await response.json()).error.code, "invalid_query")
+    }
+    assert.equal(calls.length, sealedReads, "bad cursors never reach Convex")
+    paged = false
+    grantedGames = ["hell_let_loose"]
 
     failing = true
     const unavailable = await list("game=hell_let_loose")
