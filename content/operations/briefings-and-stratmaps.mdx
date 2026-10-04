@@ -79,6 +79,9 @@ topic-preset topic. Within a topic, it sends the preset's messages in their
 saved order, using their body and attachments directly rather than adding
 arbitrary embeds.
 
+Forum creation is durable: if Discord creates the event forum but a later
+sync step fails, Logi reuses that forum on retry instead of creating another.
+
 Editing a topic preset does not rewrite old forum posts by itself. The event's
 topic resync control is available only for a non-concluded event that has both
 a forum channel and topic preset. Resyncing can update topic posts and delete

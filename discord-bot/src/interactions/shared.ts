@@ -81,7 +81,6 @@ export async function loadMembershipCategoryContext(
 export function resolveSupportMemberIds(
     guild: Guild,
     supportRoleIds: string[],
-    dashboardAdminRoleId?: string,
     includeSupportRoleMembers = true
 ) {
     const memberIds = new Set<string>()
@@ -89,12 +88,8 @@ export function resolveSupportMemberIds(
     for (const member of guild.members.cache.values()) {
         const roleIds = [...member.roles.cache.keys()]
         if (
-            member.permissions.has("Administrator") ||
-            (dashboardAdminRoleId
-                ? roleIds.includes(dashboardAdminRoleId)
-                : false) ||
-            (includeSupportRoleMembers &&
-                supportRoleIds.some((roleId) => roleIds.includes(roleId)))
+            includeSupportRoleMembers &&
+            supportRoleIds.some((roleId) => roleIds.includes(roleId))
         ) {
             memberIds.add(member.id)
         }
