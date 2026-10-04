@@ -2,7 +2,9 @@ import {
     allowsWebsiteEventWrite,
     canonicalWebsiteCommand,
     websiteEventCommandSchema,
+    websiteEventEditorSchema,
     websiteEventMembershipError,
+    websiteEventReceiptSchema,
     websiteEventStateError,
 } from "./website-command"
 import {
@@ -254,5 +256,172 @@ test("only live restricted keys with supported games may carry a command policy"
         !websiteEventPolicyApplicationsSchema.safeParse([
             { id: "bad id", clientId: "logi_abc", name: "Valkyria" },
         ]).success
+    )
+})
+
+const matchTeams = [
+    { teamId: "teamDirectory:alpha", slot: "a" as const, side: "Valkyra" },
+    { teamId: "teamDirectory:bravo", slot: "b" as const, side: null },
+]
+const refresh = {
+    operation: "refresh_match_team" as const,
+    eventId: "one",
+    expectedRevision: "4",
+    teamId: "teamDirectory:alpha",
+}
+
+test("team selections are IDs, slots and sides only; refresh names one team under an expected revision", () => {
+    for (const operation of [
+        { operation: "create", event: { ...event, matchTeams } },
+        {
+            operation: "update",
+            eventId: "one",
+            expectedRevision: "4",
+            event: { ...event, matchTeams: [] },
+        },
+        refresh,
+    ])
+        assert.equal(
+            websiteEventCommandSchema.safeParse(operation).success,
+            true
+        )
+    for (const selection of [
+        [{ ...matchTeams[0], snapshot: { name: "Forged" } }],
+        [{ ...matchTeams[0], slot: "d" }],
+        [{ teamId: "teamDirectory:alpha", slot: "a" }],
+        [
+            ...matchTeams,
+            { teamId: "teamDirectory:c", slot: "c", side: null },
+            { teamId: "teamDirectory:d", slot: "c", side: null },
+        ],
+    ])
+        assert.equal(
+            websiteEventCommandSchema.safeParse({
+                operation: "create",
+                event: { ...event, matchTeams: selection },
+            }).success,
+            false
+        )
+    for (const command of [
+        { ...refresh, teamId: "" },
+        { ...refresh, expectedRevision: undefined },
+        { ...refresh, matchTeams },
+    ])
+        assert.equal(
+            websiteEventCommandSchema.safeParse(command).success,
+            false
+        )
+    assert.equal(
+        websiteEventReceiptSchema.safeParse({
+            eventId: "one",
+            guildId: "123456789012345678",
+            gameId: "wardogs",
+            revision: "5",
+            operation: "refresh_match_team",
+            receiptId: "receipt-one",
+            replayed: false,
+        }).success,
+        true
+    )
+})
+
+test("the editor carries assignment summaries (null for trainings/legacy) without asset identifiers", () => {
+    const editor = {
+        eventId: "one",
+        guildId: "123456789012345678",
+        gameId: "wardogs",
+        revision: "4",
+        event: { ...event, matchTeams },
+        matchTeams: [
+            {
+                ...matchTeams[0],
+                name: "Alpha",
+                shortCode: null,
+                logoUrl: null,
+                teamRevision: 1,
+                capturedAt: "2026-10-04T10:00:00.000Z",
+            },
+        ],
+        canEdit: true,
+        canCancel: true,
+    }
+    assert.equal(websiteEventEditorSchema.safeParse(editor).success, true)
+    assert.equal(
+        websiteEventEditorSchema.safeParse({ ...editor, matchTeams: null })
+            .success,
+        true
+    )
+    assert.equal(
+        websiteEventEditorSchema.safeParse({
+            ...editor,
+            matchTeams: undefined,
+        }).success,
+        false,
+        "the summary field is always present"
+    )
+    assert.equal(
+        websiteEventEditorSchema.safeParse({
+            ...editor,
+            matchTeams: [
+                { ...editor.matchTeams[0], logoAssetId: "imageAssets:one" },
+            ],
+        }).success,
+        false
+    )
+})
+
+test("a snapshot refresh is an edit: same window as update, never a training or concluded match", () => {
+    const beforeMeeting = Date.parse("2030-01-01T17:30:00Z")
+    assert.equal(websiteEventStateError(refresh, event, beforeMeeting), null)
+    assert.equal(
+        websiteEventStateError(
+            refresh,
+            { ...event, kind: "training" },
+            beforeMeeting
+        ),
+        "invalid_match_teams"
+    )
+    assert.equal(
+        websiteEventStateError(
+            refresh,
+            { ...event, status: "concluded" },
+            beforeMeeting
+        ),
+        "invalid_state"
+    )
+    assert.equal(
+        websiteEventStateError(refresh, event, Date.parse(event.meetingStart)),
+        "invalid_state"
+    )
+    assert.equal(
+        websiteEventStateError(refresh, null, beforeMeeting),
+        "invalid_state"
+    )
+})
+
+test("the command digest binds team selections independent of their listed order", () => {
+    const create = (selection: unknown) =>
+        websiteEventCommandSchema.parse({
+            operation: "create",
+            event: { ...event, matchTeams: selection },
+        })
+    const listed = canonicalWebsiteCommand("wardogs", create(matchTeams))
+    assert.equal(
+        canonicalWebsiteCommand("wardogs", create([...matchTeams].reverse())),
+        listed
+    )
+    for (const changed of [
+        create([{ ...matchTeams[0], side: "Manticore" }, matchTeams[1]]),
+        create([matchTeams[0]]),
+        create([]),
+        websiteEventCommandSchema.parse({ operation: "create", event }),
+    ])
+        assert.notEqual(canonicalWebsiteCommand("wardogs", changed), listed)
+    assert.notEqual(
+        canonicalWebsiteCommand("wardogs", refresh),
+        canonicalWebsiteCommand("wardogs", {
+            ...refresh,
+            teamId: "teamDirectory:bravo",
+        })
     )
 })

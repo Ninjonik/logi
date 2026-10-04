@@ -264,6 +264,7 @@ test("event summary pages preserve empty cursors and return only allowlisted fie
                 startsAt: "2030-01-01T01:15:00.000Z",
                 endsAt: "2030-01-01T02:00:00.000Z",
                 updatedAt: "2026-09-28T10:00:00.000Z",
+                matchTeams: null,
             },
         ],
         nextCursor: null,
@@ -346,6 +347,7 @@ test("match summaries preserve unknown results despite raw telemetry and conclud
             updatedAt: "2026-09-28T10:00:00.000Z",
             resultState: "unknown",
             result: null,
+            matchTeams: null,
         }
     )
 })
@@ -389,6 +391,7 @@ test("match summaries expose imported scores as provisional without source URLs 
                     importedAt: "2026-09-28T09:59:00.000Z",
                 },
             },
+            matchTeams: null,
         }
     )
 })

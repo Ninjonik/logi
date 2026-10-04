@@ -31,11 +31,13 @@ import { UpsertNoticeUseCase } from "../src/application/events/upsert-notice.use
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case"
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
+import { resolveEventMatchTeams, syncEventAssetReferences } from "./matchTeams"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
 import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import type { MutationCtx } from "./_generated/server"
+import { matchTeamInput } from "./teamValidators"
 import type { Id } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
 import { query } from "./_generated/server"
@@ -158,6 +160,8 @@ export const upsert = mutation({
         createForumChannel: v.optional(v.boolean()),
         topicPresetId: v.optional(v.id("topicPresets")),
         stratmapIds: v.optional(v.array(v.id("stratmaps"))),
+        // Directory team selections (identity, slot, side); snapshots are captured here.
+        matchTeams: v.optional(v.array(matchTeamInput)),
     },
     handler: async (ctx, args) => {
         const eventId = await handleUpsertEvent({
@@ -177,6 +181,21 @@ export const upsert = mutation({
             getGuildDiscordId,
             getEventById: async (eventId) =>
                 await ctx.db.get(eventId as Id<"events">),
+            resolveMatchTeams: async ({ guildId, existing }) => {
+                const resolved = await resolveEventMatchTeams(ctx, {
+                    guildId,
+                    gameId: args.gameId ?? existing?.gameId,
+                    kind: args.kind ?? existing?.kind,
+                    status: existing?.status,
+                    inputs: args.matchTeams,
+                    previous: existing?.matchTeams,
+                    now: new Date().toISOString(),
+                })
+                // The dashboard route maps this prefix to a 400 with the bare code.
+                if (!resolved.ok)
+                    throw new Error(`match_teams:${resolved.error}`)
+                return resolved.matchTeams
+            },
             createUseCase: () =>
                 new UpsertEventUseCase(
                     new ConvexEventCommandRepository(ctx),
@@ -189,6 +208,8 @@ export const upsert = mutation({
                     systemClock
                 ),
         })
+        const saved = await ctx.db.get(eventId as Id<"events">)
+        if (saved) await syncEventAssetReferences(ctx, saved)
         await refreshEventSchedule(ctx, eventId as Id<"events">)
         return eventId
     },

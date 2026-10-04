@@ -81,6 +81,44 @@ type EventRouteDeps<TEventInput> = {
 type EventCreateParams = { serverId: string }
 type EventActionParams = { serverId: string; eventId: string }
 
+/**
+ * Convex rejects an invalid team selection with `match_teams:<code>`. The
+ * dashboard receives that bare code so it can localize it, instead of the
+ * generic fallback message. The wrapped Convex error text is searched, not
+ * matched exactly.
+ */
+const MATCH_TEAM_ERROR = new RegExp(
+    `match_teams:(${[
+        "invalid_match_teams",
+        "team_not_found",
+        "team_archived",
+        "team_game_mismatch",
+        "match_concluded",
+        "training_event",
+    ].join("|")})`
+)
+export function matchTeamErrorCode(error: unknown): string | null {
+    return error instanceof Error
+        ? (MATCH_TEAM_ERROR.exec(error.message)?.[1] ?? null)
+        : null
+}
+function saveErrorResponse(
+    deps: Pick<EventRouteDeps<unknown>, "getUserSafeErrorMessage">,
+    error: unknown
+) {
+    return NextResponse.json(
+        {
+            error:
+                matchTeamErrorCode(error) ??
+                deps.getUserSafeErrorMessage(
+                    error,
+                    "Unable to save the event."
+                ),
+        },
+        { status: 400 }
+    )
+}
+
 const trainingCompletionSchema = z.object({
     action: z.literal("completeTraining"),
     participants: z
@@ -291,15 +329,7 @@ export function createServerEventsPostHandler<TEventInput>(
             return NextResponse.json({ eventId })
         } catch (error) {
             deps.logRouteError("events.create", error)
-            return NextResponse.json(
-                {
-                    error: deps.getUserSafeErrorMessage(
-                        error,
-                        "Unable to save the event."
-                    ),
-                },
-                { status: 400 }
-            )
+            return saveErrorResponse(deps, error)
         }
     }
 }
@@ -334,15 +364,7 @@ export function createServerEventPatchHandler<TEventInput>(
             return NextResponse.json({ eventId: updatedEventId })
         } catch (error) {
             deps.logRouteError("events.update", error)
-            return NextResponse.json(
-                {
-                    error: deps.getUserSafeErrorMessage(
-                        error,
-                        "Unable to save the event."
-                    ),
-                },
-                { status: 400 }
-            )
+            return saveErrorResponse(deps, error)
         }
     }
 }

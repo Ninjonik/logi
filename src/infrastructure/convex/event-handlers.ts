@@ -1,4 +1,5 @@
 import { findEligibleNoticeTargets } from "@/domain/events/notice-policy"
+import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import { normalizeEventRecord } from "@/domain/events/normalization"
 import type { EventLike } from "@/domain/events/types"
 
@@ -11,6 +12,12 @@ export function assertInternalSecret(secret: string, expectedSecret: string) {
         throw new Error("Unauthorized.")
     }
 }
+
+/** The stored facts an upsert needs from the event it updates. */
+export type UpsertExistingEvent = Pick<
+    EventLike,
+    "gameId" | "kind" | "status" | "matchTeams"
+> & { guildId?: string }
 
 export async function handleUpsertEvent(input: {
     secret: string
@@ -25,7 +32,16 @@ export async function handleUpsertEvent(input: {
         serverId: string
     ) => Promise<{ discordId?: string; id?: string } | null>
     getGuildDiscordId: (guild: { discordId?: string; id?: string }) => string
-    getEventById: (eventId: string) => Promise<{ guildId?: string } | null>
+    getEventById: (eventId: string) => Promise<UpsertExistingEvent | null>
+    /**
+     * Resolves raw `matchTeams` client input against the directory for this
+     * guild. Without a resolver the field is dropped, so a client can never
+     * persist snapshots of its own.
+     */
+    resolveMatchTeams?: (context: {
+        guildId: string
+        existing: UpsertExistingEvent | null
+    }) => Promise<MatchTeamAssignment[] | undefined>
     createUseCase: () => ExecuteUseCase<any, unknown>
 }) {
     assertInternalSecret(input.secret, input.expectedSecret)
@@ -36,20 +52,30 @@ export async function handleUpsertEvent(input: {
     }
 
     const guildId = input.getGuildDiscordId(guild)
+    let existing: UpsertExistingEvent | null = null
     if (input.args.eventId) {
-        const event = await input.getEventById(input.args.eventId)
-        if (!event || event.guildId !== guildId) {
+        existing = await input.getEventById(input.args.eventId)
+        if (!existing || existing.guildId !== guildId) {
             // Do not allow a caller that can name another guild's event ID to
             // update it merely by supplying a server they do control.
             throw new Error("Event not found.")
         }
     }
 
-    const { secret: _secret, serverId: _serverId, ...command } = input.args
+    const matchTeams = input.resolveMatchTeams
+        ? await input.resolveMatchTeams({ guildId, existing })
+        : undefined
+    const {
+        secret: _secret,
+        serverId: _serverId,
+        matchTeams: _clientMatchTeams,
+        ...command
+    } = input.args
 
     return await input.createUseCase().execute({
         ...command,
         guildId,
+        matchTeams,
         topicPresetId: input.args.topicPresetId
             ? String(input.args.topicPresetId)
             : undefined,

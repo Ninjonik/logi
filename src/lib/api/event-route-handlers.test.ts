@@ -442,3 +442,74 @@ test("server event POST returns 404 for missing metadata and 400 for unsupported
     assert.equal(unsupported.status, 400)
     assert.deepEqual(await unsupported.json(), { error: "Unsupported action." })
 })
+
+test("server event saves forward team selections unchanged and surface team selection codes as 400 errors", async () => {
+    const { deps, calls } = createDeps()
+    const matchTeams = [
+        { teamId: "teamDirectory:alpha", slot: "a", side: "Allies" },
+        { teamId: "teamDirectory:bravo", slot: "b", side: null },
+    ]
+    const created = await createServerEventsPostHandler(deps)(
+        { json: async () => createEventBody({ matchTeams }) },
+        { params: Promise.resolve({ serverId: "guild-1" }) }
+    )
+    assert.equal(created.status, 200)
+    assert.deepEqual(calls.savedEvents[0]?.matchTeams, matchTeams)
+    const cleared = await createServerEventPatchHandler(deps)(
+        { json: async () => createEventBody({ matchTeams: [] }) },
+        { params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }) }
+    )
+    assert.equal(cleared.status, 200)
+    assert.deepEqual(calls.savedEvents[1]?.matchTeams, [])
+    const omitted = await createServerEventPatchHandler(deps)(
+        { json: async () => createEventBody() },
+        { params: Promise.resolve({ serverId: "guild-1", eventId: "event-1" }) }
+    )
+    assert.equal(omitted.status, 200)
+    assert.equal("matchTeams" in (calls.savedEvents[2] ?? {}), false)
+    const invalid = await createServerEventsPostHandler(deps)(
+        {
+            json: async () =>
+                createEventBody({
+                    matchTeams: [{ teamId: "x", slot: "d", side: null }],
+                }),
+        },
+        { params: Promise.resolve({ serverId: "guild-1" }) }
+    )
+    assert.equal(invalid.status, 400)
+    assert.equal(calls.savedEvents.length, 3)
+
+    deps.saveServerEvent = async () => {
+        throw new Error(
+            "[Request ID: abc] Server Error\nUncaught Error: match_teams:team_archived\n    at handler (../convex/events.ts:1:1)"
+        )
+    }
+    for (const response of [
+        await createServerEventsPostHandler(deps)(
+            { json: async () => createEventBody({ matchTeams }) },
+            { params: Promise.resolve({ serverId: "guild-1" }) }
+        ),
+        await createServerEventPatchHandler(deps)(
+            { json: async () => createEventBody({ matchTeams }) },
+            {
+                params: Promise.resolve({
+                    serverId: "guild-1",
+                    eventId: "event-1",
+                }),
+            }
+        ),
+    ]) {
+        assert.equal(response.status, 400)
+        assert.deepEqual(await response.json(), { error: "team_archived" })
+    }
+    deps.saveServerEvent = async () => {
+        throw new Error("match_teams:not_a_known_code")
+    }
+    const unknown = await createServerEventsPostHandler(deps)(
+        { json: async () => createEventBody() },
+        { params: Promise.resolve({ serverId: "guild-1" }) }
+    )
+    assert.deepEqual(await unknown.json(), {
+        error: "match_teams:not_a_known_code",
+    })
+})

@@ -30,6 +30,7 @@ test("summary HTTP routes preserve page filters, detail identity and no-store", 
         startsAt: null,
         endsAt: "2030-01-01T02:00:00.000Z",
         updatedAt: null,
+        matchTeams: null,
     }
     const matchSummary = {
         id: "fixture-event",
@@ -40,6 +41,7 @@ test("summary HTTP routes preserve page filters, detail identity and no-store", 
         updatedAt: null,
         resultState: "unknown",
         result: null,
+        matchTeams: null,
     }
     t.mock.method(
         globalThis,

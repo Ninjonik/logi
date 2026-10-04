@@ -99,6 +99,7 @@ function response(value: unknown, created: boolean, editor = false): Response {
                 : null
         const statuses: Record<string, number> = {
             invalid_request: 400,
+            invalid_match_teams: 400,
             unauthorized: 401,
             insufficient_scope: 403,
             policy_denied: 403,

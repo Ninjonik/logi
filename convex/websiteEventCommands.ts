@@ -18,6 +18,16 @@ import {
     DelegatingEventScorePort,
 } from "../src/infrastructure/convex/event-command-repositories"
 import {
+    matchTeamsEditability,
+    refreshMatchTeamSnapshot,
+} from "../src/domain/teams/match-teams"
+import {
+    mutation,
+    query,
+    type MutationCtx,
+    type QueryCtx,
+} from "./_generated/server"
+import {
     assertSessionGateway,
     activeDashboardSession,
 } from "./dashboardSessionStore"
@@ -27,9 +37,11 @@ import { canAdminServerContext } from "../src/infrastructure/convex/server-read-
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { CancelEventUseCase } from "../src/application/events/cancel-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
+import { resolveEventMatchTeams, syncEventAssetReferences } from "./matchTeams"
 import type { EventUpsertInput } from "../src/domain/events/upsert-policy"
+import { projectEventMatchTeams } from "../src/domain/api/event-summaries"
 import { memberObservation, membershipGuild } from "./membership_shared"
-import { mutation, query, type QueryCtx } from "./_generated/server"
+import { directoryLookup, recordTeamAudit, teamById } from "./teams"
 import { isApiKeyReadAccess } from "../src/domain/api/key-access"
 import { nextRevision } from "../src/domain/integrations/change"
 import { withIntegrationChanges } from "./integrationMutation"
@@ -150,8 +162,64 @@ function editableFields(event: Doc<"events">): WebsiteEventFields | null {
         meetingStart: event.meetingStart,
         gameStart: event.gameStart,
         gameEnd: event.gameEnd,
+        // Current selection as command input, so a consumer can round-trip it.
+        ...((event.kind ?? "match") === "match" && event.matchTeams
+            ? {
+                  matchTeams: event.matchTeams.map(
+                      ({ teamId, slot, side }) => ({ teamId, slot, side })
+                  ),
+              }
+            : {}),
     })
     return value.success ? value.data : null
+}
+
+/**
+ * Explicit, audited re-capture of one assigned team's presentation from its
+ * active directory entry. Runs inside the tracked command transaction so the
+ * event change feed emits; a rejection writes nothing.
+ */
+async function refreshMatchTeam(
+    tracked: MutationCtx,
+    actor: WebsiteEventActor,
+    gameId: WebsiteEventGame,
+    command: { eventId: string; teamId: string }
+): Promise<{ eventId: string } | { error: "invalid_match_teams" }> {
+    const rejected = { error: "invalid_match_teams" as const }
+    const id = tracked.db.normalizeId("events", command.eventId)
+    const event = id ? await tracked.db.get(id) : null
+    const assignment = event?.matchTeams?.find(
+        (entry) => entry.teamId === command.teamId
+    )
+    if (
+        !event?.matchTeams ||
+        event.guildId !== actor.guildId ||
+        !assignment ||
+        matchTeamsEditability(event)
+    )
+        return rejected
+    const now = new Date().toISOString()
+    const refreshed = refreshMatchTeamSnapshot({
+        guildId: actor.guildId,
+        gameId,
+        assignment,
+        team: (
+            await directoryLookup(tracked, actor.guildId, [command.teamId])
+        ).get(command.teamId),
+        now,
+    })
+    if (!refreshed.ok) return rejected
+    const matchTeams = event.matchTeams.map((entry) =>
+        entry.teamId === command.teamId ? refreshed.assignment : entry
+    )
+    await tracked.db.patch(event._id, { matchTeams, updatedAt: now })
+    await syncEventAssetReferences(tracked, { ...event, matchTeams })
+    const row = await teamById(tracked, actor.guildId, command.teamId)
+    if (row)
+        await recordTeamAudit(tracked, row, "snapshot_refresh", actor.subject, {
+            eventId: String(event._id),
+        })
+    return { eventId: String(event._id) }
 }
 
 export const readEditor = query({
@@ -180,6 +248,7 @@ export const readEditor = query({
                 gameId: game.data,
                 revision: await stamp(ctx, current),
                 event,
+                matchTeams: projectEventMatchTeams(current),
                 canEdit: editable,
                 canCancel: editable,
             },
@@ -244,9 +313,20 @@ export const execute = mutation({
                         : null
                 },
                 apply: async (actor, gameId, input) => {
-                    const eventId = await withIntegrationChanges(
+                    const outcome = await withIntegrationChanges(
                         ctx,
-                        async (tracked) => {
+                        async (
+                            tracked
+                        ): Promise<
+                            { eventId: string } | { error: WebsiteEventError }
+                        > => {
+                            if (input.operation === "refresh_match_team")
+                                return await refreshMatchTeam(
+                                    tracked,
+                                    actor,
+                                    gameId,
+                                    input
+                                )
                             const clock = { now: () => new Date() }
                             const repository = new ConvexEventCommandRepository(
                                 tracked
@@ -277,7 +357,7 @@ export const execute = mutation({
                                     .collect()
                                 for (const job of pending)
                                     await tracked.db.delete(job._id)
-                                return input.eventId
+                                return { eventId: input.eventId }
                             }
                             const current =
                                 input.operation === "update"
@@ -285,12 +365,31 @@ export const execute = mutation({
                                           input.eventId as Id<"events">
                                       )
                                     : null
+                            const { matchTeams: requested, ...fields } =
+                                input.event
+                            // Resolve before any write, so a rejected selection leaves
+                            // nothing behind. Omission preserves; [] clears.
+                            const matchTeams = await resolveEventMatchTeams(
+                                tracked,
+                                {
+                                    guildId: actor.guildId,
+                                    gameId,
+                                    kind: fields.kind,
+                                    status: current?.status,
+                                    inputs: requested,
+                                    previous: current?.matchTeams,
+                                    now: new Date().toISOString(),
+                                }
+                            )
+                            if (!matchTeams.ok)
+                                return { error: "invalid_match_teams" }
                             // Preserve every native private/Discord field on updates. Website input
                             // owns only the bounded fields above and cannot inject roles or locations.
                             const native: EventUpsertInput = {
                                 guildId: actor.guildId,
                                 gameId,
-                                ...input.event,
+                                ...fields,
+                                matchTeams: matchTeams.matchTeams,
                                 pingClan: current?.pingClan ?? false,
                                 pingMode: current?.pingMode ?? "none",
                                 pingRoleIds: current?.pingRoleIds,
@@ -331,16 +430,27 @@ export const execute = mutation({
                                     ? { eventId: input.eventId }
                                     : {}),
                             })
+                            const written = await tracked.db.get(
+                                id as Id<"events">
+                            )
+                            if (written)
+                                await syncEventAssetReferences(tracked, written)
                             await refreshEventSchedule(
                                 tracked,
                                 id as Id<"events">
                             )
-                            return id
+                            return { eventId: id }
                         }
                     )
-                    const saved = await ctx.db.get(eventId as Id<"events">)
+                    if ("error" in outcome) return outcome
+                    const saved = await ctx.db.get(
+                        outcome.eventId as Id<"events">
+                    )
                     if (!saved) throw new Error("Event write failed.")
-                    return { eventId, revision: await stamp(ctx, saved) }
+                    return {
+                        eventId: outcome.eventId,
+                        revision: await stamp(ctx, saved),
+                    }
                 },
                 record: async (
                     actor,

@@ -47,7 +47,7 @@ const failure = (description: string) => ({
 })
 const failures = {
     "400": failure(
-        "invalid_request: strict request, UTC timeline, ID, or body limit failed."
+        "invalid_request: strict request, UTC timeline, ID, or body limit failed. invalid_match_teams: a team selection or snapshot refresh named an unknown, unassigned, archived, foreign or cross-game team, used a slot or side the game does not have, duplicated a team, slot or non-null side, targeted a training, or changed a concluded match."
     ),
     "401": failure(
         "unauthorized: current service key, central session, SSO actor or exact guild/application binding failed."
@@ -88,11 +88,11 @@ export const websiteEventCommandPaths = {
     "/clan/event-commands": {
         post: {
             summary:
-                "Create, update or cancel an event as the current SSO actor",
+                "Create, update, cancel or refresh a match team as the current SSO actor",
             tags: ["Clan API — Events"],
             security,
             ...access,
-            description: `${permission} Creates native Logi events and emits normal summary invalidations. Updates use the event-summary revision and preserve native private fields. Match/training kind changes and changes after meeting start are rejected. Cancellation uses existing pre-meeting conclusion semantics: no result or attendance points. Request JSON is limited to 16 KiB; dates must satisfy registrationStart <= registrationEnd <= meetingStart <= gameStart < gameEnd. New meeting time must be in the future. Receipts are retained without a time expiry; replay uses the same application, subject, game and key. Timeouts, malformed success and server errors have unknown outcome: retain the original key and body. No Discord control fields, results, role management, passwords, publication or two-team score inference are accepted.`,
+            description: `${permission} Creates native Logi events and emits normal summary invalidations. Updates use the event-summary revision and preserve native private fields. Match/training kind changes and changes after meeting start are rejected. Cancellation uses existing pre-meeting conclusion semantics: no result or attendance points. Request JSON is limited to 16 KiB; dates must satisfy registrationStart <= registrationEnd <= meetingStart <= gameStart < gameEnd. New meeting time must be in the future. Receipts are retained without a time expiry; replay uses the same application, subject, game and key. Timeouts, malformed success and server errors have unknown outcome: retain the original key and body. No Discord control fields, results, role management, passwords, publication or two-team score inference are accepted. Match team assignments: event.matchTeams lists directory team IDs with slot (a, b; c for Wardogs) and nullable side; Logi captures each team's name, short code and logo when first selected and never accepts client snapshots. Omitting matchTeams preserves the saved selection, an explicit [] clears it, and concluded matches keep their assignments. The refresh_match_team operation re-captures one assigned team's presentation (name, short code, logo, team revision) from its active directory entry; it is an audited edit with the same expectedRevision, editable window and idempotency receipt rules as an update.`,
             parameters: [
                 game,
                 {
@@ -122,7 +122,7 @@ export const websiteEventCommandPaths = {
             responses: {
                 "200": success(
                     "WebsiteEventReceipt",
-                    "Update or cancellation committed, or its authorized receipt replayed."
+                    "Update, cancellation or team snapshot refresh committed, or its authorized receipt replayed."
                 ),
                 "201": success(
                     "WebsiteEventReceipt",
@@ -136,7 +136,7 @@ export const websiteEventCommandPaths = {
         get: {
             summary:
                 "Read the bounded editor and current revision for a website command",
-            description: `${permission} Returns only editable native schedule fields and canEdit/canCancel. Never exposes server passwords, Discord channels, rosters or private notes.`,
+            description: `${permission} Returns only editable native schedule fields, the current matchTeams inputs for round-tripping, the captured team summaries (matchTeams, null for trainings and legacy events) and canEdit/canCancel. Never exposes server passwords, Discord channels, rosters, private notes or logo asset identifiers.`,
             tags: ["Clan API — Events"],
             security,
             ...access,

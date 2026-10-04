@@ -34,12 +34,17 @@ export interface WebsiteEventCommandPorts {
         key: string
     ): Promise<{ bodyHash: string; receipt: WebsiteEventReceipt } | null>
     event(id: string): Promise<WebsiteCommandEvent | null>
-    /** Must run the native event workflow and tracked changes in this transaction. */
+    /**
+     * Must run the native event workflow and tracked changes in this
+     * transaction. A returned error means nothing was written.
+     */
     apply(
         actor: WebsiteEventActor,
         gameId: WebsiteEventGame,
         command: WebsiteEventCommand
-    ): Promise<{ eventId: string; revision: string }>
+    ): Promise<
+        { eventId: string; revision: string } | { error: WebsiteEventError }
+    >
     record(
         actor: WebsiteEventActor,
         gameId: WebsiteEventGame,
@@ -98,6 +103,7 @@ export async function executeWebsiteEventCommand(
     const state = websiteEventStateError(command.data, current, ports.now())
     if (state) return { error: { code: state } }
     const result = await ports.apply(actor, game.data, command.data)
+    if ("error" in result) return { error: { code: result.error } }
     const receiptId = await ports.record(
         actor,
         game.data,

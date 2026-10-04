@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { matchTeamSummarySchema, projectMatchTeams } from "../teams/match-teams"
 import { GAME_IDS, resolveGameScope } from "../games/game"
 import type { EventLike } from "../events/types"
 
@@ -21,6 +22,8 @@ export const clanEventSummarySchema = z
             .nullable(),
         startsAt: z.string().nullable(),
         endsAt: z.string(),
+        /** Selected directory teams with their captured presentation; null for trainings and legacy events. */
+        matchTeams: z.array(matchTeamSummarySchema).nullable(),
     })
     .strict()
 
@@ -49,6 +52,7 @@ export const clanMatchSummarySchema = z
             })
             .strict()
             .nullable(),
+        matchTeams: z.array(matchTeamSummarySchema).nullable(),
     })
     .strict()
 
@@ -64,6 +68,7 @@ type SummaryEvent = Pick<
     | "gameEnd"
     | "updatedAt"
     | "eventResult"
+    | "matchTeams"
 > & {
     _id: string
     guildId: string
@@ -80,6 +85,15 @@ function summaryIdentity(event: SummaryEvent) {
     }
 }
 
+/** Trainings never carry team assignments; legacy matches without the field read as null. */
+export function projectEventMatchTeams(
+    event: Pick<EventLike, "kind" | "matchTeams">
+) {
+    return projectMatchTeams(
+        (event.kind ?? "match") === "match" ? event.matchTeams : undefined
+    )
+}
+
 export function projectEventSummary(event: SummaryEvent): ClanEventSummary {
     return clanEventSummarySchema.parse({
         ...summaryIdentity(event),
@@ -87,6 +101,7 @@ export function projectEventSummary(event: SummaryEvent): ClanEventSummary {
         status: event.status ?? null,
         startsAt: event.gameStart ?? null,
         endsAt: event.gameEnd,
+        matchTeams: projectEventMatchTeams(event),
     })
 }
 
@@ -114,5 +129,6 @@ export function projectMatchSummary(event: SummaryEvent): ClanMatchSummary {
                   },
               }
             : null,
+        matchTeams: projectEventMatchTeams(event),
     })
 }

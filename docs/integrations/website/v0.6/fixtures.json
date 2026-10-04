@@ -43,7 +43,8 @@
                 "status": null,
                 "startsAt": null,
                 "endsAt": "2026-09-28T20:00:00.000Z",
-                "updatedAt": null
+                "updatedAt": null,
+                "matchTeams": null
             }
         }
     },
