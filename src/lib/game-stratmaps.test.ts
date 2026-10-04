@@ -62,3 +62,12 @@ test("legacy Wardogs placeholder maps resolve to Bakurani", () => {
         "bakurani"
     )
 })
+
+test("new Wardogs maps use the named catalog while saved generic stratmaps still resolve", () => {
+    assert.deepEqual(
+        getStratmapMaps("wardogs").map((map) => map.id),
+        ["bakurani", "ozeti", "zestafona"]
+    )
+    assert.ok(getStratmapMapById("wardogs-placeholder", "wardogs"))
+    assert.equal(getStratmapMapById("zestafona", "wardogs")?.name, "Zestafona")
+})

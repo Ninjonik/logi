@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useTransition } from "react"
 import { toast } from "sonner"
 
+import { eventWriteErrorMessage } from "@/lib/event-write-error"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 
@@ -35,7 +36,12 @@ export function ConcludeEventButton({
 
             const body = await response.json()
             if (!response.ok) {
-                toast.error(body.error ?? dictionary.common.error)
+                toast.error(
+                    eventWriteErrorMessage(body, {
+                        forbidden: dictionary.event.writeForbidden,
+                        fallback: dictionary.common.error,
+                    })
+                )
                 return
             }
 

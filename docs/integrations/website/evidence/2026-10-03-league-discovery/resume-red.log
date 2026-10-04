@@ -1,0 +1,30 @@
+✖ resuming a stored fixture restores its readable snapshot while a fresh read waits in the queue (16.506ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2937.0621
+
+✖ failing tests:
+
+test at src\infrastructure\convex\league-discovery.test.ts:2:4297
+✖ resuming a stored fixture restores its readable snapshot while a fresh read waits in the queue (16.506ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + undefined
+  - 'cmuqt8ep605e1lf018w2nlywu'
+
+      at TestContext.<anonymous> ([repository]\src\infrastructure\convex\league-discovery.test.ts:104:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'cmuqt8ep605e1lf018w2nlywu',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

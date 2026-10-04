@@ -1,0 +1,64 @@
+{
+  "at": "2026-10-04T01:48:48.348Z",
+  "records": [
+    {
+      "threadId": "1556092897118527511",
+      "type": 12,
+      "private": true,
+      "invitable": false,
+      "locked": true,
+      "archived": true,
+      "reporterJoined": true,
+      "databaseStatus": "closed",
+      "closeReason": "Synteticky test PR158 dokoncen.",
+      "starterRecorded": true,
+      "messageCount": 11,
+      "closeCard": true
+    },
+    {
+      "threadId": "1556111041325178962",
+      "type": 12,
+      "private": true,
+      "invitable": false,
+      "locked": true,
+      "archived": true,
+      "reporterJoined": true,
+      "databaseStatus": "closed",
+      "closeReason": "Synteticky test PR158 dokoncen.",
+      "starterRecorded": true,
+      "messageCount": 8,
+      "closeCard": true
+    },
+    {
+      "threadId": "1556119223359512711",
+      "type": 12,
+      "private": true,
+      "invitable": false,
+      "locked": true,
+      "archived": true,
+      "reporterJoined": true,
+      "databaseStatus": "closed",
+      "closeReason": "Synteticky test PR158 dokoncen.",
+      "starterRecorded": true,
+      "messageCount": 8,
+      "closeCard": true
+    },
+    {
+      "threadId": "1556094405746892876",
+      "type": 12,
+      "private": true,
+      "invitable": false,
+      "locked": true,
+      "archived": true,
+      "reporterJoined": true,
+      "databaseStatus": "closed",
+      "closeReason": "Synteticky test PR158 dokoncen.",
+      "starterRecorded": true,
+      "messageCount": 12,
+      "closeCard": true
+    }
+  ],
+  "closureDms": 4,
+  "localDatabase": true,
+  "realDiscord": true
+}

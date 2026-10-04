@@ -1,0 +1,186 @@
+{
+    "schemaVersion": 1,
+    "sourceRevision": "ab232d5e22e791de28e1ee1be08ca400138ed6dc",
+    "snapshotKind": "uncommitted source overlay on the base revision",
+    "capturedAt": "2026-10-02T23:41:15.813Z",
+    "algorithm": "SHA-256",
+    "fileCount": 44,
+    "files": [
+        {
+            "path": "AGENTS.md",
+            "sha256": "6b8fdcba5cedbf2242d20859e3f4444976ec323ab63a3ded92fdcdf9200684e2"
+        },
+        {
+            "path": "content/configuration/members.mdx",
+            "sha256": "09272671811039ca4ca31c9210b714311292c8e891933c43da0418ee48834c11"
+        },
+        {
+            "path": "content/operations/rosters.mdx",
+            "sha256": "a0871f5bfb843021db2690d46cccb6ee9279ee580f93923aa250aee19f1524b7"
+        },
+        {
+            "path": "convex/apiKeyValidators.ts",
+            "sha256": "0bf57254857494eb1c4fa9123da3434ae349d797fafb548e72107f1a8d77b5df"
+        },
+        {
+            "path": "convex/crons.ts",
+            "sha256": "31c724b14d736cfd104475bb21e70a4cdbf1986ec2a61f3806d652a741934eec"
+        },
+        {
+            "path": "convex/discordRosters.ts",
+            "sha256": "1e18a43e961181540f211a569cf29dd1af2d082ded4c039a62e59c6ece7bbb58"
+        },
+        {
+            "path": "convex/gameDataHistory.ts",
+            "sha256": "41c4ca46b37c6cbef8b9c8851fe8c8c6578a9d1703a4f2751f19b7ef7f584229"
+        },
+        {
+            "path": "convex/integrationChanges.ts",
+            "sha256": "fdb079390582a11d35b2d6e390aa0fef9c0c9dd23c11a05983de256e375de6f2"
+        },
+        {
+            "path": "convex/integrationMutation.ts",
+            "sha256": "a751ca11683f71e3af3025900cb73359e11a5edc23298700214cc4a32edc58a0"
+        },
+        {
+            "path": "convex/peopleChanges.ts",
+            "sha256": "2ca1597e4c9c5218cf0a7fb369e42dd09070e058e284ca38e9b19c4a07424a76"
+        },
+        {
+            "path": "convex/peopleProjection.ts",
+            "sha256": "759e34f7cbcdd89be5fd26655ba962291e289fdeefc7ece045a4df112deff37b"
+        },
+        {
+            "path": "convex/peopleSummaries.ts",
+            "sha256": "b3fc203c3c0a0554880a6f085cdae110cacd7b0369a5797a92cd9f864574c5c8"
+        },
+        {
+            "path": "convex/platformIdLinks.ts",
+            "sha256": "06025da5642721469b053b62ecdab78ad395d844d7d0de8355a835864cdb1bff"
+        },
+        {
+            "path": "convex/platformIdentityLinks.ts",
+            "sha256": "7faed561b20ab71011482cd895877b5ef7e8f0bdfb9e163a979c2ae37522108f"
+        },
+        {
+            "path": "convex/rosterWriterAccess.ts",
+            "sha256": "d2040acf4abc384aaf272f44e6434fdeba1b904c6e3b734791e0c26cc98a879f"
+        },
+        {
+            "path": "convex/rosters.ts",
+            "sha256": "809012f43ed238b4e86a7c282c85c83414f9f32cbf3d1576ac59fec287e85a29"
+        },
+        {
+            "path": "convex/schema.ts",
+            "sha256": "2134599cde0322c35307e7909919283c7695eb18a9143f82aaf8f52a80414675"
+        },
+        {
+            "path": "discord-bot/src/interactions/event-buttons.ts",
+            "sha256": "dab61a4037444731d38b84980c665cf89c9953630bf752eebc8a6d8ffdc64cdd"
+        },
+        {
+            "path": "docs/integrations/website/v0.14/README.md",
+            "sha256": "b5c14f2bfc8c605a274c62316f385e11c269cd2e7909e2bd97e14a3f1406c5b8"
+        },
+        {
+            "path": "docs/integrations/website/v0.14/fixtures.json",
+            "sha256": "d8733b9c5e3fc4e4693cf0883d002a5302ac87ae7d784333dfc82a4dde986fac"
+        },
+        {
+            "path": "src/app/api/servers/[serverId]/rosters/route.ts",
+            "sha256": "8729efb4643d9728ea7bcbd11c9351e126892c596c5b79a9ddf52ec3ae2d892a"
+        },
+        {
+            "path": "src/app/api/v1/clan/[[...path]]/route.ts",
+            "sha256": "5fc66c2cf0bd854e4a275df75fb6748e016b19cde9e4adc9b75a96f2e5647ecb"
+        },
+        {
+            "path": "src/app/api/v1/openapi.json/route.test.ts",
+            "sha256": "9b9c15f3bc24938c458f8d43f64d19c55aa6b09e1aa6085d337de00540f5d0f0"
+        },
+        {
+            "path": "src/app/api/v1/openapi.json/route.ts",
+            "sha256": "e13697af073ed9e11b59ebfdf80da317f1fceab35c49801b7fee3c00b2b9b06d"
+        },
+        {
+            "path": "src/components/app/roster-board.tsx",
+            "sha256": "a9a18de45f19dc9b38995af083c098be1806259447c23f0778ec1951864d853f"
+        },
+        {
+            "path": "src/domain/api/key-access.ts",
+            "sha256": "75c2a784e0d87c5b17a844694a15513e04e68a3e4d373d23825b80436359a33f"
+        },
+        {
+            "path": "src/domain/api/people-summaries.test.ts",
+            "sha256": "3727958add70befeec70c443d3faa495515443f110652593a6c4d3c6f5d61c41"
+        },
+        {
+            "path": "src/domain/api/people-summaries.ts",
+            "sha256": "851b5560192b12b2e18047a000f22946cd64c02d46fe27173d8225376f5cf042"
+        },
+        {
+            "path": "src/domain/integrations/change.ts",
+            "sha256": "b46a85cbff9136906eed1b781baee0c67ec7bb5efe6fc973a8a7a82f76f6f412"
+        },
+        {
+            "path": "src/i18n/messages/cs.ts",
+            "sha256": "d52d7071acac687c39dd9ca22e258a30b945ebcc37caa389ec8cf7f480aed03e"
+        },
+        {
+            "path": "src/i18n/messages/de.ts",
+            "sha256": "86121a1a332cee7d4ebd42884ceb6ffd40b28934a3a6a78bafc4d62aada03380"
+        },
+        {
+            "path": "src/i18n/messages/en.ts",
+            "sha256": "d92dfe2af5160c8d060d1b65156c4cc802b3e8b5b14824a4166c6241626becc9"
+        },
+        {
+            "path": "src/infrastructure/convex/people-summaries.test.ts",
+            "sha256": "47b14c497dee0fd515e7f3ae580528be16c945bc6e01c2ebfde8add9ac56a92c"
+        },
+        {
+            "path": "src/infrastructure/convex/public-api-event.test.ts",
+            "sha256": "2db8121d2818fc799b99f55c4fea0f8fded9842aca32376edfb72c3367c0c673"
+        },
+        {
+            "path": "src/infrastructure/convex/roster-writers.test.ts",
+            "sha256": "3dcf4eac54abe96156b77e8fe5024576233756dfdcfaf39619f627a032d66ac5"
+        },
+        {
+            "path": "src/lib/api/authenticated-clan-route.ts",
+            "sha256": "4072ba5adec4d3e72d7202cce9f5e9a2f5c662be27704f4da6d6d46fc08a0b6a"
+        },
+        {
+            "path": "src/lib/api/integration-route.ts",
+            "sha256": "11cb055c99865cb593b0041ceb1282984a6e272ced0b22324c174884c37af381"
+        },
+        {
+            "path": "src/lib/api/people-openapi.ts",
+            "sha256": "11039cfa4ef66b8f589fff949f5b350142e943b7fa793a6e91eab2d87f53df80"
+        },
+        {
+            "path": "src/lib/api/people-query.ts",
+            "sha256": "402a6ce5e23b5c9725a6b13799c718fcb0157046f0202ca11728b3e3d5412d37"
+        },
+        {
+            "path": "src/lib/api/people-route.test.ts",
+            "sha256": "20030ebebaa60e57c212f8962c0093d2d8d6765911f50475237e3fe1e4416d33"
+        },
+        {
+            "path": "src/lib/api/people-route.ts",
+            "sha256": "72cf86d05672a46f0136bafc423ac61746c927f3302d595d11451637fde5d41c"
+        },
+        {
+            "path": "src/lib/api/roster-write-route.test.ts",
+            "sha256": "4f9dcc97e5f3abe253ed65b83044897a311e6f5f5b0947b959755eb87c382632"
+        },
+        {
+            "path": "src/lib/api/roster-write-route.ts",
+            "sha256": "b5255506fe32ff7cb00217fa1bb71c32c3ce7be37ab7e7d189f0ed5a098a2226"
+        },
+        {
+            "path": "src/lib/gateways/roster-writes.ts",
+            "sha256": "8d3d585651c0f9cd64f4f5c54019d85c90f288ae7b64162500d23f48c8457dbe"
+        }
+    ]
+}

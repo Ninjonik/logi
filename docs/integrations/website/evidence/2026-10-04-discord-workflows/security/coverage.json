@@ -1,0 +1,610 @@
+{
+  "completeness": "partial",
+  "deferred": [
+    {
+      "id": "deferred-005486996e0645a4",
+      "paths": [
+        "convex/apiKeyValidators.ts",
+        "convex/discordMembership.ts",
+        "convex/discordPublicPanels.ts",
+        "convex/discordPublicationTable.ts",
+        "convex/events.ts",
+        "convex/hllLiveData.ts",
+        "convex/hllLiveReads.ts",
+        "convex/playerReports.ts",
+        "convex/players.ts",
+        "convex/schema.ts",
+        "discord-bot/src/index.ts",
+        "discord-bot/src/interactions.ts",
+        "discord-bot/src/interactions/membership-close-embed.test.ts",
+        "discord-bot/src/interactions/report-members.test.ts",
+        "discord-bot/src/interactions/report-members.ts",
+        "discord-bot/src/interactions/report-picker.test.ts",
+        "discord-bot/src/interactions/workflow-commands.test.ts",
+        "discord-bot/src/player-reports.ts",
+        "discord-bot/src/public-panels/hll-render.test.ts",
+        "discord-bot/src/public-panels/hll-render.ts",
+        "discord-bot/src/public-panels/render.ts",
+        "discord-bot/src/public-panels/worker.ts",
+        "src/app/api/v1/clan/hll-live/[connectionId]/route.ts",
+        "src/app/api/v1/openapi.json/route.test.ts",
+        "src/app/api/v1/openapi.json/route.ts",
+        "src/application/game-data/read-hll-live.ts",
+        "src/application/player-reports/deliver-report.test.ts",
+        "src/application/player-reports/deliver-report.ts",
+        "src/components/app/discord-public-panels-form.tsx",
+        "src/domain/api/key-access.ts",
+        "src/domain/discord-publications/settings.ts",
+        "src/domain/game-data/hll-live.ts",
+        "src/domain/player-reports/report.ts",
+        "src/infrastructure/convex/hll-live-cache.test.ts",
+        "src/infrastructure/convex/notice-targets.test.ts",
+        "src/infrastructure/convex/platform-link-subject.test.ts",
+        "src/infrastructure/convex/player-reports.test.ts",
+        "src/infrastructure/game-data/hll-live.test.ts",
+        "src/infrastructure/game-data/hll-live.ts",
+        "src/infrastructure/game-data/provider-http.ts",
+        "src/lib/api/authenticated-clan-route.test.ts",
+        "src/lib/api/authenticated-clan-route.ts",
+        "src/lib/api/hll-live-route.test.ts",
+        "src/lib/api/hll-live-route.ts",
+        "src/lib/server-hll-live.ts"
+      ],
+      "reason": "Discovery in progress"
+    }
+  ],
+  "documentType": "codex-security.coverage",
+  "excludePaths": [],
+  "explicitExclusions": [
+    {
+      "pattern": "production/hosted runtime",
+      "reason": "Offline scan; no production, provider, credential or Discord access by discovery workers."
+    },
+    {
+      "pattern": "changes before 0eec5d4b6dce1daf2f5f9aea3026136308b49196",
+      "reason": "This scan covers only the latest immutable increment, not the full cumulative PR."
+    }
+  ],
+  "includePaths": [
+    "."
+  ],
+  "inventoryStrategy": "diff",
+  "mode": "branch_diff",
+  "openQuestions": [
+    {
+      "question": "Live cache-staleness frequency was not measured; the reproduced authorization defect is conditional on stale guild data."
+    },
+    {
+      "question": "Provider-populated and second-account runtime acceptance are documented outside this source review."
+    }
+  ],
+  "scanId": "0b7fbe18-c2f1-4d13-bac9-06ee2cdb05db",
+  "schemaVersion": "1.0",
+  "surfaces": [
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_content/configuration/public-panels.mdx",
+      "label": "content/configuration/public-panels.mdx",
+      "notes": "Documentation or sanitized proof record reviewed for scope and claims.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_content/configuration/tickets.mdx",
+      "label": "content/configuration/tickets.mdx",
+      "notes": "Documentation or sanitized proof record reviewed for scope and claims.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_content/discord-bot-setup.mdx",
+      "label": "content/discord-bot-setup.mdx",
+      "notes": "Documentation or sanitized proof record reviewed for scope and claims.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_convex/_generated/api.d.ts-2",
+      "label": "convex/_generated/api.d.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_convex/apikeyvalidators.ts",
+      "label": "convex/apiKeyValidators.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "reported",
+      "id": "surface_convex/discordmembership.ts",
+      "label": "convex/discordMembership.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_convex/discordpublicpanels.ts",
+      "label": "convex/discordPublicPanels.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_convex/discordpublicationtable.ts",
+      "label": "convex/discordPublicationTable.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_convex/events.ts",
+      "label": "convex/events.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_convex/hlllivedata.ts",
+      "label": "convex/hllLiveData.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_convex/hlllivereads.ts",
+      "label": "convex/hllLiveReads.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_convex/playerreports.ts",
+      "label": "convex/playerReports.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_convex/players.ts",
+      "label": "convex/players.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_convex/schema.ts",
+      "label": "convex/schema.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/index.ts",
+      "label": "discord-bot/src/index.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "reported",
+      "id": "surface_discord-bot/src/interactions.ts",
+      "label": "discord-bot/src/interactions.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/interactions/membership-close-embed.test.ts",
+      "label": "discord-bot/src/interactions/membership-close-embed.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/interactions/report-members.test.ts",
+      "label": "discord-bot/src/interactions/report-members.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/interactions/report-members.ts",
+      "label": "discord-bot/src/interactions/report-members.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/interactions/report-picker.test.ts",
+      "label": "discord-bot/src/interactions/report-picker.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/interactions/workflow-commands.test.ts",
+      "label": "discord-bot/src/interactions/workflow-commands.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/player-reports.ts",
+      "label": "discord-bot/src/player-reports.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/public-panels/hll-render.test.ts",
+      "label": "discord-bot/src/public-panels/hll-render.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/public-panels/hll-render.ts",
+      "label": "discord-bot/src/public-panels/hll-render.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/public-panels/render.ts",
+      "label": "discord-bot/src/public-panels/render.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_discord-bot/src/public-panels/worker.ts",
+      "label": "discord-bot/src/public-panels/worker.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_docs/integrations/website/discord-public-panels.md",
+      "label": "docs/integrations/website/discord-public-panels.md",
+      "notes": "Documentation or sanitized proof record reviewed for scope and claims.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/readme.md",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/README.md",
+      "notes": "Documentation or sanitized proof record reviewed for scope and claims.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/api-proof.json",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/api-proof.json",
+      "notes": "Documentation or sanitized proof record reviewed for scope and claims.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/application-closed.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/application-closed.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/application-open.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/application-open.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/hll-live-panel.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/hll-live-panel.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/hll-private-players.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/hll-private-players.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/link-private.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/link-private.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/notice-saved.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/notice-saved.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/plan.md",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/plan.md",
+      "notes": "Documentation or sanitized proof record reviewed for scope and claims.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/player-profile.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/player-profile.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/report-player-closed.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/report-player-closed.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/report-player-form.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/report-player-form.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/report-player-private.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/report-player-private.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/report-replay-proof.json",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/report-replay-proof.json",
+      "notes": "Documentation or sanitized proof record reviewed for scope and claims.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "not_applicable",
+      "id": "surface_docs/integrations/website/evidence/2026-10-04-discord-workflows/ticket-closed.jpg",
+      "label": "docs/integrations/website/evidence/2026-10-04-discord-workflows/ticket-closed.jpg",
+      "notes": "Static acceptance screenshot; no executable source. Runtime security claims rely on reviewed code and separately identified proof.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_docs/integrations/website/hll-live-and-player-reports.md",
+      "label": "docs/integrations/website/hll-live-and-player-reports.md",
+      "notes": "Documentation or sanitized proof record reviewed for scope and claims.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_docs/integrations/website/roadmap/discord-league-reports-hll.md",
+      "label": "docs/integrations/website/roadmap/discord-league-reports-hll.md",
+      "notes": "Documentation or sanitized proof record reviewed for scope and claims.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/app/api/v1/clan/hll-live/-connectionid-/route.ts",
+      "label": "src/app/api/v1/clan/hll-live/[connectionId]/route.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/app/api/v1/openapi.json/route.test.ts",
+      "label": "src/app/api/v1/openapi.json/route.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/app/api/v1/openapi.json/route.ts",
+      "label": "src/app/api/v1/openapi.json/route.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/application/game-data/read-hll-live.ts",
+      "label": "src/application/game-data/read-hll-live.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/application/player-reports/deliver-report.test.ts",
+      "label": "src/application/player-reports/deliver-report.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/application/player-reports/deliver-report.ts",
+      "label": "src/application/player-reports/deliver-report.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/components/app/discord-public-panels-form.tsx",
+      "label": "src/components/app/discord-public-panels-form.tsx",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/domain/api/key-access.ts",
+      "label": "src/domain/api/key-access.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/domain/discord-publications/settings.ts",
+      "label": "src/domain/discord-publications/settings.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/domain/game-data/hll-live.ts",
+      "label": "src/domain/game-data/hll-live.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/domain/player-reports/report.ts",
+      "label": "src/domain/player-reports/report.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/i18n/messages/cs.ts-2",
+      "label": "src/i18n/messages/cs.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/i18n/messages/de.ts-2",
+      "label": "src/i18n/messages/de.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/i18n/messages/en.ts-2",
+      "label": "src/i18n/messages/en.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/infrastructure/convex/hll-live-cache.test.ts",
+      "label": "src/infrastructure/convex/hll-live-cache.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/infrastructure/convex/notice-targets.test.ts",
+      "label": "src/infrastructure/convex/notice-targets.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/infrastructure/convex/platform-link-subject.test.ts",
+      "label": "src/infrastructure/convex/platform-link-subject.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/infrastructure/convex/player-reports.test.ts",
+      "label": "src/infrastructure/convex/player-reports.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/infrastructure/game-data/hll-live.test.ts",
+      "label": "src/infrastructure/game-data/hll-live.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/infrastructure/game-data/hll-live.ts",
+      "label": "src/infrastructure/game-data/hll-live.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/infrastructure/game-data/provider-http.ts",
+      "label": "src/infrastructure/game-data/provider-http.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/infrastructure/testing/hll-live.ts",
+      "label": "src/infrastructure/testing/hll-live.ts",
+      "notes": "Additional synthetic support fixture omitted by automated inventory; explicitly reviewed.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/lib/api/authenticated-clan-route.test.ts",
+      "label": "src/lib/api/authenticated-clan-route.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/lib/api/authenticated-clan-route.ts",
+      "label": "src/lib/api/authenticated-clan-route.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/lib/api/hll-live-route.test.ts",
+      "label": "src/lib/api/hll-live-route.test.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/lib/api/hll-live-route.ts",
+      "label": "src/lib/api/hll-live-route.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "surface_src/lib/server-hll-live.ts",
+      "label": "src/lib/server-hll-live.ts",
+      "notes": "Reviewed immutable changed source and its directly required supporting control.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "evidence": "Generated binding diff or static locale label; no runtime authorization weakened.",
+      "id": "surface_convex/_generated/api.d.ts",
+      "label": "convex/_generated/api.d.ts",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "evidence": "Generated binding diff or static locale label; no runtime authorization weakened.",
+      "id": "surface_src/i18n/messages/cs.ts",
+      "label": "src/i18n/messages/cs.ts",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "evidence": "Generated binding diff or static locale label; no runtime authorization weakened.",
+      "id": "surface_src/i18n/messages/de.ts",
+      "label": "src/i18n/messages/de.ts",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "evidence": "Generated binding diff or static locale label; no runtime authorization weakened.",
+      "id": "surface_src/i18n/messages/en.ts",
+      "label": "src/i18n/messages/en.ts",
+      "receiptRefs": []
+    }
+  ]
+}

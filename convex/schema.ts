@@ -1,7 +1,33 @@
+import {
+    leagueTrackingSettings,
+    leagueTrackedMatches,
+    leagueIndexCache,
+    leagueMessageRefs,
+} from "./leagueDiscoveryTable"
+import {
+    imageAssetKind,
+    imageContentType,
+    matchTeamAssignment,
+    teamAuditOperation,
+    teamGame,
+} from "./teamValidators"
+import {
+    gameDataError,
+    gameDataObservation,
+    gameDataHistoryProgress,
+    gameDataSession,
+} from "./gameDataValidators"
+import {
+    discordPublications,
+    discordPublicPanels,
+} from "./discordPublicationTable"
+import { resultPublicPayload, resultRevision } from "./resultValidators"
 import { defineSchema, defineTable } from "convex/server"
+import { apiKeyReadAccess } from "./apiKeyValidators"
 import { v } from "convex/values"
 
 const users = defineTable({
+    sessionVersion: v.optional(v.number()),
     discordId: v.optional(v.string()),
     id: v.optional(v.string()),
     name: v.string(),
@@ -245,6 +271,12 @@ const membershipSettings = v.object({
     inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(rosterScoreSettings),
     categories: v.array(membershipCategory),
+})
+
+const statsSettings = v.object({
+    enabled: v.boolean(),
+    games: v.object({ hell_let_loose: v.boolean(), wardogs: v.boolean() }),
+    defaultShareChannelId: v.optional(v.string()),
 })
 
 const playerStatsServer = v.object({
@@ -499,8 +531,87 @@ const guildGames = defineTable({
 }).index("guildId_gameId", ["guildId", "gameId"])
 
 export default defineSchema({
+    discordPublications,
+    discordPublicPanels,
+    peopleIntegrationState: defineTable({
+        key: v.literal("global"),
+        generation: v.string(),
+        reconciliationRun: v.optional(v.string()),
+        reconciliationCursor: v.optional(v.union(v.string(), v.null())),
+        reconciliationLeaseUntil: v.optional(v.number()),
+    }).index("key", ["key"]),
+    peopleResultLinks: defineTable({
+        eventId: v.id("events"),
+        sessionId: v.id("gameSessions"),
+        sourceDigest: v.string(),
+        resultVersion: v.number(),
+    })
+        .index("eventId", ["eventId"])
+        .index("sessionId", ["sessionId"]),
+    eventResultRevisions: defineTable({
+        eventId: v.id("events"),
+        guildId: v.string(),
+        gameId: v.string(),
+        version: v.number(),
+        revision: resultRevision,
+    }).index("eventId_version", ["eventId", "version"]),
+    platformLinkChallenges: defineTable({
+        tokenHash: v.string(),
+        sessionHash: v.string(),
+        // Old in-progress challenges without a durable session must restart.
+        sid: v.optional(v.string()),
+        discordUserId: v.string(),
+        userRecordId: v.id("users"),
+        returnOrigin: v.string(),
+        locale: v.union(v.literal("en"), v.literal("cs"), v.literal("de")),
+        createdAt: v.number(),
+        expiresAt: v.number(),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("verifying"),
+            v.literal("consumed"),
+            v.literal("failed"),
+            v.literal("cancelled")
+        ),
+    })
+        .index("tokenHash", ["tokenHash"])
+        .index("userRecordId_createdAt", ["userRecordId", "createdAt"]),
+    platformIdentityLinks: defineTable({
+        platform: v.literal("steam"),
+        platformId: v.string(),
+        userRecordId: v.id("users"),
+        discordUserId: v.string(),
+        logiUserId: v.string(),
+        method: v.literal("steam_openid"),
+        verifiedAt: v.number(),
+        revokedAt: v.union(v.number(), v.null()),
+        active: v.boolean(),
+    })
+        .index("platform_platformId_active", [
+            "platform",
+            "platformId",
+            "active",
+        ])
+        .index("userRecordId_verifiedAt", ["userRecordId", "verifiedAt"]),
+    platformLinkNonces: defineTable({
+        nonceHash: v.string(),
+        expiresAt: v.number(),
+    })
+        .index("nonceHash", ["nonceHash"])
+        .index("expiresAt", ["expiresAt"]),
     users,
     guildGames,
+    dashboardSessions: defineTable({
+        sid: v.string(),
+        subject: v.string(),
+        userRecordId: v.id("users"),
+        userSessionVersion: v.number(),
+        createdAt: v.number(),
+        expiresAt: v.number(),
+        revokedAt: v.optional(v.number()),
+    })
+        .index("sid", ["sid"])
+        .index("expiresAt", ["expiresAt"]),
     ssoApplications: defineTable({
         guildId: v.string(),
         clientId: v.string(),
@@ -515,6 +626,12 @@ export default defineSchema({
         .index("clientId", ["clientId"])
         .index("guildId", ["guildId"]),
     ssoAuthorizationCodes: defineTable({
+        applicationRecordId: v.optional(v.id("ssoApplications")),
+        clientSecretHash: v.optional(v.string()),
+        userRecordId: v.optional(v.id("users")),
+        sessionId: v.optional(v.string()),
+        nonce: v.optional(v.string()),
+        scope: v.optional(v.string()),
         codeHash: v.string(),
         clientId: v.string(),
         redirectUri: v.string(),
@@ -523,14 +640,23 @@ export default defineSchema({
         codeChallengeMethod: v.string(),
         expiresAt: v.number(),
         usedAt: v.optional(v.number()),
-    }).index("codeHash", ["codeHash"]),
+    })
+        .index("codeHash", ["codeHash"])
+        .index("expiresAt", ["expiresAt"]),
     ssoAccessTokens: defineTable({
+        applicationRecordId: v.optional(v.id("ssoApplications")),
+        clientSecretHash: v.optional(v.string()),
+        userRecordId: v.optional(v.id("users")),
+        sessionId: v.optional(v.string()),
+        scope: v.optional(v.string()),
         tokenHash: v.string(),
         clientId: v.string(),
         userId: v.string(),
         expiresAt: v.number(),
         revokedAt: v.optional(v.number()),
-    }).index("tokenHash", ["tokenHash"]),
+    })
+        .index("tokenHash", ["tokenHash"])
+        .index("expiresAt", ["expiresAt"]),
     guilds: defineTable({
         discordId: v.optional(v.string()),
         id: v.optional(v.string()),
@@ -582,6 +708,7 @@ export default defineSchema({
         clanRoleId: v.optional(v.string()),
         dashboardAdminRoleId: v.optional(v.string()),
         playerStatsServers: v.optional(v.array(playerStatsServer)),
+        statsSettings: v.optional(statsSettings),
         gameOverrides: v.optional(gameOverrides),
         ticketSettings: v.optional(ticketSettings),
         membershipSettings: v.optional(membershipSettings),
@@ -709,6 +836,8 @@ export default defineSchema({
         statusUpdatedAt: v.optional(v.string()),
         concludedAt: v.optional(v.string()),
         eventResult: v.optional(eventResult),
+        reviewedResult: v.optional(resultPublicPayload),
+        reviewedResultGameId: v.optional(v.string()),
         matchStatsId: v.optional(v.id("matchStats")),
         competitionFixtureId: v.optional(v.id("competitionFixtures")),
         attendanceReminderLog: v.optional(v.array(attendanceReminder)),
@@ -719,6 +848,8 @@ export default defineSchema({
             v.union(v.literal("applied"), v.literal("skipped"))
         ),
         absenceNotices: v.optional(v.array(eventNotice)),
+        // Directory team selections with immutable presentation snapshots; absent on legacy events.
+        matchTeams: v.optional(v.array(matchTeamAssignment)),
         createdAt: v.string(),
         updatedAt: v.optional(v.string()),
     }).index("guildId", ["guildId"]),
@@ -866,6 +997,9 @@ export default defineSchema({
     matchRecaps: defineTable({
         eventId: v.id("events"),
         userId: v.string(),
+        // New deliveries bind the data identity separately from the Discord recipient.
+        userRecordId: v.optional(v.id("users")),
+        discordUserId: v.optional(v.string()),
         status: v.union(v.literal("pending"), v.literal("sent")),
         previousTen: v.optional(
             v.object({
@@ -962,6 +1096,54 @@ export default defineSchema({
     })
         .index("status", ["status"])
         .index("guildId", ["guildId"]),
+    playerReportDrafts: defineTable({
+        guildId: v.string(),
+        reporterId: v.string(),
+        panelId: v.id("discordPublicPanels"),
+        revision: v.number(),
+        channelId: v.string(),
+        interactionId: v.string(),
+        policyJson: v.string(),
+        observationJson: v.string(),
+        expiresAt: v.number(),
+    })
+        .index("interactionId", ["interactionId"])
+        .index("guild_reporter", ["guildId", "reporterId"]),
+    playerReports: defineTable({
+        guildId: v.string(),
+        reporterId: v.string(),
+        draftId: v.id("playerReportDrafts"),
+        panelId: v.id("discordPublicPanels"),
+        revision: v.number(),
+        channelId: v.string(),
+        policyJson: v.string(),
+        contextJson: v.string(),
+        parentChannelId: v.string(),
+        state: v.union(
+            v.literal("pending"),
+            v.literal("creating"),
+            v.literal("uncertain"),
+            v.literal("open"),
+            v.literal("blocked"),
+            v.literal("closed")
+        ),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+        fence: v.number(),
+        leaseUntil: v.number(),
+        threadId: v.optional(v.string()),
+        ticketId: v.optional(v.id("ticketThreads")),
+    })
+        .index("draftId", ["draftId"])
+        .index("ticketId", ["ticketId"])
+        .index("guildId", ["guildId"])
+        .index("guild_reporter_createdAt", [
+            "guildId",
+            "reporterId",
+            "createdAt",
+        ])
+        .index("guild_reporter_state", ["guildId", "reporterId", "state"])
+        .index("guild_state_leaseUntil", ["guildId", "state", "leaseUntil"]),
     ticketThreads: defineTable({
         guildId: v.string(),
         threadId: v.string(),
@@ -1185,6 +1367,244 @@ export default defineSchema({
     })
         .index("guildId", ["guildId"])
         .index("eventId", ["eventId"]),
+    gameDataConnections: defineTable({
+        sourceRef: v.string(),
+        guildId: v.string(),
+        gameId: v.union(v.literal("hell_let_loose"), v.literal("wardogs")),
+        pollAfterMs: v.number(),
+        provider: v.union(
+            v.literal("hll_crcon"),
+            v.literal("wardogs_rcon"),
+            v.literal("wardogs_warcon"),
+            v.literal("wardogs_public_directory")
+        ),
+        providerServerId: v.string(),
+        sourceFingerprint: v.string(),
+        enabled: v.boolean(),
+        generation: v.number(),
+        fence: v.number(),
+        leaseUntil: v.number(),
+        attempt: v.number(),
+        nextAttemptAt: v.union(v.number(), v.null()),
+        lastAttemptAt: v.union(v.string(), v.null()),
+        errorCategory: v.union(gameDataError, v.null()),
+        observation: v.union(gameDataObservation, v.null()),
+        etag: v.union(v.string(), v.null()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+        historyCount: v.optional(v.number()),
+        historyLastSuccessAt: v.optional(v.string()),
+        historyErrorCategory: v.optional(v.union(gameDataError, v.null())),
+        warconReadWindowAt: v.optional(v.number()),
+        warconReadCount: v.optional(v.number()),
+        warconReadBlockedUntil: v.optional(v.number()),
+    })
+        .index("guildId", ["guildId"])
+        .index("sourceRef", ["sourceRef"])
+        .index("nextAttemptAt", ["nextAttemptAt"]),
+    // Workspace-registered provider sources; tokens stay in Convex environment variables.
+    gameDataSources: defineTable({
+        ref: v.string(),
+        guildId: v.string(),
+        gameId: v.union(v.literal("hell_let_loose"), v.literal("wardogs")),
+        provider: v.union(
+            v.literal("hll_crcon"),
+            v.literal("wardogs_rcon"),
+            v.literal("wardogs_warcon"),
+            v.literal("wardogs_public_directory")
+        ),
+        providerServerId: v.string(),
+        origin: v.string(),
+        secretRef: v.union(v.string(), v.null()),
+        allowedAddresses: v.array(v.string()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+        updatedBy: v.string(),
+    })
+        .index("guildId", ["guildId"])
+        .index("ref", ["ref"]),
+    leagueTrackingSettings,
+    leagueTrackedMatches,
+    leagueIndexCache,
+    leagueMessageRefs,
+    leagueMatchCache: defineTable({
+        matchId: v.string(),
+        snapshotJson: v.optional(v.string()),
+        lastAttemptAt: v.optional(v.number()),
+        nextRefreshAt: v.number(),
+        error: v.optional(v.string()),
+        leaseUntil: v.number(),
+        fence: v.number(),
+        accessedAt: v.number(),
+    })
+        .index("matchId", ["matchId"])
+        .index("accessedAt", ["accessedAt"]),
+    leagueFetchBudget: defineTable({
+        key: v.literal("public-matches"),
+        windowAt: v.number(),
+        count: v.number(),
+        blockedUntil: v.number(),
+        cachedEntries: v.number(),
+    }).index("key", ["key"]),
+    hllLiveCache: defineTable({
+        connectionId: v.id("gameDataConnections"),
+        generation: v.number(),
+        fence: v.number(),
+        leaseUntil: v.number(),
+        nextAt: v.number(),
+        retainUntil: v.number(),
+        dataJson: v.optional(v.string()),
+    }).index("connectionId", ["connectionId"]),
+    warconReadCache: defineTable({
+        connectionId: v.id("gameDataConnections"),
+        queryJson: v.string(),
+        generation: v.number(),
+        fence: v.number(),
+        leaseUntil: v.number(),
+        cacheUntil: v.number(),
+        retryUntil: v.optional(v.number()),
+        retainUntil: v.number(),
+        envelopeJson: v.optional(v.string()),
+    })
+        .index("connection_query", ["connectionId", "queryJson"])
+        .index("connectionId", ["connectionId"]),
+    gameDataHistoryRuns: defineTable({
+        connectionId: v.id("gameDataConnections"),
+        progress: gameDataHistoryProgress,
+        fence: v.number(),
+        leaseUntil: v.number(),
+        attempt: v.number(),
+        nextAttemptAt: v.union(v.number(), v.null()),
+        errorCategory: v.union(gameDataError, v.null()),
+        lastSuccessAt: v.union(v.string(), v.null()),
+        lastCompletedAt: v.union(v.string(), v.null()),
+        lastWasRevisit: v.boolean(),
+    })
+        .index("connectionId", ["connectionId"])
+        .index("nextAttemptAt", ["nextAttemptAt"]),
+    gameSessions: defineTable({
+        connectionId: v.id("gameDataConnections"),
+        guildId: v.string(),
+        gameId: v.union(v.literal("hell_let_loose"), v.literal("wardogs")),
+        externalId: v.string(),
+        session: gameDataSession,
+        complete: v.boolean(),
+        fetchedAt: v.number(),
+        // Older rows must be recollected before they prove the current source configuration.
+        sourceGeneration: v.optional(v.number()),
+        updatedAt: v.string(),
+    })
+        .index("connection_external", ["connectionId", "externalId"])
+        .index("guildId_gameId", ["guildId", "gameId"])
+        .index("guildId_gameId_fetchedAt", ["guildId", "gameId", "fetchedAt"])
+        .index("connection_complete_fetched", [
+            "connectionId",
+            "complete",
+            "fetchedAt",
+        ]),
+    serverGameHistory: defineTable({
+        guildId: v.string(),
+        sourceId: v.string(),
+        externalId: v.string(),
+        session: gameDataSession,
+        contentDigest: v.string(),
+        revision: v.string(),
+        endedAt: v.string(),
+        map: v.union(v.string(), v.null()),
+        serverName: v.union(v.string(), v.null()),
+        collectedAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("source_external", ["guildId", "sourceId", "externalId"])
+        .index("guildId_endedAt", ["guildId", "endedAt"])
+        .index("guildId_sourceId_endedAt", ["guildId", "sourceId", "endedAt"]),
+    serverGameHistoryHeads: defineTable({
+        guildId: v.string(),
+        revision: v.string(),
+        lastCollectedAt: v.string(),
+    }).index("guildId", ["guildId"]),
+    teamDirectory: defineTable({
+        guildId: v.string(),
+        gameId: teamGame,
+        name: v.string(),
+        shortCode: v.union(v.string(), v.null()),
+        logoAssetId: v.union(v.id("imageAssets"), v.null()),
+        normalizedName: v.string(),
+        searchText: v.string(),
+        archivedAt: v.union(v.string(), v.null()),
+        revision: v.number(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+        createdBy: v.string(),
+        updatedBy: v.string(),
+    })
+        .index("guildId_gameId_archivedAt_normalizedName", [
+            "guildId",
+            "gameId",
+            "archivedAt",
+            "normalizedName",
+        ])
+        .index("guildId_gameId_normalizedName", [
+            "guildId",
+            "gameId",
+            "normalizedName",
+        ])
+        .searchIndex("search", {
+            searchField: "searchText",
+            filterFields: ["guildId", "gameId", "archivedAt"],
+        }),
+    teamDirectoryAudit: defineTable({
+        guildId: v.string(),
+        gameId: teamGame,
+        teamId: v.id("teamDirectory"),
+        operation: teamAuditOperation,
+        revision: v.number(),
+        actor: v.string(),
+        idempotencyKey: v.optional(v.string()),
+        fingerprint: v.optional(v.string()),
+        eventId: v.optional(v.string()),
+        createdAt: v.string(),
+    })
+        .index("guildId_idempotencyKey", ["guildId", "idempotencyKey"])
+        .index("teamId", ["teamId"]),
+    imageAssets: defineTable({
+        guildId: v.string(),
+        kind: imageAssetKind,
+        publicId: v.string(),
+        storageId: v.id("_storage"),
+        contentType: imageContentType,
+        width: v.number(),
+        height: v.number(),
+        bytes: v.number(),
+        sha256: v.string(),
+        publicUrl: v.string(),
+        state: v.union(v.literal("ready"), v.literal("deleting")),
+        createdAt: v.string(),
+        createdBy: v.string(),
+    })
+        .index("publicId", ["publicId"])
+        .index("guildId_kind", ["guildId", "kind"])
+        .index("state_createdAt", ["state", "createdAt"]),
+    imageAssetReferences: defineTable({
+        assetId: v.id("imageAssets"),
+        guildId: v.string(),
+        owner: v.union(
+            v.literal("team"),
+            v.literal("event"),
+            v.literal("panel")
+        ),
+        ownerId: v.string(),
+        createdAt: v.string(),
+    })
+        .index("assetId", ["assetId"])
+        .index("owner_ownerId", ["owner", "ownerId"]),
+    gameHistorySettings: defineTable({
+        guildId: v.string(),
+        // null keeps retained games indefinitely.
+        retentionDays: v.union(v.number(), v.null()),
+        updatedAt: v.string(),
+        updatedBy: v.string(),
+    }).index("guildId", ["guildId"]),
     apiKeys: defineTable({
         guildId: v.string(),
         name: v.string(),
@@ -1193,9 +1613,65 @@ export default defineSchema({
         createdAt: v.string(),
         lastUsedAt: v.optional(v.string()),
         revokedAt: v.optional(v.string()),
+        readAccess: v.optional(apiKeyReadAccess),
+        writeAccess: v.optional(
+            v.object({
+                resources: v.array(v.literal("event-commands")),
+                gameIds: v.array(
+                    v.union(v.literal("hell_let_loose"), v.literal("wardogs"))
+                ),
+            })
+        ),
     })
         .index("guildId", ["guildId"])
         .index("keyHash", ["keyHash"]),
+    websiteEventPolicies: defineTable({
+        applicationRecordId: v.id("ssoApplications"),
+        apiKeyId: v.id("apiKeys"),
+        guildId: v.string(),
+        enabled: v.boolean(),
+        games: v.array(
+            v.object({
+                gameId: v.union(
+                    v.literal("hell_let_loose"),
+                    v.literal("wardogs")
+                ),
+                roleIds: v.array(v.string()),
+            })
+        ),
+        version: v.string(),
+        updatedAt: v.string(),
+        updatedBy: v.string(),
+    })
+        .index("applicationRecordId", ["applicationRecordId"])
+        .index("apiKeyId", ["apiKeyId"])
+        .index("guildId", ["guildId"]),
+    websiteEventCommandReceipts: defineTable({
+        applicationRecordId: v.id("ssoApplications"),
+        apiKeyId: v.id("apiKeys"),
+        clientId: v.string(),
+        guildId: v.string(),
+        subject: v.string(),
+        gameId: v.union(v.literal("hell_let_loose"), v.literal("wardogs")),
+        idempotencyKey: v.string(),
+        bodyHash: v.string(),
+        operation: v.union(
+            v.literal("create"),
+            v.literal("update"),
+            v.literal("cancel"),
+            v.literal("refresh_match_team")
+        ),
+        eventId: v.id("events"),
+        revision: v.string(),
+        createdAt: v.string(),
+    })
+        .index("application_subject_game_key", [
+            "applicationRecordId",
+            "subject",
+            "gameId",
+            "idempotencyKey",
+        ])
+        .index("guildId", ["guildId"]),
     apiRateLimitBuckets: defineTable({
         bucket: v.string(),
         resetAt: v.number(),
@@ -1212,6 +1688,179 @@ export default defineSchema({
         createdAt: v.string(),
     })
         .index("guildId_key", ["guildId", "key"])
+        .index("expiresAt", ["expiresAt"]),
+    membershipIntegrationPolicies: defineTable({
+        apiKeyId: v.id("apiKeys"),
+        guildId: v.string(),
+        enabled: v.boolean(),
+        version: v.string(),
+        games: v.array(
+            v.object({ gameId: v.string(), roleIds: v.array(v.string()) })
+        ),
+        updatedAt: v.string(),
+    })
+        .index("apiKeyId", ["apiKeyId"])
+        .index("guildId", ["guildId"]),
+    membershipGuilds: defineTable({
+        guildId: v.string(),
+        epoch: v.string(),
+        revision: v.string(),
+        epochRevision: v.string(),
+        refreshWindowAt: v.number(),
+        refreshCount: v.number(),
+    }).index("guildId", ["guildId"]),
+    memberObservations: defineTable({
+        guildId: v.string(),
+        discordUserId: v.string(),
+        state: v.union(
+            v.literal("present"),
+            v.literal("left"),
+            v.literal("unknown")
+        ),
+        roleIds: v.array(v.string()),
+        observedAt: v.union(v.string(), v.null()),
+        receivedAt: v.string(),
+        epoch: v.string(),
+        revision: v.string(),
+        unavailable: v.boolean(),
+        refreshFence: v.number(),
+        refreshUntil: v.number(),
+        nextRefreshAt: v.number(),
+        seenRunId: v.optional(v.id("membershipSyncRuns")),
+        // Survives rejoin so queued side effects cannot cross a departure.
+        departureRevision: v.optional(v.string()),
+    })
+        .index("guildId", ["guildId"])
+        .index("guildId_discordUserId", ["guildId", "discordUserId"]),
+    memberRoleOperations: defineTable({
+        guildId: v.string(),
+        gameId,
+        // Assignment identifier and explicit, enqueue-time Discord link are distinct.
+        userId: v.string(),
+        userRecordId: v.optional(v.id("users")),
+        discordUserId: v.optional(v.string()),
+        version: v.number(),
+        actorId: v.string(),
+        actorKind: v.union(
+            v.literal("dashboard"),
+            v.literal("recruitment"),
+            v.literal("application"),
+            v.literal("rollback")
+        ),
+        categoryId: v.optional(v.string()),
+        assignmentFingerprint: v.string(),
+        policyFingerprint: v.string(),
+        allowedRoleIds: v.array(v.string()),
+        desiredRoleIds: v.array(v.string()),
+        departureRevision: v.string(),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("running"),
+            v.literal("retry_scheduled"),
+            v.literal("applied"),
+            v.literal("denied"),
+            v.literal("superseded"),
+            v.literal("failed")
+        ),
+        attempts: v.number(),
+        failureCount: v.number(),
+        nextAttemptAt: v.number(),
+        leaseUntil: v.number(),
+        fence: v.number(),
+        reason: v.string(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId_nextAttemptAt", ["guildId", "nextAttemptAt"])
+        .index("guildId_gameId_userId_version", [
+            "guildId",
+            "gameId",
+            "userId",
+            "version",
+        ])
+        .index("guildId_gameId_discordUserId_version", [
+            "guildId",
+            "gameId",
+            "discordUserId",
+            "version",
+        ])
+        .index("guildId_createdAt", ["guildId", "createdAt"]),
+    memberRoleLocks: defineTable({
+        guildId: v.string(),
+        discordUserId: v.string(),
+        leaseUntil: v.number(),
+        fence: v.number(),
+    }).index("guildId_discordUserId", ["guildId", "discordUserId"]),
+    memberRoleAudits: defineTable({
+        operationId: v.id("memberRoleOperations"),
+        guildId: v.string(),
+        userId: v.string(),
+        actorId: v.string(),
+        fence: v.number(),
+        attempt: v.number(),
+        outcome: v.string(),
+        reason: v.string(),
+        at: v.string(),
+    })
+        .index("operationId_fence", ["operationId", "fence"])
+        .index("guildId_at", ["guildId", "at"]),
+    membershipSyncRuns: defineTable({
+        guildId: v.string(),
+        epoch: v.string(),
+        startedRevision: v.string(),
+        observedAt: v.string(),
+        expectedCount: v.optional(v.number()),
+        seenCount: v.number(),
+        nextBatch: v.number(),
+        status: v.union(
+            v.literal("collecting"),
+            v.literal("sweeping"),
+            v.literal("cache-sweeping"),
+            v.literal("complete"),
+            v.literal("superseded")
+        ),
+        cursor: v.union(v.string(), v.null()),
+        expiresAt: v.number(),
+    })
+        .index("guildId", ["guildId"])
+        .index("expiresAt", ["expiresAt"]),
+    membershipSyncSubjects: defineTable({
+        runId: v.id("membershipSyncRuns"),
+        discordUserId: v.string(),
+    })
+        .index("runId_discordUserId", ["runId", "discordUserId"])
+        .index("runId", ["runId"]),
+    membershipRefreshLimits: defineTable({
+        name: v.string(),
+        until: v.number(),
+    }).index("name", ["name"]),
+    integrationHeads: defineTable({
+        guildId: v.string(),
+        revision: v.string(),
+        floor: v.string(),
+    }).index("guildId", ["guildId"]),
+    integrationChanges: defineTable({
+        guildId: v.string(),
+        gameId: v.string(),
+        resource: v.string(),
+        id: v.string(),
+        revision: v.string(),
+        revisionOrder: v.string(),
+        operation: v.union(v.literal("upsert"), v.literal("remove")),
+        expiresAt: v.number(),
+    })
+        .index("guildId_revisionOrder", ["guildId", "revisionOrder"])
+        .index("expiresAt", ["expiresAt"]),
+    integrationRecords: defineTable({
+        guildId: v.string(),
+        gameId: v.string(),
+        resource: v.string(),
+        id: v.string(),
+        revision: v.string(),
+        operation: v.union(v.literal("upsert"), v.literal("remove")),
+        expiresAt: v.optional(v.number()),
+    })
+        .index("identity", ["guildId", "gameId", "resource", "id"])
         .index("expiresAt", ["expiresAt"]),
     webhookSubscriptions: defineTable({
         guildId: v.string(),
@@ -1237,6 +1886,7 @@ export default defineSchema({
             v.literal("failed")
         ),
         processingStartedAt: v.optional(v.number()),
+        fence: v.optional(v.number()),
         nextAttemptAt: v.number(),
         responseStatus: v.optional(v.number()),
         lastError: v.optional(v.string()),
@@ -1246,7 +1896,25 @@ export default defineSchema({
         .index("guildId", ["guildId"])
         .index("webhookId", ["webhookId"])
         .index("status_nextAttemptAt", ["status", "nextAttemptAt"])
+        .index("guildId_status_nextAttemptAt", [
+            "guildId",
+            "status",
+            "nextAttemptAt",
+        ])
         .index("status_processingStartedAt", ["status", "processingStartedAt"]),
+    webhookDispatchGuilds: defineTable({
+        guildId: v.string(),
+        wakeAt: v.number(),
+    })
+        .index("guildId", ["guildId"])
+        .index("wakeAt", ["wakeAt"]),
+    webhookDispatchState: defineTable({
+        name: v.string(),
+        cursor: v.union(v.string(), v.null()),
+        migrated: v.boolean(),
+        fence: v.number(),
+        leaseUntil: v.number(),
+    }).index("name", ["name"]),
     articles: defineTable({
         guildId: v.string(),
         title: v.string(),

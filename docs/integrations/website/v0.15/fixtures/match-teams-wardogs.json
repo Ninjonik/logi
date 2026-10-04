@@ -1,0 +1,34 @@
+{
+    "matchTeams": [
+        {
+            "teamId": "kh7synthetic0wdg0team00000000c3",
+            "slot": "a",
+            "side": "Valkyra",
+            "name": "Synthetic Wardogs Collective",
+            "shortCode": null,
+            "logoUrl": null,
+            "teamRevision": 1,
+            "capturedAt": "2026-10-02T20:00:00.000Z"
+        },
+        {
+            "teamId": "kh7synthetic0wdg0team00000000d4",
+            "slot": "b",
+            "side": "Manticore",
+            "name": "Example Lancers",
+            "shortCode": "LNC",
+            "logoUrl": "https://logi.example/api/image-assets/00112233445566778899aabbccddeeff.png",
+            "teamRevision": 4,
+            "capturedAt": "2026-10-02T20:00:00.000Z"
+        },
+        {
+            "teamId": "kh7synthetic0wdg0team00000000e5",
+            "slot": "c",
+            "side": "Lonestar",
+            "name": "Placeholder Marauders",
+            "shortCode": "PMR",
+            "logoUrl": "https://logi.example/api/image-assets/ffeeddccbbaa99887766554433221100.png",
+            "teamRevision": 2,
+            "capturedAt": "2026-10-02T20:05:00.000Z"
+        }
+    ]
+}

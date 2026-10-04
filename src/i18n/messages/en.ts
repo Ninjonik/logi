@@ -1,4 +1,393 @@
 export const enMessages = {
+    gameHistory: {
+        title: "Warcon game history",
+        description:
+            "Completed server games retained by Logi. Factions are game sides, not clan teams.",
+        load: "Load / refresh history",
+        retentionTitle: "History retention",
+        retentionDescription:
+            "Choose how long retained server games stay in this workspace. Games that ended before the window are deleted permanently in a nightly sweep, and the history revision advances so website consumers rebuild their totals.",
+        retentionWindow: "Keep retained games for",
+        retentionIndefinite: "Indefinitely (default)",
+        retentionDays: "{days} days",
+        retentionSave: "Save retention",
+        retentionSaving: "Saving…",
+        retentionSaved:
+            "Retention saved. Expired games are removed in the background.",
+        retentionError:
+            "Unable to load or save the retention window. Refresh and retry.",
+        loading: "Loading the complete period…",
+        error: "History could not be completed. Retry, or select a shorter period. No partial ranking is shown.",
+        period: "Period",
+        all: "All retained games",
+        week: "7 days",
+        month: "30 days",
+        quarter: "90 days",
+        map: "Map (exact name, optional)",
+        source: "Server",
+        allSources: "All retained servers",
+        minimum: "Minimum minutes for ranking",
+        games: "Games",
+        decided: "With a winner",
+        draw: "Draws",
+        no_result: "No result",
+        unknown: "Unknown",
+        feed: "Games with combat feed",
+        faction: "Faction",
+        factions: "Faction wins",
+        share: "Share of decided games",
+        players: "Player ranking",
+        coverage: "Coverage",
+        lastCollected: "Last game imported in this workspace",
+        empty: "No completed games have been collected in this period. Enable match-history collection for a Warcon source above.",
+        player: "Player",
+        matches: "Games",
+        wins: "Wins",
+        losses: "Losses",
+        kills: "Kills",
+        deaths: "Deaths",
+        cash: "Cash delta",
+        winRate: "Win rate",
+        kd: "K/D",
+        sort: "Rank by",
+        history: "Retained games",
+        previous: "Previous",
+        next: "Next",
+        details: "Player details",
+        ended: "Ended",
+        unavailable: "Unknown",
+        ratioHelp:
+            "K/D requires complete kills/deaths and at least one death. Win rate excludes unknown outcomes. Numeric totals include known values only; x/y indicates metric coverage.",
+        retentionHelp:
+            "Coverage includes successfully imported completed games only. Missing provider history and ongoing games are excluded. Collection time does not prove that every provider game was imported.",
+    },
+    leagueMatch: {
+        title: "Wardogs League match",
+        description:
+            "Paste a public match link to preview its schedule, teams and preparation. Reading a link does not create an event.",
+        url: "Public match URL",
+        load: "Load match",
+        loading: "Loading…",
+        unknown: "Not available",
+        error: "Unable to read the match. Check the public Wardogs League URL and try again.",
+        unavailable:
+            "The source is temporarily unavailable. No saved match is available.",
+        nextCheck: "Next refresh allowed",
+        source: "Open source match",
+        stale: "Showing a saved match that may be out of date. Load the link again when a refresh is allowed.",
+        fetched: "Fetched",
+        scheduled: "Match time (Prague)",
+        map: "Map",
+        zone: "Zone",
+        lighting: "Lighting",
+        hosting: "Hosting",
+        moderator: "Moderator",
+        ready: "Ready check",
+        points: "Scoring rule",
+        membersNote:
+            "Displayed team membership, not the match roster or player count.",
+        team: "Team",
+        faction: "Faction",
+        nations: "Nations",
+        members: "Team members",
+        teamsUnavailable: "The source did not provide team details.",
+        vote: "Map vote",
+        closes: "Voting closes (Prague)",
+        rules: "Rules",
+        progress: "Match progress",
+        resultsNote:
+            "Results and placements are not imported. Scoring rules are not awarded points.",
+        partial:
+            "Some fields or this match state could not be verified. Check the source page.",
+        age: "Snapshot age: {seconds} seconds",
+        timezone:
+            "Times shown in Europe/Prague. Reads are cached for five minutes.",
+        done: "Done",
+        current: "Current step",
+        not_started: "Not started",
+    },
+    membershipIntegration: {
+        title: "Discord membership integrations",
+        description:
+            "Choose which Discord roles each integration may read. Access also requires a read-only key with the Discord membership grant. The website decides how to use these observations.",
+        enabled: "Allow membership lookups with this key",
+        roles: "Allowed role IDs",
+        rolesHelp:
+            "Enter one role ID per line. An empty list shares presence and Logi assignment only. Save to apply changes.",
+        empty: "Create a read-only API key with the Discord membership grant, then refresh this list.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        saving: "Saving…",
+        save: "Save policy",
+        saved: "Membership policy saved.",
+        error: "Unable to load or save membership policies. Refresh and retry.",
+        invalid: "Use valid Discord role IDs, with at most 100 roles per game.",
+    },
+    websiteEventPolicies: {
+        title: "Website event commands",
+        description:
+            "Let a connected website create, update or cancel events through its service key. A policy binds one registered single sign-on application to one restricted API key and lists, per game, the Discord roles whose members may use the commands.",
+        application: "Single sign-on application",
+        applicationPlaceholder: "Choose an application",
+        noApplications:
+            "Register a single sign-on application first. The policy binds the website's commands to that application.",
+        noKeys: "Create a restricted API key for the website backend, then refresh. Legacy unrestricted keys cannot carry a command policy.",
+        enabled: "Allow event commands with this key",
+        roles: "Allowed role IDs",
+        rolesHelp:
+            "Enter one Discord role ID per line. A game without roles stays read-only. Saving an enabled policy grants event-command write access for the listed games; disabling it removes the grant.",
+        granted: "Write access granted for: {games}",
+        notGranted: "No event-command write access granted.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        saving: "Saving…",
+        save: "Save policy",
+        saved: "Event command policy saved.",
+        error: "Unable to load or save the event command policy. Refresh and retry.",
+        denied: "The policy was rejected. Use a live restricted key of this workspace and an application registered in it.",
+        invalid:
+            "Use valid Discord role IDs, at most 64 per game, for games enabled in this workspace.",
+    },
+    publicPanelAppearance: {
+        title: "Appearance",
+        description:
+            "Layout, accent color, banner and faction emoji for this panel. Panels saved before these settings existed keep their previous look until you change them here.",
+        mapArtwork: "Map artwork",
+        layout: "Layout",
+        showMap: "Show map name and artwork",
+        showScoreboard: "Show scoreboard",
+        showPlayerCount: "Show player count",
+        compact: "Compact header",
+        layoutHelp:
+            "Compact uses a two-line header, inline scores and no separators. Map artwork also needs the Map artwork setting.",
+        resultsLayoutHelp:
+            "Result announcements use the map and compact settings; the scoreboard and player count apply to live panels.",
+        accentColor: "Accent color",
+        accentColorPicker: "Pick the accent color",
+        accentColorPlaceholder: "#77B255",
+        accentColorHelp:
+            "#RRGGBB. Replaces the green live color; stale or paused panels keep the amber warning. Leave empty for the default.",
+        accentColorReset: "Default color",
+        accentColorInvalid: "Use a color in #RRGGBB format.",
+        banner: "Banner",
+        bannerHelp:
+            "PNG, JPEG or WebP up to 2 MiB and 4096 × 4096 px. Logi converts it to WebP of at most 1920 × 1080 px. A banner replaces the map thumbnail.",
+        bannerUpload: "Upload banner",
+        bannerUploading: "Uploading…",
+        bannerRemove: "Remove banner",
+        bannerPreview: "Banner preview",
+        bannerNone:
+            "No banner. The panel shows map artwork when it is enabled.",
+        bannerUploaded: "Banner uploaded. Save the panel to publish it.",
+        bannerSelected: "Banner selected. Save the panel to publish it.",
+        bannerLibrary: "Uploaded banners",
+        bannerLibraryShow: "Choose an uploaded banner",
+        bannerLibraryHide: "Hide uploaded banners",
+        bannerLibraryLoading: "Loading uploaded banners…",
+        bannerLibraryEmpty:
+            "No banners have been uploaded in this workspace yet.",
+        bannerLibraryError:
+            "Uploaded banners could not be loaded. Retry later.",
+        bannerLibraryItem: "Use banner {width} × {height} px uploaded {date}",
+        factionEmoji: "Faction emoji",
+        factionEmojiHelp:
+            "One Unicode emoji, or a custom Discord emoji written as <:name:id> (animated: <a:name:id>). Custom emoji must belong to a server the bot is in or to the bot application. Leave empty to keep the default shown as the placeholder.",
+        factionEmojiInvalid: "Use one emoji or <:name:id>.",
+        noDefaultEmoji: "None",
+        factions: {
+            allies: "Allies",
+            axis: "Axis",
+            valkyra: "Valkyra",
+            manticore: "Manticore",
+            lonestar: "Lonestar",
+        },
+        invalid: "Fix the highlighted appearance settings before saving.",
+        errors: {
+            invalid_kind: "This image type cannot be used as a banner.",
+            unsupported_type: "Use a PNG, JPEG or WebP image.",
+            type_mismatch:
+                "The file content does not match its type. Export it again as PNG, JPEG or WebP.",
+            bad_dimensions: "The image must be at most 4096 × 4096 pixels.",
+            animated: "Animated images are not supported.",
+            undecodable:
+                "The image could not be read. Export it again and retry.",
+            invalid_asset: "The image could not be stored. Retry the upload.",
+            forbidden: "Only workspace administrators can upload banners.",
+            too_large: "The image is larger than 2 MiB.",
+            upload_limited: "Too many uploads. Retry in {seconds} s.",
+            unavailable: "Image uploads are unavailable. Retry later.",
+            asset_unavailable:
+                "The banner is no longer available to this workspace. Upload it again or remove it, then save.",
+        },
+    },
+    gameData: {
+        sourcesTitle: "Provider sources",
+        sourcesDescription:
+            "Register the game servers this workspace collects from. A source names the provider, its HTTPS origin, the provider's server ID and the Convex environment variable that holds the token. Tokens are never entered or shown here: the operator stores them in Convex, and you only point at the variable name. Rotate a token by storing the new value under a new variable and updating the reference.",
+        sourceRef: "Reference",
+        sourceProvider: "Provider",
+        sourceProviders: {
+            hll_crcon: "Hell Let Loose CRCON",
+            wardogs_warcon: "Wardogs Warcon panel",
+            wardogs_rcon: "Wardogs RCON",
+            wardogs_public_directory: "Wardog Servers directory",
+        },
+        sourceServerId: "Provider server ID",
+        sourceOrigin: "HTTPS origin",
+        sourceSecretRef: "Token variable",
+        sourceSecretRefHelp:
+            "Use the form LOGI_GAME_DATA_<NAME>_TOKEN. Warcon and RCON require a token variable and Warcon needs the panel server UUID; the Wardog Servers directory takes none. The allowlist holds optional IP addresses or hosts the collector may contact.",
+        sourceAllowlist: "Network allowlist (optional)",
+        sourceRegister: "Register source",
+        sourceRotate: "Update reference",
+        sourceRemove: "Remove",
+        sourceSaving: "Saving…",
+        sourceSaved:
+            "Sources saved. Enable the connection below to start collecting.",
+        sourceNone: "No provider source is registered for this workspace yet.",
+        sourceOperatorManaged: "Operator catalog (read-only)",
+        sourceWorkspaceManaged: "Registered in this workspace",
+        sourceErrors: {
+            invalid_source:
+                "Check the fields: HTTPS origin without a path, provider rules for the server ID and token variable, and a lowercase reference.",
+            duplicate_ref: "This reference is already used. Choose another.",
+            duplicate_identity:
+                "This provider server is already registered in this workspace.",
+            limit_reached: "This workspace already has 20 registered sources.",
+            not_found: "This source no longer exists. Refresh the list.",
+            unavailable:
+                "Unable to load or save provider sources. Refresh and retry.",
+        },
+        liveScoreboard: "Warcon live scoreboard",
+        scoreboardPolling:
+            "Refreshes every 15 seconds while open. Provider updates may lag.",
+        scoreboardError:
+            "The live scoreboard is unavailable. Retry after the provider recovers.",
+        scoreboardEmpty: "No players in the latest observation.",
+        scoreboardUnavailable: "No recent player observation is available.",
+        playerObservation: "Player observation",
+        joinCode: "Game join code",
+        player: "Player",
+        faction: "Faction",
+        kills: "Kills",
+        deaths: "Deaths",
+        cash: "Cash",
+        ping: "Ping (ms)",
+        collectedSessions: "Collected sessions",
+        historyObserved: "Last history import",
+        historyError: "History collection",
+        title: "Game server data",
+        description:
+            "Collect server data in Logi and share selected fields with your website. Connections must first be configured by the Logi operator.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        saving: "Saving…",
+        enable: "Enable / resume",
+        disable: "Disable",
+        disabled: "Disabled",
+        error: "Unable to load or save connections. Retry or contact the operator.",
+        empty: "No data sources are configured for this workspace.",
+        state: "Data status",
+        players: "Players",
+        map: "Map",
+        observed: "Last observation",
+        unknown: "Unknown",
+        never: "Not collected",
+        unconfirmed: "live scores, unconfirmed",
+        historySupported:
+            "Match history collection supported. Imported data requires review before result confirmation.",
+        historyUnsupported:
+            "No historical match collection is available from this source.",
+        freshness: {
+            fresh: "Fresh",
+            stale: "Stale",
+            unavailable: "Unavailable",
+        },
+        errors: {
+            not_listed: "The server is not listed; its state is unknown.",
+            timeout: "The provider did not respond in time.",
+            network: "The provider is unreachable.",
+            rate_limited: "Waiting for the provider rate limit.",
+            unauthorized: "Collection paused: provider access was denied.",
+            invalid_response: "The provider returned an unsupported response.",
+            unsupported:
+                "Collection paused: the required capability is unavailable.",
+            configuration:
+                "Collection paused: the operator must review this source.",
+        },
+    },
+    apiKeys: {
+        description:
+            "Create an integration key and keep it on your server. Choose only the data and games the integration needs.",
+        name: "Key name",
+        namePlaceholder: "Website name, e.g. main site",
+        access: "Access",
+        readOnly: "Read-only",
+        fullAccess: "Full access (legacy)",
+        readOnlyHelp:
+            "Can read only the selected resources and games. Cannot create, update or delete data.",
+        fullAccessHelp:
+            "Can read and modify all clan data across all games. Use only for integrations that need write access.",
+        resources: "Resources",
+        games: "Games",
+        selectScope: "Select at least one resource and one game.",
+        privateData:
+            "Complete records may contain private operational details. Review data before publishing it.",
+        createReadOnly: "Create read-only key",
+        createFullAccess: "Create full-access key",
+        copyNow:
+            "Copy this key now. It cannot be shown again. Keep it on your server.",
+        copy: "Copy API key",
+        copied: "API key copied.",
+        copyFailed:
+            "Unable to copy the key. Copy it manually before hiding it.",
+        hide: "Hide key",
+        createFailed:
+            "Unable to create the key. Check your selection and try again.",
+        invalidKey: "The server returned an invalid API key.",
+        revoke: "Revoke",
+        revokeFailed: "Unable to revoke the key. Try again.",
+        revoked: "revoked",
+        created: "created",
+        existingKeys: "Existing keys",
+        rotateHelp:
+            "To change permissions, create a replacement key, switch the integration, then revoke the old key.",
+        allGames: "all games; read and write",
+        loading: "Loading keys…",
+        loadFailed:
+            "Unable to refresh keys. Displayed permissions may be out of date.",
+        retry: "Retry",
+        empty: "No API keys have been created.",
+        invalidPolicy: "Unrecognized restrictions; backend access is denied.",
+        resourceLabels: {
+            "server-game-history":
+                "Retained server games (player names and Steam IDs)",
+            "league-matches": "Wardogs League",
+            "league-fixtures": "Tracked Wardogs League fixtures",
+            "hll-live":
+                "HLL live scoreboard (including player names and platform IDs)",
+            "warcon-data":
+                "Warcon gameplay data (includes player names and Steam IDs)",
+            "member-summaries": "Member directory (read-only)",
+            "roster-summaries": "Published rosters and attendance (read-only)",
+            "player-stat-summaries":
+                "Verified player facts from collected sessions",
+            "membership-summaries":
+                "Discord membership (separate policy required)",
+            "server-snapshots": "Game server snapshots",
+            "integration-health": "Collection health",
+            "event-summaries": "Event summaries",
+            "match-summaries": "Match summaries",
+            "result-summaries": "Reviewed result summaries",
+            events: "Events (complete records)",
+            matches: "Matches (raw statistics)",
+            groups: "Groups",
+            rosters: "Rosters",
+            assignments: "Member assignments",
+            stratmaps: "Tactical maps",
+            teams: "Team directory (active teams, names and logos)",
+        },
+    },
     publicProfiles: {
         communityTitle: "Community",
         communityDescription:
@@ -423,6 +812,124 @@ export const enMessages = {
         articles: "Articles",
         logiComms: "LogiComms",
         signupActivity: "Signup activity",
+        teams: "Teams",
+    },
+    teams: {
+        title: "Teams",
+        description:
+            "Keep a per-game directory of the teams your matches are played against. Names, short codes and logos are reused by the match team picker and by connected websites.",
+        add: "Add team",
+        edit: "Edit",
+        archive: "Archive",
+        restore: "Restore",
+        save: "Save team",
+        saving: "Saving…",
+        cancel: "Cancel",
+        createTitle: "New team",
+        editTitle: "Edit team",
+        name: "Name",
+        shortCode: "Short code",
+        shortCodeHelp:
+            "Optional, up to 16 characters; shown where space is tight.",
+        logo: "Logo",
+        logoHelp:
+            "PNG, JPEG or WebP up to 2 MiB. The image is normalized to a 512×512 square.",
+        upload: "Upload logo",
+        uploading: "Uploading…",
+        removeLogo: "Remove logo",
+        search: "Search teams…",
+        loadMore: "Load more",
+        showArchived: "Show archived",
+        archivedBadge: "Archived",
+        empty: "No teams in this directory yet.",
+        emptySearch: "No teams match this search.",
+        loading: "Loading teams…",
+        notAvailableForGame:
+            "The team directory is not available for this game.",
+        gameDisabled: "Enable this game in clan settings before adding teams.",
+        saved: "Team saved.",
+        archivedNotice: "Team archived. Historical matches keep its snapshot.",
+        restoredNotice: "Team restored.",
+        retry: "Try again",
+        editTeam: "Edit {name}",
+        archiveTeam: "Archive {name}",
+        restoreTeam: "Restore {name}",
+        conflictReloadFailed:
+            "This team changed in the meantime, and the latest version could not be loaded. Close the dialog and try again.",
+        duplicateActive:
+            "A team with this name already exists for this game. Use that team instead of creating a second one.",
+        duplicateArchived:
+            "An archived team already uses this name. Restore it to use it again.",
+        useExisting: "Use existing team",
+        restoreExisting: "Restore and use",
+        errors: {
+            invalid_team: "Check the team details and try again.",
+            game_disabled: "This game is not enabled for the workspace.",
+            duplicate_name:
+                "A team with this name already exists for this game.",
+            revision_conflict:
+                "This team changed in the meantime. The latest version has been loaded; review it and try again.",
+            idempotency_conflict:
+                "This request was already used with different details. Close the dialog and start again.",
+            not_found: "The team no longer exists.",
+            archived: "The team is archived. Restore it before editing.",
+            not_archived: "The team is not archived.",
+            asset_unavailable:
+                "The uploaded logo is no longer available. Upload it again.",
+            limit_reached:
+                "This game's directory has reached its limit of 500 teams.",
+            forbidden: "You are not allowed to manage teams here.",
+            unavailable: "The team directory is temporarily unavailable.",
+            rate_limited: "Too many requests; wait a moment and try again.",
+        },
+        uploadErrors: {
+            unsupported_type: "Only PNG, JPEG and WebP images are accepted.",
+            type_mismatch: "The file content does not match its image type.",
+            bad_dimensions:
+                "The image must be at least 1×1 and at most 4096×4096 pixels.",
+            animated: "Animated images are not supported.",
+            undecodable: "The image could not be read.",
+            invalid_kind: "This upload is not a team logo.",
+            invalid_asset: "The uploaded image could not be stored.",
+            too_large: "The image exceeds 2 MiB.",
+            upload_limited: "Too many uploads. Retry in {seconds} s.",
+            forbidden: "You are not allowed to upload logos here.",
+            unavailable: "Uploads are temporarily unavailable.",
+        },
+        picker: {
+            title: "Teams",
+            description:
+                "Pick the teams playing this match. Each team keeps the name and logo it had when selected until you refresh it.",
+            slots: { a: "Team A", b: "Team B", c: "Team C" },
+            team: "Team",
+            side: "Side",
+            noTeam: "No team",
+            noSide: "No side",
+            search: "Search teams…",
+            noResults: "No active teams found.",
+            unknownTeam: "Team details unavailable",
+            savedSelections: "Saved on this match",
+            addTeam: "Add team",
+            refreshSnapshot: "Refresh snapshot",
+            refreshing: "Refreshing…",
+            snapshotRefreshed: "Snapshot refreshed from the directory.",
+            archivedSelection:
+                "Archived team; the saved snapshot stays on this match.",
+            duplicateTeam: "Each team can be placed in only one slot.",
+            duplicateSide: "Each side can be assigned to only one team.",
+            errors: {
+                invalid_match_teams: "The team assignment is invalid.",
+                team_not_found: "The team no longer exists in the directory.",
+                team_archived:
+                    "The team is archived; choose another team or restore it in the team directory.",
+                team_game_mismatch: "The team belongs to a different game.",
+                match_concluded: "Concluded matches keep their team snapshots.",
+                training_event: "Trainings do not have match teams.",
+                forbidden: "You are not allowed to change the match teams.",
+                unavailable: "The team directory is temporarily unavailable.",
+                rate_limited: "Too many requests; wait a moment and try again.",
+            },
+        },
     },
     signupActivity: {
         title: "Signup activity",
@@ -569,6 +1076,66 @@ export const enMessages = {
         symbolsCategory: "Symbols",
         flagsCategory: "Flags",
     },
+    resultReview: {
+        title: "Review result",
+        dialogHelp: "Review the event's scores and sources before confirming.",
+        description:
+            "Imports stay provisional until a reviewer confirms this version. Corrections preserve the earlier result and require a reason.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        error: "Could not load or save the result. Refresh, check permissions and source changes, then review again. Incomplete sessions cannot be confirmed.",
+        status: {
+            unknown: "No reviewed result",
+            provisional: "Provisional",
+            confirmed: "Confirmed",
+            corrected: "Corrected",
+        },
+        revision: "Revision",
+        unknownScore: "Unknown",
+        attribution: "Player attribution",
+        verified: "verified",
+        unresolved: "unresolved",
+        reviewedAt: "Reviewed",
+        reviewer: "Reviewer",
+        complete: "Complete",
+        incomplete: "Incomplete",
+        source: "Result source",
+        manual: "Manual scores",
+        keepSources: "Keep linked sessions",
+        scoreHelp:
+            "An empty score means unknown. Zero is a known score. Selecting a session never confirms its result automatically.",
+        participant: "Participant",
+        score: "Score",
+        remove: "Remove participant",
+        addParticipant: "Add participant",
+        reason: "Correction reason",
+        stage: "Save provisional result",
+        confirm: "Confirm displayed revision",
+        useImport: "Use latest legacy import",
+        correct: "Save reviewed correction",
+        unsaved:
+            "There are unsaved edits. Save and review the provisional version before confirming.",
+        history: "Recent revision history",
+        importer: "Import",
+    },
+    verifiedPlatformLinks: {
+        title: "Verified Steam account",
+        description:
+            "Verify control of your Steam account by signing in on Steam. IDs entered in your profile are unverified claims.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        error: "Steam linking is unavailable. Refresh or try again shortly.",
+        callbackFailed:
+            "Steam verification did not complete. Start a new link attempt.",
+        verified: "Verified through Steam",
+        empty: "No verified Steam account",
+        verifiedAt: "Verified",
+        revokedAt: "Unlinked",
+        link: "Verify with Steam",
+        unlink: "Unlink Steam",
+        history: "Recent link history",
+        effect: "Unlinking stops future player attribution. This proof does not grant Discord roles, confirm game ownership, or publish your profile on the website.",
+    },
     userSettings: {
         privacyTitle: "Privacy and data",
         privacyDescription:
@@ -602,7 +1169,7 @@ export const enMessages = {
         platformConnection: "Platform identity",
         platformConnected: "Platform ID set",
         platformDisconnected: "Platform ID not set",
-        platformId: "Platform ID",
+        platformId: "Platform ID (unverified)",
         platformIdPlaceholder: "Steam64 or Epic player ID",
         currentPlatformId: "Current platform ID",
         platformIdHelp:
@@ -646,6 +1213,14 @@ export const enMessages = {
         playerStatsServerUrl: "Server stats URL",
         playerStatsServerUrlPlaceholder: "https://.../api/get_players_history",
         addPlayerStatsServer: "Add stats server",
+        statsCommandTitle: "Player statistics command",
+        statsCommandDescription:
+            "Decide whether members may use /stats in this server, for which games, and where Share publishes by default. Discord's own command permissions still apply.",
+        statsCommandEnabled: "Enable /stats",
+        statsCommandGame: "{game} statistics",
+        statsCommandDefaultChannel: "Default sharing channel",
+        statsCommandDefaultChannelHelp:
+            "Used when the command is run without a channel option. Without a default, Share asks for a channel. Shared cards still require the member and bot to be able to post there.",
         removePlayerStatsServer: "Remove stats server",
         rosterScoreTitle: "Roster score rules",
         rosterScoreDescription:
@@ -774,6 +1349,53 @@ export const enMessages = {
         routingInfoDescription:
             "Category support roles are invited into new ticket threads automatically. Users with the dashboard admin role are also treated as support staff for ticket handling.",
     },
+    memberRoleOperations: {
+        unlinkedTarget: "Logi ID (Discord not linked)",
+        title: "Membership role operations",
+        refresh: "Refresh",
+        loading: "Loading…",
+        description:
+            "Latest 100 staff or application operations across games. Saving a member queues a change; only a verified Discord result is marked applied.",
+        error: "Role operations are unavailable. Refresh to try again.",
+        empty: "No managed role operations yet.",
+        target: "Member Discord ID",
+        actor: "Actor Discord ID",
+        origin: "Source",
+        version: "Version",
+        updated: "Updated",
+        audit: "Attempt history",
+        auditDescription:
+            "Latest 5 attempts shown; up to 20 retained per operation. Times are UTC. Reason codes help diagnose failures.",
+        reason: "Reason",
+        status: {
+            pending: "Pending",
+            running: "In progress",
+            retry_scheduled: "Retry scheduled",
+            applied: "Applied",
+            denied: "Denied",
+            superseded: "Superseded",
+            failed: "Failed",
+        },
+        provenance: {
+            dashboard: "Administrator",
+            recruitment: "Recruitment staff",
+            application: "Member application",
+            rollback: "Application rollback",
+        },
+        hint: {
+            pending: "The bot will check permissions before changing roles.",
+            running:
+                "The bot is checking Discord and applying the current request.",
+            retry_scheduled:
+                "The bot will retry automatically after the waiting period.",
+            applied:
+                "Discord roles matched this request at the last check. The bot checks again periodically.",
+            denied: "Check staff access, membership, bot permissions and role hierarchy, then save a new member request.",
+            superseded:
+                "The assignment or policy changed. Only a new authorized request can apply the updated state.",
+            failed: "Automatic retries stopped. Resolve the cause and save a new member request.",
+        },
+    },
     membershipSettings: {
         title: "Membership settings",
         pageDescription:
@@ -833,7 +1455,7 @@ export const enMessages = {
             "Applications are enabled, but the Discord membership panel will not be posted and application threads cannot open until you set {items}.",
         roleSyncTitle: "How membership role sync works",
         roleSyncDescription:
-            "Pending applications do not assign membership roles. Recruit status uses the clan role plus the category recruit role, and active status uses the clan role plus the category final role when those roles are configured.",
+            "Pending applications do not assign membership roles. Recruit status uses the clan role plus the category recruit role, and active status uses the clan role plus the category final role when those roles are configured. Membership changes are queued; verify the result in Membership settings → Membership role operations.",
         rosterScoreDescription:
             "Set per-server score changes after the event concludes. Leaving everything at 0 disables automatic score movement.",
         rosterScoreNoCategory: "No category / no reaction",
@@ -1020,7 +1642,7 @@ export const enMessages = {
             "Reserve members cannot use the recruit status.",
         roleSyncTitle: "How membership role sync works",
         roleSyncDescription:
-            "Group-linked Discord roles sync from the selected primary and secondary groups. Membership roles only sync for non-pending members, and recruit or active status depends on the clan role plus the linked membership category roles when available.",
+            "Group-linked Discord roles sync from the selected primary and secondary groups. Membership roles only sync for non-pending members, and recruit or active status depends on the clan role plus the linked membership category roles when available. Membership changes are queued; verify the result in Membership settings → Membership role operations.",
         missingClanRoleTitle: "Clan role is not configured",
         missingClanRoleDescription:
             "This player can still be marked as recruit or active in Logi, but no base clan role will be added in Discord until the clan role is set in clan settings.",
@@ -1358,6 +1980,8 @@ export const enMessages = {
         saveHelp:
             "Name and the four timeline fields are required. Everything else is optional.",
         saveError: "Unable to save event.",
+        writeForbidden:
+            "Only workspace administrators can change this event. Sign in again if your session has expired.",
         notices: {
             announcementsTitle: "Announcements channel is not set",
             announcementsDescription:

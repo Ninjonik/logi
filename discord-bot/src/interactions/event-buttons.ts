@@ -510,6 +510,8 @@ async function handleAttendanceInteraction(
     }
 
     await convex.mutation(references.acknowledgeAttendance, {
+        secret: env.internalSecret,
+        guildId: context.event.guildId,
         eventId: context.event.id as never,
         userId: interaction.user.id,
     })

@@ -1,3 +1,13 @@
+import {
+    allowsApiKeyRead,
+    type ApiKeyReadAccess,
+} from "@/domain/api/key-access"
+import { parseApiGameScope, isApiGameScopeError } from "./game-scope"
+import { PEOPLE_RESOURCES } from "@/domain/api/people-summaries"
+import { isApiKeyReadAccess } from "@/domain/api/key-access"
+import { parseIntegrationQuery } from "./integration-query"
+import { parseMembershipQuery } from "./membership-query"
+import { parsePeopleQuery } from "./people-query"
 import { NextResponse } from "next/server"
 
 import {
@@ -36,7 +46,9 @@ export async function authenticateClanRequestWith(
             bucket: string,
             limit: number
         ) => Promise<{ allowed: boolean; remaining: number; resetAt: number }>
-        authenticateKey: (key: string) => Promise<{ guildId: string } | null>
+        authenticateKey: (
+            key: string
+        ) => Promise<{ guildId: string; readAccess?: ApiKeyReadAccess } | null>
         rateLimitHeaders: (result: {
             remaining: number
             resetAt: number
@@ -86,6 +98,173 @@ export async function authenticateClanRequestWith(
             },
             { status: 401, headers }
         )
+    const providerGrant =
+        /^\/api\/v1\/clan\/(warcon-data|server-game-history|league-matches|league-fixtures|hll-live)(\/|$)/.exec(
+            new URL(request.url).pathname
+        )?.[1]
+    const peopleResource = new URL(request.url).pathname.split("/")[4]
+    if ((PEOPLE_RESOURCES as readonly string[]).includes(peopleResource)) {
+        headers["Cache-Control"] = "no-store"
+        const input = parsePeopleQuery(request)
+        if (!input)
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "invalid_query",
+                        message:
+                            "One game and a bounded people projection are required.",
+                    },
+                },
+                { status: 400, headers }
+            )
+        if (
+            request.method !== "GET" ||
+            !isApiKeyReadAccess(authenticated.readAccess) ||
+            !allowsApiKeyRead(
+                authenticated.readAccess,
+                input.resource,
+                input.gameId
+            )
+        )
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "insufficient_scope",
+                        message:
+                            "An explicit read grant for this people resource and game is required.",
+                    },
+                },
+                { status: 403, headers }
+            )
+        return { key, guildId: authenticated.guildId, headers }
+    }
+    if (providerGrant) {
+        headers["Cache-Control"] = "no-store"
+        if (
+            request.method !== "GET" ||
+            !isApiKeyReadAccess(authenticated.readAccess) ||
+            !allowsApiKeyRead(
+                authenticated.readAccess,
+                providerGrant,
+                providerGrant === "hll-live" ? "hell_let_loose" : "wardogs"
+            )
+        )
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "insufficient_scope",
+                        message:
+                            "An explicit read grant for this provider resource and game is required.",
+                    },
+                },
+                { status: 403, headers }
+            )
+    }
+    if (
+        /^\/api\/v1\/clan\/membership-summaries(\/|$)/.test(
+            new URL(request.url).pathname
+        )
+    ) {
+        headers["Cache-Control"] = "no-store"
+        const input = parseMembershipQuery(request)
+        if (!input)
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "invalid_query",
+                        message:
+                            "An exact member, one game and a bounded observation age are required.",
+                    },
+                },
+                { status: 400, headers }
+            )
+        if (
+            request.method !== "GET" ||
+            !isApiKeyReadAccess(authenticated.readAccess) ||
+            !allowsApiKeyRead(
+                authenticated.readAccess,
+                "membership-summaries",
+                input.gameId
+            )
+        )
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "insufficient_scope",
+                        message: "This API key does not allow this operation.",
+                    },
+                },
+                { status: 403, headers }
+            )
+    }
+    if (
+        /^\/api\/v1\/clan\/(changes|sync-records)(\/|$)/.test(
+            new URL(request.url).pathname
+        )
+    ) {
+        headers["Cache-Control"] = "no-store"
+        const input = parseIntegrationQuery(request)
+        if (!input)
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "invalid_query",
+                        message:
+                            "An explicit single game and registered resources are required.",
+                    },
+                },
+                { status: 400, headers }
+            )
+        if (
+            request.method !== "GET" ||
+            !isApiKeyReadAccess(authenticated.readAccess) ||
+            !input.resources.every((resource) =>
+                allowsApiKeyRead(
+                    authenticated.readAccess,
+                    resource,
+                    input.gameId
+                )
+            )
+        )
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "insufficient_scope",
+                        message:
+                            "Explicit underlying read grants are required.",
+                    },
+                },
+                { status: 403, headers }
+            )
+        return { key, guildId: authenticated.guildId, headers }
+    }
+    if (authenticated.readAccess !== undefined) {
+        headers["Cache-Control"] = "no-store"
+        const url = new URL(request.url)
+        const path = url.pathname.match(
+            /^\/api\/v1\/clan\/([^/]+)(?:\/([^/]+))?\/?$/
+        )
+        const game = path?.[2] ? undefined : parseApiGameScope(request)
+        const hasExplicitGame = url.searchParams
+            .getAll("game")
+            .some((value) => value.split(",").some(Boolean))
+        if (
+            (request.method !== "GET" && request.method !== "HEAD") ||
+            !path ||
+            (!path[2] && !hasExplicitGame) ||
+            (game !== undefined && isApiGameScopeError(game)) ||
+            !allowsApiKeyRead(authenticated.readAccess, path[1], game)
+        )
+            return NextResponse.json(
+                {
+                    error: {
+                        code: "insufficient_scope",
+                        message: "This API key does not allow this operation.",
+                    },
+                },
+                { status: 403, headers }
+            )
+    }
     return { key, guildId: authenticated.guildId, headers }
 }
 

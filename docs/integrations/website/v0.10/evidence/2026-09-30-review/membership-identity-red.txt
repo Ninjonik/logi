@@ -1,0 +1,98 @@
+Expected failing regression captured before the corresponding fix. Final passing suite: tests.txt.
+
+✔ actual bot event mutation appends all event summary invalidations (83.0447ms)
+✖ assignment changes and identity relinks invalidate the exact Discord subjects, never imported IDs (1.9174ms)
+✔ dashboard upsert, API upsert, result import and legacy migration emit transactional changes (53.932ms)
+✔ registered authoritative writers keep transaction tracking at their Convex entrypoints (1.5894ms)
+✔ assignment create and removal advance the exact membership projection (16.0633ms)
+✔ actual user merge invalidates both reassigned subjects and event projections (13.1312ms)
+✔ actual user merge invalidates deleted duplicate assignment and event projections (0.8088ms)
+✖ membership resolves an imported player's assignment through its explicit Discord binding (10.6555ms)
+✖ membership never treats an unlinked imported ID as a Discord identity (0.6406ms)
+✔ completed reconciliation removes legacy-only admin cache in bounded pages and preserves newer members (77.2075ms)
+✔ legacy cache cleanup requires complete fetch proof and rejects a superseded epoch between pages (1.0148ms)
+✔ membership grant and per-key policy are both required and tenant/game bound (0.5887ms)
+✔ privileged lookup refreshes after 60 seconds; receivedAt cannot grant freshness (1.2372ms)
+✔ policy/key revocation during awaited REST discards provider data (0.3953ms)
+✔ newer departure defeats slow REST and role invalidation defeats old observations (1.2897ms)
+✔ slow full snapshot cannot undo departure and unfinished fetch deletes nobody (1.8938ms)
+✔ REST outage preserves provider evidence, holds one reservation and respects global Retry-After (4.1541ms)
+✔ actual Discord ingress rejects old epochs and reconciliation cannot restore its departed member cache (1.3128ms)
+✔ membership feed binds one subject and resets after policy or provider epoch changes (1.0586ms)
+✔ successful refresh still holds the per-subject cooldown and guild refresh budget (3.3931ms)
+✔ policy writes bind current key/game and the projection returns only its configured roles (0.7829ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 18
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 518.9437
+
+✖ failing tests:
+
+test at src\infrastructure\convex\integration-change-coverage.test.ts:2:1842
+✖ assignment changes and identity relinks invalidate the exact Discord subjects, never imported IDs (1.9174ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+  +   'imported-player'
+  -   'discord-before'
+    ]
+
+      at TestContext.<anonymous> (<repository>\src\infrastructure\convex\integration-change-coverage.test.ts:37:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'imported-player' ],
+    expected: [ 'discord-before' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at src\infrastructure\convex\member-observations.test.ts:2:1922
+✖ membership resolves an imported player's assignment through its explicit Discord binding (10.6555ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + null
+  - {
+  -   status: 'active',
+  -   type: 'member'
+  - }
+
+      at TestContext.<anonymous> (<repository>\src\infrastructure\convex\member-observations.test.ts:46:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: { type: 'member', status: 'active' },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at src\infrastructure\convex\member-observations.test.ts:2:2558
+✖ membership never treats an unlinked imported ID as a Discord identity (0.6406ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + {
+  +   status: 'active',
+  +   type: 'member'
+  + }
+  - null
+
+      at TestContext.<anonymous> (<repository>\src\infrastructure\convex\member-observations.test.ts:54:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { type: 'member', status: 'active' },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

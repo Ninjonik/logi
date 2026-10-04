@@ -1,0 +1,5 @@
+
+<repository>\src\app\api\v1\openapi.json\route.ts
+  173:16  warning  '_genericSuccessResponse' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (0 errors, 1 warning)

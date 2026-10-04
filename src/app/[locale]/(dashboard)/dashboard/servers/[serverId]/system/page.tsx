@@ -1,7 +1,10 @@
+import { MembershipIntegrationSettings } from "@/components/app/membership-integration-settings"
 import { ConfigurationScopeIndicator } from "@/components/app/configuration-scope-indicator"
+import { WebsiteEventPolicySettings } from "@/components/app/website-event-policy-settings"
 import { SystemMaintenanceSections } from "@/components/app/system-maintenance-sections"
 import { DiscordOperationsSettings } from "@/components/app/discord-operations-settings"
 import { CalendarFeedSettings } from "@/components/app/calendar-feed-settings"
+import { GameDataConnections } from "@/components/app/game-data-connections"
 import { CustomLoginLink } from "@/components/app/custom-login-link"
 import { SsoApplications } from "@/components/app/sso-applications"
 import { ApiKeyManager } from "@/components/app/api-key-manager"
@@ -46,10 +49,37 @@ export default async function SystemPage({
                     dictionary={dictionary}
                     additionalSections={[
                         {
+                            id: "game-data",
+                            title: dictionary.gameData.title,
+                            description: "",
+                            content: (
+                                <GameDataConnections
+                                    serverId={serverId}
+                                    dictionary={dictionary}
+                                />
+                            ),
+                        },
+                        {
                             id: "website-api",
                             title: dictionary.clan.websiteApi,
                             description: "",
-                            content: <ApiKeyManager serverId={serverId} />,
+                            content: (
+                                <ApiKeyManager
+                                    serverId={serverId}
+                                    dictionary={dictionary}
+                                />
+                            ),
+                        },
+                        {
+                            title: dictionary.membershipIntegration.title,
+                            description: "",
+                            content: (
+                                <MembershipIntegrationSettings
+                                    serverId={serverId}
+                                    dictionary={dictionary}
+                                />
+                            ),
+                            id: "membership-integrations",
                         },
                         {
                             id: "google-calendar",
@@ -87,6 +117,17 @@ export default async function SystemPage({
                                 dictionary.serverSettings.ssoDescription,
                             content: (
                                 <SsoApplications
+                                    serverId={serverId}
+                                    dictionary={dictionary}
+                                />
+                            ),
+                        },
+                        {
+                            id: "website-event-policies",
+                            title: dictionary.websiteEventPolicies.title,
+                            description: "",
+                            content: (
+                                <WebsiteEventPolicySettings
                                     serverId={serverId}
                                     dictionary={dictionary}
                                 />

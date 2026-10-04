@@ -1,0 +1,95 @@
+{
+  "startedAt": "2026-10-02T19:11:01.659Z",
+  "endedAt": "2026-10-02T19:11:02.976Z",
+  "mode": "built Next + fresh local Convex + anonymous actual League",
+  "productionDatabaseUsed": false,
+  "providerKeysUsed": false,
+  "proof": [
+    {
+      "label": "Actual anonymous League through built Next and isolated Convex",
+      "ok": true,
+      "status": 200,
+      "teams": 3,
+      "state": "Scheduled",
+      "results": null,
+      "fetchedAt": "2026-10-02T19:11:02.212Z"
+    },
+    {
+      "label": "Repeat and canonical URL share fetchedAt",
+      "ok": true,
+      "sameSnapshot": true
+    },
+    {
+      "label": "Reject missing key",
+      "ok": true,
+      "status": 401
+    },
+    {
+      "label": "Reject legacy key",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "label": "Reject wrong resource",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "label": "Reject HLL-only key",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "label": "Reject wrong game",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "label": "Reject unsafe origin",
+      "ok": true,
+      "status": 400
+    },
+    {
+      "label": "Reject request URL",
+      "ok": true,
+      "status": 400
+    },
+    {
+      "label": "Reject duplicate URL",
+      "ok": true,
+      "status": 400
+    },
+    {
+      "label": "Reject unknown parameter",
+      "ok": true,
+      "status": 400
+    },
+    {
+      "label": "Revocation denies already cached match",
+      "ok": true,
+      "status": 401
+    },
+    {
+      "label": "Internal action secret check",
+      "ok": true,
+      "denied": true
+    },
+    {
+      "label": "Convex independently checks API key scope",
+      "ok": true,
+      "denied": true
+    },
+    {
+      "label": "Admin preview uses same snapshot; anonymous session denied",
+      "ok": true,
+      "anonymousStatus": 403,
+      "adminStatus": 200,
+      "identity": "synthetic session; not OAuth"
+    },
+    {
+      "label": "OpenAPI exposes same contract",
+      "ok": true,
+      "status": 200
+    }
+  ]
+}

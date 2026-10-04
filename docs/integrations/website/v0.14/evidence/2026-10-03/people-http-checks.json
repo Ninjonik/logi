@@ -1,0 +1,206 @@
+{
+    "schemaVersion": 1,
+    "kind": "people_read_api",
+    "testedAt": "2026-10-02T23:41:36.882Z",
+    "passed": true,
+    "checkCount": 46,
+    "sourceStable": true,
+    "sourceManifest": "source-manifest.json",
+    "environment": {
+        "http": "actual local Next.js",
+        "persistence": "isolated local Convex",
+        "identities": "synthetic records",
+        "accountOwnership": "synthetic Steam link fixture; no live OpenID verification",
+        "centralLogin": "not exercised by service-key reads",
+        "productionUsed": false,
+        "liveDiscordUsed": false,
+        "liveSteamUsed": false,
+        "hostedAcceptance": false
+    },
+    "checks": [
+        {
+            "name": "unauthenticated-read-denied",
+            "passed": true
+        },
+        {
+            "name": "capture-current-generation-1",
+            "passed": true
+        },
+        {
+            "name": "list-member-summaries-page-1",
+            "passed": true
+        },
+        {
+            "name": "native-member-identity-current",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-1",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-2",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-3",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-4",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-5",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-6",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-7",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-8",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-9",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-10",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-11",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-12",
+            "passed": true
+        },
+        {
+            "name": "list-roster-summaries-page-13",
+            "passed": true
+        },
+        {
+            "name": "published-native-roster-and-acknowledgement",
+            "passed": true
+        },
+        {
+            "name": "list-player-stat-summaries-page-1",
+            "passed": true
+        },
+        {
+            "name": "list-player-stat-summaries-page-2",
+            "passed": true
+        },
+        {
+            "name": "verified-session-facts-and-coverage",
+            "passed": true
+        },
+        {
+            "name": "nullable-metrics-and-signed-cash",
+            "passed": true
+        },
+        {
+            "name": "reviewed-native-event-digest-association",
+            "passed": true
+        },
+        {
+            "name": "private-notes-guest-platform-identities-excluded",
+            "passed": true
+        },
+        {
+            "name": "scoped-detail-member-summaries",
+            "passed": true
+        },
+        {
+            "name": "atomic-revision-member-summaries",
+            "passed": true
+        },
+        {
+            "name": "scoped-detail-roster-summaries",
+            "passed": true
+        },
+        {
+            "name": "atomic-revision-roster-summaries",
+            "passed": true
+        },
+        {
+            "name": "scoped-detail-player-stat-summaries",
+            "passed": true
+        },
+        {
+            "name": "atomic-revision-player-stat-summaries",
+            "passed": true
+        },
+        {
+            "name": "wrong-game-denied",
+            "passed": true
+        },
+        {
+            "name": "unrelated-read-grant-denied",
+            "passed": true
+        },
+        {
+            "name": "legacy-full-key-does-not-enumerate-people",
+            "passed": true
+        },
+        {
+            "name": "unpublish-retained-tombstone",
+            "passed": true
+        },
+        {
+            "name": "unpublished-detail-hidden",
+            "passed": true
+        },
+        {
+            "name": "capture-current-generation-35",
+            "passed": true
+        },
+        {
+            "name": "native-attendance-sync-updated",
+            "passed": true
+        },
+        {
+            "name": "native-attendance-change-hint",
+            "passed": true
+        },
+        {
+            "name": "capture-current-generation-38",
+            "passed": true
+        },
+        {
+            "name": "Steam-proof-revocation-resets-generation",
+            "passed": true
+        },
+        {
+            "name": "revoked-proof-removes-current-personal-attribution",
+            "passed": true
+        },
+        {
+            "name": "capture-current-generation-41",
+            "passed": true
+        },
+        {
+            "name": "native-name-change-resets-generation",
+            "passed": true
+        },
+        {
+            "name": "current-immutable-member-has-new-name",
+            "passed": true
+        },
+        {
+            "name": "older-baseline-must-reset",
+            "passed": true
+        },
+        {
+            "name": "revoked-people-key-denied",
+            "passed": true
+        }
+    ]
+}

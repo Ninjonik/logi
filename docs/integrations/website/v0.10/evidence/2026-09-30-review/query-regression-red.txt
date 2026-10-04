@@ -1,0 +1,26 @@
+Expected failing regression captured before the corresponding fix. Final passing suite: tests.txt.
+
+✖ change HTTP bootstrap, signed cursor, atomic detail and explicit reset (10.4337ms)
+✔ membership feed HTTP binds its cursor to one subject and carries policy reset state (2.6147ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 453.4436
+
+✖ failing tests:
+
+test at src\lib\api\integration-route.test.ts:2:1040
+✖ change HTTP bootstrap, signed cursor, atomic detail and explicit reset (10.4337ms)
+  URIError: URI malformed
+      at decodeURIComponent (<anonymous>)
+      at parseIntegrationQuery (<repository>\src\lib\api\integration-query.ts:33:17)
+      at authenticateClanRequestWith (<repository>\src\lib\api\authenticated-clan-route.ts:142:23)
+      at async authenticateClanRequest (<repository>\src\lib\api\authenticated-clan-route.ts:29:12)
+      at async GET (<repository>\src\app\api\v1\clan\[[...path]]\route.ts:746:18)
+      at async TestContext.<anonymous> (<repository>\src\lib\api\integration-route.test.ts:93:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)

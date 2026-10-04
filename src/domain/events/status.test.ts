@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    currentEventStatus,
     canAcceptSignups,
     deriveEventStatus,
     isEventCancelledBeforeMeeting,
@@ -161,4 +162,30 @@ test("normalizeEventTimestamps falls back to available event timestamps", () => 
             updatedAt: "2026-01-01T09:00:00.000Z",
         }
     )
+})
+
+test("currentEventStatus advances a stale stored status by the schedule", () => {
+    const schedule = {
+        registrationEnd: "2026-10-01T17:00:00.000Z",
+        meetingStart: "2026-10-01T18:00:00.000Z",
+        gameEnd: "2026-10-01T20:00:00.000Z",
+    }
+    const afterEnd = new Date("2026-10-01T20:15:00.000Z")
+    assert.equal(
+        currentEventStatus({ ...schedule, status: "starting" }, afterEnd),
+        "concluded"
+    )
+    assert.equal(
+        currentEventStatus(
+            { ...schedule, status: "starting" },
+            new Date("2026-10-01T20:14:59.000Z")
+        ),
+        "starting"
+    )
+    // Without a complete schedule the stored status stands.
+    assert.equal(
+        currentEventStatus({ status: "starting" }, afterEnd),
+        "starting"
+    )
+    assert.equal(currentEventStatus({}, afterEnd), undefined)
 })

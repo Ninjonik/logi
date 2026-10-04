@@ -1,6 +1,76 @@
+import {
+    integrationChangeSchema,
+    syncRecordSchema,
+    SYNC_RESOURCES,
+} from "@/domain/integrations/change"
+import {
+    clanEventSummarySchema,
+    clanMatchSummarySchema,
+} from "@/domain/api/event-summaries"
+import {
+    serverSnapshotSchema,
+    integrationHealthSchema,
+} from "@/domain/game-data/contracts"
+import {
+    historyReadPaths,
+    historyResponseSchemas,
+} from "@/lib/api/game-history-openapi"
+import {
+    peopleReadPaths,
+    peopleResponseSchemas,
+} from "@/lib/api/people-openapi"
+import { membershipObservationSchema } from "@/domain/membership/observation"
+import { warconEnvelopeSchema } from "@/domain/game-data/warcon-contracts"
+import { clanResultSummarySchema } from "@/domain/api/result-summaries"
+import { leagueFixtureSchema } from "@/domain/wardogs-league/fixture"
+import { leagueReadSchema } from "@/domain/wardogs-league/contracts"
+import { warconQuerySchema } from "@/domain/game-data/warcon-query"
+import { hllLiveEnvelopeSchema } from "@/domain/game-data/hll-live"
+import { matchTeamSummarySchema } from "@/domain/teams/match-teams"
+import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { NextResponse } from "next/server"
+import { z } from "zod"
 
+import {
+    websiteEventCommandPaths,
+    websiteEventCommandSchemas,
+} from "@/lib/api/website-event-command-openapi"
+import { TEAM_GAMES, TEAM_PAGE_MAX, teamDtoSchema } from "@/domain/teams/team"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
+
+const summaryResponseSchemas = {
+    ...historyResponseSchemas,
+    LeagueFixture: z.toJSONSchema(leagueFixtureSchema),
+    LeagueMatchRead: z.toJSONSchema(leagueReadSchema),
+    WarconEnvelope: z.toJSONSchema(warconEnvelopeSchema),
+    HllLiveEnvelope: z.toJSONSchema(hllLiveEnvelopeSchema),
+    WarconQuery: z.toJSONSchema(warconQuerySchema),
+    MembershipObservation: z.toJSONSchema(membershipObservationSchema),
+    IntegrationChange: z.toJSONSchema(integrationChangeSchema),
+    IntegrationSyncRecord: z.toJSONSchema(syncRecordSchema),
+    ClanServerSnapshotsDocument: z.toJSONSchema(serverSnapshotSchema),
+    ClanIntegrationHealthDocument: z.toJSONSchema(integrationHealthSchema),
+    ClanEventSummariesDocument: z.toJSONSchema(clanEventSummarySchema),
+    ClanMatchSummariesDocument: z.toJSONSchema(clanMatchSummarySchema),
+    ClanResultSummariesDocument: z.toJSONSchema(clanResultSummarySchema),
+    /** Minimized workspace directory entry; actor identifiers and asset IDs are excluded. */
+    ClanTeam: z.toJSONSchema(teamDtoSchema),
+    ClanTeamPage: {
+        type: "object",
+        required: ["items", "nextCursor"],
+        additionalProperties: false,
+        properties: {
+            items: {
+                type: "array",
+                maxItems: TEAM_PAGE_MAX,
+                items: { $ref: "#/components/schemas/ClanTeam" },
+            },
+            nextCursor: { type: ["string", "null"] },
+        },
+    },
+    /** Immutable team snapshot captured for one native match slot; delivered inside summaries. */
+    ClanMatchTeam: z.toJSONSchema(matchTeamSummarySchema),
+}
 
 const error = {
     type: "object",
@@ -39,7 +109,7 @@ const gameParameter = {
     name: "game",
     in: "query",
     description:
-        "Game scope for game-owned records. Omit for legacy Hell Let Loose records, use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for any explicit combination.",
+        "Game scope for game-owned records. Legacy keys may omit it for Hell Let Loose or use game=all. Keys with readAccess require an explicit permitted game or combination and cannot use all. Repeat game (for example game=hell_let_loose&game=wardogs) or use a comma-separated combination.",
     schema: {
         type: "string",
         enum: ["hell_let_loose", "hell_let_loose_vietnam", "wardogs", "all"],
@@ -56,6 +126,11 @@ const updatedSinceParameter = {
     schema: { type: "string", format: "date-time" },
 }
 const resources = [
+    "server-snapshots",
+    "integration-health",
+    "event-summaries",
+    "match-summaries",
+    "result-summaries",
     "events",
     "groups",
     "rosters",
@@ -69,6 +144,11 @@ const resources = [
     "users",
 ]
 const resourceTags: Record<string, string> = {
+    "server-snapshots": "Clan API — Game data",
+    "integration-health": "Clan API — Game data",
+    "event-summaries": "Clan API — Events",
+    "match-summaries": "Clan API — Matches",
+    "result-summaries": "Clan API — Matches",
     events: "Clan API — Events",
     groups: "Clan API — Groups",
     rosters: "Clan API — Rosters",
@@ -110,6 +190,11 @@ const responses = {
     },
     "401": {
         description: "Invalid API key",
+        content: { "application/json": { schema: error } },
+    },
+    "403": {
+        description:
+            "insufficient_scope: the read-only key does not grant this resource, operation or game selection.",
         content: { "application/json": { schema: error } },
     },
     "404": {
@@ -317,8 +402,22 @@ const paths: Record<string, unknown> = {
         },
     },
 }
+/** Complete event records keep internal snapshot fields; summaries are the presentation contract. */
+const completeEventRecordDescription =
+    "Complete native event records for the events grant. When present, matchTeams holds the stored team assignments with their full snapshots ({teamId, slot, side, snapshot: {name, shortCode, logoAssetId, logoUrl, teamRevision, capturedAt}}); snapshot.logoAssetId is an internal image-asset record ID, not a URL, and grants nothing. Present teams from the minimized event-summaries or match-summaries matchTeams (ClanMatchTeam, logoUrl only). matchTeams is absent when no assignment was ever stored."
 for (const resource of resources) {
+    const gameDataDescription = [
+        "server-snapshots",
+        "integration-health",
+    ].includes(resource)
+        ? "Stored game-provider observations and sanitized collection health. Requires the matching resource grant and permitted game. No provider calls or controls are performed by these reads. IDs identify Logi connections. Unknown fields are null and zero is preserved. Stale at 180 seconds, unavailable at 900 seconds; errors can make data stale earlier. Freshness can change with time without a new updatedSince record. Live scores and imported sessions are not confirmed results. Source addresses, credentials and player identities are excluded."
+        : undefined
     const isGameOwned = [
+        "server-snapshots",
+        "integration-health",
+        "event-summaries",
+        "match-summaries",
+        "result-summaries",
         "events",
         "groups",
         "rosters",
@@ -329,6 +428,24 @@ for (const resource of resources) {
     paths[`/clan/${resource}`] = {
         get: {
             summary: `List clan ${resource}`,
+            ...(gameDataDescription
+                ? { description: gameDataDescription }
+                : {}),
+            ...(resource.endsWith("-summaries")
+                ? {
+                      description:
+                          "Allowlisted operational summaries. A separate matching readAccess resource grant is required for restricted keys. Website publication still requires its own approval. Match summaries use event IDs, exclude training events and report imported results as provisional; absent results remain unknown.",
+                  }
+                : {}),
+            ...(resource === "events"
+                ? { description: completeEventRecordDescription }
+                : {}),
+            ...(resource === "result-summaries"
+                ? {
+                      description:
+                          "Reviewed event-result snapshots with independent result-summaries/game grants. States unknown, provisional, confirmed and corrected. Scores preserve null and zero and support 2-16 factions. Private player/reviewer identities, free-text reasons and source addresses are excluded. Confirmation/correction are account-session-only; bearer writes are unavailable. Publication remains consumer-owned.",
+                  }
+                : {}),
             tags: [resourceTags[resource]!],
             security: [{ clanApiKey: [] }],
             parameters: [
@@ -339,21 +456,39 @@ for (const resource of resources) {
             responses,
         },
     }
-    const itemPath =
-        resource === "matches"
-            ? `/clan/${resource}/{eventId}`
-            : `/clan/${resource}/{id}`
+    const itemPath = [
+        "matches",
+        "match-summaries",
+        "result-summaries",
+    ].includes(resource)
+        ? `/clan/${resource}/{eventId}`
+        : `/clan/${resource}/{id}`
     paths[itemPath] = {
         get: {
-            summary:
-                resource === "matches"
-                    ? "Get match details for a clan event"
-                    : `Get a clan ${resource} record`,
+            summary: [
+                "matches",
+                "match-summaries",
+                "result-summaries",
+            ].includes(resource)
+                ? "Get match details for a clan event"
+                : `Get a clan ${resource} record`,
+            ...(gameDataDescription
+                ? { description: gameDataDescription }
+                : {}),
+            ...(resource === "events"
+                ? { description: completeEventRecordDescription }
+                : {}),
             tags: [resourceTags[resource]!],
             security: [{ clanApiKey: [] }],
             parameters: [
                 {
-                    name: resource === "matches" ? "eventId" : "id",
+                    name: [
+                        "matches",
+                        "match-summaries",
+                        "result-summaries",
+                    ].includes(resource)
+                        ? "eventId"
+                        : "id",
                     in: "path",
                     required: true,
                     schema: { type: "string" },
@@ -482,6 +617,8 @@ paths["/clan/events/{eventId}/signup"] = {
 const eventMutation = {
     tags: ["Clan API — Events"],
     security: [{ clanApiKey: [] }],
+    description:
+        "Creates or updates a native event with a service key. matchTeams is read-only on these bearer-key writes: an API key alone is not a writing actor, so a matchTeams field in the body is ignored (a GET -> PATCH round trip stays valid) and the saved team assignments are kept. When gameId or kind changes, the kept assignments are re-validated: a match that becomes a training drops them unless it has concluded, and a game the saved teams no longer fit is 400 validation_error with the message match_teams:<code> (for example match_teams:team_game_mismatch). Assign, clear or refresh teams with the actor-backed POST /clan/event-commands (operations create, update and refresh_match_team) or in the Logi dashboard. The response and the event.created/event.updated webhooks carry the complete event record; its matchTeams snapshots include the internal logoAssetId, so present teams from the event-summaries or match-summaries matchTeams (ClanMatchTeam, logoUrl only).",
     parameters: [idempotencyParameter],
     requestBody: {
         required: true,
@@ -522,6 +659,11 @@ const eventMutation = {
                         stratmapIds: {
                             type: "array",
                             items: { type: "string" },
+                        },
+                        matchTeams: {
+                            readOnly: true,
+                            description:
+                                "Read-only on bearer-key writes and ignored when sent; the saved assignments are kept. Use POST /clan/event-commands to change them.",
                         },
                     },
                 },
@@ -937,8 +1079,8 @@ for (const resource of ["stratmaps", "topic-presets", "squad-presets"]) {
 }
 
 // The CRUD read models return Convex documents through apiDocument(). Keep the
-// field-level response contract tied to convex/schema.ts rather than a second
-// hand-maintained list in this route.
+// field-level response contract tied to convex/schema.ts and the explicit
+// domain DTO schemas rather than a second hand-maintained list in this route.
 for (const resource of resources) {
     const collection = paths[`/clan/${resource}`] as {
         get?: OpenApiOperation
@@ -948,10 +1090,13 @@ for (const resource of resources) {
             ...responses,
             "200": successResponse(resource, true),
         }
-    const itemPath =
-        resource === "matches"
-            ? `/clan/${resource}/{eventId}`
-            : `/clan/${resource}/{id}`
+    const itemPath = [
+        "matches",
+        "match-summaries",
+        "result-summaries",
+    ].includes(resource)
+        ? `/clan/${resource}/{eventId}`
+        : `/clan/${resource}/{id}`
     const item = paths[itemPath] as { get?: OpenApiOperation }
     if (item.get)
         item.get.responses = {
@@ -987,16 +1132,802 @@ for (const resource of resources) {
         }
 }
 
+const syncParameters = [
+    {
+        ...gameParameter,
+        required: true,
+        description:
+            "Exactly one explicit permitted game. No legacy or game=all fallback.",
+        schema: {
+            type: "string",
+            enum: ["hell_let_loose", "hell_let_loose_vietnam", "wardogs"],
+        },
+    },
+]
+paths["/clan/changes"] = {
+    get: {
+        tags: ["Clan API — Synchronization"],
+        security: [{ clanApiKey: [] }],
+        summary: "Read scoped transactional invalidations",
+        description:
+            "Requires explicit underlying read grants. First obtain start=now before a baseline sweep, then replay the signed cursor. Keep resources and game fixed. Revisions are canonical decimal strings (compare as integers). Empty pages may have hasMore=true. The cursor remains usable for polling when hasMore=false. Retention is seven days; 410 reset_required requires a new bootstrap. Polling backstops webhook loss. Existing records have revision zero. The teams resource exists only for hell_let_loose and wardogs; requesting it with another game (alone or with other resources) is 400 invalid_query, not an empty page.",
+        parameters: [
+            ...syncParameters,
+            {
+                name: "subject",
+                in: "query",
+                description:
+                    "Required exactly once when resources includes membership-summaries; forbidden otherwise. One Discord user ID. Requires an enabled per-key role policy. The signed cursor binds this subject and resets after policy or guild epoch changes; no membership enumeration.",
+                schema: { type: "string", pattern: "^[0-9]{17,20}$" },
+            },
+            {
+                name: "resources",
+                in: "query",
+                required: true,
+                description: `Comma-separated subset of ${SYNC_RESOURCES.join(", ")}.`,
+                schema: { type: "string" },
+            },
+            {
+                name: "start",
+                in: "query",
+                schema: { type: "string", enum: ["now"] },
+            },
+            {
+                name: "cursor",
+                in: "query",
+                description:
+                    "Use exactly one of cursor or start=now. Bound to key, guild, game and resources.",
+                schema: { type: "string", maxLength: 4096 },
+            },
+            pageParameters[0],
+        ],
+        responses: {
+            ...responses,
+            "410": {
+                description: "reset_required: cursor predates retained history",
+                content: { "application/json": { schema: error } },
+            },
+            "200": {
+                description:
+                    "Filtered change page and next polling/continuation cursor",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data", "page"],
+                            additionalProperties: false,
+                            properties: {
+                                data: {
+                                    type: "array",
+                                    items: {
+                                        $ref: "#/components/schemas/IntegrationChange",
+                                    },
+                                },
+                                page: {
+                                    type: "object",
+                                    required: [
+                                        "nextCursor",
+                                        "hasMore",
+                                        "limit",
+                                    ],
+                                    additionalProperties: false,
+                                    properties: {
+                                        nextCursor: { type: "string" },
+                                        hasMore: { type: "boolean" },
+                                        limit: {
+                                            type: "integer",
+                                            minimum: 1,
+                                            maximum: 100,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
+paths["/clan/sync-records/{resource}/{id}"] = {
+    get: {
+        tags: ["Clan API — Synchronization"],
+        security: [{ clanApiKey: [] }],
+        summary: "Atomically read a safe projection and its revision",
+        description:
+            "Requires an explicit grant for the underlying resource and game. Returns an upsert projection or a retained scoped removal tombstone. Unknown, foreign and expired-tombstone IDs return 404. Dynamic freshness is computed at read time, so consumers must also enforce observedAt age; passage of time does not emit an invalidation.",
+        parameters: [
+            ...syncParameters,
+            {
+                name: "resource",
+                in: "path",
+                required: true,
+                schema: { type: "string", enum: [...SYNC_RESOURCES] },
+            },
+            {
+                name: "id",
+                in: "path",
+                required: true,
+                schema: { type: "string" },
+            },
+        ],
+        responses: {
+            ...responses,
+            "200": {
+                description: "Atomic projection or tombstone",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            additionalProperties: false,
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/IntegrationSyncRecord",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
+
+paths["/clan/membership-summaries/{discordUserId}"] = {
+    get: {
+        tags: ["Clan API — Membership"],
+        security: [{ clanApiKey: [] }],
+        summary: "Observe one member with explicit game and role permissions",
+        description:
+            "Requires an explicit membership-summaries read grant AND enabled per-key role policy configured by a signed-in server administrator. Legacy full-access keys are denied. No collection endpoint exists. Returns only allowlisted role IDs and an independent Logi assignment. Default maximum observation age is 60 seconds (configurable 1–300 seconds); receivedAt does not confer freshness. Stale, unavailable, rate-limited or invalidated observations have state=unknown, completeness=unavailable and no roles. Only Discord Unknown Member proves absence. Direct refresh rechecks stored key and policy after the network wait. Always no-store; consumers must enforce observedAt age at authorization time. This endpoint never grants website privileges. Policy management deliberately has no bearer-key write API.",
+        parameters: [
+            ...syncParameters,
+            {
+                name: "discordUserId",
+                in: "path",
+                required: true,
+                schema: { type: "string", pattern: "^[0-9]{17,20}$" },
+            },
+            {
+                name: "maxAgeMs",
+                in: "query",
+                schema: {
+                    type: "integer",
+                    minimum: 1000,
+                    maximum: 300000,
+                    default: 60000,
+                },
+            },
+        ],
+        responses: {
+            ...responses,
+            "503": {
+                description:
+                    "Membership storage unavailable; deny protected access",
+                content: { "application/json": { schema: error } },
+            },
+            "200": {
+                description:
+                    "Exact scoped observation; unavailable is an explicit state",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            additionalProperties: false,
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/MembershipObservation",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
+
+paths["/clan/league-fixtures"] = {
+    get: {
+        tags: ["Clan API — Matches"],
+        summary: "List this guild's tracked Wardogs League fixtures",
+        description:
+            "Requires explicit league-fixtures and wardogs grants. Bounded collection of automatically watched or explicitly included fixtures, with optional native event binding, source provenance and independent freshness. Unknown results remain null. Use changes and sync-records with resource league-fixtures for updates/removals. Bootstrap the change cursor before paging the collection and then replay changes. A fixture ID is the external League match ID, not a native event ID. Administration, channel selection and native-event binding require a current dashboard administrator; service keys cannot grant or alter tracking policy. Native event writes retain their separate actor-backed event-commands contract. Responses are no-store.",
+        security: [{ clanApiKey: [] }],
+        "x-logi-read-access": {
+            resource: "league-fixtures",
+            games: ["wardogs"],
+            explicitGrantRequired: true,
+        },
+        parameters: [
+            {
+                name: "game",
+                in: "query",
+                required: true,
+                schema: { type: "string", enum: ["wardogs"] },
+            },
+            {
+                name: "limit",
+                in: "query",
+                schema: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: 100,
+                    default: 50,
+                },
+            },
+            {
+                name: "cursor",
+                in: "query",
+                schema: { type: "string", maxLength: 4096 },
+            },
+        ],
+        responses: {
+            "200": {
+                description:
+                    "Tracked fixture page, including explicitly stale snapshots",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            properties: {
+                                data: {
+                                    type: "object",
+                                    required: ["items", "nextCursor"],
+                                    properties: {
+                                        items: {
+                                            type: "array",
+                                            items: {
+                                                $ref: "#/components/schemas/LeagueFixture",
+                                            },
+                                        },
+                                        nextCursor: {
+                                            type: ["string", "null"],
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "400": { description: "Invalid game or pagination" },
+            "401": { description: "Invalid or revoked key" },
+            "403": { description: "Missing explicit grant" },
+            "429": { description: "API rate limit" },
+            "503": { description: "Read unavailable" },
+        },
+    },
+}
+const teamGames = [...TEAM_GAMES]
+const teamGameParameter = {
+    name: "game",
+    in: "query",
+    required: true,
+    description:
+        "Exactly one directory game. No legacy default, game=all or combination; Hell Let Loose: Vietnam is not a directory game.",
+    schema: { type: "string", enum: teamGames },
+}
+const teamReadAccess = {
+    resource: "teams",
+    games: teamGames,
+    explicitGrantRequired: true,
+}
+const teamErrorResponse = (description: string) => ({
+    description,
+    content: { "application/json": { schema: error } },
+})
+const teamReadResponses = {
+    "400": teamErrorResponse(
+        "invalid_query: the key's grant allows the request but the route rejects it: combined or repeated game, a game without a directory, unknown or repeated parameters, invalid pagination or a malformed team ID; on the detail read also a missing game or game=all"
+    ),
+    "401": teamErrorResponse(
+        "missing_api_key or invalid_api_key: missing, invalid or revoked API key"
+    ),
+    "403": teamErrorResponse(
+        "insufficient_scope: no explicit teams grant for the requested game(s), or a legacy broad key; on the collection the gateway also refuses a missing or empty game, game=all and unknown game values"
+    ),
+    "429": teamErrorResponse(
+        "rate_limited: API rate limit; respect Retry-After"
+    ),
+    "503": teamErrorResponse("unavailable: directory read failed"),
+}
+paths["/clan/teams"] = {
+    get: {
+        tags: ["Clan API — Teams"],
+        summary: "List this workspace's active directory teams for one game",
+        description:
+            "Requires an explicit teams grant for the requested game. The key supplies the workspace; the caller cannot choose another one, and Convex rechecks key revocation, workspace and game grants on every read. Exactly one supported game (hell_let_loose or wardogs) is required and pagination is validated: limit 1–100 (default 50), opaque cursor at most 4,096 characters, no other parameters. Returns the workspace-owned directory as minimized DTOs (stable ID, game, name, short code, public logo URL, revision, updated time) with absent optional values as null; archived entries are excluded. Use changes and sync-records with resource teams for updates: create, update and restore emit upsert, archive emits remove, and both collection and delta reads enforce the same grants. Legacy broad keys do not acquire this resource. Catalogue writes and logo uploads are session-bound dashboard administrator operations and deliberately have no bearer-key API (documented API-parity exception). Teams selected for a native match travel as immutable matchTeams snapshots (ClanMatchTeam) inside the event-summaries and match-summaries documents; those keep historical labels and logos after a team is archived, and receiving them does not grant the directory. Responses are no-store.",
+        security: [{ clanApiKey: [] }],
+        "x-logi-read-access": teamReadAccess,
+        parameters: [
+            teamGameParameter,
+            {
+                name: "limit",
+                in: "query",
+                schema: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: TEAM_PAGE_MAX,
+                    default: 50,
+                },
+            },
+            {
+                name: "cursor",
+                in: "query",
+                description:
+                    "Opaque nextCursor from the previous page, signed for this workspace and game. A cursor Logi did not issue for the same workspace and game is 400 invalid_query.",
+                schema: { type: "string", maxLength: 4096 },
+            },
+        ],
+        responses: {
+            "200": {
+                description: "Active directory page for one game",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            additionalProperties: false,
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/ClanTeamPage",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            ...teamReadResponses,
+        },
+    },
+}
+paths["/clan/teams/{id}"] = {
+    get: {
+        tags: ["Clan API — Teams"],
+        summary: "Read one active directory team",
+        description:
+            "Requires the same explicit teams grant and exactly one supported game, rechecked inside Convex. The ID is the stable directory record ID from the collection, a matchTeams snapshot or a teams change; it is never a Discord guild, competition or League identifier. Unknown, archived, other-workspace and other-game IDs return a generic 404 without labels. Returns one minimized ClanTeam. Responses are no-store.",
+        security: [{ clanApiKey: [] }],
+        "x-logi-read-access": teamReadAccess,
+        parameters: [
+            {
+                name: "id",
+                in: "path",
+                required: true,
+                description:
+                    "Opaque directory team ID: 1–64 letters, digits, underscores or hyphens.",
+                schema: {
+                    type: "string",
+                    minLength: 1,
+                    maxLength: 64,
+                    pattern: "^[A-Za-z0-9_-]+$",
+                },
+            },
+            teamGameParameter,
+        ],
+        responses: {
+            "200": {
+                description: "Active directory team",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            additionalProperties: false,
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/ClanTeam",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            ...teamReadResponses,
+            "404": teamErrorResponse(
+                "not_found: unknown, archived, other-workspace or other-game team"
+            ),
+        },
+    },
+}
+paths["/clan/league-matches"] = {
+    get: {
+        tags: ["Clan API — Matches"],
+        summary: "Preview a public Wardogs League match URL",
+        description:
+            "Requires explicit league-matches and wardogs read grants; legacy keys are denied. Reads anonymous server-rendered HTML only, with no Team API key, cookies or browser. URL must be HTTPS wardogsleague.net/matches/{id}, without credentials/query/fragment. Shared cache by match ID for five minutes, 20 origin requests/minute and a shared Retry-After cooldown. Data is public and cached across authorized clans. On refresh failures a last valid snapshot returns HTTP 200 with stale=true, its original fetchedAt, ageSeconds and an error; with no snapshot returns 429 or 503. Consumers should poll no faster than 5–10 minutes and respect nextRefreshAt/Retry-After. Missing values are null. Displayed membership is not a match roster. Only Scheduled HTML has live acceptance evidence; results remain null and unverified states generate warnings. No event/result creation, server passwords, join IDs or authenticated League data. Reads are not emitted in the changes feed. Timestamps use UTC ISO 8601; dashboard renders Europe/Prague. Response is always no-store to consumers.",
+        security: [{ clanApiKey: [] }],
+        "x-logi-read-access": {
+            resource: "league-matches",
+            games: ["wardogs"],
+            explicitGrantRequired: true,
+        },
+        parameters: [
+            {
+                name: "game",
+                in: "query",
+                required: true,
+                schema: { type: "string", enum: ["wardogs"] },
+            },
+            {
+                name: "url",
+                in: "query",
+                required: true,
+                schema: { type: "string", format: "uri", maxLength: 125 },
+                description:
+                    "Public detail URL; duplicate or unknown parameters are rejected.",
+            },
+        ],
+        responses: {
+            "200": {
+                description: "Fresh or explicitly stale last-valid match",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/LeagueMatchRead",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "400": { description: "Invalid URL or query" },
+            "401": { description: "Missing, invalid or revoked API key" },
+            "403": { description: "Missing explicit Wardogs League grant" },
+            "429": {
+                description:
+                    "No cached snapshot; shared or upstream rate limit. Retry-After and data.nextRefreshAt apply.",
+            },
+            "503": {
+                description:
+                    "No cached snapshot; source or refresh unavailable. Retry metadata is included when known.",
+            },
+        },
+    },
+}
+paths["/clan/hll-live/{connectionId}"] = {
+    get: {
+        tags: ["Game data"],
+        summary: "Read the current HLL round and connected-player scoreboard",
+        "x-logi-read-access": {
+            resource: "hll-live",
+            games: ["hell_let_loose"],
+            explicitGrantRequired: true,
+        },
+        description:
+            "Requires explicit hll-live and hell_let_loose readAccess grants; legacy and aggregate server-snapshots keys are denied. Uses an enabled Logi connection ID, never a provider address. Includes game display names and provider player IDs, not verified Logi membership or lifetime statistics. Status and players have independent timestamps/freshness. Disconnected players are excluded; missing metrics remain null. Unknown or changing round identity suppresses player rows. A failed player read preserves aggregate status; status failure can return clearly stale last-known status with no players. Always no-store to consumers. Reads share a persisted per-connection cache/lease and respect upstream refresh interval and Retry-After; source, key and panel revocation are rechecked after network access. No query parameters. No administration URLs, credentials, raw Steam profiles or ban data are returned.",
+        parameters: [
+            {
+                name: "connectionId",
+                in: "path",
+                required: true,
+                schema: { type: "string" },
+            },
+        ],
+        responses: {
+            "200": {
+                description:
+                    "Typed observations; inspect freshness and warnings",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/HllLiveEnvelope",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "400": { description: "Unexpected query parameters" },
+            "401": { description: "Invalid API key" },
+            "403": {
+                description:
+                    "Explicit resource/game grant or enabled source missing",
+            },
+            "429": {
+                description:
+                    "A read is already in progress or provider backoff applies; Retry-After is returned",
+            },
+            "503": { description: "Read unavailable" },
+        },
+    },
+}
+paths["/clan/warcon-data/{connectionId}"] = {
+    get: {
+        tags: ["Clan API — Game data"],
+        security: [{ clanApiKey: [] }],
+        summary: "Read Warcon gameplay data for one configured connection",
+        description:
+            "Requires explicit warcon-data and wardogs readAccess grants. Legacy keys are denied. Includes game display names and Steam IDs; never treat these as verified Logi identity or membership. Uses a Logi connection ID from server-snapshots, not the panel UUID or game join code. Only an enabled, matching guild/game/source is readable. Credential provisioning and connection enable/disable are operator/session-only operations. Live includes per-player K/D, cash, ping and separate status/player timestamps and freshness. Closed match detail is null for an unfinished or missing match. Kills exposes configured=false when the upstream feed is disabled; this API never enables it. Career requires a Warcon key restricted to exactly this one server, because upstream career otherwise aggregates its visible organisation. Unknown/admin fields are stripped. Always no-store to consumers. Logi shares a 10-second live cache, 15-second kills cache, 5-minute catalog/capabilities cache and 60-second cache for other views. Provider misses share a 30/minute/connection budget and a lease. Authorization and configuration are rechecked after fetch. On errors return 429/503, never stale data relabeled as live. See WarconQuery for the closed, view-specific parameter combinations: unknown, duplicate and inapplicable parameters are rejected. Warcon reads use polling and are not part of the changes/webhook feed; durable snapshots and reviewed results retain their existing change feed.",
+        "x-logi-query-schema": "#/components/schemas/WarconQuery",
+        parameters: [
+            {
+                name: "connectionId",
+                in: "path",
+                required: true,
+                schema: { type: "string" },
+            },
+            {
+                name: "game",
+                in: "query",
+                required: true,
+                schema: { type: "string", const: "wardogs" },
+            },
+            {
+                name: "view",
+                in: "query",
+                required: true,
+                schema: {
+                    type: "string",
+                    enum: warconQuerySchema.options.map(
+                        (option) => option.shape.view.value
+                    ),
+                },
+            },
+            {
+                name: "range",
+                in: "query",
+                description:
+                    "analytics: 24h (default), 7d, 30d; leaderboard: 7d, 30d (default), 90d, all",
+                schema: {
+                    type: "string",
+                    enum: ["24h", "7d", "30d", "90d", "all"],
+                },
+            },
+            {
+                name: "page",
+                in: "query",
+                description:
+                    "matches/leaderboard only; 50 upstream rows per page",
+                schema: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: 100000,
+                    default: 1,
+                },
+            },
+            {
+                name: "matchId",
+                in: "query",
+                description: "Required for view=match",
+                schema: { type: "string", pattern: "^[1-9][0-9]{0,14}$" },
+            },
+            {
+                name: "steamId",
+                in: "query",
+                description: "Required for view=career",
+                schema: { type: "string", pattern: "^7656119[0-9]{10}$" },
+            },
+            {
+                name: "sort",
+                in: "query",
+                description:
+                    "Leaderboard: kills, deaths, kd, perHour, playtime, seeded, matches, wins, winRate, cash. Players: lastSeen, firstSeen, minutes, sessions, kills, deaths, name.",
+                schema: { type: "string" },
+            },
+            {
+                name: "dir",
+                in: "query",
+                schema: {
+                    type: "string",
+                    enum: ["asc", "desc"],
+                    default: "desc",
+                },
+            },
+            {
+                name: "minMinutes",
+                in: "query",
+                description: "Leaderboard playtime floor",
+                schema: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 100000,
+                    default: 60,
+                },
+            },
+            {
+                name: "q",
+                in: "query",
+                description: "Seen-player name or Steam ID search",
+                schema: { type: "string", maxLength: 100 },
+            },
+            {
+                name: "since",
+                in: "query",
+                description:
+                    "Players: last N days, 0=all. Cash: ISO timestamp, defaults to last hour, upstream clamps to 24 hours and newest 3000 samples.",
+                schema: {
+                    oneOf: [
+                        { type: "integer", minimum: 0, maximum: 3650 },
+                        { type: "string", format: "date-time" },
+                    ],
+                },
+            },
+            {
+                name: "offset",
+                in: "query",
+                description: "Seen players only",
+                schema: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 1000000,
+                    default: 0,
+                },
+            },
+            {
+                name: "limit",
+                in: "query",
+                description: "Seen players: 1–100; kills: 1–200",
+                schema: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: 200,
+                    default: 50,
+                },
+            },
+            {
+                name: "map",
+                in: "query",
+                description:
+                    "Catalog map ID (for example Kavkazi), NOT the live display name (Bakurani). Required for alternators, optional for experiences.",
+                schema: { type: "string", pattern: "^[\\w .-]{1,100}$" },
+            },
+            {
+                name: "before",
+                in: "query",
+                description: "Kills cursor receipt timestamp",
+                schema: { type: "string", format: "date-time" },
+            },
+            {
+                name: "beforeTime",
+                in: "query",
+                description:
+                    "Kills cursor match-clock seconds, requires before",
+                schema: { type: "number", minimum: 0 },
+            },
+            {
+                name: "match",
+                in: "query",
+                description: "Kills match ID filter",
+                schema: { type: "string", pattern: "^[1-9][0-9]{0,14}$" },
+            },
+            ...["player", "killer", "victim"].map((name) => ({
+                name,
+                in: "query",
+                description: "Kills: exact Steam ID or part of name",
+                schema: { type: "string", maxLength: 100 },
+            })),
+            {
+                name: "cause",
+                in: "query",
+                description: "Kills weapon/vehicle tag",
+                schema: { type: "string", maxLength: 200 },
+            },
+            {
+                name: "kind",
+                in: "query",
+                description: "Kills only",
+                schema: {
+                    type: "string",
+                    enum: [
+                        "headshot",
+                        "teamKill",
+                        "suicide",
+                        "vehicle",
+                        "environment",
+                    ],
+                },
+            },
+            {
+                name: "minM",
+                in: "query",
+                description: "Kills minimum distance",
+                schema: { type: "integer", minimum: 0, maximum: 100000 },
+            },
+        ],
+        responses: {
+            ...responses,
+            "200": {
+                description:
+                    "Validated gameplay data, including provider timestamps",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/WarconEnvelope",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "503": {
+                description:
+                    "Provider or local storage unavailable; fixed error category only",
+                content: { "application/json": { schema: error } },
+            },
+        },
+    },
+}
+
+// Document every endpoint's effective permission boundary, including legacy-only reads.
+Object.assign(paths, peopleReadPaths)
+Object.assign(paths, historyReadPaths)
+for (const [path, operations] of Object.entries(paths)) {
+    if (!path.startsWith("/clan/")) continue
+    for (const [method, operation] of Object.entries(
+        operations as Record<string, Record<string, unknown>>
+    )) {
+        const resource = path.split("/")[2]
+        if (
+            [
+                "league-matches",
+                "league-fixtures",
+                "server-game-history",
+                "hll-live",
+                "teams",
+            ].includes(resource) &&
+            method === "get"
+        )
+            continue
+        operation["x-logi-read-access"] =
+            resource === "membership-summaries" && method === "get"
+                ? {
+                      resource,
+                      gameSelection: "one-explicit-game",
+                      policy: "enabled-per-key-role-allowlist",
+                      subject: "exact-discord-user-id",
+                  }
+                : method === "get" &&
+                    ["changes", "sync-records"].includes(resource)
+                  ? {
+                        resources: "underlying-explicit-grants",
+                        gameSelection: "one-explicit-game",
+                    }
+                  : method === "get" &&
+                      (API_KEY_READ_RESOURCES as readonly string[]).includes(
+                          resource
+                      )
+                    ? {
+                          resource,
+                          gameSelection: path.includes("{")
+                              ? "persisted-record"
+                              : "explicit-permitted-games",
+                      }
+                    : null
+    }
+}
+
 export async function GET() {
     return NextResponse.json(
         {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.0.0",
+                version: "1.10.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read
+
+For minimized website reads, grant event-summaries and/or match-summaries and use their matching clan endpoints. Each grant is independent of raw events/matches access. Summary DTOs exclude passwords, notes, player identities, source URLs and raw telemetry. They remain private operational content requiring website publication review. Match summaries identify Logi events and expose unknown or provisional results, never automatic confirmation.
+
+Read-only people integrations have three additional independent grants: member-summaries, roster-summaries and player-stat-summaries. Legacy keys do not grant these reads. They expose closed versioned native identity references, published roster/attendance facts and current verified collected-session player facts. Publication consent and fresh role authorization remain separate. Their opaque cursors reset after cross-row identity/source changes; rebuild the entire scope before public display. See the [people integration handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.14/README.md) for coverage, null metrics, current proof and five-minute reconciliation rules.
+
+Keys with a \`readAccess\` policy can only read their explicitly granted resources and games. Collections require explicit \`game\` values; \`game=all\`, writes, metadata, settings, users, calendar, presets and performance-history return \`403 insufficient_scope\`. Detail reads enforce the persisted record's game and return \`404\` outside it. Revoked keys return \`401\`. Legacy keys without this policy retain their existing access. A manager can issue restricted keys through the session-authenticated \`POST /api/servers/{serverId}/api-keys\` endpoint; bearer keys cannot issue or escalate keys. The System > Website API form defaults to read-only summary resources and requires explicit game selection; full legacy access must be selected separately. See the [read-only integration handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.4/README.md) for provisioning, compatibility and safe publication rules.
 
 
 \`curl -H "Authorization: Bearer YOUR_API_KEY" "https://YOUR_LOGI_HOST/api/v1/clan/events?game=wardogs&limit=25&updatedSince=2026-01-01T00:00:00Z"\`
@@ -1017,6 +1948,11 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
             },
             servers: [{ url: "/api/v1" }],
             tags: [
+                {
+                    name: "Clan API — People",
+                    description:
+                        "Minimized member, published roster and verified collected-session facts; website remains read-only.",
+                },
                 {
                     name: "Public API — no key required",
                     description:
@@ -1068,23 +2004,40 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                     description: "Stored match results and history.",
                 },
                 {
+                    name: "Clan API — Teams",
+                    description:
+                        "Workspace team directory reads; match snapshots travel in summaries.",
+                },
+                {
                     name: "Clan API — Users",
                     description: "Tenant-scoped member projections.",
                 },
             ],
             components: {
-                schemas: generatedOpenApiSchemas,
+                schemas: {
+                    ...peopleResponseSchemas,
+                    ...generatedOpenApiSchemas,
+                    ...summaryResponseSchemas,
+                    ...websiteEventCommandSchemas,
+                },
                 securitySchemes: {
                     clanApiKey: {
                         type: "http",
                         scheme: "bearer",
                         bearerFormat: "logi API key",
                         description:
-                            "Send `Authorization: Bearer YOUR_API_KEY`. API keys are scoped to one clan and revoked keys are rejected.",
+                            "Send `Authorization: Bearer YOUR_API_KEY`. API keys are scoped to one clan and revoked keys are rejected. Optional readAccess restricts resources and games and forbids generic writes; x-logi-read-access describes each read. Only the separate actor-backed event-commands boundary accepts an explicit writeAccess grant together with an SSO actor token. No readAccess means legacy access to generic routes, never an event-commands grant.",
+                    },
+                    ssoActorToken: {
+                        type: "apiKey",
+                        in: "header",
+                        name: "X-Logi-Actor-Token",
+                        description:
+                            "Current opaque SSO access token for this application, subject, central session and guild. Send only from the website backend together with its explicitly permitted service key.",
                     },
                 },
             },
-            paths,
+            paths: { ...paths, ...websiteEventCommandPaths },
         },
         { headers: { "Cache-Control": "no-store" } }
     )

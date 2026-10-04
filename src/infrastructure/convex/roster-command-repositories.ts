@@ -1,3 +1,8 @@
+import {
+    matchesGameScope,
+    resolveGameScope,
+    type GameId,
+} from "@/domain/games/game"
 import type { MutationCtx } from "../../../convex/_generated/server"
 import type { Id } from "../../../convex/_generated/dataModel"
 
@@ -26,11 +31,14 @@ export class ConvexRosterCommandRepository implements RosterCommandRepository {
         return event ? { ...event } : null
     }
 
-    async listAssignments(serverDiscordId: string) {
-        return await this.ctx.db
+    async listAssignments(serverDiscordId: string, gameId?: GameId) {
+        const assignments = await this.ctx.db
             .query("userAssignments")
             .withIndex("serverId", (q) => q.eq("serverId", serverDiscordId))
             .collect()
+        return assignments.filter((assignment) =>
+            matchesGameScope(assignment.gameId, resolveGameScope(gameId))
+        )
     }
 
     async createRoster(roster: any) {

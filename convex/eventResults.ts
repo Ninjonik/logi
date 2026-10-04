@@ -1,0 +1,249 @@
+import {
+    resultCommandSchema,
+    resultDraftSchema,
+    resultRevisionSchema,
+    type ResultDraft,
+} from "../src/domain/match-results/result-revision"
+import {
+    appendEventResult,
+    currentEventResult,
+    legacyResultDraft,
+} from "./eventResultStore"
+import {
+    resolveLinkedPlayer,
+    type LinkedPlayer,
+} from "../src/domain/game-data/player-link"
+import {
+    findActivePlatformLink,
+    publicPlatformLink,
+} from "./platformIdentityStore"
+import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
+import { confirmResult } from "../src/application/match-results/confirm-result"
+import { providerSessionSchema } from "../src/domain/game-data/contracts"
+import { resolveGameScope, isGameId } from "../src/domain/games/game"
+import { assertMembershipSecret } from "./membership_shared"
+import { query, type QueryCtx } from "./_generated/server"
+import { resultCommand } from "./resultValidators"
+import type { Doc } from "./_generated/dataModel"
+import { mutation } from "./integrationMutation"
+import { getGuildByDiscordId } from "./identity"
+import { v } from "convex/values"
+
+const scope = {
+    secret: v.string(),
+    guildId: v.string(),
+    gameId: v.string(),
+    eventId: v.id("events"),
+    actorId: v.string(),
+}
+type Scope = {
+    guildId: string
+    gameId: string
+    actorId: string
+    eventId: string
+}
+async function authorize(ctx: Pick<QueryCtx, "db">, args: Scope) {
+    const id = ctx.db.normalizeId("events", args.eventId)
+    const event = id ? await ctx.db.get(id) : null
+    const guild = await getGuildByDiscordId(ctx, args.guildId)
+    const access = await ctx.db
+        .query("discordMemberAccess")
+        .withIndex("guildId_userId", (q) =>
+            q.eq("guildId", args.guildId).eq("userId", args.actorId)
+        )
+        .unique()
+    if (
+        !isGameId(args.gameId) ||
+        !event ||
+        event.guildId !== args.guildId ||
+        resolveGameScope(event.gameId) !== args.gameId ||
+        (event.kind ?? "match") !== "match" ||
+        !guild ||
+        !canAdminServerContext({
+            serverAdminIds: guild.adminIds,
+            adminAccessOverrides: guild.adminAccessOverrides,
+            userId: args.actorId,
+            discordAccess: access,
+        })
+    )
+        throw new Error("Forbidden.")
+    return event
+}
+async function sessionFor(
+    ctx: Pick<QueryCtx, "db">,
+    event: Doc<"events">,
+    sessionId: string
+) {
+    const id = ctx.db.normalizeId("gameSessions", sessionId)
+    const row = id ? await ctx.db.get(id) : null
+    if (
+        !row ||
+        row.guildId !== event.guildId ||
+        row.gameId !== resolveGameScope(event.gameId)
+    )
+        throw new Error("Session outside event scope.")
+    const connection = await ctx.db.get(row.connectionId)
+    if (
+        !connection ||
+        connection.guildId !== row.guildId ||
+        connection.gameId !== row.gameId
+    )
+        throw new Error("Session source unavailable.")
+    return {
+        row,
+        connection,
+        session: providerSessionSchema.parse(row.session),
+    }
+}
+async function attribute(
+    ctx: Pick<QueryCtx, "db">,
+    players: Array<Pick<LinkedPlayer, "platform" | "platformId">>
+) {
+    const unique = [
+        ...new Map(
+            players.map((p) => [`${p.platform}:${p.platformId}`, p])
+        ).values(),
+    ]
+    if (unique.length > 300) throw new Error("Too many players for one result.")
+    return Promise.all(
+        unique.map(async (p) => {
+            const link =
+                p.platform === "steam"
+                    ? await findActivePlatformLink(ctx, p.platformId)
+                    : null
+            return resolveLinkedPlayer(
+                p.platform,
+                p.platformId,
+                link ? [publicPlatformLink(link)] : []
+            )
+        })
+    )
+}
+async function buildDraft(
+    ctx: Pick<QueryCtx, "db">,
+    event: Doc<"events">,
+    command: ReturnType<typeof resultCommandSchema.parse>
+): Promise<ResultDraft> {
+    const sessions = await Promise.all(
+        command.sessionLinks.map((id) => sessionFor(ctx, event, id))
+    )
+    if (!sessions.length && !command.participants && event.eventResult)
+        return legacyResultDraft(event.eventResult)
+    const participants =
+        command.participants ??
+        (sessions.length === 1 ? sessions[0].session.participants : null)
+    if (!participants)
+        throw new Error(
+            "Enter explicit scores when using zero or multiple sessions."
+        )
+    return resultDraftSchema.parse({
+        origin: command.participants ? "manual" : "collected",
+        participants,
+        sessionLinks: sessions.map(({ row, connection, session }) => ({
+            sessionId: row._id,
+            provider: connection.provider,
+            externalId: session.externalId,
+            sourceDigest: session.sourceDigest,
+            startedAt: session.startedAt,
+            endedAt: session.endedAt,
+            complete: session.complete,
+            map: session.map,
+        })),
+        players: await attribute(
+            ctx,
+            sessions.flatMap(({ session }) => session.players)
+        ),
+    })
+}
+export const review = mutation({
+    args: { ...scope, command: resultCommand },
+    handler: async (ctx, args) => {
+        assertMembershipSecret(args.secret)
+        const event = await authorize(ctx, args),
+            command = resultCommandSchema.parse(args.command)
+        return confirmResult(
+            {
+                ...command,
+                eventId: event._id,
+                actor: { id: args.actorId, kind: "session" },
+            },
+            {
+                authorize: async () => {
+                    await authorize(ctx, args)
+                },
+                current: () => currentEventResult(ctx, event),
+                draft: async (input) => {
+                    const draft = await buildDraft(ctx, event, input)
+                    if (
+                        input.action === "correct" &&
+                        draft.sessionLinks.some((s) => !s.complete)
+                    )
+                        throw new Error("Linked session is incomplete.")
+                    return draft
+                },
+                refresh: async (draft) => {
+                    for (const link of draft.sessionLinks) {
+                        const { session } = await sessionFor(
+                            ctx,
+                            event,
+                            link.sessionId
+                        )
+                        if (session.sourceDigest !== link.sourceDigest)
+                            throw new Error(
+                                "Source changed. Restage and review before confirmation."
+                            )
+                        if (!session.complete)
+                            throw new Error("Linked session is incomplete.")
+                    }
+                    return {
+                        ...draft,
+                        players: await attribute(ctx, draft.players),
+                    }
+                },
+                append: (expected, revision) =>
+                    appendEventResult(ctx, event._id, expected, revision),
+                now: () => new Date().toISOString(),
+            }
+        )
+    },
+})
+export const get = query({
+    args: scope,
+    handler: async (ctx, args) => {
+        assertMembershipSecret(args.secret)
+        const event = await authorize(ctx, args)
+        const current = await currentEventResult(ctx, event)
+        const history = await ctx.db
+            .query("eventResultRevisions")
+            .withIndex("eventId_version", (q) => q.eq("eventId", event._id))
+            .order("desc")
+            .take(20)
+        const sessions =
+            args.gameId === "hell_let_loose"
+                ? await ctx.db
+                      .query("gameSessions")
+                      .withIndex("guildId_gameId_fetchedAt", (q) =>
+                          q
+                              .eq("guildId", args.guildId)
+                              .eq("gameId", "hell_let_loose")
+                      )
+                      .order("desc")
+                      .take(50)
+                : []
+        return {
+            current,
+            history: history.map((row) =>
+                resultRevisionSchema.parse(row.revision)
+            ),
+            sessions: sessions.map((row) => ({
+                id: row._id,
+                externalId: row.externalId,
+                map: row.session.map,
+                startedAt: row.session.startedAt,
+                complete: row.session.complete,
+                participants: row.session.participants,
+            })),
+            hasLegacyImport: Boolean(event.eventResult),
+        }
+    },
+})

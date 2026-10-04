@@ -1,0 +1,164 @@
+✔ manual registration and scanner resolve to the same durable identity (18.5118ms)
+✔ settings change fences pending reads and rejects old publication snapshots (2.3486ms)
+✔ deleting a human reference preserves pin and automatic reasons; delayed edits cannot resurrect it (4.2209ms)
+✔ native event binding is same-guild, Wardogs match-only and one-to-one (2.9722ms)
+✔ dashboard revocation prevents tracking changes and foreign guild publication claims (2.8001ms)
+✖ bounded human-link bursts cannot consume discovery and administrator capacity (282.6282ms)
+✖ full discovery reclaims only disposable candidates, preserving leases, references and publication recovery (8.7878ms)
+✖ human references cannot protect unlimited existing scanner candidates or reset their quota by editing (78.0955ms)
+✖ existing references can be removed after disabling intake without admitting new links (1.1997ms)
+✖ existing references can be removed after moving intake without admitting new links (0.8857ms)
+✖ explicitly refreshing an archived unresolved match attempts one read without extending the archive horizon (1.2749ms)
+✔ index reads only main-content match details and rejects unrecognized HTML (14.2641ms)
+✔ real site navigation retains structural tab evidence but contributes no match links (2.9238ms)
+✔ index fetch retains the query and rejects switching tabs on redirect (7.1347ms)
+✖ button pagination never claims complete coverage (2.5177ms)
+✖ an unverified empty shell never claims complete coverage (0.6421ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 8
+ℹ fail 8
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1817.8046
+
+✖ failing tests:
+
+test at src\infrastructure\convex\league-discovery.test.ts:2:8647
+✖ bounded human-link bursts cannot consume discovery and administrator capacity (282.6282ms)
+  AssertionError [ERR_ASSERTION]: automatic discovery must retain admission capacity after untrusted intake
+      at TestContext.<anonymous> ([repository]\src\infrastructure\convex\league-discovery.test.ts:234:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\infrastructure\convex\league-discovery.test.ts:2:9705
+✖ full discovery reclaims only disposable candidates, preserving leases, references and publication recovery (8.7878ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+    assert.ok(ctx.db.tables.leagueTrackedMatches.some(row => row.matchId === matchId))
+
+      at TestContext.<anonymous> ([repository]\src\infrastructure\convex\league-discovery.test.ts:260:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\infrastructure\convex\league-discovery.test.ts:2:11096
+✖ human references cannot protect unlimited existing scanner candidates or reset their quota by editing (78.0955ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  40 !== 0
+
+      at TestContext.<anonymous> ([repository]\src\infrastructure\convex\league-discovery.test.ts:277:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 40,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\infrastructure\convex\league-discovery.test.ts:2:12253
+✖ existing references can be removed after disabling intake without admitting new links (1.1997ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  1 !== 0
+
+      at TestContext.<anonymous> ([repository]\src\infrastructure\convex\league-discovery.test.ts:289:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\infrastructure\convex\league-discovery.test.ts:2:12253
+✖ existing references can be removed after moving intake without admitting new links (0.8857ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  1 !== 0
+
+      at TestContext.<anonymous> ([repository]\src\infrastructure\convex\league-discovery.test.ts:289:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\infrastructure\convex\league-discovery.test.ts:2:13524
+✖ explicitly refreshing an archived unresolved match attempts one read without extending the archive horizon (1.2749ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+    assert.ok(job)
+
+      at TestContext.<anonymous> ([repository]\src\infrastructure\convex\league-discovery.test.ts:303:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\infrastructure\wardogs-league\parse-index.test.ts:2:3468
+✖ button pagination never claims complete coverage (2.5177ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  false !== true
+
+      at TestContext.<anonymous> ([repository]\src\infrastructure\wardogs-league\parse-index.test.ts:58:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\infrastructure\wardogs-league\parse-index.test.ts:2:3736
+✖ an unverified empty shell never claims complete coverage (0.6421ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> ([repository]\src\infrastructure\wardogs-league\parse-index.test.ts:62:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid_html/,
+    operator: 'throws',
+    diff: 'simple'
+  }

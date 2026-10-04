@@ -1,0 +1,27 @@
+{
+  "at": "2026-10-03T18:03:36.344Z",
+  "localDatabaseOnly": true,
+  "counts": {
+    "candidates": 38,
+    "tracked": 1
+  },
+  "messages": [
+    {
+      "deleted": false,
+      "matchIds": [],
+      "messageId": "1556002882975956995",
+      "version": 1791050543868
+    }
+  ],
+  "reference": [
+    {
+      "automatic": true,
+      "discordRefs": [],
+      "eventId": null,
+      "id": "vh7452zmgjd1d0th676ethqzas8fkgdq",
+      "pinned": true,
+      "revision": 1791050501891,
+      "state": "tracked"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import {
     getServerUserAssignments,
     saveServerUserAssignment,
 } from "@/lib/server-user-management"
+import { getServerContextUncached as getServerContext } from "@/lib/read-models/server-context"
 import {
     DEFAULT_GAME_ID,
     filterByGameScope,
@@ -16,7 +17,6 @@ import {
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { syncDiscordRolesForAssignment } from "@/lib/discord"
 import { fetchDiscordGuildMembers } from "@/lib/discord"
-import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
 
 type MigrationTarget = "recruit" | "member" | "reserve_member" | "mercenary"
@@ -51,7 +51,7 @@ export async function POST(
             gameId?: string
         }
         const gameId = isGameId(body.gameId) ? body.gameId : DEFAULT_GAME_ID
-        const context = await getServerContext(serverId, gameId)
+        const context = await getServerContext(serverId)
         if (!context?.canAdmin) {
             return NextResponse.json({ error: "Forbidden." }, { status: 403 })
         }
@@ -105,6 +105,10 @@ export async function POST(
             }
 
             await saveServerUserAssignment({
+                roleActor: {
+                    userId: context.user.discordId,
+                    kind: "dashboard",
+                },
                 assignmentId: assignment.id,
                 userId: assignment.userId,
                 serverId,

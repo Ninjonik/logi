@@ -14,6 +14,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import { eventWriteErrorMessage } from "@/lib/event-write-error"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
@@ -40,6 +41,13 @@ type ImportProgress = {
     failed: number
     percent: number
     currentLink?: string
+}
+
+/** The final streamed summary of an import; counts may be absent on partial results. */
+type ImportEventsResult = {
+    importedEvents?: number
+    importedPlayers?: number
+    failedLinks?: unknown[]
 }
 
 export function ImportEventsButton({
@@ -91,7 +99,12 @@ export function ImportEventsButton({
 
             if (!response.ok) {
                 const body = await response.json()
-                toast.error(body.error ?? dictionary.common.error)
+                toast.error(
+                    eventWriteErrorMessage(body, {
+                        forbidden: dictionary.event.writeForbidden,
+                        fallback: dictionary.common.error,
+                    })
+                )
                 return
             }
 
@@ -103,7 +116,7 @@ export function ImportEventsButton({
 
             const decoder = new TextDecoder()
             let buffer = ""
-            let finalResult: any = null
+            let finalResult: ImportEventsResult | null = null
             let streamError: string | null = null
 
             while (true) {
@@ -124,14 +137,14 @@ export function ImportEventsButton({
                     const payload = JSON.parse(line) as {
                         type: "progress" | "result" | "error"
                         progress?: ImportProgress
-                        result?: any
+                        result?: ImportEventsResult
                         error?: string
                     }
 
                     if (payload.type === "progress" && payload.progress) {
                         setProgress(payload.progress)
                     } else if (payload.type === "result") {
-                        finalResult = payload.result
+                        finalResult = payload.result ?? null
                     } else if (payload.type === "error") {
                         streamError = payload.error ?? dictionary.common.error
                     }

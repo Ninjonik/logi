@@ -1,0 +1,15 @@
+{
+  "headSha": "6ff40b9406c14c33c030b18b0bc5ef93e67963b3",
+  "status": "completed",
+  "conclusion": "success",
+  "runUrl": "https://github.com/Ninjonik/logi/actions/runs/37147719228",
+  "completedAt": "2026-10-03T19:24:51Z",
+  "checks": [
+    "frozen lockfile installation",
+    "generated contract parity",
+    "typecheck",
+    "unit and adapter tests"
+  ],
+  "GitGuardian": "success",
+  "applicationCodeUnchangedFrom": "2ae44f5c000f0fbc5eb6ef446dbae767208c3c51"
+}

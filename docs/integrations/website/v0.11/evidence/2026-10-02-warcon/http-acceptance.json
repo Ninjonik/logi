@@ -1,0 +1,233 @@
+{
+  "startedAt": "2026-10-02T18:04:33.197Z",
+  "endedAt": "2026-10-02T18:04:36.203Z",
+  "mode": "production Next build + fresh loopback Convex + actual read-only Warcon and isolated synthetic provider",
+  "productionConvexUsed": false,
+  "proof": [
+    {
+      "label": "actual HTTP live",
+      "ok": true,
+      "view": "live",
+      "available": true,
+      "players": 100,
+      "freshness": "fresh",
+      "playersFreshness": "fresh"
+    },
+    {
+      "label": "actual HTTP analytics 24h",
+      "ok": true,
+      "view": "analytics",
+      "available": true
+    },
+    {
+      "label": "actual HTTP analytics 7d",
+      "ok": true,
+      "view": "analytics",
+      "available": true
+    },
+    {
+      "label": "actual HTTP analytics 30d",
+      "ok": true,
+      "view": "analytics",
+      "available": true
+    },
+    {
+      "label": "actual HTTP cash",
+      "ok": true,
+      "view": "cash",
+      "available": true
+    },
+    {
+      "label": "actual HTTP matches",
+      "ok": true,
+      "view": "matches",
+      "available": true,
+      "rows": 1,
+      "completed": 0
+    },
+    {
+      "label": "actual HTTP leaderboard all",
+      "ok": true,
+      "view": "leaderboard",
+      "available": true
+    },
+    {
+      "label": "actual HTTP players",
+      "ok": true,
+      "view": "players",
+      "available": true
+    },
+    {
+      "label": "actual HTTP kills",
+      "ok": true,
+      "view": "kills",
+      "available": true,
+      "configured": true,
+      "rows": 0
+    },
+    {
+      "label": "actual HTTP catalog",
+      "ok": true,
+      "view": "catalog",
+      "available": true
+    },
+    {
+      "label": "actual HTTP rotation",
+      "ok": true,
+      "view": "rotation",
+      "available": true
+    },
+    {
+      "label": "actual HTTP health",
+      "ok": true,
+      "view": "health",
+      "available": true
+    },
+    {
+      "label": "actual HTTP capabilities",
+      "ok": true,
+      "view": "capabilities",
+      "available": true
+    },
+    {
+      "label": "actual HTTP experiences",
+      "ok": true,
+      "view": "experiences",
+      "available": true
+    },
+    {
+      "label": "actual HTTP alternators",
+      "ok": true,
+      "view": "alternators",
+      "available": true
+    },
+    {
+      "label": "actual HTTP match",
+      "ok": true,
+      "view": "match",
+      "available": false
+    },
+    {
+      "label": "actual HTTP career",
+      "ok": true,
+      "view": "career",
+      "available": true
+    },
+    {
+      "label": "shared live cache preserves fetchedAt",
+      "ok": true
+    },
+    {
+      "label": "synthetic scoreboard preserves zero",
+      "ok": true,
+      "players": 1
+    },
+    {
+      "label": "synthetic completed match and nonempty kill feed",
+      "ok": true,
+      "completedMatches": 1,
+      "kills": 1
+    },
+    {
+      "label": "denial no token",
+      "ok": true,
+      "status": 401
+    },
+    {
+      "label": "denial legacy key",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "label": "denial wrong resource",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "label": "denial HLL-only key",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "label": "denial other guild",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "label": "denial wrong game",
+      "ok": true,
+      "status": 400
+    },
+    {
+      "label": "denial unsafe view",
+      "ok": true,
+      "status": 400
+    },
+    {
+      "label": "denial duplicate query",
+      "ok": true,
+      "status": 400
+    },
+    {
+      "label": "revoke rejects already cached read",
+      "ok": true,
+      "status": 401
+    },
+    {
+      "label": "disabled connection rejects cached data",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "label": "internal action requires secret",
+      "ok": true
+    },
+    {
+      "label": "dashboard route requires session and permits local admin",
+      "ok": true,
+      "unauthenticatedStatus": 403,
+      "adminStatus": 200,
+      "identity": "synthetic local session; not OAuth"
+    },
+    {
+      "label": "collector snapshots and history stored in isolated database",
+      "ok": true,
+      "sources": 2,
+      "snapshotKeys": [
+        "attribution",
+        "capabilities",
+        "capacity",
+        "displayName",
+        "freshness",
+        "gameId",
+        "guildId",
+        "id",
+        "lastSuccessAt",
+        "map",
+        "observedAt",
+        "players",
+        "provider",
+        "providerInstanceId",
+        "providerUpdatedAt",
+        "scores",
+        "state"
+      ],
+      "healthKeys": [
+        "capabilities",
+        "collectedSessions",
+        "enabled",
+        "errorCategory",
+        "freshness",
+        "gameId",
+        "guildId",
+        "historyErrorCategory",
+        "id",
+        "lastAttemptAt",
+        "lastHistorySuccessAt",
+        "lastSuccessAt",
+        "nextAttemptAt",
+        "provider"
+      ]
+    }
+  ]
+}

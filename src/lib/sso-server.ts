@@ -1,13 +1,14 @@
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 
-import { createSsoSecret, hashSsoValue, isExactHttpsUrl } from "@/lib/sso"
+import { isSsoCallback } from "@/domain/identity/sso-policy"
+import { createSsoSecret, hashSsoValue } from "@/lib/sso"
+import { getSsoProvider } from "./gateways/sso-provider"
 import { getInternalAuthSecret } from "@/lib/env"
 
 const listReference = makeFunctionReference<"query">("sso:listForGuild")
 const createReference = makeFunctionReference<"mutation">("sso:create")
 const removeReference = makeFunctionReference<"mutation">("sso:remove")
-const revokeReference = makeFunctionReference<"mutation">("sso:revokeForUser")
 
 export async function listSsoApplications(guildId: string) {
     return await fetchQuery(listReference, {
@@ -24,6 +25,9 @@ export async function createSsoApplication(input: {
     redirectUris: string[]
     backchannelLogoutUri?: string
 }) {
+    const provider = await getSsoProvider()
+    const isExactHttpsUrl = (url: string) =>
+        isSsoCallback(url, provider.allowLoopbackHttp)
     if (
         !input.name.trim() ||
         !isExactHttpsUrl(input.websiteUrl) ||
@@ -60,13 +64,5 @@ export async function removeSsoApplication(
         guildId,
         userId,
         clientId,
-    })
-}
-
-export async function revokeSsoTokensForUser(userId: string) {
-    await fetchMutation(revokeReference, {
-        secret: getInternalAuthSecret(),
-        userId,
-        now: Date.now(),
     })
 }

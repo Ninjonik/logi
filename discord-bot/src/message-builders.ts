@@ -10,6 +10,7 @@ import {
     SeparatorBuilder,
     TextDisplayBuilder,
     ThumbnailBuilder,
+    escapeMarkdown,
     type APIEmbedField,
 } from "discord.js"
 import { buildMembershipFlowHeader } from "./interactions/membership-flow"
@@ -25,6 +26,8 @@ import type {
     DiscordConfig,
     EventRecord,
     Group,
+    MatchTeamAssignment,
+    MatchTeamSlot,
     MembershipApplicationThreadRecord,
     MembershipCategory,
     Roster,
@@ -91,6 +94,8 @@ export function buildAnnouncementV2Message(
     options?: EventEmbedOptions & {
         pingRoleIds?: string[]
         eventLinks?: EventLink[]
+        /** Adds one logo section per assigned team (event information cards). */
+        matchTeamCards?: boolean
     }
 ) {
     const legacy = buildAnnouncementMessage(
@@ -143,6 +148,16 @@ export function buildAnnouncementV2Message(
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(block.slice(0, 4000))
         )
+    }
+
+    // Components V2 messages cannot carry embeds, so the per-team logo cards
+    // are sections with a thumbnail inside the event card.
+    const teamSections = options?.matchTeamCards
+        ? buildMatchTeamV2Sections(event)
+        : []
+    if (teamSections.length) {
+        container.addSeparatorComponents(new SeparatorBuilder())
+        container.addSectionComponents(...teamSections)
     }
 
     if (options?.eventLinks?.length) {
@@ -311,9 +326,20 @@ export function buildCompactV2FieldText(fields: APIEmbedField[]) {
 
     return sections
         .map((section) => {
-            const members = section.values
-                .flatMap((value) => value.split("\n"))
-                .filter((value) => value.trim() && value !== "\u200B")
+            const columns = section.values.map((value) =>
+                value
+                    .split("\n")
+                    .filter((name) => name.trim() && name !== "\u200B")
+            )
+            // Legacy fields are filled across each row; undo that layout for V2.
+            const members: string[] = []
+            const rowCount = Math.max(
+                0,
+                ...columns.map((column) => column.length)
+            )
+            for (let row = 0; row < rowCount; row++)
+                for (const column of columns)
+                    if (column[row]) members.push(column[row])
             return `**${section.name}**\n${members.join(", ")}`
         })
         .join("\n\n")
@@ -466,7 +492,9 @@ export function buildEventEmbed(
 
     for (const members of signupsByGroup.values()) {
         members.sort((left, right) =>
-            left.localeCompare(right, undefined, { sensitivity: "base" })
+            left.localeCompare(right, config.defaultLanguage, {
+                sensitivity: "base",
+            })
         )
     }
 
@@ -498,6 +526,11 @@ export function buildEventEmbed(
         )
     if (event.kind === "match" && event.side)
         descriptionLines.push(`**⚔️ ${messages.embed.side}:** ${event.side}`)
+    const matchTeamsSummary = formatMatchTeamsSummary(event)
+    if (matchTeamsSummary)
+        descriptionLines.push(
+            `**🛡️ ${messages.embed.teams}:** ${matchTeamsSummary}`
+        )
     if (event.kind === "match" && event.cap)
         descriptionLines.push(`**🎯 ${messages.embed.cap}:** ${event.cap}`)
     if (event.server)
@@ -668,6 +701,189 @@ export function buildEventEmbed(
     )
 
     return embed
+}
+
+const MATCH_TEAM_SLOT_ORDER: Record<MatchTeamSlot, number> = {
+    a: 0,
+    b: 1,
+    c: 2,
+}
+/** Discord rejects messages with more than ten embeds. */
+const DISCORD_MAX_EMBEDS = 10
+const DISCORD_EMBED_AUTHOR_NAME_LIMIT = 256
+const DISCORD_THUMBNAIL_DESCRIPTION_LIMIT = 1024
+
+function sortMatchTeams(event: EventRecord) {
+    return [...(event.matchTeams ?? [])].sort(
+        (left, right) =>
+            MATCH_TEAM_SLOT_ORDER[left.slot] - MATCH_TEAM_SLOT_ORDER[right.slot]
+    )
+}
+
+/** Keeps a stored label on one line so it cannot start Markdown blocks. */
+function toSingleLine(value: string) {
+    return value.replace(/[\s\p{Cc}]+/gu, " ").trim()
+}
+
+/**
+ * Cuts to a Discord length limit, which counts UTF-16 code units, without
+ * splitting a surrogate pair.
+ */
+function truncateUtf16(value: string, maxLength: number) {
+    if (value.length <= maxLength) return value
+    let truncated = ""
+    for (const codePoint of value) {
+        if (truncated.length + codePoint.length > maxLength) break
+        truncated += codePoint
+    }
+    return truncated
+}
+
+/**
+ * Makes user-supplied text render literally instead of as a mention, channel,
+ * emoji, timestamp or command reference: every `@` and every `<@`, `<#`, `<:`,
+ * `</` or `<t:`-style opener is broken with a zero-width space.
+ */
+export function neutralizeDiscordMentions(value: string) {
+    return value
+        .replace(/@/g, "@\u200B")
+        .replace(/<(?=[@#:&/]|[a-z]+:)/gi, "<\u200B")
+}
+
+/** Breaks `://` with a zero-width space so text never becomes a URL. */
+function breakUrlSchemes(value: string) {
+    return value.replace(/:\/\//g, ":\u200B//")
+}
+
+/**
+ * Escapes stored team text for Discord surfaces that render Markdown. Brackets
+ * and parentheses are escaped so labels cannot form masked links, and `://` is
+ * broken so a label never becomes a clickable URL. Every `-` is escaped (which
+ * also covers bulleted lists) so stored text can never contain the `-{20,}`
+ * run that splits Components V2 cards into separate blocks.
+ */
+export function escapeMatchTeamText(value: string) {
+    const escaped = escapeMarkdown(toSingleLine(value), {
+        heading: true,
+        numberedList: true,
+    })
+        .replace(/[[\]()-]/g, "\\$&")
+        .replace(/^>/, "\\>")
+    return breakUrlSchemes(neutralizeDiscordMentions(escaped))
+}
+
+/** Plain-text label for Discord fields that do not render Markdown. */
+function plainMatchTeamLabel(assignment: MatchTeamAssignment) {
+    const name = toSingleLine(assignment.snapshot.name)
+    const code = toSingleLine(assignment.snapshot.shortCode ?? "")
+    return breakUrlSchemes(
+        neutralizeDiscordMentions(code ? `${name} [${code}]` : name)
+    )
+}
+
+function formatMatchTeamLabel(
+    assignment: MatchTeamAssignment,
+    includeSide: boolean
+) {
+    const parts = [escapeMatchTeamText(assignment.snapshot.name)]
+    const code = assignment.snapshot.shortCode?.trim()
+    if (code) parts.push(`[${escapeMatchTeamText(code)}]`)
+    const side = assignment.side?.trim()
+    if (includeSide && side) parts.push(`(${escapeMatchTeamText(side)})`)
+    return parts.join(" ")
+}
+
+/** "Name [CODE] (Side) vs …" ordered by slot; undefined without assignments. */
+export function formatMatchTeamsSummary(event: EventRecord) {
+    if (event.kind !== "match") return undefined
+    const teams = sortMatchTeams(event)
+    if (!teams.length) return undefined
+    return teams
+        .map((assignment) => formatMatchTeamLabel(assignment, true))
+        .join(" vs ")
+}
+
+/** Two teams play an HLL match; Wardogs matches have up to three. */
+export function getMatchTeamLogoLimit(event: Pick<EventRecord, "gameId">) {
+    return event.gameId === "wardogs" ? 3 : 2
+}
+
+function parseHttpUrl(value: string | null) {
+    if (!value) return undefined
+    try {
+        const url = new URL(value)
+        return url.protocol === "http:" || url.protocol === "https:"
+            ? url.href
+            : undefined
+    } catch {
+        return undefined
+    }
+}
+
+function listMatchTeamLogos(event: EventRecord) {
+    if (event.kind !== "match") return []
+    return sortMatchTeams(event)
+        .flatMap((assignment) => {
+            const logoUrl = parseHttpUrl(assignment.snapshot.logoUrl)
+            return logoUrl ? [{ assignment, logoUrl }] : []
+        })
+        .slice(0, getMatchTeamLogoLimit(event))
+}
+
+/**
+ * One small embed per assigned team with a usable logo, for legacy (non
+ * Components V2) event information messages. Never exceeds Discord's ten
+ * embed limit together with `existingEmbedCount`.
+ */
+export function buildMatchTeamLogoEmbeds(
+    event: EventRecord,
+    color: number | undefined,
+    existingEmbedCount = 1
+) {
+    const available = Math.max(0, DISCORD_MAX_EMBEDS - existingEmbedCount)
+    return listMatchTeamLogos(event)
+        .slice(0, available)
+        .map(({ assignment, logoUrl }) => {
+            // Embed author names render as plain text, so Markdown escaping
+            // would show literal backslashes; mentions are still neutralized.
+            const embed = new EmbedBuilder().setAuthor({
+                name: truncateUtf16(
+                    plainMatchTeamLabel(assignment),
+                    DISCORD_EMBED_AUTHOR_NAME_LIMIT
+                ),
+                iconURL: logoUrl,
+            })
+            if (color !== undefined) embed.setColor(color)
+            const side = assignment.side?.trim()
+            if (side) embed.setDescription(escapeMatchTeamText(side))
+            return embed
+        })
+}
+
+/** Components V2 equivalent of {@link buildMatchTeamLogoEmbeds}. */
+export function buildMatchTeamV2Sections(event: EventRecord) {
+    return listMatchTeamLogos(event).map(({ assignment, logoUrl }) => {
+        const side = assignment.side?.trim()
+        const content = [
+            `**${formatMatchTeamLabel(assignment, false)}**`,
+            side ? escapeMatchTeamText(side) : undefined,
+        ]
+            .filter(Boolean)
+            .join("\n")
+        return new SectionBuilder()
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(content)
+            )
+            .setThumbnailAccessory(
+                new ThumbnailBuilder({
+                    media: { url: logoUrl },
+                    description: truncateUtf16(
+                        plainMatchTeamLabel(assignment),
+                        DISCORD_THUMBNAIL_DESCRIPTION_LIMIT
+                    ),
+                })
+            )
+    })
 }
 
 export function buildEventComponents(

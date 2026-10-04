@@ -1,0 +1,32 @@
+Source revision: fc5eb8696942adedbd5009d3e47ccca98e98b868
+Scope: isolated local database + authorized test Discord; synthetic data.
+Full suite (npm run test):
+ℹ tests 800
+ℹ suites 0
+ℹ pass 800
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8674.0345
+
+Typecheck: passed.
+Clean build: next build --webpack; passed in 32112ms.
+Generated OpenAPI and offline Convex API inventory: passed; no tracked changes.
+Changed TypeScript lint: 0 errors, 5 existing event-form warnings.
+Prettier changed TypeScript: passed.
+Final isolated Convex deployment: http://127.0.0.1:32290; passed in 1700ms.
+Real Discord current delivery: 13/13; restart: 15/15; result correction/withdrawal: 13/13.
+Actual authorized browser interaction: rejected old control; current 1/3 -> 2/3 -> 3/3 -> 2/3.
+Dedicated native security scan: c42ea770..e281495; one low authorization finding.
+Separate focused repair review: e281495..fc5eb8696942adedbd5009d3e47ccca98e98b868; 19 tests passed; no new findings.
+Full-repository lint is not green. Production and native-client acceptance are not claimed.
+
+Reproducible offline verification (use synthetic CI environment from .github/workflows/verify.yml):
+npm run test
+npm run typecheck
+npm run generate:openapi
+node scripts/generate-convex-api-offline.mjs
+node --import tsx --test discord-bot/src/public-panels/player-details.test.ts discord-bot/src/public-panels/render.test.ts discord-bot/src/sync/publication-files.test.ts src/domain/game-data/player-leaders.test.ts
+
+Runtime reproduction: configure isolated Convex and a test application/guild, enable a synthetic Warcon fixture, save a panel, restart the worker and compare stored Discord message/attachment IDs. Use a logged-in test member to exercise player pages. Never reuse production Convex or commit test tokens.

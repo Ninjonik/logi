@@ -8,6 +8,7 @@ import type {
     PlayerStatsServer,
     TicketSettings,
 } from "@/types/domain"
+import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
 import { getInternalAuthSecret } from "@/lib/env"
 
 const getConfigByGuildReference = makeFunctionReference<"query">(
@@ -53,6 +54,7 @@ export async function saveDiscordConfig(input: {
     playerStatsServers?: PlayerStatsServer[]
     ticketSettings?: TicketSettings
     membershipSettings?: MembershipSettings
+    statsSettings?: StatsCommandSettings
     gameOverrides?: Partial<
         Record<import("@/domain/games/game").GameId, GameDiscordOverrides>
     >
@@ -75,6 +77,7 @@ export async function saveDiscordConfig(input: {
         playerStatsServers: input.playerStatsServers,
         ticketSettings: input.ticketSettings,
         membershipSettings: input.membershipSettings,
+        statsSettings: input.statsSettings,
         gameOverrides: input.gameOverrides,
     })
 }

@@ -276,6 +276,13 @@ export const WARDOGS_PLACEHOLDER_MAPS = [
     ),
 ]
 
+// Retain saved pre-catalog stratmaps without offering the generic ID for new maps.
+const legacyWardogsMap = placeholderMap(
+    "wardogs-placeholder",
+    "Wardogs — placeholder map",
+    "/maps/wardogs-placeholder.svg"
+)
+
 export function getStratmapMaps(gameId?: GameId) {
     if (gameId === "hell_let_loose_vietnam") return HLL_VIETNAM_PLACEHOLDER_MAPS
     if (gameId === "wardogs") return WARDOGS_PLACEHOLDER_MAPS
@@ -292,6 +299,7 @@ export function getStratmapMapById(mapId: string, gameId?: GameId) {
 
     return (
         getStratmapMaps(gameId).find((map) => map.id === mapId) ??
+        (mapId === legacyWardogsMap.id ? legacyWardogsMap : undefined) ??
         getHllStratmapMapById(mapId) ??
         HLL_VIETNAM_PLACEHOLDER_MAPS.find((map) => map.id === mapId) ??
         WARDOGS_PLACEHOLDER_MAPS.find((map) => map.id === mapId)

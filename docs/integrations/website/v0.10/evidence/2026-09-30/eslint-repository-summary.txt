@@ -1,0 +1,8 @@
+Command: node node_modules/eslint/bin/eslint.js .
+Scope: entire repository, not only changed files.
+Full diagnostics retained privately; this is an excerpt, not the full log.
+SHA256 of original private log: 2356b2287ddcb48d065662a58b51783dc93972192a332522dc5e4e625c4d2c27
+
+
+✖ 285 problems (143 errors, 142 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.

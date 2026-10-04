@@ -10,6 +10,7 @@ import {
     syncGuildMemberAccess,
 } from "./sync/member-access"
 import { processAttendanceReminders } from "./sync/attendance-reminders"
+import { syncManagedMemberRoles } from "./sync/managed-member-roles"
 import { reportClanDiscordError } from "./error-reporting"
 import { syncPayloadEvents } from "./sync/events"
 import type { SyncPayload } from "./types"
@@ -32,6 +33,9 @@ export async function syncGuildPayload(
     })
 
     if (mode === "full") {
+        await runGuildSyncStep(client, "managed member roles", payload, () =>
+            syncManagedMemberRoles(client, payload.config.guildId)
+        )
         await runGuildSyncStep(
             client,
             "dashboard admin role sync",

@@ -1,0 +1,81 @@
+{
+  "contractVersion": "0.3.0",
+  "synthetic": true,
+  "productionReady": false,
+  "sources": [
+    { "sourceInstanceId": "fixture-logi-a", "origin": "https://logi.example.invalid", "guildId": "fixture-guild-a" },
+    { "sourceInstanceId": "fixture-logi-b", "origin": "https://other.example.invalid", "guildId": "fixture-guild-b" }
+  ],
+  "keyPolicy": { "readAccess": { "resources": ["events", "matches"], "gameIds": ["hell_let_loose", "wardogs"] } },
+  "wireExcerpts": {
+    "notice": "Synthetic selected fields, not complete generated OpenAPI documents. Never publish these raw operational objects.",
+    "privateHllEvent": {
+      "id": "fixture-event-hll", "guildId": "fixture-guild-a", "gameId": "hell_let_loose",
+      "kind": "match", "name": "Fixture HLL practice", "status": "registration",
+      "registrationEnd": "2026-10-01T16:00:00.000Z", "meetingStart": "2026-10-01T16:30:00.000Z",
+      "gameStart": "2026-10-01T17:00:00.000Z", "gameEnd": "2026-10-01T19:00:00.000Z",
+      "serverPassword": "SYNTHETIC-NEVER-PUBLISH", "notes": "Synthetic private tactical note",
+      "updatedAt": "2026-09-28T10:00:00.000Z"
+    },
+    "wardogsEvent": {
+      "id": "fixture-event-wardogs", "guildId": "fixture-guild-a", "gameId": "wardogs",
+      "kind": "training", "name": "Fixture Wardogs training", "status": "registration",
+      "registrationEnd": "2026-10-02T16:00:00.000Z", "meetingStart": "2026-10-02T16:30:00.000Z",
+      "gameStart": "2026-10-02T17:00:00.000Z", "gameEnd": "2026-10-02T19:00:00.000Z",
+      "updatedAt": "2026-09-28T10:00:00.000Z"
+    },
+    "emptyFilteredPage": { "data": [], "page": { "nextCursor": "fixture-opaque-next", "limit": 1 } },
+    "scopeDenied": { "error": { "code": "insufficient_scope", "message": "This API key does not allow this operation." } },
+    "invalidKey": { "error": { "code": "invalid_api_key", "message": "The API key is invalid or revoked." } }
+  },
+  "normalized": {
+    "privateEvent": {
+      "ref": { "source": "logi", "sourceInstanceId": "fixture-logi-a", "guildId": "fixture-guild-a", "gameId": "hell-let-loose", "kind": "event", "externalId": "fixture-event-hll" },
+      "observedAt": "2026-09-28T10:01:00.000Z", "sourceUpdatedAt": "2026-09-28T10:00:00.000Z", "freshness": "fresh", "publication": "unreviewed",
+      "title": "Fixture HLL practice", "titleLocale": null, "kind": "match", "status": "registration", "startsAt": "2026-10-01T17:00:00.000Z", "endsAt": "2026-10-01T19:00:00.000Z", "detailUrl": null, "signupUrl": null
+    },
+    "approvedWardogsEvent": {
+      "ref": { "source": "logi", "sourceInstanceId": "fixture-logi-a", "guildId": "fixture-guild-a", "gameId": "wardogs", "kind": "event", "externalId": "fixture-event-wardogs" },
+      "observedAt": "2026-09-28T10:01:00.000Z", "sourceUpdatedAt": "2026-09-28T10:00:00.000Z", "freshness": "fresh", "publication": "approved",
+      "title": "Fixture Wardogs training", "titleLocale": null, "kind": "training", "status": "registration", "startsAt": "2026-10-02T17:00:00.000Z", "endsAt": "2026-10-02T19:00:00.000Z", "detailUrl": null, "signupUrl": null
+    },
+    "unknownResult": {
+      "ref": { "source": "logi", "sourceInstanceId": "fixture-logi-a", "guildId": "fixture-guild-a", "gameId": "hell-let-loose", "kind": "match", "externalId": "fixture-match" },
+      "observedAt": "2026-09-28T10:01:00.000Z", "sourceUpdatedAt": null, "freshness": "unavailable", "publication": "unreviewed",
+      "eventRef": { "source": "logi", "sourceInstanceId": "fixture-logi-a", "guildId": "fixture-guild-a", "gameId": "hell-let-loose", "kind": "event", "externalId": "fixture-event-hll" },
+      "opponents": [], "map": null, "rounds": [], "homeScore": null, "awayScore": null, "resultState": "unknown", "provenance": null, "confirmedAt": null
+    },
+    "withdrawnMember": {
+      "ref": { "source": "logi", "sourceInstanceId": "fixture-logi-a", "guildId": "fixture-guild-a", "gameId": "wardogs", "kind": "member", "externalId": "fixture-private-member-reference" },
+      "observedAt": "2026-09-28T10:01:00.000Z", "sourceUpdatedAt": null, "freshness": "fresh", "publication": "withdrawn",
+      "displayName": "Synthetic member", "biography": null, "avatarUrl": null, "games": ["wardogs"], "consentCheckedAt": "2026-09-28T10:01:00.000Z", "consentValidUntil": null
+    },
+    "serverTimeout": {
+      "ref": { "source": "logi", "sourceInstanceId": "fixture-logi-a", "guildId": "fixture-guild-a", "gameId": "wardogs", "kind": "server", "externalId": "fixture-server" },
+      "observedAt": "2026-09-28T10:01:00.000Z", "sourceUpdatedAt": null, "freshness": "unavailable", "publication": "approved",
+      "displayName": "Fixture server", "state": "unknown", "map": null, "players": null, "capacity": null
+    },
+    "collectorHealth": {
+      "ref": { "source": "logi", "sourceInstanceId": "fixture-logi-a", "guildId": "fixture-guild-a", "gameId": "wardogs", "kind": "integration", "externalId": "fixture-collector" },
+      "observedAt": "2026-09-28T10:01:00.000Z", "sourceUpdatedAt": null, "freshness": "stale", "publication": "unreviewed",
+      "capabilities": ["events:read"], "lastAttemptAt": "2026-09-28T10:01:00.000Z", "lastCompletedSweepAt": "2026-09-28T09:00:00.000Z", "errorCategory": "timeout", "backlogCount": null
+    }
+  },
+  "consumerScenarios": [
+    { "id": "empty-page-retry-resume", "fixedFilter": { "game": "wardogs", "updatedSince": "2026-09-28T08:59:00.000Z", "sort": "createdAt" }, "initialCompletedWatermark": "2026-09-28T09:00:00.000Z", "steps": ["empty page with cursor", "429 with Retry-After", "restart", "resume same cursor and filter", "terminal page commits"], "expect": "Advance completed watermark only after terminal commit; retry keeps the original filter." },
+    { "id": "timestamp-ties", "steps": ["two rows share updatedAt", "rows land on different pages"], "expect": "Both survive the sweep and overlapping next sweep without duplicates." },
+    { "id": "deletion-partial", "steps": ["known item absent from page", "next page times out"], "expect": "Keep cached item stale; neither delete nor advance watermark." },
+    { "id": "deletion-confirmed", "steps": ["complete full reconciliation misses item", "same current policy permits lookup", "authoritative 404 confirmation"], "expect": "Remove local projection and its public cache; keep audit provenance." },
+    { "id": "webhook-tamper", "steps": ["verify signed raw body", "change one body byte without changing signature"], "expect": "Reject altered body before parsing or enqueue." },
+    { "id": "webhook-duplicate-restart", "steps": ["accept signed envelope into durable inbox", "process crashes", "duplicate signed ID with modified delivery header", "worker resumes"], "expect": "Mismatch rejected; exact duplicate does not enqueue twice; durable worker refetches authoritative record." },
+    { "id": "webhook-out-of-order", "steps": ["new invalidation", "older invalidation"], "expect": "Refetch authoritative state; do not restore an old webhook body." },
+    { "id": "consent-withdrawal", "steps": ["approved member published", "website consent withdrawn", "old cached Logi record arrives"], "expect": "Member remains unpublished and public caches are purged." },
+    { "id": "membership-and-role-removal", "steps": ["fresh HLL admin grant", "Discord departure or role revoked", "shared session visits Wardogs admin"], "expect": "Revoke affected authority immediately; no cross-game inherited grant." },
+    { "id": "authority-errors", "responses": [401, 403], "expect": "Stop authority-dependent work, keep completed watermark, deny privileges; no deletion inference." },
+    { "id": "result-states", "states": ["unknown", "provisional", "confirmed", "corrected"], "expect": "Confirmation needs agreed provenance; missing scores remain null and corrections replace only the same composite identity." },
+    { "id": "two-sources-same-external-id", "expect": "Source/guild/game/kind remain part of identity; neither row overwrites the other." },
+    { "id": "publication-and-languages", "states": ["draft article", "withdrawn article", "private HLL event", "approved Wardogs event", "missing media"], "expect": "Only approved content renders on explicit CS/EN game routes; no invented translation or image." },
+    { "id": "shared-session-and-domain-migration", "expect": "Canonical host-only session; explicit game grants; old-domain login requires deliberate re-login/callback migration." },
+    { "id": "provider-disabled", "expect": "Logi SSO controls remain unavailable until private provider and deployed-version acceptance." }
+  ]
+}

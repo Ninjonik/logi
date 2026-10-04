@@ -1,0 +1,40 @@
+Command: npm run build
+Runtime source: 46fd6a0d06d48b923ad558b76d0a107cf2caa5af
+Exit: 1
+
+STDOUT
+
+> logi@1.0.0 build
+> next build
+
+▲ Next.js 16.3.6 (Turbopack)
+✓ Running next.config.ts took 176ms
+- Experiments (use with caution):
+  · optimizePackageImports
+
+  Creating an optimized production build ...
+- warn [nextra] The repository is shallow cloned, so the latest modified time will not be presented.
+✓ Compiled successfully in 12.3s
+  Running TypeScript ...
+  Finished TypeScript in 3.7s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/208) ...
+  Generating static pages using 15 workers (52/208)
+  Generating static pages using 15 workers (104/208)
+  Generating static pages using 15 workers (156/208)
+
+STDERR
+Error occurred prerendering page "/en/competitions". Read more: https://nextjs.org/docs/messages/prerender-error
+[TypeError: fetch failed] {
+  digest: '3227098399',
+  [cause]: Error: connect ECONNREFUSED 127.0.0.1:32199
+      at <unknown> (Error: connect ECONNREFUSED 127.0.0.1:32199) {
+    errno: -4078,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '127.0.0.1',
+    port: 32199
+  }
+}
+Export encountered an error on /[locale]/competitions/page: /en/competitions, exiting the build.
+⨯ Next.js build worker exited with code: 1 and signal: null

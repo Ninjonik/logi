@@ -1,0 +1,89 @@
+◇ injected env (1) from .env.local // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+✖ ticket closure uses current guild and role permissions: revoked-admin-role (5.8674ms)
+✖ ticket closure uses current guild and role permissions: former-owner (1.176ms)
+✖ ticket closure uses current guild and role permissions: roles-unavailable (0.5037ms)
+✖ ticket closure uses current guild and role permissions: guild-unavailable (0.4178ms)
+✔ ticket closure uses current guild and role permissions: current-admin (0.9977ms)
+✔ ticket closure rejects cached administrator when fresh membership is revoked (0.8584ms)
+✔ ticket closure rejects cached administrator when fresh membership is unavailable (0.7878ms)
+✔ link acknowledges privately before database and emoji reads (1.014ms)
+✔ notice submit acknowledges before persistence and cache revalidation (7.8255ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 5
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1362.6705
+
+✖ failing tests:
+
+test at discord-bot\src\interactions\workflow-commands.test.ts:2:1580
+✖ ticket closure uses current guild and role permissions: revoked-admin-role (5.8674ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (C:\Users\major\OneDrive\Dokumenty\GitHub\logi-upstream\discord-bot\src\interactions\workflow-commands.test.ts:85:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at discord-bot\src\interactions\workflow-commands.test.ts:2:1580
+✖ ticket closure uses current guild and role permissions: former-owner (1.176ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (C:\Users\major\OneDrive\Dokumenty\GitHub\logi-upstream\discord-bot\src\interactions\workflow-commands.test.ts:85:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at discord-bot\src\interactions\workflow-commands.test.ts:2:1580
+✖ ticket closure uses current guild and role permissions: roles-unavailable (0.5037ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (C:\Users\major\OneDrive\Dokumenty\GitHub\logi-upstream\discord-bot\src\interactions\workflow-commands.test.ts:85:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at discord-bot\src\interactions\workflow-commands.test.ts:2:1580
+✖ ticket closure uses current guild and role permissions: guild-unavailable (0.4178ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (C:\Users\major\OneDrive\Dokumenty\GitHub\logi-upstream\discord-bot\src\interactions\workflow-commands.test.ts:85:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

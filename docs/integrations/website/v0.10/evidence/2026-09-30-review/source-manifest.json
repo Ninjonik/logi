@@ -1,0 +1,39 @@
+{
+  "commit": "ba845b38703d7ab053bd4f6897c002fbf6268f9f",
+  "base": "a34ef149883240ab6a9eb879e845b5f71a5786e6",
+  "executionParent": "9c61c53f9a6c13a9c747a4f242a7eab4322916f6",
+  "binding": "Checks ran on the uncommitted runtime changes, then the unchanged source content was committed. The documentation/evidence commit can be newer.",
+  "runtimePaths": [
+    "src",
+    "convex",
+    "discord-bot",
+    "content",
+    "patches",
+    "scripts",
+    "package.json",
+    "bun.lock",
+    "next.config.ts",
+    "tsconfig.json",
+    "eslint.config.mjs"
+  ],
+  "changedFiles": {
+    "bun.lock": "6d97c563e753ec380205d90738d199e3efce738dd6e9bd125d99c590e395d78f",
+    "content/configuration/members.mdx": "4e94773d850d24bf2d4b4f8691ce458dc46eabbbd9251ed5929b73a285e6b186",
+    "convex/competitions.ts": "5ca1be059e4ed0ee24ca3898f890be115d98b443447a0dcc0f415eb2ffeb4e17",
+    "convex/integrationMutation.ts": "66bf054b175ec0e9f757c8b4e12c9e7465cdccd15741985c266bbb8737f1bf89",
+    "convex/membershipSubject.ts": "67b50586764e60cff502dfe9c057be4b7f6f70d9ef304825a2614ce2f46d5f49",
+    "convex/membership_shared.ts": "436174010d0b91c1d8a23c63389e4b0105782cc6bd0241f1fd49c1f1d416b93a",
+    "discord-bot/README.md": "b3a326c8b915b9fe896685516978b18e5994cde9b02d00252a97392551adc1ac",
+    "discord-bot/src/gateway-lifecycle.test.ts": "2d00cda73797820731261a94906c1fe673b6fda8bcaa73c27252741536383957",
+    "discord-bot/src/sync/managed-member-roles.test.ts": "4744c1f8628d1f6e5b00d8fa4a5566462f72e8c738347f5388fb5c104342e339",
+    "discord-bot/src/sync/managed-member-roles.ts": "8f93174d409dd77e4dd13336a421306ddfd4603a808656fa13594599a89587b3",
+    "discord-bot/test-fixtures/gateway-lifecycle.mjs": "3bf40d8a3bfaf50ec29d6390f98c22a68687e4a52292b0f7bc6170293f488ccc",
+    "package.json": "8dff5522f7797549764f2242a56fb65c2abf7e13cc6b96fcc6ba30753e0e8598",
+    "patches/@discordjs+ws+1.2.3.patch": "6bbd0dc3e64a34e155e70cc9f30df62e6346ed06f6a9f5ee5b1bac47317fbf83",
+    "patches/README.md": "86c89171167a339e58688d9ed797c4c334e29654f4b67f96609ed07b01a2c187",
+    "src/infrastructure/convex/integration-change-coverage.test.ts": "505a239a827317f27e295905458ec8ed4ca3c899f9f8d459355d31c347884712",
+    "src/infrastructure/convex/member-observations.test.ts": "f740b336a033a103e9bde27f3042915c5f205083f0270d3adf7a46fac6f615fc",
+    "src/lib/api/integration-query.ts": "319d778705d1f71d7964e852185df7e03b952158a5026e189ef5d8cc9c7edd43",
+    "src/lib/api/integration-route.test.ts": "6b058f9a151a6c4798fdbc5499c09c68b1641b91d3c6e756be88bce4653e5564"
+  }
+}

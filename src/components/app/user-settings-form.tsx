@@ -1,5 +1,8 @@
 "use client"
 
+import type { LinkLocale } from "@/domain/identity/platform-link"
+import { VerifiedPlatformLinks } from "./verified-platform-links"
+
 import {
     AlertTriangle,
     CircleHelp,
@@ -50,10 +53,14 @@ export function UserSettingsForm({
     user,
     dictionary,
     workspaces,
+    locale,
+    steamCallbackFailed,
 }: {
     user: AppUser
     dictionary: Dictionary
     workspaces: Guild[]
+    locale: LinkLocale
+    steamCallbackFailed: boolean
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -280,6 +287,11 @@ export function UserSettingsForm({
                 </CardContent>
             </Card>
             <div className="space-y-6">
+                <VerifiedPlatformLinks
+                    dictionary={dictionary}
+                    locale={locale}
+                    initialCallbackFailed={steamCallbackFailed}
+                />
                 <Card className="border-border/60 rounded-2xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">

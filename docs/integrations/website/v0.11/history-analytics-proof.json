@@ -1,0 +1,323 @@
+{
+  "provider": {
+    "checkedAt": "2026-10-03T19:51:57.317Z",
+    "method": "GET",
+    "productionDatabaseUsed": false,
+    "reads": [
+      {
+        "view": "matches",
+        "status": 200,
+        "keys": [
+          "ok",
+          "matches",
+          "live",
+          "page",
+          "pageSize",
+          "total",
+          "pages"
+        ],
+        "error": null,
+        "total": 6,
+        "pages": 1,
+        "returned": 6,
+        "completedOnPage": 5,
+        "decidedOnPage": 4,
+        "ongoingOnPage": 1,
+        "sample": [
+          {
+            "id": 5,
+            "startedAt": "2026-10-02T23:10:27.486Z",
+            "endedAt": "2026-10-02T23:14:05.1Z",
+            "map": "Ozeti",
+            "winner": null,
+            "finalScores": null,
+            "players": 11
+          },
+          {
+            "id": 4,
+            "startedAt": "2026-10-02T21:57:46.024Z",
+            "endedAt": "2026-10-02T23:10:27.486Z",
+            "map": "Bakurani",
+            "winner": "Manticore",
+            "finalScores": [
+              {
+                "name": "Manticore",
+                "score": 100
+              },
+              {
+                "name": "Valkyra",
+                "score": 40
+              },
+              {
+                "name": "Lonestar",
+                "score": 21
+              }
+            ],
+            "players": 101
+          },
+          {
+            "id": 3,
+            "startedAt": "2026-10-02T20:34:32.28Z",
+            "endedAt": "2026-10-02T21:57:46.024Z",
+            "map": "Zestafona",
+            "winner": "Lonestar",
+            "finalScores": [
+              {
+                "name": "Lonestar",
+                "score": 100
+              },
+              {
+                "name": "Manticore",
+                "score": 44
+              },
+              {
+                "name": "Valkyra",
+                "score": 36
+              }
+            ],
+            "players": 153
+          }
+        ]
+      },
+      {
+        "view": "analytics",
+        "status": 200,
+        "keys": [
+          "ok",
+          "range",
+          "from",
+          "to",
+          "sampleSeconds",
+          "bucketSeconds",
+          "summary",
+          "population",
+          "cash",
+          "maps",
+          "wins",
+          "players",
+          "matches",
+          "hourly",
+          "combat"
+        ],
+        "error": null,
+        "matchKeys": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "wins": {
+          "teams": [
+            {
+              "name": "Manticore",
+              "wins": 2,
+              "colorHex": "#1DD65C"
+            },
+            {
+              "name": "Lonestar",
+              "wins": 1,
+              "colorHex": "#4CB1EF"
+            },
+            {
+              "name": "Valkyra",
+              "wins": 1,
+              "colorHex": "#FA503E"
+            }
+          ],
+          "decided": 4,
+          "draws": 0,
+          "noResult": 1
+        }
+      },
+      {
+        "view": "leaderboard",
+        "status": 200,
+        "keys": [
+          "ok",
+          "query",
+          "rows",
+          "total",
+          "pageSize",
+          "hasFeed"
+        ],
+        "error": null,
+        "total": 197,
+        "rows": 50,
+        "hasFeed": true,
+        "playerFieldNames": [
+          "rank",
+          "steamId",
+          "name",
+          "minutes",
+          "seedMinutes",
+          "kills",
+          "deaths",
+          "headshots",
+          "teamKills",
+          "suicides",
+          "vehicleKills",
+          "killStreak",
+          "deathStreak",
+          "matches",
+          "wins",
+          "losses",
+          "draws",
+          "cash",
+          "lastSeen"
+        ]
+      },
+      {
+        "view": "match",
+        "status": 200,
+        "matchId": 4,
+        "hasFeed": true,
+        "winner": "Manticore",
+        "scores": [
+          {
+            "name": "Manticore",
+            "score": 100
+          },
+          {
+            "name": "Valkyra",
+            "score": 40
+          },
+          {
+            "name": "Lonestar",
+            "score": 21
+          }
+        ],
+        "factions": [
+          {
+            "name": "Manticore",
+            "colorHex": "#1DD65C"
+          },
+          {
+            "name": "Valkyra",
+            "colorHex": "#FA503E"
+          },
+          {
+            "name": "Lonestar",
+            "colorHex": "#4CB1EF"
+          }
+        ],
+        "playerLines": 101,
+        "playerFieldNames": [
+          "steamId",
+          "name",
+          "faction",
+          "seconds",
+          "kills",
+          "deaths",
+          "cashDelta",
+          "headshots",
+          "teamKills",
+          "suicides",
+          "vehicleKills",
+          "longestM",
+          "killStreak",
+          "deathStreak",
+          "result"
+        ],
+        "resultCounts": {
+          "win": 25,
+          "loss": 58,
+          "unknown": 18
+        },
+        "timelineSamples": 263,
+        "awardKinds": [
+          "kills",
+          "kd",
+          "cash"
+        ],
+        "error": null
+      }
+    ]
+  },
+  "adapter": {
+    "checkedAt": "2026-10-03T19:53:56.42Z",
+    "sourceRevision": "1d44a276696eeed400d461b2d4b9726e67f92b81",
+    "input": "Captured actual HTTPS GET responses; no synthetic player rows",
+    "networkCallsDuringAdapterCheck": 0,
+    "databaseWrites": 0,
+    "checks": [
+      {
+        "view": "matches",
+        "parsed": true
+      },
+      {
+        "view": "analytics",
+        "parsed": true
+      },
+      {
+        "view": "leaderboard",
+        "parsed": true
+      },
+      {
+        "view": "match",
+        "parsed": true
+      }
+    ],
+    "session": {
+      "complete": true,
+      "players": 101,
+      "factionScores": [
+        {
+          "id": "Manticore",
+          "label": "Manticore",
+          "score": 100
+        },
+        {
+          "id": "Valkyra",
+          "label": "Valkyra",
+          "score": 40
+        },
+        {
+          "id": "Lonestar",
+          "label": "Lonestar",
+          "score": 21
+        }
+      ],
+      "retainedSessionFields": [
+        "externalId",
+        "startedAt",
+        "endedAt",
+        "complete",
+        "map",
+        "participants",
+        "sourceDigest",
+        "players"
+      ],
+      "retainedPlayerFields": [
+        "platform",
+        "platformId",
+        "metrics"
+      ],
+      "retainedMetricNames": [
+        "seconds",
+        "kills",
+        "deaths",
+        "cashDelta",
+        "headshots",
+        "teamKills",
+        "suicides",
+        "vehicleKills",
+        "longestM",
+        "killStreak",
+        "deathStreak"
+      ],
+      "upstreamWinnerPresent": true,
+      "storedWinnerField": false,
+      "storedPlayerFactionField": false,
+      "storedPlayerResultField": false
+    }
+  },
+  "tests": {
+    "command": "node --import tsx --test src/infrastructure/game-data/warcon.test.ts src/application/game-data/collect-sessions.test.ts",
+    "passed": 14,
+    "failed": 0,
+    "skipped": 0
+  },
+  "acceptance": "Read-only provider observations and current adapter behavior; no database persistence or new analytics implementation."
+}

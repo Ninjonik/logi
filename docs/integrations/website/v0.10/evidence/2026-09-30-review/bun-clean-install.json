@@ -1,0 +1,10 @@
+{
+  "command": "bun 1.4.2 install --frozen-lockfile",
+  "exitCode": 0,
+  "sourceContent": "ba845b38703d7ab053bd4f6897c002fbf6268f9f",
+  "scope": "Fresh directory with full project package.json, bun.lock and patches; no credentials",
+  "packagesInstalled": 1038,
+  "durationSeconds": 146.38,
+  "postinstallPatchApplied": true,
+  "testsExecutedInThisInstall": false
+}
