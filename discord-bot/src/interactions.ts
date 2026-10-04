@@ -45,7 +45,6 @@ import {
     buildPlatformLinkMockApplyModalId,
     buildPlatformLinkSearchModalId,
     buildPlayerSearchResultsMessage,
-    buildPlatformLinkStartMessage,
     buildPlatformSelectMessageWithEmojis,
     buildPlayedBeforeMessage,
     getPlatformFlowMessages,
@@ -1306,7 +1305,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                       platformIds: linkState.platformIds,
                       emojis,
                   })
-                : buildPlatformLinkStartMessage(language, { mode: "link" })),
+                : buildPlatformSelectMessageWithEmojis({
+                      language,
+                      context: { mode: "link" },
+                      emojis,
+                  })),
             flags: MessageFlags.Ephemeral,
         })
     }
@@ -1499,12 +1502,15 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             draft.gameId
         )
         if (!context) return
+        const step: MembershipFlowStep = context.category.modalQuestions.length
+            ? "questions"
+            : "review"
         await convex.mutation(references.updateMembershipApplicationDraft, {
             secret: env.internalSecret,
             draftId: draftId as never,
             guildId: interaction.guildId,
             creatorId: interaction.user.id,
-            step: "questions",
+            step,
         })
         const updatedDraft = await getMembershipFlowDraft(
             draftId,
@@ -1516,7 +1522,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             interaction,
             updatedDraft,
             language,
-            "questions",
+            step,
             context.category,
             true,
             "update"
@@ -1772,11 +1778,15 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 ...buildMembershipPlatformFlowMessage(
                     language,
                     draftId,
-                    buildPlatformLinkStartMessage(language, {
-                        mode: "membership",
-                        categoryId: draft.categoryId,
-                        gameId: draft.gameId,
-                        draftId,
+                    buildPlatformSelectMessageWithEmojis({
+                        language,
+                        context: {
+                            mode: "membership",
+                            categoryId: draft.categoryId,
+                            gameId: draft.gameId,
+                            draftId,
+                        },
+                        emojis: await getPlatformEmojis(),
                     })
                 ),
                 flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
@@ -2118,15 +2128,16 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 ...buildMembershipPlatformFlowMessage(
                     prereq.config.defaultLanguage as ClanLanguage,
                     draft.id,
-                    buildPlatformLinkStartMessage(
-                        prereq.config.defaultLanguage as ClanLanguage,
-                        {
+                    buildPlatformSelectMessageWithEmojis({
+                        language: prereq.config.defaultLanguage as ClanLanguage,
+                        context: {
                             mode: "membership",
                             categoryId,
                             gameId,
                             draftId: draft.id,
-                        }
-                    )
+                        },
+                        emojis: await getPlatformEmojis(),
+                    })
                 ),
                 flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
             })
