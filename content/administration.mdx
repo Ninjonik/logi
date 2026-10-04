@@ -36,7 +36,7 @@ has a name (unique per game, ignoring letter case and extra spaces), an optional
 short code, logo, description (up to 500 characters) and up to three https
 links. A team can be linked to one Logi workspace to record that the team is
 that workspace's clan; the link grants no permissions. Logos uploaded here are
-normalized to a 512×512 PNG and belong to the platform, not to a workspace.
+normalized to a PNG no larger than 512×512 and belong to the platform, not to a workspace.
 
 - **Archive** hides a team from new selection and from connected websites;
   saved matches keep their snapshot. **Restore** brings it back unless another
@@ -45,8 +45,8 @@ normalized to a 512×512 PNG and belong to the platform, not to a workspace.
   same game). The duplicate is archived with a pointer to the kept team, and its
   competition registrations, fixtures and pending requests move to the kept
   team. Saved match snapshots are not rewritten. A merge cannot be undone. Two
-  teams that played each other in a competition are different teams and cannot
-  be merged.
+  teams that both take part in one competition (both registered, or a fixture
+  between them) are different teams there and cannot be merged.
 - Every save, archive, restore and merge is checked against the version you
   loaded. If someone else changed the team first, the dialog or row shows the
   latest version and keeps your own edits; review it and try again.
@@ -127,10 +127,13 @@ immediately.
   native Logi match event of the same game. The dialog suggests matches from
   the workspaces linked to either team; you can also paste an event ID. When the
   event has assigned match teams, both fixture teams must be among them. An
-  event can belong to only one fixture. If the event already has an imported
-  result, a still-scheduled fixture takes its score; later results imported for
-  that match mark the fixture final and copy the two scores. Workspace managers
-  no longer link their own matches.
+  event can belong to only one fixture. An imported Hell Let Loose result is
+  Axis versus Allies, so Logi fills the fixture only when both fixture teams
+  have an Axis or Allies side assigned in the event: each team gets its side's
+  score. If the event already has such a result, a still-scheduled fixture takes
+  it; later imports mark the fixture final. Without sides, enter the score
+  yourself. Changing a fixture's teams releases its linked match. Workspace
+  managers no longer link their own matches.
 - **ECL 2026.** **Create ECL 2026** creates (or completes) the published ECL
   competition with its official divisions, reusing catalogue teams with the
   same name and creating the missing ones.
@@ -146,7 +149,11 @@ opponent, division or forfeit rules.
     migration they stay readable but show **Migration pending**, cannot be
     linked, and block the ECL seed. The migration turns each referenced
     workspace into (or matches it with) a catalogue team of the competition's
-    game, linked to the workspace when it is a real Logi workspace.
+    game, linked to the workspace when it is a real Logi workspace. Two
+    same-name clans of one competition become one team only when they share a
+    division and never played each other; otherwise the second keeps its own
+    team with a distinguishable name you can rename. Public pages may show the
+    previous state for up to five minutes after the migration.
 </Callout>
 
 ## LogiComms

@@ -44,6 +44,87 @@ import {
 } from "@/lib/api/website-event-command-openapi"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
+/** One division of a public competition, shared by the full and the paged response. */
+const publicCompetitionDivisionSchema = {
+    type: "object",
+    required: ["id", "name", "teams", "fixtures"],
+    properties: {
+        id: { type: "string" },
+        name: {
+            type: "string",
+        },
+        teams: {
+            type: "array",
+            items: {
+                type: "object",
+                required: ["id", "name", "shortCode", "logoUrl", "withdrawn"],
+                properties: {
+                    id: {
+                        type: "string",
+                        description:
+                            "Global team catalogue ID (guild:<id> for a legacy record).",
+                    },
+                    name: {
+                        type: "string",
+                    },
+                    shortCode: {
+                        type: ["string", "null"],
+                    },
+                    logoUrl: {
+                        type: ["string", "null"],
+                        format: "uri",
+                    },
+                    withdrawn: {
+                        type: "boolean",
+                    },
+                },
+            },
+        },
+        fixtures: {
+            type: "array",
+            items: {
+                type: "object",
+                required: ["id", "phase", "teamAId", "teamBId", "status"],
+                properties: {
+                    id: {
+                        type: "string",
+                    },
+                    phase: {
+                        type: "string",
+                        enum: ["league", "playoff", "relegation"],
+                    },
+                    teamAId: {
+                        type: "string",
+                    },
+                    teamBId: {
+                        type: "string",
+                    },
+                    scoreA: {
+                        type: "integer",
+                    },
+                    scoreB: {
+                        type: "integer",
+                    },
+                    status: {
+                        type: "string",
+                        enum: ["scheduled", "final", "forfeit"],
+                    },
+                    scheduledAt: {
+                        type: "string",
+                        description:
+                            "ISO 8601 for fixtures scheduled in Logi; imported legacy fixtures may hold free text.",
+                    },
+                    eventId: {
+                        type: "string",
+                        description:
+                            "Linked Logi match event; its public page is /matches/{eventId}.",
+                    },
+                },
+            },
+        },
+    },
+} as const
+
 const summaryResponseSchemas = {
     ...historyResponseSchemas,
     LeagueFixture: z.toJSONSchema(leagueFixtureSchema),
@@ -401,146 +482,71 @@ const paths: Record<string, unknown> = {
                                 required: ["data"],
                                 properties: {
                                     data: {
-                                        type: "object",
-                                        required: [
-                                            "id",
-                                            "gameId",
-                                            "slug",
-                                            "name",
-                                            "season",
-                                            "description",
-                                            "divisions",
-                                        ],
-                                        properties: {
-                                            id: { type: "string" },
-                                            gameId: {
-                                                type: "string",
-                                                enum: [
-                                                    "hell_let_loose",
-                                                    "hell_let_loose_vietnam",
-                                                    "wardogs",
+                                        oneOf: [
+                                            {
+                                                type: "object",
+                                                required: [
+                                                    "id",
+                                                    "gameId",
+                                                    "slug",
+                                                    "name",
+                                                    "season",
+                                                    "description",
+                                                    "divisions",
                                                 ],
-                                            },
-                                            slug: { type: "string" },
-                                            name: { type: "string" },
-                                            season: { type: "string" },
-                                            description: {
-                                                type: ["string", "null"],
-                                            },
-                                            divisions: {
-                                                type: "array",
-                                                items: {
-                                                    type: "object",
-                                                    required: [
-                                                        "id",
-                                                        "name",
-                                                        "teams",
-                                                        "fixtures",
-                                                    ],
-                                                    properties: {
-                                                        id: { type: "string" },
-                                                        name: {
-                                                            type: "string",
-                                                        },
-                                                        teams: {
-                                                            type: "array",
-                                                            items: {
-                                                                type: "object",
-                                                                required: [
-                                                                    "id",
-                                                                    "name",
-                                                                    "shortCode",
-                                                                    "logoUrl",
-                                                                    "withdrawn",
-                                                                ],
-                                                                properties: {
-                                                                    id: {
-                                                                        type: "string",
-                                                                        description:
-                                                                            "Global team catalogue ID (guild:<id> for a legacy record).",
-                                                                    },
-                                                                    name: {
-                                                                        type: "string",
-                                                                    },
-                                                                    shortCode: {
-                                                                        type: [
-                                                                            "string",
-                                                                            "null",
-                                                                        ],
-                                                                    },
-                                                                    logoUrl: {
-                                                                        type: [
-                                                                            "string",
-                                                                            "null",
-                                                                        ],
-                                                                        format: "uri",
-                                                                    },
-                                                                    withdrawn: {
-                                                                        type: "boolean",
-                                                                    },
-                                                                },
-                                                            },
-                                                        },
-                                                        fixtures: {
-                                                            type: "array",
-                                                            items: {
-                                                                type: "object",
-                                                                required: [
-                                                                    "id",
-                                                                    "phase",
-                                                                    "teamAId",
-                                                                    "teamBId",
-                                                                    "status",
-                                                                ],
-                                                                properties: {
-                                                                    id: {
-                                                                        type: "string",
-                                                                    },
-                                                                    phase: {
-                                                                        type: "string",
-                                                                        enum: [
-                                                                            "league",
-                                                                            "playoff",
-                                                                            "relegation",
-                                                                        ],
-                                                                    },
-                                                                    teamAId: {
-                                                                        type: "string",
-                                                                    },
-                                                                    teamBId: {
-                                                                        type: "string",
-                                                                    },
-                                                                    scoreA: {
-                                                                        type: "integer",
-                                                                    },
-                                                                    scoreB: {
-                                                                        type: "integer",
-                                                                    },
-                                                                    status: {
-                                                                        type: "string",
-                                                                        enum: [
-                                                                            "scheduled",
-                                                                            "final",
-                                                                            "forfeit",
-                                                                        ],
-                                                                    },
-                                                                    scheduledAt:
-                                                                        {
-                                                                            type: "string",
-                                                                            format: "date-time",
-                                                                        },
-                                                                    eventId: {
-                                                                        type: "string",
-                                                                        description:
-                                                                            "Linked Logi match event; its public page is /matches/{eventId}.",
-                                                                    },
-                                                                },
-                                                            },
-                                                        },
+                                                properties: {
+                                                    id: { type: "string" },
+                                                    gameId: {
+                                                        type: "string",
+                                                        enum: [
+                                                            "hell_let_loose",
+                                                            "hell_let_loose_vietnam",
+                                                            "wardogs",
+                                                        ],
+                                                    },
+                                                    slug: { type: "string" },
+                                                    name: { type: "string" },
+                                                    season: { type: "string" },
+                                                    description: {
+                                                        type: [
+                                                            "string",
+                                                            "null",
+                                                        ],
+                                                    },
+                                                    divisions: {
+                                                        type: "array",
+                                                        items: publicCompetitionDivisionSchema,
                                                     },
                                                 },
                                             },
-                                        },
+                                            {
+                                                description:
+                                                    "With collection=divisions: one page of divisions.",
+                                                type: "object",
+                                                required: [
+                                                    "page",
+                                                    "total",
+                                                    "offset",
+                                                    "limit",
+                                                    "nextOffset",
+                                                ],
+                                                properties: {
+                                                    page: {
+                                                        type: "array",
+                                                        items: publicCompetitionDivisionSchema,
+                                                    },
+                                                    total: { type: "integer" },
+                                                    offset: { type: "integer" },
+                                                    limit: { type: "integer" },
+                                                    nextOffset: {
+                                                        type: [
+                                                            "integer",
+                                                            "null",
+                                                        ],
+                                                    },
+                                                },
+                                            },
+                                        ],
                                     },
                                 },
                             },

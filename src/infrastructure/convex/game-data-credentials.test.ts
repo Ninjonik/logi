@@ -1176,3 +1176,61 @@ test("the operator can return an operator source to its variable; workspaces can
         .sources
     assert.equal(listed.key.state, "environment")
 })
+
+test("a selected legacy registration migrates even when it is not on the first page", async (t) => {
+    const ctx = setup(t)
+    setEnv(t, { LOGI_GAME_DATA_SECOND_TOKEN: `${SENTINEL}-second` })
+    for (const [ref, variable] of [
+        ["first", "LOGI_GAME_DATA_FIRST_TOKEN"],
+        ["second", "LOGI_GAME_DATA_SECOND_TOKEN"],
+    ])
+        ctx.db.seed("gameDataSources", {
+            _id: `gameDataSources:${ref}`,
+            ref,
+            guildId: "guild-b",
+            gameId: "wardogs",
+            provider: "wardogs_warcon",
+            providerServerId:
+                ref === "first"
+                    ? warconId
+                    : "44444444-4444-4444-8444-444444444444",
+            origin: "https://own.example.test",
+            secretRef: variable,
+            allowedAddresses: [],
+            createdAt: "2026-10-01T00:00:00.000Z",
+            updatedAt: "2026-10-01T00:00:00.000Z",
+            updatedBy: "200000000000000002",
+        })
+    const result = await migrateLegacyCredentials(
+        {
+            candidates: (input) =>
+                invoke(migration.legacyCandidates, ctx, input),
+            readVariable: (name) => process.env[name],
+            encrypter: () => (plaintext, aad) =>
+                encryptCredential(parseKeyring(ring1)!, plaintext, aad),
+            adopt: (candidate, envelope) =>
+                invoke(migration.adoptLegacyCredential, ctx, {
+                    kind: candidate.kind,
+                    guildId: candidate.guildId,
+                    ref: candidate.ref,
+                    secretRef: candidate.secretRef,
+                    expectedRevision: candidate.expectedRevision,
+                    envelope,
+                }),
+        },
+        {
+            dryRun: false,
+            phase: "workspace",
+            cursor: null,
+            limit: 1,
+            guildId: "guild-b",
+            ref: "second",
+            confirmWorkspaceBinding: true,
+        }
+    )
+    assert.deepEqual(
+        result.results.map((entry) => [entry.ref, entry.status]),
+        [["second", "migrated"]]
+    )
+    assert.equal(leaks(result), false)
+})

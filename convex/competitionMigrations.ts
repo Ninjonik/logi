@@ -4,7 +4,8 @@ import { adoptedTeamName } from "../src/domain/competitions/competition"
 import { teamGameSchema, type TeamGame } from "../src/domain/teams/team"
 import { internalMutation, type MutationCtx } from "./_generated/server"
 import { resolveGameScope } from "../src/domain/games/game"
-import type { Id } from "./_generated/dataModel"
+import type { Doc, Id } from "./_generated/dataModel"
+import { getGuildDiscordId } from "./identity"
 import { internal } from "./_generated/api"
 import { v } from "convex/values"
 
@@ -53,7 +54,8 @@ function teamAdopter(ctx: MutationCtx, counts: Counts) {
         if (guild) {
             // A same-name clan proven different keeps its own team under a
             // stable, distinguishable name an administrator can rename later.
-            const suffix = guild.discordId ?? String(guildId).slice(-6)
+            const discordId = getGuildDiscordId(guild) || null
+            const suffix = discordId ?? String(guildId).slice(-6)
             const adopted = await adoptCatalogueTeam(
                 ports,
                 COMPETITION_MIGRATION_ACTOR,
@@ -65,7 +67,7 @@ function teamAdopter(ctx: MutationCtx, counts: Counts) {
                               `Team ${guildId}`
                           )
                         : adoptedTeamName(guild.name, `Team ${guildId}`),
-                    linkedGuildId: guild.discordId ?? null,
+                    linkedGuildId: discordId,
                 }
             )
             if ("ok" in adopted) {
@@ -81,16 +83,29 @@ function teamAdopter(ctx: MutationCtx, counts: Counts) {
 }
 
 /** Whether two legacy clans of one competition played a fixture against each other. */
+function fixtureReader(ctx: MutationCtx) {
+    const cache = new Map<string, Promise<Doc<"competitionFixtures">[]>>()
+    return (competitionId: Id<"competitions">) => {
+        let fixtures = cache.get(competitionId)
+        if (!fixtures) {
+            fixtures = ctx.db
+                .query("competitionFixtures")
+                .withIndex("competitionId", (q) =>
+                    q.eq("competitionId", competitionId)
+                )
+                .collect()
+            cache.set(competitionId, fixtures)
+        }
+        return fixtures
+    }
+}
 async function metInCompetition(
-    ctx: MutationCtx,
+    fixturesOf: ReturnType<typeof fixtureReader>,
     competitionId: Id<"competitions">,
     guildId: Id<"guilds">,
     otherGuildId: Id<"guilds">
 ): Promise<boolean> {
-    const fixtures = await ctx.db
-        .query("competitionFixtures")
-        .withIndex("competitionId", (q) => q.eq("competitionId", competitionId))
-        .collect()
+    const fixtures = await fixturesOf(competitionId)
     return fixtures.some(
         (fixture) =>
             (fixture.teamAId === guildId && fixture.teamBId === otherGuildId) ||
@@ -138,6 +153,7 @@ export const adoptGlobalTeams = internalMutation({
             unresolved: 0,
         }
         const adopt = teamAdopter(ctx, counts)
+        const fixturesOf = fixtureReader(ctx)
         const now = new Date().toISOString()
         let next: string | null
         if (phase === "teams") {
@@ -162,19 +178,21 @@ export const adoptGlobalTeams = internalMutation({
                         )
                         .first()
                 let existing = await registered(teamId)
-                // Same-name clans that met in this competition are different
-                // teams: folding them would make the team play itself.
+                // Same-name clans that met, or sit in different divisions, of
+                // this competition are different teams: folding them would make
+                // a team play itself or orphan the other division's results.
                 if (
                     gameId &&
                     existing &&
                     existing._id !== row._id &&
                     existing.guildId &&
-                    (await metInCompetition(
-                        ctx,
-                        row.competitionId,
-                        row.guildId,
-                        existing.guildId
-                    ))
+                    (existing.divisionId !== row.divisionId ||
+                        (await metInCompetition(
+                            fixturesOf,
+                            row.competitionId,
+                            row.guildId,
+                            existing.guildId
+                        )))
                 ) {
                     teamId = await adopt(gameId, row.guildId, {
                         distinct: true,
@@ -223,15 +241,21 @@ export const adoptGlobalTeams = internalMutation({
                 }
                 const sideATeamId = await resolve(row.sideATeamId, row.teamAId)
                 const sideBTeamId = await resolve(row.sideBTeamId, row.teamBId)
+                // Each resolvable side is converted on its own, so a known team
+                // keeps its name next to a deleted opponent.
+                if (
+                    (sideATeamId && !row.sideATeamId) ||
+                    (sideBTeamId && !row.sideBTeamId)
+                )
+                    await ctx.db.patch(row._id, {
+                        ...(sideATeamId ? { sideATeamId } : {}),
+                        ...(sideBTeamId ? { sideBTeamId } : {}),
+                        updatedAt: now,
+                    })
                 if (!sideATeamId || !sideBTeamId) {
                     counts.unresolved++
                     continue
                 }
-                await ctx.db.patch(row._id, {
-                    sideATeamId,
-                    sideBTeamId,
-                    updatedAt: now,
-                })
                 counts.fixturesConverted++
             }
             next = page.isDone ? null : `fixtures:${page.continueCursor}`

@@ -24,6 +24,8 @@ import {
     type FixtureInput,
     type PublicCompetition,
     type RegisteredTeam,
+    fixtureScoreFromEvent,
+    type EventTeamSide,
 } from "../src/domain/competitions/competition"
 import type {
     CompetitionAdminView,
@@ -397,6 +399,24 @@ export const adminGet = query({
 })
 
 /** The global team IDs an event's match-team assignments currently stand for (merges followed). */
+/** Each assigned team's side, under its assigned ID and its current (merged-into) ID. */
+export async function eventTeamSides(
+    ctx: Db,
+    event: Doc<"events">
+): Promise<EventTeamSide[]> {
+    const sides: EventTeamSide[] = []
+    for (const assignment of event.matchTeams ?? []) {
+        const current = await currentTeam(ctx, assignment.teamId)
+        sides.push({
+            teamIds: current
+                ? [assignment.teamId, String(current._id)]
+                : [assignment.teamId],
+            side: assignment.side,
+        })
+    }
+    return sides
+}
+
 async function eventTeamIds(ctx: Db, event: Doc<"events">): Promise<string[]> {
     const ids = new Set<string>()
     for (const assignment of event.matchTeams ?? []) {
@@ -897,8 +917,16 @@ export const updateFixture = mutation({
         if (!row || !competition) return fail("not_found")
         const write = await fixtureWrite(ctx, competition, args.input)
         if ("error" in write) return write
+        // A linked match event belongs to the pairing it was checked for; new
+        // teams release it so later imports cannot score the wrong pairing.
+        const teamsChanged =
+            write.fields.sideATeamId !== row.sideATeamId ||
+            write.fields.sideBTeamId !== row.sideBTeamId
+        if (teamsChanged && row.eventId)
+            await releaseEvent(ctx, row.eventId, row._id)
         await ctx.db.patch(row._id, {
             ...write.fields,
+            ...(teamsChanged ? { eventId: undefined } : {}),
             teamAId: undefined,
             teamBId: undefined,
             phase: write.fixture.phase,
@@ -1002,16 +1030,20 @@ export const linkEvent = mutation({
         if (blocked || !event) return fail(blocked ?? "event_not_found")
         if (fixture.eventId && fixture.eventId !== event._id)
             await releaseEvent(ctx, fixture.eventId, fixture._id)
-        const score = event.eventResult?.score
+        const score =
+            event.eventResult?.score && fixture.status === "scheduled"
+                ? fixtureScoreFromEvent({
+                      fixture: {
+                          sideATeamId: String(fixture.sideATeamId),
+                          sideBTeamId: String(fixture.sideBTeamId),
+                      },
+                      eventTeams: await eventTeamSides(ctx, event),
+                      score: event.eventResult.score,
+                  })
+                : null
         await ctx.db.patch(fixture._id, {
             eventId: event._id,
-            ...(score && fixture.status === "scheduled"
-                ? {
-                      scoreA: score.sideA,
-                      scoreB: score.sideB,
-                      status: "final" as const,
-                  }
-                : {}),
+            ...(score ? { ...score, status: "final" as const } : {}),
             updatedAt: NOW(),
         })
         await ctx.db.patch(event._id, { competitionFixtureId: fixture._id })

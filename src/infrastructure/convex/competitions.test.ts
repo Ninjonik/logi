@@ -1,6 +1,7 @@
 import { actorFixture, seedDashboardActor } from "./testing/dashboard-actor"
 import * as competitions from "../../../convex/competitions"
 import { invoke, testContext } from "./testing/database"
+import * as events from "../../../convex/events"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -666,10 +667,14 @@ test("a fixture links to one free match event of the same game with both teams, 
         })
     const first = await fixture("teamDirectory:circle")
     const second = await fixture("teamDirectory:wolves")
-    const assignment = (teamId: string, slot: string) => ({
+    const assignment = (
+        teamId: string,
+        slot: string,
+        side: string | null = null
+    ) => ({
         teamId,
         slot,
-        side: null,
+        side,
         snapshot: {},
     })
     ctx.db.seed("guilds", {
@@ -687,10 +692,11 @@ test("a fixture links to one free match event of the same game with both teams, 
             gameStart: "2026-10-10T19:00:00.000Z",
             ...extra,
         })
+    // The imported score is Axis 3 : Allies 2; Omen (fixture side A) played Allies.
     event("events:match", {
         matchTeams: [
-            assignment("teamDirectory:circle", "a"),
-            assignment("teamDirectory:omen", "b"),
+            assignment("teamDirectory:circle", "a", "Axis"),
+            assignment("teamDirectory:omen", "b", "Allies"),
         ],
         eventResult: { score: { sideA: 3, sideB: 2 } },
     })
@@ -744,10 +750,10 @@ test("a fixture links to one free match event of the same game with both teams, 
             (row) => row._id === first.fixtureId
         )!
     assert.equal(stored().eventId, "events:match")
-    // An imported result fills the still-scheduled fixture.
+    // An imported result fills the still-scheduled fixture by each team's side.
     assert.deepEqual(
         [stored().status, stored().scoreA, stored().scoreB],
-        ["final", 3, 2]
+        ["final", 2, 3]
     )
     const linkedEvent = () =>
         ctx.db.tables.events.find((row) => row._id === "events:match")!
@@ -785,6 +791,153 @@ test("a fixture links to one free match event of the same game with both teams, 
         true
     )
     assert.equal(legacyEvent().competitionFixtureId, undefined)
+})
+
+test("a result without known sides is not guessed, and new fixture teams release the linked event", async () => {
+    const ctx = setup()
+    const { competitionId, d1 } = await competitionWithDivisions(ctx)
+    for (const team of ["omen", "circle", "wolves"])
+        await register(ctx, competitionId, `teamDirectory:${team}`, d1)
+    const created = await invoke(competitions.createFixture, ctx, {
+        ...platform,
+        competitionId,
+        input: {
+            divisionId: d1,
+            phase: "league",
+            sideATeamId: "teamDirectory:omen",
+            sideBTeamId: "teamDirectory:circle",
+            status: "scheduled",
+        },
+    })
+    ctx.db.seed("events", {
+        _id: "events:sideless",
+        guildId: "123456789012345678",
+        kind: "match",
+        gameId: "hell_let_loose",
+        name: "sideless",
+        gameStart: "2026-10-10T19:00:00.000Z",
+        matchTeams: [
+            {
+                teamId: "teamDirectory:omen",
+                slot: "a",
+                side: null,
+                snapshot: {},
+            },
+            {
+                teamId: "teamDirectory:circle",
+                slot: "b",
+                side: null,
+                snapshot: {},
+            },
+        ],
+        eventResult: { score: { sideA: 5, sideB: 0 } },
+    })
+    assert.equal(
+        (
+            await invoke(competitions.linkEvent, ctx, {
+                ...platform,
+                fixtureId: created.fixtureId,
+                input: { eventId: "events:sideless" },
+            })
+        ).ok,
+        true
+    )
+    const stored = () =>
+        ctx.db.tables.competitionFixtures.find(
+            (row) => row._id === created.fixtureId
+        )!
+    assert.deepEqual(
+        [stored().status, stored().scoreA, stored().scoreB],
+        ["scheduled", undefined, undefined]
+    )
+    assert.equal(
+        (
+            await invoke(competitions.updateFixture, ctx, {
+                ...platform,
+                fixtureId: created.fixtureId,
+                input: {
+                    divisionId: d1,
+                    phase: "league",
+                    sideATeamId: "teamDirectory:omen",
+                    sideBTeamId: "teamDirectory:wolves",
+                    status: "scheduled",
+                },
+            })
+        ).ok,
+        true
+    )
+    assert.equal(stored().eventId, undefined)
+    assert.equal(
+        ctx.db.tables.events.find((row) => row._id === "events:sideless")!
+            .competitionFixtureId,
+        undefined
+    )
+})
+
+test("an imported result updates a linked fixture by each team's side, never blindly", async () => {
+    const ctx = setup()
+    const { competitionId, d1 } = await competitionWithDivisions(ctx)
+    for (const team of ["omen", "circle"])
+        await register(ctx, competitionId, `teamDirectory:${team}`, d1)
+    const created = await invoke(competitions.createFixture, ctx, {
+        ...platform,
+        competitionId,
+        input: {
+            divisionId: d1,
+            phase: "league",
+            sideATeamId: "teamDirectory:omen",
+            sideBTeamId: "teamDirectory:circle",
+            status: "scheduled",
+        },
+    })
+    ctx.db.seed("events", {
+        _id: "events:imported",
+        guildId: "123456789012345678",
+        kind: "match",
+        gameId: "hell_let_loose",
+        name: "imported",
+        gameStart: "2026-10-10T19:00:00.000Z",
+        matchTeams: [
+            {
+                teamId: "teamDirectory:omen",
+                slot: "a",
+                side: "Allies",
+                snapshot: {},
+            },
+            {
+                teamId: "teamDirectory:circle",
+                slot: "b",
+                side: "Axis",
+                snapshot: {},
+            },
+        ],
+    })
+    await invoke(competitions.linkEvent, ctx, {
+        ...platform,
+        fixtureId: created.fixtureId,
+        input: { eventId: "events:imported" },
+    })
+    // Axis (Circle) won 5:0; Omen is fixture side A.
+    await invoke(events.setResult, ctx, {
+        secret,
+        eventId: "events:imported",
+        eventResult: {
+            sourceUrl: "https://crcon.example.test/games/1",
+            mapId: "1",
+            importedAt: "2026-10-10T21:00:00.000Z",
+            sideA: "Axis",
+            sideB: "Allies",
+            outcome: "defeat",
+            score: { sideA: 5, sideB: 0 },
+        },
+    })
+    const fixture = ctx.db.tables.competitionFixtures.find(
+        (row) => row._id === created.fixtureId
+    )!
+    assert.deepEqual(
+        [fixture.status, fixture.scoreA, fixture.scoreB],
+        ["final", 0, 5]
+    )
 })
 
 test("the ECL seed creates or reuses global catalogue teams instead of placeholder clans", async () => {

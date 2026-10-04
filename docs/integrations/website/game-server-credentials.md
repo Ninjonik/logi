@@ -221,8 +221,23 @@ from production; never test-write into production.
 3. Set it in Convex (`npx convex env set LOGI_CREDENTIAL_KEYRING` with the value
    from a file or prompt, not in shell history) and in the Next server
    environment. Both must be identical.
-4. Deploy Convex (`bunx convex deploy`) and then Next. The schema change only
-   adds optional fields, a table and indexes.
+4. Deploy Convex (`bunx convex deploy`) and then Next **immediately**: the
+   previous Next build calls functions this release removes or changes. The
+   schema change only adds optional fields, tables and indexes, so existing data
+   stays valid.
+
+What stops at deploy, by design:
+
+- **Workspace registrations that named a variable** (created through the
+  previous dashboard form) stop collecting, and their live reads return
+  nothing, until they are migrated (step 2) or their administrator enters the
+  key. Run the workspace dry run (it reads no values) right after deploying and
+  migrate the confirmed ones straight away, so the gap stays short.
+- **Keyless workspace registrations with an administrator-chosen network
+  exception** (for example a keyless CRCON source) pause with a configuration
+  error, because the exception is no longer honoured. They do not appear in the
+  migration report; their administrator restarts collection with **Start
+  collecting**, which binds the source without the exception.
 
 ### 2. Migrate existing variables
 

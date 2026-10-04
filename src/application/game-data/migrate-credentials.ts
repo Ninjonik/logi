@@ -44,6 +44,8 @@ export type MigrationPorts = {
         phase: LegacyCandidate["kind"]
         cursor: string | null
         limit: number
+        guildId?: string
+        ref?: string
     }): Promise<{ candidates: LegacyCandidate[]; nextCursor: string | null }>
     /** Reads exactly the named variable; the environment is never enumerated. */
     readVariable(name: string): string | undefined
@@ -88,7 +90,15 @@ export async function migrateLegacyCredentials(
     results: MigrationResult[]
     nextCursor: string | null
 }> {
-    const page = await ports.candidates(input)
+    // A selected registration is read directly, wherever it would page.
+    const page = await ports.candidates({
+        phase: input.phase,
+        cursor: input.cursor,
+        limit: input.limit,
+        ...(input.guildId && input.ref
+            ? { guildId: input.guildId, ref: input.ref }
+            : {}),
+    })
     const encrypt = ports.encrypter()
     const results: MigrationResult[] = []
     for (const candidate of page.candidates) {

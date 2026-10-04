@@ -238,7 +238,9 @@ test("fixtures are converted with the same mapping; unresolvable references are 
         [circle._id, omen._id]
     )
     assert.equal(byId["competitionFixtures:2"].teamAId, "guilds:ghost-circle")
-    assert.equal(byId["competitionFixtures:3"].sideATeamId, undefined)
+    // The resolvable side is converted; the deleted opponent stays legacy.
+    assert.equal(byId["competitionFixtures:3"].sideATeamId, circle._id)
+    assert.equal(byId["competitionFixtures:3"].sideBTeamId, undefined)
     // Public standings now read global teams.
     const shown = await invoke(competitions.getPublic, ctx, {
         slug: "ecl-2026",
@@ -257,8 +259,8 @@ test("fixtures are converted with the same mapping; unresolvable references are 
         [
             [omen._id, "teamDirectory:valkyria"],
             [circle._id, omen._id],
-            // Converted only when both sides resolve.
-            ["guild:guilds:ghost-circle", "guild:guilds:deleted"],
+            // The known team keeps its catalogue identity next to a deleted opponent.
+            [circle._id, "guild:guilds:deleted"],
         ]
     )
 })

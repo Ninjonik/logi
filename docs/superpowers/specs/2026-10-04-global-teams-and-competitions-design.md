@@ -34,8 +34,9 @@ linked to one Logi workspace (`linkedGuildId`), which records that the team is
 that clan; linking grants no permissions.
 
 Only global administrators create, edit, archive, restore, link and merge
-teams. Every write is revision-checked and audited. Two teams that played each
-other in a competition cannot be merged. Merge archives the source
+teams. Every write is revision-checked and audited. Two teams that both take
+part in one competition (both registered, or a fixture between them) cannot be
+merged. Merge archives the source
 team, records `mergedIntoTeamId`, and moves its competition registrations,
 fixtures and pending requests to the target. Saved match snapshots are never
 rewritten; a refresh of a merged team follows the merge pointer.
@@ -90,11 +91,20 @@ teams (`competitionTeams.teamId`, `competitionFixtures.sideATeamId` and
 `sideBTeamId`). The old guild references become optional legacy fields so that
 existing documents stay valid. An idempotent internal migration converts them:
 each guild in a competition becomes (or matches) a global team of that game,
-linked to the guild when it is a real Logi workspace. The ECL seed creates
+linked to the guild when it is a real Logi workspace (by its Discord ID or
+legacy ID). Same-name clans of one competition fold into one team only when they
+share a division and never met; otherwise the second keeps its own team under a
+distinguishable name. Each resolvable fixture side converts on its own. The ECL
+seed creates
 global teams instead of placeholder clans. After deploying, the operator runs
 `npx convex run competitionMigrations:adoptGlobalTeams` once; it works in
 batches of 100, schedules the rest itself and is safe to rerun. The ECL seed
 refuses to run while legacy rows remain.
+
+An imported Hell Let Loose result is Axis versus Allies. A linked fixture takes
+it only when both fixture teams have an Axis or Allies side in the event, each
+team getting its side's score; otherwise an administrator enters it. Changing a
+fixture's teams releases its linked event.
 
 Competition administration has no `/api/v1` endpoints: it is a global
 administrator workflow with no workspace-scoped equivalent, so a workspace API

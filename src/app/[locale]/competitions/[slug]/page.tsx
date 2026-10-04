@@ -154,8 +154,12 @@ export default async function CompetitionPage({ params }: Props) {
                             division.teams,
                             division.fixtures
                         )
+                        // A playoff or relegation fixture may pair teams of
+                        // different divisions; name both from the whole competition.
                         const teams = new Map(
-                            division.teams.map((team) => [team.id, team])
+                            competition.divisions.flatMap((entry) =>
+                                entry.teams.map((team) => [team.id, team])
+                            )
                         )
                         return (
                             <Card key={division.id} className="overflow-hidden">

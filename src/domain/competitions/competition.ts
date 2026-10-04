@@ -437,3 +437,36 @@ export type PublicCompetition = {
         fixtures: PublicCompetitionFixture[]
     }>
 }
+
+/** One team's side in a native match event, by every ID it is known under (merges followed). */
+export type EventTeamSide = { teamIds: readonly string[]; side: string | null }
+
+/**
+ * The fixture score from an imported Hell Let Loose result. The import lists
+ * Axis as `sideA` and Allies as `sideB`, while fixture sides follow the
+ * administrator's order, so each fixture team takes the score of the side it
+ * was assigned in the event. Without a known Axis/Allies side for both teams
+ * nothing is filled in rather than guessing.
+ */
+export function fixtureScoreFromEvent(input: {
+    fixture: { sideATeamId: string; sideBTeamId: string }
+    eventTeams: readonly EventTeamSide[]
+    score: { sideA: number; sideB: number }
+}): { scoreA: number; scoreB: number } | null {
+    const sideOf = (teamId: string) =>
+        input.eventTeams.find((team) => team.teamIds.includes(teamId))?.side ??
+        null
+    const scoreOf = (side: string | null) =>
+        side === "Axis"
+            ? input.score.sideA
+            : side === "Allies"
+              ? input.score.sideB
+              : null
+    const sideA = sideOf(input.fixture.sideATeamId)
+    const sideB = sideOf(input.fixture.sideBTeamId)
+    const scoreA = scoreOf(sideA)
+    const scoreB = scoreOf(sideB)
+    return sideA !== sideB && scoreA !== null && scoreB !== null
+        ? { scoreA, scoreB }
+        : null
+}

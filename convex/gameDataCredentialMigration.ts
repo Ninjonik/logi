@@ -51,6 +51,9 @@ export const legacyCandidates = internalQuery({
         phase: v.union(v.literal("operator"), v.literal("workspace")),
         cursor: v.union(v.string(), v.null()),
         limit: v.number(),
+        /** With both set, the workspace phase reads that one registration directly. */
+        guildId: v.optional(v.string()),
+        ref: v.optional(v.string()),
     },
     handler: async (
         ctx,
@@ -88,12 +91,27 @@ export const legacyCandidates = internalQuery({
             }
             return { candidates, nextCursor: null }
         }
-        const page = await ctx.db
-            .query("gameDataSources")
-            .withIndex("credentialMode", (q) =>
-                q.eq("credentialMode", undefined)
-            )
-            .paginate({ cursor: args.cursor, numItems: limit })
+        const { guildId, ref } = args
+        const page =
+            guildId && ref
+                ? {
+                      page: (
+                          await ctx.db
+                              .query("gameDataSources")
+                              .withIndex("guildId_ref", (q) =>
+                                  q.eq("guildId", guildId).eq("ref", ref)
+                              )
+                              .take(1)
+                      ).filter((row) => row.credentialMode === undefined),
+                      isDone: true,
+                      continueCursor: "",
+                  }
+                : await ctx.db
+                      .query("gameDataSources")
+                      .withIndex("credentialMode", (q) =>
+                          q.eq("credentialMode", undefined)
+                      )
+                      .paginate({ cursor: args.cursor, numItems: limit })
         const candidates: LegacyCandidate[] = []
         for (const row of page.page) {
             if (!row.secretRef) continue

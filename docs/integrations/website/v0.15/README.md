@@ -130,8 +130,10 @@ grant allows is then validated by the route, so a combination of granted games,
 a repeated `game`, a granted game without a team catalogue (Hell Let Loose:
 Vietnam), any other or repeated parameter and bad pagination are
 `400 invalid_query`. Items are the active teams of the global catalogue ordered
-by normalized name; follow `nextCursor` until it is `null`. Unlike the summary
-collections, the page is an object inside `data`:
+by normalized name; follow `nextCursor` until it is `null`. A cursor issued
+before the global catalogue was deployed (it paged a workspace's own directory)
+is rejected with `400 invalid_query`; restart from the first page. Unlike the
+summary collections, the page is an object inside `data`:
 
 ```json
 {

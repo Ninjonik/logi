@@ -19,6 +19,7 @@ import {
     registrationCreateSchema,
     registrationUpdateSchema,
     type RegisteredTeam,
+    fixtureScoreFromEvent,
 } from "./competition"
 import assert from "node:assert/strict"
 import test from "node:test"
@@ -408,4 +409,55 @@ test("legacy workspace references keep a stable key and a usable catalogue name"
     assert.equal(adoptedTeamName("Bad\u0007Name", "x"), "Bad Name")
     assert.equal(adoptedTeamName("A".repeat(130), "x").length, 120)
     assert.equal(adoptedTeamName("\u0007", "Team guilds:9"), "Team guilds:9")
+})
+
+test("an imported Axis/Allies score reaches the fixture by each team's assigned side", () => {
+    const fixture = { sideATeamId: "omen", sideBTeamId: "circle" }
+    const score = { sideA: 5, sideB: 0 } // Axis 5, Allies 0
+    // Omen played Allies and lost 0:5.
+    assert.deepEqual(
+        fixtureScoreFromEvent({
+            fixture,
+            eventTeams: [
+                { teamIds: ["omen"], side: "Allies" },
+                { teamIds: ["circle"], side: "Axis" },
+            ],
+            score,
+        }),
+        { scoreA: 0, scoreB: 5 }
+    )
+    // A merged assignment is found under its current ID.
+    assert.deepEqual(
+        fixtureScoreFromEvent({
+            fixture,
+            eventTeams: [
+                { teamIds: ["old-omen", "omen"], side: "Axis" },
+                { teamIds: ["circle"], side: "Allies" },
+            ],
+            score,
+        }),
+        { scoreA: 5, scoreB: 0 }
+    )
+    // Unknown, missing or equal sides fill nothing in.
+    for (const eventTeams of [
+        [],
+        [{ teamIds: ["omen"], side: "Axis" }],
+        [
+            { teamIds: ["omen"], side: null },
+            { teamIds: ["circle"], side: "Allies" },
+        ],
+        [
+            { teamIds: ["omen"], side: "Axis" },
+            { teamIds: ["circle"], side: "Axis" },
+        ],
+        [
+            { teamIds: ["omen"], side: "Valkyra" },
+            { teamIds: ["circle"], side: "Manticore" },
+        ],
+    ])
+        assert.equal(
+            fixtureScoreFromEvent({ fixture, eventTeams, score }),
+            null,
+            JSON.stringify(eventTeams)
+        )
 })
