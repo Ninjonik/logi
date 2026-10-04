@@ -176,6 +176,14 @@ test("every clan operation documents runtime scope denial and its read-access re
                 })
                 continue
             }
+            if (resource === "teams") {
+                assert.deepEqual(operation["x-logi-read-access"], {
+                    resource,
+                    games: ["hell_let_loose", "wardogs"],
+                    explicitGrantRequired: true,
+                })
+                continue
+            }
             const allowed =
                 method === "get" &&
                 [
@@ -361,6 +369,115 @@ test("OpenAPI documents beginner-safe API workflows", async () => {
     )
 })
 
+test("team directory reads document explicit per-game grants, archived exclusion and snapshot delivery", async () => {
+    const document = await (await GET()).json()
+    const collection = document.paths["/clan/teams"].get,
+        detail = document.paths["/clan/teams/{id}"].get
+    assert.deepEqual(Object.keys(document.paths["/clan/teams"]), ["get"])
+    assert.deepEqual(Object.keys(document.paths["/clan/teams/{id}"]), ["get"])
+    for (const operation of [collection, detail]) {
+        assert.deepEqual(operation.tags, ["Clan API — Teams"])
+        assert.deepEqual(operation.security, [{ clanApiKey: [] }])
+        assert.deepEqual(operation["x-logi-read-access"], {
+            resource: "teams",
+            games: ["hell_let_loose", "wardogs"],
+            explicitGrantRequired: true,
+        })
+        const game = operation.parameters.find(
+            (p: { name: string }) => p.name === "game"
+        )
+        assert.equal(game.required, true)
+        assert.deepEqual(game.schema.enum, ["hell_let_loose", "wardogs"])
+        for (const code of ["200", "400", "401", "403", "429", "503"])
+            assert.ok(operation.responses[code], code)
+        assert.match(operation.description, /no-store/)
+    }
+    assert.ok(detail.responses["404"])
+    assert.equal(collection.responses["404"], undefined)
+    for (const phrase of [
+        /key supplies the workspace/i,
+        /exactly one supported game/i,
+        /archived entries are excluded/i,
+        /create, update and restore emit upsert, archive emits remove/i,
+        /legacy broad keys do not acquire/i,
+        /no bearer-key API/i,
+        /matchTeams snapshots \(ClanMatchTeam\)/,
+    ])
+        assert.match(collection.description, phrase)
+    assert.match(detail.description, /generic 404 without labels/)
+    const limit = collection.parameters.find(
+        (p: { name: string }) => p.name === "limit"
+    )
+    assert.deepEqual(limit.schema, {
+        type: "integer",
+        minimum: 1,
+        maximum: 100,
+        default: 50,
+    })
+    assert.equal(
+        collection.parameters.find((p: { name: string }) => p.name === "cursor")
+            .schema.maxLength,
+        4096
+    )
+    const id = detail.parameters.find((p: { name: string }) => p.name === "id")
+    assert.equal(id.in, "path")
+    assert.equal(id.schema.maxLength, 64)
+    assert.equal(
+        collection.responses["200"].content["application/json"].schema
+            .properties.data.$ref,
+        "#/components/schemas/ClanTeamPage"
+    )
+    assert.equal(
+        detail.responses["200"].content["application/json"].schema.properties
+            .data.$ref,
+        "#/components/schemas/ClanTeam"
+    )
+    const { ClanTeam, ClanTeamPage, ClanMatchTeam } =
+        document.components.schemas
+    assert.equal(ClanTeam.additionalProperties, false)
+    assert.deepEqual(Object.keys(ClanTeam.properties).sort(), [
+        "gameId",
+        "id",
+        "logoUrl",
+        "name",
+        "revision",
+        "shortCode",
+        "updatedAt",
+    ])
+    assert.deepEqual(ClanTeam.properties.gameId.enum, [
+        "hell_let_loose",
+        "wardogs",
+    ])
+    assert.equal(ClanTeamPage.additionalProperties, false)
+    assert.equal(ClanTeamPage.properties.items.maxItems, 100)
+    assert.equal(
+        ClanTeamPage.properties.items.items.$ref,
+        "#/components/schemas/ClanTeam"
+    )
+    assert.equal(ClanMatchTeam.additionalProperties, false)
+    assert.equal("logoAssetId" in ClanMatchTeam.properties, false)
+    assert.deepEqual(ClanMatchTeam.properties.slot.enum, ["a", "b", "c"])
+    for (const field of ["teamId", "side", "teamRevision", "capturedAt"])
+        assert.ok(ClanMatchTeam.properties[field], field)
+    // The synchronization surface enumerates teams wherever SYNC_RESOURCES is used.
+    assert.ok(
+        document.paths["/clan/sync-records/{resource}/{id}"].get.parameters
+            .find((p: { name: string }) => p.name === "resource")
+            .schema.enum.includes("teams")
+    )
+    assert.match(
+        document.paths["/clan/changes"].get.parameters.find(
+            (p: { name: string }) => p.name === "resources"
+        ).description,
+        /\bteams\b/
+    )
+    assert.ok(
+        document.components.schemas.IntegrationChange.properties.resource.enum.includes(
+            "teams"
+        )
+    )
+})
+
 test("OpenAPI groups operations by their clan resource", async () => {
     const document = (await (await GET()).json()) as {
         tags: Array<{ name: string }>
@@ -384,6 +501,7 @@ test("OpenAPI groups operations by their clan resource", async () => {
             "Clan API — Topic presets",
             "Clan API — Squad presets",
             "Clan API — Matches",
+            "Clan API — Teams",
             "Clan API — Users",
         ]
     )

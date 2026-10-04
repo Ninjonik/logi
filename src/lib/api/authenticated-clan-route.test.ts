@@ -323,3 +323,62 @@ test("clan authentication returns the key owner after applying the rate limit", 
         })
     }
 })
+
+test("team directory reads require an explicit per-game teams grant at the gateway", async () => {
+    const scoped = createDependencies({
+        authenticateKey: async () => ({
+            guildId: "guild-1",
+            readAccess: {
+                resources: ["teams"],
+                gameIds: ["hell_let_loose"],
+            },
+        }),
+    })
+    for (const [path, expected] of [
+        ["teams?game=hell_let_loose", 200],
+        ["teams/opaque-team-id?game=hell_let_loose", 200],
+        ["teams?game=wardogs", 403],
+        ["teams", 403],
+        ["teams?game=", 403],
+        ["teams?game=all", 403],
+    ] as const) {
+        const result = await authenticateClanRequestWith(
+            new Request(`https://logi.test/api/v1/clan/${path}`, {
+                headers: { authorization: "Bearer fixture" },
+            }),
+            scoped
+        )
+        assert.equal(isAuthError(result) ? result.status : 200, expected, path)
+        if (!isAuthError(result))
+            assert.equal(result.headers["Cache-Control"], "no-store")
+    }
+    // Another explicit grant for the same game does not imply the directory.
+    const other = await authenticateClanRequestWith(
+        new Request("https://logi.test/api/v1/clan/teams?game=hell_let_loose", {
+            headers: { authorization: "Bearer fixture" },
+        }),
+        createDependencies({
+            authenticateKey: async () => ({
+                guildId: "guild-1",
+                readAccess: {
+                    resources: ["event-summaries"],
+                    gameIds: ["hell_let_loose"],
+                },
+            }),
+        })
+    )
+    assert.ok(isAuthError(other))
+    assert.equal(other.status, 403)
+    // A legacy key (no readAccess) is not refused by the generic gateway branch:
+    // it reaches the handler, and teamReads:* denies it inside Convex because
+    // allowsApiKeyRead(undefined, "teams", game) is false. The HTTP outcome is
+    // still 403 insufficient_scope: teams-route.test.ts covers the HTTP mapping
+    // and src/infrastructure/convex/teams.test.ts the Convex-side denial.
+    const legacy = await authenticateClanRequestWith(
+        new Request("https://logi.test/api/v1/clan/teams?game=hell_let_loose", {
+            headers: { authorization: "Bearer fixture" },
+        }),
+        createDependencies()
+    )
+    assert.equal(isAuthError(legacy), false)
+})

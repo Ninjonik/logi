@@ -26,6 +26,7 @@ import { leagueFixtureSchema } from "@/domain/wardogs-league/fixture"
 import { leagueReadSchema } from "@/domain/wardogs-league/contracts"
 import { warconQuerySchema } from "@/domain/game-data/warcon-query"
 import { hllLiveEnvelopeSchema } from "@/domain/game-data/hll-live"
+import { matchTeamSummarySchema } from "@/domain/teams/match-teams"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { NextResponse } from "next/server"
 import { z } from "zod"
@@ -34,6 +35,7 @@ import {
     websiteEventCommandPaths,
     websiteEventCommandSchemas,
 } from "@/lib/api/website-event-command-openapi"
+import { TEAM_GAMES, TEAM_PAGE_MAX, teamDtoSchema } from "@/domain/teams/team"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
 const summaryResponseSchemas = {
@@ -51,6 +53,23 @@ const summaryResponseSchemas = {
     ClanEventSummariesDocument: z.toJSONSchema(clanEventSummarySchema),
     ClanMatchSummariesDocument: z.toJSONSchema(clanMatchSummarySchema),
     ClanResultSummariesDocument: z.toJSONSchema(clanResultSummarySchema),
+    /** Minimized workspace directory entry; actor identifiers and asset IDs are excluded. */
+    ClanTeam: z.toJSONSchema(teamDtoSchema),
+    ClanTeamPage: {
+        type: "object",
+        required: ["items", "nextCursor"],
+        additionalProperties: false,
+        properties: {
+            items: {
+                type: "array",
+                maxItems: TEAM_PAGE_MAX,
+                items: { $ref: "#/components/schemas/ClanTeam" },
+            },
+            nextCursor: { type: ["string", "null"] },
+        },
+    },
+    /** Immutable team snapshot captured for one native match slot; delivered inside summaries. */
+    ClanMatchTeam: z.toJSONSchema(matchTeamSummarySchema),
 }
 
 const error = {
@@ -1367,6 +1386,138 @@ paths["/clan/league-fixtures"] = {
         },
     },
 }
+const teamGames = [...TEAM_GAMES]
+const teamGameParameter = {
+    name: "game",
+    in: "query",
+    required: true,
+    description:
+        "Exactly one directory game. No legacy default, game=all or combination; Hell Let Loose: Vietnam is not a directory game.",
+    schema: { type: "string", enum: teamGames },
+}
+const teamReadAccess = {
+    resource: "teams",
+    games: teamGames,
+    explicitGrantRequired: true,
+}
+const teamErrorResponse = (description: string) => ({
+    description,
+    content: { "application/json": { schema: error } },
+})
+const teamReadResponses = {
+    "400": teamErrorResponse(
+        "invalid_query: not exactly one directory game, invalid pagination or a malformed team ID"
+    ),
+    "401": teamErrorResponse(
+        "missing_api_key or invalid_api_key: missing, invalid or revoked API key"
+    ),
+    "403": teamErrorResponse(
+        "insufficient_scope: no explicit teams grant for this game; legacy broad keys are denied"
+    ),
+    "429": teamErrorResponse(
+        "rate_limited: API rate limit; respect Retry-After"
+    ),
+    "503": teamErrorResponse("unavailable: directory read failed"),
+}
+paths["/clan/teams"] = {
+    get: {
+        tags: ["Clan API — Teams"],
+        summary: "List this workspace's active directory teams for one game",
+        description:
+            "Requires an explicit teams grant for the requested game. The key supplies the workspace; the caller cannot choose another one, and Convex rechecks key revocation, workspace and game grants on every read. Exactly one supported game (hell_let_loose or wardogs) is required and pagination is validated: limit 1–100 (default 50), opaque cursor at most 4,096 characters, no other parameters. Returns the workspace-owned directory as minimized DTOs (stable ID, game, name, short code, public logo URL, revision, updated time) with absent optional values as null; archived entries are excluded. Use changes and sync-records with resource teams for updates: create, update and restore emit upsert, archive emits remove, and both collection and delta reads enforce the same grants. Legacy broad keys do not acquire this resource. Catalogue writes and logo uploads are session-bound dashboard administrator operations and deliberately have no bearer-key API (documented API-parity exception). Teams selected for a native match travel as immutable matchTeams snapshots (ClanMatchTeam) inside the event-summaries and match-summaries documents; those keep historical labels and logos after a team is archived, and receiving them does not grant the directory. Responses are no-store.",
+        security: [{ clanApiKey: [] }],
+        "x-logi-read-access": teamReadAccess,
+        parameters: [
+            teamGameParameter,
+            {
+                name: "limit",
+                in: "query",
+                schema: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: TEAM_PAGE_MAX,
+                    default: 50,
+                },
+            },
+            {
+                name: "cursor",
+                in: "query",
+                description:
+                    "Opaque value from the previous page; reuse only with the same game.",
+                schema: { type: "string", maxLength: 4096 },
+            },
+        ],
+        responses: {
+            "200": {
+                description: "Active directory page for one game",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            additionalProperties: false,
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/ClanTeamPage",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            ...teamReadResponses,
+        },
+    },
+}
+paths["/clan/teams/{id}"] = {
+    get: {
+        tags: ["Clan API — Teams"],
+        summary: "Read one active directory team",
+        description:
+            "Requires the same explicit teams grant and exactly one supported game, rechecked inside Convex. The ID is the stable directory record ID from the collection, a matchTeams snapshot or a teams change; it is never a Discord guild, competition or League identifier. Unknown, archived, other-workspace and other-game IDs return a generic 404 without labels. Returns one minimized ClanTeam. Responses are no-store.",
+        security: [{ clanApiKey: [] }],
+        "x-logi-read-access": teamReadAccess,
+        parameters: [
+            {
+                name: "id",
+                in: "path",
+                required: true,
+                description:
+                    "Opaque directory team ID: 1–64 letters, digits, underscores or hyphens.",
+                schema: {
+                    type: "string",
+                    minLength: 1,
+                    maxLength: 64,
+                    pattern: "^[A-Za-z0-9_-]+$",
+                },
+            },
+            teamGameParameter,
+        ],
+        responses: {
+            "200": {
+                description: "Active directory team",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            additionalProperties: false,
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/ClanTeam",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            ...teamReadResponses,
+            "404": teamErrorResponse(
+                "not_found: unknown, archived, other-workspace or other-game team"
+            ),
+        },
+    },
+}
 paths["/clan/league-matches"] = {
     get: {
         tags: ["Clan API — Matches"],
@@ -1712,6 +1863,7 @@ for (const [path, operations] of Object.entries(paths)) {
                 "league-fixtures",
                 "server-game-history",
                 "hll-live",
+                "teams",
             ].includes(resource) &&
             method === "get"
         )
@@ -1834,6 +1986,11 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                 {
                     name: "Clan API — Matches",
                     description: "Stored match results and history.",
+                },
+                {
+                    name: "Clan API — Teams",
+                    description:
+                        "Workspace team directory reads; match snapshots travel in summaries.",
                 },
                 {
                     name: "Clan API — Users",

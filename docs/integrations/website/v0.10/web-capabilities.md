@@ -61,7 +61,8 @@ Supported restricted resource names are `event-summaries`, `match-summaries`,
 `result-summaries`, `server-snapshots`, `integration-health`, `membership-summaries`, `warcon-data`,
 `events`, `groups`, `rosters`, `assignments`, `stratmaps`, and `matches`.
 The last six are operational resources and can contain data inappropriate for a
-public site. Raw `users` is not an allowed restricted resource. Resource names and
+public site. The workspace team directory is a further explicit `teams` grant
+([0.15](../v0.15/README.md)) that legacy keys never acquire. Raw `users` is not an allowed restricted resource. Resource names and
 backend policy are defined in [`key-access.ts`](../../../../src/domain/api/key-access.ts).
 
 ## Minimized HTTP read surface
@@ -81,6 +82,7 @@ schemas and full errors; examples use synthetic IDs only.
 | `/membership-summaries/{discordUserId}?game=wardogs&maxAgeMs=60000` | `membership-summaries` **and enabled per-key/game policy** | Exact subject observation; no collection endpoint; [0.7](../v0.7/README.md) |
 | `/changes?game=wardogs&resources=event-summaries,result-summaries&start=now` | Restricted key with all requested resource/game grants | Initial signed cursor, then paged changes; [0.6](../v0.6/README.md) |
 | `/sync-records/{resource}/{id}?game=wardogs` | Same restricted grants; membership also needs its policy | Atomic projection/revision or tombstone; [0.6](../v0.6/README.md) |
+| `/teams?game=hell_let_loose` and `/teams/{id}?game=hell_let_loose` | Explicit `teams` grant for the one requested game; legacy keys denied; Convex rechecks revocation, workspace and game | Active workspace opponent directory (stable ID, game, name, short code, public logo URL, revision); archived entries excluded; collection is `{data: {items, nextCursor}}`; also a `changes`/`sync-records` resource; [0.15](../v0.15/README.md) |
 
 Regular summary collections return `{data: [...], page: {nextCursor, limit}}`;
 details return `{data: ...}`. Collections support `limit` 1–100, opaque `cursor`,

@@ -1,0 +1,24 @@
+{
+    "matchTeams": [
+        {
+            "teamId": "kh7synthetic0hll0team00000000a1",
+            "slot": "a",
+            "side": "Allies",
+            "name": "Synthetic Armoured Div.",
+            "shortCode": "SAD",
+            "logoUrl": "https://logi.example/api/image-assets/0123456789abcdef0123456789abcdef.png",
+            "teamRevision": 2,
+            "capturedAt": "2026-10-01T18:00:00.000Z"
+        },
+        {
+            "teamId": "kh7synthetic0hll0team00000000b2",
+            "slot": "b",
+            "side": "Axis",
+            "name": "Example Rifle Regiment",
+            "shortCode": "ERR",
+            "logoUrl": "https://logi.example/api/image-assets/fedcba9876543210fedcba9876543210.png",
+            "teamRevision": 1,
+            "capturedAt": "2026-10-01T18:00:00.000Z"
+        }
+    ]
+}
