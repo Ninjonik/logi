@@ -27,6 +27,28 @@ Restart reconciliation and duplicate prevention are automatic behavior of manage
 panels; they do not need an administrator toggle. On-demand `/stats` sharing is a
 separate snapshot with an explicit Discord channel selection.
 
+### Image assets
+
+Workspace administrators upload team logos and panel banners through the
+dashboard-session route `POST /api/servers/{serverId}/image-assets?kind=team-logo|panel-banner`
+(same-origin requests with admin access only) and list the workspace's live
+assets of one kind with `GET` on the same route. The route accepts PNG, JPEG
+and WebP sources up to 2 MiB and 4096×4096 pixels, checks the declared content
+type against the magic number and the decoder, rejects animated images, and
+stores only a normalized copy: logos fit inside 512×512 and are published as
+PNG, banners fit inside 1920×1080 and are published as WebP, with EXIF
+orientation applied and metadata dropped. Each attempt counts toward a limit of
+10 uploads per 10 minutes per actor and workspace before any body bytes are
+read; a limited attempt answers `429` with `Retry-After` and
+`{ "error": "upload_limited", "retryAfterMs": … }`. Stored images are served
+from the immutable public URL `/api/image-assets/{publicId}.{png|webp}` with
+the recorded content type, `X-Content-Type-Options: nosniff`, a one-year
+immutable cache header and `Content-Disposition: inline`; the extension must
+match the recorded type. An hourly Convex job removes uploads that were not
+attached to a team, event or panel within 24 hours. No dashboard screen uses
+the route yet, and no `/api/v1` operation exposes uploads; that exclusion is
+deliberate until the team catalogue editor exists.
+
 ## Settings gaps and deployment prerequisites
 
 - **Provider tokens:** sources can now be registered and their credential reference
