@@ -212,9 +212,23 @@ test("animated and oversized-dimension sources are rejected before storage", asy
             .png()
             .toBuffer()
     )
+    // Over the 4096x4096 pixel budget: still reported as a dimension problem.
+    const large = new Uint8Array(
+        await sharp({
+            create: {
+                width: 5000,
+                height: 4000,
+                channels: 3,
+                background: { r: 0, g: 0, b: 0 },
+            },
+        })
+            .png()
+            .toBuffer()
+    )
     for (const [bytes, contentType, error] of [
         [animated, "image/webp", "animated"],
         [wide, "image/png", "bad_dimensions"],
+        [large, "image/png", "bad_dimensions"],
     ] as const) {
         const response = await handlers.POST(
             upload(bytes, contentType, { kind: "panel-banner" }),

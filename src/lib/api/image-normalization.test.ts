@@ -4,6 +4,7 @@ import {
     validateImageSource,
 } from "@/domain/assets/image-asset"
 import { inspectImage, normalizeImage } from "./image-normalization"
+import { crc32, deflateSync } from "node:zlib"
 import assert from "node:assert/strict"
 import test from "node:test"
 import sharp from "sharp"
@@ -17,6 +18,49 @@ const solid = (width: number, height: number) =>
             background: { r: 200, g: 40, b: 40, alpha: 1 },
         },
     })
+
+const pngChunk = (type: string, data: Buffer) => {
+    const length = Buffer.alloc(4)
+    length.writeUInt32BE(data.length)
+    const body = Buffer.concat([Buffer.from(type, "latin1"), data])
+    const checksum = Buffer.alloc(4)
+    checksum.writeUInt32BE(crc32(body))
+    return Buffer.concat([length, body, checksum])
+}
+/** A valid two-frame 4x4 APNG; sharp cannot encode one, so it is built by chunk. */
+function animatedPng() {
+    const header = Buffer.alloc(13)
+    header.writeUInt32BE(4, 0)
+    header.writeUInt32BE(4, 4)
+    header[8] = 8
+    header[9] = 2
+    const pixels = deflateSync(Buffer.alloc(4 * (1 + 4 * 3)))
+    const control = Buffer.alloc(8)
+    control.writeUInt32BE(2, 0)
+    const frame = (sequence: number) => {
+        const data = Buffer.alloc(26)
+        data.writeUInt32BE(sequence, 0)
+        data.writeUInt32BE(4, 4)
+        data.writeUInt32BE(4, 8)
+        data.writeUInt16BE(1, 20)
+        data.writeUInt16BE(10, 22)
+        return data
+    }
+    const sequence = Buffer.alloc(4)
+    sequence.writeUInt32BE(2)
+    return new Uint8Array(
+        Buffer.concat([
+            Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+            pngChunk("IHDR", header),
+            pngChunk("acTL", control),
+            pngChunk("fcTL", frame(0)),
+            pngChunk("IDAT", pixels),
+            pngChunk("fcTL", frame(1)),
+            pngChunk("fdAT", Buffer.concat([sequence, pixels])),
+            pngChunk("IEND", Buffer.alloc(0)),
+        ])
+    )
+}
 
 test("inspection reports decoder facts and rejects undecodable bytes", async () => {
     const png = new Uint8Array(await solid(1000, 600).png().toBuffer())
@@ -92,7 +136,7 @@ test("banners fit inside 1920x1080 as WebP and EXIF orientation is applied then 
     assert.equal(metadata.exif, undefined)
 })
 
-test("animated sources report their frames and pixel bombs never decode", async () => {
+test("animated sources report their frames and oversized sources never decode", async () => {
     const frames = await Promise.all(
         [10, 200].map((r) =>
             sharp({
@@ -123,7 +167,33 @@ test("animated sources report their frames and pixel bombs never decode", async 
         }),
         "animated"
     )
+    const apng = animatedPng()
+    const apngDecoded = await inspectImage(apng)
+    assert.equal(apngDecoded?.format, "png")
+    assert.equal(apngDecoded?.pages, 2)
+    assert.equal(
+        validateImageSource({
+            declaredType: "image/png",
+            bytes: apng.length,
+            sniffed: sniffImageType(apng),
+            decoded: apngDecoded,
+        }),
+        "animated"
+    )
+    // The header is read without the pixel cap so the reason stays specific;
+    // decoding the pixels is still refused.
     const bomb = new Uint8Array(await solid(4097, 4097).png().toBuffer())
-    assert.equal(await inspectImage(bomb), null)
+    const bombDecoded = await inspectImage(bomb)
+    assert.equal(bombDecoded?.width, 4097)
+    assert.equal(bombDecoded?.height, 4097)
+    assert.equal(
+        validateImageSource({
+            declaredType: "image/png",
+            bytes: bomb.length,
+            sniffed: sniffImageType(bomb),
+            decoded: bombDecoded,
+        }),
+        "bad_dimensions"
+    )
     await assert.rejects(normalizeImage(bomb, "panel-banner"))
 })

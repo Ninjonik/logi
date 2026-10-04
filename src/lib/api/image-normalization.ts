@@ -10,21 +10,49 @@ import { createHash } from "node:crypto"
 import sharp from "sharp"
 
 // Server-only: decodes untrusted bytes with sharp inside the Node runtime.
-const inputOptions = {
+/** Pixel decoding is capped so a small file cannot expand into a huge raster. */
+const decodeOptions = {
     animated: false,
     limitInputPixels: IMAGE_MAX_SOURCE_DIMENSION * IMAGE_MAX_SOURCE_DIMENSION,
 } as const
+/**
+ * A header read decodes no pixels, so it runs without the cap: an oversized
+ * source reports its real dimensions and the domain answers `bad_dimensions`.
+ */
+const headerOptions = { animated: false, limitInputPixels: false } as const
+
+/**
+ * libvips reports no frame count for an animated PNG, so the animation control
+ * chunk is read directly: an `acTL` before the first `IDAT` declares the frames.
+ */
+function apngFrameCount(bytes: Uint8Array): number | undefined {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    for (let offset = 8; offset + 8 <= bytes.byteLength;) {
+        const length = view.getUint32(offset)
+        const type = String.fromCharCode(
+            ...bytes.subarray(offset + 4, offset + 8)
+        )
+        if (type === "IDAT") return undefined
+        if (type === "acTL" && length >= 8 && offset + 16 <= bytes.byteLength)
+            return view.getUint32(offset + 8)
+        offset += 12 + length
+    }
+    return undefined
+}
 
 /** Header-level facts for the domain validator; null when the bytes do not decode. */
 export async function inspectImage(
     bytes: Uint8Array
 ): Promise<DecodedImage | null> {
     try {
-        const metadata = await sharp(bytes, inputOptions).metadata()
+        const metadata = await sharp(bytes, headerOptions).metadata()
         return {
             width: metadata.width,
             height: metadata.height,
-            pages: metadata.pages,
+            pages:
+                metadata.format === "png"
+                    ? (apngFrameCount(bytes) ?? metadata.pages)
+                    : metadata.pages,
             format: metadata.format,
         }
     } catch {
@@ -51,7 +79,7 @@ export async function normalizeImage(
     kind: ImageAssetKind
 ): Promise<NormalizedImage> {
     const output = IMAGE_OUTPUT[kind]
-    const pipeline = sharp(bytes, inputOptions).rotate().resize({
+    const pipeline = sharp(bytes, decodeOptions).rotate().resize({
         width: output.width,
         height: output.height,
         fit: "inside",

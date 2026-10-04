@@ -34,20 +34,26 @@ dashboard-session route `POST /api/servers/{serverId}/image-assets?kind=team-log
 (same-origin requests with admin access only) and list the workspace's live
 assets of one kind with `GET` on the same route. The route accepts PNG, JPEG
 and WebP sources up to 2 MiB and 4096×4096 pixels, checks the declared content
-type against the magic number and the decoder, rejects animated images, and
-stores only a normalized copy: logos fit inside 512×512 and are published as
-PNG, banners fit inside 1920×1080 and are published as WebP, with EXIF
-orientation applied and metadata dropped. Each attempt counts toward a limit of
-10 uploads per 10 minutes per actor and workspace before any body bytes are
-read; a limited attempt answers `429` with `Retry-After` and
-`{ "error": "upload_limited", "retryAfterMs": … }`. Stored images are served
-from the immutable public URL `/api/image-assets/{publicId}.{png|webp}` with
-the recorded content type, `X-Content-Type-Options: nosniff`, a one-year
-immutable cache header and `Content-Disposition: inline`; the extension must
-match the recorded type. An hourly Convex job removes uploads that were not
-attached to a team, event or panel within 24 hours. No dashboard screen uses
-the route yet, and no `/api/v1` operation exposes uploads; that exclusion is
-deliberate until the team catalogue editor exists.
+type against the magic number and the decoder, rejects animated WebP and
+animated PNG (APNG) sources, reports a source over 4096 pixels on either side
+as `bad_dimensions` without decoding its pixels, and stores only a normalized
+copy: logos fit inside 512×512 and are published as PNG, banners fit inside
+1920×1080 and are published as WebP, with EXIF orientation applied and metadata
+dropped. Each attempt counts toward a limit of 10 uploads per 10 minutes per
+actor and workspace before any body bytes are read; a limited attempt answers
+`429` with `Retry-After` and `{ "error": "upload_limited", "retryAfterMs": … }`.
+Stored images are served from the immutable public URL
+`/api/image-assets/{publicId}.{png|webp}` with the recorded content type,
+`X-Content-Type-Options: nosniff`, a one-year immutable cache header and
+`Content-Disposition: inline`; the extension must match the recorded type.
+An hourly Convex job removes recorded uploads that are still not attached to a
+team, event or panel 24 hours after they were created. The normalized file is
+stored before its record is created, so a file whose record creation then fails
+(a Convex error, access revoked between reservation and recording, or a
+rejected record) has no record and is not yet removed by that job; sweeping
+those files needs a follow-up Convex change. No dashboard screen uses the route
+yet, and no `/api/v1` operation exposes uploads; that exclusion is deliberate
+until the team catalogue editor exists.
 
 ## Settings gaps and deployment prerequisites
 
