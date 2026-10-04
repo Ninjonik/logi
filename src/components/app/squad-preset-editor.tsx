@@ -291,7 +291,7 @@ export function SquadPresetEditor({
             toast.success(dictionary.common.save)
             startTransition(() => {
                 router.push(
-                    `/${locale}/dashboard/servers/${serverId}/squad-presets/${createMode ? body.presetId : presetId}`
+                    `/${locale}/dashboard/servers/${serverId}/squad-presets/${createMode ? body.presetId : presetId}?game=${gameId}`
                 )
                 router.refresh()
             })
