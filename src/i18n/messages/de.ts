@@ -879,6 +879,12 @@ export const deMessages = {
         restoreTeam: "{name} wiederherstellen",
         conflictReloadFailed:
             "Dieses Team wurde zwischenzeitlich geändert, und die neueste Version konnte nicht geladen werden. Schließe den Dialog und versuche es erneut.",
+        duplicateActive:
+            "Ein Team mit diesem Namen existiert für dieses Spiel bereits. Verwende dieses Team, statt ein zweites anzulegen.",
+        duplicateArchived:
+            "Ein archiviertes Team verwendet diesen Namen bereits. Stelle es wieder her, um es erneut zu verwenden.",
+        useExisting: "Vorhandenes Team verwenden",
+        restoreExisting: "Wiederherstellen und verwenden",
         errors: {
             invalid_team: "Prüfe die Teamangaben und versuche es erneut.",
             game_disabled:
@@ -900,6 +906,8 @@ export const deMessages = {
             forbidden: "Du darfst hier keine Teams verwalten.",
             unavailable:
                 "Das Teamverzeichnis ist vorübergehend nicht verfügbar.",
+            rate_limited:
+                "Zu viele Anfragen; warte einen Moment und versuche es erneut.",
         },
         uploadErrors: {
             unsupported_type:
@@ -953,6 +961,8 @@ export const deMessages = {
                 forbidden: "Du darfst die Match-Teams nicht ändern.",
                 unavailable:
                     "Das Teamverzeichnis ist vorübergehend nicht verfügbar.",
+                rate_limited:
+                    "Zu viele Anfragen; warte einen Moment und versuche es erneut.",
             },
         },
     },

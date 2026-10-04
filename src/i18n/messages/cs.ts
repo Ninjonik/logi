@@ -854,6 +854,12 @@ export const csMessages = {
         restoreTeam: "Obnovit tým {name}",
         conflictReloadFailed:
             "Tým byl mezitím změněn a nejnovější verzi se nepodařilo načíst. Zavřete dialog a zkuste to znovu.",
+        duplicateActive:
+            "Tým s tímto názvem pro tuto hru již existuje. Místo vytvoření druhého použijte tento tým.",
+        duplicateArchived:
+            "Tento název už používá archivovaný tým. Obnovte ho, abyste ho mohli znovu použít.",
+        useExisting: "Použít existující tým",
+        restoreExisting: "Obnovit a použít",
         errors: {
             invalid_team: "Zkontrolujte údaje týmu a zkuste to znovu.",
             game_disabled: "Tato hra není v pracovním prostoru zapnutá.",
@@ -870,6 +876,8 @@ export const csMessages = {
             limit_reached: "Adresář této hry dosáhl limitu 500 týmů.",
             forbidden: "Nemáte oprávnění zde spravovat týmy.",
             unavailable: "Adresář týmů je dočasně nedostupný.",
+            rate_limited:
+                "Příliš mnoho požadavků; chvíli počkejte a zkuste to znovu.",
         },
         uploadErrors: {
             unsupported_type: "Přijímají se pouze obrázky PNG, JPEG a WebP.",
@@ -918,6 +926,8 @@ export const csMessages = {
                 training_event: "Tréninky nemají zápasové týmy.",
                 forbidden: "Nemáte oprávnění měnit týmy zápasu.",
                 unavailable: "Adresář týmů je dočasně nedostupný.",
+                rate_limited:
+                    "Příliš mnoho požadavků; chvíli počkejte a zkuste to znovu.",
             },
         },
     },

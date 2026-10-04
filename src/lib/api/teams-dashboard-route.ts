@@ -9,6 +9,7 @@ import {
     teamUpdateSchema,
     type TeamGame,
 } from "@/domain/teams/team"
+import { readBoundedJson } from "./request-json"
 import { z } from "zod"
 
 /** A dashboard directory read: one record by ID, or a page of one game's entries. */
@@ -131,4 +132,119 @@ export function teamCommandResponse(result: unknown): {
         }
     }
     return { body: result, status: 200 }
+}
+
+/**
+ * Requests per actor and workspace per minute across directory reads, writes
+ * and match snapshot refreshes; the picker's debounced search stays well below.
+ */
+export const TEAM_DASHBOARD_RATE_LIMIT = 120
+/** One bucket per workspace and dashboard actor, shared by every directory route. */
+export function teamDashboardRateBucket(guildId: string, subject: string) {
+    return `teams:${guildId}:${subject}`
+}
+export type TeamDashboardRateLimit = {
+    allowed: boolean
+    retryAfterSeconds: number
+}
+/** The limited answer every directory route returns before doing any work. */
+export function teamRateLimitedResponse(rate: TeamDashboardRateLimit) {
+    return Response.json(
+        { error: "rate_limited" },
+        {
+            status: 429,
+            headers: {
+                "Cache-Control": "no-store",
+                "Retry-After": String(
+                    Math.max(1, Math.ceil(rate.retryAfterSeconds))
+                ),
+            },
+        }
+    )
+}
+
+type TeamDashboardAccess = { guildId: string; actor: { subject: string } }
+export type TeamsDashboardPorts<Access extends TeamDashboardAccess> = {
+    /** Current workspace admin and dashboard actor; null denies the request. */
+    access(serverId: string): Promise<Access | null>
+    rateLimit(bucket: string): Promise<TeamDashboardRateLimit>
+    get(access: Access, teamId: string): Promise<unknown>
+    list(
+        access: Access,
+        query: Extract<TeamsQuery, { kind: "list" }>
+    ): Promise<unknown>
+    command(
+        access: Access,
+        mutation: (typeof TEAM_MUTATION_FOR)[TeamCommand["action"]],
+        payload: Omit<TeamCommand, "action">
+    ): Promise<unknown>
+}
+
+const noStore = (value: unknown, status = 200) =>
+    Response.json(value, { status, headers: { "Cache-Control": "no-store" } })
+
+/**
+ * Dashboard directory reads and writes. Each request is admin-only and
+ * consumes the actor's workspace bucket before Convex is called; writes are
+ * same-origin only.
+ */
+export function teamsDashboardHandlers<Access extends TeamDashboardAccess>(
+    ports: TeamsDashboardPorts<Access>
+) {
+    async function admit(
+        serverId: string
+    ): Promise<{ access: Access } | { denied: Response }> {
+        const access = await ports.access(serverId)
+        if (!access) return { denied: noStore({ error: "forbidden" }, 403) }
+        const rate = await ports.rateLimit(
+            teamDashboardRateBucket(access.guildId, access.actor.subject)
+        )
+        return rate.allowed
+            ? { access }
+            : { denied: teamRateLimitedResponse(rate) }
+    }
+    return {
+        /** `?teamId=` reads one record as `{ team }`; otherwise `?game=` pages one game's directory. */
+        async GET(request: Request, serverId: string): Promise<Response> {
+            try {
+                const admitted = await admit(serverId)
+                if ("denied" in admitted) return admitted.denied
+                const query = parseTeamsQuery(new URL(request.url).searchParams)
+                if (!query) return noStore({ error: "invalid_team" }, 400)
+                if (query.kind === "get") {
+                    const team = await ports.get(admitted.access, query.teamId)
+                    return team
+                        ? noStore({ team })
+                        : noStore({ error: "not_found" }, 404)
+                }
+                return noStore(await ports.list(admitted.access, query))
+            } catch {
+                return noStore({ error: "unavailable" }, 503)
+            }
+        },
+        async POST(request: Request, serverId: string): Promise<Response> {
+            if (request.headers.get("origin") !== new URL(request.url).origin)
+                return noStore({ error: "forbidden" }, 403)
+            try {
+                const admitted = await admit(serverId)
+                if ("denied" in admitted) return admitted.denied
+                const command = teamCommandSchema.safeParse(
+                    await readBoundedJson(request, 16384)
+                )
+                if (!command.success)
+                    return noStore({ error: "invalid_team" }, 400)
+                const { action, ...payload } = command.data
+                const result = teamCommandResponse(
+                    await ports.command(
+                        admitted.access,
+                        TEAM_MUTATION_FOR[action],
+                        payload
+                    )
+                )
+                return noStore(result.body, result.status)
+            } catch {
+                return noStore({ error: "unavailable" }, 503)
+            }
+        },
+    }
 }

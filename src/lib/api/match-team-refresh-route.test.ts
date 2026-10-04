@@ -28,7 +28,15 @@ function fixture(result: unknown = { ok: true, matchTeams: [assignment] }) {
     const ports: MatchTeamRefreshPorts = {
         access: async (serverId) => {
             calls.push({ access: serverId })
-            return { serverRecordId: "guilds:record", actor: "123456789" }
+            return {
+                serverRecordId: "guilds:record",
+                guildId: "910000000000000001",
+                actor: "123456789",
+            }
+        },
+        rateLimit: async (bucket) => {
+            calls.push({ rateLimit: bucket })
+            return { allowed: true, retryAfterSeconds: 0 }
         },
         refresh: async (input) => {
             calls.push(input)
@@ -69,6 +77,7 @@ test("refresh forwards the admin's server record, event, team and actor and retu
     })
     assert.deepEqual(f.calls, [
         { access: "guilds:one" },
+        { rateLimit: "teams:910000000000000001:123456789" },
         {
             serverRecordId: "guilds:record",
             eventId: "events:one",
@@ -107,7 +116,11 @@ test("refresh rejects cross-origin, non-admin and malformed requests before Conv
         const response = await f.post(f.request(body))
         assert.equal(response.status, 400)
         assert.deepEqual(await response.json(), { error: "invalid_request" })
-        assert.equal(f.calls.length, 1, "only access was consulted")
+        assert.equal(
+            f.calls.length,
+            2,
+            "only access and the rate limit were consulted"
+        )
     }
 })
 
@@ -139,4 +152,22 @@ test("team rule violations are 400 codes; unknown outcomes and malformed results
         assert.deepEqual(await response.json(), { error: "unavailable" })
         assert.deepEqual(f.revalidated, [])
     }
+})
+
+test("a limited actor gets 429 with Retry-After before the body is read or Convex is called", async () => {
+    const f = fixture()
+    f.ports.rateLimit = async (bucket) => {
+        f.calls.push({ rateLimit: bucket })
+        return { allowed: false, retryAfterSeconds: 12.2 }
+    }
+    const response = await f.post(f.request())
+    assert.equal(response.status, 429)
+    assert.equal(response.headers.get("retry-after"), "13")
+    assert.equal(response.headers.get("cache-control"), "no-store")
+    assert.deepEqual(await response.json(), { error: "rate_limited" })
+    assert.deepEqual(f.calls, [
+        { access: "guilds:one" },
+        { rateLimit: "teams:910000000000000001:123456789" },
+    ])
+    assert.deepEqual(f.revalidated, [])
 })

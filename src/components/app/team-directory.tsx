@@ -433,9 +433,20 @@ function GameTeams({
                 onOpenChange={(open) =>
                     setDialog((state) => ({ ...state, open }))
                 }
-                onSaved={(team) => {
+                onSaved={(team, outcome = "saved") => {
                     applyRecord(team.id, team)
-                    setNotice({ tone: "success", text: t.saved })
+                    // Choosing an existing active team changes nothing to report.
+                    setNotice(
+                        outcome === "selected"
+                            ? null
+                            : {
+                                  tone: "success",
+                                  text:
+                                      outcome === "restored"
+                                          ? t.restoredNotice
+                                          : t.saved,
+                              }
+                    )
                 }}
                 onStale={applyRecord}
             />

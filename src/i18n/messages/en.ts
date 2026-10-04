@@ -856,6 +856,12 @@ export const enMessages = {
         restoreTeam: "Restore {name}",
         conflictReloadFailed:
             "This team changed in the meantime, and the latest version could not be loaded. Close the dialog and try again.",
+        duplicateActive:
+            "A team with this name already exists for this game. Use that team instead of creating a second one.",
+        duplicateArchived:
+            "An archived team already uses this name. Restore it to use it again.",
+        useExisting: "Use existing team",
+        restoreExisting: "Restore and use",
         errors: {
             invalid_team: "Check the team details and try again.",
             game_disabled: "This game is not enabled for the workspace.",
@@ -874,6 +880,7 @@ export const enMessages = {
                 "This game's directory has reached its limit of 500 teams.",
             forbidden: "You are not allowed to manage teams here.",
             unavailable: "The team directory is temporarily unavailable.",
+            rate_limited: "Too many requests; wait a moment and try again.",
         },
         uploadErrors: {
             unsupported_type: "Only PNG, JPEG and WebP images are accepted.",
@@ -920,6 +927,7 @@ export const enMessages = {
                 training_event: "Trainings do not have match teams.",
                 forbidden: "You are not allowed to change the match teams.",
                 unavailable: "The team directory is temporarily unavailable.",
+                rate_limited: "Too many requests; wait a moment and try again.",
             },
         },
     },

@@ -33,6 +33,7 @@ export const TEAM_ERROR_CODES = [
     "asset_unavailable",
     "limit_reached",
     "forbidden",
+    "rate_limited",
     "unavailable",
 ] as const
 export type TeamErrorCode = (typeof TEAM_ERROR_CODES)[number]
@@ -60,6 +61,7 @@ export const MATCH_TEAM_ERROR_CODES = [
     "match_concluded",
     "training_event",
     "forbidden",
+    "rate_limited",
     "unavailable",
 ] as const
 export type MatchTeamErrorCode = (typeof MATCH_TEAM_ERROR_CODES)[number]
@@ -215,6 +217,29 @@ export async function sendTeamCommand(
             existingId: readString(body, "existingId"),
         }
     return { ok: true, teamId: readString(body, "teamId") }
+}
+
+export type TeamRestoreResult =
+    { ok: true; team: TeamRecord } | { ok: false; code: TeamErrorCode }
+
+/**
+ * Restores an archived team at the revision the caller has seen and returns
+ * the re-read record, so a duplicate-name conflict can reuse the existing team.
+ */
+export async function restoreTeam(
+    serverId: string,
+    team: Pick<TeamRecord, "id" | "revision">
+): Promise<TeamRestoreResult> {
+    const result = await sendTeamCommand(serverId, {
+        action: "restore",
+        teamId: team.id,
+        input: { expectedRevision: team.revision },
+    })
+    if (!result.ok) return { ok: false, code: result.code }
+    const restored = await fetchTeamRecord(serverId, team.id).catch(() => null)
+    return restored && !restored.archivedAt
+        ? { ok: true, team: restored }
+        : { ok: false, code: "unavailable" }
 }
 
 export type LogoUploadResult =

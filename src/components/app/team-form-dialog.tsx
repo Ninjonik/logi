@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog"
 import {
     fetchTeamRecord,
+    restoreTeam,
     sendTeamCommand,
     uploadTeamLogo,
     type TeamErrorCode,
@@ -34,6 +35,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 
+export type TeamFormOutcome = "saved" | "selected" | "restored"
 export type TeamFormDialogProps = {
     serverId: string
     gameId: TeamGame
@@ -42,8 +44,12 @@ export type TeamFormDialogProps = {
     onOpenChange(open: boolean): void
     /** Editing target; absent creates a new team in `gameId`. */
     team?: TeamRecord | null
-    /** Receives the re-read record after a successful create or update. */
-    onSaved(team: TeamRecord): void
+    /**
+     * Receives the re-read record after a successful create or update, or the
+     * existing team the admin chose (`selected`, or `restored` from the
+     * archive) after a duplicate-name conflict.
+     */
+    onSaved(team: TeamRecord, outcome?: TeamFormOutcome): void
     /** Receives the latest record (or `null` when gone) after a stale-revision rejection. */
     onStale?(teamId: string, team: TeamRecord | null): void
 }
@@ -91,6 +97,8 @@ function TeamFormBody({
     const [pending, setPending] = useState(false),
         [uploading, setUploading] = useState(false),
         [failure, setFailure] = useState<string | null>(null)
+    // The same-name team a create collided with; the admin may use or restore it.
+    const [duplicate, setDuplicate] = useState<TeamRecord | null>(null)
     const fileInput = useRef<HTMLInputElement>(null)
     const busy = pending || uploading
     const editing = Boolean(team)
@@ -140,6 +148,47 @@ function TeamFormBody({
         setFailure(latest.archivedAt ? t.errors.archived : t.errors[error])
     }
 
+    /** Loads the conflicting team so it can be used (active) or restored (archived). */
+    async function offerExisting(existingId: string) {
+        const existing = await fetchTeamRecord(serverId, existingId).catch(
+            () => null
+        )
+        if (!existing || existing.gameId !== gameId) {
+            setFailure(t.errors.duplicate_name)
+            return
+        }
+        setDuplicate(existing)
+        setFailure(
+            existing.archivedAt ? t.duplicateArchived : t.duplicateActive
+        )
+    }
+
+    async function adoptExisting(existing: TeamRecord) {
+        if (!existing.archivedAt) {
+            onSaved(existing, "selected")
+            onOpenChange(false)
+            return
+        }
+        setPending(true)
+        setFailure(null)
+        try {
+            const restored = await restoreTeam(serverId, existing)
+            if (restored.ok) {
+                onSaved(restored.team, "restored")
+                onOpenChange(false)
+                return
+            }
+            // Someone else changed it: show the latest state for the next choice.
+            const latest = await fetchTeamRecord(serverId, existing.id).catch(
+                () => null
+            )
+            setDuplicate(latest && latest.gameId === gameId ? latest : null)
+            setFailure(t.errors[restored.code])
+        } finally {
+            setPending(false)
+        }
+    }
+
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
         // The dialog may be portaled out of another form (the match editor); keep its submit local.
@@ -161,11 +210,18 @@ function TeamFormBody({
         const { request } = command
         setPending(true)
         setFailure(null)
+        setDuplicate(null)
         try {
             const result = await sendTeamCommand(serverId, request)
             if (!result.ok) {
                 if (base && STALE.has(result.code))
                     await reloadAfter(result.code, base)
+                else if (
+                    !base &&
+                    result.code === "duplicate_name" &&
+                    result.existingId
+                )
+                    await offerExisting(result.existingId)
                 else setFailure(t.errors[result.code])
                 return
             }
@@ -263,7 +319,11 @@ function TeamFormBody({
                     autoFocus
                     autoComplete="off"
                     disabled={pending}
-                    onChange={(event) => setName(event.target.value)}
+                    onChange={(event) => {
+                        setName(event.target.value)
+                        // A different name no longer collides with the offered team.
+                        setDuplicate(null)
+                    }}
                 />
             </div>
             <div className="space-y-2">
@@ -288,6 +348,30 @@ function TeamFormBody({
                 <p role="alert" className="text-destructive text-sm">
                     {failure}
                 </p>
+            ) : null}
+            {duplicate ? (
+                <div className="flex items-center gap-3 rounded-md border p-2">
+                    <TeamLogo
+                        name={duplicate.name}
+                        shortCode={duplicate.shortCode}
+                        logoUrl={duplicate.logoUrl}
+                        className="size-8 text-xs"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                        {duplicate.name}
+                    </span>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() => void adoptExisting(duplicate)}
+                    >
+                        {duplicate.archivedAt
+                            ? t.restoreExisting
+                            : t.useExisting}
+                    </Button>
+                </div>
             ) : null}
             <DialogFooter>
                 <Button

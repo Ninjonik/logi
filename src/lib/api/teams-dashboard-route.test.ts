@@ -4,6 +4,7 @@ import {
     teamCommandResponse,
     teamCommandSchema,
     teamErrorStatus,
+    teamsDashboardHandlers,
 } from "./teams-dashboard-route"
 import assert from "node:assert/strict"
 import test from "node:test"
@@ -152,4 +153,142 @@ test("command errors map to conflict, missing or bad-request statuses with exist
         body: success,
         status: 200,
     })
+})
+
+function dashboardFixture(limited = false) {
+    const calls: unknown[] = []
+    const access = {
+        secret: "s",
+        guildId: "910000000000000001",
+        actor: { subject: "123456789" },
+    }
+    const handlers = teamsDashboardHandlers({
+        access: async (serverId) => {
+            calls.push({ access: serverId })
+            return serverId === "server-1" ? access : null
+        },
+        rateLimit: async (bucket) => {
+            calls.push({ rateLimit: bucket })
+            return limited
+                ? { allowed: false, retryAfterSeconds: 4.5 }
+                : { allowed: true, retryAfterSeconds: 0 }
+        },
+        get: async (_access, teamId) => {
+            calls.push({ get: teamId })
+            return teamId === "teamDirectory:1" ? { id: teamId } : null
+        },
+        list: async (_access, query) => {
+            calls.push({ list: query.gameId })
+            return { items: [], nextCursor: null }
+        },
+        command: async (_access, mutation, payload) => {
+            calls.push({ command: mutation, payload })
+            return { error: "duplicate_name", existingId: "teamDirectory:9" }
+        },
+    })
+    const origin = "https://logi.test"
+    const post = (body: unknown, headers: HeadersInit = { origin }) =>
+        new Request(`${origin}/api/servers/server-1/teams`, {
+            method: "POST",
+            headers: { "content-type": "application/json", ...headers },
+            body: JSON.stringify(body),
+        })
+    const get = (query: string) =>
+        new Request(`${origin}/api/servers/server-1/teams?${query}`)
+    return { calls, handlers, post, get }
+}
+const createBody = {
+    action: "create",
+    input: {
+        gameId: "wardogs",
+        name: "Alpha",
+        idempotencyKey: "create-alpha-0001",
+    },
+}
+
+test("directory reads and writes consume the actor's workspace bucket before Convex", async () => {
+    const f = dashboardFixture()
+    const list = await f.handlers.GET(f.get("game=wardogs"), "server-1")
+    assert.equal(list.status, 200)
+    assert.equal(list.headers.get("cache-control"), "no-store")
+    const one = await f.handlers.GET(
+        f.get("teamId=teamDirectory:1"),
+        "server-1"
+    )
+    assert.deepEqual(await one.json(), { team: { id: "teamDirectory:1" } })
+    assert.equal(
+        (await f.handlers.GET(f.get("teamId=teamDirectory:2"), "server-1"))
+            .status,
+        404
+    )
+    const conflict = await f.handlers.POST(f.post(createBody), "server-1")
+    assert.equal(conflict.status, 409)
+    assert.deepEqual(await conflict.json(), {
+        error: "duplicate_name",
+        existingId: "teamDirectory:9",
+    })
+    const bucket = { rateLimit: "teams:910000000000000001:123456789" }
+    assert.deepEqual(f.calls, [
+        { access: "server-1" },
+        bucket,
+        { list: "wardogs" },
+        { access: "server-1" },
+        bucket,
+        { get: "teamDirectory:1" },
+        { access: "server-1" },
+        bucket,
+        { get: "teamDirectory:2" },
+        { access: "server-1" },
+        bucket,
+        {
+            command: "teams:create",
+            // The domain schema has normalized the input before Convex sees it.
+            payload: {
+                input: {
+                    ...createBody.input,
+                    shortCode: null,
+                    logoAssetId: null,
+                },
+            },
+        },
+    ])
+})
+
+test("a limited actor gets 429 with Retry-After; denied and cross-origin calls never consume the bucket", async () => {
+    const limited = dashboardFixture(true)
+    for (const response of [
+        await limited.handlers.GET(limited.get("game=wardogs"), "server-1"),
+        await limited.handlers.POST(limited.post(createBody), "server-1"),
+    ]) {
+        assert.equal(response.status, 429)
+        assert.equal(response.headers.get("retry-after"), "5")
+        assert.equal(response.headers.get("cache-control"), "no-store")
+        assert.deepEqual(await response.json(), { error: "rate_limited" })
+    }
+    assert.equal(
+        limited.calls.some(
+            (call) =>
+                typeof call === "object" &&
+                call &&
+                !("access" in call) &&
+                !("rateLimit" in call)
+        ),
+        false,
+        "nothing reaches Convex while limited"
+    )
+    const f = dashboardFixture()
+    assert.equal(
+        (await f.handlers.GET(f.get("game=wardogs"), "server-2")).status,
+        403
+    )
+    assert.equal(
+        (
+            await f.handlers.POST(
+                f.post(createBody, { origin: "https://evil.test" }),
+                "server-1"
+            )
+        ).status,
+        403
+    )
+    assert.deepEqual(f.calls, [{ access: "server-2" }])
 })

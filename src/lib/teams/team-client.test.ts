@@ -3,6 +3,7 @@ import {
     fetchTeamRecord,
     matchTeamSaveErrorCode,
     requestMatchTeamRefresh,
+    restoreTeam,
     sendTeamCommand,
     teamErrorCode,
     teamListUrl,
@@ -250,6 +251,61 @@ test("snapshot refresh returns the stored assignments or a match-team code", asy
     })
     stubFetch(() => json({ ok: true, matchTeams: [{ teamId: "x" }] }))
     assert.deepEqual(await requestMatchTeamRefresh("srv", "evt", "team_1"), {
+        ok: false,
+        code: "unavailable",
+    })
+})
+
+test("a rate-limited directory request keeps its localizable code", async () => {
+    stubFetch(() => json({ error: "rate_limited" }, 429))
+    await assert.rejects(
+        fetchTeamPage("srv", { gameId: "wardogs", archived: false }),
+        (error: unknown) =>
+            error instanceof TeamRequestError && error.code === "rate_limited"
+    )
+    assert.deepEqual(
+        await sendTeamCommand("srv", {
+            action: "archive",
+            teamId: "team_1",
+            input: { expectedRevision: 2 },
+        }),
+        { ok: false, code: "rate_limited", existingId: null }
+    )
+    assert.deepEqual(
+        await requestMatchTeamRefresh("srv", "event_1", "team_1"),
+        { ok: false, code: "rate_limited" }
+    )
+})
+
+test("restoring a duplicate's archived team sends its revision and returns the re-read record", async () => {
+    const archived = { ...record, archivedAt: "2026-10-02T00:00:00.000Z" }
+    const calls = stubFetch((call) =>
+        call.init?.method === "POST"
+            ? json({ ok: true, revision: 3 })
+            : json({ team: { ...record, revision: 3 } })
+    )
+    assert.deepEqual(await restoreTeam("srv", archived), {
+        ok: true,
+        team: { ...record, revision: 3 },
+    })
+    assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
+        action: "restore",
+        teamId: "team_1",
+        input: { expectedRevision: 2 },
+    })
+    assert.equal(calls[1]?.url, "/api/servers/srv/teams?teamId=team_1")
+    stubFetch(() => json({ error: "revision_conflict" }, 409))
+    assert.deepEqual(await restoreTeam("srv", archived), {
+        ok: false,
+        code: "revision_conflict",
+    })
+    // A restore whose re-read still shows the team archived is not reported as success.
+    stubFetch((call) =>
+        call.init?.method === "POST"
+            ? json({ ok: true, revision: 3 })
+            : json({ team: archived })
+    )
+    assert.deepEqual(await restoreTeam("srv", archived), {
         ok: false,
         code: "unavailable",
     })

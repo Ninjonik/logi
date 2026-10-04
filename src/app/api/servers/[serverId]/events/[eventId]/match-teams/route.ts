@@ -1,7 +1,9 @@
 import { matchTeamRefreshHandler } from "@/lib/api/match-team-refresh-route"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
+import { TEAM_DASHBOARD_RATE_LIMIT } from "@/lib/api/teams-dashboard-route"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
+import { checkPublicApiRateLimit } from "@/lib/public-api"
 import { makeFunctionReference } from "convex/server"
 import { getInternalAuthSecret } from "@/lib/env"
 import { fetchMutation } from "convex/nextjs"
@@ -19,8 +21,22 @@ const handler = matchTeamRefreshHandler({
             currentDashboardActor(),
         ])
         return server?.canAdmin && actor
-            ? { serverRecordId: server.server.id, actor: actor.subject }
+            ? {
+                  serverRecordId: server.server.id,
+                  guildId: server.server.discordId,
+                  actor: actor.subject,
+              }
             : null
+    },
+    rateLimit: async (bucket) => {
+        const value = await checkPublicApiRateLimit(
+            bucket,
+            TEAM_DASHBOARD_RATE_LIMIT
+        )
+        return {
+            allowed: value.allowed,
+            retryAfterSeconds: (value.resetAt - Date.now()) / 1000,
+        }
     },
     refresh: async (input) =>
         await fetchMutation(refreshSnapshot, {

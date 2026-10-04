@@ -1,4 +1,9 @@
 import {
+    teamDashboardRateBucket,
+    teamRateLimitedResponse,
+    type TeamDashboardRateLimit,
+} from "@/lib/api/teams-dashboard-route"
+import {
     matchTeamAssignmentSchema,
     type MatchTeamError,
 } from "@/domain/teams/match-teams"
@@ -26,9 +31,13 @@ const refreshedSchema = z.array(matchTeamAssignmentSchema).max(3)
 
 export type MatchTeamRefreshPorts = {
     /** Current workspace admin and dashboard actor; null denies the request. */
-    access(
-        serverId: string
-    ): Promise<{ serverRecordId: string; actor: string } | null>
+    access(serverId: string): Promise<{
+        serverRecordId: string
+        guildId: string
+        actor: string
+    } | null>
+    /** The directory bucket shared with team reads and writes. */
+    rateLimit(bucket: string): Promise<TeamDashboardRateLimit>
     refresh(input: {
         serverRecordId: string
         eventId: string
@@ -52,6 +61,11 @@ export function matchTeamRefreshHandler(ports: MatchTeamRefreshPorts) {
         try {
             const access = await ports.access(params.serverId)
             if (!access) return json({ error: "forbidden" }, 403)
+            // Every refresh writes an audit row, so it consumes the directory bucket.
+            const rate = await ports.rateLimit(
+                teamDashboardRateBucket(access.guildId, access.actor)
+            )
+            if (!rate.allowed) return teamRateLimitedResponse(rate)
             const input = matchTeamRefreshCommandSchema.safeParse(
                 await readBoundedJson(request, 4096)
             )
