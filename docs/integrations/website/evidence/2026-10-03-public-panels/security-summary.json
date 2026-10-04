@@ -1,0 +1,262 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-03",
+  "kind": "Security scan result plus separate repair verification; not a new sealed scan",
+  "sealedScan": {
+    "id": "8bd8ac60-6646-4d27-8bf4-22e4fc3a5cf4",
+    "status": "completed",
+    "baseRevision": "c42ea770c307793494ae159a924f86e3c6ced50d",
+    "headRevision": "e281495acf6f680ed1fc5ebdf23ceb49758f4a7e",
+    "findings": [
+      {
+        "attackPath": null,
+        "confidence": {
+          "level": "high",
+          "rationale": "Actual unmodified handler executed with synthetic service/interaction boundaries and returned current player data to an old channel; configuration/dispatcher code establishes product reachability."
+        },
+        "findingId": "csf_dbbec88e2b9132eea7236189",
+        "fingerprints": {
+          "algorithm": "codex-security/v1",
+          "primary": "codex-security/v1:sha256:89170fde2652ffa1aa0c9e0f285d522fa1dd99440f38b7db2ff91214320c8d1e"
+        },
+        "identity": {
+          "anchor": "private-player-current-destination",
+          "instance": "discord-public-panel"
+        },
+        "locations": [
+          {
+            "endLine": 183,
+            "path": "discord-bot/src/index.ts",
+            "role": "entrypoint",
+            "startLine": 178
+          },
+          {
+            "endLine": 154,
+            "path": "discord-bot/src/public-panels/render.ts",
+            "role": "source",
+            "startLine": 146
+          },
+          {
+            "endLine": 195,
+            "path": "discord-bot/src/public-panels/worker.ts",
+            "role": "root_control",
+            "startLine": 185
+          },
+          {
+            "endLine": 219,
+            "path": "discord-bot/src/public-panels/worker.ts",
+            "role": "sink",
+            "startLine": 215
+          }
+        ],
+        "occurrenceId": "occ_dc3e4a04e39bec7c8d020bee",
+        "provenance": {
+          "source": "local_plugin"
+        },
+        "remediation": "Bind all player controls to the current panel revision and originating channel. Before provider reads and again before replies, reject moved/reconfigured controls and verify current member ViewChannel/ReadMessageHistory permissions using fresh Discord channel/member/role state. Fail closed when authorization cannot be established.",
+        "remediationTests": [
+          "An old ephemeral control after a destination change must perform no provider read.",
+          "Rebinding a source invalidates old controls even within the same channel.",
+          "Revoked user channel visibility denies private pagination; current authorized controls still work."
+        ],
+        "ruleId": "authorization-bypass.retained-component",
+        "severity": {
+          "level": "low",
+          "rationale": "Limited same-guild player names and match statistics disclosure; no account, secret, integrity or cross-tenant compromise. Low impact/high conditional reachability maps to low (P3). No self-only or privileged-attacker suppression applies."
+        },
+        "summary": "Retained private player controls can expose current data after a panel moves to a restricted channel",
+        "taxonomy": {
+          "category": "authorization-bypass",
+          "cwe": [
+            "CWE-862"
+          ]
+        },
+        "title": "Retained private player controls outlive destination authorization",
+        "validation": null
+      }
+    ],
+    "canonicalArtifactDigests": [
+      {
+        "mediaType": "application/json",
+        "path": "findings.json",
+        "sha256": "9e036df4ad0eb4765b3ccf623d51f7199fce3a0a6f3bc67bd1ec100cfe6309dd"
+      },
+      {
+        "mediaType": "application/json",
+        "path": "coverage.json",
+        "sha256": "060e04009d9907e5563305eae91542177c0843d6d9eaed93cac5e1e730ae7cb7"
+      }
+    ],
+    "reviewedSourceFiles": {
+      "back": [
+        "convex/_generated/api.d.ts",
+        "convex/discordPublicPanels.ts",
+        "convex/discordPublicationTable.ts",
+        "convex/discordPublications.ts",
+        "convex/schema.ts",
+        "convex/warconData.ts",
+        "convex/warconReads.ts",
+        "src/app/api/servers/[serverId]/discord-public-panels/route.ts",
+        "src/app/api/servers/[serverId]/discord-settings/route.ts",
+        "src/infrastructure/convex/discord-publications.test.ts",
+        "src/infrastructure/convex/warcon-cache.test.ts",
+        "src/lib/gateways/discord-public-channel.ts"
+      ],
+      "transport": [
+        "discord-bot/src/index.ts",
+        "discord-bot/src/public-panels/assets.ts",
+        "discord-bot/src/public-panels/private-reply.test.ts",
+        "discord-bot/src/public-panels/private-reply.ts",
+        "discord-bot/src/public-panels/render.test.ts",
+        "discord-bot/src/public-panels/render.ts",
+        "discord-bot/src/public-panels/worker.ts",
+        "discord-bot/src/sync/events.ts",
+        "discord-bot/src/sync/owned-message.test.ts",
+        "discord-bot/src/sync/owned-message.ts",
+        "discord-bot/src/sync/panels.ts",
+        "discord-bot/src/sync/publication.ts",
+        "scripts/provision-discord-panel-emoji.ts",
+        "src/application/discord-publications/provision-emoji.test.ts",
+        "src/application/discord-publications/provision-emoji.ts",
+        "src/application/discord-publications/publish.test.ts",
+        "src/application/discord-publications/publish.ts",
+        "src/application/discord-publications/results.test.ts",
+        "src/application/discord-publications/results.ts"
+      ],
+      "parent": [
+        "src/components/app/discord-channel-select.tsx",
+        "src/components/app/discord-public-panels-form.tsx",
+        "src/components/app/discord-server-settings-form.tsx",
+        "src/components/app/event-form-panel.tsx",
+        "src/components/app/membership-settings-form.tsx",
+        "src/components/app/ticket-settings-form.tsx",
+        "src/domain/discord-publications/channel-permissions.test.ts",
+        "src/domain/discord-publications/channel-permissions.ts",
+        "src/domain/discord-publications/channel-types.test.ts",
+        "src/domain/discord-publications/channel-types.ts",
+        "src/domain/discord-publications/destinations.test.ts",
+        "src/domain/discord-publications/destinations.ts",
+        "src/domain/discord-publications/legacy-bindings.test.ts",
+        "src/domain/discord-publications/legacy-bindings.ts",
+        "src/domain/discord-publications/settings.ts"
+      ]
+    },
+    "coverageArtifact": {
+      "completeness": "partial",
+      "deferred": [
+        {
+          "id": "candidate-d6d33e5e1b61a131",
+          "paths": [
+            "discord-bot/src/public-panels/worker.ts"
+          ],
+          "reason": "Validated disclosure; preparing final canonical finding."
+        }
+      ],
+      "documentType": "codex-security.coverage",
+      "excludePaths": [],
+      "explicitExclusions": [
+        {
+          "pattern": "production/runtime",
+          "reason": "No production Convex, credentials, real game providers, real Discord permission moves/rate limits, hosted SSO or deployment validation in the security scan."
+        },
+        {
+          "pattern": "unchanged-repository/**",
+          "reason": "Supporting controls traced only as needed; this is the 46-source-file public-panel delta, not a new whole-repository or whole-PR scan."
+        }
+      ],
+      "includePaths": [
+        "."
+      ],
+      "inventoryStrategy": "diff",
+      "mode": "branch_diff",
+      "openQuestions": [],
+      "scanId": "8bd8ac60-6646-4d27-8bf4-22e4fc3a5cf4",
+      "schemaVersion": "1.0",
+      "surfaces": [
+        {
+          "disposition": "no_issue_found",
+          "id": "backend",
+          "label": "Current dashboard actor, Convex publication/cache/results, fixed Discord channel verification (12 full files)",
+          "notes": "discordPublicPanels.ts:29-46,91-94,125-198; discordPublications.ts:20-49,98-135; warconReads.ts:48-62,85-110,207-238; new route:12-50. Revocation/source fingerprints/bounded fixed-origin fetch survive. Legacy discord-settings cached authorization is unchanged; it is not equivalent to the new actor-backed route.",
+          "receiptRefs": [],
+          "riskArea": "Authorization, tenancy and persistence"
+        },
+        {
+          "disposition": "reported",
+          "id": "transport",
+          "label": "Discord worker, message ownership/recovery, private rendering and emoji (19 full files)",
+          "notes": "One retained-private-control disclosure at worker.ts:185-219. Fresh author verification owned-message.ts:14-24; forced guild-scoped channel/permission checks publication.ts:44-68; exact marker 120-137; pending-before-send publish.ts:34-88; escaped bounded text render.ts:25-31,124-164; result review gate results.ts:35-66; explicit emoji application binding.",
+          "receiptRefs": [],
+          "riskArea": "Current destination entitlement"
+        },
+        {
+          "disposition": "no_issue_found",
+          "id": "ui-domain",
+          "label": "Channel pickers, six settings/event forms, pure channel permissions/config/migration rules (15 full files)",
+          "notes": "All 15 full files read, including entire event-form-panel.tsx 1-3288. New selectors use React text rendering and restricted type filtering; manual ID is a convenience, not authorization. Event fields flow to existing authenticated event handlers, and transport independently binds guild. Strict settings reject unknown keys; effective permission calculations honor overwrites. Membership game overrides do not inherit message IDs; legacy event adoption keeps the old channel.",
+          "receiptRefs": [],
+          "riskArea": "Input handling and legacy routing"
+        }
+      ]
+    },
+    "coverageNote": "All 46 changed source files were read and the progress ledger closed 46/46. The sealed coverage artifact still says partial and retains a deferred candidate already promoted to the one canonical finding. This original artifact is not rewritten or presented as a clean final-head scan.",
+    "validation": {
+      "mode": "Offline execution of the actual unmodified handler with synthetic interaction/service boundaries",
+      "outcome": "Old-channel private control performed one provider read and returned current restricted-panel player data",
+      "externalCalls": false,
+      "credentialsUsed": false,
+      "limitation": "Not a real two-account Discord permission-move attack. Canonical finding validation/attackPath fields are null; detailed validation exists in the scan candidate ledger."
+    }
+  },
+  "followUp": {
+    "baseRevision": "e281495acf6f680ed1fc5ebdf23ceb49758f4a7e",
+    "headRevision": "fc5eb8696942adedbd5009d3e47ccca98e98b868",
+    "scope": [
+      "convex/discordPublicationTable.ts",
+      "discord-bot/src/public-panels/assets.ts",
+      "discord-bot/src/public-panels/render.test.ts",
+      "discord-bot/src/public-panels/render.ts",
+      "discord-bot/src/public-panels/worker.ts",
+      "discord-bot/src/public-panels/player-details.ts",
+      "discord-bot/src/public-panels/player-details.test.ts",
+      "discord-bot/src/sync/publication.ts",
+      "discord-bot/src/sync/publication-files.ts",
+      "discord-bot/src/sync/publication-files.test.ts",
+      "src/components/app/discord-public-panels-form.tsx",
+      "src/domain/discord-publications/settings.ts",
+      "src/domain/game-data/player-leaders.ts",
+      "src/domain/game-data/player-leaders.test.ts"
+    ],
+    "findingId": "csf_dbbec88e2b9132eea7236189",
+    "disposition": "fixed_in_source_and_focused_verification",
+    "changes": "Bind controls to guild, channel and configuration revision; fetch current guild/channel/member/role permissions before and after loading; fail closed. Public leader names default off independently of private details. Artwork paths are catalog-only and attachment reuse requires fresh owned-message verification.",
+    "offlineTests": {
+      "passed": 19,
+      "failed": 0,
+      "maximumRenderCharacters": 3528,
+      "limit": 4000
+    },
+    "newFindings": 0,
+    "liveRootVerification": "Actual authorized Discord web session rejected a retained legacy control and passed current private pagination 1/3 -> 2/3 -> 3/3 -> 2/3 with synthetic data. Real REST checks passed update/restart and retained attachment identity.",
+    "canonicalFindingState": "Original immutable scan remains open/idle in its recorded result; this separate verification does not mutate native scan artifacts.",
+    "exclusions": [
+      "Production Convex or bot deployment",
+      "Real provider acceptance for this increment",
+      "Native mobile/desktop Discord",
+      "Real two-account permission-move attack",
+      "A new complete whole-PR or full-repository security scan"
+    ]
+  },
+  "usage": {
+    "cacheWriteInputTokens": 0,
+    "cachedInputTokens": 17115776,
+    "coverage": "complete",
+    "inputTokens": 17851435,
+    "outputTokens": 79796,
+    "reasoningOutputTokens": 20808,
+    "source": "codex_rollout",
+    "threadCount": 4,
+    "totalTokens": 17931231,
+    "interpretation": "Plugin-reported rollout usage includes prior thread history and cached context across four threads; it is not incremental scan-only billing."
+  }
+}

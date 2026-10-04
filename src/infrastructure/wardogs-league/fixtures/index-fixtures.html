@@ -1,0 +1,11 @@
+<!doctype html>
+<!-- Semantic fixture from the public index observed 2026-10-03. Non-match navigation is intentional. -->
+<html><body>
+<nav><a href="/matches/outside">Outside main</a></nav>
+<main>
+  <h1>Find your next match</h1>
+  <nav><a href="/matches?tab=fixtures">Fixtures</a><a href="/matches?tab=results">Results</a><a href="/matches/nav-only">Not an index entry</a></nav>
+  <a href="/matches/one">Match #1</a><a href="/matches/one/">Duplicate</a>
+  <a href="/matches/requests/no">Request</a><a href="https://evil.test/matches/no">External link</a>
+</main>
+</body></html>

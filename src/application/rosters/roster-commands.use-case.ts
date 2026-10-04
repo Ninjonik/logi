@@ -63,7 +63,10 @@ export interface RosterCommandRepository {
     getRosterById(rosterId: string): Promise<RosterCommandRecord | null>
     getRosterByEventId(eventId: string): Promise<RosterCommandRecord | null>
     getEvent(eventId: string): Promise<EventRosterRecord | null>
-    listAssignments(serverDiscordId: string): Promise<AssignmentRosterRecord[]>
+    listAssignments(
+        serverDiscordId: string,
+        gameId?: GameId
+    ): Promise<AssignmentRosterRecord[]>
     createRoster(roster: Omit<RosterCommandRecord, "id">): Promise<string>
     updateRoster(
         rosterId: string,
@@ -95,7 +98,7 @@ export class UpsertRosterUseCase {
     async execute(input: UpsertRosterInput) {
         const event = await this.repository.getEvent(input.eventId)
         const assignments = event
-            ? await this.repository.listAssignments(event.guildId)
+            ? await this.repository.listAssignments(event.guildId, event.gameId)
             : []
         const existing = input.rosterId
             ? await this.repository.getRosterById(input.rosterId)

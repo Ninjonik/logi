@@ -1,0 +1,54 @@
+{
+    "schemaVersion": 1,
+    "scanId": "f3b4e926-ff57-4739-90ca-8aafcfb3ed64",
+    "status": "completed",
+    "baseRevision": "b2606d98282eac12e1649f62d47a55595d3acf05",
+    "scanRevision": "345b29f06ebbdf1d212e491a7f54b13a8c004eb4",
+    "fixRevision": "550ec1b3fd8d36d292a567cfa4a765c0cd462f82",
+    "classifiedChangedSourceFilesReviewed": 306,
+    "coverage": "partial",
+    "findings": [
+        {
+            "area": "source configuration current authority",
+            "severity": "low",
+            "fixed": true,
+            "validation": "original synthetic handler reproduction and repaired regression"
+        },
+        {
+            "area": "Warcon read completion current authority",
+            "severity": "low",
+            "fixed": true,
+            "validation": "source analysis and repaired regression"
+        },
+        {
+            "area": "Steam verification completion current session",
+            "severity": "low",
+            "fixed": true,
+            "validation": "source analysis and repaired regression; no real Steam login"
+        },
+        {
+            "area": "League persistent backoff bound",
+            "severity": "low",
+            "fixed": true,
+            "validation": "original synthetic transport/cache reproduction and repaired regression"
+        }
+    ],
+    "deferred": [
+        {
+            "area": "HTML parser resource impact",
+            "codeImproved": true,
+            "reason": "Original resource-bound benchmark and deployed-worker isolation were not measured; no proven availability exploit is claimed."
+        }
+    ],
+    "additionalHardening": "Inherited API key management authority cache is repaired but not counted as a new diff finding.",
+    "aggregatePluginUsage": {
+        "source": "codex_rollout",
+        "threadCount": 5,
+        "totalTokens": 29651277,
+        "cachedInputTokens": 28406016,
+        "outputTokens": 114666,
+        "billingEstimate": false
+    },
+    "privateArtifactsPublished": false,
+    "hostedAcceptanceClaimed": false
+}

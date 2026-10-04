@@ -1,0 +1,10 @@
+Command: convex dev --once --typecheck try --codegen disable --env-file <private-local-env>
+Exit code: 0
+Source content: ba845b38703d7ab053bd4f6897c002fbf6268f9f
+Environment: isolated local configuration; no production credentials
+
+▌ Developing against deployment:
+▌ └─ http://127.0.0.1:32190
+- Preparing Convex functions...
+
+√ 12:50:12 Convex functions ready! (792.94ms)

@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-03T17:59:10.272Z",
+  "realDiscord": true,
+  "localDatabaseOnly": true,
+  "records": [
+    {
+      "key": "league:vh7452zmgjd1d0th676ethqzas8fkgdq",
+      "messageId": "1556001818398687323",
+      "channelId": "1554615183106904074",
+      "error": null,
+      "lastSuccessAt": 1791050321066
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server"
+import { mutation } from "./integrationMutation"
 import { v } from "convex/values"
 
 const INTERNAL_AUTH_SECRET =

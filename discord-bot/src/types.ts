@@ -250,6 +250,27 @@ export type SquadPreset = {
     updatedAt: string
 }
 
+export type MatchTeamSlot = "a" | "b" | "c"
+
+/**
+ * Mirrors a native event's stored `matchTeams` entry (convex/teamValidators.ts).
+ * The snapshot is captured server-side when a team is assigned; directory
+ * edits never rewrite it, so the bot renders exactly these labels and logos.
+ */
+export type MatchTeamAssignment = {
+    teamId: string
+    slot: MatchTeamSlot
+    side: string | null
+    snapshot: {
+        name: string
+        shortCode: string | null
+        logoAssetId: string | null
+        logoUrl: string | null
+        teamRevision: number
+        capturedAt: string
+    }
+}
+
 export type EventRecord = {
     id: string
     guildId: string
@@ -293,6 +314,8 @@ export type EventRecord = {
     createForumChannel: boolean
     topicPresetId?: string
     stratmapIds?: string[]
+    /** Native match teams; absent or empty on legacy events. */
+    matchTeams?: MatchTeamAssignment[]
     status: "registration" | "closed" | "starting" | "concluded"
     statusUpdatedAt: string
     concludedAt?: string

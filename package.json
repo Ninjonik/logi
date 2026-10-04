@@ -4,7 +4,8 @@
     "private": true,
     "overrides": {
         "react-remove-scroll-bar": "2.3.7",
-        "zod": "4.3.6"
+        "zod": "4.3.6",
+        "@discordjs/ws": "1.2.3"
     },
     "scripts": {
         "dev": "next dev",
@@ -18,11 +19,12 @@
         "build-show-all-errors": "cross-env NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS=--max-old-space-size=4096 __NEXT_TEST_MODE=true next build",
         "start": "next start",
         "typecheck": "tsc --noEmit",
-        "lint": "next lint",
+        "lint": "eslint .",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "generate:openapi": "tsx scripts/generate-openapi-schemas.ts",
-        "convex:deploy": "convex deploy"
+        "convex:deploy": "convex deploy",
+        "postinstall": "patch-package --error-on-fail"
     },
     "dependencies": {
         "@dnd-kit/core": "^6.3.1",
@@ -55,6 +57,7 @@
         "@tailwindcss/postcss": "^4.3.3",
         "@tanstack/react-table": "^8.21.3",
         "@uiw/react-md-editor": "^4.1.2",
+        "cheerio": "1.2.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
@@ -75,6 +78,8 @@
         "nextra": "^4.6.1",
         "nextra-theme-docs": "^4.6.1",
         "nextstepjs": "^2.3.0",
+        "passport-steam-openid": "1.1.12",
+        "patch-package": "8.0.1",
         "postcss": "^8.5.28",
         "react": "^19.2.8",
         "react-big-calendar": "^1.20.0",
@@ -89,6 +94,7 @@
         "recharts": "3.6.0",
         "rehype-raw": "^7.0.0",
         "remark-gfm": "^4.0.1",
+        "sharp": "0.35.4",
         "sonner": "^2.0.8",
         "tailwind-merge": "^3.6.0",
         "vaul": "^1.1.2",

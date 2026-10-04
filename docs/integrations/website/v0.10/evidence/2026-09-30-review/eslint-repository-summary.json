@@ -1,0 +1,570 @@
+{
+  "command": "npm run lint (eslint .)",
+  "exitCode": 1,
+  "files": 915,
+  "errors": 140,
+  "warnings": 142,
+  "diagnostics": [
+    {
+      "file": ".superpowers/sdd/2026-09-29-pr-documentation/capture.mjs",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": ".superpowers/sdd/2026-09-29-pr-documentation/verify-docs.mjs",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "content/_meta.js",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "content/configuration/_meta.js",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "content/dashboard/_meta.js",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "content/operations/_meta.js",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "content/public/_meta.js",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "convex/_generated/api.js",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "convex/_generated/dataModel.d.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "convex/_generated/server.d.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "convex/_generated/server.js",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "convex/migrations.ts",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "errors": 0,
+      "warnings": 4
+    },
+    {
+      "file": "convex/publicProfiles.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "convex/rosterSync.ts",
+      "errors": 3,
+      "warnings": 0
+    },
+    {
+      "file": "convex/sso.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "convex/stratmaps.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "convex/userAssignments.ts",
+      "errors": 0,
+      "warnings": 3
+    },
+    {
+      "file": "convex/webhooks.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "discord-bot/src/interactions.ts",
+      "errors": 0,
+      "warnings": 3
+    },
+    {
+      "file": "discord-bot/src/message-builders.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "discord-bot/src/runtime/guild-cache.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "discord-bot/src/scheduled-events.test.ts",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "discord-bot/src/sync/events.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "scripts/seed-vlk.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/calendar/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/[eventId]/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/events/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/groups/[groupId]/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/groups/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/matches/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/memberships/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/page.tsx",
+      "errors": 1,
+      "warnings": 2
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/[rosterId]/page.tsx",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/rosters/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/settings/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/squad-presets/[presetId]/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/squad-presets/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/tickets/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/topic-presets/[presetId]/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/topic-presets/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/trainings/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/[assignmentId]/page.tsx",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/create/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/(dashboard)/dashboard/servers/[serverId]/users/page.tsx",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/app/[locale]/community/page.tsx",
+      "errors": 0,
+      "warnings": 5
+    },
+    {
+      "file": "src/app/[locale]/competitions/[slug]/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/competitions/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/layout.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/[locale]/platform-id-link/[token]/page.tsx",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/app/[locale]/rosters/[eventId]/page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/app/api/discord/roster-image/[eventId]/route.tsx",
+      "errors": 0,
+      "warnings": 5
+    },
+    {
+      "file": "src/app/api/og/[kind]/[id]/route.tsx",
+      "errors": 0,
+      "warnings": 10
+    },
+    {
+      "file": "src/app/api/servers/[serverId]/events/[eventId]/route.ts",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/app/api/servers/[serverId]/events/route.ts",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/app/api/v1/openapi.json/route.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/application/events/complete-training.use-case.test.ts",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/application/events/conclude-event.use-case.test.ts",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/application/events/reconcile-event-statuses.use-case.test.ts",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/application/events/upsert-event.use-case.test.ts",
+      "errors": 2,
+      "warnings": 0
+    },
+    {
+      "file": "src/application/rosters/roster-commands.use-case.test.ts",
+      "errors": 5,
+      "warnings": 0
+    },
+    {
+      "file": "src/components/app/breadcrumbs.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/dashboard-onboarding.tsx",
+      "errors": 1,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/emoji-picker-input.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/emoji-value.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/entity-select.tsx",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/components/app/event-form-panel.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/game-badge.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/game-selection-gate.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/group-form.tsx",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/components/app/group-inline-icons.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/hll-map-selector.tsx",
+      "errors": 0,
+      "warnings": 3
+    },
+    {
+      "file": "src/components/app/import-events-button.tsx",
+      "errors": 2,
+      "warnings": 0
+    },
+    {
+      "file": "src/components/app/locale-switcher.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/match-details.tsx",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/components/app/resource-table-client.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/roster-board-attendee-lists.tsx",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/components/app/roster-board-squad-card.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/roster-board.tsx",
+      "errors": 2,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/site-header.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/squad-preset-editor.tsx",
+      "errors": 1,
+      "warnings": 6
+    },
+    {
+      "file": "src/components/app/stratmap-editor.tsx",
+      "errors": 91,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/stratmap-editor/rendered-element.tsx",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/components/app/stratmap-editor/selection-inspector.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/stratmap-editor/tool-properties-panel.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/stratmap-editor/use-stratmap-editor.ts",
+      "errors": 3,
+      "warnings": 4
+    },
+    {
+      "file": "src/components/app/theme-switcher.tsx",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/components/app/topic-preset-form.tsx",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/components/app/user-assignment-form.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/app/webhook-manager.tsx",
+      "errors": 1,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/auth/user-avatar.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/color-picker.tsx",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/components/landing/landing-page.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/logo.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/nav-user.tsx",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/components/providers/convex-client-provider.tsx",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/components/ui/sidebar.tsx",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/contexts/user-context.tsx",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/domain/events/upsert-policy.ts",
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "src/hooks/use-fullscreen.ts",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/hooks/use-mobile.ts",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/infrastructure/convex/assignment-command-repositories.ts",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/infrastructure/convex/event-command-repositories.ts",
+      "errors": 3,
+      "warnings": 0
+    },
+    {
+      "file": "src/infrastructure/convex/event-handlers.ts",
+      "errors": 1,
+      "warnings": 2
+    },
+    {
+      "file": "src/infrastructure/convex/roster-command-repositories.ts",
+      "errors": 2,
+      "warnings": 0
+    },
+    {
+      "file": "src/infrastructure/testing/in-memory-assignment-command.ts",
+      "errors": 6,
+      "warnings": 2
+    },
+    {
+      "file": "src/infrastructure/testing/in-memory-event-workflow.ts",
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "src/lib/api/event-route-handlers.ts",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/lib/server-discord-settings.ts",
+      "errors": 1,
+      "warnings": 0
+    },
+    {
+      "file": "src/lib/server-match-results.ts",
+      "errors": 0,
+      "warnings": 3
+    },
+    {
+      "file": "src/lib/server-user-management.ts",
+      "errors": 0,
+      "warnings": 1
+    }
+  ],
+  "detail": "Full local diagnostics retained privately; this public record preserves counts per file."
+}

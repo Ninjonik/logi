@@ -125,6 +125,8 @@ export default async function EventDetailPage({
                                 <SubmitMatchResultsButton
                                     serverId={serverId}
                                     eventId={event.id}
+                                    gameId={event.gameId ?? "hell_let_loose"}
+                                    reviewable={event.kind !== "training"}
                                     dictionary={dictionary}
                                 />
                             ) : (

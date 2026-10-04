@@ -34,6 +34,30 @@ For example, after a scheduling or Discord-related change, inspect an event or t
 
 ## System area, API keys, and Discord metadata
 
+### Preview a Wardogs League match
+
+For scheduled discovery, manual tracking and persistent Discord cards, see [Wardogs League tracking](/wiki/configuration/league-tracking). The standalone preview below remains available without registering a match.
+
+Select **Wardogs**, then open **System → Imports → Wardogs League match**.
+Paste a public `https://wardogsleague.net/matches/{id}` link and choose **Load match**.
+The preview shows the schedule in Europe/Prague, teams with their factions,
+map/zone/lighting, public hosting, moderator, map voting, rules and preparation steps.
+Team member counts describe the team profile; they are not the match roster.
+Reading the link does not create an event or confirm results.
+
+No League account or Team API key is needed. Logi refreshes on request, at most
+once every five minutes per match. If a refresh fails, the last saved match
+remains visible with a stale warning, collection time and next allowed refresh.
+Missing fields remain unknown. Only the Scheduled page format has live validation;
+results, placements and no-show interpretation are not supported yet.
+
+Website backends can request the same preview with an API key explicitly granting
+**Public Wardogs League matches** (`league-matches`) and **Wardogs**:
+`GET /api/v1/clan/league-matches?game=wardogs&url=<URL-encoded-public-match-link>`.
+Poll every 5–10 minutes and honor `nextRefreshAt` and `Retry-After`. Inspect `stale`
+and `fetchedAt` before presenting cached data as current. Legacy full-access keys
+do not grant this new read. Server passwords and join IDs are never returned.
+
 ## Games
 
 The **Games** section controls which games are active for this workspace:
@@ -50,18 +74,98 @@ links to this settings section. When exactly one is active, creation pages
 select it automatically. With multiple games active, starting a game-owned
 creation flow from **All games** first asks the manager to choose a game.
 
-The manager-only **System** area groups Website API keys, Google Calendar sync, single sign-on applications, Imports, Helper data, and Webhooks into collapsed sections. Normal Clan settings contains game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
+The manager-only **System** area groups Website API keys, Google Calendar sync, single sign-on applications, website event commands, Imports, Helper data, and Webhooks into collapsed sections. Normal Clan settings contains game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
-Each website API key belongs to the currently selected workspace and can read
-that workspace's clan-owned data. Give it a recognisable name of at most 80
+Each website API key belongs to the currently selected workspace. Its permissions
+determine which data it can read or change. Give it a recognisable name of at most 80
 characters. The full value is displayed once, at creation time; afterward the
-dashboard shows only its prefix, creation date, and whether it has been
-revoked. Revoking a key takes effect for future requests and cannot be undone:
+dashboard shows its prefix, creation date, granted resources/games, and whether
+it has been revoked. Revoking a key takes effect for future requests and cannot be undone:
 create and deploy a replacement key before revoking one used by a live site.
+
+#### Read-only integration keys
+
+In **System → Website API**, the form starts with **Read-only** access and
+only **Event summaries** and **Match summaries** selected. Choose the required
+games explicitly; an empty resource or game selection cannot create a restricted
+key. Review the selection, enter a name and press **Create read-only key**.
+Copy the revealed key before hiding it or leaving the workspace. It is never
+available from the existing-key list.
+
+Choose **Full access (legacy)** only when an integration needs write access.
+That mode can read and modify all clan data across all games. Existing keys
+keep their permissions; restricted and legacy keys are clearly distinguished
+in the list. To change a policy, create a replacement key, switch the integration,
+and then revoke its old key. The interface is localized in English, Czech and German.
+
+Administrators can also issue a restricted key through the existing authenticated
+`POST /api/servers/{serverId}/api-keys` endpoint by including a `readAccess`
+object alongside `name`:
+
+```json
+{
+    "name": "Website summary reader",
+    "readAccess": {
+        "resources": ["event-summaries", "match-summaries"],
+        "gameIds": ["hell_let_loose", "wardogs"]
+    }
+}
+```
+
+Both arrays must be nonempty and contain no duplicates. Resources can be
+`server-snapshots`, `integration-health`, `event-summaries`, `match-summaries`, `events`, `groups`, `rosters`,
+`assignments`, `stratmaps` or `matches`; game IDs
+can be `hell_let_loose`, `hell_let_loose_vietnam` or `wardogs`. Each collection
+request must select explicit permitted games. Missing `game`, `game=all`,
+ungranted resources and all writes return `403 insufficient_scope`. Detail
+reads check the stored tenant and game. Revocation is checked on every backend
+operation, and restricted reads are not cached by HTTP clients.
+
+Requests without `readAccess` still create full-access legacy keys, including
+the form's explicit full-access option. Existing keys are not automatically restricted.
+Use a newly issued restricted key for a read-only website and revoke the old
+credential after switching it. The management list endpoint includes the stored
+policy. A bearer key cannot create or broaden keys; that requires a dashboard
+administrator session.
+
+Restricted keys do not grant metadata, settings, raw users, calendar items,
+presets or performance history in this first release. Read-only records still
+require publication review: never publish raw API responses. The
+[versioned website handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.5/README.md)
+describes field allowlists, safe synchronization, fixtures and rollout order.
+Deploy the compatible backend before using these new policies; an older backend
+does not enforce them.
+
+For website event and result listings, use `GET /api/v1/clan/event-summaries`
+and `GET /api/v1/clan/match-summaries`, with an explicit game. These return
+only identity, title, schedule/status or a minimized imported result. They
+exclude passwords, notes, signup/player identities, source URLs and raw
+telemetry. Each summary resource requires its own grant; it does not grant
+access to the raw `events` or `matches` resource, or vice versa.
+
+Both summary detail routes use the Logi event ID. Match summaries exclude
+training events. No stored event result means `resultState: "unknown"` and
+`result: null`; an imported event result is `provisional`, including for
+concluded events. The website still approves publication and translations.
+These routes do not provide human result confirmation or public-member consent.
+
+For a workspace's opponent team directory, issue a restricted key that grants
+`teams` for each game the website may read, then use
+`GET /api/v1/clan/teams?game=hell_let_loose` (or `game=wardogs`) and
+`GET /api/v1/clan/teams/{id}?game=...`. Exactly one game is required; Hell Let
+Loose: Vietnam has no team directory. The reads return only active teams with
+their ID, game, name, short code, public logo URL, revision and update time;
+archived teams are omitted. Legacy full-access keys never grant this read.
+Event and match summaries carry the teams captured for each native match, which
+keep their names and logos after a team is renamed or archived. Creating,
+editing, archiving and restoring teams and uploading logos are dashboard-only
+administrator actions with no API-key equivalent. The
+[team directory handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.15/README.md)
+describes the change feed, fixtures and match assignment commands.
 
 Website integrations use the versioned API at `/api/v1`. Clan API requests
 use `Authorization: Bearer <API key>`. Game-owned clan data uses **Hell Let
-Loose** when no `game` query parameter is supplied, including legacy records;
+Loose** for legacy keys when no `game` query parameter is supplied, including legacy records;
 use `game=hell_let_loose_vietnam`, `game=wardogs`, or `game=all` to select
 another scope. List requests are cursor-paginated, default to 25 records, and
 are capped at 100 records. Every game-owned returned record has an explicit `gameId`, so a
@@ -70,8 +174,9 @@ machine-readable contract is available at `/api/v1/openapi.json` and the
 interactive reference at `/api/v1/docs`.
 
 Start with the API key in an `Authorization` header; never put it in a URL or
-client-side bundle. The key is tenant-scoped: it can read and write only the
-workspace that created it. A record ID from another workspace is not usable.
+client-side bundle. The key is tenant-scoped: it can access only the workspace
+that created it and only operations permitted by its policy. A record ID from
+another workspace is not usable. Writes below require a legacy full-access key.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
@@ -123,6 +228,17 @@ the dashboard. Referenced signup groups, stratmaps, and topic presets must
 belong to the authenticated workspace. Successful creates emit `event.created`;
 updates and `POST /api/v1/clan/events/{eventId}/actions/conclude` emit
 `event.updated`.
+
+Match team selections (`matchTeams`) are read-only on these two endpoints,
+because an API key alone is not a writing actor. A sent selection is ignored
+and the saved one is kept; a game change that the saved teams no longer fit
+returns `validation_error`, and changing an unconcluded match into a training
+clears its teams. A connected website selects teams through the signed-in
+[website event commands](/wiki/operations/events#connected-clan-websites).
+Complete event records from `GET /api/v1/clan/events` keep each saved team's
+full snapshot, including an internal logo reference that is not a URL; show
+team names and logos from the `matchTeams` of the event or match summaries,
+which carry only the public `logoUrl`.
 
 Stratmaps and presets use `POST /api/v1/clan/stratmaps`,
 `POST /api/v1/clan/topic-presets`, and `POST /api/v1/clan/squad-presets`, with
@@ -214,18 +330,19 @@ Saving a channel or role selection does not prove that the bot can use it. The
 bot must still be in this Discord server, be running, and have the channel and
 role permissions required for the relevant action.
 
-| Setting                     | Enables                                                            | If blank, invalid, or inaccessible                                                                                                 |
-| --------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Timezone                    | Dashboard formatting for this workspace and event-entry conversion | Times fall back to the relevant display default; it does not change existing stored timestamps.                                    |
-| Default language            | Bot panel, event, and interaction wording                          | Existing content is not translated; the bot uses its configured fallback where needed.                                             |
-| Announcements channel       | Event announcement messages                                        | No announcement is created there.                                                                                                  |
-| Event information channel   | Separate match information message                                 | The separate message is not created. It is meaningful only alongside announcements.                                                |
-| Errors channel              | Delivery of bot error reports                                      | Errors remain in the bot's logs rather than reaching a staff Discord channel.                                                      |
-| Calendar channel            | One managed calendar-panel message                                 | No Discord calendar panel is maintained. Removing the configured channel clears the stored panel state after cleanup is attempted. |
-| Forum category              | Match forum-post provisioning                                      | A match cannot get a Logi forum post from the workspace default.                                                                   |
-| Meeting voice/stage channel | Discord scheduled event and meeting-channel attendance tools       | No scheduled event is maintained. A text/category channel is not a substitute.                                                     |
-| Clan role                   | Clan pings and membership-role transitions                         | No clan ping/managed clan role is available.                                                                                       |
-| Dashboard admin role        | Dashboard manager access; Player-page admin changes add or remove this role | A configured, manageable role is required for Logi to mirror Player-page admin changes. Discord Administrator remains an independent bootstrap access path. |
+| Setting                     | Enables                                                                            | If blank, invalid, or inaccessible                                                                                                                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Timezone                    | Dashboard formatting for this workspace and event-entry conversion                 | Times fall back to the relevant display default; it does not change existing stored timestamps.                                                                                                       |
+| Default language            | Bot panel, event, and interaction wording                                          | Existing content is not translated; the bot uses its configured fallback where needed.                                                                                                                |
+| Announcements channel       | Event announcement messages                                                        | No announcement is created there.                                                                                                                                                                     |
+| Event information channel   | Separate match information message                                                 | The separate message is not created. It is meaningful only alongside announcements.                                                                                                                   |
+| Errors channel              | Delivery of bot error reports                                                      | Errors remain in the bot's logs rather than reaching a staff Discord channel.                                                                                                                         |
+| Calendar channel            | One managed calendar-panel message                                                 | No Discord calendar panel is maintained. Removing the configured channel clears the stored panel state after cleanup is attempted.                                                                    |
+| Forum category              | Match forum-post provisioning                                                      | A match cannot get a Logi forum post from the workspace default.                                                                                                                                      |
+| Meeting voice/stage channel | Discord scheduled event and meeting-channel attendance tools                       | No scheduled event is maintained. A text/category channel is not a substitute.                                                                                                                        |
+| Clan role                   | Clan pings and membership-role transitions                                         | No clan ping/managed clan role is available.                                                                                                                                                          |
+| Dashboard admin role        | Dashboard manager access; Player-page admin changes add or remove this role        | A configured, manageable role is required for Logi to mirror Player-page admin changes. Discord Administrator remains an independent bootstrap access path.                                           |
+| Player statistics command   | Whether `/stats` answers in this server, per game, and its default sharing channel | With the command or a game switched off the bot replies privately that statistics are unavailable here. Without a default channel, Share asks for one. Discord's own command permissions still apply. |
 
 Event-level Discord channel selections can override workspace defaults at event
 creation. Those message locations are then retained for that event; later
@@ -248,6 +365,91 @@ The subscription includes every scheduled Logi event and every manual calendar
 item, including recurring items. The URL is a secret capability: anyone who has
 it can read that clan's calendar. Rotate the link to immediately disable an old
 subscription; add the newly generated URL in Google Calendar afterward.
+
+## Game server data
+
+In **System → Game server data**, managers can register provider sources and then
+enable, disable and resume them. **Provider sources** takes a lowercase reference,
+the provider, the provider's server ID (a panel UUID for Warcon), the HTTPS origin
+without a path, the name of the Convex environment variable that holds the token
+(`LOGI_GAME_DATA_<NAME>_TOKEN`) and an optional network allowlist. Logi never asks
+for, stores or shows the token itself: the operator sets the variable in Convex
+first, and you point the source at its name. To rotate a token, the operator
+stores the new value under a new variable and you update the reference; the
+connection picks the new reference up immediately. Removing a registration
+disables its connection but keeps retained history. Sources from the operator's
+own catalog appear read-only alongside workspace registrations.
+
+HLL CRCON supports current server data and historical match collection. Wardogs
+RCON supports current server data after checking its available functions. An
+optional Wardog Servers directory source provides public status with attribution.
+The **Wardogs Warcon** provider reads an existing Warcon panel, including live
+players and completed matches. It is distinct from a direct Wardogs RCON source.
+Select one source for a server; Logi does not silently replace it with another.
+
+Cards show players, map, last observation, data freshness and any provider error.
+HLL and Warcon also show the number of collected sessions and last successful history
+import. Zero players is a known value; unknown is different. Old counts remain
+visible with their timestamp when a source fails. Data becomes stale after three
+minutes and unavailable after fifteen; disabling a source makes it unavailable
+immediately. A missing directory entry does not prove that the server is offline.
+
+**Disable** stops collection and rejects in-flight results from older runs.
+If access or configuration is rejected, ask the operator to fix it and use
+**Enable / resume**. **Refresh** reloads Logi's stored status; it does not contact
+the game server. A history-import error is displayed separately from current data.
+
+Website keys need the **Server snapshots** and/or **Integration health** grants
+and an explicit game. Read `/api/v1/clan/server-snapshots?game=wardogs` or
+`/api/v1/clan/integration-health?game=hell_let_loose`; details use the Logi
+connection ID. These are read-only resources. Provider credentials, addresses
+and private player identities are excluded. Live scores and imported sessions
+remain unconfirmed; they do not create a verified player link or approved match
+result. No game-server controls are provided by this screen or these API routes.
+
+Discord server managers can also use `/server-status` with a game to see a private
+summary of stored observations and their freshness. The command does not trigger
+collection; the full connection list stays in settings.
+
+### Warcon live scoreboard and website reads
+
+An enabled Warcon connection has a **Live Warcon scoreboard** panel. Expand it
+to see current players, faction scores, kills/deaths, K/D, cash, ping and the game
+join code. It refreshes every 15 seconds while open in a visible tab. Its refresh
+button requests a live view, which can reuse a shared ten-second cache.
+
+Player and status timestamps are separate. This live view becomes stale after
+45 seconds and unavailable after three minutes; unavailable player rows are
+hidden. These thresholds differ from the stored snapshot card above. Missing
+values are unknown, while a displayed zero is a measurement. Failed reads show
+an error instead of leaving a player table labeled as current.
+
+For the website, create a read-only key with the explicit **Warcon gameplay
+data** grant and **Wardogs** selected. Legacy full-access keys do not implicitly
+include it. The grant includes game display names and Steam IDs; only publish
+those according to your community's policy. Keep the key in your website backend.
+
+Read `/api/v1/clan/warcon-data/{connectionId}?game=wardogs&view=live`. Other views
+provide analytics, cash history, match pages/details, leaderboard, seen players,
+career, kills, catalogs, rotation and API health/capabilities. See the
+[Warcon integration guide](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.11/README.md)
+and [API documentation](/api/v1/docs) for parameters and permissions. Map filters
+use IDs from the catalog, which can differ from live display names.
+
+A disabled kill feed remains disabled; Logi does not turn it on. Imported matches
+and player observations remain unconfirmed and do not establish account ownership.
+The scoreboard and website API provide reads only. Ban lists, staff notes, private
+server configuration and administrative actions are outside this integration.
+
+Changing a data source and managing website API keys require a current signed-in
+administrator. Logi checks the session and workspace permission again when saving
+the change. A pending Warcon read also rechecks access before returning provider
+data. After signing out or losing administrator access, refresh the page and sign
+in with an authorized account before trying again.
+
+Wardogs League refreshes honor the provider's retry delay, up to 24 hours per
+response. Existing saved data remains visible with its age while refresh is
+unavailable; a provider error never replaces it with an empty match.
 
 ## Imports, performance, and helper data
 
@@ -276,4 +478,65 @@ Use reset only when deliberately starting these helper structures over, and
 check events and rosters afterward because their preset references will have
 been removed.
 
+### Durable website synchronization
+
+Restricted integrations can recover changes with `GET /api/v1/clan/changes` and
+refetch minimal records atomically with their revision at
+`GET /api/v1/clan/sync-records/{resource}/{id}?game=wardogs`. Both require explicit
+underlying read grants and one game. Capture `start=now` before a baseline sweep,
+then replay its signed cursor. Continue empty pages when `hasMore` is true.
+Store decimal revisions losslessly. After seven days without recovery, a 410
+`reset_required` response requires a new baseline. Keep CMS/publication decisions
+in the website's own backend.
+
+The registered projections are event summaries, match summaries, reviewed result
+summaries, server snapshots and integration health. Optional `integration.changed` webhook subscriptions emit
+minimal invalidations from dashboard, API, bot, import and collector transactions.
+Use the existing administrator-session webhook endpoint to opt into that event
+type; existing subscriptions are unchanged. The queue processes bounded batches,
+honors Retry-After and recovers expired worker leases. Receivers must deduplicate;
+the change feed remains the recovery source. See `/api/v1/docs` for the contract.
+
 > **Screenshot placeholder — settings:** Show the server Settings page with the active workspace name, clearly separated settings sections, and a redacted example of any sensitive key field.
+
+### Reviewed result access
+
+Select **Reviewed result summaries** explicitly when creating a restricted key;
+the existing event/match defaults do not include it. Read
+`/api/v1/clan/result-summaries?game=hell_let_loose`, or a detail using its event ID.
+The response distinguishes unknown, provisional, confirmed and corrected results,
+preserves zero versus unknown scores, and supports multiple factions. It omits
+private player/reviewer identities and correction notes. Confirmation and
+correction require a signed-in manager in Logi; an integration key cannot do them.
+Existing match summaries retain their earlier import-only semantics.
+
+## Discord membership integrations
+
+Create a read-only key with the Discord membership resource and selected games in
+Website API. Open Discord membership integrations, refresh, enter the allowed role
+IDs per game, enable the policy and save. Blank role lists share only presence and
+Logi assignment. Policy administration requires your signed-in server administrator
+session; API keys cannot change these permissions.
+
+Membership reads return an explicit unknown state when fresh Discord evidence is
+unavailable. They never expose all roles or grant website administration. Policy
+changes and reconnects invalidate cached authority. Membership feed consumers must
+specify one Discord subject and handle a scope reset; membership webhooks require an
+explicit `membership.changed` subscription. Existing summary keys and webhook
+subscriptions do not gain member access automatically.
+
+## Website event commands
+
+A connected website may create, update or cancel events through its own service
+key only when a manager enables a policy for it. Open **System → Website event
+commands**, choose the registered single sign-on application, and for each live
+restricted API key enter the allowed Discord role IDs per game (one ID per line),
+tick **Allow event commands with this key** and save. Saving grants event-command
+write access for the games that have at least one role; a game without roles stays
+read-only, and disabling the policy removes the grant again.
+
+The form only offers restricted keys of the current workspace and applications
+registered in it; legacy unrestricted keys never qualify. Members must also hold one
+of the listed roles in a fresh Discord observation when the website issues a
+command, so a role list is a ceiling, not a guarantee. Policy administration needs
+your signed-in server administrator session; API keys cannot change it.

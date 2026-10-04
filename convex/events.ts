@@ -19,7 +19,13 @@ import {
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
 import { ReconcileEventStatusesUseCase } from "../src/application/events/reconcile-event-statuses.use-case"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/team-directory-repositories"
 import { CompleteTrainingUseCase } from "../src/application/events/complete-training.use-case"
+import {
+    getGuildById,
+    getGuildByDiscordId,
+    getGuildDiscordId,
+} from "./identity"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
 import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case"
 import { UpsertNoticeUseCase } from "../src/application/events/upsert-notice.use-case"
@@ -27,12 +33,16 @@ import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
-import { getGuildById, getGuildDiscordId } from "./identity"
+import { currentEventStatus } from "../src/domain/events/status"
+import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import type { MutationCtx } from "./_generated/server"
-import { mutation, query } from "./_generated/server"
+import { resolveEventMatchTeams } from "./matchTeams"
+import { matchTeamInput } from "./teamValidators"
 import type { Id } from "./_generated/dataModel"
+import { mutation } from "./integrationMutation"
+import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 const INTERNAL_AUTH_SECRET =
@@ -152,6 +162,8 @@ export const upsert = mutation({
         createForumChannel: v.optional(v.boolean()),
         topicPresetId: v.optional(v.id("topicPresets")),
         stratmapIds: v.optional(v.array(v.id("stratmaps"))),
+        // Directory team selections (identity, slot, side); snapshots are captured here.
+        matchTeams: v.optional(v.array(matchTeamInput)),
     },
     handler: async (ctx, args) => {
         const eventId = await handleUpsertEvent({
@@ -171,6 +183,21 @@ export const upsert = mutation({
             getGuildDiscordId,
             getEventById: async (eventId) =>
                 await ctx.db.get(eventId as Id<"events">),
+            resolveMatchTeams: async ({ guildId, existing }) => {
+                const resolved = await resolveEventMatchTeams(ctx, {
+                    guildId,
+                    gameId: args.gameId ?? existing?.gameId,
+                    kind: args.kind ?? existing?.kind,
+                    status: existing ? currentEventStatus(existing) : undefined,
+                    inputs: args.matchTeams,
+                    previous: existing?.matchTeams,
+                    now: new Date().toISOString(),
+                })
+                // The dashboard route maps this prefix to a 400 with the bare code.
+                if (!resolved.ok)
+                    throw new Error(`match_teams:${resolved.error}`)
+                return resolved.matchTeams
+            },
             createUseCase: () =>
                 new UpsertEventUseCase(
                     new ConvexEventCommandRepository(ctx),
@@ -183,6 +210,8 @@ export const upsert = mutation({
                     systemClock
                 ),
         })
+        const saved = await ctx.db.get(eventId as Id<"events">)
+        if (saved) await syncEventAssetReferences(ctx, saved)
         await refreshEventSchedule(ctx, eventId as Id<"events">)
         return eventId
     },
@@ -202,15 +231,32 @@ export const getById = query({
 
 export const findNoticeTarget = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         userId: v.string(),
         query: v.string(),
     },
     handler: async (ctx, args) => {
-        const events = await ctx.db
-            .query("events")
-            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-            .collect()
+        if (args.secret !== INTERNAL_AUTH_SECRET)
+            throw new Error("Unauthorized.")
+        const guild = await getGuildByDiscordId(ctx, args.guildId)
+        if (guild && getGuildDiscordId(guild) !== args.guildId) return []
+        const keys = new Set([
+            args.guildId,
+            ...(guild
+                ? [String(guild._id), ...(guild.id ? [guild.id] : [])]
+                : []),
+        ])
+        const events = (
+            await Promise.all(
+                [...keys].map((guildId) =>
+                    ctx.db
+                        .query("events")
+                        .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                        .collect()
+                )
+            )
+        ).flat()
 
         const eventsWithReserves = await Promise.all(
             events.map(async (event) => {
@@ -458,6 +504,7 @@ export const setResult = mutation({
                 updatedAt: new Date().toISOString(),
             })
         }
+        await recordImportedResult(ctx, args.eventId, args.eventResult)
         return result
     },
 })

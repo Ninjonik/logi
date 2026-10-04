@@ -4,7 +4,6 @@ import {
     getDiscordClientSecret,
     getDiscordRedirectUri,
 } from "@/lib/env"
-import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
 import { getServerGroups } from "@/lib/server-groups"
 
 const ADMINISTRATOR_PERMISSION = BigInt(8)
@@ -379,12 +378,8 @@ export async function syncDiscordRolesForAssignment(input: {
         return { addedRoleIds: [], removedRoleIds: [] }
     }
 
-    const [groups, config] = await Promise.all([
-        getServerGroups(input.serverId),
-        getDiscordConfigByGuild(input.serverId),
-    ])
+    const groups = await getServerGroups(input.serverId)
     const roleIdByGroupId = buildLinkedRoleIdsByGroupId(groups)
-
     const beforeRoleIds = new Set(
         [input.beforePrimaryGroupId, ...(input.beforeSecondaryGroupIds ?? [])]
             .filter((groupId): groupId is string => Boolean(groupId))
@@ -398,35 +393,6 @@ export async function syncDiscordRolesForAssignment(input: {
             .map((groupId) => roleIdByGroupId.get(groupId))
             .filter((roleId): roleId is string => Boolean(roleId))
     )
-
-    const beforeSpecialRoleIds = [
-        input.beforeAssignmentType && input.beforeMembershipStatus
-            ? getMembershipRoleIds(
-                  config,
-                  input.beforeAssignmentType,
-                  input.beforeMembershipStatus,
-                  input.beforeMembershipCategoryId
-              )
-            : [],
-    ].flat()
-    const afterSpecialRoleIds = [
-        input.afterAssignmentType && input.afterMembershipStatus
-            ? getMembershipRoleIds(
-                  config,
-                  input.afterAssignmentType,
-                  input.afterMembershipStatus,
-                  input.afterMembershipCategoryId
-              )
-            : [],
-    ].flat()
-
-    for (const roleId of beforeSpecialRoleIds) {
-        beforeRoleIds.add(roleId)
-    }
-
-    for (const roleId of afterSpecialRoleIds) {
-        afterRoleIds.add(roleId)
-    }
 
     const roleIdsToAdd = [...afterRoleIds].filter(
         (roleId) => !beforeRoleIds.has(roleId)
@@ -504,41 +470,4 @@ export async function syncDiscordMemberRoleIds(input: {
         addedRoleIds: roleIdsToAdd,
         removedRoleIds: roleIdsToRemove,
     }
-}
-
-function getMembershipRoleIds(
-    config: Awaited<ReturnType<typeof getDiscordConfigByGuild>>,
-    type: "member" | "reserve_member" | "mercenary",
-    status: "pending" | "recruit" | "active",
-    membershipCategoryId?: string
-) {
-    if (!config) {
-        return []
-    }
-
-    if (status === "pending") {
-        return []
-    }
-
-    const roleIds = new Set<string>()
-    const category = membershipCategoryId
-        ? config.membershipSettings?.categories.find(
-              (item) => item.id === membershipCategoryId
-          )
-        : undefined
-    if (config.clanRoleId) {
-        roleIds.add(config.clanRoleId)
-    }
-    if (status === "recruit") {
-        for (const roleId of category?.recruitRoleIds ?? []) {
-            roleIds.add(roleId)
-        }
-    }
-    if (status === "active") {
-        for (const roleId of category?.finalRoleIds ?? []) {
-            roleIds.add(roleId)
-        }
-    }
-
-    return [...roleIds]
 }

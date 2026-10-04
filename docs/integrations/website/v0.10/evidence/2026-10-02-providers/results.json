@@ -1,0 +1,438 @@
+{
+  "executedOn": "2026-10-02",
+  "logiSource": "36af5fa018b4e646e0d22f97dc17b6b9cce5568a",
+  "warconDocumentationCommit": "600c32b02212c7815dda842f33a3d096fd835fd1",
+  "scope": {
+    "requests": "GET only to the two operator-supplied HTTPS origins",
+    "productionProviderReads": true,
+    "productionConvexUsed": false,
+    "providerWrites": false,
+    "websiteDeploymentChanged": false,
+    "rawResponsesAndCredentials": "private local directory outside Git"
+  },
+  "requests": [
+    {
+      "label": "warcon-servers",
+      "provider": "warcon",
+      "route": "/api/servers",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:33:20.026Z",
+      "durationMs": 276,
+      "httpStatus": 200,
+      "ok": true,
+      "bytes": 443,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "hll-api-docs",
+      "provider": "hll",
+      "route": "/api/get_api_documentation",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:33:20.056Z",
+      "durationMs": 288,
+      "httpStatus": 200,
+      "failed": false,
+      "bytes": 103974,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "hll-public-info",
+      "provider": "hll",
+      "route": "/api/get_public_info",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:34:48.877Z",
+      "durationMs": 292,
+      "httpStatus": 200,
+      "failed": false,
+      "bytes": 3445,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "warcon-summary",
+      "provider": "warcon",
+      "route": "/api/servers/{serverId}/summary",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:34:48.904Z",
+      "durationMs": 171,
+      "httpStatus": 200,
+      "ok": true,
+      "bytes": 1534,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "warcon-matches",
+      "provider": "warcon",
+      "route": "/api/servers/{serverId}/matches?page=1",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:34:49.075Z",
+      "durationMs": 137,
+      "httpStatus": 200,
+      "ok": true,
+      "bytes": 429,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "hll-server-list",
+      "provider": "hll",
+      "route": "/api/get_server_list",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:34:49.185Z",
+      "durationMs": 424,
+      "httpStatus": 200,
+      "failed": false,
+      "bytes": 495,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "warcon-analytics",
+      "provider": "warcon",
+      "route": "/api/servers/{serverId}/analytics?range=24h",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:34:49.213Z",
+      "durationMs": 94,
+      "httpStatus": 200,
+      "ok": true,
+      "bytes": 7004,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "warcon-leaderboard",
+      "provider": "warcon",
+      "route": "/api/servers/{serverId}/leaderboard?range=7d&page=1&minMinutes=0",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:34:49.308Z",
+      "durationMs": 65,
+      "httpStatus": 200,
+      "ok": true,
+      "bytes": 448,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "warcon-seen",
+      "provider": "warcon",
+      "route": "/api/servers/{serverId}/players/seen?limit=5&offset=0",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:34:49.373Z",
+      "durationMs": 74,
+      "httpStatus": 200,
+      "ok": true,
+      "bytes": 384,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "warcon-kills",
+      "provider": "warcon",
+      "route": "/api/servers/{serverId}/kills?limit=5",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:34:49.447Z",
+      "durationMs": 72,
+      "httpStatus": 200,
+      "ok": true,
+      "bytes": 68,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "hll-map-rotation",
+      "provider": "hll",
+      "route": "/api/get_map_rotation",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:34:49.609Z",
+      "durationMs": 256,
+      "httpStatus": 200,
+      "failed": false,
+      "bytes": 557,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "hll-map-rotation-anonymous",
+      "provider": "hll",
+      "route": "/api/get_map_rotation",
+      "method": "GET",
+      "authenticated": false,
+      "startedAt": "2026-10-02T16:34:49.865Z",
+      "durationMs": 70,
+      "httpStatus": 401,
+      "failed": true,
+      "bytes": 168,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "hll-scoreboard-maps",
+      "provider": "hll",
+      "route": "/api/get_scoreboard_maps?server_number=1&page=1&limit=10",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:35:43.339Z",
+      "durationMs": 229,
+      "httpStatus": 200,
+      "failed": false,
+      "bytes": 5937,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "hll-live-stats",
+      "provider": "hll",
+      "route": "/api/get_live_game_stats",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:35:43.571Z",
+      "durationMs": 71,
+      "httpStatus": 200,
+      "failed": false,
+      "bytes": 1863,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "hll-gamestate",
+      "provider": "hll",
+      "route": "/api/get_gamestate",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:35:43.643Z",
+      "durationMs": 203,
+      "httpStatus": 200,
+      "failed": false,
+      "bytes": 1370,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "hll-map-scoreboard",
+      "provider": "hll",
+      "route": "/api/get_map_scoreboard?map_id={sampleMapId}",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:36:33.720Z",
+      "durationMs": 208,
+      "httpStatus": 200,
+      "failed": false,
+      "bytes": 4591,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "warcon-match-detail",
+      "provider": "warcon",
+      "route": "/api/servers/{serverId}/matches/{sampleMatchId}",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:36:33.930Z",
+      "durationMs": 162,
+      "httpStatus": 404,
+      "ok": false,
+      "bytes": 73,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    },
+    {
+      "label": "warcon-live",
+      "provider": "warcon",
+      "route": "/api/live",
+      "method": "GET",
+      "authenticated": true,
+      "startedAt": "2026-10-02T16:39:28.111Z",
+      "durationMs": 245,
+      "httpStatus": 200,
+      "ok": true,
+      "bytes": 974,
+      "json": true,
+      "redirectsFollowed": false,
+      "tlsVerification": true
+    }
+  ],
+  "additionalLiveCheck": {
+    "name": "Logi production HTTPS transport plus snapshot parser",
+    "method": "GET",
+    "route": "/api/get_public_info",
+    "status": "pass",
+    "note": "This request is included in compatibility below; the private probe did not duplicate its response metadata."
+  },
+  "summary": {
+    "recordedRequests": 18,
+    "successful200": 16,
+    "anonymousAuthControl401": 1,
+    "ongoingMatchDetail404": 1,
+    "additionalLiveTransportRequests": 1
+  },
+  "hll": {
+    "version": "v12.3.0",
+    "documentedEndpoints": 303,
+    "configuredServers": 2,
+    "contactedOrigins": 1,
+    "serverNumber": 1,
+    "historyTotal": 10509,
+    "historyRowsSampled": 10,
+    "scoreboardsSampled": 1,
+    "scoreboardPlayerRows": 2
+  },
+  "warcon": {
+    "visibleServers": 1,
+    "readCapability": "server.view",
+    "snapshot": {
+      "healthy": true,
+      "map": "Bakurani",
+      "players": 0,
+      "capacity": 100,
+      "factions": [
+        {
+          "name": "Lonestar",
+          "score": 0
+        },
+        {
+          "name": "Valkyra",
+          "score": 0
+        },
+        {
+          "name": "Manticore",
+          "score": 0
+        }
+      ],
+      "observedAt": "2026-10-02T16:34:43.030Z",
+      "nullableFields": {
+        "scoreCap": null,
+        "matchSeconds": null
+      }
+    },
+    "analytics": {
+      "uniquePlayers": 1,
+      "peakPlayers": 1,
+      "avgPlayers": 0,
+      "uptimePct": 100,
+      "onlineNow": 0,
+      "samples": 319,
+      "matches": 1,
+      "coveredHours": 2.5
+    },
+    "matchRows": 1,
+    "completedRowsInSample": 0,
+    "detail404Reason": "Only listed match is ongoing; documented detail contract requires an ended match.",
+    "leaderboardRows": 1,
+    "seenPlayers": 1,
+    "killFeedConfigured": false,
+    "killRows": 0,
+    "logiPanelAdapterImplemented": false
+  },
+  "compatibility": [
+    {
+      "name": "Unmodified Logi HLL snapshot parser on captured production response",
+      "status": "pass",
+      "observation": {
+        "observedAt": "2026-10-02T16:37:34.625Z",
+        "providerUpdatedAt": null,
+        "state": "online",
+        "map": "St. Mere Eglise Warfare",
+        "players": 0,
+        "capacity": 100,
+        "providerInstanceId": null,
+        "scores": [
+          {
+            "id": "allied",
+            "label": "Allies",
+            "score": 2
+          },
+          {
+            "id": "axis",
+            "label": "Axis",
+            "score": 2
+          }
+        ],
+        "capabilities": [
+          "server_snapshot",
+          "match_history"
+        ]
+      }
+    },
+    {
+      "name": "Unmodified Logi HLL history page parser on captured production response",
+      "status": "pass",
+      "idsRead": 10,
+      "nextPage": 2
+    },
+    {
+      "name": "Unmodified Logi HLL session parser on captured production response",
+      "status": "pass",
+      "externalId": "{sampleMapId}",
+      "complete": true,
+      "map": "St. Mere Eglise Warfare",
+      "startedAt": "2026-10-01T18:40:51.000Z",
+      "endedAt": "2026-10-01T20:13:51.000Z",
+      "participants": [
+        {
+          "id": "allied",
+          "label": "Allies",
+          "score": 2
+        },
+        {
+          "id": "axis",
+          "label": "Axis",
+          "score": 2
+        }
+      ],
+      "playerCount": 2,
+      "metrics": [
+        "kills",
+        "deaths",
+        "combat",
+        "offense",
+        "defense",
+        "support"
+      ]
+    },
+    {
+      "name": "Unmodified Logi HTTPS transport and snapshot parser against live CRCON",
+      "status": "pass",
+      "players": 0,
+      "capacity": 100,
+      "map": "St. Mere Eglise Warfare"
+    }
+  ],
+  "limitations": [
+    "Only the supplied HLL origin was contacted; the listed second HLL server was not contacted.",
+    "Only the first ten HLL history rows and one scoreboard were sampled.",
+    "Warcon completed-match detail unverified: the only listed match is ongoing.",
+    "No Warcon kill feed data: configured=false.",
+    "No Warcon adapter, continuous collection or new persistence/export pipeline was implemented by this probe."
+  ]
+}

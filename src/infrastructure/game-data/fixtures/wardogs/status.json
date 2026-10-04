@@ -1,0 +1,15 @@
+{
+    "serverName": "Synthetic Wardogs server",
+    "map": "Fortress",
+    "experiences": ["KOTH"],
+    "lighting": "Day",
+    "alternator": "",
+    "scoreTick": { "current": 1, "min": 1, "max": 10 },
+    "players": { "current": 0, "max": 98 },
+    "factionScores": [
+        { "name": "Alpha", "colorHex": "#ff0000", "score": 0 },
+        { "name": "Bravo", "colorHex": "#00ff00", "score": 12 },
+        { "name": "Charlie", "colorHex": "#0000ff", "score": 7 }
+    ],
+    "rotation": { "nowIndex": 0, "nextIndex": 1 }
+}

@@ -1,0 +1,576 @@
+{
+  "kind": "synthetic-registration-payload",
+  "note": "Actual registerGuildCommands serialization; fake guild.commands.set; no Discord registration or message.",
+  "locales": {
+    "en-US": [
+      {
+        "options": [
+          {
+            "type": 3,
+            "choices": [
+              {
+                "name": "Hell Let Loose",
+                "value": "hell_let_loose"
+              },
+              {
+                "name": "Wardogs",
+                "value": "wardogs"
+              }
+            ],
+            "name": "game",
+            "description": "Game whose configured servers to show.",
+            "description_localizations": {
+              "cs": "Hra, jejíž nakonfigurované servery chceš zobrazit.",
+              "de": "Spiel, dessen konfigurierte Server angezeigt werden sollen."
+            },
+            "required": true
+          }
+        ],
+        "name": "server-status",
+        "description": "Show stored HLL or Wardogs server status (server managers).",
+        "description_localizations": {
+          "cs": "Zobrazí uložený stav HLL nebo Wardogs serverů (pro správce).",
+          "de": "Zeigt gespeicherten HLL- oder Wardogs-Serverstatus (für Serververwalter)."
+        },
+        "default_member_permissions": "32",
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "type": 3,
+            "name": "reason",
+            "description": "Reason shown to the user in DMs.",
+            "description_localizations": {
+              "cs": "Důvod zobrazený uživateli v DM.",
+              "de": "Grund, der dem Nutzer in DMs angezeigt wird."
+            },
+            "required": false,
+            "max_length": 500
+          }
+        ],
+        "name": "close_ticket",
+        "description": "Close the current ticket thread.",
+        "description_localizations": {
+          "cs": "Uzavře aktuální ticket vlákno.",
+          "de": "Schließt den aktuellen Ticket-Thread."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "type": 3,
+            "choices": [
+              {
+                "name": "Denied",
+                "name_localizations": {
+                  "cs": "Zamítnuto",
+                  "de": "Abgelehnt"
+                },
+                "value": "denied"
+              },
+              {
+                "name": "Pending",
+                "name_localizations": {
+                  "cs": "Čekající",
+                  "de": "Ausstehend"
+                },
+                "value": "pending"
+              },
+              {
+                "name": "Recruit",
+                "name_localizations": {
+                  "cs": "Rekrut",
+                  "de": "Recruit"
+                },
+                "value": "recruit"
+              },
+              {
+                "name": "Member",
+                "name_localizations": {
+                  "cs": "Člen",
+                  "de": "Member"
+                },
+                "value": "member"
+              },
+              {
+                "name": "Mercenary",
+                "name_localizations": {
+                  "cs": "Žoldák",
+                  "de": "Mercenary"
+                },
+                "value": "mercenary"
+              }
+            ],
+            "name": "outcome",
+            "description": "What the applicant should become after closing.",
+            "description_localizations": {
+              "cs": "Čím se má žadatel po uzavření stát.",
+              "de": "Was der Bewerber nach dem Schließen werden soll."
+            },
+            "required": true
+          },
+          {
+            "type": 3,
+            "name": "reason",
+            "description": "Reason shown to the user in DMs.",
+            "description_localizations": {
+              "cs": "Důvod zobrazený uživateli v DM.",
+              "de": "Grund, der dem Nutzer in DMs angezeigt wird."
+            },
+            "required": false,
+            "max_length": 500
+          }
+        ],
+        "name": "close_application",
+        "description": "Close the current membership application thread.",
+        "description_localizations": {
+          "cs": "Uzavře aktuální vlákno členské přihlášky.",
+          "de": "Schließt den aktuellen Bewerbungs-Thread."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "autocomplete": true,
+            "type": 3,
+            "name": "event",
+            "description": "Choose one of your upcoming signed-up events.",
+            "description_localizations": {
+              "cs": "Vyberte jednu ze svých nadcházejících přihlášených akcí.",
+              "de": "Wählen Sie eines Ihrer kommenden angemeldeten Events."
+            },
+            "required": true
+          }
+        ],
+        "name": "notice",
+        "description": "Submit a late notice for an upcoming event.",
+        "description_localizations": {
+          "cs": "Odešle notice o pozdním příchodu na nadcházející akci.",
+          "de": "Reicht eine Verspätungsmeldung für ein kommendes Event ein."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [],
+        "name": "link",
+        "description": "Open a one-time page to link your platform ID.",
+        "description_localizations": {
+          "cs": "Otevře jednorázovou stránku pro propojení vašeho platform ID.",
+          "de": "Öffnet eine einmalige Seite zur Verknüpfung Ihrer Platform ID."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "autocomplete": true,
+            "type": 3,
+            "name": "player",
+            "description": "Pick a player from this clan.",
+            "description_localizations": {
+              "cs": "Vyberte hráče z tohoto klanu.",
+              "de": "Wählen Sie einen Spieler aus diesem Clan."
+            },
+            "required": true
+          }
+        ],
+        "name": "player",
+        "description": "Search clan players and view their stats.",
+        "description_localizations": {
+          "cs": "Vyhledejte hráče klanu a zobrazte jeho statistiky.",
+          "de": "Clan-Spieler suchen und deren Stats ansehen."
+        },
+        "dm_permission": false,
+        "type": 1
+      }
+    ],
+    "cs": [
+      {
+        "options": [
+          {
+            "type": 3,
+            "choices": [
+              {
+                "name": "Hell Let Loose",
+                "value": "hell_let_loose"
+              },
+              {
+                "name": "Wardogs",
+                "value": "wardogs"
+              }
+            ],
+            "name": "game",
+            "description": "Game whose configured servers to show.",
+            "description_localizations": {
+              "cs": "Hra, jejíž nakonfigurované servery chceš zobrazit.",
+              "de": "Spiel, dessen konfigurierte Server angezeigt werden sollen."
+            },
+            "required": true
+          }
+        ],
+        "name": "server-status",
+        "description": "Show stored HLL or Wardogs server status (server managers).",
+        "description_localizations": {
+          "cs": "Zobrazí uložený stav HLL nebo Wardogs serverů (pro správce).",
+          "de": "Zeigt gespeicherten HLL- oder Wardogs-Serverstatus (für Serververwalter)."
+        },
+        "default_member_permissions": "32",
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "type": 3,
+            "name": "reason",
+            "description": "Důvod zobrazený uživateli v DM.",
+            "description_localizations": {
+              "cs": "Důvod zobrazený uživateli v DM.",
+              "de": "Grund, der dem Nutzer in DMs angezeigt wird."
+            },
+            "required": false,
+            "max_length": 500
+          }
+        ],
+        "name": "close_ticket",
+        "description": "Uzavře aktuální ticket vlákno.",
+        "description_localizations": {
+          "cs": "Uzavře aktuální ticket vlákno.",
+          "de": "Schließt den aktuellen Ticket-Thread."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "type": 3,
+            "choices": [
+              {
+                "name": "Denied",
+                "name_localizations": {
+                  "cs": "Zamítnuto",
+                  "de": "Abgelehnt"
+                },
+                "value": "denied"
+              },
+              {
+                "name": "Pending",
+                "name_localizations": {
+                  "cs": "Čekající",
+                  "de": "Ausstehend"
+                },
+                "value": "pending"
+              },
+              {
+                "name": "Recruit",
+                "name_localizations": {
+                  "cs": "Rekrut",
+                  "de": "Recruit"
+                },
+                "value": "recruit"
+              },
+              {
+                "name": "Member",
+                "name_localizations": {
+                  "cs": "Člen",
+                  "de": "Member"
+                },
+                "value": "member"
+              },
+              {
+                "name": "Mercenary",
+                "name_localizations": {
+                  "cs": "Žoldák",
+                  "de": "Mercenary"
+                },
+                "value": "mercenary"
+              }
+            ],
+            "name": "outcome",
+            "description": "Čím se má žadatel po uzavření stát.",
+            "description_localizations": {
+              "cs": "Čím se má žadatel po uzavření stát.",
+              "de": "Was der Bewerber nach dem Schließen werden soll."
+            },
+            "required": true
+          },
+          {
+            "type": 3,
+            "name": "reason",
+            "description": "Důvod zobrazený uživateli v DM.",
+            "description_localizations": {
+              "cs": "Důvod zobrazený uživateli v DM.",
+              "de": "Grund, der dem Nutzer in DMs angezeigt wird."
+            },
+            "required": false,
+            "max_length": 500
+          }
+        ],
+        "name": "close_application",
+        "description": "Uzavře aktuální vlákno členské přihlášky.",
+        "description_localizations": {
+          "cs": "Uzavře aktuální vlákno členské přihlášky.",
+          "de": "Schließt den aktuellen Bewerbungs-Thread."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "autocomplete": true,
+            "type": 3,
+            "name": "event",
+            "description": "Vyberte jednu ze svých nadcházejících přihlášených akcí.",
+            "description_localizations": {
+              "cs": "Vyberte jednu ze svých nadcházejících přihlášených akcí.",
+              "de": "Wählen Sie eines Ihrer kommenden angemeldeten Events."
+            },
+            "required": true
+          }
+        ],
+        "name": "notice",
+        "description": "Odešle notice o pozdním příchodu na nadcházející akci.",
+        "description_localizations": {
+          "cs": "Odešle notice o pozdním příchodu na nadcházející akci.",
+          "de": "Reicht eine Verspätungsmeldung für ein kommendes Event ein."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [],
+        "name": "link",
+        "description": "Otevře jednorázovou stránku pro propojení vašeho platform ID.",
+        "description_localizations": {
+          "cs": "Otevře jednorázovou stránku pro propojení vašeho platform ID.",
+          "de": "Öffnet eine einmalige Seite zur Verknüpfung Ihrer Platform ID."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "autocomplete": true,
+            "type": 3,
+            "name": "player",
+            "description": "Vyberte hráče z tohoto klanu.",
+            "description_localizations": {
+              "cs": "Vyberte hráče z tohoto klanu.",
+              "de": "Wählen Sie einen Spieler aus diesem Clan."
+            },
+            "required": true
+          }
+        ],
+        "name": "player",
+        "description": "Vyhledejte hráče klanu a zobrazte jeho statistiky.",
+        "description_localizations": {
+          "cs": "Vyhledejte hráče klanu a zobrazte jeho statistiky.",
+          "de": "Clan-Spieler suchen und deren Stats ansehen."
+        },
+        "dm_permission": false,
+        "type": 1
+      }
+    ],
+    "de": [
+      {
+        "options": [
+          {
+            "type": 3,
+            "choices": [
+              {
+                "name": "Hell Let Loose",
+                "value": "hell_let_loose"
+              },
+              {
+                "name": "Wardogs",
+                "value": "wardogs"
+              }
+            ],
+            "name": "game",
+            "description": "Game whose configured servers to show.",
+            "description_localizations": {
+              "cs": "Hra, jejíž nakonfigurované servery chceš zobrazit.",
+              "de": "Spiel, dessen konfigurierte Server angezeigt werden sollen."
+            },
+            "required": true
+          }
+        ],
+        "name": "server-status",
+        "description": "Show stored HLL or Wardogs server status (server managers).",
+        "description_localizations": {
+          "cs": "Zobrazí uložený stav HLL nebo Wardogs serverů (pro správce).",
+          "de": "Zeigt gespeicherten HLL- oder Wardogs-Serverstatus (für Serververwalter)."
+        },
+        "default_member_permissions": "32",
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "type": 3,
+            "name": "reason",
+            "description": "Grund, der dem Nutzer in DMs angezeigt wird.",
+            "description_localizations": {
+              "cs": "Důvod zobrazený uživateli v DM.",
+              "de": "Grund, der dem Nutzer in DMs angezeigt wird."
+            },
+            "required": false,
+            "max_length": 500
+          }
+        ],
+        "name": "close_ticket",
+        "description": "Schließt den aktuellen Ticket-Thread.",
+        "description_localizations": {
+          "cs": "Uzavře aktuální ticket vlákno.",
+          "de": "Schließt den aktuellen Ticket-Thread."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "type": 3,
+            "choices": [
+              {
+                "name": "Denied",
+                "name_localizations": {
+                  "cs": "Zamítnuto",
+                  "de": "Abgelehnt"
+                },
+                "value": "denied"
+              },
+              {
+                "name": "Pending",
+                "name_localizations": {
+                  "cs": "Čekající",
+                  "de": "Ausstehend"
+                },
+                "value": "pending"
+              },
+              {
+                "name": "Recruit",
+                "name_localizations": {
+                  "cs": "Rekrut",
+                  "de": "Recruit"
+                },
+                "value": "recruit"
+              },
+              {
+                "name": "Member",
+                "name_localizations": {
+                  "cs": "Člen",
+                  "de": "Member"
+                },
+                "value": "member"
+              },
+              {
+                "name": "Mercenary",
+                "name_localizations": {
+                  "cs": "Žoldák",
+                  "de": "Mercenary"
+                },
+                "value": "mercenary"
+              }
+            ],
+            "name": "outcome",
+            "description": "Was der Bewerber nach dem Schließen werden soll.",
+            "description_localizations": {
+              "cs": "Čím se má žadatel po uzavření stát.",
+              "de": "Was der Bewerber nach dem Schließen werden soll."
+            },
+            "required": true
+          },
+          {
+            "type": 3,
+            "name": "reason",
+            "description": "Grund, der dem Nutzer in DMs angezeigt wird.",
+            "description_localizations": {
+              "cs": "Důvod zobrazený uživateli v DM.",
+              "de": "Grund, der dem Nutzer in DMs angezeigt wird."
+            },
+            "required": false,
+            "max_length": 500
+          }
+        ],
+        "name": "close_application",
+        "description": "Schließt den aktuellen Bewerbungs-Thread.",
+        "description_localizations": {
+          "cs": "Uzavře aktuální vlákno členské přihlášky.",
+          "de": "Schließt den aktuellen Bewerbungs-Thread."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "autocomplete": true,
+            "type": 3,
+            "name": "event",
+            "description": "Wählen Sie eines Ihrer kommenden angemeldeten Events.",
+            "description_localizations": {
+              "cs": "Vyberte jednu ze svých nadcházejících přihlášených akcí.",
+              "de": "Wählen Sie eines Ihrer kommenden angemeldeten Events."
+            },
+            "required": true
+          }
+        ],
+        "name": "notice",
+        "description": "Reicht eine Verspätungsmeldung für ein kommendes Event ein.",
+        "description_localizations": {
+          "cs": "Odešle notice o pozdním příchodu na nadcházející akci.",
+          "de": "Reicht eine Verspätungsmeldung für ein kommendes Event ein."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [],
+        "name": "link",
+        "description": "Öffnet eine einmalige Seite zur Verknüpfung Ihrer Platform ID.",
+        "description_localizations": {
+          "cs": "Otevře jednorázovou stránku pro propojení vašeho platform ID.",
+          "de": "Öffnet eine einmalige Seite zur Verknüpfung Ihrer Platform ID."
+        },
+        "dm_permission": false,
+        "type": 1
+      },
+      {
+        "options": [
+          {
+            "autocomplete": true,
+            "type": 3,
+            "name": "player",
+            "description": "Wählen Sie einen Spieler aus diesem Clan.",
+            "description_localizations": {
+              "cs": "Vyberte hráče z tohoto klanu.",
+              "de": "Wählen Sie einen Spieler aus diesem Clan."
+            },
+            "required": true
+          }
+        ],
+        "name": "player",
+        "description": "Clan-Spieler suchen und deren Stats ansehen.",
+        "description_localizations": {
+          "cs": "Vyhledejte hráče klanu a zobrazte jeho statistiky.",
+          "de": "Clan-Spieler suchen und deren Stats ansehen."
+        },
+        "dm_permission": false,
+        "type": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "runtimeCommit": "5c494e869429b97dfebb663253593d5ef5014353",
+  "baseline": "267c1b55583c9f4e048065d558e5b9e3d1c5ba76",
+  "runtimePaths": [
+    "src",
+    "convex",
+    "discord-bot",
+    "content",
+    "scripts",
+    "config",
+    "patches",
+    "package.json",
+    "package-lock.json",
+    "bun.lock",
+    "bun.lockb",
+    "next.config.ts",
+    "tsconfig.json",
+    "eslint.config.mjs"
+  ],
+  "files": [
+    {
+      "path": "content/configuration/settings.mdx",
+      "gitBlob": "3490b963cb46665a1075b366899fee2d12cf5dfa"
+    },
+    {
+      "path": "convex/_generated/api.d.ts",
+      "gitBlob": "1a0549f2de91150669ce86ab46559c6ab6dfd478"
+    },
+    {
+      "path": "convex/apiKeyValidators.ts",
+      "gitBlob": "5a0819d60b84aeb53f8e0e0e3bf0a4bcc071d366"
+    },
+    {
+      "path": "convex/gameData.ts",
+      "gitBlob": "2ef3c461ed51e58855e5aa6d83592501940cca50"
+    },
+    {
+      "path": "convex/gameDataCollector.ts",
+      "gitBlob": "6b5d69fbea52c007f8a4883e51f0acc46b41331f"
+    },
+    {
+      "path": "convex/gameDataHistory.ts",
+      "gitBlob": "2648a1d323a2b3d3f438deeba5d34e5f64e9ef40"
+    },
+    {
+      "path": "convex/resultValidators.ts",
+      "gitBlob": "9c5c2fdeaa155a3cf0f3025018be2cd847dbfb51"
+    },
+    {
+      "path": "convex/schema.ts",
+      "gitBlob": "ca1708e19dcecc2811ce14b7f1475c202c3b0668"
+    },
+    {
+      "path": "convex/warconData.ts",
+      "gitBlob": "a898bcb62a40291b882332031300dd6f109f8809"
+    },
+    {
+      "path": "convex/warconReads.ts",
+      "gitBlob": "1196f43db799262ecae26379ad208b5999340024"
+    },
+    {
+      "path": "discord-bot/src/interactions/server-status.ts",
+      "gitBlob": "b22696510b971dfa21530ea08813e6d7bb53d8f0"
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/game-data/[connectionId]/route.ts",
+      "gitBlob": "ca32137916f9ff9b3f9f75dfa1a9660f73e83e41"
+    },
+    {
+      "path": "src/app/api/v1/clan/warcon-data/[connectionId]/route.ts",
+      "gitBlob": "14cbbdaa8eb8f66ca5630a7ace710ee638e27403"
+    },
+    {
+      "path": "src/app/api/v1/openapi.json/route.test.ts",
+      "gitBlob": "db3b8d4334676dc35451f01574c4290d97bf31b1"
+    },
+    {
+      "path": "src/app/api/v1/openapi.json/route.ts",
+      "gitBlob": "e931c03fc324e7cc8572428c1fd3ec9a46c8c109"
+    },
+    {
+      "path": "src/application/game-data/read-warcon.test.ts",
+      "gitBlob": "ff2a7902c7c7c49a17e376911fdef9e0870c4be1"
+    },
+    {
+      "path": "src/application/game-data/read-warcon.ts",
+      "gitBlob": "a5dabd9d19180e5317ae7ef877e6e62c00d88547"
+    },
+    {
+      "path": "src/components/app/game-data-connections.tsx",
+      "gitBlob": "352842f90c27e610fe6062dc75ef435ba62c48ab"
+    },
+    {
+      "path": "src/components/app/warcon-scoreboard.tsx",
+      "gitBlob": "234f988f30582d61188be05fe942813e72028faa"
+    },
+    {
+      "path": "src/domain/api/key-access.ts",
+      "gitBlob": "e1d9027c95ce97eaddebb4cce17cf8816af229dd"
+    },
+    {
+      "path": "src/domain/game-data/contracts.ts",
+      "gitBlob": "f06a1bd9e017eef7964e7da0a76669e937823142"
+    },
+    {
+      "path": "src/domain/game-data/policy.ts",
+      "gitBlob": "d9d1e0f7a76cae31b3ef7774f2d760b9c4d6f23d"
+    },
+    {
+      "path": "src/domain/game-data/warcon-contracts.ts",
+      "gitBlob": "888d02e2bce41386d642310e6a77f98f45b74385"
+    },
+    {
+      "path": "src/domain/game-data/warcon-query.ts",
+      "gitBlob": "f27cb56b0225ef0fdfb94962008d7b461c505f2f"
+    },
+    {
+      "path": "src/i18n/messages/cs.ts",
+      "gitBlob": "56316c991c0069779f41dffbac8409b1dc102ff9"
+    },
+    {
+      "path": "src/i18n/messages/de.ts",
+      "gitBlob": "220d80e51ba5036197a2541b24899b927f43d639"
+    },
+    {
+      "path": "src/i18n/messages/en.ts",
+      "gitBlob": "c012819aba9f20930e7a2a4381db9c963f75c118"
+    },
+    {
+      "path": "src/infrastructure/convex/warcon-cache.test.ts",
+      "gitBlob": "9dc8b9fca7396877c3e83266bbe40929b5b12271"
+    },
+    {
+      "path": "src/infrastructure/game-data/provider-http.ts",
+      "gitBlob": "a80fbeb0416439aec3b87a00ff8519ce8b0a69ac"
+    },
+    {
+      "path": "src/infrastructure/game-data/warcon-http.test.ts",
+      "gitBlob": "0e7133c72a78f5dbdb7284b6aa6d29b4aa1b1ba7"
+    },
+    {
+      "path": "src/infrastructure/game-data/warcon.test.ts",
+      "gitBlob": "b637c7359ddba1b265cddbe1a2798945a217a0c5"
+    },
+    {
+      "path": "src/infrastructure/game-data/warcon.ts",
+      "gitBlob": "f4aea2fdb6f9f3a7b2061e72a7773a10b2220faf"
+    },
+    {
+      "path": "src/infrastructure/testing/warcon.ts",
+      "gitBlob": "ad59e0178823e8d0c99f68e0e65a0665f8a67a13"
+    },
+    {
+      "path": "src/lib/api/authenticated-clan-route.test.ts",
+      "gitBlob": "4ef589b308b6186468ac7d1aee99df154b23822f"
+    },
+    {
+      "path": "src/lib/api/authenticated-clan-route.ts",
+      "gitBlob": "5e78f24fb268d123655c7e7402aa0231768303d5"
+    },
+    {
+      "path": "src/lib/api/warcon-route.test.ts",
+      "gitBlob": "6d5e4377c0d0e6a674d42f30581f6381840644f6"
+    },
+    {
+      "path": "src/lib/api/warcon-route.ts",
+      "gitBlob": "daf4fef22f92e6b7bf92c74d6ef1d8288bbeac47"
+    },
+    {
+      "path": "src/lib/server-warcon.ts",
+      "gitBlob": "c3ca6d46e1f9879ec566f6a85457ecab202ace0c"
+    }
+  ]
+}

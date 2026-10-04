@@ -1,0 +1,38 @@
+{
+  "executedAt": "2026-09-30T10:44:03.106Z",
+  "scope": "minimal clean Discord dependency tree; no credentials or Discord network",
+  "results": [
+    {
+      "label": "Fresh npm install with production postinstall",
+      "exitCode": 0
+    },
+    {
+      "label": "Clean npm ci with production postinstall",
+      "exitCode": 0
+    },
+    {
+      "label": "require/cancel",
+      "exitCode": 0
+    },
+    {
+      "label": "require/recover",
+      "exitCode": 0
+    },
+    {
+      "label": "require/open",
+      "exitCode": 0
+    },
+    {
+      "label": "import/cancel",
+      "exitCode": 0
+    },
+    {
+      "label": "import/recover",
+      "exitCode": 0
+    },
+    {
+      "label": "import/open",
+      "exitCode": 0
+    }
+  ]
+}

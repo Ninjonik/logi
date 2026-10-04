@@ -1,0 +1,20 @@
+{
+  "verifiedAt": "2026-10-03T14:30:24.941Z",
+  "sourceRevision": "1ad09ddb454c440ac3f8eae85b3aef914c6660bf",
+  "screenshots": 21,
+  "newScreenshots": 19,
+  "referencedPriorScreenshots": 2,
+  "screenshotSha256AndJpegChecks": "passed",
+  "sourceSha256Checks": "passed",
+  "markdownFilesChecked": [
+    "AGENTS.md",
+    "discord-bot/README.md",
+    "docs/integrations/website/v0.10/discord-reference.md",
+    "docs/integrations/website/evidence/2026-10-03-discord-gallery/README.md"
+  ],
+  "validLocalLinks": 99,
+  "inlineGalleryBytes": 690811,
+  "inlineGalleryContentChecks": "passed",
+  "applicationTestsRerun": false,
+  "reason": "Documentation and screenshot inventory only; no application implementation changed."
+}

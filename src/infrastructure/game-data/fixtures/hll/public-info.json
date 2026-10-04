@@ -1,0 +1,31 @@
+{
+    "failed": false,
+    "error": null,
+    "command": "get_public_info",
+    "result": {
+        "name": {
+            "name": "Synthetic HLL server",
+            "short_name": "Fixture",
+            "public_stats_port": null,
+            "public_stats_port_https": null
+        },
+        "current_map": {
+            "map": {
+                "id": "sme_warfare",
+                "pretty_name": "Sainte-Mère-Église Warfare"
+            },
+            "start": null
+        },
+        "next_map": {
+            "map": { "id": "foy_warfare", "pretty_name": "Foy Warfare" },
+            "start": null
+        },
+        "player_count": 0,
+        "max_player_count": 100,
+        "player_count_by_team": { "allied": 0, "axis": 0 },
+        "score": { "allied": 0, "axis": 5 },
+        "time_remaining": 3000,
+        "vote_status": [],
+        "config": { "private": "must be discarded" }
+    }
+}

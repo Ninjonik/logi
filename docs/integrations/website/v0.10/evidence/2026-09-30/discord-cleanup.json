@@ -1,0 +1,10 @@
+{
+  "executedAt": "2026-09-30T07:08:59.040Z",
+  "botStoppedBeforeRestore": true,
+  "priorCommandDefinitionsRestored": 19,
+  "definitionEqualityReadback": true,
+  "commandIds": "Discord-generated IDs may differ after recreation",
+  "perCommandPermissionOverrides": "Not captured or verified; definition-level default permissions restored",
+  "testChannelAndZeroPermissionRoles": "retained for owner inspection",
+  "existingMemberRolesModified": false
+}

@@ -1,0 +1,25 @@
+{
+    "data": {
+        "items": [
+            {
+                "id": "kh7synthetic0hll0team00000000b2",
+                "gameId": "hell_let_loose",
+                "name": "Example Rifle Regiment",
+                "shortCode": "ERR",
+                "logoUrl": "https://logi.example/api/image-assets/fedcba9876543210fedcba9876543210.png",
+                "revision": 1,
+                "updatedAt": "2026-09-30T08:15:00.000Z"
+            },
+            {
+                "id": "kh7synthetic0hll0team00000000a1",
+                "gameId": "hell_let_loose",
+                "name": "Synthetic Armoured Division",
+                "shortCode": "SAD",
+                "logoUrl": "https://logi.example/api/image-assets/0123456789abcdef0123456789abcdef.png",
+                "revision": 3,
+                "updatedAt": "2026-10-03T10:00:00.000Z"
+            }
+        ],
+        "nextCursor": null
+    }
+}

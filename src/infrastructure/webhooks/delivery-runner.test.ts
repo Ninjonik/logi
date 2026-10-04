@@ -3,7 +3,10 @@ import test from "node:test"
 
 import { signWebhookPayload } from "@/domain/webhooks/signature"
 
-import { runWebhookDelivery } from "./delivery-runner"
+import {
+    runWebhookDelivery,
+    type WebhookDeliveryCompletion,
+} from "./delivery-runner"
 
 const delivery = {
     id: "delivery-1",
@@ -78,7 +81,46 @@ test("runWebhookDelivery records network failures without a response status", as
         {
             deliveryId: "delivery-1",
             delivered: false,
-            error: "connection reset",
+            error: "Delivery request failed.",
         },
     ])
+})
+
+test("delivery uses a deadline and does not forward signatures through redirects", async () => {
+    let init: RequestInit | undefined
+    await runWebhookDelivery(delivery, {
+        fetch: async (_url, options) => {
+            init = options
+            return new Response(null, { status: 302 })
+        },
+        finish: async () => {},
+    })
+    assert.equal(init?.redirect, "manual")
+    assert.ok(init?.signal instanceof AbortSignal)
+})
+test("429 respects Retry-After and completion persistence is never retried as HTTP failure", async () => {
+    let result: WebhookDeliveryCompletion | undefined
+    await runWebhookDelivery(delivery, {
+        fetch: async () =>
+            new Response(null, {
+                status: 429,
+                headers: { "Retry-After": "120" },
+            }),
+        finish: async (input) => {
+            result = input
+        },
+        now: () => 1000,
+    })
+    assert.equal(result?.retryAfterMs, 120_000)
+    let calls = 0
+    await assert.rejects(
+        runWebhookDelivery(delivery, {
+            fetch: async () => new Response(null, { status: 204 }),
+            finish: async () => {
+                calls++
+                throw new Error("storage unavailable")
+            },
+        })
+    )
+    assert.equal(calls, 1)
 })

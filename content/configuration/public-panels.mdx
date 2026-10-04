@@ -1,0 +1,109 @@
+---
+title: Public Discord panels
+description: Automatically updated server, scoreboard and reviewed result messages.
+---
+
+# Public Discord panels
+
+In workspace Discord settings, open **Public panels**, select a configured data
+source and choose **Server + score**, **Separate scoreboard** or **Confirmed
+results**. Search the channel list by name or ID, or switch to ID entry. Use
+**Verify channel** to check the bot's permissions before saving.
+
+One compact server panel includes map, player count and supported scores. A
+separate scoreboard needs another channel. Refresh can run every 30, 60 or 300
+seconds. Saving again requests an update; the bot checks changes every 15 seconds.
+
+Enable **Public top players (names + stats)** to add the top three connected
+players by kills and current cash, plus the leading killer and cash holder for
+each known Wardogs faction. This setting is off by default and is independent of
+the private player button. Cash is the reported current balance, not total match
+earnings; these live rankings are not confirmed match results.
+
+**Private player details** enables a button for Warcon player names, factions,
+kills, deaths, cash and ping. Its response is visible only to the person pressing
+the button. HLL CRCON panels show connected players and current-round kills,
+deaths, combat, offense, defense and support scores. Public HLL leaders use kills
+overall and per team, with Allies/Axis scores, remaining time and map artwork.
+The HLL live website endpoint requires an explicit **HLL live data** read grant;
+ordinary aggregate keys cannot read player lists. Stale data is labeled; missing
+metrics stay unknown. HLL Records profile stats are a separate data source.
+Use **Previous** and **Next** to navigate eight players per page. If loading fails,
+the bot gives a private retry message instead of leaving the response loading.
+The button requires current access to the panel's channel. After the panel moves
+or its settings change, open its current message again; old private controls expire.
+
+Select a **Report Player** ticket category to add a private reporting button to a
+CRCON or Warcon server/score panel. The category shows the configured destination
+parent; choose or change that room in [Tickets](/configuration/tickets). A person
+can select a current player or enter a name for someone who left, then submit a
+reason and optional evidence link. Only the reporter and designated staff receive
+the resulting private thread. Staff close it with `/close_ticket`; reports do not
+automatically ban players. Leaving the category empty disables this feature.
+
+Public messages accept text or announcement channels. Ticket and recruitment
+private-thread parents must use ordinary text channels; the shared picker labels
+unsupported channel types and the central settings API validates pasted IDs.
+
+Confirmed results publish only after review in Logi. Corrections edit the original
+message. Historical reviews are not posted when first enabling the feature.
+Disabling result publication removes its owned result messages. Pausing a server
+panel keeps a paused card in the selected channel.
+
+The bot retains message IDs across restarts and edits the same message. Changing
+channels waits for removal of the old message. If Discord's response to a send
+is lost, the bot searches for its exact marker. A pending recovery that cannot be
+resolved from recent history needs operator attention; repeatedly saving does
+not send a duplicate.
+
+**Map artwork** uses the packaged map or game image as a compact, clickable
+thumbnail. The bot uploads it once and reuses the attachment on updates and
+restart. Application emoji are installed once by the operator; workspace
+administrators do not need to upload faction logos. Missing artwork and icons
+have readable fallbacks.
+
+## Appearance
+
+The **Appearance** section of the panel form changes how one panel looks in
+Discord. Save the panel to apply it; the bot updates the message within about
+15 seconds. Panels saved before these settings existed, and panels whose
+appearance is never changed, look exactly as before.
+
+- **Layout** switches:
+    - **Show map name and artwork** hides or shows the map line and the map
+      thumbnail. The thumbnail additionally needs **Map artwork**.
+    - **Show scoreboard** hides or shows the faction or team score section.
+    - **Show player count** hides or shows connected players and capacity.
+    - **Compact header** uses a two-line header, puts scores on one line and
+      removes section separators.
+
+    Confirmed result messages use only the map and compact switches.
+
+- **Accent color** takes a `#RRGGBB` value, typed or picked with the color
+  picker. It replaces the green color of a live panel and the color of result
+  messages. Stale or paused panels keep the amber warning color. **Default
+  color** restores the standard green.
+- **Banner** uploads a PNG, JPEG or WebP image of up to 2 MiB and at most
+  4096 × 4096 pixels. Logi converts it to WebP of at most 1920 × 1080 pixels and
+  shows it as the main image above the panel header, in place of the map
+  thumbnail. **Choose an uploaded banner** lists the banners already uploaded in
+  this workspace, so several panels can share one without uploading it again.
+  Saving waits until a running upload finishes, and changes made meanwhile are
+  kept. An upload or choice is attached only after you save the panel; **Remove
+  banner** detaches it on the next save. Uploads that are never saved to a panel
+  are removed automatically after a day. Banner and team logo uploads share a
+  limit of 10 images every 10 minutes for each administrator in a workspace;
+  above it, the editor says how many seconds to wait. If a banner is no longer
+  available to the workspace, saving asks you to upload it again or remove it.
+  Discord shows the banner only when Logi runs on a public HTTPS address.
+- **Faction emoji** set the marker shown before each faction or team name on
+  scores, leader lists, results and private player pages, for the games of the
+  selected source:
+  Allies and Axis for Hell Let Loose, Valkyra, Manticore and Lonestar for
+  Wardogs. Enter one Unicode emoji such as 🦅, or a custom Discord emoji as
+  `<:name:id>` (animated: `<a:name:id>`). A custom emoji must belong to a
+  server the bot is in or to the bot application. An empty field keeps the
+  default shown as the placeholder: the installed Wardogs application emoji or
+  ◈, and no emoji for Hell Let Loose teams. Private player pages show only the
+  emoji you set, and drop them if they would make a page too long for Discord.
+  Provider labels such as Alpha or Bravo always keep the neutral ◈ marker.

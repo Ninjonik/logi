@@ -1,0 +1,56 @@
+{
+  "executedAt": "2026-09-30T10:57:07.767Z",
+  "realDiscord": true,
+  "localConvex": true,
+  "results": [
+    {
+      "name": "Actual guild command registration",
+      "status": "pass",
+      "commands": [
+        "close_application",
+        "close_ticket",
+        "link",
+        "notice",
+        "player",
+        "server-status"
+      ]
+    },
+    {
+      "name": "Actual Components V2 event messages in isolated test channel",
+      "status": "pass",
+      "messages": 1,
+      "mentions": 0,
+      "newEventDelivered": true
+    },
+    {
+      "name": "Fresh worker attempt blocks above-bot target and records denial",
+      "status": "pass",
+      "reason": "target_not_eligible",
+      "attempts": 1,
+      "targetHighestRole": 102,
+      "botHighestRole": 100,
+      "allOriginalRolesPreserved": true
+    },
+    {
+      "name": "Positive live role grant/revoke",
+      "status": "blocked",
+      "reason": "Approved target role hierarchy is above the bot; no hierarchy changes authorized or performed."
+    },
+    {
+      "name": "Configured-source slash command interaction",
+      "status": "pass",
+      "evidenceKind": "manual user confirmation",
+      "command": "/server-status game:wardogs",
+      "observed": {
+        "private": true,
+        "players": 0,
+        "capacity": 98,
+        "scores": [
+          0,
+          12,
+          7
+        ]
+      }
+    }
+  ]
+}

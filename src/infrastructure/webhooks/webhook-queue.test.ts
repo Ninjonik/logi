@@ -1,364 +1,235 @@
+import { invoke, testContext } from "../convex/testing/database"
+import { drainWebhookDeliveries } from "./delivery-runner"
+
+test("drain waits for its other in-flight deliveries before releasing a failed batch", async () => {
+    let claims = 0,
+        finished = 0
+    await assert.rejects(
+        drainWebhookDeliveries({
+            claim: async () =>
+                claims++ < 4
+                    ? {
+                          id: String(claims),
+                          url: "https://example.test",
+                          signingSecret: "fake",
+                          payload: "{}",
+                          eventType: "test",
+                      }
+                    : null,
+            deliver: async (value) => {
+                if (value.id === "1") throw new Error("storage unavailable")
+                await new Promise((resolve) => setImmediate(resolve))
+                finished++
+                return { delivered: true }
+            },
+        })
+    )
+    assert.equal(finished, 3)
+})
+import * as queue from "../../../convex/webhookQueue"
+import * as webhook from "../../../convex/webhooks"
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import * as webhookDispatcher from "../../../convex/webhookDispatcher"
-import * as webhookFunctions from "../../../convex/webhooks"
-
-type Hook = {
-    _id: string
-    guildId: string
-    url: string
-    secret: string
-    eventTypes: string[]
-    enabled: boolean
-    createdAt: string
-    updatedAt: string
-    lastDeliveredAt?: string
-    lastFailureAt?: string
-}
-type Delivery = {
-    _id: string
-    webhookId: string
-    guildId: string
-    eventType: string
-    payload: string
-    attempt: number
-    status: "pending" | "processing" | "delivered" | "failed"
-    processingStartedAt?: number
-    nextAttemptAt: number
-    responseStatus?: number
-    lastError?: string
-    createdAt: string
-    deliveredAt?: string
-}
-type Constraint = { field: string; value: unknown; operator: "eq" | "lte" }
-
-class FakeQuery<T extends { _id: string }> {
-    private constraints: Constraint[] = []
-
-    constructor(private readonly documents: T[]) {}
-
-    withIndex(
-        _name: string,
-        build: (query: {
-            eq: (field: string, value: unknown) => unknown
-            lte: (field: string, value: unknown) => unknown
-        }) => unknown
-    ) {
-        const query = {
-            eq: (field: string, value: unknown) => {
-                this.constraints.push({ field, value, operator: "eq" })
-                return query
-            },
-            lte: (field: string, value: unknown) => {
-                this.constraints.push({ field, value, operator: "lte" })
-                return query
-            },
-        }
-        build(query)
-        return this
-    }
-
-    async first() {
-        return this.matching()[0] ?? null
-    }
-
-    async collect() {
-        return this.matching()
-    }
-
-    private matching() {
-        return this.documents.filter((document) =>
-            this.constraints.every(({ field, value, operator }) => {
-                const actual = document[field as keyof T]
-                return operator === "eq"
-                    ? actual === value
-                    : (actual as number) <= (value as number)
-            })
-        )
-    }
-}
-
-class FakeDb {
-    readonly hooks = new Map<string, Hook>()
-    readonly deliveries = new Map<string, Delivery>()
-
-    async get(id: string) {
-        return this.hooks.get(id) ?? this.deliveries.get(id) ?? null
-    }
-
-    async patch(id: string, value: Record<string, unknown>) {
-        const document = await this.get(id)
-        if (!document) throw new Error(`Document ${id} not found.`)
-        Object.assign(document, value)
-    }
-
-    query(table: "webhookSubscriptions" | "webhookDeliveries") {
-        return new FakeQuery<Hook | Delivery>(
-            table === "webhookSubscriptions"
-                ? [...this.hooks.values()]
-                : [...this.deliveries.values()]
-        )
-    }
-}
-
-type WebhookHandler<Args, Context = { db: FakeDb }> = (
-    ctx: Context,
-    args: Args
-) => Promise<unknown>
-const internalSecret = "dev-internal-auth-secret"
-const handler = <Args, Context = { db: FakeDb }>(value: unknown) =>
-    (value as { _handler: WebhookHandler<Args, Context> })._handler
-
-const hook = (overrides: Partial<Hook> = {}): Hook => ({
-    _id: "hook-1",
-    guildId: "guild-a",
-    url: "https://hooks.example.test/logi",
-    secret: "signing-secret",
-    eventTypes: ["article.created"],
-    enabled: true,
-    createdAt: "2026-01-01T00:00:00.000Z",
-    updatedAt: "2026-01-01T00:00:00.000Z",
-    ...overrides,
-})
-const delivery = (overrides: Partial<Delivery> = {}): Delivery => ({
-    _id: "delivery-1",
-    webhookId: "hook-1",
-    guildId: "guild-a",
-    eventType: "article.created",
-    payload: '{"id":"article-1"}',
-    attempt: 0,
-    status: "pending",
-    nextAttemptAt: 0,
-    createdAt: "2026-01-01T00:00:00.000Z",
-    ...overrides,
-})
-
-test("claimed successful deliveries update both delivery and subscription", async () => {
-    const db = new FakeDb()
-    db.hooks.set("hook-1", hook())
-    db.deliveries.set("delivery-1", delivery())
-
-    const claimed = await handler<{}>(webhookFunctions.claimDueDelivery)(
-        { db },
-        {}
-    )
-    assert.deepEqual(claimed, {
-        id: "delivery-1",
-        url: "https://hooks.example.test/logi",
-        signingSecret: "signing-secret",
-        eventType: "article.created",
-        payload: '{"id":"article-1"}',
-        attempt: 0,
+function fixture() {
+    const ctx = testContext()
+    ctx.db.seed("webhookSubscriptions", {
+        _id: "webhookSubscriptions:one",
+        guildId: "guild-a",
+        url: "https://example.test/hooks",
+        secret: "synthetic-secret",
+        enabled: true,
+        eventTypes: [],
     })
-
-    await handler<{
-        deliveryId: string
-        delivered: boolean
-        responseStatus?: number
-        error?: string
-    }>(webhookFunctions.finishDelivery)(
-        { db },
-        {
-            deliveryId: "delivery-1",
-            delivered: true,
-            responseStatus: 204,
-        }
-    )
-
-    assert.equal(db.deliveries.get("delivery-1")?.status, "delivered")
-    assert.equal(db.deliveries.get("delivery-1")?.responseStatus, 204)
-    assert.ok(db.deliveries.get("delivery-1")?.deliveredAt)
-    assert.ok(db.hooks.get("hook-1")?.lastDeliveredAt)
+    ctx.db.seed("webhookDeliveries", {
+        _id: "webhookDeliveries:one",
+        webhookId: "webhookSubscriptions:one",
+        guildId: "guild-a",
+        payload: "{}",
+        eventType: "webhook.test",
+        attempt: 0,
+        status: "pending",
+        nextAttemptAt: 0,
+        createdAt: new Date().toISOString(),
+    })
+    return ctx
+}
+test("stale completion cannot overwrite a newer delivery claim", async () => {
+    const ctx = fixture(),
+        row = ctx.db.tables.webhookDeliveries[0]
+    Object.assign(row, {
+        status: "processing",
+        fence: 2,
+        processingStartedAt: Date.now(),
+        attempt: 2,
+    })
+    await invoke(webhook.finishDelivery, ctx, {
+        deliveryId: row._id,
+        fence: 1,
+        delivered: true,
+    })
+    assert.equal(row.status, "processing")
 })
-
-test("disabled and deleted subscriptions safely fail queued or in-flight deliveries", async () => {
-    const disabled = new FakeDb()
-    disabled.hooks.set("hook-1", hook({ enabled: false }))
-    disabled.deliveries.set("delivery-1", delivery())
-
+test("100 deliveries drain in bounded batches with at most four concurrent requests", async () => {
+    let remaining = 100,
+        active = 0,
+        peak = 0,
+        completed = 0
+    while (remaining) {
+        const result = await drainWebhookDeliveries({
+            claim: async () =>
+                remaining-- > 0
+                    ? {
+                          id: String(remaining),
+                          url: "https://example.test",
+                          signingSecret: "fake",
+                          payload: "{}",
+                          eventType: "test",
+                      }
+                    : null,
+            deliver: async () => {
+                active++
+                peak = Math.max(peak, active)
+                await new Promise((resolve) => setImmediate(resolve))
+                active--
+                return { delivered: true }
+            },
+        })
+        assert.equal(result.processed, 25)
+        completed += result.delivered
+    }
+    assert.equal(completed, 100)
+    assert.equal(peak, 4)
+})
+test("expired HTTP lease is recovered and old response remains fenced out", async () => {
+    const ctx = fixture(),
+        fence = await invoke(queue.beginDrain, ctx)
+    const first = await invoke(queue.claimDueDelivery, ctx, {
+            drainFence: fence,
+        }),
+        row = ctx.db.tables.webhookDeliveries[0]
+    row.processingStartedAt = Date.now() - 30_001
+    await invoke(queue.finishDelivery, ctx, {
+        deliveryId: row._id,
+        fence: first.fence,
+        delivered: true,
+    })
+    assert.equal(row.status, "processing")
+    ctx.db.tables.webhookDispatchState[0].leaseUntil = 0
+    const secondFence = await invoke(queue.beginDrain, ctx),
+        second = await invoke(queue.claimDueDelivery, ctx, {
+            drainFence: secondFence,
+        })
+    assert.ok(second.fence > first.fence)
+    await invoke(queue.finishDelivery, ctx, {
+        deliveryId: row._id,
+        fence: first.fence,
+        delivered: true,
+    })
+    assert.equal(row.status, "processing")
+    await invoke(queue.finishDelivery, ctx, {
+        deliveryId: row._id,
+        fence: second.fence,
+        delivered: true,
+        responseStatus: 204,
+    })
+    assert.equal(row.status, "delivered")
+})
+test("retry delay, permanent errors and attempt ceiling are persisted", async () => {
+    for (const status of [400, 408, 429, 500, undefined]) {
+        const ctx = fixture(),
+            started = Date.now(),
+            fence = await invoke(queue.beginDrain, ctx)
+        const claim = await invoke(queue.claimDueDelivery, ctx, {
+            drainFence: fence,
+        })
+        await invoke(queue.finishDelivery, ctx, {
+            deliveryId: claim.id,
+            fence: claim.fence,
+            delivered: false,
+            responseStatus: status,
+            retryAfterMs: 120_000,
+        })
+        const row = ctx.db.tables.webhookDeliveries[0]
+        assert.equal(row.status, status === 400 ? "failed" : "pending")
+        assert.ok(row.nextAttemptAt >= started + 120_000)
+        if (row.status === "pending") assert.ok(ctx.scheduler.calls.length)
+    }
+    const ctx = fixture(),
+        row = ctx.db.tables.webhookDeliveries[0]
+    Object.assign(row, {
+        status: "processing",
+        fence: 6,
+        attempt: 6,
+        processingStartedAt: Date.now(),
+    })
+    await invoke(queue.finishDelivery, ctx, {
+        deliveryId: row._id,
+        fence: 6,
+        delivered: false,
+        responseStatus: 500,
+    })
+    assert.equal(row.status, "failed")
+})
+test("tenant rotation prevents a busy guild blocking another and continuation is durable", async () => {
+    const ctx = fixture()
+    for (let i = 0; i < 100; i++)
+        ctx.db.seed("webhookDeliveries", {
+            ...ctx.db.tables.webhookDeliveries[0],
+            _id: `webhookDeliveries:a-${i}`,
+        })
+    ctx.db.seed("webhookSubscriptions", {
+        ...ctx.db.tables.webhookSubscriptions[0],
+        _id: "webhookSubscriptions:two",
+        guildId: "guild-b",
+    })
+    ctx.db.seed("webhookDeliveries", {
+        ...ctx.db.tables.webhookDeliveries[0],
+        _id: "webhookDeliveries:b",
+        guildId: "guild-b",
+        webhookId: "webhookSubscriptions:two",
+    })
+    const fence = await invoke(queue.beginDrain, ctx)
+    await invoke(queue.claimDueDelivery, ctx, { drainFence: fence })
     assert.equal(
-        await handler<{}>(webhookFunctions.claimDueDelivery)(
-            { db: disabled },
-            {}
-        ),
+        (await invoke(queue.claimDueDelivery, ctx, { drainFence: fence })).id,
+        "webhookDeliveries:b"
+    )
+    assert.equal(await invoke(queue.beginDrain, ctx), null)
+    await invoke(queue.endDrain, ctx, { fence })
+    assert.ok(ctx.scheduler.calls.length)
+})
+test("deleted subscription preserves in-flight audit; disabled work fails safely", async () => {
+    const ctx = fixture(),
+        fence = await invoke(queue.beginDrain, ctx),
+        claim = await invoke(queue.claimDueDelivery, ctx, { drainFence: fence })
+    await ctx.db.delete("webhookSubscriptions:one")
+    await invoke(queue.finishDelivery, ctx, {
+        deliveryId: claim.id,
+        fence: claim.fence,
+        delivered: true,
+    })
+    assert.equal(ctx.db.tables.webhookDeliveries[0].status, "delivered")
+    const disabled = fixture()
+    disabled.db.tables.webhookSubscriptions[0].enabled = false
+    const disabledFence = await invoke(queue.beginDrain, disabled)
+    assert.equal(
+        await invoke(queue.claimDueDelivery, disabled, {
+            drainFence: disabledFence,
+        }),
         null
     )
-    assert.equal(disabled.deliveries.get("delivery-1")?.status, "failed")
-
-    const deleted = new FakeDb()
-    deleted.deliveries.set("delivery-1", delivery({ status: "processing" }))
-    await handler<{
-        deliveryId: string
-        delivered: boolean
-        responseStatus?: number
-        error?: string
-    }>(webhookFunctions.finishDelivery)(
-        { db: deleted },
-        {
-            deliveryId: "delivery-1",
-            delivered: true,
-            responseStatus: 204,
-        }
-    )
-    assert.equal(deleted.deliveries.get("delivery-1")?.status, "delivered")
+    assert.equal(disabled.db.tables.webhookDeliveries[0].status, "failed")
 })
-
-test("queue retries transient failures and permanently fails client errors or exhausted work", async () => {
-    for (const responseStatus of [undefined, 408, 429, 500]) {
-        const db = new FakeDb()
-        db.hooks.set("hook-1", hook())
-        db.deliveries.set("delivery-1", delivery({ status: "processing" }))
-        await handler<{
-            deliveryId: string
-            delivered: boolean
-            responseStatus?: number
-            error?: string
-        }>(webhookFunctions.finishDelivery)(
-            { db },
-            {
-                deliveryId: "delivery-1",
-                delivered: false,
-                responseStatus,
-                error: "temporary failure",
-            }
-        )
-        const result = db.deliveries.get("delivery-1")
-        assert.equal(result?.status, "pending")
-        assert.equal(result?.attempt, 1)
-        assert.ok((result?.nextAttemptAt ?? 0) > Date.now() - 1_000)
-    }
-
-    const permanent = new FakeDb()
-    permanent.hooks.set("hook-1", hook())
-    permanent.deliveries.set("delivery-1", delivery({ status: "processing" }))
-    await handler<{
-        deliveryId: string
-        delivered: boolean
-        responseStatus?: number
-        error?: string
-    }>(webhookFunctions.finishDelivery)(
-        { db: permanent },
-        {
-            deliveryId: "delivery-1",
-            delivered: false,
-            responseStatus: 400,
-            error: "bad request",
-        }
-    )
-    assert.equal(permanent.deliveries.get("delivery-1")?.status, "failed")
-    assert.ok(permanent.hooks.get("hook-1")?.lastFailureAt)
-
-    const exhausted = new FakeDb()
-    exhausted.hooks.set("hook-1", hook())
-    exhausted.deliveries.set(
-        "delivery-1",
-        delivery({ status: "processing", attempt: 5 })
-    )
-    await handler<{
-        deliveryId: string
-        delivered: boolean
-        responseStatus?: number
-        error?: string
-    }>(webhookFunctions.finishDelivery)(
-        { db: exhausted },
-        {
-            deliveryId: "delivery-1",
-            delivered: false,
-            error: "network failure",
-        }
-    )
-    assert.equal(exhausted.deliveries.get("delivery-1")?.status, "failed")
-    assert.equal(exhausted.deliveries.get("delivery-1")?.attempt, 6)
-})
-
-test("claiming recovers stale processing work before selecting a due delivery", async () => {
-    const db = new FakeDb()
-    db.hooks.set("hook-1", hook())
-    db.deliveries.set(
-        "delivery-1",
-        delivery({
-            status: "processing",
-            processingStartedAt: Date.now() - 5 * 60_000 - 1,
-        })
-    )
-
-    const claimed = await handler<{}>(webhookFunctions.claimDueDelivery)(
-        { db },
-        {}
-    )
-    assert.equal((claimed as { id: string }).id, "delivery-1")
-    assert.equal(db.deliveries.get("delivery-1")?.status, "processing")
-    assert.equal(
-        db.deliveries.get("delivery-1")?.lastError,
-        "Recovered abandoned delivery."
-    )
-})
-
-test("dashboard delivery history rejects another guild's subscription", async () => {
-    const db = new FakeDb()
-    db.hooks.set("hook-1", hook())
-
+test("delivery history enforces guild ownership", async () => {
     await assert.rejects(
-        handler<{
-            secret: string
-            guildId: string
-            webhookId: string
-            cursor: string | null
-            limit: number
-        }>(webhookFunctions.listDeliveries)(
-            { db },
-            {
-                secret: internalSecret,
-                guildId: "guild-b",
-                webhookId: "hook-1",
-                cursor: null,
-                limit: 25,
-            }
-        ),
+        invoke(webhook.listDeliveries, fixture(), {
+            secret: "dev-internal-auth-secret",
+            guildId: "other",
+            webhookId: "webhookSubscriptions:one",
+            cursor: null,
+            limit: 25,
+        }),
         /Webhook not found/
     )
-})
-
-test("dispatcher finishes the one delivery it claims", async () => {
-    const mutations: Array<{ reference: unknown; args: unknown }> = []
-    const originalFetch = globalThis.fetch
-    globalThis.fetch = async () => new Response(null, { status: 204 })
-    try {
-        const result = await handler<
-            {},
-            {
-                runMutation: (
-                    reference: unknown,
-                    args: unknown
-                ) => Promise<unknown>
-            }
-        >(webhookDispatcher.deliverDue)(
-            {
-                runMutation: async (reference: unknown, args: unknown) => {
-                    mutations.push({ reference, args })
-                    return mutations.length === 1
-                        ? {
-                              id: "delivery-1",
-                              url: "https://hooks.example.test/logi",
-                              signingSecret: "signing-secret",
-                              eventType: "article.created",
-                              payload: '{"id":"article-1"}',
-                              attempt: 0,
-                          }
-                        : undefined
-                },
-            },
-            {}
-        )
-        assert.deepEqual(result, { delivered: true })
-        assert.equal(mutations.length, 2)
-        assert.deepEqual(mutations[1]?.args, {
-            deliveryId: "delivery-1",
-            delivered: true,
-            responseStatus: 204,
-        })
-    } finally {
-        globalThis.fetch = originalFetch
-    }
 })

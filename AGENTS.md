@@ -30,6 +30,28 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — dependency direction, layer responsibilities, migration guidance, and testing strategy
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — contribution workflow, placement rules, and expected validation
 - [discord-bot/README.md](./discord-bot/README.md) — bot runtime, required environment variables, responsibilities, and source layout
+- [Website integration handoff](./docs/integrations/website/v0.8/README.md) — actor-backed managed role queue/audit; inherits scoped membership from 0.7, synchronization from 0.6, collectors from 0.5 and scoped summary keys from 0.4
+- [Integration PR delivery handbook](./docs/integrations/website/v0.10/pr-handbook.md) — web/API capabilities, complete Discord command inventory, stored test/build/lint proof, visual evidence, activation and remaining work
+- [Integration PR review guide](./docs/integrations/website/v0.10/review-guide.md) — cumulative architecture, review boundaries, findings, verification and remaining owner tasks
+- [Integration roadmap](./docs/integrations/website/roadmap/README.md) — proposed HLL/Wardogs collection, website synchronization, Discord membership and identity plans
+- [Discord public panels](./docs/integrations/website/discord-public-panels.md) — channel settings, durable message recovery, map artwork, application emoji, live scoreboards, reviewed results and activation limits
+- [HLL live data and private player reports](./docs/integrations/website/hll-live-and-player-reports.md) — scoped CRCON live reads, private report intake, current Discord audience checks and recovery limits
+- [Integration settings coverage](./docs/integrations/website/configuration-coverage.md) — implemented UI controls, operator configuration and outstanding settings gaps
+- [Discord player statistics](./docs/integrations/website/discord-player-stats.md) — shared HLL/Wardogs command, self-declared Steam lookup, channel sharing, retained-history totals and HLL provider access limits
+- [Discord feature gallery](./docs/integrations/website/evidence/2026-10-03-discord-gallery/README.md) — 21 actual Discord screenshots, existing/new capability inventory, audiences and observed design gaps
+- [Discord League/report/HLL proposal](./docs/integrations/website/roadmap/discord-league-reports-hll.md) — scoped League discovery/manual tracking, requested channel routing, private report intake, live CRCON investigation and unimplemented follow-up scope
+- [Verified Steam identity](./docs/integrations/website/v0.9/README.md) — session-bound account proof, revocation, identity separation and synthetic acceptance evidence
+- [Reviewed result handoff](./docs/integrations/website/v0.10/README.md) — immutable confirmation/correction, proof-based attribution, scoped result summaries, consumer fixtures and synthetic acceptance
+- [Warcon read integration](./docs/integrations/website/v0.11/README.md) — fifteen gameplay reads, live scoreboard, scoped website access, completed-match collection and provider/local proof
+- [Wardogs League public match reader](./docs/integrations/website/v0.12/README.md) — anonymous HTML parser, safe URL preview, shared stale cache, scoped website API and live/local proof
+- [League discovery and shared fixtures](./docs/integrations/website/league-discovery.md) — scheduled scanning, admin pins, human links, compact persistent Discord cards and scoped collection/change feed
+- [Workspace team directory design](./docs/superpowers/specs/2026-10-03-team-directory-design.md) — HLL/Wardogs team catalogue, logo ownership, historical match snapshots and website/Discord contracts; implemented, with runtime acceptance (isolated Convex, browser, Discord test channel) pending
+- [Retained Warcon history](./docs/integrations/website/warcon-history.md) — durable completed-game archive, faction/player calculations, scoped web pages and local acceptance evidence
+- [Actor-backed website event commands](./docs/integrations/website/event-commands.md) — current SSO actor and role policy, native event writes, durable receipts, revision conflicts and local HTTP proof
+- [Central login and connected website acceptance](./docs/integrations/website/v0.13/README.md) — paired SSO, roles, native event commands, local regression/browser proof and remaining activation
+- [Read-only people and player facts](./docs/integrations/website/v0.14/README.md) — scoped member directory, published roster/attendance, verified collected-session facts and bounded dependency resets
+- [PR #158 review and repaired-runtime proof](./docs/integrations/website/v0.14/evidence/2026-10-03-pr-review/README.md) — upstream integration fixes, security dispositions, exact runtime verification and activation limits
+- [Workspace team directory handoff](./docs/integrations/website/v0.15/README.md) — explicit `teams` grant, scoped collection/detail reads, change-feed protocol, immutable match snapshots, actor-backed `matchTeams` commands and the catalogue-write API-parity exception
 
 ### User-facing and legal Markdown
 
@@ -89,16 +111,16 @@ Do not introduce grab-bag server modules or compatibility shims solely to preser
 
 ## Where New Work Goes
 
-| Change | Primary location | Typical validation |
-| --- | --- | --- |
-| Pure business rule or calculation | `src/domain/<feature>` | colocated unit test |
-| Multi-repository workflow | `src/application/<feature>` | colocated use-case test with fakes |
-| Convex persistence or transaction wiring | `convex/` and/or `src/infrastructure/convex` | mapping test plus focused integration check |
-| Next.js page or route | `src/app` | typecheck and focused behavioral test |
-| Web read/write integration | `src/lib/read-models` or `src/lib/gateways` | focused unit/integration test |
-| React UI | `src/components` or route-local UI | typecheck and manual UI verification |
-| Discord behavior | `discord-bot/src` | colocated bot test; use shared rules for cross-runtime behavior |
-| Translation copy | `src/i18n/messages` and related dictionaries | update all supported locales (`en`, `cs`) unless fallback is intentional |
+| Change                                   | Primary location                             | Typical validation                                                       |
+| ---------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
+| Pure business rule or calculation        | `src/domain/<feature>`                       | colocated unit test                                                      |
+| Multi-repository workflow                | `src/application/<feature>`                  | colocated use-case test with fakes                                       |
+| Convex persistence or transaction wiring | `convex/` and/or `src/infrastructure/convex` | mapping test plus focused integration check                              |
+| Next.js page or route                    | `src/app`                                    | typecheck and focused behavioral test                                    |
+| Web read/write integration               | `src/lib/read-models` or `src/lib/gateways`  | focused unit/integration test                                            |
+| React UI                                 | `src/components` or route-local UI           | typecheck and manual UI verification                                     |
+| Discord behavior                         | `discord-bot/src`                            | colocated bot test; use shared rules for cross-runtime behavior          |
+| Translation copy                         | `src/i18n/messages` and related dictionaries | update all supported locales (`en`, `cs`) unless fallback is intentional |
 
 Prefer existing feature patterns and naming over inventing a parallel abstraction. Search for a similar implementation before adding a module.
 
@@ -234,6 +256,7 @@ Before handing work back:
 - verify all new imports, links, routes, and environment variable names
 - update relevant Markdown when behavior or developer workflow changed
 - state what changed, what was validated, and any remaining risk or unrun check
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

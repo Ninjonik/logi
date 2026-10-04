@@ -1,0 +1,62 @@
+{
+  "runtimeCommit": "5c494e869429b97dfebb663253593d5ef5014353",
+  "executionTree": "Original baseRevision plus the source files subsequently committed as runtimeCommit; no runtime edits after these checks",
+  "versions": {
+    "node": "v24.21.0",
+    "next": "16.3.6",
+    "convex": "1.46.0",
+    "typescript": "5.9.3",
+    "zod": "4.3.6"
+  },
+  "checks": [
+    {
+      "mode": "test",
+      "code": 0,
+      "signal": null,
+      "durationMs": 7829,
+      "baseRevision": "267c1b55583c9f4e048065d558e5b9e3d1c5ba76",
+      "productionConvexLoaded": false
+    },
+    {
+      "mode": "typecheck",
+      "code": 0,
+      "signal": null,
+      "durationMs": 25374,
+      "baseRevision": "267c1b55583c9f4e048065d558e5b9e3d1c5ba76",
+      "productionConvexLoaded": false
+    },
+    {
+      "mode": "lint",
+      "code": 0,
+      "signal": null,
+      "durationMs": 7830,
+      "baseRevision": "267c1b55583c9f4e048065d558e5b9e3d1c5ba76",
+      "productionConvexLoaded": false
+    },
+    {
+      "mode": "build",
+      "code": 0,
+      "signal": null,
+      "durationMs": 25778,
+      "baseRevision": "267c1b55583c9f4e048065d558e5b9e3d1c5ba76",
+      "productionConvexLoaded": false
+    },
+    {
+      "mode": "push",
+      "code": 0,
+      "signal": null,
+      "durationMs": 1040,
+      "baseRevision": "267c1b55583c9f4e048065d558e5b9e3d1c5ba76",
+      "productionConvexLoaded": false
+    }
+  ],
+  "openapiGeneration": {
+    "command": "npm run generate:openapi",
+    "exitCode": 0,
+    "generatedSourceChanged": false
+  },
+  "smokeLint": {
+    "exitCode": 0
+  },
+  "productionConvexLoaded": false
+}

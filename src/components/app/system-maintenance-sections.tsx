@@ -15,6 +15,8 @@ import { LinkMissingDiscordIdsButton } from "@/components/app/link-missing-disco
 import { ImportDiscordMembersButton } from "@/components/app/import-discord-members-button"
 import { AutoLinkPlatformIdsButton } from "@/components/app/auto-link-platform-ids-button"
 import { DedupePlayerStatsButton } from "@/components/app/dedupe-player-stats-button"
+import { WardogsLeaguePreview } from "@/components/app/wardogs-league-preview"
+import { LeagueTrackingForm } from "@/components/app/league-tracking-form"
 import { ImportEventsButton } from "@/components/app/import-events-button"
 import { HelperDataActions } from "@/components/app/helper-data-actions"
 import { DEFAULT_GAME_ID, type GameId } from "@/domain/games/game"
@@ -133,6 +135,12 @@ export function SystemMaintenanceSections({
                             gameId={gameId}
                         />
                     </div>
+                    {gameId === "wardogs" && (
+                        <>
+                            <LeagueTrackingForm serverId={serverId} />
+                            <WardogsLeaguePreview serverId={serverId} />
+                        </>
+                    )}
                 </AccordionContent>
             </AccordionItem>
 

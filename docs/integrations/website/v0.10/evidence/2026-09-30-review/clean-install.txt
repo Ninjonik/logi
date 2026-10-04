@@ -1,0 +1,40 @@
+
+Fresh npm install with production postinstall
+
+> logi-gateway-clean-proof@1.0.0 postinstall
+> patch-package --error-on-fail
+
+patch-package 8.0.1
+Applying patches...
+@discordjs/ws@1.2.3 ✔
+
+added 81 packages in 8s
+
+Clean npm ci with production postinstall
+
+> logi-gateway-clean-proof@1.0.0 postinstall
+> patch-package --error-on-fail
+
+patch-package 8.0.1
+Applying patches...
+@discordjs/ws@1.2.3 ✔
+
+added 81 packages in 3s
+
+require/cancel
+{"connections":1,"ready":false,"openSockets":0}
+
+require/recover
+{"connections":2,"ready":true,"openSockets":0}
+
+require/open
+{"connections":1,"ready":true,"openSockets":0}
+
+import/cancel
+{"connections":1,"ready":false,"openSockets":0}
+
+import/recover
+{"connections":2,"ready":true,"openSockets":0}
+
+import/open
+{"connections":1,"ready":true,"openSockets":0}

@@ -18,15 +18,13 @@ import type {
     TicketModalQuestion,
     TicketSettings,
 } from "@/types/domain"
-import {
-    DiscordEntitySelect,
-    type DiscordSelectOption,
-} from "@/components/app/discord-entity-select"
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
+import type { DiscordSelectOption } from "@/components/app/discord-entity-select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
 import { ExpandableItemCard } from "@/components/app/expandable-item-card"
 import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
+import { DiscordChannelSelect } from "./discord-channel-select"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -164,8 +162,6 @@ export function TicketSettingsForm({
     }, [serverId])
 
     const roles = metadata?.roles ?? []
-    const textChannels =
-        metadata?.channels?.filter((channel) => channel.type === 0) ?? []
     const emojiOptions = metadata?.emojis ?? []
     const categoryFieldPreview = useMemo(
         () => buildTicketCategoryFieldPreview(ticketSettings.categories),
@@ -335,14 +331,14 @@ export function TicketSettingsForm({
                 <div className="grid gap-4 lg:grid-cols-2">
                     <div className="space-y-2">
                         <Label>{dictionary.ticketSettings.submitChannel}</Label>
-                        <DiscordEntitySelect
+                        <DiscordChannelSelect
                             value={ticketSettings.submitChannelId}
                             onChange={(value) =>
                                 patchTicketSettings({
                                     submitChannelId: value ?? "",
                                 })
                             }
-                            options={textChannels}
+                            channels={metadata?.channels ?? []}
                             placeholder={
                                 dictionary.ticketSettings.submitChannel
                             }
@@ -350,14 +346,15 @@ export function TicketSettingsForm({
                     </div>
                     <div className="space-y-2">
                         <Label>{dictionary.ticketSettings.parentChannel}</Label>
-                        <DiscordEntitySelect
+                        <DiscordChannelSelect
                             value={ticketSettings.ticketParentChannelId}
+                            purpose="private-thread"
                             onChange={(value) =>
                                 patchTicketSettings({
                                     ticketParentChannelId: value ?? "",
                                 })
                             }
-                            options={textChannels}
+                            channels={metadata?.channels ?? []}
                             placeholder={
                                 dictionary.ticketSettings.parentChannel
                             }

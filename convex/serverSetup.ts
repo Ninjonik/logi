@@ -1,4 +1,5 @@
-import { mutation, type MutationCtx } from "./_generated/server"
+import { type MutationCtx } from "./_generated/server"
+import { mutation } from "./integrationMutation"
 import { v } from "convex/values"
 
 import { createHllStarterSquadPreset } from "../src/lib/squad-preset-templates"

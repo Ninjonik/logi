@@ -1,0 +1,164 @@
+{
+  "runtimeCommit": "47fe06ead719d584848c57b8d9d680af4cd9687b",
+  "baseline": "89c9f9d0ffd77177afca996da9e91d5024c68e38",
+  "runtimePaths": [
+    "src",
+    "convex",
+    "discord-bot",
+    "content",
+    "scripts",
+    "config",
+    "patches",
+    "package.json",
+    "bun.lock",
+    "next.config.ts",
+    "tsconfig.json",
+    "eslint.config.mjs"
+  ],
+  "files": [
+    {
+      "path": "bun.lock",
+      "gitBlob": "409116dd1747735926597e290dcc302c4298e115"
+    },
+    {
+      "path": "content/configuration/settings.mdx",
+      "gitBlob": "e2a8ed87a3b6d2ae7492143dd513d64fcc6f098f"
+    },
+    {
+      "path": "convex/_generated/api.d.ts",
+      "gitBlob": "354a6db115faae8054efee247d20b8840d0fcd17"
+    },
+    {
+      "path": "convex/apiKeyValidators.ts",
+      "gitBlob": "820ca7f80a9259aa00f2d13424a227a06af4b474"
+    },
+    {
+      "path": "convex/leagueMatchData.ts",
+      "gitBlob": "030c018db71e84d20392f11e2b03cb589eeafa02"
+    },
+    {
+      "path": "convex/leagueMatches.ts",
+      "gitBlob": "c4308718d5f6a1af83f0a4fea7eba86770463084"
+    },
+    {
+      "path": "convex/schema.ts",
+      "gitBlob": "a7778e75937ef13c4d2fd570b16fa71be92298a0"
+    },
+    {
+      "path": "package.json",
+      "gitBlob": "2747ea105c06f4da4950b5aa3973f5f83db6ff30"
+    },
+    {
+      "path": "scripts/smoke-league-match.ts",
+      "gitBlob": "1abbd434c88215fdaaf85fe4b372ee2caa009c5e"
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/league-matches/route.ts",
+      "gitBlob": "7e4d1741f48d1ac1f569f8ea54494c861d631bb7"
+    },
+    {
+      "path": "src/app/api/v1/clan/league-matches/route.ts",
+      "gitBlob": "fb7b7e108e379c2fe0fdb7cfb2d06faa68f48570"
+    },
+    {
+      "path": "src/app/api/v1/openapi.json/route.test.ts",
+      "gitBlob": "1bd2ba99a623dcb658907ddc0a3daa7e69cb9576"
+    },
+    {
+      "path": "src/app/api/v1/openapi.json/route.ts",
+      "gitBlob": "1783e2ace6ee09735d1bbf0bb06b0ac4f99b1b9d"
+    },
+    {
+      "path": "src/application/wardogs-league/read-match.test.ts",
+      "gitBlob": "8fdce3e5f0732eeb79e3dfcc602f8a2469aa388e"
+    },
+    {
+      "path": "src/application/wardogs-league/read-match.ts",
+      "gitBlob": "103bc907d7e5fcce1f887af144e9030c7800db88"
+    },
+    {
+      "path": "src/components/app/system-maintenance-sections.tsx",
+      "gitBlob": "1068e33feb056bb5a56c253eaed0455a8ec584d7"
+    },
+    {
+      "path": "src/components/app/wardogs-league-preview.tsx",
+      "gitBlob": "2af3a0700d25fc8a84da6325fb82d920e72b37da"
+    },
+    {
+      "path": "src/domain/api/key-access.ts",
+      "gitBlob": "07a4f31f317d8cd7a52b163c294eedb8325ea136"
+    },
+    {
+      "path": "src/domain/wardogs-league/contracts.ts",
+      "gitBlob": "968b30ed6277ea8b1342f3fcdd5675803e1dbabc"
+    },
+    {
+      "path": "src/domain/wardogs-league/match-url.test.ts",
+      "gitBlob": "f382bf0dc5e1ad27b53df78a7d460c81f5d72424"
+    },
+    {
+      "path": "src/domain/wardogs-league/match-url.ts",
+      "gitBlob": "9a639499dd906cabb4bffb6600a47b566b943a45"
+    },
+    {
+      "path": "src/i18n/messages/cs.ts",
+      "gitBlob": "cd8c401534a0175f06bef0551513d4542e38baf9"
+    },
+    {
+      "path": "src/i18n/messages/de.ts",
+      "gitBlob": "8495b1a3cac01f0dd623f564f5db53a334556ab1"
+    },
+    {
+      "path": "src/i18n/messages/en.ts",
+      "gitBlob": "f5ee71bcca7b551077b65aefdfad52513dd9b1ac"
+    },
+    {
+      "path": "src/infrastructure/convex/league-cache.test.ts",
+      "gitBlob": "18acbac240ecf69314fa3c8c2aa310d19f533bb3"
+    },
+    {
+      "path": "src/infrastructure/wardogs-league/fetch-match.test.ts",
+      "gitBlob": "29326734e2244b8237eef5acbf0c36f05cdd9831"
+    },
+    {
+      "path": "src/infrastructure/wardogs-league/fetch-match.ts",
+      "gitBlob": "efedd1b638483ee85b75b2b5f130d218d2b294e5"
+    },
+    {
+      "path": "src/infrastructure/wardogs-league/fixtures/README.md",
+      "gitBlob": "947becd57a398eaac79d1ddc735690b7a12734c3"
+    },
+    {
+      "path": "src/infrastructure/wardogs-league/fixtures/scheduled.html",
+      "gitBlob": "bcd3f5debaabe9600af838414e1c0c953b39e15c"
+    },
+    {
+      "path": "src/infrastructure/wardogs-league/parse-match.test.ts",
+      "gitBlob": "8b3238f26e0eebdd8c6eec7a12f3da714713e30c"
+    },
+    {
+      "path": "src/infrastructure/wardogs-league/parse-match.ts",
+      "gitBlob": "3c72278adfc82bb0db25bb3ea8b37613f5126a9b"
+    },
+    {
+      "path": "src/lib/api/authenticated-clan-route.test.ts",
+      "gitBlob": "cda3226179072e2370d7fdb634aed30312259c94"
+    },
+    {
+      "path": "src/lib/api/authenticated-clan-route.ts",
+      "gitBlob": "1fcd6514421f3a44d798a5aefb6a425165698b44"
+    },
+    {
+      "path": "src/lib/api/league-match-route.test.ts",
+      "gitBlob": "c4e151bb589f619729379229af6402723f94eca1"
+    },
+    {
+      "path": "src/lib/api/league-match-route.ts",
+      "gitBlob": "1cc1042c4067efb8e959bb2a1402fb50a328b24c"
+    },
+    {
+      "path": "src/lib/server-league-matches.ts",
+      "gitBlob": "b95dc2e1547755a42672254ef66c12ab5784cf3b"
+    }
+  ]
+}

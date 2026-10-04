@@ -1,0 +1,158 @@
+{
+  "capturedAt": "2026-09-29T14:59:14.549Z",
+  "source": {
+    "repository": "Ninjonik/logi",
+    "commit": "46fd6a0d06d48b923ad558b76d0a107cf2caa5af",
+    "tree": "17028bf547a48acfecd74d6c967afb72f6978797",
+    "mergeBase": "a34ef149883240ab6a9eb879e845b5f71a5786e6",
+    "upstreamMain": "a51c171bdf8014751a7ecc4a5d52f4a3fc89f675"
+  },
+  "runtime": {
+    "platform": "win32",
+    "node": "v24.21.0",
+    "dependencies": {
+      "next": "16.3.6",
+      "convex": "1.46.0",
+      "discord.js": "14.27.0",
+      "jose": "6.2.12",
+      "tsx": "4.23.15"
+    }
+  },
+  "scope": "Local synthetic verification; no hosted provider, live Discord, website deployment or private SSO qualification evidence.",
+  "commands": [
+    {
+      "id": "tests",
+      "command": "npm run test",
+      "exitCode": 0,
+      "durationMs": 7918,
+      "output": "tests.txt"
+    },
+    {
+      "id": "typecheck",
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "durationMs": 4017,
+      "output": "typecheck.txt"
+    },
+    {
+      "id": "openapi",
+      "command": "npm run generate:openapi",
+      "exitCode": 0,
+      "durationMs": 665,
+      "output": "openapi.txt"
+    },
+    {
+      "id": "convex-codegen",
+      "command": "node scripts/generate-convex-api-offline.mjs",
+      "exitCode": 0,
+      "durationMs": 124,
+      "output": "convex-codegen.txt"
+    },
+    {
+      "id": "eslint",
+      "command": "node node_modules/eslint/bin/eslint.js <files in eslint-files.txt>",
+      "exitCode": 1,
+      "durationMs": 5721,
+      "output": "eslint.txt",
+      "files": "eslint-files.txt"
+    },
+    {
+      "id": "lint-script",
+      "command": "npm run lint",
+      "exitCode": 1,
+      "durationMs": 470,
+      "output": "lint-script.txt"
+    },
+    {
+      "id": "command-registration",
+      "command": "node --import tsx docs/integrations/website/v0.10/evidence/2026-09-29/capture-commands.mjs",
+      "exitCode": 0,
+      "durationMs": 841,
+      "output": "command-registration.txt"
+    },
+    {
+      "id": "build",
+      "command": "npm run build",
+      "exitCode": 1,
+      "durationMs": 20224,
+      "output": "build.txt"
+    }
+  ],
+  "artifacts": {
+    "build.txt": "911246d7c50246754657b85f1156e7da1cecd7d3d3bedbba79d569e1b4b0b438",
+    "capture-commands.mjs": "a400ee6811a213a884617d696701fb5e7409e18732e51353cf77fd4b0970804b",
+    "command-registration.txt": "efa43878a10d8b6e87f6805fe3c7b7f061ba88e9d3731f3d792423f676fec557",
+    "convex-codegen.txt": "1023bf66160f3e13bb166efc400e3b032833bc31927cae8683f2dc5aa0dd5a30",
+    "discord-commands.json": "cd39a11343abd9e230f283d1402a09a5c08141f55293f106a99b430c880280a1",
+    "eslint-files.txt": "07a657305b23e918e0a86b77cfd0c440d7dc28cf30568c04744892ad6a85a7f7",
+    "eslint.txt": "23474a9918f96d295e995a4e982bace8ad45e7606c9714ecef02ad5579c41431",
+    "lint-script.txt": "6cb42ccb6bea98ddb087838dea74be9b8d99f93f4aebe818344ea5b1aed631bc",
+    "openapi.txt": "a557b509c7ec7356a79c0dde4a7a5df67344470f777ce9b3e826c478a0794bf5",
+    "tests.txt": "c77935d280f535bafd21aacf559ea6f3647645d4b7e5d108c494070def5d03c1",
+    "typecheck.txt": "a2d3289aa263a73c8615ae6b6ae51adf9623c6ee3c3584847c62086a07a8f5f7",
+    "verify-proof.mjs": "f620e2ea47330f7fb19f4249c55daf2ec0e9399a45ac4cb14cd513b639a3c5dc"
+  },
+  "generatedDiff": "",
+  "runtimeDiff": {
+    "comparedWith": "46fd6a0d06d48b923ad558b76d0a107cf2caa5af",
+    "paths": [
+      "src",
+      "convex",
+      "discord-bot/src",
+      "scripts",
+      "package.json",
+      "package-lock.json",
+      "config"
+    ],
+    "changed": false
+  },
+  "results": {
+    "tests": {
+      "total": 551,
+      "passed": 551,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": "pass",
+    "openapi": "pass_no_diff",
+    "convexCodegen": "pass_offline_no_diff",
+    "eslint": {
+      "errors": 3,
+      "warnings": 17,
+      "status": "baseline_failure"
+    },
+    "lintScript": "unsupported_next_lint",
+    "build": "compile_and_types_pass_prerender_missing_synthetic_convex",
+    "commandCapture": {
+      "commands": 6,
+      "locales": [
+        "en-US",
+        "cs",
+        "de"
+      ],
+      "liveRegistration": false
+    }
+  },
+  "hashAlgorithm": "SHA-256",
+  "hashNormalization": "UTF-8 text with CRLF normalized to LF; preserves content across Git autocrlf checkouts",
+  "documentationVerification": {
+    "command": "node docs/integrations/website/v0.10/evidence/2026-09-29/verify-proof.mjs",
+    "exitCode": 0,
+    "result": {
+      "relativeLinks": 212,
+      "artifactHashes": 12,
+      "commandDefinitions": 6,
+      "locales": 3,
+      "wikiMdxSyntax": "pass",
+      "runtimeDiff": "unchanged",
+      "note": "Local link/MDX/hash/source check; not a full Nextra build or hosted acceptance."
+    },
+    "proofScriptLint": {
+      "command": "node node_modules/eslint/bin/eslint.js docs/integrations/website/v0.10/evidence/2026-09-29/capture-commands.mjs docs/integrations/website/v0.10/evidence/2026-09-29/verify-proof.mjs",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0
+    }
+  },
+  "logNormalization": "Repository path replaced by <repository>; terminal color codes removed; trailing horizontal whitespace trimmed; stdout/stderr and failures retained"
+}

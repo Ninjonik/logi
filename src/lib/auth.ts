@@ -1,16 +1,24 @@
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 import { redirect } from "next/navigation"
-import { jwtVerify, SignJWT } from "jose"
 import { cookies } from "next/headers"
 import { cache } from "react"
 
-import { getInternalAuthSecret, getJwtSecret } from "@/lib/env"
+import {
+    createDashboardToken,
+    verifyDashboardToken,
+    readDashboardToken,
+    revokeDashboardSession,
+    readDashboardUser,
+    type SessionIdentity,
+} from "./gateways/dashboard-sessions"
+import { endDashboardSession } from "@/application/identity/end-dashboard-session"
+import { getInternalAuthSecret } from "@/lib/env"
+export type { SessionClaims } from "./gateways/dashboard-sessions"
 import { parsePlatformIdsInput } from "@/lib/platform-ids"
 import { isSuperadminDiscordId } from "@/lib/superadmin"
 import type { AppUser, Guild } from "@/types/domain"
 
-const getUserByIdReference = makeFunctionReference<"query">("players:getById")
 const getVisibleGuildsReference = makeFunctionReference<"query">(
     "guilds:visibleForUser"
 )
@@ -48,91 +56,8 @@ const setMatchRecapNotificationsReference = makeFunctionReference<"mutation">(
 const SESSION_COOKIE_NAME = "token"
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
 
-export type SessionClaims = {
-    sub: string
-    name: string
-    avatar: string
-    discordGuilds?: Array<{
-        id: string
-        canAdmin: boolean
-        botInside: boolean
-    }>
-}
-
-function getSessionSecret() {
-    return new TextEncoder().encode(getJwtSecret())
-}
-
-export async function createSessionToken(claims: SessionClaims) {
-    const now = Math.floor(Date.now() / 1000)
-
-    return await new SignJWT({
-        name: claims.name,
-        avatar: claims.avatar,
-        discordGuilds: claims.discordGuilds ?? [],
-    })
-        .setProtectedHeader({
-            alg: "HS256",
-            typ: "JWT",
-        })
-        .setSubject(claims.sub)
-        .setIssuedAt(now)
-        .setExpirationTime(now + SESSION_MAX_AGE_SECONDS)
-        .sign(getSessionSecret())
-}
-
-export async function verifySessionToken(
-    token: string
-): Promise<SessionClaims | null> {
-    try {
-        const { payload } = await jwtVerify(token, getSessionSecret())
-
-        if (
-            typeof payload.sub !== "string" ||
-            typeof payload.name !== "string" ||
-            typeof payload.avatar !== "string"
-        ) {
-            return null
-        }
-
-        return {
-            sub: payload.sub,
-            name: payload.name,
-            avatar: payload.avatar,
-            discordGuilds: Array.isArray(payload.discordGuilds)
-                ? payload.discordGuilds.flatMap((guild) => {
-                      if (!guild || typeof guild !== "object") {
-                          return []
-                      }
-
-                      const candidate = guild as {
-                          id?: unknown
-                          canAdmin?: unknown
-                          botInside?: unknown
-                      }
-
-                      if (
-                          typeof candidate.id !== "string" ||
-                          typeof candidate.canAdmin !== "boolean" ||
-                          typeof candidate.botInside !== "boolean"
-                      ) {
-                          return []
-                      }
-
-                      return [
-                          {
-                              id: candidate.id,
-                              canAdmin: candidate.canAdmin,
-                              botInside: candidate.botInside,
-                          },
-                      ]
-                  })
-                : [],
-        }
-    } catch {
-        return null
-    }
-}
+export const createSessionToken = createDashboardToken
+export const verifySessionToken = verifyDashboardToken
 
 export async function setSessionToken(token: string) {
     const cookieStore = await cookies()
@@ -145,9 +70,23 @@ export async function setSessionToken(token: string) {
     })
 }
 
-export async function clearSessionToken() {
+export async function clearSessionToken(allSessions = false) {
     const cookieStore = await cookies()
-    cookieStore.delete(SESSION_COOKIE_NAME)
+    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value
+    await endDashboardSession(
+        {
+            session: readDashboardToken,
+            revoke: revokeDashboardSession,
+            cancelSteam: async (value, subject) => {
+                const { cancelSteamSession } =
+                    await import("./gateways/platform-links")
+                await cancelSteamSession(value, subject)
+            },
+            clearCookie: () => cookieStore.delete(SESSION_COOKIE_NAME),
+        },
+        token,
+        allSessions
+    )
 }
 
 export const getSessionToken = cache(async function getSessionToken() {
@@ -172,9 +111,7 @@ export const getLoggedInUser = cache(
         }
 
         try {
-            return await fetchQuery(getUserByIdReference, {
-                userId: session.sub,
-            })
+            return await readDashboardUser(session)
         } catch {
             return null
         }
@@ -288,7 +225,7 @@ export async function handleIfNotLoggedIn(redirectUrl: string) {
     return user
 }
 
-export async function syncCurrentPlayerFromDiscord(session: SessionClaims) {
+export async function syncCurrentPlayerFromDiscord(session: SessionIdentity) {
     return await fetchMutation(syncDiscordProfileReference, {
         secret: getInternalAuthSecret(),
         id: session.sub,

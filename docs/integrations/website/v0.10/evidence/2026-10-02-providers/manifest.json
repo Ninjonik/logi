@@ -1,0 +1,10 @@
+{
+  "createdAt": "2026-10-02T16:43:06.811Z",
+  "source": "36af5fa018b4e646e0d22f97dc17b6b9cce5568a",
+  "textHashFormat": "SHA-256 of UTF-8 with LF line endings",
+  "artifacts": {
+    "results.json": "6836be2b9576b736736daa3cdd8e5e4670e1ddd216d76cee4d857cbcd34bea42",
+    "verify.mjs": "6680046658ba9f2de85e6b7fb92e4ad6614ce87a92763281a6f04c9aa6e22841",
+    "../../live-provider-probe.md": "34e223da57dbe3196db9817b5df4d8a696b6de0ea2e88dbfa1363d522c51fe18"
+  }
+}

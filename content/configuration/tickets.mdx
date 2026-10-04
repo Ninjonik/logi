@@ -50,7 +50,29 @@ one. Test after changing channels so staff do not leave an old panel in use.
    Discord thread to `closed-<number>`, and attempts to DM the requester. A
    failed DM does not stop the ticket from closing.
 
-### Membership application
+Before closing, the bot reloads the current server owner, role permissions and
+staff membership. If Discord cannot confirm them, it leaves the ticket open;
+previously cached administrator access does not authorize closure.
+
+### Player reports
+
+Support categories can also receive **Report Player** tickets from a configured
+CRCON or Warcon public panel. Select the category in **Discord → Public panels**;
+the selector shows the private-thread parent configured here. The player chooses
+an observed player or enters a name, then supplies a reason and optional evidence.
+The interaction and resulting thread are private to the reporter and designated
+staff. Names entered manually are unverified; reports never trigger automatic bans.
+Staff close these reports with `/close_ticket`. Reports have one-minute cooldowns,
+a three-active-report limit and durable recovery after a bot restart. Failed or
+uncertain creation is reconciled before another thread can be created.
+
+Private reports require complete, current permission checks. Unrelated people
+with Manage Threads can see private threads, so remove that access or designate
+the appropriate support staff before enabling this feature. The bot checks the
+actual thread members before writing the report. The website API does not export
+private reports. See the [implementation and operational limits](https://github.com/Ninjonik/logi/blob/feat/valkyria-integration/docs/integrations/website/hll-live-and-player-reports.md).
+
+### Membership application flow
 
 1. The person completes a private, ephemeral Discord wizard in one updating
    message: game, category, platform account, category questions, and a final
@@ -63,24 +85,42 @@ one. Test after changing channels so staff do not leave an old panel in use.
 3. After **Agree and submit**, the bot creates a private application thread and an assignment. It starts as
    pending unless **auto-assign recruit on apply** is enabled for a member
    category, in which case it starts as recruit and the configured recruit roles
-   are applied. The category decides whether its assignment is member, reserve
+   are queued for the bot. The category decides whether its assignment is member, reserve
    member, or mercenary.
 4. Eligible staff close it with `/close_application` and choose **denied**,
    **pending**, **recruit**, **member**, or **mercenary**. The selected outcome
    updates the assignment, except denied, which removes the assignment created
    for the application.
 5. The bot records the closing outcome, posts the result in the thread, renames
-   it, attempts to DM the applicant, and applies/removes the configured
-   membership roles for the status transition.
+   it and attempts to DM the applicant. The assignment transaction separately
+   queues the configured membership roles for the status transition; inspect
+   the operation status before assuming that Discord has applied them.
 
 ### Membership role and score settings
 
 The workspace clan role is added for recruit or active membership outcomes.
 The category's **recruit roles** apply only to recruit, and its **final roles**
 apply only to active member/mercenary outcomes. Pending has no managed roles.
-These are transition-based changes: Logi adds roles newly required by the
-outcome and removes roles that belonged only to the previous outcome. It does
-not use group-linked roles for this purpose.
+The bot compares actual Discord roles with the authorized desired state and
+changes only roles in that game's managed set. Unmanaged roles and another game's
+roles are preserved. A category's game decides which game owns its roles;
+categories without a game remain Hell Let Loose. Do not reuse one category
+role for another game, as a group role, or as the dashboard administrator role.
+
+**Membership role operations** shows pending, in-progress, retry, applied, denied,
+superseded and failed requests, their actor/target and recent attempts. Each attempt
+checks current staff access, target presence and bot hierarchy. A departure/rejoin
+cannot revive an old request. Applied means a fresh check matched the desired roles.
+After six consecutive failures, correct the cause and save a new authorized member
+request. Importing members does not create role grants. Details and activation
+requirements are in the [managed-role handoff](https://github.com/Ninjonik/logi/blob/feat/valkyria-integration/docs/integrations/website/v0.8/README.md).
+
+The bot verifies current Discord permissions before changing roles. A newly granted
+dashboard admin role must reach Discord first; old login/access caches cannot authorize
+the operation. A player's internal Logi ID is not a Discord link, even when numeric.
+Unlinked players remain editable, but their role request is denied without a Discord
+call. Changing the linked account invalidates an older queued request; save a new
+authorized request after checking the link.
 
 Membership application settings and the Discord panel are shared by the whole
 workspace. Each category selects its target game, so one panel can contain

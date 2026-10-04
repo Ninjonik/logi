@@ -13,17 +13,29 @@ import {
     getUserSafeErrorMessage,
     logRouteError,
 } from "@/lib/server-route-errors"
+import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { getEventMetadata, getGuildMetadata } from "@/lib/server-metadata"
 import { sendDiscordBotDm, syncDiscordMemberRoleIds } from "@/lib/discord"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { importEventMatchResults } from "@/lib/server-match-results"
 import { getUsersByIds } from "@/lib/server-user-management"
 import { getClanDiscordMessages } from "@/lib/clan-language"
 import { eventSchema } from "@/lib/validation/event"
 
+/** Current server admin with a live dashboard session. */
+async function canAdminServer(serverId: string) {
+    const [server, actor] = await Promise.all([
+        getServerContextUncached(serverId),
+        currentDashboardActor(),
+    ])
+    return Boolean(server?.canAdmin && actor)
+}
+
 const patchHandler = createServerEventPatchHandler({
     eventSchema,
+    canAdminServer,
     saveServerEvent,
     concludeServerEvent,
     completeServerTraining,
@@ -41,6 +53,7 @@ const patchHandler = createServerEventPatchHandler({
 
 const postHandler = createServerEventPostHandler({
     eventSchema,
+    canAdminServer,
     saveServerEvent,
     concludeServerEvent,
     completeServerTraining,

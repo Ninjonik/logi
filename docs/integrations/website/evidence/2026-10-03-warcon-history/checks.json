@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-03T21:15:55.865724Z",
+  "baseRevision": "af5a52a08b79b23e0ee491ee627887114424610d",
+  "implementationRevision": "051457a4afe744e0b8d991348f2d00e02bf3e64e",
+  "testedRuntimeRevision": "424e118b24e106ecc0b038d1f7698a24ac942d3f",
+  "generatedDeclarationRevision": "902266798ad052b5ea0de08957b8efd653c3a6a8",
+  "declarationDelta": "Import ordering and generated comments only; module inventory and exported types unchanged.",
+  "tests": {
+    "passed": 844,
+    "skipped": 0,
+    "failed": 0,
+    "environment": "Offline synthetic environment in .github/workflows/verify.yml",
+    "command": "npm run test",
+    "exitCode": 0
+  },
+  "typecheck": {
+    "command": "npm run typecheck",
+    "recheckedAfterGeneration": true,
+    "exitCode": 0
+  },
+  "build": {
+    "command": "next build --webpack",
+    "durationMs": 82831,
+    "source": "Private copy without .env files or fixture-only endpoints; isolated loopback configuration and synthetic Discord token",
+    "exitCode": 0,
+    "warnings": [
+      "Existing system-logs.ts createRequire bundler warnings"
+    ]
+  },
+  "changedSourceLint": {
+    "warning": "Pre-existing unused _genericSuccessResponse in the OpenAPI module",
+    "command": "eslint --quiet <changed TypeScript source paths>",
+    "priorNonQuietWarnings": 1,
+    "exitCode": 0
+  },
+  "generatedContracts": {
+    "exitCode": 0,
+    "commands": [
+      "npm run generate:openapi",
+      "node scripts/generate-convex-api-offline.mjs",
+      "git diff --exit-code -- src/lib/api/generated-openapi-schemas.ts convex/_generated/api.d.ts"
+    ]
+  },
+  "localDeployment": {
+    "productionWrites": false,
+    "exitCode": 0,
+    "target": "http://127.0.0.1:32290"
+  },
+  "review": {
+    "fixVerification": "Two failures observed before fix, both green afterward, final full suite green; no second independent scan claimed",
+    "correctnessFindingsFixed": 1,
+    "fixRegressionTargetedTests": 17,
+    "immutableReviewedHead": "051457a4afe744e0b8d991348f2d00e02bf3e64e",
+    "independentTargetedTests": 27,
+    "confirmedSecurityFindings": 0,
+    "correctnessFindings": 1,
+    "status": "complete",
+    "scanId": "e3ad749b-a19f-4ea0-bedd-bfbeec4821d3",
+    "changedFilesReviewed": 47,
+    "sourceItemsReviewed": 37
+  },
+  "browser": {
+    "totalGames": 23,
+    "mapFilter": "Bakurani",
+    "distinctPlayers": 24,
+    "filteredDecided": 11,
+    "filteredNoResult": 1,
+    "synthetic": true,
+    "filteredGames": 12,
+    "clearingFilterRestoredGames": 23
+  },
+  "unrun": [
+    "Production Logi activation",
+    "Hosted SSO acceptance",
+    "Valkyria www history presentation/deployment",
+    "Team directory implementation"
+  ],
+  "artifacts": [
+    {
+      "path": "tests.txt",
+      "sha256": "89bdd0f0f61f0e0e17457bddbfe0887104d646cd4880846ba96cbfefdd9983b3",
+      "bytes": 77079
+    },
+    {
+      "path": "build.txt",
+      "sha256": "4c3c317a99762d014dece5ea567c19977fa69826773844ec886525583d6c1da7",
+      "bytes": 9589
+    },
+    {
+      "path": "live-acceptance.json",
+      "sha256": "d7377b3924cc6f2cade98264a7187241b59d32cb36544a99551df5c4ca9b59db",
+      "bytes": 1264
+    },
+    {
+      "path": "http-acceptance.json",
+      "sha256": "b7851d8c26c3ad133197f356ba8b1fd160e5bf928bb5f82d2c728852a721a36b",
+      "bytes": 376
+    },
+    {
+      "path": "security-review.md",
+      "sha256": "87195105b895e59b685211da9912fa54047c0368418da3082a3fb6be41d7258d",
+      "bytes": 9201
+    },
+    {
+      "path": "dashboard-overview.jpg",
+      "sha256": "d488cae62212819bf0842df67f90e7f7a58026039737a17da8b0f5accc19c3b0",
+      "bytes": 76627
+    },
+    {
+      "path": "dashboard-match-detail.jpg",
+      "sha256": "1b5fa480cf93ac6380b5969a96d6b3c680bef194bc22eb8c6d370769c79e1231",
+      "bytes": 88122
+    },
+    {
+      "path": "dashboard-map-filter.jpg",
+      "sha256": "82ba7d867f03a148abcb47bebb66ef776d8abcb3aafb61e92500c4b57c172511",
+      "bytes": 80635
+    }
+  ],
+  "artifactHashBasis": "Raw image bytes and UTF-8 LF text bytes as stored in Git; build output trailing whitespace normalized."
+}

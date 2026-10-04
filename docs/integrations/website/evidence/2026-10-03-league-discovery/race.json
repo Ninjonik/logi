@@ -1,0 +1,7 @@
+{
+  "at": "2026-10-03T19:17:35.540Z",
+  "localDatabaseOnly": true,
+  "concurrentAdminAndIndexShareIdentity": true,
+  "durableRecordCount": 1,
+  "syntheticRowsCleaned": true
+}

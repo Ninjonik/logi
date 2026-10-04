@@ -5,6 +5,7 @@
 import { writeFileSync } from "node:fs"
 import { resolve } from "node:path"
 
+import { omitResultStorage } from "../src/domain/api/result-summaries"
 import importedSchema from "../convex/schema"
 
 type JsonSchema = Record<string, unknown>
@@ -153,6 +154,13 @@ const components = Object.fromEntries(
         document.example = {
             ...(exampleFor(schema.tables[table]!.validator) as object),
             id: "string",
+        }
+        if (table === "events") {
+            document.properties = omitResultStorage(properties)
+            document.example = omitResultStorage(document.example as object)
+            document.required = [...required].filter(
+                (field) => field in (document.properties as object)
+            )
         }
         return [
             `Clan${resource.replace(/(^|-)([a-z])/g, (_, separator, letter) => `${separator}${letter.toUpperCase()}`).replace(/-/g, "")}Document`,

@@ -1,0 +1,180 @@
+diff --git a/node_modules/@discordjs/ws/dist/index.js b/node_modules/@discordjs/ws/dist/index.js
+index 106b2ec..3e6f850 100644
+--- a/node_modules/@discordjs/ws/dist/index.js
++++ b/node_modules/@discordjs/ws/dist/index.js
+@@ -622,6 +622,7 @@ var WebSocketShard = class extends import_async_event_emitter.AsyncEventEmitter
+   timeoutAbortControllers = new import_collection5.Collection();
+   strategy;
+   id;
++  #destroying = false;
+   #status = 0 /* Idle */;
+   get status() {
+     return this.#status;
+@@ -703,10 +704,12 @@ var WebSocketShard = class extends import_async_event_emitter.AsyncEventEmitter
+     }
+   }
+   async destroy(options = {}) {
+-    if (this.#status === 0 /* Idle */) {
++    if (this.#status === 0 /* Idle */ || this.#destroying) {
+       this.debug(["Tried to destroy a shard that was idle"]);
+       return;
+     }
++    this.#destroying = true;
++    try {
+     if (!options.code) {
+       options.code = options.recover === 1 /* Resume */ ? 4200 /* Resuming */ : 1e3 /* Normal */;
+     }
+@@ -736,7 +739,7 @@ var WebSocketShard = class extends import_async_event_emitter.AsyncEventEmitter
+     if (this.connection) {
+       this.connection.onmessage = null;
+       this.connection.onclose = null;
+-      const shouldClose = this.connection.readyState === import_ws.WebSocket.OPEN;
++      const shouldClose = this.connection.readyState !== import_ws.WebSocket.CLOSED;
+       this.debug([
+         "Connection status during destroy",
+         `Needs closing: ${shouldClose}`,
+@@ -756,6 +759,9 @@ var WebSocketShard = class extends import_async_event_emitter.AsyncEventEmitter
+     } else {
+       this.debug(["Destroying a shard that has no connection; please open an issue on GitHub"]);
+     }
++    } finally {
++      this.#destroying = false;
++    }
+     this.#status = 0 /* Idle */;
+     if (options.recover !== void 0) {
+       await (0, import_promises2.setTimeout)(500);
+diff --git a/node_modules/@discordjs/ws/dist/index.mjs b/node_modules/@discordjs/ws/dist/index.mjs
+index 0ebc06d..ae9aa93 100644
+--- a/node_modules/@discordjs/ws/dist/index.mjs
++++ b/node_modules/@discordjs/ws/dist/index.mjs
+@@ -583,6 +583,7 @@ var WebSocketShard = class extends AsyncEventEmitter {
+   timeoutAbortControllers = new Collection5();
+   strategy;
+   id;
++  #destroying = false;
+   #status = 0 /* Idle */;
+   get status() {
+     return this.#status;
+@@ -664,10 +665,12 @@ var WebSocketShard = class extends AsyncEventEmitter {
+     }
+   }
+   async destroy(options = {}) {
+-    if (this.#status === 0 /* Idle */) {
++    if (this.#status === 0 /* Idle */ || this.#destroying) {
+       this.debug(["Tried to destroy a shard that was idle"]);
+       return;
+     }
++    this.#destroying = true;
++    try {
+     if (!options.code) {
+       options.code = options.recover === 1 /* Resume */ ? 4200 /* Resuming */ : 1e3 /* Normal */;
+     }
+@@ -697,7 +700,7 @@ var WebSocketShard = class extends AsyncEventEmitter {
+     if (this.connection) {
+       this.connection.onmessage = null;
+       this.connection.onclose = null;
+-      const shouldClose = this.connection.readyState === WebSocket.OPEN;
++      const shouldClose = this.connection.readyState !== WebSocket.CLOSED;
+       this.debug([
+         "Connection status during destroy",
+         `Needs closing: ${shouldClose}`,
+@@ -717,6 +720,9 @@ var WebSocketShard = class extends AsyncEventEmitter {
+     } else {
+       this.debug(["Destroying a shard that has no connection; please open an issue on GitHub"]);
+     }
++    } finally {
++      this.#destroying = false;
++    }
+     this.#status = 0 /* Idle */;
+     if (options.recover !== void 0) {
+       await sleep2(500);
+diff --git a/node_modules/@discordjs/ws/dist/defaultWorker.js b/node_modules/@discordjs/ws/dist/defaultWorker.js
+index 306d691..d14cef1 100644
+--- a/node_modules/@discordjs/ws/dist/defaultWorker.js
++++ b/node_modules/@discordjs/ws/dist/defaultWorker.js
+@@ -383,6 +383,7 @@ var WebSocketShard = class extends import_async_event_emitter.AsyncEventEmitter
+   timeoutAbortControllers = new import_collection6.Collection();
+   strategy;
+   id;
++  #destroying = false;
+   #status = 0 /* Idle */;
+   get status() {
+     return this.#status;
+@@ -464,10 +465,12 @@ var WebSocketShard = class extends import_async_event_emitter.AsyncEventEmitter
+     }
+   }
+   async destroy(options = {}) {
+-    if (this.#status === 0 /* Idle */) {
++    if (this.#status === 0 /* Idle */ || this.#destroying) {
+       this.debug(["Tried to destroy a shard that was idle"]);
+       return;
+     }
++    this.#destroying = true;
++    try {
+     if (!options.code) {
+       options.code = options.recover === 1 /* Resume */ ? 4200 /* Resuming */ : 1e3 /* Normal */;
+     }
+@@ -497,7 +500,7 @@ var WebSocketShard = class extends import_async_event_emitter.AsyncEventEmitter
+     if (this.connection) {
+       this.connection.onmessage = null;
+       this.connection.onclose = null;
+-      const shouldClose = this.connection.readyState === import_ws.WebSocket.OPEN;
++      const shouldClose = this.connection.readyState !== import_ws.WebSocket.CLOSED;
+       this.debug([
+         "Connection status during destroy",
+         `Needs closing: ${shouldClose}`,
+@@ -517,6 +520,9 @@ var WebSocketShard = class extends import_async_event_emitter.AsyncEventEmitter
+     } else {
+       this.debug(["Destroying a shard that has no connection; please open an issue on GitHub"]);
+     }
++    } finally {
++      this.#destroying = false;
++    }
+     this.#status = 0 /* Idle */;
+     if (options.recover !== void 0) {
+       await (0, import_promises2.setTimeout)(500);
+diff --git a/node_modules/@discordjs/ws/dist/defaultWorker.mjs b/node_modules/@discordjs/ws/dist/defaultWorker.mjs
+index 1302a02..e388558 100644
+--- a/node_modules/@discordjs/ws/dist/defaultWorker.mjs
++++ b/node_modules/@discordjs/ws/dist/defaultWorker.mjs
+@@ -365,6 +365,7 @@ var WebSocketShard = class extends AsyncEventEmitter {
+   timeoutAbortControllers = new Collection6();
+   strategy;
+   id;
++  #destroying = false;
+   #status = 0 /* Idle */;
+   get status() {
+     return this.#status;
+@@ -446,10 +447,12 @@ var WebSocketShard = class extends AsyncEventEmitter {
+     }
+   }
+   async destroy(options = {}) {
+-    if (this.#status === 0 /* Idle */) {
++    if (this.#status === 0 /* Idle */ || this.#destroying) {
+       this.debug(["Tried to destroy a shard that was idle"]);
+       return;
+     }
++    this.#destroying = true;
++    try {
+     if (!options.code) {
+       options.code = options.recover === 1 /* Resume */ ? 4200 /* Resuming */ : 1e3 /* Normal */;
+     }
+@@ -479,7 +482,7 @@ var WebSocketShard = class extends AsyncEventEmitter {
+     if (this.connection) {
+       this.connection.onmessage = null;
+       this.connection.onclose = null;
+-      const shouldClose = this.connection.readyState === WebSocket.OPEN;
++      const shouldClose = this.connection.readyState !== WebSocket.CLOSED;
+       this.debug([
+         "Connection status during destroy",
+         `Needs closing: ${shouldClose}`,
+@@ -499,6 +502,9 @@ var WebSocketShard = class extends AsyncEventEmitter {
+     } else {
+       this.debug(["Destroying a shard that has no connection; please open an issue on GitHub"]);
+     }
++    } finally {
++      this.#destroying = false;
++    }
+     this.#status = 0 /* Idle */;
+     if (options.recover !== void 0) {
+       await sleep2(500);
