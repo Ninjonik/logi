@@ -111,6 +111,31 @@ export const enMessages = {
         error: "Unable to load or save membership policies. Refresh and retry.",
         invalid: "Use valid Discord role IDs, with at most 100 roles per game.",
     },
+    websiteEventPolicies: {
+        title: "Website event commands",
+        description:
+            "Let a connected website create, update or cancel events through its service key. A policy binds one registered single sign-on application to one restricted API key and lists, per game, the Discord roles whose members may use the commands.",
+        application: "Single sign-on application",
+        applicationPlaceholder: "Choose an application",
+        noApplications:
+            "Register a single sign-on application first. The policy binds the website's commands to that application.",
+        noKeys: "Create a restricted API key for the website backend, then refresh. Legacy unrestricted keys cannot carry a command policy.",
+        enabled: "Allow event commands with this key",
+        roles: "Allowed role IDs",
+        rolesHelp:
+            "Enter one Discord role ID per line. A game without roles stays read-only. Saving an enabled policy grants event-command write access for the listed games; disabling it removes the grant.",
+        granted: "Write access granted for: {games}",
+        notGranted: "No event-command write access granted.",
+        loading: "Loading…",
+        refresh: "Refresh",
+        saving: "Saving…",
+        save: "Save policy",
+        saved: "Event command policy saved.",
+        error: "Unable to load or save the event command policy. Refresh and retry.",
+        denied: "The policy was rejected. Use a live restricted key of this workspace and an application registered in it.",
+        invalid:
+            "Use valid Discord role IDs, at most 64 per game, for games enabled in this workspace.",
+    },
     gameData: {
         liveScoreboard: "Warcon live scoreboard",
         scoreboardPolling:

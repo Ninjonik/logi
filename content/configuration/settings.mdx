@@ -74,7 +74,7 @@ links to this settings section. When exactly one is active, creation pages
 select it automatically. With multiple games active, starting a game-owned
 creation flow from **All games** first asks the manager to choose a game.
 
-The manager-only **System** area groups Website API keys, Google Calendar sync, single sign-on applications, Imports, Helper data, and Webhooks into collapsed sections. Normal Clan settings contains game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
+The manager-only **System** area groups Website API keys, Google Calendar sync, single sign-on applications, website event commands, Imports, Helper data, and Webhooks into collapsed sections. Normal Clan settings contains game, frontend, and Discord configuration. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
 Each website API key belongs to the currently selected workspace. Its permissions
 determine which data it can read or change. Give it a recognisable name of at most 80
@@ -491,3 +491,19 @@ changes and reconnects invalidate cached authority. Membership feed consumers mu
 specify one Discord subject and handle a scope reset; membership webhooks require an
 explicit `membership.changed` subscription. Existing summary keys and webhook
 subscriptions do not gain member access automatically.
+
+## Website event commands
+
+A connected website may create, update or cancel events through its own service
+key only when a manager enables a policy for it. Open **System → Website event
+commands**, choose the registered single sign-on application, and for each live
+restricted API key enter the allowed Discord role IDs per game (one ID per line),
+tick **Allow event commands with this key** and save. Saving grants event-command
+write access for the games that have at least one role; a game without roles stays
+read-only, and disabling the policy removes the grant again.
+
+The form only offers restricted keys of the current workspace and applications
+registered in it; legacy unrestricted keys never qualify. Members must also hold one
+of the listed roles in a fresh Discord observation when the website issues a
+command, so a role list is a ceiling, not a guarantee. Policy administration needs
+your signed-in server administrator session; API keys cannot change it.

@@ -5,6 +5,10 @@ import {
     websiteEventMembershipError,
     websiteEventStateError,
 } from "./website-command"
+import {
+    eligibleWebsiteEventKeys,
+    websiteEventPolicyApplicationsSchema,
+} from "./website-command"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -193,5 +197,62 @@ test("canonical command digest input binds game and semantic body, independent o
     assert.notEqual(
         canonicalWebsiteCommand("wardogs", a),
         canonicalWebsiteCommand("hell_let_loose", a)
+    )
+})
+
+test("only live restricted keys with supported games may carry a command policy", () => {
+    const keys = eligibleWebsiteEventKeys([
+        {
+            id: "k1",
+            name: "Website commands",
+            readAccess: {
+                resources: ["event-summaries"],
+                gameIds: [
+                    "wardogs",
+                    "hell_let_loose_vietnam",
+                    "hell_let_loose",
+                ],
+            },
+        },
+        { id: "k2", name: "Legacy unrestricted" },
+        {
+            id: "k3",
+            name: "Revoked",
+            revokedAt: "2026-10-01T00:00:00.000Z",
+            readAccess: {
+                resources: ["event-summaries"],
+                gameIds: ["wardogs"],
+            },
+        },
+        {
+            id: "k4",
+            name: "Vietnam only",
+            readAccess: {
+                resources: ["event-summaries"],
+                gameIds: ["hell_let_loose_vietnam"],
+            },
+        },
+        {
+            id: "k5",
+            name: "Malformed access",
+            readAccess: { resources: [], gameIds: ["wardogs"] },
+        },
+    ])
+    assert.deepEqual(keys, [
+        {
+            id: "k1",
+            name: "Website commands",
+            gameIds: ["wardogs", "hell_let_loose"],
+        },
+    ])
+    assert.ok(
+        websiteEventPolicyApplicationsSchema.safeParse([
+            { id: "app_1", clientId: "logi_abc", name: "Valkyria", extra: 1 },
+        ]).success
+    )
+    assert.ok(
+        !websiteEventPolicyApplicationsSchema.safeParse([
+            { id: "bad id", clientId: "logi_abc", name: "Valkyria" },
+        ]).success
     )
 })

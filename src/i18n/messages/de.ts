@@ -112,6 +112,31 @@ export const deMessages = {
         invalid:
             "Verwende gültige Discord-Rollen-IDs, höchstens 100 Rollen pro Spiel.",
     },
+    websiteEventPolicies: {
+        title: "Website-Befehle für Events",
+        description:
+            "Erlaube einer verbundenen Website, Events über ihren Dienstschlüssel zu erstellen, zu ändern oder abzusagen. Eine Richtlinie verbindet eine registrierte Single-Sign-on-Anwendung mit einem eingeschränkten API-Schlüssel und nennt je Spiel die Discord-Rollen, deren Mitglieder die Befehle nutzen dürfen.",
+        application: "Single-Sign-on-Anwendung",
+        applicationPlaceholder: "Anwendung wählen",
+        noApplications:
+            "Registriere zuerst eine Single-Sign-on-Anwendung. Die Richtlinie bindet die Befehle der Website an diese Anwendung.",
+        noKeys: "Erstelle einen eingeschränkten API-Schlüssel für das Website-Backend und aktualisiere die Liste. Ältere uneingeschränkte Schlüssel können keine Befehlsrichtlinie tragen.",
+        enabled: "Event-Befehle mit diesem Schlüssel erlauben",
+        roles: "Erlaubte Rollen-IDs",
+        rolesHelp:
+            "Eine Discord-Rollen-ID pro Zeile. Ein Spiel ohne Rollen bleibt schreibgeschützt. Das Speichern einer aktivierten Richtlinie gewährt Schreibzugriff für die genannten Spiele; das Deaktivieren entzieht ihn.",
+        granted: "Schreibzugriff gewährt für: {games}",
+        notGranted: "Kein Schreibzugriff für Event-Befehle gewährt.",
+        loading: "Wird geladen…",
+        refresh: "Aktualisieren",
+        saving: "Wird gespeichert…",
+        save: "Richtlinie speichern",
+        saved: "Richtlinie für Event-Befehle gespeichert.",
+        error: "Die Richtlinie konnte nicht geladen oder gespeichert werden. Bitte aktualisieren und erneut versuchen.",
+        denied: "Die Richtlinie wurde abgelehnt. Verwende einen gültigen eingeschränkten Schlüssel dieses Arbeitsbereichs und eine darin registrierte Anwendung.",
+        invalid:
+            "Verwende gültige Discord-Rollen-IDs, höchstens 64 pro Spiel, für in diesem Arbeitsbereich aktivierte Spiele.",
+    },
     gameData: {
         liveScoreboard: "Warcon Live-Scoreboard",
         scoreboardPolling:

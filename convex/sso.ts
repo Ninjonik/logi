@@ -64,6 +64,7 @@ export const listForGuild = query({
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .collect()
         return apps.map((app) => ({
+            id: String(app._id),
             clientId: app.clientId,
             guildId: app.guildId,
             name: app.name,

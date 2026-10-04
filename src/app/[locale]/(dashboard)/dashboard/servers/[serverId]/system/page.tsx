@@ -1,5 +1,6 @@
 import { MembershipIntegrationSettings } from "@/components/app/membership-integration-settings"
 import { ConfigurationScopeIndicator } from "@/components/app/configuration-scope-indicator"
+import { WebsiteEventPolicySettings } from "@/components/app/website-event-policy-settings"
 import { SystemMaintenanceSections } from "@/components/app/system-maintenance-sections"
 import { DiscordOperationsSettings } from "@/components/app/discord-operations-settings"
 import { CalendarFeedSettings } from "@/components/app/calendar-feed-settings"
@@ -116,6 +117,17 @@ export default async function SystemPage({
                                 dictionary.serverSettings.ssoDescription,
                             content: (
                                 <SsoApplications
+                                    serverId={serverId}
+                                    dictionary={dictionary}
+                                />
+                            ),
+                        },
+                        {
+                            id: "website-event-policies",
+                            title: dictionary.websiteEventPolicies.title,
+                            description: "",
+                            content: (
+                                <WebsiteEventPolicySettings
                                     serverId={serverId}
                                     dictionary={dictionary}
                                 />

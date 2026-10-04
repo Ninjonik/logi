@@ -1,3 +1,4 @@
+import { isApiKeyReadAccess } from "../api/key-access"
 import { deriveEventStatus } from "./status"
 import type { EventStatus } from "./types"
 import { z } from "zod"
@@ -45,6 +46,47 @@ export const websiteEventPolicyListSchema = z
 export type WebsiteEventPolicyInput = z.infer<
     typeof websiteEventPolicyInputSchema
 >
+/** Registered SSO applications as the dashboard lists them for the policy form. */
+export const websiteEventPolicyApplicationsSchema = z
+    .array(
+        z.object({
+            id: websiteEventIdSchema,
+            clientId: z.string().min(1),
+            name: z.string(),
+        })
+    )
+    .max(100)
+export type WebsiteEventPolicyApplication = z.infer<
+    typeof websiteEventPolicyApplicationsSchema
+>[number]
+const websiteEventPolicyKeyRecord = z.object({
+    id: websiteEventIdSchema,
+    name: z.string(),
+    revokedAt: z.string().optional(),
+    readAccess: z.unknown().optional(),
+})
+export const websiteEventPolicyKeysSchema = z.object({
+    keys: z.array(websiteEventPolicyKeyRecord).max(500),
+})
+export type WebsiteEventPolicyKey = {
+    id: string
+    name: string
+    gameIds: WebsiteEventGame[]
+}
+/** Only a live restricted key may carry a command policy, and only for games the
+ * command contract supports; legacy unrestricted keys never qualify. */
+export function eligibleWebsiteEventKeys(
+    keys: z.infer<typeof websiteEventPolicyKeyRecord>[]
+): WebsiteEventPolicyKey[] {
+    return keys.flatMap((key) => {
+        if (key.revokedAt || !isApiKeyReadAccess(key.readAccess)) return []
+        const gameIds = key.readAccess.gameIds.filter(
+            (gameId): gameId is WebsiteEventGame =>
+                websiteEventGameSchema.safeParse(gameId).success
+        )
+        return gameIds.length ? [{ id: key.id, name: key.name, gameIds }] : []
+    })
+}
 const instant = z.iso.datetime()
 export const websiteEventFieldsSchema = z
     .strictObject({

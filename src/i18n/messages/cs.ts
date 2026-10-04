@@ -111,6 +111,31 @@ export const csMessages = {
         error: "Pravidla členství nelze načíst nebo uložit. Obnovte seznam a zkuste to znovu.",
         invalid: "Použijte platná ID rolí Discordu, nejvýše 100 rolí na hru.",
     },
+    websiteEventPolicies: {
+        title: "Příkazy webu pro události",
+        description:
+            "Umožněte připojenému webu vytvářet, upravovat nebo rušit události přes jeho servisní klíč. Pravidlo spojuje jednu registrovanou aplikaci jednotného přihlášení s jedním omezeným API klíčem a pro každou hru uvádí role Discordu, jejichž členové smí příkazy používat.",
+        application: "Aplikace jednotného přihlášení",
+        applicationPlaceholder: "Vyberte aplikaci",
+        noApplications:
+            "Nejdřív zaregistrujte aplikaci jednotného přihlášení. Pravidlo váže příkazy webu na tuto aplikaci.",
+        noKeys: "Vytvořte omezený API klíč pro backend webu a obnovte seznam. Starší neomezené klíče pravidlo pro příkazy nést nemohou.",
+        enabled: "Povolit tomuto klíči příkazy pro události",
+        roles: "Povolená ID rolí",
+        rolesHelp:
+            "Zadejte jedno ID role Discordu na řádek. Hra bez rolí zůstává jen pro čtení. Uložení zapnutého pravidla udělí zápis příkazů pro uvedené hry; vypnutí oprávnění odebere.",
+        granted: "Zápis udělen pro: {games}",
+        notGranted: "Zápis příkazů pro události není udělen.",
+        loading: "Načítání…",
+        refresh: "Obnovit",
+        saving: "Ukládání…",
+        save: "Uložit pravidlo",
+        saved: "Pravidlo příkazů pro události bylo uloženo.",
+        error: "Pravidlo příkazů pro události nelze načíst nebo uložit. Obnovte seznam a zkuste to znovu.",
+        denied: "Pravidlo bylo odmítnuto. Použijte platný omezený klíč tohoto pracovního prostoru a aplikaci v něm registrovanou.",
+        invalid:
+            "Použijte platná ID rolí Discordu, nejvýše 64 na hru, pro hry zapnuté v tomto pracovním prostoru.",
+    },
     gameData: {
         liveScoreboard: "Živý scoreboard Warconu",
         scoreboardPolling:

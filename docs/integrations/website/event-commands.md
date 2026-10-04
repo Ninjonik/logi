@@ -40,12 +40,12 @@ dashboard-session POST to
 
 ```json
 {
-  "applicationRecordId": "<registered-sso-application-record-id>",
-  "apiKeyId": "<restricted-api-key-record-id>",
-  "policy": {
-    "enabled": true,
-    "games": [{ "gameId": "wardogs", "roleIds": ["<discord-role-id>"] }]
-  }
+    "applicationRecordId": "<registered-sso-application-record-id>",
+    "apiKeyId": "<restricted-api-key-record-id>",
+    "policy": {
+        "enabled": true,
+        "games": [{ "gameId": "wardogs", "roleIds": ["<discord-role-id>"] }]
+    }
 }
 ```
 
@@ -56,16 +56,22 @@ this policy atomically grants the listed nonempty games on that key; disabling
 it removes the write grant. Use a dedicated command key. Bearer-key policy
 configuration is deliberately unavailable: a service key cannot grant itself
 permission. GET on the same path with `?applicationRecordId=...` returns bounded
-nonsecret policy metadata to the current workspace administrator. There is no
-new dashboard policy form in this slice.
+nonsecret policy metadata to the current workspace administrator.
+
+The dashboard form **System → Website event commands** uses exactly these two
+endpoints. It lists the workspace's registered SSO applications and its live
+restricted API keys (legacy unrestricted keys are not offered), shows the current
+policy and granted games per key, and saves the enabled flag with one Discord
+role list per supported game. The same-origin session and final-transaction
+administrator checks apply to the form as to any other caller.
 
 ## HTTP contract
 
 The [generated OpenAPI endpoint](/api/v1/openapi.json) includes these operations:
 
-| Request | Purpose |
-| --- | --- |
-| `POST /api/v1/clan/event-commands?game=wardogs` | Create, update or cancel |
+| Request                                                  | Purpose                                      |
+| -------------------------------------------------------- | -------------------------------------------- |
+| `POST /api/v1/clan/event-commands?game=wardogs`          | Create, update or cancel                     |
 | `GET /api/v1/clan/event-commands/{eventId}?game=wardogs` | Read the bounded editor and current revision |
 
 Use `Authorization: Bearer <command-service-key>` and
@@ -80,17 +86,17 @@ Create:
 
 ```json
 {
-  "operation": "create",
-  "event": {
-    "kind": "match",
-    "name": "Wardogs friendly",
-    "matchType": "Friendly",
-    "map": "Zestafona",
-    "registrationEnd": "2030-01-01T17:00:00Z",
-    "meetingStart": "2030-01-01T18:00:00Z",
-    "gameStart": "2030-01-01T18:30:00Z",
-    "gameEnd": "2030-01-01T20:00:00Z"
-  }
+    "operation": "create",
+    "event": {
+        "kind": "match",
+        "name": "Wardogs friendly",
+        "matchType": "Friendly",
+        "map": "Zestafona",
+        "registrationEnd": "2030-01-01T17:00:00Z",
+        "meetingStart": "2030-01-01T18:00:00Z",
+        "gameStart": "2030-01-01T18:30:00Z",
+        "gameEnd": "2030-01-01T20:00:00Z"
+    }
 }
 ```
 
@@ -121,15 +127,15 @@ POST returns 201 for create (including replay), otherwise 200:
 
 ```json
 {
-  "data": {
-    "eventId": "<native-event-id>",
-    "guildId": "<discord-guild-id>",
-    "gameId": "wardogs",
-    "revision": "123",
-    "operation": "create",
-    "receiptId": "<durable-receipt-id>",
-    "replayed": false
-  }
+    "data": {
+        "eventId": "<native-event-id>",
+        "guildId": "<discord-guild-id>",
+        "gameId": "wardogs",
+        "revision": "123",
+        "operation": "create",
+        "receiptId": "<durable-receipt-id>",
+        "replayed": false
+    }
 }
 ```
 
@@ -155,15 +161,15 @@ update/cancel compares `expectedRevision` to the current event-summary revision
 in the transaction; a concurrent change returns `revision_conflict` without an
 overwrite. The event, schedule, change records and receipt commit atomically.
 
-| Status | Error codes / consumer action |
-| --- | --- |
-| 400 | `invalid_request`; correct the intentional command |
-| 401 | `unauthorized`; obtain a current central session/key |
-| 403 | `insufficient_scope`, `policy_denied`, `membership_denied`; do not bypass authorization |
-| 404 | `not_found`; event absent from this exact guild/game |
-| 409 | `revision_conflict`, `idempotency_conflict`, `invalid_state`; require a refreshed deliberate edit |
-| 429 | `rate_limited`; respect `Retry-After`, preserve key/body |
-| 503 | `membership_stale`, `unavailable`; revalidate, preserving uncertain command identity |
+| Status | Error codes / consumer action                                                                     |
+| ------ | ------------------------------------------------------------------------------------------------- |
+| 400    | `invalid_request`; correct the intentional command                                                |
+| 401    | `unauthorized`; obtain a current central session/key                                              |
+| 403    | `insufficient_scope`, `policy_denied`, `membership_denied`; do not bypass authorization           |
+| 404    | `not_found`; event absent from this exact guild/game                                              |
+| 409    | `revision_conflict`, `idempotency_conflict`, `invalid_state`; require a refreshed deliberate edit |
+| 429    | `rate_limited`; respect `Retry-After`, preserve key/body                                          |
+| 503    | `membership_stale`, `unavailable`; revalidate, preserving uncertain command identity              |
 
 Result confirmation, score corrections, roster edits, Discord role writes,
 server controls, publication and destructive event deletion are intentionally
