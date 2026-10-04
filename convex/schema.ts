@@ -5,6 +5,13 @@ import {
     leagueMessageRefs,
 } from "./leagueDiscoveryTable"
 import {
+    imageAssetKind,
+    imageContentType,
+    matchTeamAssignment,
+    teamAuditOperation,
+    teamGame,
+} from "./teamValidators"
+import {
     gameDataError,
     gameDataObservation,
     gameDataHistoryProgress,
@@ -841,6 +848,8 @@ export default defineSchema({
             v.union(v.literal("applied"), v.literal("skipped"))
         ),
         absenceNotices: v.optional(v.array(eventNotice)),
+        // Directory team selections with immutable presentation snapshots; absent on legacy events.
+        matchTeams: v.optional(v.array(matchTeamAssignment)),
         createdAt: v.string(),
         updatedAt: v.optional(v.string()),
     }).index("guildId", ["guildId"]),
@@ -1514,6 +1523,81 @@ export default defineSchema({
         revision: v.string(),
         lastCollectedAt: v.string(),
     }).index("guildId", ["guildId"]),
+    teamDirectory: defineTable({
+        guildId: v.string(),
+        gameId: teamGame,
+        name: v.string(),
+        shortCode: v.union(v.string(), v.null()),
+        logoAssetId: v.union(v.id("imageAssets"), v.null()),
+        normalizedName: v.string(),
+        searchText: v.string(),
+        archivedAt: v.union(v.string(), v.null()),
+        revision: v.number(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+        createdBy: v.string(),
+        updatedBy: v.string(),
+    })
+        .index("guildId_gameId_archivedAt_normalizedName", [
+            "guildId",
+            "gameId",
+            "archivedAt",
+            "normalizedName",
+        ])
+        .index("guildId_gameId_normalizedName", [
+            "guildId",
+            "gameId",
+            "normalizedName",
+        ])
+        .searchIndex("search", {
+            searchField: "searchText",
+            filterFields: ["guildId", "gameId", "archivedAt"],
+        }),
+    teamDirectoryAudit: defineTable({
+        guildId: v.string(),
+        gameId: teamGame,
+        teamId: v.id("teamDirectory"),
+        operation: teamAuditOperation,
+        revision: v.number(),
+        actor: v.string(),
+        idempotencyKey: v.optional(v.string()),
+        fingerprint: v.optional(v.string()),
+        eventId: v.optional(v.string()),
+        createdAt: v.string(),
+    })
+        .index("guildId_idempotencyKey", ["guildId", "idempotencyKey"])
+        .index("teamId", ["teamId"]),
+    imageAssets: defineTable({
+        guildId: v.string(),
+        kind: imageAssetKind,
+        publicId: v.string(),
+        storageId: v.id("_storage"),
+        contentType: imageContentType,
+        width: v.number(),
+        height: v.number(),
+        bytes: v.number(),
+        sha256: v.string(),
+        publicUrl: v.string(),
+        state: v.union(v.literal("ready"), v.literal("deleting")),
+        createdAt: v.string(),
+        createdBy: v.string(),
+    })
+        .index("publicId", ["publicId"])
+        .index("guildId_kind", ["guildId", "kind"])
+        .index("state_createdAt", ["state", "createdAt"]),
+    imageAssetReferences: defineTable({
+        assetId: v.id("imageAssets"),
+        guildId: v.string(),
+        owner: v.union(
+            v.literal("team"),
+            v.literal("event"),
+            v.literal("panel")
+        ),
+        ownerId: v.string(),
+        createdAt: v.string(),
+    })
+        .index("assetId", ["assetId"])
+        .index("owner_ownerId", ["owner", "ownerId"]),
     gameHistorySettings: defineTable({
         guildId: v.string(),
         // null keeps retained games indefinitely.

@@ -22,7 +22,8 @@ export const apiKeyReadAccess = v.object({
             v.literal("matches"),
             v.literal("event-summaries"),
             v.literal("match-summaries"),
-            v.literal("result-summaries")
+            v.literal("result-summaries"),
+            v.literal("teams")
         )
     ),
     gameIds: v.array(

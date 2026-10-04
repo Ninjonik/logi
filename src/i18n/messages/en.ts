@@ -313,6 +313,7 @@ export const enMessages = {
             rosters: "Rosters",
             assignments: "Member assignments",
             stratmaps: "Tactical maps",
+            teams: "Team directory (active teams, names and logos)",
         },
     },
     publicProfiles: {

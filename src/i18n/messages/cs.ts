@@ -309,6 +309,7 @@ export const csMessages = {
             rosters: "Soupisky",
             assignments: "Zařazení členů",
             stratmaps: "Taktické mapy",
+            teams: "Adresář týmů (aktivní týmy, názvy a loga)",
         },
     },
     publicProfiles: {

@@ -10,6 +10,7 @@ export const SYNC_RESOURCES = [
     "result-summaries",
     "server-snapshots",
     "integration-health",
+    "teams",
 ] as const
 export type SyncResource = (typeof SYNC_RESOURCES)[number]
 export type IntegrationChange = {
@@ -50,6 +51,7 @@ export const syncRecordSchema = z.union([
             serverSnapshotSchema,
             integrationHealthSchema,
             membershipObservationSchema,
+            teamDtoSchema,
         ]),
     }),
 ])
@@ -82,5 +84,6 @@ import { membershipObservationSchema } from "../membership/observation"
 import { clanResultSummarySchema } from "../api/result-summaries"
 import { leagueFixtureSchema } from "../wardogs-league/fixture"
 import { historyRecordSchema } from "../game-data/history"
+import { teamDtoSchema } from "../teams/team"
 import { GAME_IDS } from "../games/game"
 import { z } from "zod"

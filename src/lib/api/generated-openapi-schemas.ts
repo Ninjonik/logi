@@ -458,6 +458,98 @@ export const generatedOpenApiSchemas = {
                     ]
                 }
             },
+            "matchTeams": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "teamId": {
+                            "type": "string"
+                        },
+                        "slot": {
+                            "anyOf": [
+                                {
+                                    "const": "a"
+                                },
+                                {
+                                    "const": "b"
+                                },
+                                {
+                                    "const": "c"
+                                }
+                            ]
+                        },
+                        "side": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
+                        "snapshot": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "shortCode": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                },
+                                "logoAssetId": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                },
+                                "logoUrl": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                },
+                                "teamRevision": {
+                                    "type": "number"
+                                },
+                                "capturedAt": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "shortCode",
+                                "logoAssetId",
+                                "logoUrl",
+                                "teamRevision",
+                                "capturedAt"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "teamId",
+                        "slot",
+                        "side",
+                        "snapshot"
+                    ]
+                }
+            },
             "createdAt": {
                 "type": "string"
             },
@@ -592,6 +684,21 @@ export const generatedOpenApiSchemas = {
                     "userId": "string",
                     "reason": "string",
                     "createdAt": "string"
+                }
+            ],
+            "matchTeams": [
+                {
+                    "teamId": "string",
+                    "slot": "a",
+                    "side": "string",
+                    "snapshot": {
+                        "name": "string",
+                        "shortCode": "string",
+                        "logoAssetId": "string",
+                        "logoUrl": "string",
+                        "teamRevision": 0,
+                        "capturedAt": "string"
+                    }
                 }
             ],
             "createdAt": "string",

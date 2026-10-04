@@ -22,6 +22,7 @@ export const API_KEY_READ_RESOURCES = [
     "event-summaries",
     "match-summaries",
     "result-summaries",
+    "teams",
 ] as const
 
 export type ApiKeyReadAccess = {
@@ -68,6 +69,7 @@ export function allowsApiKeyRead(
             "member-summaries",
             "roster-summaries",
             "player-stat-summaries",
+            "teams",
         ].includes(resource)
     if (
         !isApiKeyReadAccess(access) ||

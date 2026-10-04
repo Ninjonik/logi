@@ -92,6 +92,25 @@ export class TestDatabase {
                 fn?.(index)
                 return query
             },
+            withSearchIndex: (_name: string, fn: (q: any) => unknown) => {
+                const search: any = {
+                    search: (field: string, text: string) => {
+                        const needle = text.toLowerCase()
+                        tests.push((row) =>
+                            String(row[field] ?? "")
+                                .toLowerCase()
+                                .includes(needle)
+                        )
+                        return search
+                    },
+                    eq: (field: string, value: unknown) => {
+                        tests.push(predicate("eq", field, value))
+                        return search
+                    },
+                }
+                fn(search)
+                return query
+            },
             filter: (fn: (q: any) => (row: TestRow) => boolean) => {
                 tests.push(fn(expr))
                 return query
@@ -125,8 +144,17 @@ export class TestDatabase {
     }
 }
 export function testContext() {
+    const files = new Map<string, string>()
     return {
         db: new TestDatabase(),
+        storage: {
+            files,
+            getUrl: async (id: string) => files.get(id) ?? null,
+            delete: async (id: string) => {
+                files.delete(id)
+            },
+            generateUploadUrl: async () => "https://storage.test/upload",
+        },
         scheduler: {
             calls: [] as unknown[],
             runAfter: async function (...args: unknown[]) {

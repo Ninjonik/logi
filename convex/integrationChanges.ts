@@ -26,6 +26,7 @@ import { readHistoryRecord } from "./gameHistoryStore"
 import { makeFunctionReference } from "convex/server"
 import { isGameId } from "../src/domain/games/game"
 import { peopleGeneration } from "./peopleChanges"
+import { readTeamDto } from "./teamReads"
 import { v } from "convex/values"
 
 async function authorize(
@@ -224,6 +225,22 @@ export const readSyncRecord = query({
                       data: null,
                   }
                 : null
+        if (resource === "teams") {
+            const data = await readTeamDto(
+                ctx,
+                key.guildId,
+                args.gameId,
+                args.id
+            )
+            return data
+                ? {
+                      ...identity,
+                      revision: stamp?.revision ?? "0",
+                      operation: "upsert" as const,
+                      data,
+                  }
+                : null
+        }
         if ((PEOPLE_RESOURCES as readonly string[]).includes(resource)) {
             const data = await readPeopleProjection(
                 ctx,

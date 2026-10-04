@@ -64,6 +64,13 @@ crons.daily(
 )
 
 crons.interval(
+    "remove unattached image uploads after their retention window",
+    { hours: 1 },
+    internal.imageAssets.cleanupUnattached,
+    {}
+)
+
+crons.interval(
     "deliver pending webhooks",
     { minutes: 1 },
     internal.webhookDispatcher.deliverDue,

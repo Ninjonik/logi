@@ -324,6 +324,7 @@ export const deMessages = {
             rosters: "Aufstellungen",
             assignments: "Mitgliedszuordnungen",
             stratmaps: "Taktikkarten",
+            teams: "Teamverzeichnis (aktive Teams, Namen und Logos)",
         },
     },
     publicProfiles: {
