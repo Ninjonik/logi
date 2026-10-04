@@ -10,6 +10,7 @@ import {
     SeparatorBuilder,
     TextDisplayBuilder,
     ThumbnailBuilder,
+    escapeMarkdown,
     type APIEmbedField,
 } from "discord.js"
 import { buildMembershipFlowHeader } from "./interactions/membership-flow"
@@ -25,6 +26,8 @@ import type {
     DiscordConfig,
     EventRecord,
     Group,
+    MatchTeamAssignment,
+    MatchTeamSlot,
     MembershipApplicationThreadRecord,
     MembershipCategory,
     Roster,
@@ -91,6 +94,8 @@ export function buildAnnouncementV2Message(
     options?: EventEmbedOptions & {
         pingRoleIds?: string[]
         eventLinks?: EventLink[]
+        /** Adds one logo section per assigned team (event information cards). */
+        matchTeamCards?: boolean
     }
 ) {
     const legacy = buildAnnouncementMessage(
@@ -143,6 +148,16 @@ export function buildAnnouncementV2Message(
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(block.slice(0, 4000))
         )
+    }
+
+    // Components V2 messages cannot carry embeds, so the per-team logo cards
+    // are sections with a thumbnail inside the event card.
+    const teamSections = options?.matchTeamCards
+        ? buildMatchTeamV2Sections(event)
+        : []
+    if (teamSections.length) {
+        container.addSeparatorComponents(new SeparatorBuilder())
+        container.addSectionComponents(...teamSections)
     }
 
     if (options?.eventLinks?.length) {
@@ -511,6 +526,11 @@ export function buildEventEmbed(
         )
     if (event.kind === "match" && event.side)
         descriptionLines.push(`**⚔️ ${messages.embed.side}:** ${event.side}`)
+    const matchTeamsSummary = formatMatchTeamsSummary(event)
+    if (matchTeamsSummary)
+        descriptionLines.push(
+            `**🛡️ ${messages.embed.teams}:** ${matchTeamsSummary}`
+        )
     if (event.kind === "match" && event.cap)
         descriptionLines.push(`**🎯 ${messages.embed.cap}:** ${event.cap}`)
     if (event.server)
@@ -681,6 +701,174 @@ export function buildEventEmbed(
     )
 
     return embed
+}
+
+const MATCH_TEAM_SLOT_ORDER: Record<MatchTeamSlot, number> = {
+    a: 0,
+    b: 1,
+    c: 2,
+}
+/** Discord rejects messages with more than ten embeds. */
+const DISCORD_MAX_EMBEDS = 10
+const DISCORD_EMBED_AUTHOR_NAME_LIMIT = 256
+const DISCORD_THUMBNAIL_DESCRIPTION_LIMIT = 1024
+
+function sortMatchTeams(event: EventRecord) {
+    return [...(event.matchTeams ?? [])].sort(
+        (left, right) =>
+            MATCH_TEAM_SLOT_ORDER[left.slot] - MATCH_TEAM_SLOT_ORDER[right.slot]
+    )
+}
+
+/** Keeps a stored label on one line so it cannot start Markdown blocks. */
+function toSingleLine(value: string) {
+    return value.replace(/[\s\p{Cc}]+/gu, " ").trim()
+}
+
+function truncateCodePoints(value: string, maxLength: number) {
+    const codePoints = Array.from(value)
+    return codePoints.length > maxLength
+        ? codePoints.slice(0, maxLength).join("")
+        : value
+}
+
+/**
+ * Makes user-supplied text render literally instead of as a mention, channel,
+ * emoji, timestamp or command reference: every `@` and every `<@`, `<#`, `<:`,
+ * `</` or `<t:`-style opener is broken with a zero-width space.
+ */
+export function neutralizeDiscordMentions(value: string) {
+    return value
+        .replace(/@/g, "@\u200B")
+        .replace(/<(?=[@#:&/]|[a-z]+:)/gi, "<\u200B")
+}
+
+/**
+ * Escapes stored team text for Discord surfaces that render Markdown. Brackets
+ * and parentheses are escaped so labels cannot form masked links, and `://` is
+ * broken so a label never becomes a clickable URL.
+ */
+export function escapeMatchTeamText(value: string) {
+    const escaped = escapeMarkdown(toSingleLine(value), {
+        heading: true,
+        bulletedList: true,
+        numberedList: true,
+    })
+        .replace(/[[\]()]/g, "\\$&")
+        .replace(/^>/, "\\>")
+    return neutralizeDiscordMentions(escaped).replace(/:\/\//g, ":\u200B//")
+}
+
+/** Plain-text label for Discord fields that do not render Markdown. */
+function plainMatchTeamLabel(assignment: MatchTeamAssignment) {
+    const name = toSingleLine(assignment.snapshot.name)
+    const code = toSingleLine(assignment.snapshot.shortCode ?? "")
+    return neutralizeDiscordMentions(code ? `${name} [${code}]` : name)
+}
+
+function formatMatchTeamLabel(
+    assignment: MatchTeamAssignment,
+    includeSide: boolean
+) {
+    const parts = [escapeMatchTeamText(assignment.snapshot.name)]
+    const code = assignment.snapshot.shortCode?.trim()
+    if (code) parts.push(`[${escapeMatchTeamText(code)}]`)
+    const side = assignment.side?.trim()
+    if (includeSide && side) parts.push(`(${escapeMatchTeamText(side)})`)
+    return parts.join(" ")
+}
+
+/** "Name [CODE] (Side) vs …" ordered by slot; undefined without assignments. */
+export function formatMatchTeamsSummary(event: EventRecord) {
+    if (event.kind !== "match") return undefined
+    const teams = sortMatchTeams(event)
+    if (!teams.length) return undefined
+    return teams
+        .map((assignment) => formatMatchTeamLabel(assignment, true))
+        .join(" vs ")
+}
+
+/** Two teams play an HLL match; Wardogs matches have up to three. */
+export function getMatchTeamLogoLimit(event: Pick<EventRecord, "gameId">) {
+    return event.gameId === "wardogs" ? 3 : 2
+}
+
+function parseHttpUrl(value: string | null) {
+    if (!value) return undefined
+    try {
+        const url = new URL(value)
+        return url.protocol === "http:" || url.protocol === "https:"
+            ? url.href
+            : undefined
+    } catch {
+        return undefined
+    }
+}
+
+function listMatchTeamLogos(event: EventRecord) {
+    if (event.kind !== "match") return []
+    return sortMatchTeams(event)
+        .flatMap((assignment) => {
+            const logoUrl = parseHttpUrl(assignment.snapshot.logoUrl)
+            return logoUrl ? [{ assignment, logoUrl }] : []
+        })
+        .slice(0, getMatchTeamLogoLimit(event))
+}
+
+/**
+ * One small embed per assigned team with a usable logo, for legacy (non
+ * Components V2) event information messages. Never exceeds Discord's ten
+ * embed limit together with `existingEmbedCount`.
+ */
+export function buildMatchTeamLogoEmbeds(
+    event: EventRecord,
+    color: number | undefined,
+    existingEmbedCount = 1
+) {
+    const available = Math.max(0, DISCORD_MAX_EMBEDS - existingEmbedCount)
+    return listMatchTeamLogos(event)
+        .slice(0, available)
+        .map(({ assignment, logoUrl }) => {
+            // Embed author names render as plain text, so Markdown escaping
+            // would show literal backslashes; mentions are still neutralized.
+            const embed = new EmbedBuilder().setAuthor({
+                name: truncateCodePoints(
+                    plainMatchTeamLabel(assignment),
+                    DISCORD_EMBED_AUTHOR_NAME_LIMIT
+                ),
+                iconURL: logoUrl,
+            })
+            if (color !== undefined) embed.setColor(color)
+            const side = assignment.side?.trim()
+            if (side) embed.setDescription(escapeMatchTeamText(side))
+            return embed
+        })
+}
+
+/** Components V2 equivalent of {@link buildMatchTeamLogoEmbeds}. */
+export function buildMatchTeamV2Sections(event: EventRecord) {
+    return listMatchTeamLogos(event).map(({ assignment, logoUrl }) => {
+        const side = assignment.side?.trim()
+        const content = [
+            `**${formatMatchTeamLabel(assignment, false)}**`,
+            side ? escapeMatchTeamText(side) : undefined,
+        ]
+            .filter(Boolean)
+            .join("\n")
+        return new SectionBuilder()
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(content)
+            )
+            .setThumbnailAccessory(
+                new ThumbnailBuilder({
+                    media: { url: logoUrl },
+                    description: truncateCodePoints(
+                        plainMatchTeamLabel(assignment),
+                        DISCORD_THUMBNAIL_DESCRIPTION_LIMIT
+                    ),
+                })
+            )
+    })
 }
 
 export function buildEventComponents(

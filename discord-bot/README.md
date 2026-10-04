@@ -10,6 +10,22 @@ Human-link ingestion additionally needs `LOGI_LEAGUE_MESSAGE_CONTENT=true` and *
 
 See the [operator wiki](../content/configuration/league-tracking.mdx) and [implementation/API contract](../docs/integrations/website/league-discovery.md) for activation, permissions, limits and freshness semantics.
 
+## Native match team cards
+
+Native match events can carry `matchTeams`: server-captured team snapshots
+(name, short code, logo URL) with a slot and optional side. The event embed adds
+one `🛡️ Teams` line next to the side line, ordered by slot as
+`Name [CODE] (Side)` joined with `vs`; labels are Markdown-escaped, mentions are
+broken with zero-width spaces and no URL is ever written as text. The event
+information card (the separate event-info message, or the single announcement
+when no event-info room is configured) also shows one small logo card per team
+whose snapshot logo is an http(s) URL, at most two for HLL and three for
+Wardogs: an author-icon embed in the main embed colour for legacy embed
+messages, or a thumbnail section inside the Components V2 card, which cannot
+carry embeds. Registration cards keep only the text line. Sign-up components,
+map/banner details, rooms and durable message identity are unchanged, and
+events without assignments render exactly as before.
+
 ## Run
 
 From the repository root:

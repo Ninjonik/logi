@@ -48,6 +48,7 @@ type ClanDiscordMessages = {
     embed: {
         map: string
         side: string
+        teams: string
         cap: string
         server: string
         password: string
@@ -447,6 +448,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
         embed: {
             map: "Map",
             side: "Side",
+            teams: "Teams",
             cap: "Cap",
             server: "Server",
             password: "Password",
@@ -985,6 +987,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             signupCount: "Počet přihlášených",
             map: "Mapa",
             side: "Strana",
+            teams: "Týmy",
             cap: "Cap",
             server: "Server",
             password: "Heslo",
@@ -1356,6 +1359,7 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
         embed: {
             map: "Map",
             side: "Seite",
+            teams: "Teams",
             cap: "Cap",
             server: "Server",
             password: "Passwort",
