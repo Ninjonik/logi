@@ -11,7 +11,7 @@ import {
 } from "./_generated/server"
 import { internalMutation } from "./_generated/server"
 import { makeFunctionReference } from "convex/server"
-import { catalogSources } from "./gameDataCatalog"
+import { connectionSource } from "./gameDataCatalog"
 import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
@@ -63,11 +63,8 @@ async function context(
         !["hll_crcon", "wardogs_warcon"].includes(connection.provider)
     )
         return null
-    const source = (await catalogSources(ctx)).find(
-        (s) => s.ref === connection.sourceRef && s.guildId === args.guildId
-    )
-    if (!source || JSON.stringify(source) !== connection.sourceFingerprint)
-        return null
+    const source = await connectionSource(ctx, connection)
+    if (!source) return null
     const policy = {
         guildId: args.guildId,
         panelId: panel._id,

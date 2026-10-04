@@ -1,4 +1,13 @@
 import {
+    gameDataError,
+    gameDataCredentialMode,
+    gameDataCredentialFailure,
+    gameDataTestOutcome,
+    gameDataObservation,
+    gameDataHistoryProgress,
+    gameDataSession,
+} from "./gameDataValidators"
+import {
     imageAssetKind,
     imageContentType,
     matchTeamAssignment,
@@ -12,12 +21,6 @@ import {
     leagueIndexCache,
     leagueMessageRefs,
 } from "./leagueDiscoveryTable"
-import {
-    gameDataError,
-    gameDataObservation,
-    gameDataHistoryProgress,
-    gameDataSession,
-} from "./gameDataValidators"
 import {
     discordPublications,
     discordPublicPanels,
@@ -1416,6 +1419,7 @@ export default defineSchema({
         warconReadBlockedUntil: v.optional(v.number()),
     })
         .index("guildId", ["guildId"])
+        .index("guildId_sourceRef", ["guildId", "sourceRef"])
         .index("sourceRef", ["sourceRef"])
         .index("nextAttemptAt", ["nextAttemptAt"]),
     // Workspace-registered provider sources; tokens stay in Convex environment variables.
@@ -1436,9 +1440,47 @@ export default defineSchema({
         createdAt: v.string(),
         updatedAt: v.string(),
         updatedBy: v.string(),
+        /** Administrator-chosen alias; unique within the workspace only. */
+        displayName: v.optional(v.string()),
+        /** Absent on registrations from before encrypted keys: read as legacy_env when secretRef is set. */
+        credentialMode: v.optional(gameDataCredentialMode),
+        revision: v.optional(v.number()),
+        createdBy: v.optional(v.string()),
+        lastTestAt: v.optional(v.string()),
+        lastTestOutcome: v.optional(gameDataTestOutcome),
     })
         .index("guildId", ["guildId"])
+        .index("guildId_ref", ["guildId", "ref"])
+        .index("credentialMode", ["credentialMode"])
+        .index("secretRef", ["secretRef"])
         .index("ref", ["ref"]),
+    /**
+     * One encrypted provider key per source (AES-256-GCM, operator keyring
+     * outside the database). Never returned by public functions; only
+     * collector and test actions decrypt it.
+     */
+    gameDataCredentials: defineTable({
+        guildId: v.string(),
+        sourceRef: v.string(),
+        format: v.literal(1),
+        keyId: v.string(),
+        nonce: v.string(),
+        ciphertext: v.string(),
+        tag: v.string(),
+        /** Bumped by every new key; re-encryption keeps it. */
+        version: v.number(),
+        verifiedAt: v.union(v.string(), v.null()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+        updatedBy: v.string(),
+        reencryptedAt: v.optional(v.string()),
+        failure: v.optional(gameDataCredentialFailure),
+        failureAt: v.optional(v.string()),
+        lastTestAt: v.optional(v.string()),
+        lastTestOutcome: v.optional(gameDataTestOutcome),
+    })
+        .index("guildId_sourceRef", ["guildId", "sourceRef"])
+        .index("keyId", ["keyId"]),
     leagueTrackingSettings,
     leagueTrackedMatches,
     leagueIndexCache,

@@ -3,15 +3,13 @@ import {
     gameDataSession,
     gameDataHistoryProgress,
 } from "./gameDataValidators"
-import {
-    providerSessionSchema,
-    type DataSource,
-} from "../src/domain/game-data/contracts"
 import type { HistoryProgress } from "../src/application/game-data/collect-sessions"
+import type { ResolvedSource } from "../src/domain/game-data/credentials"
+import { providerSessionSchema } from "../src/domain/game-data/contracts"
 import { archiveWarconHistory } from "./gameHistoryStore"
 import { internalMutation } from "./integrationMutation"
 import { type MutationCtx } from "./_generated/server"
-import { catalogSources } from "./gameDataCatalog"
+import { connectionSource } from "./gameDataCatalog"
 import type { Id } from "./_generated/dataModel"
 import { internal } from "./_generated/api"
 import { v } from "convex/values"
@@ -55,7 +53,8 @@ type Claim = {
     generation: number
     fence: number
     attempt: number
-    connection: DataSource
+    connectionId: Id<"gameDataConnections">
+    connection: ResolvedSource
     progress: HistoryProgress
     revisitId: string | null
 }
@@ -69,22 +68,15 @@ export const claimNext = internalMutation({
                 q.gte("nextAttemptAt", 0).lte("nextAttemptAt", now)
             )
             .take(10)
-        const catalog = await catalogSources(ctx)
         for (const row of rows) {
             if (row.leaseUntil > now) continue
             const connection = await ctx.db.get(row.connectionId)
             const source =
-                connection &&
-                catalog.find(
-                    (entry) =>
-                        entry.ref === connection.sourceRef &&
-                        entry.guildId === connection.guildId
-                )
+                connection?.enabled && (await connectionSource(ctx, connection))
             if (
-                !connection?.enabled ||
+                !connection ||
                 !source ||
-                !["hll_crcon", "wardogs_warcon"].includes(source.provider) ||
-                JSON.stringify(source) !== connection.sourceFingerprint
+                !["hll_crcon", "wardogs_warcon"].includes(source.provider)
             ) {
                 await ctx.db.patch(row._id, {
                     errorCategory: "configuration",
@@ -124,6 +116,7 @@ export const claimNext = internalMutation({
                 generation: connection.generation,
                 fence,
                 attempt,
+                connectionId: connection._id,
                 connection: source,
                 progress,
                 revisitId: unfinished?.externalId ?? null,
@@ -155,13 +148,7 @@ async function currentRun(
         !["hll_crcon", "wardogs_warcon"].includes(connection.provider)
     )
         return null
-    const source = (await catalogSources(ctx)).find(
-        (entry) =>
-            entry.ref === connection.sourceRef &&
-            entry.guildId === connection.guildId
-    )
-    if (!source || JSON.stringify(source) !== connection.sourceFingerprint)
-        return null
+    if (!(await connectionSource(ctx, connection))) return null
     return { row, connection }
 }
 const progressSchema = z.strictObject({

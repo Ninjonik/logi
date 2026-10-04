@@ -26,6 +26,9 @@ function fixture() {
                 origin: "https://warcon.example",
                 secretRef: "LOGI_GAME_DATA_WD_TOKEN",
                 allowedAddresses: [],
+                credentialMode: "legacy_env",
+                managed: "operator",
+                usable: true,
             },
         }),
         read: async () => {

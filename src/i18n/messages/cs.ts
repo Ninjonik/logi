@@ -222,42 +222,156 @@ export const csMessages = {
         },
     },
     gameData: {
-        sourcesTitle: "Zdroje poskytovatelů",
-        sourcesDescription:
-            "Zaregistrujte herní servery, ze kterých tento pracovní prostor sbírá data. Zdroj uvádí poskytovatele, jeho HTTPS adresu, ID serveru u poskytovatele a proměnnou prostředí Convexu, která drží token. Tokeny se tu nikdy nezadávají ani nezobrazují: operátor je uloží v Convexu a vy jen odkážete na název proměnné. Token obměníte uložením nové hodnoty pod novou proměnnou a úpravou odkazu.",
-        sourceRef: "Reference",
-        sourceProvider: "Poskytovatel",
-        sourceProviders: {
-            hll_crcon: "Hell Let Loose CRCON",
-            wardogs_warcon: "Panel Wardogs Warcon",
-            wardogs_rcon: "Wardogs RCON",
-            wardogs_public_directory: "Adresář Wardog Servers",
-        },
-        sourceServerId: "ID serveru u poskytovatele",
-        sourceOrigin: "HTTPS adresa",
-        sourceSecretRef: "Proměnná s tokenem",
-        sourceSecretRefHelp:
-            "Použijte tvar LOGI_GAME_DATA_<NAZEV>_TOKEN. Warcon a RCON vyžadují proměnnou s tokenem a Warcon potřebuje UUID serveru z panelu; adresář Wardog Servers žádnou nemá. Allowlist obsahuje volitelné IP adresy nebo hostitele, které smí kolektor kontaktovat.",
-        sourceAllowlist: "Síťový allowlist (volitelné)",
-        sourceRegister: "Zaregistrovat zdroj",
-        sourceRotate: "Upravit odkaz",
-        sourceRemove: "Odebrat",
-        sourceSaving: "Ukládání…",
-        sourceSaved: "Zdroje uloženy. Sběr spustíte zapnutím připojení níže.",
-        sourceNone:
-            "Pro tento pracovní prostor zatím není zaregistrován žádný zdroj.",
-        sourceOperatorManaged: "Katalog operátora (jen pro čtení)",
-        sourceWorkspaceManaged: "Zaregistrováno v tomto prostoru",
-        sourceErrors: {
-            invalid_source:
-                "Zkontrolujte pole: HTTPS adresa bez cesty, pravidla poskytovatele pro ID serveru a proměnnou s tokenem a reference malými písmeny.",
-            duplicate_ref: "Tato reference se už používá. Zvolte jinou.",
-            duplicate_identity:
-                "Tento server poskytovatele je v tomto prostoru už zaregistrován.",
-            limit_reached: "Tento prostor už má 20 zaregistrovaných zdrojů.",
-            not_found: "Tento zdroj už neexistuje. Obnovte seznam.",
-            unavailable:
-                "Zdroje poskytovatelů nelze načíst nebo uložit. Obnovte stránku a zkuste to znovu.",
+        servers: {
+            title: "Herní servery",
+            description:
+                "Připojte servery Hell Let Loose CRCON nebo Wardogs Warcon, ze kterých tento prostor sbírá data: HTTPS adresu serveru, jeho ID u poskytovatele a API klíč. Logi ověří připojení a klíč uloží šifrovaně. Uložený klíč nejde zobrazit ani exportovat; chcete-li ho změnit, zadejte nový.",
+            encryptionUnavailable:
+                "Šifrované ukládání klíčů zatím není v tomto nasazení Logi aktivované. Klíč můžete otestovat, ale ukládání je vypnuté, dokud ho operátor Logi neaktivuje.",
+            none: "K tomuto prostoru zatím není připojený žádný herní server.",
+            limit: "Nejvýše {limit} serverů na prostor.",
+            add: "Připojit server",
+            managed: {
+                workspace: "Spravováno v tomto prostoru",
+                operator: "Nastaveno operátorem Logi",
+            },
+            games: {
+                hell_let_loose: "Hell Let Loose",
+                wardogs: "Wardogs",
+            },
+            providers: {
+                hll_crcon: "CRCON",
+                wardogs_warcon: "Panel Warcon",
+                wardogs_rcon: "Wardogs RCON",
+                wardogs_public_directory: "Adresář Wardog Servers (veřejný)",
+            },
+            fields: {
+                displayName: "Název",
+                game: "Hra",
+                provider: "Poskytovatel",
+                origin: "HTTPS adresa",
+                serverId: "ID serveru u poskytovatele",
+                key: "API klíč",
+                newKey: "Nový API klíč",
+            },
+            hints: {
+                origin: "Jen adresa, například https://panel.example.com, bez cesty.",
+                serverId: {
+                    hll_crcon: "Číslo serveru v CRCON, obvykle 1.",
+                    wardogs_warcon: "UUID serveru z panelu Warcon.",
+                    wardogs_rcon: "ID serveru, které hlásí vaše RCON API.",
+                    wardogs_public_directory:
+                        "ID serveru v adresáři Wardog Servers.",
+                },
+                key: "Odešle se jednou, otestuje a uloží šifrovaně. Logi ho už nikdy nezobrazí.",
+                keyOptional:
+                    "U CRCON je volitelný: bez klíče Logi čte jen veřejná data. S klíčem potřebuje jeho uživatel v CRCON oprávnění zobrazit informace o připojení.",
+                keyNone: "Veřejný adresář nepotřebuje klíč.",
+            },
+            enableAfterTest: "Po úspěšném testu spustit sběr",
+            allowUnverified:
+                "Uložit i při neúspěšném testu (sběr se zastaví, dokud test neprojde)",
+            actions: {
+                test: "Otestovat připojení",
+                testing: "Testuji…",
+                save: "Uložit server",
+                saving: "Ukládání…",
+                testStored: "Otestovat uložený klíč",
+                changeKey: "Změnit klíč",
+                saveKey: "Uložit klíč",
+                cancel: "Zrušit",
+                removeKey: "Odebrat klíč",
+                rename: "Přejmenovat",
+                saveName: "Uložit název",
+                enable: "Spustit sběr",
+                disable: "Zastavit sběr",
+                remove: "Odebrat server",
+            },
+            confirm: {
+                removeKey:
+                    "Odebrat uložený klíč pro {name}? Sběr, který klíč potřebuje, se zastaví.",
+                remove: "Odebrat {name}? Sběr se zastaví a uložený klíč se smaže. Nasbíraná historie zůstane.",
+            },
+            key: {
+                set: "Klíč uložen šifrovaně",
+                missing: "Není uložen žádný klíč",
+                not_required: "Klíč není potřeba",
+                environment: "Klíč nastavil operátor Logi",
+                needs_operator:
+                    "Starý odkaz na klíč: zadejte klíč znovu, nebo požádejte operátora Logi o migraci",
+            },
+            keyChanged: "Klíč změněn {date}",
+            verified: "Klíč prošel posledním testem",
+            unverified: "Klíč není ověřený: před sběrem ho otestujte",
+            failure: {
+                key_unavailable:
+                    "Uložený klíč nejde použít, protože šifrovací klíč operátora není dostupný. Kontaktujte operátora Logi.",
+                decrypt_failed:
+                    "Uložený klíč nejde pro tento server přečíst. Zadejte klíč znovu.",
+            },
+            collection: {
+                enabled: "Sbírá se",
+                disabled: "Nesbírá se",
+                none: "Sběr není nastavený",
+                lastSuccess: "Poslední úspěšný sběr {date}",
+                never: "Zatím žádný úspěšný sběr",
+            },
+            lastTest: "Poslední test {date}: {outcome}",
+            saved: {
+                created: "Server uložen a sběr běží.",
+                draft: "Server uložen jako vypnutý koncept. Otestujte ho a sběr spusťte, až test projde.",
+                key: "Klíč uložen.",
+                keyUnverified:
+                    "Klíč uložen, ale test neprošel, takže se sběr zastavil.",
+                removedKey: "Klíč odebrán.",
+                renamed: "Název uložen.",
+                removed: "Server odebrán.",
+                enabled: "Sběr spuštěn.",
+                disabled: "Sběr zastaven.",
+            },
+            outcomes: {
+                ok: "Připojení funguje a klíč je pro tento server přijat.",
+                unauthorized: "Poskytovatel klíč odmítl.",
+                server_mismatch:
+                    "Poskytovatel odpověděl, ale ne pro toto ID serveru.",
+                rate_limited:
+                    "Poskytovatel omezuje počet požadavků. Zkuste to později.",
+                timeout: "Poskytovatel neodpověděl včas.",
+                network: "Poskytovatel není dostupný.",
+                invalid_response:
+                    "Poskytovatel poslal neočekávanou odpověď. Zkontrolujte adresu a poskytovatele.",
+                configuration:
+                    "Tato adresa není povolená (jen veřejné HTTPS adresy) nebo server není úplně nastavený.",
+                unsupported: "Poskytovatel tuto kontrolu nepodporuje.",
+                key_unavailable:
+                    "Uložený klíč nejde použít. Zadejte ho znovu nebo kontaktujte operátora Logi.",
+            },
+            errors: {
+                invalid_source:
+                    "Zkontrolujte pole: HTTPS adresa bez cesty a ID serveru ve formátu poskytovatele.",
+                invalid_key:
+                    "Klíč musí mít 8 až 4096 viditelných znaků bez mezer.",
+                duplicate_name:
+                    "Jiný server v tomto prostoru už má tento název.",
+                duplicate_identity:
+                    "Tento server je v tomto prostoru už připojený.",
+                limit_reached: "Tento prostor už má maximální počet serverů.",
+                not_found: "Tento server už neexistuje. Obnovte seznam.",
+                revision_conflict:
+                    "Server mezitím změnil někdo jiný. Obnovte stránku a zkuste to znovu.",
+                operator_managed:
+                    "Tento server nastavuje operátor Logi: nejde tu přejmenovat ani odebrat a jeho klíč jde jen nahradit.",
+                key_required: "Tento poskytovatel potřebuje API klíč.",
+                key_not_allowed: "Veřejný adresář klíč nepřijímá.",
+                verification_required:
+                    "Test připojení neprošel. Opravte problém, nebo klíč výslovně uložte jako neověřený.",
+                encryption_unavailable:
+                    "Šifrované ukládání klíčů není dostupné. Kontaktujte operátora Logi.",
+                rate_limited:
+                    "Příliš mnoho testů připojení. Zkuste to za {seconds} s.",
+                unavailable:
+                    "Herní servery nelze načíst nebo uložit. Obnovte stránku a zkuste to znovu.",
+            },
         },
         liveScoreboard: "Živý scoreboard Warconu",
         scoreboardPolling:
@@ -279,7 +393,7 @@ export const csMessages = {
         historyError: "Sběr historie",
         title: "Data herních serverů",
         description:
-            "Logi sbírá data serverů a vybrané údaje poskytuje vašemu webu. Připojení nejdříve připraví provozovatel Logi.",
+            "Sbírejte data serverů v Logi a vybraná pole sdílejte se svým webem. Server připojte výše; sběr začne, jakmile projde test připojení.",
         loading: "Načítání…",
         refresh: "Obnovit",
         saving: "Ukládání…",
@@ -287,7 +401,7 @@ export const csMessages = {
         disable: "Vypnout",
         disabled: "Vypnuto",
         error: "Připojení se nepodařilo načíst nebo uložit. Zkuste to znovu nebo kontaktujte provozovatele.",
-        empty: "Pro tento prostor zatím nejsou nastavené zdroje dat.",
+        empty: "Pro tento prostor zatím žádný herní server nesbírá data.",
         state: "Stav dat",
         players: "Hráči",
         map: "Mapa",
@@ -312,7 +426,7 @@ export const csMessages = {
             invalid_response: "Zdroj vrátil nepodporovanou odpověď.",
             unsupported: "Sběr pozastaven: požadovaná funkce není dostupná.",
             configuration:
-                "Sběr pozastaven: provozovatel musí zkontrolovat nastavení zdroje.",
+                "Sběr pozastaven: zkontrolujte adresu a klíč serveru, nebo kontaktujte operátora Logi.",
         },
     },
     apiKeys: {

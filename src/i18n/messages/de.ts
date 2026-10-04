@@ -230,46 +230,161 @@ export const deMessages = {
         },
     },
     gameData: {
-        sourcesTitle: "Anbieterquellen",
-        sourcesDescription:
-            "Registriere die Spielserver, von denen dieser Arbeitsbereich Daten sammelt. Eine Quelle nennt den Anbieter, seinen HTTPS-Ursprung, die Server-ID beim Anbieter und die Convex-Umgebungsvariable mit dem Token. Tokens werden hier nie eingegeben oder angezeigt: Der Betreiber speichert sie in Convex, du verweist nur auf den Variablennamen. Ein Token rotierst du, indem du den neuen Wert unter einer neuen Variablen speicherst und den Verweis änderst.",
-        sourceRef: "Referenz",
-        sourceProvider: "Anbieter",
-        sourceProviders: {
-            hll_crcon: "Hell Let Loose CRCON",
-            wardogs_warcon: "Wardogs-Warcon-Panel",
-            wardogs_rcon: "Wardogs RCON",
-            wardogs_public_directory: "Wardog-Servers-Verzeichnis",
-        },
-        sourceServerId: "Server-ID beim Anbieter",
-        sourceOrigin: "HTTPS-Ursprung",
-        sourceSecretRef: "Token-Variable",
-        sourceSecretRefHelp:
-            "Verwende die Form LOGI_GAME_DATA_<NAME>_TOKEN. Warcon und RCON benötigen eine Token-Variable, Warcon zusätzlich die Server-UUID des Panels; das Wardog-Servers-Verzeichnis braucht keine. Die Allowlist enthält optionale IP-Adressen oder Hosts, die der Collector kontaktieren darf.",
-        sourceAllowlist: "Netzwerk-Allowlist (optional)",
-        sourceRegister: "Quelle registrieren",
-        sourceRotate: "Verweis aktualisieren",
-        sourceRemove: "Entfernen",
-        sourceSaving: "Wird gespeichert…",
-        sourceSaved:
-            "Quellen gespeichert. Aktiviere unten die Verbindung, um die Erfassung zu starten.",
-        sourceNone:
-            "Für diesen Arbeitsbereich ist noch keine Anbieterquelle registriert.",
-        sourceOperatorManaged: "Betreiberkatalog (schreibgeschützt)",
-        sourceWorkspaceManaged: "In diesem Arbeitsbereich registriert",
-        sourceErrors: {
-            invalid_source:
-                "Prüfe die Felder: HTTPS-Ursprung ohne Pfad, Anbieterregeln für Server-ID und Token-Variable sowie eine Referenz in Kleinbuchstaben.",
-            duplicate_ref:
-                "Diese Referenz wird bereits verwendet. Wähle eine andere.",
-            duplicate_identity:
-                "Dieser Anbieterserver ist in diesem Arbeitsbereich bereits registriert.",
-            limit_reached:
-                "Dieser Arbeitsbereich hat bereits 20 registrierte Quellen.",
-            not_found:
-                "Diese Quelle existiert nicht mehr. Aktualisiere die Liste.",
-            unavailable:
-                "Anbieterquellen konnten nicht geladen oder gespeichert werden. Bitte aktualisieren und erneut versuchen.",
+        servers: {
+            title: "Spielserver",
+            description:
+                "Verbinde die Hell-Let-Loose-CRCON- oder Wardogs-Warcon-Server, von denen dieser Arbeitsbereich Daten sammelt: die HTTPS-Adresse des Servers, seine ID beim Anbieter und den API-Schlüssel. Logi testet die Verbindung und speichert den Schlüssel verschlüsselt. Ein gespeicherter Schlüssel kann weder angezeigt noch exportiert werden; um ihn zu ändern, gib einen neuen ein.",
+            encryptionUnavailable:
+                "Die verschlüsselte Schlüsselablage ist in dieser Logi-Installation noch nicht aktiviert. Du kannst einen Schlüssel testen, aber das Speichern ist deaktiviert, bis der Logi-Betreiber sie aktiviert.",
+            none: "Mit diesem Arbeitsbereich ist noch kein Spielserver verbunden.",
+            limit: "Höchstens {limit} Server pro Arbeitsbereich.",
+            add: "Server verbinden",
+            managed: {
+                workspace: "In diesem Arbeitsbereich verwaltet",
+                operator: "Vom Logi-Betreiber eingerichtet",
+            },
+            games: {
+                hell_let_loose: "Hell Let Loose",
+                wardogs: "Wardogs",
+            },
+            providers: {
+                hll_crcon: "CRCON",
+                wardogs_warcon: "Warcon-Panel",
+                wardogs_rcon: "Wardogs RCON",
+                wardogs_public_directory:
+                    "Wardog-Servers-Verzeichnis (öffentlich)",
+            },
+            fields: {
+                displayName: "Name",
+                game: "Spiel",
+                provider: "Anbieter",
+                origin: "HTTPS-Adresse",
+                serverId: "Server-ID beim Anbieter",
+                key: "API-Schlüssel",
+                newKey: "Neuer API-Schlüssel",
+            },
+            hints: {
+                origin: "Nur die Adresse, zum Beispiel https://panel.example.com, ohne Pfad.",
+                serverId: {
+                    hll_crcon: "Die CRCON-Servernummer, meist 1.",
+                    wardogs_warcon: "Die Server-UUID aus dem Warcon-Panel.",
+                    wardogs_rcon: "Die Server-ID, die deine RCON-API meldet.",
+                    wardogs_public_directory:
+                        "Die Server-ID im Wardog-Servers-Verzeichnis.",
+                },
+                key: "Wird einmal gesendet, getestet und verschlüsselt gespeichert. Logi zeigt ihn nie wieder an.",
+                keyOptional:
+                    "Bei CRCON optional: Ohne Schlüssel liest Logi nur öffentliche Daten. Mit Schlüssel braucht dessen CRCON-Benutzer die Berechtigung, Verbindungsinformationen anzuzeigen.",
+                keyNone:
+                    "Das öffentliche Verzeichnis braucht keinen Schlüssel.",
+            },
+            enableAfterTest: "Nach erfolgreichem Test mit dem Sammeln beginnen",
+            allowUnverified:
+                "Auch bei fehlgeschlagenem Test speichern (das Sammeln stoppt, bis ein Test besteht)",
+            actions: {
+                test: "Verbindung testen",
+                testing: "Wird getestet…",
+                save: "Server speichern",
+                saving: "Wird gespeichert…",
+                testStored: "Gespeicherten Schlüssel testen",
+                changeKey: "Schlüssel ändern",
+                saveKey: "Schlüssel speichern",
+                cancel: "Abbrechen",
+                removeKey: "Schlüssel entfernen",
+                rename: "Umbenennen",
+                saveName: "Namen speichern",
+                enable: "Sammeln starten",
+                disable: "Sammeln stoppen",
+                remove: "Server entfernen",
+            },
+            confirm: {
+                removeKey:
+                    "Den gespeicherten Schlüssel für {name} entfernen? Sammeln, das den Schlüssel braucht, stoppt.",
+                remove: "{name} entfernen? Das Sammeln stoppt und der gespeicherte Schlüssel wird gelöscht. Gesammelter Verlauf bleibt erhalten.",
+            },
+            key: {
+                set: "Schlüssel verschlüsselt gespeichert",
+                missing: "Kein Schlüssel gespeichert",
+                not_required: "Kein Schlüssel nötig",
+                environment: "Schlüssel vom Logi-Betreiber gesetzt",
+                needs_operator:
+                    "Alter Schlüsselverweis: Gib den Schlüssel hier erneut ein oder bitte den Logi-Betreiber um die Migration",
+            },
+            keyChanged: "Schlüssel geändert {date}",
+            verified: "Schlüssel hat den letzten Test bestanden",
+            unverified: "Schlüssel nicht geprüft: Teste ihn vor dem Sammeln",
+            failure: {
+                key_unavailable:
+                    "Der gespeicherte Schlüssel kann nicht verwendet werden, weil der Verschlüsselungsschlüssel des Betreibers fehlt. Wende dich an den Logi-Betreiber.",
+                decrypt_failed:
+                    "Der gespeicherte Schlüssel kann für diesen Server nicht gelesen werden. Gib den Schlüssel erneut ein.",
+            },
+            collection: {
+                enabled: "Sammelt",
+                disabled: "Sammelt nicht",
+                none: "Kein Sammeln eingerichtet",
+                lastSuccess: "Letztes erfolgreiches Sammeln {date}",
+                never: "Noch kein erfolgreiches Sammeln",
+            },
+            lastTest: "Letzter Test {date}: {outcome}",
+            saved: {
+                created: "Server gespeichert, das Sammeln läuft.",
+                draft: "Server als deaktivierter Entwurf gespeichert. Teste ihn und starte das Sammeln, sobald der Test besteht.",
+                key: "Schlüssel gespeichert.",
+                keyUnverified:
+                    "Schlüssel gespeichert, aber der Test ist fehlgeschlagen, daher wurde das Sammeln gestoppt.",
+                removedKey: "Schlüssel entfernt.",
+                renamed: "Name gespeichert.",
+                removed: "Server entfernt.",
+                enabled: "Sammeln gestartet.",
+                disabled: "Sammeln gestoppt.",
+            },
+            outcomes: {
+                ok: "Die Verbindung funktioniert und der Schlüssel wird für diesen Server akzeptiert.",
+                unauthorized: "Der Anbieter hat den Schlüssel abgelehnt.",
+                server_mismatch:
+                    "Der Anbieter hat geantwortet, aber nicht für diese Server-ID.",
+                rate_limited:
+                    "Der Anbieter drosselt Anfragen. Versuche es später erneut.",
+                timeout: "Der Anbieter hat nicht rechtzeitig geantwortet.",
+                network: "Der Anbieter ist nicht erreichbar.",
+                invalid_response:
+                    "Der Anbieter hat unerwartet geantwortet. Prüfe Adresse und Anbieter.",
+                configuration:
+                    "Diese Adresse ist nicht erlaubt (nur öffentliche HTTPS-Adressen) oder der Server ist nicht vollständig eingerichtet.",
+                unsupported: "Der Anbieter unterstützt diese Prüfung nicht.",
+                key_unavailable:
+                    "Der gespeicherte Schlüssel kann nicht verwendet werden. Gib ihn erneut ein oder wende dich an den Logi-Betreiber.",
+            },
+            errors: {
+                invalid_source:
+                    "Prüfe die Felder: eine HTTPS-Adresse ohne Pfad und eine Server-ID im Format des Anbieters.",
+                invalid_key:
+                    "Der Schlüssel muss aus 8 bis 4096 sichtbaren Zeichen ohne Leerzeichen bestehen.",
+                duplicate_name:
+                    "Ein anderer Server in diesem Arbeitsbereich hat bereits diesen Namen.",
+                duplicate_identity:
+                    "Dieser Server ist in diesem Arbeitsbereich bereits verbunden.",
+                limit_reached:
+                    "Dieser Arbeitsbereich hat bereits die maximale Anzahl an Servern.",
+                not_found:
+                    "Dieser Server existiert nicht mehr. Aktualisiere die Liste.",
+                revision_conflict:
+                    "Jemand anderes hat diesen Server geändert. Aktualisiere und versuche es erneut.",
+                operator_managed:
+                    "Diesen Server richtet der Logi-Betreiber ein: Er kann hier weder umbenannt noch entfernt werden, und sein Schlüssel kann nur ersetzt werden.",
+                key_required: "Dieser Anbieter braucht einen API-Schlüssel.",
+                key_not_allowed:
+                    "Das öffentliche Verzeichnis nimmt keinen Schlüssel an.",
+                verification_required:
+                    "Der Verbindungstest ist nicht bestanden. Behebe das Problem oder speichere den Schlüssel ausdrücklich als ungeprüft.",
+                encryption_unavailable:
+                    "Die verschlüsselte Schlüsselablage ist nicht verfügbar. Wende dich an den Logi-Betreiber.",
+                rate_limited:
+                    "Zu viele Verbindungstests. Versuche es in {seconds} s erneut.",
+                unavailable:
+                    "Spielserver konnten nicht geladen oder gespeichert werden. Bitte aktualisieren und erneut versuchen.",
+            },
         },
         liveScoreboard: "Warcon Live-Scoreboard",
         scoreboardPolling:
@@ -292,7 +407,7 @@ export const deMessages = {
         historyError: "Verlauferfassung",
         title: "Spielserver-Daten",
         description:
-            "Logi sammelt Serverdaten und stellt ausgewählte Felder Ihrer Website bereit. Der Logi-Betreiber muss die Verbindungen zuerst konfigurieren.",
+            "Sammle Serverdaten in Logi und teile ausgewählte Felder mit deiner Website. Verbinde oben einen Server; das Sammeln beginnt, sobald sein Verbindungstest besteht.",
         loading: "Wird geladen…",
         refresh: "Aktualisieren",
         saving: "Wird gespeichert…",
@@ -300,7 +415,7 @@ export const deMessages = {
         disable: "Deaktivieren",
         disabled: "Deaktiviert",
         error: "Verbindungen konnten nicht geladen oder gespeichert werden. Erneut versuchen oder den Betreiber kontaktieren.",
-        empty: "Für diesen Arbeitsbereich sind keine Datenquellen konfiguriert.",
+        empty: "Für diesen Arbeitsbereich sammelt noch kein Spielserver Daten.",
         state: "Datenstatus",
         players: "Spieler",
         map: "Karte",
@@ -329,7 +444,7 @@ export const deMessages = {
             unsupported:
                 "Erfassung pausiert: Die erforderliche Funktion ist nicht verfügbar.",
             configuration:
-                "Erfassung pausiert: Der Betreiber muss die Quelle prüfen.",
+                "Sammeln pausiert: Prüfe Adresse und Schlüssel des Servers oder wende dich an den Logi-Betreiber.",
         },
     },
     apiKeys: {

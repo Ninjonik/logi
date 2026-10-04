@@ -8,6 +8,7 @@ import { createProviderHttp } from "../src/infrastructure/game-data/provider-htt
 import { warconQuerySchema } from "../src/domain/game-data/warcon-query"
 import { readWarcon } from "../src/infrastructure/game-data/warcon"
 import { makeFunctionReference } from "convex/server"
+import { runCredential } from "./gameDataCollector"
 import { dashboardActor } from "./dashboardActor"
 import { action } from "./_generated/server"
 import { v } from "convex/values"
@@ -42,12 +43,15 @@ export const read = action({
                     >("warconReads:reserve"),
                     args
                 ),
-            read: (source, input) =>
+            read: (source, input, claim) =>
                 readWarcon(
                     source,
                     input,
                     createProviderHttp(source, {
-                        resolveSecret: (ref) => process.env[ref],
+                        credential: runCredential(ctx, source, {
+                            connectionId: args.connectionId,
+                            generation: claim.generation,
+                        }),
                         now: Date.now,
                     }),
                     Date.now

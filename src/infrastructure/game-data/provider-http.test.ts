@@ -28,7 +28,7 @@ test("a claimed connection can perform a bounded read without serializing its le
         etag: null,
     }
     const http = createProviderHttp(claimed, {
-        resolveSecret: () => "synthetic-token",
+        credential: async () => "synthetic-token",
         now: Date.now,
         fetch: async (url) => {
             assert.equal(String(url), "https://rcon.example.test/v1/status")
@@ -39,7 +39,6 @@ test("a claimed connection can perform a bounded read without serializing its le
         players: { current: 0, max: 100 },
     })
     const missing = createProviderHttp(claimed, {
-        resolveSecret: () => undefined,
         now: Date.now,
         fetch: async () => {
             assert.fail("no request without configured credentials")
@@ -51,7 +50,7 @@ test("a claimed connection can perform a bounded read without serializing its le
 test("only allowed GET routes receive provider credentials; redirects cannot forward them", async () => {
     const calls: string[] = []
     const http = createProviderHttp(source, {
-        resolveSecret: () => "synthetic-token",
+        credential: async () => "synthetic-token",
         now: Date.now,
         fetch: async (url, init) => {
             calls.push(String(url))
@@ -78,7 +77,7 @@ test("only allowed GET routes receive provider credentials; redirects cannot for
 
 test("bounded transport sanitizes upstream failures and honors Retry-After", async () => {
     const http = createProviderHttp(source, {
-        resolveSecret: () => "synthetic-token",
+        credential: async () => "synthetic-token",
         now: () => 0,
         fetch: async () =>
             new Response("secret response", {
@@ -95,13 +94,13 @@ test("bounded transport sanitizes upstream failures and honors Retry-After", asy
             error.retryAfterMs === 120_000
     )
     const invalid = createProviderHttp(source, {
-        resolveSecret: () => "synthetic-token",
+        credential: async () => "synthetic-token",
         now: Date.now,
         fetch: async () => new Response("not json"),
     })
     await assert.rejects(invalid.get("/v1/status"), /invalid_response/)
     const huge = createProviderHttp(source, {
-        resolveSecret: () => "synthetic-token",
+        credential: async () => "synthetic-token",
         now: Date.now,
         fetch: async () => new Response('"' + "x".repeat(2_100_000) + '"'),
     })
@@ -110,7 +109,7 @@ test("bounded transport sanitizes upstream failures and honors Retry-After", asy
 
 test("deadline also bounds a transport that never resolves", async () => {
     const http = createProviderHttp(source, {
-        resolveSecret: () => "synthetic-token",
+        credential: async () => "synthetic-token",
         now: Date.now,
         timeoutMs: 10,
         fetch: async () => new Promise<Response>(() => {}),
@@ -121,7 +120,7 @@ test("deadline also bounds a transport that never resolves", async () => {
 test("provider access denial has a sanitized category and no upstream payload", async () => {
     for (const status of [401, 403]) {
         const http = createProviderHttp(source, {
-            resolveSecret: () => "synthetic-token",
+            credential: async () => "synthetic-token",
             now: Date.now,
             fetch: async () =>
                 new Response("private upstream detail", { status }),
@@ -151,4 +150,40 @@ test("DNS destinations deny metadata, loopback and private networks unless expli
     assert.equal(isAllowedAddress("2606:4700:4700::1111", []), true)
     assert.equal(isAllowedAddress("10.20.1.2", ["10.20.1.2"]), true)
     assert.equal(isAllowedAddress("8.8.8.8", ["10.20.1.2"]), false)
+})
+
+test("a resolved key that could split a header, or a key for a keyless provider, is never sent", async () => {
+    let requests = 0
+    const fetch = async () => {
+        requests++
+        return Response.json({})
+    }
+    for (const key of ["token\r\nx-forwarded-for: 1", "two words", ""]) {
+        const http = createProviderHttp(source, {
+            credential: async () => key,
+            now: Date.now,
+            fetch,
+        })
+        await assert.rejects(http.get("/v1/status"), /configuration/)
+    }
+    const directory = parseSources(
+        JSON.stringify([
+            {
+                ref: "dir",
+                guildId: "guild",
+                gameId: "wardogs",
+                provider: "wardogs_public_directory",
+                providerServerId: "1",
+                origin: "https://api.wardogservers.com",
+                secretRef: null,
+            },
+        ])
+    )[0]!
+    const keyed = createProviderHttp(directory, {
+        credential: async () => "synthetic-token",
+        now: Date.now,
+        fetch,
+    })
+    await assert.rejects(keyed.get("/v1/servers/1"), /configuration/)
+    assert.equal(requests, 0)
 })

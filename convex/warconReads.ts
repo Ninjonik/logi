@@ -16,7 +16,7 @@ import type { WarconPrepared } from "../src/application/game-data/read-warcon"
 import { internalMutation, type MutationCtx } from "./_generated/server"
 import { makeFunctionReference } from "convex/server"
 import { gameDataError } from "./gameDataValidators"
-import { catalogSources } from "./gameDataCatalog"
+import { connectionSource } from "./gameDataCatalog"
 import { v } from "convex/values"
 
 const accessArgs = {
@@ -91,15 +91,8 @@ async function authorize(ctx: MutationCtx, args: Access) {
         row.gameId !== "wardogs"
     )
         return null
-    const source = (await catalogSources(ctx)).find(
-        (s) => s.ref === row.sourceRef && s.guildId === args.guildId
-    )
-    if (
-        !source ||
-        source.provider !== "wardogs_warcon" ||
-        JSON.stringify(source) !== row.sourceFingerprint
-    )
-        return null
+    const source = await connectionSource(ctx, row)
+    if (!source || source.provider !== "wardogs_warcon") return null
     return { row, source, input, queryJson: JSON.stringify(input) }
 }
 const pruneReference = makeFunctionReference<"mutation">("warconReads:prune")

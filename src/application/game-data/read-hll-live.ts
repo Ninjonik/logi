@@ -3,7 +3,7 @@ import {
     type HllLive,
     type HllLiveEnvelope,
 } from "../../domain/game-data/hll-live"
-import type { DataSource } from "../../domain/game-data/contracts"
+import type { ResolvedSource } from "../../domain/game-data/credentials"
 
 export type HllClaim = { cacheId: string; generation: number; fence: number }
 export type HllPrepared =
@@ -13,7 +13,7 @@ export type HllPrepared =
     | {
           kind: "claimed"
           claim: HllClaim
-          source: DataSource
+          source: ResolvedSource
           previous?: HllLive
       }
 export type HllServed =
@@ -25,7 +25,11 @@ export async function serveHllLive(
     ports: {
         now(): number
         prepare(): Promise<HllPrepared>
-        read(source: DataSource, previous?: HllLive): Promise<HllLive>
+        read(
+            source: ResolvedSource,
+            previous: HllLive | undefined,
+            claim: HllClaim
+        ): Promise<HllLive>
         finish(claim: HllClaim, data: HllLive): Promise<boolean>
     }
 ): Promise<HllServed> {
@@ -34,7 +38,11 @@ export async function serveHllLive(
     const data =
         prepared.kind === "cached"
             ? prepared.data
-            : await ports.read(prepared.source, prepared.previous)
+            : await ports.read(
+                  prepared.source,
+                  prepared.previous,
+                  prepared.claim
+              )
     // An expired lease or a moved fence is a timing collision, not a scope failure.
     if (
         prepared.kind === "claimed" &&

@@ -221,42 +221,157 @@ export const enMessages = {
         },
     },
     gameData: {
-        sourcesTitle: "Provider sources",
-        sourcesDescription:
-            "Register the game servers this workspace collects from. A source names the provider, its HTTPS origin, the provider's server ID and the Convex environment variable that holds the token. Tokens are never entered or shown here: the operator stores them in Convex, and you only point at the variable name. Rotate a token by storing the new value under a new variable and updating the reference.",
-        sourceRef: "Reference",
-        sourceProvider: "Provider",
-        sourceProviders: {
-            hll_crcon: "Hell Let Loose CRCON",
-            wardogs_warcon: "Wardogs Warcon panel",
-            wardogs_rcon: "Wardogs RCON",
-            wardogs_public_directory: "Wardog Servers directory",
-        },
-        sourceServerId: "Provider server ID",
-        sourceOrigin: "HTTPS origin",
-        sourceSecretRef: "Token variable",
-        sourceSecretRefHelp:
-            "Use the form LOGI_GAME_DATA_<NAME>_TOKEN. Warcon and RCON require a token variable and Warcon needs the panel server UUID; the Wardog Servers directory takes none. The allowlist holds optional IP addresses or hosts the collector may contact.",
-        sourceAllowlist: "Network allowlist (optional)",
-        sourceRegister: "Register source",
-        sourceRotate: "Update reference",
-        sourceRemove: "Remove",
-        sourceSaving: "Saving…",
-        sourceSaved:
-            "Sources saved. Enable the connection below to start collecting.",
-        sourceNone: "No provider source is registered for this workspace yet.",
-        sourceOperatorManaged: "Operator catalog (read-only)",
-        sourceWorkspaceManaged: "Registered in this workspace",
-        sourceErrors: {
-            invalid_source:
-                "Check the fields: HTTPS origin without a path, provider rules for the server ID and token variable, and a lowercase reference.",
-            duplicate_ref: "This reference is already used. Choose another.",
-            duplicate_identity:
-                "This provider server is already registered in this workspace.",
-            limit_reached: "This workspace already has 20 registered sources.",
-            not_found: "This source no longer exists. Refresh the list.",
-            unavailable:
-                "Unable to load or save provider sources. Refresh and retry.",
+        servers: {
+            title: "Game servers",
+            description:
+                "Connect the Hell Let Loose CRCON or Wardogs Warcon servers this workspace collects from: the server's HTTPS address, its ID at the provider and the API key. Logi tests the connection and stores the key encrypted. A saved key can't be shown or exported; to change it, enter a new one.",
+            encryptionUnavailable:
+                "Encrypted key storage is not activated on this Logi deployment yet. You can test a key, but saving keys is disabled until the Logi operator activates it.",
+            none: "No game server is connected to this workspace yet.",
+            limit: "Up to {limit} servers per workspace.",
+            add: "Connect a server",
+            managed: {
+                workspace: "Managed in this workspace",
+                operator: "Configured by the Logi operator",
+            },
+            games: {
+                hell_let_loose: "Hell Let Loose",
+                wardogs: "Wardogs",
+            },
+            providers: {
+                hll_crcon: "CRCON",
+                wardogs_warcon: "Warcon panel",
+                wardogs_rcon: "Wardogs RCON",
+                wardogs_public_directory: "Wardog Servers directory (public)",
+            },
+            fields: {
+                displayName: "Name",
+                game: "Game",
+                provider: "Provider",
+                origin: "HTTPS address",
+                serverId: "Server ID at the provider",
+                key: "API key",
+                newKey: "New API key",
+            },
+            hints: {
+                origin: "Only the address, for example https://panel.example.com, without a path.",
+                serverId: {
+                    hll_crcon: "The CRCON server number, usually 1.",
+                    wardogs_warcon:
+                        "The server UUID shown in the Warcon panel.",
+                    wardogs_rcon: "The server ID your RCON API reports.",
+                    wardogs_public_directory:
+                        "The server ID in the Wardog Servers directory.",
+                },
+                key: "Sent once, tested, then stored encrypted. Logi never shows it again.",
+                keyOptional:
+                    "Optional for CRCON: without a key Logi reads only public data. With a key, the key's CRCON user needs permission to view connection info.",
+                keyNone: "The public directory needs no key.",
+            },
+            enableAfterTest: "Start collecting after a successful test",
+            allowUnverified:
+                "Save even if the test fails (collection stops until a test passes)",
+            actions: {
+                test: "Test connection",
+                testing: "Testing…",
+                save: "Save server",
+                saving: "Saving…",
+                testStored: "Test saved key",
+                changeKey: "Change key",
+                saveKey: "Save key",
+                cancel: "Cancel",
+                removeKey: "Remove key",
+                rename: "Rename",
+                saveName: "Save name",
+                enable: "Start collecting",
+                disable: "Stop collecting",
+                remove: "Remove server",
+            },
+            confirm: {
+                removeKey:
+                    "Remove the stored key for {name}? Collection that needs the key stops.",
+                remove: "Remove {name}? Collection stops and its stored key is deleted. Collected history is kept.",
+            },
+            key: {
+                set: "Key stored encrypted",
+                missing: "No key stored",
+                not_required: "No key needed",
+                environment: "Key set by the Logi operator",
+                needs_operator:
+                    "Old key reference: enter the key again here, or ask the Logi operator to migrate it",
+            },
+            keyChanged: "Key changed {date}",
+            verified: "Key passed its last test",
+            unverified: "Key not verified: test it before collecting",
+            failure: {
+                key_unavailable:
+                    "The stored key can't be used because the operator's encryption key is unavailable. Contact the Logi operator.",
+                decrypt_failed:
+                    "The stored key can't be read for this server. Enter the key again.",
+            },
+            collection: {
+                enabled: "Collecting",
+                disabled: "Not collecting",
+                none: "No collection set up",
+                lastSuccess: "Last successful collection {date}",
+                never: "No successful collection yet",
+            },
+            lastTest: "Last test {date}: {outcome}",
+            saved: {
+                created: "Server saved and collecting.",
+                draft: "Server saved as a disabled draft. Test it and start collecting when it passes.",
+                key: "Key saved.",
+                keyUnverified:
+                    "Key saved, but the test failed, so collection has stopped.",
+                removedKey: "Key removed.",
+                renamed: "Name saved.",
+                removed: "Server removed.",
+                enabled: "Collection started.",
+                disabled: "Collection stopped.",
+            },
+            outcomes: {
+                ok: "The connection works and the key is accepted for this server.",
+                unauthorized: "The provider rejected the key.",
+                server_mismatch:
+                    "The provider answered, but not for this server ID.",
+                rate_limited: "The provider is rate limiting. Retry later.",
+                timeout: "The provider did not answer in time.",
+                network: "The provider could not be reached.",
+                invalid_response:
+                    "The provider sent an unexpected answer. Check the address and provider.",
+                configuration:
+                    "This address isn't allowed (public HTTPS addresses only) or the server isn't fully configured.",
+                unsupported: "The provider doesn't support this check.",
+                key_unavailable:
+                    "The stored key can't be used. Enter it again or contact the Logi operator.",
+            },
+            errors: {
+                invalid_source:
+                    "Check the fields: an HTTPS address without a path and a server ID in the provider's format.",
+                invalid_key:
+                    "The key must be 8 to 4096 visible characters without spaces.",
+                duplicate_name:
+                    "Another server in this workspace already has this name.",
+                duplicate_identity:
+                    "This server is already connected in this workspace.",
+                limit_reached:
+                    "This workspace already has the maximum number of servers.",
+                not_found: "This server no longer exists. Refresh the list.",
+                revision_conflict:
+                    "Someone else changed this server. Refresh and try again.",
+                operator_managed:
+                    "The Logi operator configures this server: it can't be renamed or removed here, and its key can only be replaced.",
+                key_required: "This provider needs an API key.",
+                key_not_allowed: "The public directory doesn't take a key.",
+                verification_required:
+                    "The connection test didn't pass. Fix the problem, or save the key explicitly as unverified.",
+                encryption_unavailable:
+                    "Encrypted key storage isn't available. Contact the Logi operator.",
+                rate_limited:
+                    "Too many connection tests. Retry in {seconds} s.",
+                unavailable:
+                    "Unable to load or save game servers. Refresh and retry.",
+            },
         },
         liveScoreboard: "Warcon live scoreboard",
         scoreboardPolling:
@@ -278,7 +393,7 @@ export const enMessages = {
         historyError: "History collection",
         title: "Game server data",
         description:
-            "Collect server data in Logi and share selected fields with your website. Connections must first be configured by the Logi operator.",
+            "Collect server data in Logi and share selected fields with your website. Connect a server above; collection starts after its connection test passes.",
         loading: "Loading…",
         refresh: "Refresh",
         saving: "Saving…",
@@ -286,7 +401,7 @@ export const enMessages = {
         disable: "Disable",
         disabled: "Disabled",
         error: "Unable to load or save connections. Retry or contact the operator.",
-        empty: "No data sources are configured for this workspace.",
+        empty: "No game server collects data for this workspace yet.",
         state: "Data status",
         players: "Players",
         map: "Map",
@@ -313,7 +428,7 @@ export const enMessages = {
             unsupported:
                 "Collection paused: the required capability is unavailable.",
             configuration:
-                "Collection paused: the operator must review this source.",
+                "Collection paused: check the server's address and key, or contact the Logi operator.",
         },
     },
     apiKeys: {

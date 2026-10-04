@@ -1,82 +1,76 @@
 import {
-    sourceRegistrationSchema,
-    sourceRotationSchema,
-} from "@/domain/game-data/source-registration"
+    credentialEncryption,
+    newSourceRef,
+    testGameServerConnection,
+} from "@/lib/gateways/game-server-credentials"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
+import { gameDataSourceHandlers } from "@/lib/api/game-data-sources-route"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
-import { fetchMutation, fetchQuery } from "convex/nextjs"
-import { readBoundedJson } from "@/lib/api/request-json"
+import { fetchAction, fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 import { getInternalAuthSecret } from "@/lib/env"
-import { z } from "zod"
 
 export const runtime = "nodejs"
 type Context = { params: Promise<{ serverId: string }> }
-const json = (value: unknown, status = 200) =>
-    Response.json(value, { status, headers: { "Cache-Control": "no-store" } })
-async function access(context: Context) {
-    const server = await getServerContextUncached(
-            (await context.params).serverId
-        ),
-        actor = await currentDashboardActor()
-    return server?.canAdmin && actor
-        ? {
-              secret: getInternalAuthSecret(),
-              guildId: server.server.discordId,
-              actor,
-          }
-        : null
+
+/** Every Convex call carries the actor so the transaction re-checks the session and admin rights. */
+async function access(guildId: string) {
+    const actor = await currentDashboardActor()
+    if (!actor) throw new Error("Forbidden.")
+    return { secret: getInternalAuthSecret(), guildId, actor }
 }
-const command = z.discriminatedUnion("action", [
-    z.strictObject({
-        action: z.literal("register"),
-        registration: sourceRegistrationSchema,
-    }),
-    z.strictObject({
-        action: z.literal("rotate"),
-        rotation: sourceRotationSchema,
-    }),
-    z.strictObject({
-        action: z.literal("remove"),
-        ref: z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/),
-    }),
-])
-const mutationFor = {
-    register: "gameDataSources:register",
-    rotate: "gameDataSources:rotate",
-    remove: "gameDataSources:remove",
-} as const
+const mutation = (name: string) => makeFunctionReference<"mutation">(name)
+
+const handlers = gameDataSourceHandlers({
+    authorize: async (serverId) => {
+        const [server, actor] = await Promise.all([
+            getServerContextUncached(serverId),
+            currentDashboardActor(),
+        ])
+        return server?.canAdmin && actor
+            ? { guildId: server.server.discordId }
+            : null
+    },
+    list: async (guildId) =>
+        fetchQuery(
+            makeFunctionReference<"query">("gameDataSources:list"),
+            await access(guildId)
+        ),
+    reserveTest: async (guildId, ref) =>
+        fetchMutation(mutation("gameDataSources:reserveTest"), {
+            ...(await access(guildId)),
+            ref,
+        }),
+    create: async (guildId, input) =>
+        fetchMutation(mutation("gameDataSources:create"), {
+            ...(await access(guildId)),
+            ...input,
+        }),
+    setCredential: async (guildId, input) =>
+        fetchMutation(mutation("gameDataSources:setCredential"), {
+            ...(await access(guildId)),
+            ...input,
+        }),
+    command: async (guildId, name, input) =>
+        fetchMutation(mutation(`gameDataSources:${name}`), {
+            ...(await access(guildId)),
+            ...input,
+        }),
+    testStored: async (guildId, ref) =>
+        fetchAction(
+            makeFunctionReference<"action">(
+                "gameDataCredentialActions:testStored"
+            ),
+            { ...(await access(guildId)), ref }
+        ),
+    encryption: credentialEncryption,
+    testConnection: testGameServerConnection,
+    newRef: newSourceRef,
+})
 
 export async function GET(_request: Request, context: Context) {
-    const args = await access(context)
-    if (!args) return json({ error: "forbidden" }, 403)
-    try {
-        return json(
-            await fetchQuery(
-                makeFunctionReference<"query">("gameDataSources:list"),
-                args
-            )
-        )
-    } catch {
-        return json({ error: "unavailable" }, 503)
-    }
+    return handlers.GET((await context.params).serverId)
 }
-
 export async function POST(request: Request, context: Context) {
-    if (request.headers.get("origin") !== new URL(request.url).origin)
-        return json({ error: "forbidden" }, 403)
-    const args = await access(context)
-    if (!args) return json({ error: "forbidden" }, 403)
-    const input = command.safeParse(await readBoundedJson(request, 8192))
-    if (!input.success) return json({ error: "invalid_source" }, 400)
-    try {
-        const { action, ...payload } = input.data
-        const result = (await fetchMutation(
-            makeFunctionReference<"mutation">(mutationFor[action]),
-            { ...args, ...payload }
-        )) as { ok?: true; error?: string }
-        return result.error ? json({ error: result.error }, 400) : json(result)
-    } catch {
-        return json({ error: "unavailable" }, 503)
-    }
+    return handlers.POST(request, (await context.params).serverId)
 }
