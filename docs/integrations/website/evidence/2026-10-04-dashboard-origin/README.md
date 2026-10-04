@@ -62,6 +62,15 @@ The first complete test invocation omitted the required offline environment and
 also failed fixture initialization. The configured rerun above is the useful
 comparison. Do not treat the complete test suite or full build as green.
 
+Hosted [Verify run 37218745448](https://github.com/Ninjonik/logi/actions/runs/37218745448)
+stopped before typecheck/tests at `Verify generated contracts`: the offline
+generator removes the `managedRolePolicy` import and entry from
+`convex/_generated/api.d.ts`. Running that same generator on clean baseline
+`e8a8743` produced the identical two-line removal. The generator, module and
+generated inventory are unchanged by this patch and by the rebase to `7ed7f40`.
+This inherited contract-inventory mismatch remains unresolved in this web fix;
+the hosted check is not green. GitGuardian's check passed on the initial PR head.
+
 The three pre-existing failures are in
 `src/infrastructure/convex/member-role-operations.test.ts` (lines 92, 492, 522),
 each reporting `Missing expected rejection` for `/owner/`:
