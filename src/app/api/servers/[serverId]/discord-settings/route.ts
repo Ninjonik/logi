@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { invalidPublicationDestination } from "@/domain/discord-publications/destinations"
-import { discordSettingsSchema } from "@/lib/validation/discord-settings"
+import { discordSettingsPatchSchema } from "@/lib/validation/discord-settings"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { saveDiscordConfig } from "@/lib/server-discord-settings"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
@@ -23,7 +23,7 @@ export async function POST(
 
     try {
         const json = await request.json()
-        const parsed = discordSettingsSchema.safeParse(json)
+        const parsed = discordSettingsPatchSchema.safeParse(json)
 
         if (!parsed.success) {
             return NextResponse.json(
@@ -37,7 +37,14 @@ export async function POST(
         }
 
         const invalidChannel = invalidPublicationDestination(
-            parsed.data,
+            {
+                ...parsed.data,
+                announcementsChannelId:
+                    parsed.data.announcementsChannelId ?? undefined,
+                eventInfoChannelId: parsed.data.eventInfoChannelId ?? undefined,
+                errorsChannelId: parsed.data.errorsChannelId ?? undefined,
+                calendarChannelId: parsed.data.calendarChannelId ?? undefined,
+            },
             await fetchDiscordGuildChannels(serverContext.server.discordId)
         )
         if (invalidChannel)
@@ -51,10 +58,7 @@ export async function POST(
                 { status: 400 }
             )
 
-        await saveDiscordConfig({
-            guildId: serverId,
-            ...parsed.data,
-        })
+        await saveDiscordConfig(serverId, parsed.data)
 
         revalidateCacheEntries([
             appCacheTags.serverContext(serverId),

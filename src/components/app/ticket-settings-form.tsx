@@ -265,15 +265,7 @@ export function TicketSettingsForm({
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
-                    timezone: config?.timezone ?? "UTC",
-                    defaultLanguage: config?.defaultLanguage ?? "en",
-                    announcementsChannelId: config?.announcementsChannelId,
-                    forumCategoryId: config?.forumCategoryId,
-                    meetingChannelId: config?.meetingChannelId,
-                    clanRoleId: config?.clanRoleId,
-                    dashboardAdminRoleId: config?.dashboardAdminRoleId,
                     ticketSettings: normalizedTicketSettings,
-                    membershipSettings: config?.membershipSettings,
                 }),
             }
         )

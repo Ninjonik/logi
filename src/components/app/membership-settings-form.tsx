@@ -280,7 +280,6 @@ export function MembershipSettingsForm({
     }
 
     async function handleSave() {
-        const sharedConfig = config
         const membershipSettings = settings.enabled
             ? {
                   enabled: true,
@@ -326,18 +325,7 @@ export function MembershipSettingsForm({
             {
                 method: "POST",
                 headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                    timezone: sharedConfig?.timezone ?? "UTC",
-                    defaultLanguage: sharedConfig?.defaultLanguage ?? "en",
-                    announcementsChannelId:
-                        sharedConfig?.announcementsChannelId,
-                    forumCategoryId: sharedConfig?.forumCategoryId,
-                    meetingChannelId: sharedConfig?.meetingChannelId,
-                    clanRoleId: sharedConfig?.clanRoleId,
-                    dashboardAdminRoleId: sharedConfig?.dashboardAdminRoleId,
-                    ticketSettings: sharedConfig?.ticketSettings,
-                    membershipSettings,
-                }),
+                body: JSON.stringify({ membershipSettings }),
             }
         )
 
