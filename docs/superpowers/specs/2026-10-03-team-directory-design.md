@@ -1,10 +1,15 @@
 # Workspace team directory for HLL and Wardogs
 
 - Date: 2026-10-03
-- Status: implemented on `feat/valkyria-integration` (see the
-  [v0.15 handoff](../../integrations/website/v0.15/README.md)); synthetic tests
-  and static checks pass; the runtime acceptance under
-  [Verification](#verification-and-delivery-acceptance) is pending
+- Status: implemented on `feat/valkyria-integration`; the per-workspace
+  ownership model is superseded by the
+  [global teams and competitions design](2026-10-04-global-teams-and-competitions-design.md)
+  (one global catalogue per game, see the
+  [global team catalogue handoff](../../integrations/website/v0.15/README.md));
+  the snapshot, logo, website and Discord rules below still apply unless that
+  design changes them. Synthetic tests and static checks pass; the runtime
+  acceptance under [Verification](#verification-and-delivery-acceptance) is
+  pending
 - Source baseline: `09567516c919f46e8aa668fda953af5924efcb68`
 - Delivery: existing Logi PR #158
 

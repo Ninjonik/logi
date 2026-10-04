@@ -1,7 +1,9 @@
 # Global team catalogue, team requests and competitions
 
 - Date: 2026-10-04
-- Status: approved by the owner (decisions below); implementation in progress
+- Status: approved by the owner (decisions below); implemented; runtime
+  acceptance pending (website contract in the
+  [global team catalogue handoff](../../integrations/website/v0.15/README.md))
 - Supersedes: the ownership model of
   [the workspace team directory design](2026-10-03-team-directory-design.md).
   Its snapshot, logo, website and Discord rules still apply unless this
