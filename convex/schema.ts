@@ -1493,6 +1493,13 @@ export default defineSchema({
         revision: v.string(),
         lastCollectedAt: v.string(),
     }).index("guildId", ["guildId"]),
+    gameHistorySettings: defineTable({
+        guildId: v.string(),
+        // null keeps retained games indefinitely.
+        retentionDays: v.union(v.number(), v.null()),
+        updatedAt: v.string(),
+        updatedBy: v.string(),
+    }).index("guildId", ["guildId"]),
     apiKeys: defineTable({
         guildId: v.string(),
         name: v.string(),

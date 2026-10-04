@@ -1,6 +1,7 @@
 "use client"
 
 import { gameDataSettingsSchema } from "@/domain/game-data/contracts"
+import { GameHistoryRetention } from "./game-history-retention"
 import { useCallback, useEffect, useState } from "react"
 import { GameHistoryPanel } from "./game-history-panel"
 import { WarconScoreboard } from "./warcon-scoreboard"
@@ -258,6 +259,7 @@ function Connections({ serverId, dictionary }: Props) {
                     </section>
                 )
             })}
+            <GameHistoryRetention serverId={serverId} dictionary={dictionary} />
             <GameHistoryPanel serverId={serverId} dictionary={dictionary} />
         </div>
     )

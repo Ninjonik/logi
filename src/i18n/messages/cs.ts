@@ -4,6 +4,18 @@ export const csMessages = {
         description:
             "Dokončené serverové hry uchované v Logim. Frakce jsou herní strany, nikoli klanové týmy.",
         load: "Načíst / obnovit historii",
+        retentionTitle: "Uchovávání historie",
+        retentionDescription:
+            "Zvolte, jak dlouho zůstanou uložené hry serveru v tomto pracovním prostoru. Hry ukončené před tímto oknem se v nočním úklidu trvale smažou a revize historie se posune, takže weby přepočítají své součty.",
+        retentionWindow: "Uchovávat uložené hry po dobu",
+        retentionIndefinite: "Neomezeně (výchozí)",
+        retentionDays: "{days} dní",
+        retentionSave: "Uložit uchovávání",
+        retentionSaving: "Ukládání…",
+        retentionSaved:
+            "Uchovávání uloženo. Prošlé hry se odstraňují na pozadí.",
+        retentionError:
+            "Okno uchovávání nelze načíst nebo uložit. Obnovte stránku a zkuste to znovu.",
         loading: "Načítám celé období…",
         error: "Historii se nepodařilo načíst celou. Zkus to znovu nebo vyber kratší období. Částečný žebříček se nezobrazuje.",
         period: "Období",

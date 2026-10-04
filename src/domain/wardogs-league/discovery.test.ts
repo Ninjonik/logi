@@ -1,7 +1,10 @@
 import {
+    indexDueForWorkspace,
     indexUrl,
     extractMatchUrls,
     matchesWatchedTeams,
+    refreshIntervalMs,
+    sharedScanIntervalMs,
     trackingDeadline,
     trackingSettingsSchema,
 } from "./discovery"
@@ -88,5 +91,69 @@ test("refresh bounds use source start or first observation and settings require 
             outputChannelId: "bad",
         }).success,
         false
+    )
+})
+
+test("cadence settings default to the historical 10/5 minutes and accept only offered values", () => {
+    const parsed = trackingSettingsSchema.parse({
+        enabled: true,
+        teamCodes: ["VLK"],
+        inputChannelId: null,
+        outputChannelId: null,
+    })
+    assert.equal(parsed.scanMinutes, 10)
+    assert.equal(parsed.refreshMinutes, 5)
+    assert.ok(
+        !trackingSettingsSchema.safeParse({ ...parsed, scanMinutes: 7 }).success
+    )
+    assert.ok(
+        !trackingSettingsSchema.safeParse({ ...parsed, refreshMinutes: 1 })
+            .success
+    )
+    assert.equal(refreshIntervalMs({ refreshMinutes: 15 }), 15 * 60_000)
+    assert.equal(refreshIntervalMs(undefined), 5 * 60_000)
+})
+
+test("the shared scan follows the fastest enabled workspace and each workspace keeps its own cadence", () => {
+    assert.equal(sharedScanIntervalMs([]), 10 * 60_000)
+    assert.equal(
+        sharedScanIntervalMs([
+            { enabled: true, scanMinutes: 60 },
+            { enabled: false, scanMinutes: 10 },
+        ]),
+        60 * 60_000
+    )
+    assert.equal(
+        sharedScanIntervalMs([
+            { enabled: true, scanMinutes: 30 },
+            { enabled: true, scanMinutes: 15 },
+        ]),
+        15 * 60_000
+    )
+    const fetchedAt = Date.parse("2026-10-04T12:00:00.000Z")
+    assert.ok(indexDueForWorkspace({ scanMinutes: 30 }, fetchedAt))
+    assert.ok(
+        !indexDueForWorkspace(
+            { scanMinutes: 30, lastIndexAt: fetchedAt },
+            fetchedAt
+        )
+    )
+    assert.ok(
+        !indexDueForWorkspace(
+            { scanMinutes: 30, lastIndexAt: fetchedAt - 10 * 60_000 },
+            fetchedAt
+        )
+    )
+    assert.ok(
+        indexDueForWorkspace(
+            { scanMinutes: 30, lastIndexAt: fetchedAt - 30 * 60_000 + 10_000 },
+            fetchedAt
+        )
+    )
+    assert.ok(
+        indexDueForWorkspace(
+            { lastIndexAt: fetchedAt - 10 * 60_000 },
+            fetchedAt
+        )
     )
 })

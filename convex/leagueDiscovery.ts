@@ -29,6 +29,8 @@ const settingsFields = {
     teamCodes: v.array(v.string()),
     inputChannelId: v.union(v.string(), v.null()),
     outputChannelId: v.union(v.string(), v.null()),
+    scanMinutes: v.optional(v.number()),
+    refreshMinutes: v.optional(v.number()),
 }
 export const configure = mutation({
     args: {
@@ -129,6 +131,12 @@ export const list = query({
                       teamCodes: config.teamCodes,
                       inputChannelId: config.inputChannelId,
                       outputChannelId: config.outputChannelId,
+                      scanMinutes:
+                          config.scanMinutes ??
+                          DEFAULT_TRACKING_SETTINGS.scanMinutes,
+                      refreshMinutes:
+                          config.refreshMinutes ??
+                          DEFAULT_TRACKING_SETTINGS.refreshMinutes,
                   }
                 : DEFAULT_TRACKING_SETTINGS,
             scan: scan

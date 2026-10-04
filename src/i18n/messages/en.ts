@@ -4,6 +4,18 @@ export const enMessages = {
         description:
             "Completed server games retained by Logi. Factions are game sides, not clan teams.",
         load: "Load / refresh history",
+        retentionTitle: "History retention",
+        retentionDescription:
+            "Choose how long retained server games stay in this workspace. Games that ended before the window are deleted permanently in a nightly sweep, and the history revision advances so website consumers rebuild their totals.",
+        retentionWindow: "Keep retained games for",
+        retentionIndefinite: "Indefinitely (default)",
+        retentionDays: "{days} days",
+        retentionSave: "Save retention",
+        retentionSaving: "Saving…",
+        retentionSaved:
+            "Retention saved. Expired games are removed in the background.",
+        retentionError:
+            "Unable to load or save the retention window. Refresh and retry.",
         loading: "Loading the complete period…",
         error: "History could not be completed. Retry, or select a shorter period. No partial ranking is shown.",
         period: "Period",

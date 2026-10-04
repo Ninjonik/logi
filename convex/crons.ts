@@ -56,6 +56,13 @@ crons.daily(
     {}
 )
 
+crons.daily(
+    "prune retained game history past each workspace's retention window",
+    { hourUTC: 3, minuteUTC: 40 },
+    internal.gameHistoryRetention.pruneDue,
+    {}
+)
+
 crons.interval(
     "deliver pending webhooks",
     { minutes: 1 },

@@ -10,7 +10,7 @@ Archive identity combines workspace, HTTPS origin, provider server ID and extern
 
 Duplicate faction names are rejected at both the provider detail and retained metadata boundaries. A malformed provider response cannot count one winner twice; a failed import preserves the previously retained facts.
 
-Disabling collection or removing its configuration does not delete retained history. Retention is currently indefinite. There is no new end-user deletion workflow in this increment. Operators must consider retention and player-ID visibility before granting website access.
+Disabling collection or removing its configuration does not delete retained history. Retention is indefinite by default; a workspace administrator may set a 90-, 180-, 365- or 730-day window in **System → Game server data → History retention**. A nightly sweep (and an immediate run after the window is shortened) deletes games that ended before the window in batches, emits `server-game-history` remove changes and advances the workspace history revision, so paginating consumers receive `reset_required` and rebuild. There is no per-game deletion workflow. Operators must consider retention and player-ID visibility before granting website access.
 
 Stored facts include UTC start/end, map, final scores, explicit winner, provider outcome, faction names/colors, mode/lighting, feed flag and per-player platform ID, observed name, faction, result, time, kills/deaths, signed cash delta and available combat metrics. Timeline samples and presentation awards are available through the existing Warcon view, not duplicated in this archive.
 

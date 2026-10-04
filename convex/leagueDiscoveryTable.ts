@@ -6,6 +6,8 @@ export const leagueTrackingSettings = defineTable({
     teamCodes: v.array(v.string()),
     inputChannelId: v.union(v.string(), v.null()),
     outputChannelId: v.union(v.string(), v.null()),
+    scanMinutes: v.optional(v.number()),
+    refreshMinutes: v.optional(v.number()),
     revision: v.number(),
     lastIndexAt: v.optional(v.number()),
     queueFull: v.optional(v.boolean()),

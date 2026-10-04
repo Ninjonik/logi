@@ -4,6 +4,18 @@ export const deMessages = {
         description:
             "Abgeschlossene Serverspiele in Logi. Fraktionen sind Spielseiten, keine Clans.",
         load: "Historie laden / aktualisieren",
+        retentionTitle: "Aufbewahrung der Historie",
+        retentionDescription:
+            "Lege fest, wie lange aufbewahrte Serverspiele in diesem Arbeitsbereich bleiben. Spiele, die vor dem Zeitfenster endeten, werden in einem nächtlichen Lauf endgültig gelöscht; die Historienrevision rückt vor, damit Websites ihre Summen neu aufbauen.",
+        retentionWindow: "Aufbewahrte Spiele behalten für",
+        retentionIndefinite: "Unbegrenzt (Standard)",
+        retentionDays: "{days} Tage",
+        retentionSave: "Aufbewahrung speichern",
+        retentionSaving: "Wird gespeichert…",
+        retentionSaved:
+            "Aufbewahrung gespeichert. Abgelaufene Spiele werden im Hintergrund entfernt.",
+        retentionError:
+            "Das Aufbewahrungsfenster konnte nicht geladen oder gespeichert werden. Bitte aktualisieren und erneut versuchen.",
         loading: "Vollständigen Zeitraum laden…",
         error: "Historie unvollständig. Erneut versuchen oder kürzeren Zeitraum wählen. Keine Teilrangliste wird angezeigt.",
         period: "Zeitraum",

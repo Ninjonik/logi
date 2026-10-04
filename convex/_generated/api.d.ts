@@ -39,6 +39,7 @@ import type * as gameDataCollector from "../gameDataCollector.js";
 import type * as gameDataHistory from "../gameDataHistory.js";
 import type * as gameDataValidators from "../gameDataValidators.js";
 import type * as gameHistoryReads from "../gameHistoryReads.js";
+import type * as gameHistoryRetention from "../gameHistoryRetention.js";
 import type * as gameHistoryStore from "../gameHistoryStore.js";
 import type * as groups from "../groups.js";
 import type * as guildGames from "../guildGames.js";
@@ -143,6 +144,7 @@ declare const fullApi: ApiFromModules<{
   gameDataHistory: typeof gameDataHistory;
   gameDataValidators: typeof gameDataValidators;
   gameHistoryReads: typeof gameHistoryReads;
+  gameHistoryRetention: typeof gameHistoryRetention;
   gameHistoryStore: typeof gameHistoryStore;
   groups: typeof groups;
   guildGames: typeof guildGames;

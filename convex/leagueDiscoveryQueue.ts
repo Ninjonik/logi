@@ -4,13 +4,16 @@ import {
     leagueSnapshotSchema,
 } from "../src/domain/wardogs-league/contracts"
 import {
+    refreshIntervalMs,
+    sharedScanIntervalMs,
+} from "../src/domain/wardogs-league/discovery"
+import {
     trackingAdmission,
     trackingConfig,
     updateTracked,
 } from "./leagueTrackingStore"
 import { selectTrackedSnapshot } from "../src/application/wardogs-league/accept-snapshot"
 import { trackingDecision } from "../src/application/wardogs-league/tracking"
-import { SCAN_MS, TRACK_MS } from "../src/domain/wardogs-league/discovery"
 import { internalMutation, internalQuery } from "./_generated/server"
 import { matchUrl } from "../src/domain/wardogs-league/match-url"
 import { v } from "convex/values"
@@ -131,7 +134,11 @@ export const finishScan = internalMutation({
                 fixtureUrls: args.fixtureUrls.map((url) => matchUrl(url).url),
                 incomplete: args.incomplete ?? false,
                 fetchedAt: now,
-                nextScanAt: now + SCAN_MS,
+                nextScanAt:
+                    now +
+                    sharedScanIntervalMs(
+                        await ctx.db.query("leagueTrackingSettings").take(100)
+                    ),
                 leaseUntil: 0,
                 error: undefined,
             })
@@ -243,7 +250,7 @@ export const claimDue = internalMutation({
                 fence,
                 leaseUntil: now + 30_000,
                 lastAttemptAt: now,
-                nextRefreshAt: now + TRACK_MS,
+                nextRefreshAt: now + refreshIntervalMs(config),
             })
             return {
                 id: row._id,
@@ -299,7 +306,7 @@ export const finishRead = internalMutation({
                 : (read.error ?? undefined),
             leaseUntil: 0,
             nextRefreshAt: Math.max(
-                now + TRACK_MS,
+                now + refreshIntervalMs(config),
                 Math.min(
                     Date.parse(read.nextRefreshAt),
                     now + MAX_RETRY_AFTER_MS

@@ -1,8 +1,11 @@
 "use node"
+import {
+    INDEX_URLS,
+    indexDueForWorkspace,
+} from "../src/domain/wardogs-league/discovery"
 import { fetchLeagueIndex } from "../src/infrastructure/wardogs-league/fetch-match"
 import type { Served } from "../src/application/wardogs-league/read-match"
 import { LeagueError } from "../src/domain/wardogs-league/contracts"
-import { INDEX_URLS } from "../src/domain/wardogs-league/discovery"
 import type { Doc, Id } from "./_generated/dataModel"
 import { makeFunctionReference } from "convex/server"
 import { internalAction } from "./_generated/server"
@@ -52,10 +55,11 @@ export const collectDue = internalAction({
             makeFunctionReference<"query">("leagueDiscoveryQueue:status"),
             {}
         )
-        if (status.index?.fetchedAt) {
-            const index = status.index
+        const index = status.index,
+            fetchedAt = index?.fetchedAt
+        if (index && fetchedAt) {
             for (const settings of status.settings) {
-                if (settings.lastIndexAt === index.fetchedAt) continue
+                if (!indexDueForWorkspace(settings, fetchedAt)) continue
                 for (
                     let at = 0;
                     at < Math.max(index.matchUrls.length, 1);

@@ -8,6 +8,8 @@ These are in-game factions, not clan teams. A collected game does not confirm an
 
 History survives disabling collection and credential rotation. Repeated imports update the existing game, including corrections. Coverage starts with successfully imported games: Logi cannot reconstruct games that disappeared from Warcon before collection.
 
+**History retention** in the same section keeps retained games indefinitely by default. A manager can instead choose 90, 180, 365 or 730 days; games that ended before that window are deleted permanently in a nightly sweep (and immediately after the window is shortened). Deletion advances the history revision, so a website scanning `/api/v1/clan/server-game-history` receives `reset_required` and rebuilds its totals from the remaining games. Deleted games cannot be recovered from Logi.
+
 Invalid provider data, including repeated faction names, is rejected. The last successfully retained games remain available; a failed import does not add wins or replace valid history.
 
 Administrators can give a website backend a read key with **Retained server games** and **Wardogs** access. This includes player names and platform IDs, so keep the key on the backend and choose which fields the public website displays. The `/api/v1/clan/server-game-history?game=wardogs` endpoint supplies revision-consistent pages. A website must finish all pages before showing totals, and restart a scan if the API returns `reset_required`.

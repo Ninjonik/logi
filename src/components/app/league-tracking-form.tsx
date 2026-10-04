@@ -1,6 +1,8 @@
 "use client"
 import {
     DEFAULT_TRACKING_SETTINGS,
+    REFRESH_MINUTES,
+    SCAN_MINUTES,
     trackingSettingsSchema,
     type TrackingSettings,
 } from "@/domain/wardogs-league/discovery"
@@ -144,8 +146,8 @@ export function LeagueTrackingForm({ serverId }: { serverId: string }) {
             </h3>
             <p className="text-muted-foreground text-sm">
                 {cs
-                    ? "Nové zápasy kontrolujeme po 10 minutách, sledované detaily po 5 minutách. Web i Discord používají stejný záznam."
-                    : "Discover new fixtures every 10 minutes and refresh tracked details every 5 minutes. Website and Discord share the same record."}
+                    ? `Nové zápasy kontrolujeme po ${settings.scanMinutes} minutách, sledované detaily po ${settings.refreshMinutes} minutách. Web i Discord používají stejný záznam.`
+                    : `Discover new fixtures every ${settings.scanMinutes} minutes and refresh tracked details every ${settings.refreshMinutes} minutes. Website and Discord share the same record.`}
             </p>
             <form
                 className="space-y-3"
@@ -192,6 +194,65 @@ export function LeagueTrackingForm({ serverId }: { serverId: string }) {
                         onChange={(e) => setTeams(e.target.value)}
                     />
                 </label>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <label className="block space-y-1">
+                        <span>
+                            {cs
+                                ? "Hledat nové zápasy každých"
+                                : "Discover new fixtures every"}
+                        </span>
+                        <select
+                            className="bg-background w-full rounded-md border p-2 text-sm"
+                            value={settings.scanMinutes}
+                            disabled={busy}
+                            onChange={(e) =>
+                                setSettings({
+                                    ...settings,
+                                    scanMinutes: Number(
+                                        e.target.value
+                                    ) as TrackingSettings["scanMinutes"],
+                                })
+                            }
+                        >
+                            {SCAN_MINUTES.map((minutes) => (
+                                <option key={minutes} value={minutes}>
+                                    {minutes} {cs ? "minut" : "minutes"}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="block space-y-1">
+                        <span>
+                            {cs
+                                ? "Obnovovat sledované detaily každých"
+                                : "Refresh tracked details every"}
+                        </span>
+                        <select
+                            className="bg-background w-full rounded-md border p-2 text-sm"
+                            value={settings.refreshMinutes}
+                            disabled={busy}
+                            onChange={(e) =>
+                                setSettings({
+                                    ...settings,
+                                    refreshMinutes: Number(
+                                        e.target.value
+                                    ) as TrackingSettings["refreshMinutes"],
+                                })
+                            }
+                        >
+                            {REFRESH_MINUTES.map((minutes) => (
+                                <option key={minutes} value={minutes}>
+                                    {minutes} {cs ? "minut" : "minutes"}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                    {cs
+                        ? "Společný scan indexu běží v nejrychlejší kadenci, kterou si některý zapnutý prostor přeje; tento prostor převezme nový index až po uplynutí vlastního intervalu. Omezení zdroje může intervaly prodloužit."
+                        : "The shared index scan runs at the fastest cadence any enabled workspace asks for; this workspace takes a fresh index only after its own interval. Source throttling can stretch the intervals."}
+                </p>
                 <div className="grid gap-4 md:grid-cols-2">
                     <div>
                         <p className="mb-1 text-sm">
