@@ -45,6 +45,7 @@ const fail = (error: SourceCommandError): Failure => ({ error })
 const TEST_WINDOW_MS = 10 * 60_000
 const TESTS_PER_WORKSPACE = 30
 const TESTS_PER_SOURCE = 6
+const TESTS_PER_ACTOR = 30
 
 function revisionOf(entry: CatalogEntry): number {
     return entry.row
@@ -206,58 +207,79 @@ export async function refreshConnectionCredential(
     return enabled
 }
 
-async function takeBucket(
+/**
+ * Spends one test from every bucket, or from none: a refusal by any bucket
+ * leaves all counters unchanged and reports the longest wait.
+ */
+async function takeBuckets(
     ctx: MutationCtx,
-    bucket: string,
-    limit: number,
+    buckets: ReadonlyArray<{ name: string; limit: number }>,
     now: number
 ): Promise<number | null> {
-    const existing = await ctx.db
-        .query("apiRateLimitBuckets")
-        .withIndex("bucket", (q) => q.eq("bucket", bucket))
-        .unique()
-    if (!existing || existing.resetAt <= now) {
-        if (existing)
-            await ctx.db.patch(existing._id, {
+    const rows = await Promise.all(
+        buckets.map(async (bucket) => ({
+            ...bucket,
+            row: await ctx.db
+                .query("apiRateLimitBuckets")
+                .withIndex("bucket", (q) => q.eq("bucket", bucket.name))
+                .unique(),
+        }))
+    )
+    const waits = rows
+        .filter(
+            ({ row, limit }) => row && row.resetAt > now && row.count >= limit
+        )
+        .map(({ row }) => row!.resetAt - now)
+    if (waits.length) return Math.max(...waits)
+    for (const { name, row } of rows) {
+        if (row && row.resetAt > now)
+            await ctx.db.patch(row._id, { count: row.count + 1 })
+        else if (row)
+            await ctx.db.patch(row._id, {
                 count: 1,
                 resetAt: now + TEST_WINDOW_MS,
             })
         else
             await ctx.db.insert("apiRateLimitBuckets", {
-                bucket,
+                bucket: name,
                 count: 1,
                 resetAt: now + TEST_WINDOW_MS,
             })
-        return null
     }
-    if (existing.count >= limit) return existing.resetAt - now
-    await ctx.db.patch(existing._id, { count: existing.count + 1 })
     return null
 }
 
-/** Bounds connection tests per workspace and per source before any provider request. */
+/**
+ * Bounds connection tests before any provider request: per workspace, per
+ * source and per administrator across workspaces, so creating more
+ * workspaces does not buy more probes.
+ */
 async function reserveTestQuota(
     ctx: MutationCtx,
-    guildId: string,
-    sourceRef: string | null
+    input: { guildId: string; sourceRef: string | null; actor: string }
 ): Promise<Failure | null> {
-    const now = Date.now()
-    const workspace = await takeBucket(
+    const wait = await takeBuckets(
         ctx,
-        `game-data-test:${guildId}`,
-        TESTS_PER_WORKSPACE,
-        now
+        [
+            {
+                name: `game-data-test:${input.guildId}`,
+                limit: TESTS_PER_WORKSPACE,
+            },
+            {
+                name: `game-data-test-actor:${input.actor}`,
+                limit: TESTS_PER_ACTOR,
+            },
+            ...(input.sourceRef
+                ? [
+                      {
+                          name: `game-data-test:${input.guildId}:${input.sourceRef}`,
+                          limit: TESTS_PER_SOURCE,
+                      },
+                  ]
+                : []),
+        ],
+        Date.now()
     )
-    const source =
-        workspace === null && sourceRef
-            ? await takeBucket(
-                  ctx,
-                  `game-data-test:${guildId}:${sourceRef}`,
-                  TESTS_PER_SOURCE,
-                  now
-              )
-            : null
-    const wait = workspace ?? source
     return wait === null ? null : { error: "rate_limited", retryAfterMs: wait }
 }
 
@@ -279,19 +301,21 @@ export const reserveTest = mutation({
                   provider: GameServerSource["provider"]
                   origin: string
                   providerServerId: string
-                  /** Operator-set network exception the collector also applies; never set by a workspace. */
-                  allowedAddresses: string[]
                   revision: number
               } | null
           }
         | Failure
     > => {
-        await authorizeDashboardAdmin(ctx, args)
+        const admin = await authorizeDashboardAdmin(ctx, args)
         const entry = args.ref
             ? await resolveSource(ctx, args.guildId, args.ref)
             : null
         if (args.ref && !entry) return fail("not_found")
-        const limited = await reserveTestQuota(ctx, args.guildId, args.ref)
+        const limited = await reserveTestQuota(ctx, {
+            guildId: args.guildId,
+            sourceRef: args.ref,
+            actor: admin.session.subject,
+        })
         if (limited) return limited
         return {
             ok: true,
@@ -301,7 +325,6 @@ export const reserveTest = mutation({
                       provider: entry.source.provider,
                       origin: entry.source.origin,
                       providerServerId: entry.source.providerServerId,
-                      allowedAddresses: entry.source.allowedAddresses,
                       revision: revisionOf(entry),
                   }
                 : null,
@@ -569,9 +592,10 @@ export const setCredential = mutation({
 })
 
 /**
- * Deletes a workspace source's stored key. A provider that needs a key stops
- * collecting. Operator sources keep their key: removing it would silently
- * return them to their environment variable.
+ * Deletes a workspace source's stored key and stops collection, also for a
+ * provider that can read keyless: switching to unauthenticated requests needs
+ * an explicit start. Operator sources keep their key: removing it would
+ * silently return them to their environment variable.
  */
 export const removeCredential = mutation({
     args: { ...access, ref: v.string(), expectedRevision: v.number() },
@@ -598,8 +622,7 @@ export const removeCredential = mutation({
             guildId: args.guildId,
             sourceRef: args.ref,
             entry: await resolveSource(ctx, args.guildId, args.ref),
-            enabled:
-                credentialRequirement(entry.source.provider) !== "required",
+            enabled: false,
         })
         return { ok: true, revision, enabled }
     },
@@ -667,10 +690,14 @@ export const remove = mutation({
 export const reserveStoredTest = internalMutation({
     args: { ...access, ref: v.string() },
     handler: async (ctx, args) => {
-        await authorizeDashboardAdmin(ctx, args)
+        const admin = await authorizeDashboardAdmin(ctx, args)
         const entry = await resolveSource(ctx, args.guildId, args.ref)
         if (!entry) return fail("not_found")
-        const limited = await reserveTestQuota(ctx, args.guildId, args.ref)
+        const limited = await reserveTestQuota(ctx, {
+            guildId: args.guildId,
+            sourceRef: args.ref,
+            actor: admin.session.subject,
+        })
         if (limited) return limited
         return {
             ok: true as const,
@@ -684,27 +711,58 @@ export const reserveStoredTest = internalMutation({
                       tag: entry.credential.tag,
                   }
                 : null,
-            credentialVersion: entry.credential?.version ?? null,
+            tested: testedCredential(entry),
         }
     },
 })
 
-/** Records a stored-key test; a pass verifies only the key version that was tested. */
+/**
+ * The exact stored key a test used: row, version and nonce. A removed and
+ * re-added key restarts its version, so the version alone cannot tell keys apart.
+ */
+function testedCredential(entry: CatalogEntry) {
+    return entry.credential
+        ? {
+              id: String(entry.credential._id),
+              version: entry.credential.version,
+              nonce: entry.credential.nonce,
+          }
+        : null
+}
+
+/**
+ * Records a stored-key test only if the key is still the one that was tested;
+ * a pass then verifies exactly that key. A late result for a replaced key
+ * changes nothing.
+ */
 export const recordStoredTest = internalMutation({
     args: {
         guildId: v.string(),
         ref: v.string(),
-        credentialVersion: v.union(v.number(), v.null()),
+        tested: v.union(
+            v.object({
+                id: v.string(),
+                version: v.number(),
+                nonce: v.string(),
+            }),
+            v.null()
+        ),
         outcome: gameDataTestOutcome,
     },
     handler: async (ctx, args): Promise<void> => {
         const entry = await resolveSource(ctx, args.guildId, args.ref)
         if (!entry) return
+        const current = testedCredential(entry)
+        if (
+            current?.id !== args.tested?.id ||
+            current?.version !== args.tested?.version ||
+            current?.nonce !== args.tested?.nonce
+        )
+            return
         const now = new Date().toISOString()
         const test = { lastTestAt: now, lastTestOutcome: args.outcome }
-        const current = entry.credential?.version ?? null
         if (entry.row) await ctx.db.patch(entry.row._id, test)
-        if (entry.credential && current === args.credentialVersion)
+        if (entry.credential)
             await ctx.db.patch(entry.credential._id, {
                 ...(entry.row ? {} : test),
                 ...(args.outcome === "ok" ? { verifiedAt: now } : {}),

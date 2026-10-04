@@ -1011,3 +1011,168 @@ test("a stored-key test is authorized internally, spends quota and records only 
     assert.equal(limited.error, "rate_limited")
     assert.equal(leaks(ctx.db.tables), false)
 })
+
+test("a late stored-key test result never verifies a replaced key", async (t) => {
+    const ctx = setup(t)
+    await create(ctx, "guild-a", refA)
+    const reserved = await invoke(sources.reserveStoredTest, ctx, {
+        ...access("guild-a"),
+        ref: refA,
+    })
+    // Meanwhile the key is removed and another one is saved unverified at version 1 again.
+    const removed = await invoke(sources.removeCredential, ctx, {
+        ...access("guild-a"),
+        ref: refA,
+        expectedRevision: 1,
+    })
+    await invoke(sources.setCredential, ctx, {
+        ...access("guild-a"),
+        ref: refA,
+        expectedRevision: removed.revision,
+        binding: {
+            provider: "wardogs_warcon",
+            origin: "https://wardogs.example.test",
+            providerServerId: warconId,
+        },
+        credential: envelopeFor(bindingOf("guild-a", refA), "second-key-0002"),
+        verified: false,
+        testOutcome: "server_mismatch",
+    })
+    const stored = ctx.db.tables.gameDataCredentials![0]!
+    assert.equal(stored.version, reserved.tested.version)
+    await invoke(sources.recordStoredTest, ctx, {
+        guildId: "guild-a",
+        ref: refA,
+        tested: reserved.tested,
+        outcome: "ok",
+    })
+    assert.equal(stored.verifiedAt, null)
+    const row = ctx.db.tables.gameDataSources![0]!
+    assert.equal(row.lastTestOutcome, "server_mismatch")
+    assert.deepEqual(
+        await invoke(sources.setEnabled, ctx, {
+            ...access("guild-a"),
+            ref: refA,
+            enabled: true,
+        }),
+        { error: "verification_required" }
+    )
+    // A result for the current key does verify it.
+    const current = await invoke(sources.reserveStoredTest, ctx, {
+        ...access("guild-a"),
+        ref: refA,
+    })
+    await invoke(sources.recordStoredTest, ctx, {
+        guildId: "guild-a",
+        ref: refA,
+        tested: current.tested,
+        outcome: "ok",
+    })
+    assert.notEqual(stored.verifiedAt, null)
+})
+
+test("removing an optional CRCON key stops collection instead of going keyless", async (t) => {
+    const ctx = setup(t)
+    const crcon = {
+        guildId: "guild-a",
+        sourceRef: refA,
+        provider: "hll_crcon" as const,
+        origin: "https://crcon.example.test",
+        providerServerId: "1",
+    }
+    await create(ctx, "guild-a", refA, {
+        source: {
+            ref: refA,
+            displayName: "CRCON",
+            gameId: "hell_let_loose",
+            provider: "hll_crcon",
+            origin: crcon.origin,
+            providerServerId: "1",
+        },
+        credential: envelopeFor(crcon),
+    })
+    assert.equal(connectionOf(ctx, refA).enabled, true)
+    assert.deepEqual(
+        await invoke(sources.removeCredential, ctx, {
+            ...access("guild-a"),
+            ref: refA,
+            expectedRevision: 1,
+        }),
+        { ok: true, revision: 2, enabled: false }
+    )
+    assert.equal(connectionOf(ctx, refA).enabled, false)
+    // Keyless collection is an explicit choice afterwards.
+    assert.deepEqual(
+        await invoke(sources.setEnabled, ctx, {
+            ...access("guild-a"),
+            ref: refA,
+            enabled: true,
+        }),
+        { ok: true }
+    )
+})
+
+test("test quotas are all-or-nothing and follow the administrator across workspaces", async (t) => {
+    const ctx = setup(t)
+    await create(ctx, "guild-a", refA)
+    const reserve = (guildId: string, ref: string | null) =>
+        invoke(sources.reserveTest, ctx, { ...access(guildId), ref })
+    for (let i = 0; i < 6; i++)
+        assert.equal((await reserve("guild-a", refA)).ok, true)
+    assert.equal((await reserve("guild-a", refA)).error, "rate_limited")
+    // The refused per-source test did not spend the workspace quota.
+    const workspace = ctx.db.tables.apiRateLimitBuckets!.find(
+        (row) => row.bucket === "game-data-test:guild-a"
+    )!
+    assert.equal(workspace.count, 6)
+    for (let i = 0; i < 24; i++)
+        assert.equal((await reserve("guild-b", null)).ok, true)
+    // The same administrator has used 30 tests in two workspaces.
+    const limited = await reserve("guild-b", null)
+    assert.equal(limited.error, "rate_limited")
+    assert.ok(limited.retryAfterMs > 0)
+})
+
+test("the operator can return an operator source to its variable; workspaces cannot", async (t) => {
+    const operator = {
+        ref: "valkyria-warcon",
+        guildId: "guild-a",
+        gameId: "wardogs",
+        provider: "wardogs_warcon",
+        providerServerId: warconId,
+        origin: "https://wardogs.example.test",
+        secretRef: "LOGI_GAME_DATA_VALKYRIA_TOKEN",
+    }
+    const ctx = setup(t, [operator])
+    await invoke(sources.setCredential, ctx, {
+        ...access("guild-a"),
+        ref: "valkyria-warcon",
+        expectedRevision: 0,
+        binding: {
+            provider: "wardogs_warcon",
+            origin: "https://wardogs.example.test",
+            providerServerId: warconId,
+        },
+        credential: envelopeFor(bindingOf("guild-a", "valkyria-warcon")),
+        verified: true,
+        testOutcome: "ok",
+    })
+    assert.equal(
+        await invoke(migration.removeOperatorSourceKey, ctx, {
+            guildId: "guild-b",
+            ref: "valkyria-warcon",
+        }),
+        "not_found"
+    )
+    assert.equal(
+        await invoke(migration.removeOperatorSourceKey, ctx, {
+            guildId: "guild-a",
+            ref: "valkyria-warcon",
+        }),
+        "removed"
+    )
+    assert.equal(ctx.db.tables.gameDataCredentials!.length, 0)
+    const [listed] = (await invoke(sources.list, ctx, access("guild-a")))
+        .sources
+    assert.equal(listed.key.state, "environment")
+})

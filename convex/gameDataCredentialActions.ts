@@ -51,7 +51,7 @@ export const testStored = action({
             args
         )
         if ("error" in reserved) return reserved
-        const { source, envelope, credentialVersion } = reserved
+        const { source, envelope, tested } = reserved
         let keyFailed = false
         const credential = providerCredential(source, {
             env: (name) => process.env[name],
@@ -73,7 +73,7 @@ export const testStored = action({
         await ctx.runMutation(internal.gameDataSources.recordStoredTest, {
             guildId: args.guildId,
             ref: args.ref,
-            credentialVersion,
+            tested,
             outcome,
         })
         return { ...result, outcome }

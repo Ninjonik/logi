@@ -385,12 +385,15 @@ whether a key is stored, when it was changed, whether it passed its last test,
 whether collection is running and when it last succeeded. **Change key** tests
 the new key first and replaces the old one only if the test passes, unless you
 explicitly save it as unverified, which stops collection until a test passes.
-**Test saved key** re-checks the stored key, **Remove key** deletes it (servers
-that need a key stop collecting) and **Remove server** stops collection and
+**Test saved key** re-checks the stored key, **Remove key** deletes it and stops
+collection (a CRCON server can then be started again without a key) and
+**Remove server** stops collection and
 deletes the key while keeping collected history. The address and server ID
 cannot be edited: connect a new server instead. Names are unique within the
 workspace; up to 20 servers can be connected, and connection tests are limited
-to 30 per workspace and 6 per server every 10 minutes.
+to 30 per workspace, 6 per server and 30 per administrator every 10 minutes. For
+an operator server reachable only through an operator network exception, save a
+new key as unverified and then use **Test saved key**.
 
 Servers configured by the Logi operator appear as **Configured by the Logi
 operator**. You can test them and replace their key, but not rename or remove

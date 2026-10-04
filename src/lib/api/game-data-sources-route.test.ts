@@ -50,7 +50,6 @@ function setup(overrides: Partial<GameDataSourcePorts> = {}) {
                 provider: "wardogs_warcon" as const,
                 origin: "https://wardogs.example.test",
                 providerServerId: draft.providerServerId,
-                allowedAddresses: [],
                 revision: 3,
             },
         }),
@@ -280,7 +279,6 @@ test("a key change is tested against the stored identity before it replaces the 
             provider: "wardogs_warcon" as const,
             origin: "https://wardogs.example.test",
             providerServerId: draft.providerServerId,
-            allowedAddresses: ["203.0.113.7"],
             revision: 3,
         },
     }
@@ -328,10 +326,8 @@ test("a key change is tested against the stored identity before it replaces the 
         test: { outcome: "ok" },
     })
     const tested = calls.find((call) => call.name === "testConnection")!
-    // The collector's operator network exception applies to the test as well.
-    assert.deepEqual((tested.args[0] as DataSource).allowedAddresses, [
-        "203.0.113.7",
-    ])
+    // Operator network exceptions belong to the Convex network; the web server never applies them.
+    assert.deepEqual((tested.args[0] as DataSource).allowedAddresses, [])
     const input = calls.find((call) => call.name === "setCredential")!
         .args[1] as {
         binding: unknown

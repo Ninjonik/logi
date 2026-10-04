@@ -257,3 +257,24 @@ export const replaceCiphertext = internalMutation({
         return "reencrypted"
     },
 })
+
+/**
+ * Operator command: deletes the key a workspace stored for an operator catalog
+ * entry, returning it to its operator variable. Collection stops; the operator
+ * restarts it deliberately with `gameData:configure`.
+ */
+export const removeOperatorSourceKey = internalMutation({
+    args: { guildId: v.string(), ref: v.string() },
+    handler: async (ctx, args): Promise<"removed" | "not_found"> => {
+        const entry = await resolveSource(ctx, args.guildId, args.ref)
+        if (!entry || entry.row || !entry.credential) return "not_found"
+        await ctx.db.delete(entry.credential._id)
+        await refreshConnectionCredential(ctx, {
+            guildId: args.guildId,
+            sourceRef: args.ref,
+            entry: await resolveSource(ctx, args.guildId, args.ref),
+            enabled: false,
+        })
+        return "removed"
+    },
+})

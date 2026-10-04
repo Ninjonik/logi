@@ -130,7 +130,7 @@ never removed back to the variable.
 | `create`      | `draft`, `key \| null`, `enable`                    | New workspace source with a generated reference (`src-<32 hex>`). Collection starts only when `enable` is set **and** the test passed; otherwise it is a disabled draft. |
 | `set_key`     | `ref`, `expectedRevision`, `key`, `allowUnverified` | Tests the new key against the stored identity, then replaces the old key. A failed test stores nothing unless `allowUnverified`, which stops collection.                 |
 | `test_stored` | `ref`                                               | Tests the stored key inside Convex (internal path); records the outcome.                                                                                                 |
-| `remove_key`  | `ref`, `expectedRevision`                           | Workspace sources only; deletes the key and stops collection for providers that need one.                                                                                |
+| `remove_key`  | `ref`, `expectedRevision`                           | Workspace sources only; deletes the key and stops collection, also for a CRCON source that could read keyless (keyless collection needs an explicit start).              |
 | `rename`      | `ref`, `expectedRevision`, `displayName`            | Workspace sources only.                                                                                                                                                  |
 | `set_enabled` | `ref`, `enabled`                                    | Starts collection only with a usable key that passed a test.                                                                                                             |
 | `remove`      | `ref`, `expectedRevision`                           | Workspace sources only; stops collection, deletes the key and the registration, keeps history.                                                                           |
@@ -193,13 +193,18 @@ Unchanged and shared by tests and collection: HTTPS only, DNS resolved once
 and pinned, every resolved address must be public (loopback, private,
 link-local, metadata, CGNAT and documentation ranges are refused), redirects
 are refused, only the provider's allowlisted read paths, a 10 s timeout and a
-2 MiB response limit. Workspaces cannot set network exceptions; operator
-catalog exceptions still apply to that operator source, including its tests.
-Logi is not a general HTTP or RCON proxy: a test returns a category only.
+2 MiB response limit. Workspaces cannot set network exceptions. An operator
+catalog exception applies only inside Convex (collection and **Test saved
+key**), never to a test run from the web server, whose network differs: for such
+a source, save a new key as unverified and then verify it with **Test saved
+key**. Logi is not a general HTTP or RCON proxy: a test returns a category only.
+Any HTTPS port is accepted, as for collection.
 
-Connection tests are limited to 30 per workspace and 6 per source in 10
-minutes; a workspace has at most 20 registrations. Collectors keep honouring
-provider `Retry-After` (capped at 24 h).
+Connection tests are limited to 30 per workspace, 6 per source and 30 per
+administrator across workspaces in 10 minutes; a refused test spends none of
+them. A workspace has at most 20 registrations. Collectors keep honouring
+provider `Retry-After` (capped at 24 h); a test only reports it to the
+administrator.
 
 ## Operator runbook
 
@@ -261,6 +266,18 @@ entry is ignored once a key is stored.
 3. Retire the old key only after a complete pass reports nothing pending and
    no failures (`orphaned` rows belong to removed sources and can be ignored).
 
+### Undo a workspace key on an operator source
+
+A workspace may replace the key of an operator catalog entry but cannot remove
+it, because removal would silently return the source to its variable. The
+operator can: `npx convex run gameDataCredentialMigration:removeOperatorSourceKey '{"guildId":"<guild>","ref":"<ref>"}'`
+deletes the stored key and stops collection; restart it deliberately with
+`gameData:configure`.
+
+A migration `conflict` caused by a registration from before this change that
+names the operator's variable is resolved by removing or re-keying that
+registration first.
+
 ### Recovery and rollback
 
 - A database backup is restorable only together with a keyring that contains
@@ -294,6 +311,12 @@ ciphertext or addresses.
 | Keyring missing or wrong                            | Fail closed with a sanitized category; no plaintext writes when inactive                                                                                         | Collection stops until fixed                                                              |
 | Tampered ciphertext                                 | GCM authentication                                                                                                                                               | none known                                                                                |
 | Gateway attests "verified"                          | The gateway holds the internal secret and tests in the same request; Convex re-checks the session, admin rights, revision and identity                           | A compromised Next server could store an untested key for a workspace it already controls |
+| Late test result verifies a replaced key            | A stored-key test records only if the key row, version and nonce are unchanged                                                                                   | none known                                                                                |
+| Removing an optional key silently goes keyless      | Removing a key always stops collection                                                                                                                           | none known                                                                                |
+| Probing through many workspaces                     | Quotas per workspace, per source and per administrator, all-or-nothing                                                                                           | Bounded probing of public HTTPS hosts on any port                                         |
+| Rollback to an older ciphertext                     | Requires database write access                                                                                                                                   | Someone with database write access could restore an older key of the same source          |
+| Browser password managers                           | Masked key fields opt out of autofill and password-manager capture                                                                                               | A browser may still offer to save the value                                               |
+| Keyring in default-runtime mutations                | Mutations read only the key IDs to refuse undecryptable ciphertext; they never decode keys                                                                       | The keyring value is present in the Convex environment, as it must be for the actions     |
 
 ## Evidence
 

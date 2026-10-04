@@ -70,7 +70,6 @@ type Binding = {
     provider: DataProvider
     origin: string
     providerServerId: string
-    allowedAddresses: string[]
     revision: number
 }
 /** What the route needs from the session, Convex and this process; injected for tests. */
@@ -222,7 +221,10 @@ export function gameDataSourceHandlers(ports: GameDataSourcePorts) {
                 origin: binding.origin,
                 providerServerId: binding.providerServerId,
                 secretRef: null,
-                allowedAddresses: binding.allowedAddresses,
+                // An operator network exception is for the Convex network, not
+                // this server's: a key for such a source is verified there with
+                // `test_stored` after an explicitly unverified save.
+                allowedAddresses: [],
             }
             const test = await ports.testConnection(source, plaintext)
             const verified = test.outcome === "ok"

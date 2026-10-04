@@ -204,7 +204,8 @@ function AddServer({
     const id = useId()
     const field = (name: string) => `${id}-${name}`
     const [draft, setDraft] = useState(emptyDraft)
-    // The key lives only in this field's state and is cleared after every request.
+    // The key lives only in this field's state: kept after a test so it can be
+    // saved, cleared after every save attempt, and never stored elsewhere.
     const [key, setKey] = useState("")
     const [enable, setEnable] = useState(true)
     const [tested, setTested] = useState<ConnectionTestOutcome | null>(null)
@@ -381,7 +382,11 @@ function AddServer({
                         <Input
                             id={field("key")}
                             type="password"
-                            autoComplete="new-password"
+                            autoComplete="off"
+                            data-1p-ignore=""
+                            data-lpignore="true"
+                            data-bwignore="true"
+                            data-form-type="other"
                             spellCheck={false}
                             value={key}
                             maxLength={4200}
@@ -663,7 +668,11 @@ function ServerRow({
                         <Input
                             id={`${id}-key`}
                             type="password"
-                            autoComplete="new-password"
+                            autoComplete="off"
+                            data-1p-ignore=""
+                            data-lpignore="true"
+                            data-bwignore="true"
+                            data-form-type="other"
                             spellCheck={false}
                             value={key}
                             maxLength={4200}
