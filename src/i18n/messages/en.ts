@@ -973,6 +973,14 @@ export const enMessages = {
         playerStatsServerUrl: "Server stats URL",
         playerStatsServerUrlPlaceholder: "https://.../api/get_players_history",
         addPlayerStatsServer: "Add stats server",
+        statsCommandTitle: "Player statistics command",
+        statsCommandDescription:
+            "Decide whether members may use /stats in this server, for which games, and where Share publishes by default. Discord's own command permissions still apply.",
+        statsCommandEnabled: "Enable /stats",
+        statsCommandGame: "{game} statistics",
+        statsCommandDefaultChannel: "Default sharing channel",
+        statsCommandDefaultChannelHelp:
+            "Used when the command is run without a channel option. Without a default, Share asks for a channel. Shared cards still require the member and bot to be able to post there.",
         removePlayerStatsServer: "Remove stats server",
         rosterScoreTitle: "Roster score rules",
         rosterScoreDescription:

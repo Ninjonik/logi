@@ -972,6 +972,14 @@ export const csMessages = {
         playerStatsServerUrl: "URL stats serveru",
         playerStatsServerUrlPlaceholder: "https://.../api/get_players_history",
         addPlayerStatsServer: "Přidat stats server",
+        statsCommandTitle: "Příkaz statistik hráčů",
+        statsCommandDescription:
+            "Rozhodněte, zda členové smí v tomto serveru používat /stats, pro které hry, a kam Sdílet standardně publikuje. Vlastní oprávnění příkazů v Discordu platí dál.",
+        statsCommandEnabled: "Povolit /stats",
+        statsCommandGame: "Statistiky {game}",
+        statsCommandDefaultChannel: "Výchozí kanál pro sdílení",
+        statsCommandDefaultChannelHelp:
+            "Použije se, když je příkaz spuštěn bez volby kanálu. Bez výchozího kanálu si Sdílet vyžádá kanál. Sdílené karty stále vyžadují, aby člen i bot mohli do kanálu psát.",
         removePlayerStatsServer: "Odebrat stats server",
         rosterScoreTitle: "Pravidla skóre soupisky",
         rosterScoreDescription:

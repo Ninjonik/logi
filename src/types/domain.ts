@@ -1,5 +1,6 @@
 export type Timestamp = string
 
+import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
 import type { GameId } from "@/domain/games/game"
 export type { GameId, GameScope } from "@/domain/games/game"
 
@@ -219,6 +220,8 @@ export type DiscordConfig = {
     clanRoleId?: string
     dashboardAdminRoleId?: string
     playerStatsServers?: PlayerStatsServer[]
+    /** `/stats` command availability and default sharing room. */
+    statsSettings?: StatsCommandSettings
     gameOverrides?: Partial<Record<GameId, GameDiscordOverrides>>
     ticketSettings?: TicketSettings
     membershipSettings?: MembershipSettings

@@ -47,6 +47,7 @@ function setup() {
     const row = historyRecord()
     const dependencies: StatsRuntimeDependencies = {
         now: () => time,
+        settings: async () => undefined,
         member: async () => {
             checks++
             return present

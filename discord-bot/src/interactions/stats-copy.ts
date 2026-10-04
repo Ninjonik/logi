@@ -26,6 +26,8 @@ const en = {
         "This private view expired or the bot restarted. Run /stats again.",
     invalid:
         "Choose one target: a Discord member, or a Wardogs player from the suggestions.",
+    disabled: "The /stats command is switched off in this server.",
+    gameDisabled: "Statistics for this game are switched off in this server.",
     hllOnly:
         "HLL statistics require a linked Discord player. Player search and server filters apply to Wardogs.",
     incomplete:
@@ -112,6 +114,8 @@ const cs: typeof en = {
         "Soukromý náhled vypršel nebo se bot restartoval. Spusť /stats znovu.",
     invalid:
         "Vyber jediný cíl: Discord člena, nebo Wardogs hráče z našeptávače.",
+    disabled: "Příkaz /stats je v tomto serveru vypnutý.",
+    gameDisabled: "Statistiky této hry jsou v tomto serveru vypnuté.",
     hllOnly:
         "HLL statistiky vyžadují propojeného Discord hráče. Vyhledávání hráčů a filtr serveru jsou pro Wardogs.",
     incomplete:
@@ -197,6 +201,9 @@ const de: typeof en = {
         "Diese private Ansicht ist abgelaufen oder der Bot wurde neu gestartet. Nutze /stats erneut.",
     invalid:
         "Wähle ein Ziel: ein Discord-Mitglied oder einen Wardogs-Spieler aus den Vorschlägen.",
+    disabled: "Der Befehl /stats ist auf diesem Server deaktiviert.",
+    gameDisabled:
+        "Statistiken für dieses Spiel sind auf diesem Server deaktiviert.",
     hllOnly:
         "HLL benötigt einen verknüpften Discord-Spieler. Spielersuche und Serverfilter gelten für Wardogs.",
     incomplete:

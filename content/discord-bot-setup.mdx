@@ -108,7 +108,7 @@ They are examples of the configured bot capabilities, not separate services.
 | Ticket panel                                    | Enable ticket settings, submit channel, ticket parent channel, and at least one category          | Confirm the panel appears and a test request creates a ticket in the intended private location.                   |
 | Membership application panel                    | Enable membership settings, submit channel, application parent channel, and at least one category | Confirm the panel appears and a test application reaches the intended private location.                           |
 | Player-stat servers                             | Player-stat token and URL entries                                                                 | Verify against a non-production test if possible. Treat tokens as secrets.                                        |
-| Game-server status command                      | HLL/WDG game data sources under System settings                                                   | Run `/server-status` with a game; check the private response, source and observation age.                           |
+| Game-server status command                      | HLL/WDG game data sources under System settings                                                   | Run `/server-status` with a game; check the private response, source and observation age.                         |
 
 <Callout type="info">
     Event-level channel choices can override a workspace default. When a test
@@ -133,15 +133,15 @@ needed; this revision does not register commands separately on guild join.
 All seven commands are guild-only. Names stay in English; descriptions/options
 support Czech and German localization.
 
-| Command | Purpose and access |
-| --- | --- |
-| `/stats game:wardogs` or `game:hll` | Private player statistics, optional linked member, period and explicit sharing |
-| `/server-status game:wardogs` or `game:hell_let_loose` | Private stored game-server status for Discord Manage Server / Administrator |
-| `/close_ticket [reason]` | Close the current tracked ticket thread; Administrator, configured dashboard-admin role or category support role |
-| `/close_application outcome:<choice> [reason]` | Close the current tracked application and request the corresponding membership state; authorized recruitment staff |
-| `/notice event:<selection>` | Open your notice/reason modal for a matching eligible event |
-| `/link` | Privately manage your claimed platform identifiers; this is not verified Steam ownership |
-| `/player player:<selection>` | Show the selected clan player's profile/statistics in the channel |
+| Command                                                | Purpose and access                                                                                                 |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `/stats game:wardogs` or `game:hll`                    | Private player statistics, optional linked member, period and explicit sharing                                     |
+| `/server-status game:wardogs` or `game:hell_let_loose` | Private stored game-server status for Discord Manage Server / Administrator                                        |
+| `/close_ticket [reason]`                               | Close the current tracked ticket thread; Administrator, configured dashboard-admin role or category support role   |
+| `/close_application outcome:<choice> [reason]`         | Close the current tracked application and request the corresponding membership state; authorized recruitment staff |
+| `/notice event:<selection>`                            | Open your notice/reason modal for a matching eligible event                                                        |
+| `/link`                                                | Privately manage your claimed platform identifiers; this is not verified Steam ownership                           |
+| `/player player:<selection>`                           | Show the selected clan player's profile/statistics in the channel                                                  |
 
 Brackets mark optional input. Closing reasons are limited to 500 characters.
 Application outcomes are `denied`, `pending`, `recruit`, `member` and `mercenary`.
@@ -170,7 +170,10 @@ its own last-100-games scope, and `+` counters are lower bounds. Wardogs statist
 cover games retained by this community's Warcon collection.
 
 Replies initially appear only to you. **Share** publishes the current view to the
-channel supplied in `channel`, or opens a channel picker. You and the bot need
+channel supplied in `channel`, else to the default sharing channel a manager set in
+Discord settings, or opens a channel picker. Managers can also switch `/stats` off
+entirely or for one game; the bot then answers privately that statistics are
+unavailable in this server. You and the bot need
 View Channel, Send Messages and Embed Links there, plus Attach Files for artwork.
 Private controls expire after 15 minutes or a restart; run `/stats` again. Shared
 cards are snapshots and are not automatically refreshed like server panels.

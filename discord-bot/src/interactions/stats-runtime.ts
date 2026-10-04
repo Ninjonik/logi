@@ -30,6 +30,7 @@ export type StatsRuntimeDependencies = {
     hll: StatsPorts["hll"]
     artwork: StatsPorts["artwork"]
     send: StatsPorts["share"]
+    settings: StatsPorts["settings"]
 }
 async function bounded<T>(operation: Promise<T>, ms: number): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -92,6 +93,7 @@ export function createStatsRuntimePorts(
         authorize,
         hll: d.hll,
         artwork: d.artwork,
+        settings: d.settings,
         async account(r) {
             return z
                 .object({

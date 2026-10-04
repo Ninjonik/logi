@@ -11,6 +11,7 @@ import {
     type StatsPorts,
 } from "./stats"
 import { historyRecord } from "../../../src/infrastructure/testing/game-history"
+import { statsCopy } from "./stats-copy"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -73,6 +74,7 @@ function setup() {
             shares++
         },
         artwork: async () => null,
+        settings: async () => undefined,
     }
     const responses: unknown[] = []
     let deferred = false
@@ -227,4 +229,80 @@ test("expired controls after a restart never publish or link accounts", async ()
     } as unknown as ButtonInteraction)
     assert.match(answer, /stats/)
     assert.equal(f.counts().shares, 0)
+})
+
+test("a switched-off command or game answers privately before any source read", async () => {
+    const off = setup()
+    off.ports.settings = async () => ({
+        enabled: false,
+        games: { hell_let_loose: true, wardogs: true },
+    })
+    await off.controller.command(off.command)
+    assert.equal(off.responses.length, 1)
+    assert.deepEqual(off.responses[0], {
+        content: statsCopy("cs").disabled,
+        flags: MessageFlags.Ephemeral,
+    })
+    const gameOff = setup()
+    gameOff.ports.settings = async () => ({
+        enabled: true,
+        games: { hell_let_loose: true, wardogs: false },
+    })
+    await gameOff.controller.command(gameOff.command)
+    assert.deepEqual(gameOff.responses[0], {
+        content: statsCopy("cs").gameDisabled,
+        flags: MessageFlags.Ephemeral,
+    })
+})
+
+test("the configured default room shares without a channel picker, and an explicit channel still wins", async () => {
+    const f = setup()
+    f.setLinked()
+    let settingsReads = 0
+    f.ports.settings = async () => {
+        settingsReads++
+        return {
+            enabled: true,
+            games: { hell_let_loose: true, wardogs: true },
+            defaultShareChannelId: "444444444444444444",
+        }
+    }
+    const shared: string[] = []
+    f.ports.share = async (_request, channelId) => {
+        shared.push(channelId)
+    }
+    await f.controller.command(f.command)
+    assert.equal(settingsReads, 1)
+    await f.controller.button({
+        customId: control(f.responses.at(-1), "share"),
+        guildId: guild,
+        user: { id: actor },
+        locale: "cs",
+        deferUpdate: async () => {},
+        reply: async () => {
+            throw new Error("no channel picker expected")
+        },
+        editReply: async () => {},
+    } as unknown as ButtonInteraction)
+    assert.deepEqual(shared, ["444444444444444444"])
+    const explicit = setup()
+    explicit.setLinked()
+    explicit.ports.settings = f.ports.settings
+    explicit.ports.share = async (_request, channelId) => {
+        shared.push(channelId)
+    }
+    explicit.command.options.getChannel = (() => ({
+        id: "555555555555555555",
+    })) as unknown as typeof explicit.command.options.getChannel
+    await explicit.controller.command(explicit.command)
+    await explicit.controller.button({
+        customId: control(explicit.responses.at(-1), "share"),
+        guildId: guild,
+        user: { id: actor },
+        locale: "cs",
+        deferUpdate: async () => {},
+        reply: async () => {},
+        editReply: async () => {},
+    } as unknown as ButtonInteraction)
+    assert.deepEqual(shared, ["444444444444444444", "555555555555555555"])
 })

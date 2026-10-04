@@ -5,6 +5,7 @@ import {
     gameOverridesValidator,
     normalizeConfigDoc,
     playerStatsServerValidator,
+    statsSettingsValidator,
     ticketSettingsValidator,
 } from "./discord_shared"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
@@ -66,6 +67,7 @@ export const upsertConfig = mutation({
         playerStatsServers: v.optional(v.array(playerStatsServerValidator)),
         ticketSettings: v.optional(ticketSettingsValidator),
         membershipSettings: v.optional(membershipSettingsValidator),
+        statsSettings: v.optional(statsSettingsValidator),
         gameOverrides: v.optional(gameOverridesValidator),
     },
     handler: async (ctx, args) => {
@@ -104,6 +106,7 @@ export const upsertConfig = mutation({
                 .filter((item) => item.token && item.url),
             ticketSettings: args.ticketSettings,
             membershipSettings: args.membershipSettings,
+            statsSettings: args.statsSettings,
             gameOverrides: args.gameOverrides,
             updatedAt: now,
         }

@@ -266,6 +266,12 @@ const membershipSettings = v.object({
     categories: v.array(membershipCategory),
 })
 
+const statsSettings = v.object({
+    enabled: v.boolean(),
+    games: v.object({ hell_let_loose: v.boolean(), wardogs: v.boolean() }),
+    defaultShareChannelId: v.optional(v.string()),
+})
+
 const playerStatsServer = v.object({
     token: v.string(),
     url: v.string(),
@@ -695,6 +701,7 @@ export default defineSchema({
         clanRoleId: v.optional(v.string()),
         dashboardAdminRoleId: v.optional(v.string()),
         playerStatsServers: v.optional(v.array(playerStatsServer)),
+        statsSettings: v.optional(statsSettings),
         gameOverrides: v.optional(gameOverrides),
         ticketSettings: v.optional(ticketSettings),
         membershipSettings: v.optional(membershipSettings),

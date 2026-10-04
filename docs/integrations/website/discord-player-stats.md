@@ -58,8 +58,11 @@ freshly fetches requester and selected member membership before and after source
 reads; Convex also checks the internal secret, configured guild and a membership
 observation no older than ten seconds. There is no anonymous Convex history path.
 
-**Share** uses the selected slash-command channel or opens a Discord channel
-picker. The requester and bot must currently be able to view, send messages and
+**Share** uses the selected slash-command channel, else the default sharing
+channel from **Clan settings → Discord → Player statistics command**, else opens
+a Discord channel picker. The same settings let a manager switch the command off
+for the server or for one game; the bot then answers privately that statistics are
+unavailable, before any source read. Missing settings keep both games enabled. The requester and bot must currently be able to view, send messages and
 embed links there; artwork also needs Attach Files. Cross-guild destinations,
 threads, voice channels and missing permissions are rejected. Shared cards have
 no account-management controls and suppress mentions. HLL's explicit public

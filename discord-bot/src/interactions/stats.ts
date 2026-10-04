@@ -23,6 +23,11 @@ import {
     type StatsRequest,
 } from "../../../src/application/game-data/read-player-stats"
 import {
+    resolveStatsShareChannel,
+    statsCommandAccess,
+    type StatsCommandSettings,
+} from "../../../src/domain/player-stats/command-settings"
+import {
     hllProfileUrl,
     parseSteamId,
     statsGameSchema,
@@ -51,6 +56,8 @@ export type StatsPorts = PlayerStatsPorts & {
         game: string,
         map?: string | null
     ) => Promise<{ path: string; name: string; url: string } | null>
+    /** Workspace switches for the command; undefined keeps the defaults. */
+    settings: (guildId: string) => Promise<StatsCommandSettings | undefined>
     now?: () => number
 }
 type State = {
@@ -366,6 +373,18 @@ export function createStatsController(ports: StatsPorts) {
                 })
                 return
             }
+            const settings = await ports
+                .settings(i.guildId)
+                .catch(() => undefined)
+            const access = statsCommandAccess(settings, game.data)
+            if (access !== "allowed") {
+                await i.reply({
+                    content:
+                        access === "disabled" ? c.disabled : c.gameDisabled,
+                    flags: MessageFlags.Ephemeral,
+                })
+                return
+            }
             const actor = `${i.guildId}:${i.user.id}`
             if (now() - (commandsAt.get(actor) ?? 0) < 3000) {
                 await i.reply({
@@ -398,7 +417,10 @@ export function createStatsController(ports: StatsPorts) {
                 view: "overview",
                 busy: true,
                 shared: false,
-                channelId: i.options.getChannel("channel")?.id,
+                channelId: resolveStatsShareChannel(
+                    settings,
+                    i.options.getChannel("channel")?.id
+                ),
             }
             states.set(s.id, s)
             try {

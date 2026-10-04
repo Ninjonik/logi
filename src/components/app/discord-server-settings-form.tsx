@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import {
+    DEFAULT_STATS_COMMAND_SETTINGS,
+    STATS_COMMAND_GAMES,
+    type StatsCommandSettings,
+} from "@/domain/player-stats/command-settings"
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -20,11 +25,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { supportedClanLanguages, type ClanLanguage } from "@/lib/clan-language"
 import { DiscordPublicPanelsForm } from "./discord-public-panels-form"
 import { DiscordChannelSelect } from "./discord-channel-select"
+import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import { supportedTimezones } from "@/lib/discord-timezones"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { getDictionary } from "@/i18n/dictionaries"
 import type { DiscordConfig } from "@/types/domain"
-import type { GameId } from "@/domain/games/game"
+import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -149,6 +155,9 @@ export function DiscordServerSettingsForm({
     const [playerStatsServers, setPlayerStatsServers] = useState<
         Array<{ token: string; url: string }>
     >(config?.playerStatsServers ?? [])
+    const [statsSettings, setStatsSettings] = useState<StatsCommandSettings>(
+        config?.statsSettings ?? DEFAULT_STATS_COMMAND_SETTINGS
+    )
 
     useEffect(() => {
         fetch(`/api/servers/${serverId}/discord-metadata`)
@@ -214,6 +223,7 @@ export function DiscordServerSettingsForm({
                               clanRoleId,
                               dashboardAdminRoleId,
                               playerStatsServers,
+                              statsSettings,
                               ticketSettings: remappedDefaults.ticketSettings,
                               membershipSettings:
                                   remappedDefaults.membershipSettings,
@@ -522,6 +532,96 @@ export function DiscordServerSettingsForm({
                                             .addPlayerStatsServer
                                     }
                                 </Button>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <Label>
+                                    {
+                                        dictionary.serverSettings
+                                            .statsCommandTitle
+                                    }
+                                </Label>
+                                <p className="text-muted-foreground text-sm">
+                                    {
+                                        dictionary.serverSettings
+                                            .statsCommandDescription
+                                    }
+                                </p>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                                <Label htmlFor="stats-command-enabled">
+                                    {
+                                        dictionary.serverSettings
+                                            .statsCommandEnabled
+                                    }
+                                </Label>
+                                <Switch
+                                    id="stats-command-enabled"
+                                    checked={statsSettings.enabled}
+                                    onCheckedChange={(checked) =>
+                                        setStatsSettings((current) => ({
+                                            ...current,
+                                            enabled: checked,
+                                        }))
+                                    }
+                                />
+                            </div>
+                            {STATS_COMMAND_GAMES.map((game) => (
+                                <div
+                                    key={game}
+                                    className="flex items-center justify-between gap-4"
+                                >
+                                    <Label htmlFor={`stats-command-${game}`}>
+                                        {dictionary.serverSettings.statsCommandGame.replace(
+                                            "{game}",
+                                            GAME_LABELS[game]
+                                        )}
+                                    </Label>
+                                    <Switch
+                                        id={`stats-command-${game}`}
+                                        checked={statsSettings.games[game]}
+                                        disabled={!statsSettings.enabled}
+                                        onCheckedChange={(checked) =>
+                                            setStatsSettings((current) => ({
+                                                ...current,
+                                                games: {
+                                                    ...current.games,
+                                                    [game]: checked,
+                                                },
+                                            }))
+                                        }
+                                    />
+                                </div>
+                            ))}
+                            <div className="space-y-2">
+                                <Label>
+                                    {
+                                        dictionary.serverSettings
+                                            .statsCommandDefaultChannel
+                                    }
+                                </Label>
+                                <DiscordChannelSelect
+                                    value={statsSettings.defaultShareChannelId}
+                                    onChange={(value) =>
+                                        setStatsSettings((current) => ({
+                                            ...current,
+                                            defaultShareChannelId:
+                                                value || undefined,
+                                        }))
+                                    }
+                                    channels={metadata?.channels ?? []}
+                                    placeholder={
+                                        dictionary.serverSettings
+                                            .statsCommandDefaultChannel
+                                    }
+                                />
+                                <p className="text-muted-foreground text-sm">
+                                    {
+                                        dictionary.serverSettings
+                                            .statsCommandDefaultChannelHelp
+                                    }
+                                </p>
                             </div>
                         </div>
                     </>

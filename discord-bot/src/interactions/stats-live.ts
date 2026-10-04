@@ -2,6 +2,7 @@ import {
     createStatsRuntimePorts,
     type StatsRuntimeDependencies,
 } from "./stats-runtime"
+import { statsCommandSettingsSchema } from "../../../src/domain/player-stats/command-settings"
 import { createHllRecordsReader } from "../../../src/infrastructure/hll-records/read-profile"
 import { panelArtwork } from "../public-panels/assets"
 import { makeFunctionReference } from "convex/server"
@@ -13,7 +14,10 @@ import { convex } from "../convex"
 
 const account = makeFunctionReference<"query">("discordPlayerStats:account"),
     history = makeFunctionReference<"query">("discordPlayerStats:history"),
-    link = makeFunctionReference<"mutation">("discordPlayerStats:linkSteam")
+    link = makeFunctionReference<"mutation">("discordPlayerStats:linkSteam"),
+    guildConfig = makeFunctionReference<"query">(
+        "discordConfig:getConfigByDiscordGuildId"
+    )
 const dependencies: StatsRuntimeDependencies = {
     member: async (guildId, id) => {
         const guild = client.guilds.cache.get(guildId)
@@ -48,6 +52,15 @@ const dependencies: StatsRuntimeDependencies = {
     artwork: panelArtwork,
     send: (request, channelId, payload) =>
         publishStats(client, request, channelId, payload),
+    settings: async (guildId) => {
+        const config = (await convex.query(guildConfig, { guildId })) as {
+            statsSettings?: unknown
+        } | null
+        const parsed = statsCommandSettingsSchema.safeParse(
+            config?.statsSettings
+        )
+        return parsed.success ? parsed.data : undefined
+    },
 }
 export const statsController = createStatsController(
     createStatsRuntimePorts(dependencies)

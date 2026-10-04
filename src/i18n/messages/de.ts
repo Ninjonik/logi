@@ -986,6 +986,14 @@ export const deMessages = {
         playerStatsServerUrl: "Server-Stats-URL",
         playerStatsServerUrlPlaceholder: "https://.../api/get_players_history",
         addPlayerStatsServer: "Stats-Server hinzufügen",
+        statsCommandTitle: "Befehl für Spielerstatistiken",
+        statsCommandDescription:
+            "Lege fest, ob Mitglieder /stats auf diesem Server nutzen dürfen, für welche Spiele, und wohin Teilen standardmäßig veröffentlicht. Die Befehlsberechtigungen von Discord gelten weiterhin.",
+        statsCommandEnabled: "/stats aktivieren",
+        statsCommandGame: "Statistiken für {game}",
+        statsCommandDefaultChannel: "Standardkanal zum Teilen",
+        statsCommandDefaultChannelHelp:
+            "Wird verwendet, wenn der Befehl ohne Kanaloption ausgeführt wird. Ohne Standard fragt Teilen nach einem Kanal. Geteilte Karten setzen weiterhin voraus, dass Mitglied und Bot dort posten dürfen.",
         removePlayerStatsServer: "Stats-Server entfernen",
         rosterScoreTitle: "Roster-Score-Regeln",
         rosterScoreDescription:
