@@ -58,3 +58,21 @@ test("membership flow always renders the account action", () => {
         /membership-flow:draft-1:link/
     )
 })
+
+test("membership flow skips an empty application form and renders review copy", () => {
+    const message = buildMembershipFlowMessage({
+        language: "en",
+        draftId: "draft-1",
+        step: "questions",
+        gameId: "wardogs",
+        platformLinked: true,
+        hasQuestions: false,
+    })
+
+    const json = JSON.stringify(
+        message.components.map((component) => component.toJSON())
+    )
+    assert.match(json, /# Review/)
+    assert.doesNotMatch(json, /undefined/)
+    assert.match(json, /membership-flow:draft-1:submit/)
+})

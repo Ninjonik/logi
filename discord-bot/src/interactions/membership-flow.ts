@@ -177,7 +177,11 @@ export function buildMembershipFlowMessage(input: {
     const text = copy[input.language]
     const hasQuestions = input.hasQuestions ?? true
     const steps = visibleFlowSteps(hasQuestions)
-    const activeStep = input.step === "platform" ? "account" : input.step
+    // An empty application form has no interactive step. A stale draft may
+    // still point at it after platform linking, so render the review instead.
+    const step =
+        !hasQuestions && input.step === "questions" ? "review" : input.step
+    const activeStep = step === "platform" ? "account" : step
     const activeIndex = steps.indexOf(activeStep)
     const container = new ContainerBuilder().setAccentColor(0x5865f2)
     container.addTextDisplayComponents(
@@ -193,7 +197,7 @@ export function buildMembershipFlowMessage(input: {
     )
     container.addSeparatorComponents(new SeparatorBuilder())
 
-    if (input.step === "game") {
+    if (step === "game") {
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(text.selectGame)
         )
@@ -213,7 +217,7 @@ export function buildMembershipFlowMessage(input: {
                 )
             )
         )
-    } else if (input.step === "specialization") {
+    } else if (step === "specialization") {
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(text.selectSpecialization)
         )
@@ -231,7 +235,7 @@ export function buildMembershipFlowMessage(input: {
                     .setStyle(ButtonStyle.Secondary)
             )
         )
-    } else if (input.step === "account") {
+    } else if (step === "account") {
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
                 input.platformLinked ? text.accountReady : text.linkAccount
@@ -250,7 +254,7 @@ export function buildMembershipFlowMessage(input: {
                     .setStyle(ButtonStyle.Primary)
             )
         )
-    } else if (input.step === "platform") {
+    } else if (step === "platform") {
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(text.choosePlatform)
         )
@@ -272,7 +276,7 @@ export function buildMembershipFlowMessage(input: {
                 )
             )
         )
-    } else if (input.step === "questions") {
+    } else if (step === "questions") {
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(text.form)
         )
@@ -320,7 +324,7 @@ export function buildMembershipFlowMessage(input: {
     )
     return {
         components: [
-            buildMembershipFlowHeader(input.language, input.step, hasQuestions),
+            buildMembershipFlowHeader(input.language, step, hasQuestions),
             container,
         ],
         flags: MessageFlags.IsComponentsV2,
