@@ -12,7 +12,8 @@ import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
     title: "Teams | Logi",
-    description: "Manage the workspace team directory.",
+    description:
+        "Browse the Logi team catalogue and request new teams or changes.",
 }
 
 export default async function ServerTeamsPage({
@@ -24,12 +25,13 @@ export default async function ServerTeamsPage({
 }) {
     const { locale, serverId } = await params
     const { game } = await searchParams
-    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
+    const resolvedLocale = isLocale(locale) ? locale : "en"
+    const dictionary = getDictionary(resolvedLocale)
     const context = await getServerContext(serverId, "all")
     if (!context?.canAdmin) return null
 
     const selected = typeof game === "string" && isGameId(game) ? game : null
-    // The all-games view lists each supported game separately; HLL: Vietnam has no directory.
+    // The all-games view lists each catalogue game separately; HLL: Vietnam has no catalogue.
     const games = selected ? [matchTeamGame(selected)] : TEAM_GAMES
     const enabledGames = context.server.enabledGames ?? [DEFAULT_GAME_ID]
 
@@ -47,6 +49,7 @@ export default async function ServerTeamsPage({
                 ) : (
                     <TeamDirectory
                         serverId={serverId}
+                        locale={resolvedLocale}
                         dictionary={dictionary}
                         settingsHref={`/${locale}/dashboard/servers/${serverId}/settings`}
                         sections={games.flatMap((gameId) =>
@@ -54,7 +57,8 @@ export default async function ServerTeamsPage({
                                 ? [
                                       {
                                           gameId,
-                                          canAdd: enabledGames.includes(gameId),
+                                          enabled:
+                                              enabledGames.includes(gameId),
                                       },
                                   ]
                                 : []

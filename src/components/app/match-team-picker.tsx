@@ -1,18 +1,18 @@
 "use client"
 
 import {
-    matchTeamSides,
-    matchTeamSlots,
-    type MatchTeamAssignment,
-    type MatchTeamInput,
-    type MatchTeamSlot,
-} from "@/domain/teams/match-teams"
+    followRefreshedTeam,
+    matchTeamSelectionIssues,
+    requestableTeamName,
+    setSlotSide,
+    setSlotTeam,
+} from "@/lib/teams/match-team-selection"
 import {
     fetchTeamPage,
     fetchTeamRecord,
     requestMatchTeamRefresh,
-    TeamRequestError,
-    type TeamErrorCode,
+    TeamReadError,
+    type TeamReadErrorCode,
 } from "@/lib/teams/team-client"
 import {
     Command,
@@ -23,6 +23,12 @@ import {
     CommandSeparator,
 } from "@/components/ui/command"
 import {
+    matchTeamSides,
+    matchTeamSlots,
+    type MatchTeamAssignment,
+    type MatchTeamInput,
+} from "@/domain/teams/match-teams"
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -30,20 +36,16 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import {
-    matchTeamSelectionIssues,
-    setSlotSide,
-    setSlotTeam,
-} from "@/lib/teams/match-team-selection"
-import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { Check, ChevronsUpDown, Loader2, Plus, RefreshCw } from "lucide-react"
+import { TeamRequestDialog } from "@/components/app/team-request-dialog"
 import { useEffect, useId, useMemo, useRef, useState } from "react"
-import { TeamFormDialog } from "@/components/app/team-form-dialog"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import type { TeamGame, TeamRecord } from "@/domain/teams/team"
+import { fillTeamTemplate } from "@/lib/teams/team-list"
 import { TeamLogo } from "@/components/app/team-logo"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
@@ -71,14 +73,18 @@ type Shown = {
     shortCode: string | null
     logoUrl: string | null
     archived: boolean
+    /** Merged into another catalogue team; a snapshot refresh follows the merge. */
+    merged: boolean
 }
 type Message = { tone: "error" | "success"; text: string }
 const NO_SIDE = "__none"
 
 /**
- * Team slots of one native match: a searchable directory picker and an optional
- * side per slot. Saved selections show their stored snapshot; archived teams
- * stay selected until replaced.
+ * Team slots of one native match: a searchable picker over the global team
+ * catalogue and an optional side per slot. Saved selections show their stored
+ * snapshot; archived (and merged) teams stay selected until replaced. A team
+ * missing from the catalogue is requested instead of created; it becomes
+ * selectable once a global administrator approves it.
  */
 export function MatchTeamPicker({
     serverId,
@@ -96,14 +102,18 @@ export function MatchTeamPicker({
     const [directory, setDirectory] = useState<ReadonlyMap<string, TeamRecord>>(
         () => new Map()
     )
-    const [creatingSlot, setCreatingSlot] = useState<MatchTeamSlot | null>(null)
+    // The new-team request opened from a slot's picker, prefilled with the typed name.
+    const [request, setRequest] = useState<{
+        open: boolean
+        name: string
+    } | null>(null)
     const [refreshing, setRefreshing] = useState<string | null>(null)
     const [message, setMessage] = useState<Message | null>(null)
     const attempted = useRef(new Set<string>())
     const issues = matchTeamSelectionIssues(value)
     const sides = matchTeamSides(gameId)
 
-    // Directory state (archive flag, current presentation) of saved and selected teams.
+    // Catalogue state (archive flag, current presentation) of saved and selected teams.
     const unresolved = useMemo(
         () =>
             [
@@ -152,7 +162,8 @@ export function MatchTeamPicker({
             (assignment) => assignment.teamId === teamId
         )
         const record = directory.get(teamId)
-        const archived = Boolean(record?.archivedAt)
+        const archived = Boolean(record?.archivedAt),
+            merged = Boolean(record?.mergedIntoTeamId)
         if (saved)
             return {
                 teamId,
@@ -160,6 +171,7 @@ export function MatchTeamPicker({
                 shortCode: saved.snapshot.shortCode,
                 logoUrl: saved.snapshot.logoUrl,
                 archived,
+                merged,
             }
         return record
             ? {
@@ -168,6 +180,7 @@ export function MatchTeamPicker({
                   shortCode: record.shortCode,
                   logoUrl: record.logoUrl,
                   archived,
+                  merged,
               }
             : null
     }
@@ -183,6 +196,15 @@ export function MatchTeamPicker({
                 teamId
             )
             if (result.ok) {
+                // A merged team's refresh re-points the slot at the surviving team.
+                onChange(
+                    followRefreshedTeam(
+                        value,
+                        teamId,
+                        existing,
+                        result.matchTeams
+                    )
+                )
                 onRefreshed?.(result.matchTeams)
                 setMessage({ tone: "success", text: t.snapshotRefreshed })
             } else setMessage({ tone: "error", text: t.errors[result.code] })
@@ -250,7 +272,10 @@ export function MatchTeamPicker({
                                             setSlotTeam(value, slot, teamId)
                                         )
                                     }}
-                                    onAdd={() => setCreatingSlot(slot)}
+                                    onRequest={(name) => {
+                                        setMessage(null)
+                                        setRequest({ open: true, name })
+                                    }}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -298,10 +323,15 @@ export function MatchTeamPicker({
                                     {selection?.archived ? (
                                         <>
                                             <Badge variant="secondary">
-                                                {dictionary.teams.archivedBadge}
+                                                {selection.merged
+                                                    ? t.mergedBadge
+                                                    : dictionary.teams
+                                                          .archivedBadge}
                                             </Badge>
                                             <span className="text-muted-foreground text-xs">
-                                                {t.archivedSelection}
+                                                {selection.merged
+                                                    ? t.mergedSelection
+                                                    : t.archivedSelection}
                                             </span>
                                         </>
                                     ) : null}
@@ -312,7 +342,10 @@ export function MatchTeamPicker({
                                             size="sm"
                                             disabled={
                                                 refreshing !== null ||
-                                                Boolean(selection?.archived)
+                                                Boolean(
+                                                    selection?.archived &&
+                                                    !selection.merged
+                                                )
                                             }
                                             aria-label={`${t.refreshSnapshot}: ${selection?.name ?? t.slots[slot]}`}
                                             onClick={() =>
@@ -366,20 +399,21 @@ export function MatchTeamPicker({
                     </p>
                 ) : null}
             </div>
-            {disabled ? null : (
-                <TeamFormDialog
+            {disabled || !request ? null : (
+                <TeamRequestDialog
                     serverId={serverId}
-                    gameId={gameId}
                     dictionary={dictionary}
-                    open={creatingSlot !== null}
-                    onOpenChange={(open) => {
-                        if (!open) setCreatingSlot(null)
-                    }}
-                    onSaved={(team) => {
-                        remember(team)
-                        if (creatingSlot)
-                            onChange(setSlotTeam(value, creatingSlot, team.id))
-                    }}
+                    open={request.open}
+                    target={{ kind: "create", gameId }}
+                    initialName={request.name}
+                    onOpenChange={(open) =>
+                        setRequest((current) =>
+                            current ? { ...current, open } : current
+                        )
+                    }
+                    onSubmitted={() =>
+                        setMessage({ tone: "success", text: t.requestSent })
+                    }
                 />
             )}
         </div>
@@ -389,7 +423,7 @@ export function MatchTeamPicker({
 type ComboboxState =
     | { status: "loading"; items: TeamRecord[] }
     | { status: "ready"; items: TeamRecord[] }
-    | { status: "error"; items: TeamRecord[]; code: TeamErrorCode }
+    | { status: "error"; items: TeamRecord[]; code: TeamReadErrorCode }
 
 function TeamCombobox({
     id,
@@ -403,7 +437,7 @@ function TeamCombobox({
     invalid,
     describedBy,
     onSelect,
-    onAdd,
+    onRequest,
 }: {
     id: string
     serverId: string
@@ -416,7 +450,8 @@ function TeamCombobox({
     invalid: boolean
     describedBy?: string
     onSelect(teamId: string | null, record?: TeamRecord): void
-    onAdd(): void
+    /** Opens a new-team request for the typed name (empty when none is requestable). */
+    onRequest(name: string): void
 }) {
     const t = dictionary.teams.picker
     const [open, setOpen] = useState(false)
@@ -435,7 +470,7 @@ function TeamCombobox({
             try {
                 const page = await fetchTeamPage(
                     serverId,
-                    { gameId, archived: false, search: term },
+                    { gameId, search: term },
                     controller.signal
                 )
                 if (!controller.signal.aborted)
@@ -446,7 +481,7 @@ function TeamCombobox({
                     status: "error",
                     items: [],
                     code:
-                        error instanceof TeamRequestError
+                        error instanceof TeamReadError
                             ? error.code
                             : "unavailable",
                 })
@@ -467,6 +502,9 @@ function TeamCombobox({
                 option.name.toLowerCase().includes(lowered) ||
                 option.shortCode?.toLowerCase().includes(lowered))
     )
+
+    // A typed name no listed team carries can be requested by that name.
+    const requestable = requestableTeamName(query, state.items)
 
     function choose(teamId: string | null, record?: TeamRecord) {
         onSelect(teamId, record)
@@ -558,6 +596,7 @@ function TeamCombobox({
                                             shortCode: team.shortCode,
                                             logoUrl: team.logoUrl,
                                             archived: false,
+                                            merged: false,
                                         }}
                                     />
                                 </CommandItem>
@@ -608,7 +647,10 @@ function TeamCombobox({
                                             variant="secondary"
                                             className="ml-auto"
                                         >
-                                            {dictionary.teams.archivedBadge}
+                                            {option.merged
+                                                ? t.mergedBadge
+                                                : dictionary.teams
+                                                      .archivedBadge}
                                         </Badge>
                                     </CommandItem>
                                 ))}
@@ -617,16 +659,31 @@ function TeamCombobox({
                         <CommandSeparator alwaysRender />
                         <CommandGroup>
                             <CommandItem
-                                value="__add-team"
+                                value="__request-team"
                                 onSelect={() => {
+                                    const name = requestable ?? ""
                                     setOpen(false)
                                     setQuery("")
                                     // Let the popover release focus before the dialog traps it.
-                                    setTimeout(onAdd, 0)
+                                    setTimeout(() => onRequest(name), 0)
                                 }}
                             >
-                                <Plus className="size-4" aria-hidden />
-                                {t.addTeam}
+                                <Plus
+                                    className="size-4 shrink-0 self-start"
+                                    aria-hidden
+                                />
+                                <span className="flex min-w-0 flex-col">
+                                    <span className="truncate">
+                                        {requestable
+                                            ? fillTeamTemplate(t.requestNamed, {
+                                                  name: requestable,
+                                              })
+                                            : t.requestTeam}
+                                    </span>
+                                    <span className="text-muted-foreground text-xs">
+                                        {t.requestHint}
+                                    </span>
+                                </span>
                             </CommandItem>
                         </CommandGroup>
                     </CommandList>
