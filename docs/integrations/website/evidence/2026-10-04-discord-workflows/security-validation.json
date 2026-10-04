@@ -1,0 +1,104 @@
+{
+  "testedCodeRevision": "ba7af186f98e569a16a68a6a3455afc99c31d22e",
+  "scannedRevision": "20b52805b190e0152c6a91911eee88c014d6fc07",
+  "baseline": "0eec5d4b6dce1daf2f5f9aea3026136308b49196",
+  "scanId": "0b7fbe18-c2f1-4d13-bac9-06ee2cdb05db",
+  "codeFiles": [
+    {
+      "path": "discord-bot/src/interactions.ts",
+      "gitBlob": "ae397123345e28b533cf2b5cf539b68efb29c69b"
+    },
+    {
+      "path": "discord-bot/src/interactions/workflow-commands.test.ts",
+      "gitBlob": "6f9cdfb10d1c92974b38ccb99614199a3dc2285b"
+    }
+  ],
+  "fullSuite": {
+    "command": "node --import tsx --test src/**/*.test.ts discord-bot/src/**/*.test.ts",
+    "passed": 936,
+    "failed": 0,
+    "skipped": 0,
+    "exitCode": 0,
+    "log": "security-full-suite.txt",
+    "sha256": "59ab54903166485a14938d2e5a8326b0a8f4fbb2157c6ebf1d403e52d1216371"
+  },
+  "focusedSuite": {
+    "command": "node --import tsx --test discord-bot/src/interactions/workflow-commands.test.ts",
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0,
+    "exitCode": 0,
+    "log": "security-regression-after.txt",
+    "sha256": "1db1e86fe6e2bbcce040206901c8eb2970877d199f0a7e41a9140b51ce12723c"
+  },
+  "typecheck": {
+    "command": "node node_modules/typescript/bin/tsc --noEmit",
+    "exitCode": 0
+  },
+  "build": {
+    "command": "next build --webpack",
+    "exitCode": 0,
+    "environment": "clean source copy; synthetic Discord token; isolated loopback backend; SSO disabled",
+    "log": "security-build.txt",
+    "sha256": "57768c0b508b5f72ae0851f499b5faddeb5faac2ec5e7a0e9e221f54f273cd3c"
+  },
+  "coverage": {
+    "canonical": "partial",
+    "automaticSourcePathsReviewed": 49,
+    "additionalSyntheticSourcePathsReviewed": 1,
+    "ancillaryPathsAccountedFor": 21,
+    "uniqueChangedPaths": 71,
+    "artifactSurfaceRows": 75,
+    "retainedPriorDeferredPaths": 45,
+    "note": "Sealed artifact retained the earlier discovery checkpoint. See security-review.md; the artifact was not modified."
+  },
+  "scanArtifactCopies": [
+    {
+      "originalPath": "report.md",
+      "path": "security/report.md",
+      "sha256": "bd2b174cbe2edc8bbd17d3de047353ed2ec02e21449d8b14beb00b98e745e16c"
+    },
+    {
+      "originalPath": "scan-manifest.json",
+      "path": "security/scan-manifest.json",
+      "sha256": "8061f9c95dddbd2bdfeb3f69e9b560d4f704cc5e87afc9cedf3237820ecf1c2b"
+    },
+    {
+      "originalPath": "findings.json",
+      "path": "security/findings.json",
+      "sha256": "ec392178547cc92a4d89527db97683c3132160c264f825e98f7adacb942b0768"
+    },
+    {
+      "originalPath": "coverage.json",
+      "path": "security/coverage.json",
+      "sha256": "bab1eba14e20d554e4e040e57bb723f0aecd3d2fe4de08d862cd34604ed9556a"
+    },
+    {
+      "originalPath": "artifacts/01_context/threat_model.md",
+      "path": "security/artifacts/01_context/threat_model.md",
+      "sha256": "3c4c5ab618fbb949f596f280795e9c36c390cb554667382befe9356ca7627260"
+    },
+    {
+      "originalPath": "artifacts/02_discovery/validation_artifacts/candidate-98b35b7ecc0c8507/before.log",
+      "path": "security/artifacts/02_discovery/validation_artifacts/candidate-98b35b7ecc0c8507/before.log",
+      "sha256": "b4c0f0cd02211cc7b83be351d81cc9477254e2cc9ce7654fcf9d95ef6d113d8e"
+    },
+    {
+      "originalPath": "artifacts/02_discovery/validation_artifacts/candidate-98b35b7ecc0c8507/regression.test.ts",
+      "path": "security/artifacts/02_discovery/validation_artifacts/candidate-98b35b7ecc0c8507/regression.test.ts.txt",
+      "sha256": "1315082cdcd9ee81b26a944ae638f9b5f74e0b9db43498cc7c1e33d9ecb2fd58"
+    }
+  ],
+  "securityUsage": {
+    "totalTokens": 13603287,
+    "inputTokens": 13552133,
+    "cachedInputTokens": 13042560,
+    "outputTokens": 51154,
+    "threadCount": 4,
+    "source": "tool-reported cumulative rollout counters"
+  },
+  "productionChanged": false,
+  "liveDiscordReexercisedAfterPermissionRepair": false,
+  "convexRedeployedForRepair": false,
+  "convexNote": "Repair changes only Discord handler/tests and documentation; initial increment local deploy proof remains in validation.json."
+}

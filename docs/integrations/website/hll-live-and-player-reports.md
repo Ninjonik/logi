@@ -109,8 +109,9 @@ parity; it does not gain a report export or a key-driven Discord reporting actio
 
 `/notice` resolves canonical and legacy guild event keys, rejects conflicting
 guild aliases and requires bot authentication. Notice and `/link` interactions
-acknowledge privately before slow reads. `/close_ticket` rechecks current staff
-membership. Application closing cards show both outcome and reason. Platform
+acknowledge privately before slow reads. `/close_ticket` refreshes guild ownership,
+role definitions and current staff membership before checking authority; a failed
+refresh withholds closure. Application closing cards show both outcome and reason. Platform
 link mutations require the exact linked Discord subject; imported numeric IDs
 cannot become account authority, and equivalent Steam aliases/verified ownership
 are checked before a manual link.

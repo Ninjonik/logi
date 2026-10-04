@@ -50,6 +50,10 @@ one. Test after changing channels so staff do not leave an old panel in use.
    Discord thread to `closed-<number>`, and attempts to DM the requester. A
    failed DM does not stop the ticket from closing.
 
+Before closing, the bot reloads the current server owner, role permissions and
+staff membership. If Discord cannot confirm them, it leaves the ticket open;
+previously cached administrator access does not authorize closure.
+
 ### Player reports
 
 Support categories can also receive **Report Player** tickets from a configured
