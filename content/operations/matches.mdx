@@ -112,7 +112,8 @@ room, sign-up buttons, map and banner.
 Recording a match result stores the result and can update a linked competition
 fixture. Concluding the match changes its lifecycle, removes its Discord event
 messages, completes or cancels its linked Discord scheduled event, and triggers
-the one-time score calculation. The calculation uses the workspace score
+the one-time score calculation, which is completed in the background for large
+rosters. The calculation uses the workspace score
 settings, roster position, manager-confirmed attendance, decline status, and
 absence notices; it does not infer attendance from merely signing up or
 acknowledging a reminder.

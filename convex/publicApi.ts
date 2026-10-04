@@ -17,11 +17,6 @@ import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 import {
-    ConvexEventCommandRepository,
-    ConvexEventScoreRepository,
-    DelegatingEventScorePort,
-} from "../src/infrastructure/convex/event-command-repositories"
-import {
     ConvexAssignmentCommandRepository,
     ConvexAssignmentRosterSyncPort,
 } from "../src/infrastructure/convex/assignment-command-repositories"
@@ -29,6 +24,10 @@ import {
     ConvexEventWorkflowRepository,
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
+import {
+    ConvexEventCommandRepository,
+    DelegatingEventScorePort,
+} from "../src/infrastructure/convex/event-command-repositories"
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories"
 import {
     isGameId,
@@ -42,7 +41,6 @@ import {
     buildDefaultStratmapState,
     stringifyStratmapState,
 } from "../src/lib/stratmaps"
-import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
 import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
@@ -58,7 +56,7 @@ import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
 import { currentEventStatus } from "../src/domain/events/status"
 import { systemClock } from "../src/domain/shared/clock"
-import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
+import { scheduleEventScore } from "./eventScoreQueue"
 import { apiKeyReadAccess } from "./apiKeyValidators"
 import { resolveEventMatchTeams } from "./matchTeams"
 import { getGuildByDiscordId } from "./identity"
@@ -446,9 +444,7 @@ async function enqueueClanWebhook(
 }
 
 async function applyEventScore(ctx: MutationCtx, eventId: string) {
-    await new ApplyEventScoreUseCase(
-        new ConvexEventScoreRepository(ctx, DEFAULT_ROSTER_SCORE_SETTINGS)
-    ).execute(eventId)
+    await scheduleEventScore(ctx, eventId as Id<"events">)
 }
 
 /** Atomically applies a dashboard-equivalent event upsert or conclude action. */
