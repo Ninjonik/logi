@@ -1,10 +1,10 @@
 import type { Metadata } from "next"
 
+import { filterByGameScope, resolveGameScope } from "@/domain/games/game"
 import { SquadPresetEditor } from "@/components/app/squad-preset-editor"
 import { getSquadPresetMetadata } from "@/lib/server-metadata"
 import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
-import { resolveGameScope } from "@/domain/games/game"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
 
@@ -24,14 +24,17 @@ export default async function SquadPresetDetailPage({
 }) {
     const { locale, serverId, presetId } = await params
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    // Squad groups are presentation labels, not membership links. Load every
-    // workspace group so a preset remains able to reuse its group labels.
     const context = await getServerContext(serverId, "all")
     if (!context) return null
-    const { squadPresets, canAdmin, groups = [] } = context
+    const { squadPresets, canAdmin } = context
     const preset = squadPresets.find((item) => item.id === presetId)
 
     if (!preset) return null
+
+    const groups = filterByGameScope(
+        context.groups ?? [],
+        resolveGameScope(preset.gameId)
+    )
 
     return (
         <>
