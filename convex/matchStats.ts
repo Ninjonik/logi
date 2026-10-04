@@ -1,8 +1,8 @@
-import { rebuildGuildPerformanceHistory } from "./performanceHistory"
 import type { MutationCtx } from "./_generated/server"
 import type { Doc } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
 import { query } from "./_generated/server"
+import { internal } from "./_generated/api"
 import { v } from "convex/values"
 
 const INTERNAL_AUTH_SECRET =
@@ -186,104 +186,21 @@ async function upsertMatchPreview(
     else await ctx.db.insert("publicPreviews", preview)
 }
 
-function previewExpiry(now: string) {
-    return new Date(
-        new Date(now).getTime() + 30 * 24 * 60 * 60 * 1000
-    ).toISOString()
-}
-
-async function upsertPreview(
+async function schedulePerformanceHistoryRefresh(
     ctx: MutationCtx,
-    entityType: "player" | "clan",
-    entityId: string,
-    title: string,
-    description: string,
-    now: string
+    event: Pick<Doc<"events">, "gameId" | "guildId">
 ) {
-    const existing = await ctx.db
-        .query("publicPreviews")
-        .withIndex("entity", (q) =>
-            q.eq("entityType", entityType).eq("entityId", entityId)
-        )
-        .unique()
-    const preview = {
-        entityType,
-        entityId,
-        title,
-        description,
-        imageVersion: now,
-        updatedAt: now,
-        expiresAt: previewExpiry(now),
-    }
-    if (existing) await ctx.db.patch(existing._id, preview)
-    else await ctx.db.insert("publicPreviews", preview)
-}
-
-async function refreshRelatedPreviews(
-    ctx: MutationCtx,
-    event: Pick<Doc<"events">, "_id" | "guildId">,
-    now: string
-) {
-    const guild =
-        (await ctx.db
-            .query("guilds")
-            .withIndex("discordId", (q) => q.eq("discordId", event.guildId))
-            .unique()) ??
-        (await ctx.db
-            .query("guilds")
-            .withIndex("id", (q) => q.eq("id", event.guildId))
-            .unique())
-    if (guild)
-        await upsertPreview(
-            ctx,
-            "clan",
-            event.guildId,
-            guild.name,
-            "Public clan profile and recorded match history.",
-            now
-        )
-
-    const stats = await ctx.db.query("playerStats").collect()
-    const linked = stats.filter(
-        (entry) =>
-            entry.userId &&
-            Object.prototype.hasOwnProperty.call(
-                entry.matches,
-                String(event._id)
-            )
-    )
-    await Promise.all(
-        linked.map(async (entry) => {
-            const user =
-                (await ctx.db
-                    .query("users")
-                    .withIndex("id", (q) => q.eq("id", entry.userId!))
-                    .unique()) ??
-                (await ctx.db
-                    .query("users")
-                    .withIndex("discordId", (q) =>
-                        q.eq("discordId", entry.userId!)
-                    )
-                    .unique())
-            if (!user) return
-            const matches = Object.values(entry.matches)
-            const kills = matches.reduce(
-                (total, match) => total + match.kills,
-                0
-            )
-            const deaths = matches.reduce(
-                (total, match) => total + match.deaths,
-                0
-            )
-            await upsertPreview(
-                ctx,
-                "player",
-                entry.userId!,
-                user.name,
-                `${matches.length} recorded matches · ${(deaths ? kills / deaths : kills).toFixed(2)} K/D`,
-                now
-            )
-        })
+    // The scoreboard write can be close to Convex's document-size limit. Keep
+    // this transaction focused on that durable write, then let the action run
+    // the guild and player history mutations independently.
+    await ctx.scheduler.runAfter(
+        0,
+        internal.performanceHistory.refreshInBackground,
+        {
+            secret: INTERNAL_AUTH_SECRET,
+            guildId: event.guildId,
+            gameId: event.gameId ?? "hell_let_loose",
+        }
     )
 }
 
@@ -323,8 +240,7 @@ export const upsertForEvent = mutation({
                 updatedAt: now,
             })
             await upsertMatchPreview(ctx, event, args.raw, now)
-            await refreshRelatedPreviews(ctx, event, now)
-            await rebuildGuildPerformanceHistory(ctx, event.guildId)
+            await schedulePerformanceHistoryRefresh(ctx, event)
 
             return String(existing._id)
         }
@@ -346,8 +262,7 @@ export const upsertForEvent = mutation({
             updatedAt: now,
         })
         await upsertMatchPreview(ctx, event, args.raw, now)
-        await refreshRelatedPreviews(ctx, event, now)
-        await rebuildGuildPerformanceHistory(ctx, event.guildId)
+        await schedulePerformanceHistoryRefresh(ctx, event)
 
         return String(insertedId)
     },
