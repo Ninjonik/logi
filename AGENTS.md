@@ -36,6 +36,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Integration roadmap](./docs/integrations/website/roadmap/README.md) — proposed HLL/Wardogs collection, website synchronization, Discord membership and identity plans
 - [Discord public panels](./docs/integrations/website/discord-public-panels.md) — channel settings, durable message recovery, map artwork, application emoji, live scoreboards, reviewed results and activation limits
 - [HLL live data and private player reports](./docs/integrations/website/hll-live-and-player-reports.md) — scoped CRCON live reads, private report intake, current Discord audience checks and recovery limits
+- [Game servers and API keys](./docs/integrations/website/game-server-credentials.md) — workspace-entered provider keys, AES-256-GCM keyring, credential modes and legacy interpretation, commands, fencing, operator activation/migration/rotation runbook, security review and pending live acceptance
 - [Integration settings coverage](./docs/integrations/website/configuration-coverage.md) — implemented UI controls, operator configuration and outstanding settings gaps
 - [Discord player statistics](./docs/integrations/website/discord-player-stats.md) — shared HLL/Wardogs command, self-declared Steam lookup, channel sharing, retained-history totals and HLL provider access limits
 - [Discord feature gallery](./docs/integrations/website/evidence/2026-10-03-discord-gallery/README.md) — 21 actual Discord screenshots, existing/new capability inventory, audiences and observed design gaps

@@ -24,6 +24,11 @@ a dependency. HLL: Vietnam is not assumed compatible with HLL CRCON.
 
 ## Operator setup and manager workflow
 
+> **Superseded for keys (2026-10-04):** workspaces now enter provider keys in the
+> dashboard, stored encrypted. `secretRef` variables remain only for operator
+> catalog entries until migrated; see
+> [game-server credentials](../game-server-credentials.md).
+
 Set `LOGI_GAME_DATA_SOURCES` in the **Convex runtime environment**, as a JSON
 array. The catalog binds each source to a Discord guild ID and a game. It
 defaults to `[]`; no collection starts automatically. Example values are

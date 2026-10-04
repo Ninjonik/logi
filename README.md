@@ -64,23 +64,24 @@ npm install
 
 Create a private `.env.local` file at the repository root. Do not commit it. The exact variables depend on the parts of Logi you run:
 
-| Variable                                     | Used for                                                                                                                    |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_CONVEX_URL`                     | Convex endpoint used by the dashboard and optionally the bot                                                                |
-| `CONVEX_SELF_HOSTED_URL`                     | Alternative endpoint for a self-hosted Convex backend                                                                       |
-| `CONVEX_SELF_HOSTED_ADMIN_KEY`               | Private Convex CLI administration key for a self-hosted backend                                                             |
-| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Discord OAuth sign-in                                                                                                       |
-| `DISCORD_REDIRECT_URI` or `SITE_URL`         | OAuth callback and public site URLs                                                                                         |
-| `JWT_SECRET`                                 | Dashboard session signing                                                                                                   |
-| `SITE_URL`                                   | Fixed dashboard/OIDC issuer origin, without a trailing slash                                                                |
-| `LOGI_SSO_ENABLED`                           | Explicit opt-in for the optional SSO provider in Next.js and Convex; disabled unless `true`                                 |
-| `LOGI_SSO_PRIVATE_JWK`                       | Operator-managed private RSA JWK with a `kid`, only in Next.js; its public counterpart is exposed at `/api/sso/jwks`        |
-| `LOGI_SSO_ALLOW_LOOPBACK_HTTP`               | Development-only opt-in for explicit localhost/127.0.0.1/IPv6 loopback issuer and callbacks; ordinary HTTP remains rejected |
-| `INTERNAL_AUTH_SECRET`                       | Shared secret for trusted dashboard/bot-to-Convex operations                                                                |
-| `DISCORD_BOT_TOKEN`                          | Required when running the Discord bot                                                                                       |
-| `DISCORD_SUPPORT_URL`                        | Public Discord support-server invite shown in Logi navigation                                                               |
-| `LOGI_GAME_DATA_SOURCES`                     | Optional operator-owned provider catalog in Convex; workspaces can also register sources in System → Game server data       |
-| `LOGI_GAME_DATA_<NAME>_TOKEN`                | Provider token in Convex, referenced by catalog name only                                                                   |
+| Variable                                     | Used for                                                                                                                             |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_CONVEX_URL`                     | Convex endpoint used by the dashboard and optionally the bot                                                                         |
+| `CONVEX_SELF_HOSTED_URL`                     | Alternative endpoint for a self-hosted Convex backend                                                                                |
+| `CONVEX_SELF_HOSTED_ADMIN_KEY`               | Private Convex CLI administration key for a self-hosted backend                                                                      |
+| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Discord OAuth sign-in                                                                                                                |
+| `DISCORD_REDIRECT_URI` or `SITE_URL`         | OAuth callback and public site URLs                                                                                                  |
+| `JWT_SECRET`                                 | Dashboard session signing                                                                                                            |
+| `SITE_URL`                                   | Fixed dashboard/OIDC issuer origin, without a trailing slash                                                                         |
+| `LOGI_SSO_ENABLED`                           | Explicit opt-in for the optional SSO provider in Next.js and Convex; disabled unless `true`                                          |
+| `LOGI_SSO_PRIVATE_JWK`                       | Operator-managed private RSA JWK with a `kid`, only in Next.js; its public counterpart is exposed at `/api/sso/jwks`                 |
+| `LOGI_SSO_ALLOW_LOOPBACK_HTTP`               | Development-only opt-in for explicit localhost/127.0.0.1/IPv6 loopback issuer and callbacks; ordinary HTTP remains rejected          |
+| `INTERNAL_AUTH_SECRET`                       | Shared secret for trusted dashboard/bot-to-Convex operations                                                                         |
+| `DISCORD_BOT_TOKEN`                          | Required when running the Discord bot                                                                                                |
+| `DISCORD_SUPPORT_URL`                        | Public Discord support-server invite shown in Logi navigation                                                                        |
+| `LOGI_CREDENTIAL_KEYRING`                    | Operator keyring for encrypted game-server keys; identical in Convex and the Next server, never public (see the credentials runbook) |
+| `LOGI_GAME_DATA_SOURCES`                     | Optional operator-owned provider catalog in Convex; workspaces connect their own servers in System → Game server data                |
+| `LOGI_GAME_DATA_<NAME>_TOKEN`                | Legacy provider token in Convex for operator catalog entries; migrate it to an encrypted key                                         |
 
 Start the dashboard:
 

@@ -368,17 +368,38 @@ subscription; add the newly generated URL in Google Calendar afterward.
 
 ## Game server data
 
-In **System → Game server data**, managers can register provider sources and then
-enable, disable and resume them. **Provider sources** takes a lowercase reference,
-the provider, the provider's server ID (a panel UUID for Warcon), the HTTPS origin
-without a path, the name of the Convex environment variable that holds the token
-(`LOGI_GAME_DATA_<NAME>_TOKEN`) and an optional network allowlist. Logi never asks
-for, stores or shows the token itself: the operator sets the variable in Convex
-first, and you point the source at its name. To rotate a token, the operator
-stores the new value under a new variable and you update the reference; the
-connection picks the new reference up immediately. Removing a registration
-disables its connection but keeps retained history. Sources from the operator's
-own catalog appear read-only alongside workspace registrations.
+In **System → Game server data**, workspace administrators connect their own game
+servers under **Game servers**. For each server enter a name, the game, the
+provider, the HTTPS address without a path, the server ID at the provider (the
+CRCON server number, usually `1`, or the Warcon panel's server UUID) and the API
+key. **Test connection** makes one read-only request and checks that the key
+works for exactly that server. **Save server** stores the key encrypted; with
+**Start collecting after a successful test** checked, collection starts only if
+the test passes, otherwise the server is saved as a disabled draft. The Wardog
+Servers directory needs no key; a CRCON key is optional and, without one, Logi
+reads only public data. A CRCON key's user needs permission to view connection
+information.
+
+A saved key is never shown again and cannot be exported. Each server shows
+whether a key is stored, when it was changed, whether it passed its last test,
+whether collection is running and when it last succeeded. **Change key** tests
+the new key first and replaces the old one only if the test passes, unless you
+explicitly save it as unverified, which stops collection until a test passes.
+**Test saved key** re-checks the stored key, **Remove key** deletes it (servers
+that need a key stop collecting) and **Remove server** stops collection and
+deletes the key while keeping collected history. The address and server ID
+cannot be edited: connect a new server instead. Names are unique within the
+workspace; up to 20 servers can be connected, and connection tests are limited
+to 30 per workspace and 6 per server every 10 minutes.
+
+Servers configured by the Logi operator appear as **Configured by the Logi
+operator**. You can test them and replace their key, but not rename or remove
+them. A server registered before encrypted keys that named an environment
+variable shows **Old key reference** and does not collect until you enter its key
+again or the operator migrates it. If Logi reports that the stored key cannot be
+used because the encryption key is unavailable, contact the Logi operator. If
+encrypted key storage is not activated on the deployment, keys can be tested but
+not saved.
 
 HLL CRCON supports current server data and historical match collection. Wardogs
 RCON supports current server data after checking its available functions. An
@@ -394,9 +415,9 @@ visible with their timestamp when a source fails. Data becomes stale after three
 minutes and unavailable after fifteen; disabling a source makes it unavailable
 immediately. A missing directory entry does not prove that the server is offline.
 
-**Disable** stops collection and rejects in-flight results from older runs.
-If access or configuration is rejected, ask the operator to fix it and use
-**Enable / resume**. **Refresh** reloads Logi's stored status; it does not contact
+**Disable** (or **Stop collecting**) stops collection and rejects in-flight
+results from older runs; so does a key change. If the provider rejects the key,
+change it and run **Test saved key** before **Start collecting**. **Refresh** reloads Logi's stored status; it does not contact
 the game server. A history-import error is displayed separately from current data.
 
 Website keys need the **Server snapshots** and/or **Integration health** grants
