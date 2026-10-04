@@ -361,16 +361,178 @@ const paths: Record<string, unknown> = {
             summary: "Get a public competition",
             tags: ["Public API — no key required"],
             description:
-                "Public, rate-limited competition details. Each competition includes its gameId. Use collection=divisions for divisions.",
+                "Public, rate-limited details of a published competition: its gameId, season, divisions with registered teams, and fixtures with results. Team IDs are global Logi team catalogue IDs, shared by every competition the team plays in (breaking change: they were Logi workspace IDs before). Teams carry name, shortCode and logoUrl (null when the team has none); fixtures reference them with teamAId and teamBId. An ID of the form guild:<id> marks a legacy record that has not been migrated yet. Unpublished and unknown competitions return 404. Use collection=divisions for a paginated division list.",
             parameters: [
                 {
                     name: "slug",
                     in: "path",
                     required: true,
-                    schema: { type: "string" },
+                    schema: {
+                        type: "string",
+                        pattern: "^[a-z0-9][a-z0-9-]{1,63}$",
+                    },
                 },
             ],
-            responses,
+            responses: {
+                ...responses,
+                "200": {
+                    description:
+                        "The published competition (or a page of its divisions with collection=divisions).",
+                    headers: responses["200"].headers,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["data"],
+                                properties: {
+                                    data: {
+                                        type: "object",
+                                        required: [
+                                            "id",
+                                            "gameId",
+                                            "slug",
+                                            "name",
+                                            "season",
+                                            "description",
+                                            "divisions",
+                                        ],
+                                        properties: {
+                                            id: { type: "string" },
+                                            gameId: {
+                                                type: "string",
+                                                enum: [
+                                                    "hell_let_loose",
+                                                    "hell_let_loose_vietnam",
+                                                    "wardogs",
+                                                ],
+                                            },
+                                            slug: { type: "string" },
+                                            name: { type: "string" },
+                                            season: { type: "string" },
+                                            description: {
+                                                type: ["string", "null"],
+                                            },
+                                            divisions: {
+                                                type: "array",
+                                                items: {
+                                                    type: "object",
+                                                    required: [
+                                                        "id",
+                                                        "name",
+                                                        "teams",
+                                                        "fixtures",
+                                                    ],
+                                                    properties: {
+                                                        id: { type: "string" },
+                                                        name: {
+                                                            type: "string",
+                                                        },
+                                                        teams: {
+                                                            type: "array",
+                                                            items: {
+                                                                type: "object",
+                                                                required: [
+                                                                    "id",
+                                                                    "name",
+                                                                    "shortCode",
+                                                                    "logoUrl",
+                                                                    "withdrawn",
+                                                                ],
+                                                                properties: {
+                                                                    id: {
+                                                                        type: "string",
+                                                                        description:
+                                                                            "Global team catalogue ID (guild:<id> for a legacy record).",
+                                                                    },
+                                                                    name: {
+                                                                        type: "string",
+                                                                    },
+                                                                    shortCode: {
+                                                                        type: [
+                                                                            "string",
+                                                                            "null",
+                                                                        ],
+                                                                    },
+                                                                    logoUrl: {
+                                                                        type: [
+                                                                            "string",
+                                                                            "null",
+                                                                        ],
+                                                                        format: "uri",
+                                                                    },
+                                                                    withdrawn: {
+                                                                        type: "boolean",
+                                                                    },
+                                                                },
+                                                            },
+                                                        },
+                                                        fixtures: {
+                                                            type: "array",
+                                                            items: {
+                                                                type: "object",
+                                                                required: [
+                                                                    "id",
+                                                                    "phase",
+                                                                    "teamAId",
+                                                                    "teamBId",
+                                                                    "status",
+                                                                ],
+                                                                properties: {
+                                                                    id: {
+                                                                        type: "string",
+                                                                    },
+                                                                    phase: {
+                                                                        type: "string",
+                                                                        enum: [
+                                                                            "league",
+                                                                            "playoff",
+                                                                            "relegation",
+                                                                        ],
+                                                                    },
+                                                                    teamAId: {
+                                                                        type: "string",
+                                                                    },
+                                                                    teamBId: {
+                                                                        type: "string",
+                                                                    },
+                                                                    scoreA: {
+                                                                        type: "integer",
+                                                                    },
+                                                                    scoreB: {
+                                                                        type: "integer",
+                                                                    },
+                                                                    status: {
+                                                                        type: "string",
+                                                                        enum: [
+                                                                            "scheduled",
+                                                                            "final",
+                                                                            "forfeit",
+                                                                        ],
+                                                                    },
+                                                                    scheduledAt:
+                                                                        {
+                                                                            type: "string",
+                                                                            format: "date-time",
+                                                                        },
+                                                                    eventId: {
+                                                                        type: "string",
+                                                                        description:
+                                                                            "Linked Logi match event; its public page is /matches/{eventId}.",
+                                                                    },
+                                                                },
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
         },
     },
     "/clan/meta": {

@@ -1003,35 +1003,185 @@ export const deMessages = {
         totalMatches: "Matches gesamt",
         team: "Team",
         withdrawn: "(zurückgezogen)",
-        manageDescription:
-            "Verwalte globale Saisons, Teams, Spielpläne und Ergebnis-Links.",
-        manualResult: "Manuelles Ergebnis hinzufügen",
-        manualResultDescription:
-            "Nutze dies, wenn kein Logi-Match-Event verknüpft ist.",
-        division: "Division",
-        teamA: "Team A",
-        teamB: "Team B",
-        chooseTeam: "Team wählen",
-        teamAScore: "Punkte Team A",
-        teamBScore: "Punkte Team B",
-        saveResult: "Ergebnis speichern",
-        saving: "Speichert…",
-        resultSaved: "Ergebnis gespeichert.",
-        resultSaveFailed: "Ergebnis konnte nicht gespeichert werden.",
-        mergeAliases: "Clan-Aliase zusammenführen",
-        mergeDescription:
-            "Übertrage Wettbewerbshistorie von einem Ghost- oder Alias-Clan auf den echten Clan.",
-        clanToKeep: "Zu behaltender Clan",
-        chooseRealClan: "Wähle den echten Clan",
-        ghostToMerge: "Ghost oder Duplikat zum Zusammenführen",
-        chooseDuplicate: "Wähle das Duplikat",
-        mergeClans: "Clans zusammenführen",
-        merging: "Wird zusammengeführt…",
-        mergeFailed: "Clans konnten nicht zusammengeführt werden.",
-        mergeSuccess: "Clan-Historie zusammengeführt.",
+        noTeams: "Noch keine Teams registriert.",
+        phases: {
+            league: "Liga",
+            playoff: "Playoff",
+            relegation: "Relegation",
+        },
+        fixtureStatus: {
+            scheduled: "Geplant",
+            final: "Endgültig",
+            forfeit: "Forfeit",
+        },
         createEcl: "ECL 2026 erstellen",
         createFailed: "ECL konnte nicht erstellt werden.",
         createSuccess: "ECL 2026 erstellt.",
+    },
+    competitionAdmin: {
+        listDescription:
+            "Erstelle und betreue Wettbewerbe für Hell Let Loose und Wardogs mit Teams aus dem globalen Katalog.",
+        newCompetition: "Neuer Wettbewerb",
+        createTitle: "Wettbewerb erstellen",
+        createDescription:
+            "Wähle zuerst das Spiel – es lässt sich später nicht ändern. Der Wettbewerb startet unveröffentlicht.",
+        game: "Spiel",
+        name: "Name",
+        season: "Saison",
+        slug: "Adresse (Slug)",
+        slugHelp:
+            "2–64 Kleinbuchstaben, Ziffern und Bindestriche; wird in der öffentlichen Adresse verwendet.",
+        description: "Beschreibung",
+        published: "Veröffentlicht",
+        publishedHelp:
+            "Unveröffentlichte Wettbewerbe sind auf den öffentlichen Seiten und in der öffentlichen API verborgen.",
+        publishedBadge: "Veröffentlicht",
+        draftBadge: "Unveröffentlicht",
+        create: "Erstellen",
+        creating: "Wird erstellt…",
+        cancel: "Abbrechen",
+        save: "Speichern",
+        saving: "Speichert…",
+        saved: "Gespeichert.",
+        manage: "Verwalten",
+        openPublic: "Öffentliche Seite",
+        back: "Alle Wettbewerbe",
+        noCompetitions: "Noch keine Wettbewerbe.",
+        counts: "{divisions} Divisionen · {teams} Teams · {fixtures} Spiele",
+        legacyTitle: "Migration ausstehend",
+        legacyDescription:
+            "{count} Wettbewerbsdatensätze verweisen noch auf Logi-Workspaces statt auf globale Teams. Sie bleiben sichtbar, lassen sich aber erst bearbeiten oder verknüpfen, wenn der Plattformbetreiber die einmalige Wettbewerbsmigration ausführt.",
+        legacyBadge: "Migration ausstehend",
+        detailsTitle: "Details",
+        detailsDescription:
+            "Name, öffentliche Adresse, Saison, Beschreibung und Sichtbarkeit. Das Spiel ist festgelegt.",
+        divisionsTitle: "Divisionen",
+        divisionsDescription:
+            "Divisionen erscheinen in dieser Reihenfolge auf der öffentlichen Seite. Eine Division kann nur gelöscht werden, wenn sie weder Teams noch Spiele hat.",
+        divisionName: "Name der Division",
+        divisionCounts: "{teams} Teams · {fixtures} Spiele",
+        addDivision: "Division hinzufügen",
+        addDivisionFirst:
+            "Füge eine Division hinzu, bevor du Teams registrierst.",
+        rename: "Umbenennen",
+        moveUp: "Nach oben",
+        moveDown: "Nach unten",
+        delete: "Löschen",
+        confirmDeleteDivision: "Division „{name}“ löschen?",
+        noDivisions: "Noch keine Divisionen.",
+        teamsTitle: "Teams",
+        teamsDescription:
+            "Registriere aktive Teams aus dem globalen Katalog, die zum Spiel dieses Wettbewerbs gehören. Ein Team kann nur entfernt werden, solange es keine Spiele hat; ziehe es sonst zurück, damit seine Ergebnisse erhalten bleiben.",
+        team: "Team",
+        division: "Division",
+        unassigned: "Keine Division",
+        chooseTeam: "Team wählen",
+        searchTeams: "Teams suchen…",
+        loadingTeams: "Teams werden geladen…",
+        noTeamResults: "Kein passendes aktives, noch nicht registriertes Team.",
+        register: "Registrieren",
+        withdraw: "Zurückziehen",
+        reinstate: "Wieder aufnehmen",
+        remove: "Entfernen",
+        moveTo: "Division",
+        confirmRemoveTeam: "{name} aus diesem Wettbewerb entfernen?",
+        noTeams: "Keine Teams in dieser Division.",
+        withdrawnBadge: "Zurückgezogen",
+        archivedBadge: "Archiviert",
+        fixturesTitle: "Spiele",
+        fixturesDescription:
+            "Endgültige Ergebnisse und Forfeits mit beiden Punktständen zählen für die Tabelle, geplante Spiele nicht.",
+        allDivisions: "Alle Divisionen",
+        addFixture: "Spiel hinzufügen",
+        editFixture: "Spiel bearbeiten",
+        noFixtures: "Noch keine Spiele.",
+        fixtureHelp:
+            "Ligaspiele bestreiten zwei Teams der gewählten Division; Playoff- und Relegationsspiele dürfen divisionsübergreifend sein.",
+        invalidFixture:
+            "Wähle eine Division und zwei verschiedene Teams und gib bei einem endgültigen Ergebnis oder Forfeit beide Punktstände als ganze Zahlen ein.",
+        confirmDeleteFixture: "Dieses Spiel löschen?",
+        phase: "Phase",
+        phases: {
+            league: "Liga",
+            playoff: "Playoff",
+            relegation: "Relegation",
+        },
+        status: "Status",
+        statuses: {
+            scheduled: "Geplant",
+            final: "Endgültig",
+            forfeit: "Forfeit",
+        },
+        teamA: "Team A",
+        teamB: "Team B",
+        scoreA: "Punkte Team A",
+        scoreB: "Punkte Team B",
+        score: "Ergebnis",
+        scheduledAt: "Termin",
+        event: "Match-Event",
+        actions: "Aktionen",
+        linkEvent: "Match-Event verknüpfen",
+        linkEventTitle: "Logi-Match-Event verknüpfen",
+        linkEventDescription:
+            "Für das verknüpfte Match importierte Ergebnisse aktualisieren dieses Spiel. Das Match muss zum selben Spiel gehören, und wenn ihm Teams zugeordnet sind, müssen beide Teams dieses Spiels darunter sein.",
+        linked: "Derzeit verknüpft mit {name}.",
+        candidates: "Matches aus den verknüpften Workspaces der Teams",
+        loadingCandidates: "Matches werden geladen…",
+        noCandidates:
+            "In den verknüpften Workspaces der Teams wurden keine Matches gefunden.",
+        teamsMatch: "Beide Teams zugeordnet",
+        teamsUnassigned: "Teams nicht zugeordnet",
+        hasResult: "Ergebnis importiert",
+        eventId: "Event-ID",
+        eventIdHelp:
+            "Oder füge die Event-ID aus der Dashboard-Adresse des Matches ein.",
+        link: "Verknüpfen",
+        unlink: "Verknüpfung lösen",
+        errors: {
+            invalid_competition:
+                "Prüfe die eingegebenen Werte und versuche es erneut.",
+            not_found:
+                "Dieser Wettbewerbsdatensatz existiert nicht mehr. Lade die Seite neu.",
+            duplicate_slug:
+                "Ein anderer Wettbewerb verwendet diese Adresse bereits.",
+            duplicate_division:
+                "Dieser Wettbewerb hat bereits eine Division mit diesem Namen.",
+            division_not_found:
+                "Die Division existiert nicht mehr. Lade die Seite neu.",
+            division_not_empty:
+                "Verschiebe oder entferne ihre Teams und Spiele, bevor du die Division löschst.",
+            invalid_order:
+                "Die Divisionen haben sich inzwischen geändert. Lade die Seite neu und versuche es erneut.",
+            limit_reached: "Dieser Wettbewerb hat seine Größengrenze erreicht.",
+            team_not_found: "Das Team existiert nicht mehr im Katalog.",
+            team_archived:
+                "Archivierte oder zusammengeführte Teams können nicht registriert werden.",
+            team_game_mismatch:
+                "Das Team gehört zu einem anderen Spiel als der Wettbewerb.",
+            already_registered:
+                "Dieses Team ist bereits im Wettbewerb registriert.",
+            registration_has_fixtures:
+                "Das Team hat Spiele. Lösche sie zuerst oder ziehe das Team stattdessen zurück.",
+            team_not_registered:
+                "Beide Teams müssen in diesem Wettbewerb registriert sein.",
+            division_mismatch:
+                "Ligaspiele brauchen zwei Teams, die in der gewählten Division registriert sind.",
+            event_not_found: "Es gibt kein Logi-Event mit dieser ID.",
+            event_not_match:
+                "Nur Match-Events können verknüpft werden, keine Trainings.",
+            event_game_mismatch:
+                "Das Match gehört zu einem anderen Spiel als der Wettbewerb.",
+            event_already_linked:
+                "Dieses Match ist bereits mit einem anderen Spiel verknüpft.",
+            event_team_mismatch:
+                "Die zugeordneten Teams des Matches enthalten nicht beide Teams dieses Spiels.",
+            migration_pending:
+                "Alte Datensätze müssen zuerst zu globalen Teams migriert werden.",
+            forbidden:
+                "Nur globale Logi-Administratoren können Wettbewerbe verwalten.",
+            unavailable:
+                "Der Wettbewerbsdienst ist nicht verfügbar. Versuche es erneut.",
+        },
     },
     articles: {
         title: "Artikel",
