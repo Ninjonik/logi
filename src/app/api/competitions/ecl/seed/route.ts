@@ -1,15 +1,8 @@
-import { revalidateCacheEntries, appCacheTags } from "@/lib/cache-tags"
-import { seedEclCompetition } from "@/lib/read-models/competitions"
-import { isCurrentUserSuperadmin } from "@/lib/auth"
-import { NextResponse } from "next/server"
+import { competitionAdminRoutes } from "@/lib/gateways/competition-admin"
 
-export async function POST() {
-    if (!(await isCurrentUserSuperadmin()))
-        return NextResponse.json({ error: "Forbidden." }, { status: 403 })
-    await seedEclCompetition()
-    revalidateCacheEntries([
-        appCacheTags.competition("ecl-2026"),
-        appCacheTags.publicDiscovery(),
-    ])
-    return NextResponse.json({ ok: true })
+export const runtime = "nodejs"
+
+/** Creates or completes ECL 2026 with global catalogue teams. */
+export async function POST(request: Request) {
+    return await competitionAdminRoutes.command(request, { action: "seedEcl" })
 }
