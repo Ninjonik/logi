@@ -47,10 +47,10 @@ Authorization is enforced twice:
 
 1. The HTTP gateway (`authenticated-clan-route.ts`) refuses a restricted key
    that lacks `teams`, or, on the collection, lacks the requested game, with
-   `403 insufficient_scope`. A collection request without an explicit `game` is
-   refused the same way. The gateway cannot know a detail record's game, and
-   its generic branch only evaluates restricted keys, so a legacy key reaches
-   the route handler.
+   `403 insufficient_scope`. A collection request without an explicit `game`,
+   with `game=all` or with an unknown game value is refused the same way. The
+   gateway cannot know a detail record's game, and its generic branch only
+   evaluates restricted keys, so a legacy key reaches the route handler.
 2. `teamReads:list` and `teamReads:get` **recheck inside Convex** that the key
    exists, is not revoked, belongs to the same guild, carries a restricted
    `readAccess` policy and grants `teams` for the requested game. Any refusal,
@@ -77,9 +77,14 @@ Authorization: Bearer <restricted service key>
 
 Exactly one `game` is required; `limit` is 1–100 (default 50); `cursor` is the
 non-empty opaque value from the previous page, at most 4,096 characters, and is
-valid only for the same game. Any other parameter, a repeated parameter,
-`game=all` or a game combination is `400 invalid_query`. Items are the active
-entries ordered by normalized name; follow `nextCursor` until it is `null`.
+valid only for the same game. The gateway checks the requested games against
+the key first: a missing or empty `game`, `game=all`, an unknown game value, or
+any game (alone or in a combination) the key does not grant is
+`403 insufficient_scope`. A request the grant allows is then validated by the
+route, so a combination of granted games, a repeated `game`, a granted game
+without a directory (Hell Let Loose: Vietnam), any other or repeated parameter
+and bad pagination are `400 invalid_query`. Items are the active entries
+ordered by normalized name; follow `nextCursor` until it is `null`.
 Unlike the summary collections, the page is an object inside `data`:
 
 ```json
@@ -111,8 +116,12 @@ Authorization: Bearer <restricted service key>
 The detail read returns `{ "data": ClanTeam }` and accepts no parameter other
 than one `game`. The ID path segment must be an opaque identifier of 1–64
 letters, digits, `_` or `-`; traversal, separator, encoded or whitespace
-characters are `400 invalid_query`. An unknown, archived, other-workspace or
-other-game ID is a generic `404 not_found` without labels.
+characters are `400 invalid_query`. The gateway cannot know a record's game,
+so here the route validates `game`: a missing or empty value, `game=all`, a
+combination or a game without a directory is `400 invalid_query`, and a single
+directory game the key does not grant is refused by Convex with
+`403 insufficient_scope`. An unknown, archived, other-workspace or other-game ID
+is a generic `404 not_found` without labels.
 
 `ClanTeam` is a closed object: `id`, `gameId`, `name`, `shortCode` (nullable),
 `logoUrl` (nullable public URL), `revision` (integer ≥ 1) and `updatedAt`.
@@ -120,14 +129,14 @@ Actor identifiers, asset IDs, archive state and audit data are never included.
 
 ### Errors
 
-| Status | Code                                 | Meaning                                                          |
-| ------ | ------------------------------------ | ---------------------------------------------------------------- |
-| 400    | `invalid_query`                      | Not exactly one directory game, bad pagination or malformed ID   |
-| 401    | `missing_api_key`, `invalid_api_key` | No bearer key, or the key is invalid or revoked                  |
-| 403    | `insufficient_scope`                 | No explicit `teams` grant for this game, or a legacy broad key   |
-| 404    | `not_found`                          | Detail only: unknown, archived, other-workspace or other-game ID |
-| 429    | `rate_limited`                       | Shared key rate limit; respect `Retry-After`                     |
-| 503    | `unavailable`                        | Convex read failed or returned an unexpected shape               |
+| Status | Code                                 | Meaning                                                                                                                                                                                                                             |
+| ------ | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | `invalid_query`                      | A request the grant allows but the route rejects: combined or repeated `game`, a game without a directory, unknown or repeated parameters, bad pagination or a malformed ID; on the detail read also a missing `game` or `game=all` |
+| 401    | `missing_api_key`, `invalid_api_key` | No bearer key, or the key is invalid or revoked                                                                                                                                                                                     |
+| 403    | `insufficient_scope`                 | No explicit `teams` grant for the requested game(s), or a legacy broad key; on the collection also a missing or empty `game`, `game=all` or an unknown game value (gateway)                                                         |
+| 404    | `not_found`                          | Detail only: unknown, archived, other-workspace or other-game ID                                                                                                                                                                    |
+| 429    | `rate_limited`                       | Shared key rate limit; respect `Retry-After`                                                                                                                                                                                        |
+| 503    | `unavailable`                        | Convex read failed or returned an unexpected shape                                                                                                                                                                                  |
 
 ## Change feed for `teams`
 

@@ -1406,13 +1406,13 @@ const teamErrorResponse = (description: string) => ({
 })
 const teamReadResponses = {
     "400": teamErrorResponse(
-        "invalid_query: not exactly one directory game, invalid pagination or a malformed team ID"
+        "invalid_query: the key's grant allows the request but the route rejects it: combined or repeated game, a game without a directory, unknown or repeated parameters, invalid pagination or a malformed team ID; on the detail read also a missing game or game=all"
     ),
     "401": teamErrorResponse(
         "missing_api_key or invalid_api_key: missing, invalid or revoked API key"
     ),
     "403": teamErrorResponse(
-        "insufficient_scope: no explicit teams grant for this game; legacy broad keys are denied"
+        "insufficient_scope: no explicit teams grant for the requested game(s), or a legacy broad key; on the collection the gateway also refuses a missing or empty game, game=all and unknown game values"
     ),
     "429": teamErrorResponse(
         "rate_limited: API rate limit; respect Retry-After"

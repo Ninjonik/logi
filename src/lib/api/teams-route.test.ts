@@ -156,7 +156,8 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
     })
     let legacy = false,
         granted = true,
-        failing = false
+        failing = false,
+        grantedGames = ["hell_let_loose"]
     const calls: Array<{ path: string; args: Record<string, unknown> }> = []
     t.mock.method(
         globalThis,
@@ -178,7 +179,7 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
                         : {
                               readAccess: {
                                   resources: ["teams"],
-                                  gameIds: ["hell_let_loose"],
+                                  gameIds: grantedGames,
                               },
                           }),
                 }
@@ -248,18 +249,36 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
     assert.equal(missing.status, 404)
     assert.deepEqual(await missing.json(), { error: { code: "not_found" } })
 
+    const reads = calls.length
+    // The gateway refuses collection game selections the key cannot satisfy
+    // before the route parser runs: these are 403, never 400.
     for (const [response, label] of [
         [await list("game=wardogs"), "ungranted game at the gateway"],
         [await list(""), "missing game at the gateway"],
+        [await list("game="), "empty game at the gateway"],
+        [await list("game=all"), "game=all at the gateway"],
+        [
+            await list("game=all,hell_let_loose"),
+            "all with a game at the gateway",
+        ],
+        [await list("game=unknown"), "unknown game at the gateway"],
+        [
+            await list("game=hell_let_loose,wardogs"),
+            "combination with an ungranted game at the gateway",
+        ],
     ] as const) {
         assert.equal(response.status, 403, label)
         assert.equal((await response.json()).error.code, "insufficient_scope")
     }
-    const reads = calls.length
     for (const [response, label] of [
         [await list("game=hell_let_loose&limit=101"), "limit above 100"],
         [await list("game=hell_let_loose&sort=createdAt"), "unknown parameter"],
+        [
+            await list("game=hell_let_loose&game=hell_let_loose"),
+            "repeated granted game",
+        ],
         [await get(team.id, ""), "detail without game"],
+        [await get(team.id, "game=all"), "detail with game=all"],
         [await get(team.id, "game=hell_let_loose&limit=1"), "detail extras"],
         [await get("../teams", "game=hell_let_loose"), "traversal segment"],
         [await get("a".repeat(65), "game=hell_let_loose"), "oversized segment"],
@@ -269,6 +288,22 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
         assert.equal(response.headers.get("cache-control"), "no-store")
     }
     assert.equal(calls.length, reads, "invalid input never reaches Convex")
+
+    // Selections every game of which the key grants pass the gateway and are
+    // then rejected by the route parser as 400 invalid_query.
+    grantedGames = ["hell_let_loose", "wardogs", "hell_let_loose_vietnam"]
+    for (const [response, label] of [
+        [await list("game=hell_let_loose,wardogs"), "granted combination"],
+        [
+            await list("game=hell_let_loose_vietnam"),
+            "granted game without a directory",
+        ],
+    ] as const) {
+        assert.equal(response.status, 400, label)
+        assert.equal((await response.json()).error.code, "invalid_query")
+    }
+    assert.equal(calls.length, reads, "parser rejections never reach Convex")
+    grantedGames = ["hell_let_loose"]
 
     // The gateway cannot know a detail record's game; Convex rechecks the grant.
     granted = false
