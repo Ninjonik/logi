@@ -1,5 +1,8 @@
 import {
+    Collection,
+    GuildMember,
     MessageFlags,
+    PermissionsBitField,
     type ChatInputCommandInteraction,
     type ModalSubmitInteraction,
 } from "discord.js"
@@ -17,6 +20,99 @@ const handler = () =>
     })
 const guildId = "111111111111111111",
     actorId = "222222222222222222"
+
+for (const scenario of [
+    "revoked-admin-role",
+    "former-owner",
+    "roles-unavailable",
+    "guild-unavailable",
+    "current-admin",
+] as const) {
+    test(`ticket closure uses current guild and role permissions: ${scenario}`, async (t) => {
+        let writes = 0,
+            ownerId = scenario === "former-owner" ? actorId : guildId
+        const role = {
+            permissions: new PermissionsBitField(
+                scenario === "former-owner"
+                    ? BigInt(0)
+                    : PermissionsBitField.Flags.Administrator
+            ),
+        }
+        const permissions = Object.getOwnPropertyDescriptor(
+            GuildMember.prototype,
+            "permissions"
+        )!.get!
+        const member = {
+            user: { id: actorId },
+            guild: {
+                get ownerId() {
+                    return ownerId
+                },
+            },
+            roles: { cache: new Collection([["staff-role", role]]) },
+            get permissions() {
+                return permissions.call(this)
+            },
+        }
+        const currentGuild = {
+            roles: {
+                fetch: async () => {
+                    if (scenario === "roles-unavailable")
+                        throw new Error("Offline")
+                    role.permissions = new PermissionsBitField(
+                        scenario === "current-admin"
+                            ? PermissionsBitField.Flags.Administrator
+                            : BigInt(0)
+                    )
+                    return member.roles.cache
+                },
+            },
+            members: { fetch: async () => member },
+        }
+        t.mock.method(ConvexReactClient.prototype, "query", async () => ({
+            config: { guildId, defaultLanguage: "en" },
+            ticket: {
+                guildId,
+                status: "open",
+                creatorId: actorId,
+                ticketNumber: 1,
+            },
+            category: { supportRoleIds: [] },
+        }))
+        t.mock.method(ConvexReactClient.prototype, "mutation", async () => {
+            writes++
+        })
+        const noop = async () => {}
+        await handler().handleChatInputCommand({
+            commandName: "close_ticket",
+            guildId,
+            channelId: "333333333333333333",
+            inGuild: () => true,
+            user: { id: actorId },
+            channel: {
+                isThread: () => true,
+                send: noop,
+                setName: noop,
+                setLocked: noop,
+                setArchived: noop,
+            },
+            guild: {
+                ...currentGuild,
+                fetch: async () => {
+                    if (scenario === "guild-unavailable")
+                        throw new Error("Offline")
+                    ownerId = guildId
+                    return currentGuild
+                },
+            },
+            client: { users: { fetch: async () => null } },
+            options: { getString: () => "synthetic closure" },
+            deferReply: noop,
+            editReply: noop,
+        } as unknown as ChatInputCommandInteraction)
+        assert.equal(writes, scenario === "current-admin" ? 1 : 0)
+    })
+}
 
 for (const missing of [false, true]) {
     test(`ticket closure rejects cached administrator when fresh membership is ${missing ? "unavailable" : "revoked"}`, async (t) => {
@@ -49,6 +145,10 @@ for (const missing of [false, true]) {
                 roles: { cache: new Map() },
             },
             guild: {
+                fetch: async function () {
+                    return this
+                },
+                roles: { fetch: async () => new Map() },
                 members: {
                     fetch: async (args: { user: string; force: boolean }) => {
                         assert.deepEqual(args, { user: actorId, force: true })

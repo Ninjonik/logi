@@ -3075,9 +3075,21 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const member = await interaction.guild?.members
-            .fetch({ user: interaction.user.id, force: true })
-            .catch(() => null)
+        let member: GuildMember | null = null
+        try {
+            if (interaction.guild) {
+                // Member permissions also depend on guild ownership and role
+                // definitions, not only the member's assigned role IDs.
+                const guild = await interaction.guild.fetch()
+                await guild.roles.fetch()
+                member = await guild.members.fetch({
+                    user: interaction.user.id,
+                    force: true,
+                })
+            }
+        } catch {
+            // Withhold closure when current authority cannot be established.
+        }
         if (!member) {
             await interaction.editReply({
                 content: messages.ticket.unableToVerifyPermissions,
