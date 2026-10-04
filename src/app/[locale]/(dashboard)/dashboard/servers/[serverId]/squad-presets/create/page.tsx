@@ -17,10 +17,7 @@ export default async function CreateSquadPresetPage({
     const { game } = await searchParams
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
     const gameId = isGameId(game) ? game : undefined
-    // A squad stores the selected group's name as a layout label; it does not
-    // create a game-scoped membership association. Show the workspace catalog
-    // so a preset can reuse an existing group name regardless of game scope.
-    const context = await getServerContext(serverId, "all")
+    const context = await getServerContext(serverId, gameId ?? "all")
     const canAdmin = context?.canAdmin ?? false
     const groups = context?.groups ?? []
 
