@@ -2035,6 +2035,8 @@ export const deMessages = {
         saveHelp:
             "Name und die vier Zeitlinienfelder sind erforderlich. Alles andere ist optional.",
         saveError: "Event konnte nicht gespeichert werden.",
+        writeForbidden:
+            "Nur Administratoren des Arbeitsbereichs können dieses Event ändern. Melde dich erneut an, falls deine Sitzung abgelaufen ist.",
         notices: {
             announcementsTitle: "Ankündigungs-Channel ist nicht gesetzt",
             announcementsDescription:

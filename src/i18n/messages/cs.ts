@@ -1979,6 +1979,8 @@ export const csMessages = {
         saveHelp:
             "Název a čtyři časová pole jsou povinné. Všechno ostatní je volitelné.",
         saveError: "Akci se nepodařilo uložit.",
+        writeForbidden:
+            "Tuto akci mohou měnit jen správci pracovního prostoru. Pokud vám vypršelo přihlášení, přihlaste se znovu.",
         notices: {
             announcementsTitle: "Kanál pro oznámení není nastavený",
             announcementsDescription:

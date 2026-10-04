@@ -1980,6 +1980,8 @@ export const enMessages = {
         saveHelp:
             "Name and the four timeline fields are required. Everything else is optional.",
         saveError: "Unable to save event.",
+        writeForbidden:
+            "Only workspace administrators can change this event. Sign in again if your session has expired.",
         notices: {
             announcementsTitle: "Announcements channel is not set",
             announcementsDescription:

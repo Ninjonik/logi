@@ -78,6 +78,7 @@ import { eventSchema, type EventInput } from "@/lib/validation/event"
 import { MatchTeamPicker } from "@/components/app/match-team-picker"
 import { HllMapSelector } from "@/components/app/hll-map-selector"
 import { matchTeamSaveErrorCode } from "@/lib/teams/team-client"
+import { eventWriteErrorMessage } from "@/lib/event-write-error"
 import { getEventCategoryLabel } from "@/lib/event-categories"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
@@ -1023,7 +1024,10 @@ export function EventFormPanel({
             const matchTeamError = matchTeamSaveErrorCode(body)
             const message = matchTeamError
                 ? dictionary.teams.picker.errors[matchTeamError]
-                : (body.error ?? dictionary.event.saveError)
+                : eventWriteErrorMessage(body, {
+                      forbidden: dictionary.event.writeForbidden,
+                      fallback: dictionary.event.saveError,
+                  })
             toast.error(message)
             form.setError("root", { message })
             return

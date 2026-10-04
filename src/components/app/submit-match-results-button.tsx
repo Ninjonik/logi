@@ -14,6 +14,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import { eventWriteErrorMessage } from "@/lib/event-write-error"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
@@ -55,7 +56,12 @@ export function SubmitMatchResultsButton({
 
             const body = await response.json()
             if (!response.ok) {
-                toast.error(body.error ?? dictionary.common.error)
+                toast.error(
+                    eventWriteErrorMessage(body, {
+                        forbidden: dictionary.event.writeForbidden,
+                        fallback: dictionary.common.error,
+                    })
+                )
                 return
             }
 
