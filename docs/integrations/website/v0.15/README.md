@@ -175,8 +175,13 @@ every historical match. The only way to update it is the explicit
 `refresh_match_team` actor action described below.
 
 The `event-summaries` and `match-summaries` documents carry `matchTeams`: an
-array of `ClanMatchTeam` entries sorted by slot, or `null` for trainings and
-legacy events without stored assignments. Treat `null` and `[]` alike as "no
+array of `ClanMatchTeam` entries sorted by slot, or `null` when no assignment
+was ever stored. `null` covers trainings, events saved before team selection
+existed and matches created by a client that omitted `matchTeams`: a website
+`create` without the field, a bearer-key `POST /api/v1/clan/events` (which
+cannot assign teams) or a match created by the Discord bot. A match created in
+the dashboard stores `[]` until teams are chosen, and an explicit `[]` clears a
+selection. Do not read `null` as "legacy"; treat `null` and `[]` alike as "no
 assigned teams".
 
 | Field                          | Meaning                                                                       |
@@ -192,6 +197,21 @@ Receiving snapshots through an `event-summaries` or `match-summaries` grant does
 not grant the `teams` directory. Do not infer teams from event titles or sides.
 See [`match-teams-hll.json`](fixtures/match-teams-hll.json) and
 [`match-teams-wardogs.json`](fixtures/match-teams-wardogs.json).
+
+### Complete event records versus minimized summaries
+
+The summaries above are the presentation contract. The complete native event
+record is different: `GET /api/v1/clan/events` and `GET /api/v1/clan/events/{id}`
+(the `events` grant, which legacy unrestricted keys also read), the bearer-key
+`POST`/`PATCH /api/v1/clan/events` responses and the `event.created` and
+`event.updated` webhook payloads return the stored record, kept complete. When
+an assignment was stored, its `matchTeams` is the stored list
+`{ teamId, slot, side, snapshot: { name, shortCode, logoAssetId, logoUrl, teamRevision, capturedAt } }`
+(OpenAPI `ClanEventsDocument`). `snapshot.logoAssetId` is an internal
+image-asset record ID: it is not a URL, grants no access and must not be
+persisted, shown or used to build a URL. Present teams from the summaries'
+`matchTeams` (`ClanMatchTeam`, which carries only `logoUrl`), or from
+`snapshot.logoUrl` when only the complete record is available.
 
 ## Actor-backed event commands
 
@@ -213,16 +233,34 @@ unable to write.
    re-captures one assigned team's presentation from its active directory entry
    before the match concludes. It is audited and respects revision and
    idempotency semantics like `update`.
-3. Any team-assignment rule violation is `400 invalid_match_teams`: an
-   unknown, foreign-workspace, archived or cross-game team; a bad slot or side;
-   a duplicate team, slot or non-null side; a concluded match; or a training
-   event.
+3. `400 invalid_match_teams` covers every team-assignment problem: a body
+   whose only schema failures lie in `event.matchTeams` (more than three
+   entries, a slot other than `a`/`b`/`c`, a side that is empty or longer than
+   32 characters, a `teamId` outside 1–64 characters, or extra keys such as a
+   snapshot); an unknown, foreign-workspace, archived or cross-game team; a
+   slot or side the game does not have; a duplicate team, slot or non-null
+   side; teams assigned to a training; and a `refresh_match_team` of a team
+   that is not assigned, of a training or of a concluded match. An `update` or
+   `cancel` after meeting start or of a concluded event is `409 invalid_state`
+   before any team rule is evaluated. A match counts as concluded once it is
+   stored as concluded or 15 minutes after its game end, whichever is first.
 4. The editor read returns `data.matchTeams` (an array of
    `{teamId, slot, side, name, shortCode, logoUrl, teamRevision, capturedAt}`,
-   or `null` for trainings and legacy events) and `data.event.matchTeams` with
-   the current inputs, so a consumer can round-trip them in an update.
+   or `null` for a training or a match that never stored an assignment) and,
+   when an assignment is stored, `data.event.matchTeams` with the current
+   inputs, so a consumer can round-trip them in an update.
 5. Event and match summaries gain `matchTeams` with the same summary array or
    `null`.
+
+Bearer-key `POST`/`PATCH /api/v1/clan/events` writes treat `matchTeams` as
+read-only: an API key alone is not a writing actor. A `matchTeams` field in the
+body is ignored, so a `GET` → `PATCH` round trip stays valid, and the saved
+assignments are kept. When `gameId` or `kind` changes, the kept assignments are
+re-validated: a match that becomes a training drops them unless it has
+concluded, and a game the saved teams no longer fit is
+`400 validation_error` with the message `match_teams:<code>` (for example
+`match_teams:team_game_mismatch`). Assign, clear or refresh teams only through
+the actor-backed event commands or in the Logi dashboard.
 
 ## API-parity exception: catalogue writes and logo uploads
 
@@ -248,8 +286,10 @@ exception: it is available through the actor-backed event commands above.
 - Logos are public presentation assets; knowing a URL grants no other data.
   Without a logo, `logoUrl` is `null`; render short-code or name initials, as
   Logi does (`teamInitials`).
-- Do not derive asset identifiers from the URL; `logoAssetId` is internal and
-  absent from every website DTO.
+- Do not derive asset identifiers from the URL. `logoAssetId` is internal: it
+  is absent from `ClanTeam`, the summaries' `ClanMatchTeam` and the command
+  editor, and appears only inside the snapshots of complete event records (see
+  [Complete event records versus minimized summaries](#complete-event-records-versus-minimized-summaries)).
 
 ## Fixtures
 
@@ -289,11 +329,15 @@ conformance to the Zod contracts. The route tests mock Convex over HTTP; the
 [`teams.test.ts`](../../../../src/infrastructure/convex/teams.test.ts).
 
 The event command fields, `refresh_match_team`, `invalid_match_teams` and the
-summary/editor `matchTeams` fields are specified here as the website contract;
-they ship and are tested with the native match-assignment change, not by the
-commands above. No Convex deployment, hosted SSO acceptance, connected-website
-(www) deployment, public logo serving or live Discord rendering is claimed by
-this document.
+summary/editor `matchTeams` fields ship in the same change and are covered by
+[`website-event-commands.test.ts`](../../../../src/infrastructure/convex/website-event-commands.test.ts),
+[`event-match-teams.test.ts`](../../../../src/infrastructure/convex/event-match-teams.test.ts),
+[`website-event-command-route.test.ts`](../../../../src/lib/api/website-event-command-route.test.ts)
+and [`website-command.test.ts`](../../../../src/domain/events/website-command.test.ts).
+No Convex deployment, hosted SSO acceptance, connected-website (www)
+deployment, public logo serving or live Discord rendering is claimed by this
+document; runtime acceptance on the isolated Convex instance, in a browser and
+in the Discord test channel is still pending (see below).
 
 ## Remaining owner tasks
 
@@ -304,5 +348,9 @@ this document.
 | Issue a restricted key with `teams` and the required games; keep it server-side         | Workspace administrator      |
 | Deploy the compatible Convex backend and dashboard together before relying on the reads | Operators                    |
 | Runtime acceptance on the authorized isolated Convex instance and Discord test channel  | Maintainers                  |
-| Public wiki page for the dashboard directory, team picker and logo upload               | Dashboard/wiki maintainers   |
 | Explicit league identity mapping and import UI                                          | Later provider-contract work |
+
+The public wiki pages for the dashboard directory, team picker and logo upload
+are delivered: [Teams](../../../../content/operations/teams.mdx), the Teams
+section of [Matches](../../../../content/operations/matches.mdx) and the API
+notes in [Settings](../../../../content/configuration/settings.mdx).

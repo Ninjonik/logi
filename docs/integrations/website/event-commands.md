@@ -153,11 +153,14 @@ its read grant and the consumer fixtures are described in the
 [workspace team directory handoff](v0.15/README.md). Team assignment adds one
 optional event field, one operation and one error code. SSO actor checks,
 per-game event-write policy, `Idempotency-Key` and `expectedRevision` semantics
-are unchanged, and an API key alone is still not a writing actor.
+are unchanged, and an API key alone is still not a writing actor: bearer-key
+`POST`/`PATCH /api/v1/clan/events` writes ignore `matchTeams` and keep the
+saved assignments (see the
+[handoff](v0.15/README.md#actor-backed-event-commands)).
 
 **`event.matchTeams` on create and update.** The `event` object of `create` and
-`update` accepts an optional `matchTeams` array of at most three entries. Each
-entry carries identity, position and side only:
+`update` accepts an optional `matchTeams` array. Each entry carries identity,
+position and side only:
 
 ```json
 {
@@ -184,18 +187,32 @@ entry carries identity, position and side only:
 | `hell_let_loose` | `a`, `b`      | `Allies`, `Axis`                         |
 | `wardogs`        | `a`, `b`, `c` | `Valkyra`, `Manticore`, `Lonestar`       |
 
-- `teamId` is the stable directory ID of an active team in the same workspace
-  and game. Teams, slots and non-null sides are unique within one event.
-- **Omitting** `matchTeams` preserves the saved assignments, so a consumer that
-  does not know the field never erases them. An **empty array** `[]` clears them
-  while the event is still editable.
-- Clients never send snapshots. When a team is first assigned, Logi captures
-  `{name, shortCode, logo, team revision, capturedAt}` from its directory entry
-  and keeps that snapshot through slot or side edits and through later
-  directory renames, logo changes and archival of the team.
+- **Shape.** At most three entries. Each entry is a closed object with exactly
+  `teamId` (1–64 characters), `slot` (`a`, `b` or `c`) and `side` (1–32
+  characters, or `null`). Any other key, including a snapshot, is rejected.
+  The game then narrows slots and sides to the table above, and teams, slots
+  and non-null sides must be unique within the event.
+- **Teams.** `teamId` is the stable directory ID of an active team in the same
+  workspace and game. A team already assigned to the event may stay even if it
+  has since been archived; only a newly assigned team must be active.
+- **Omission and `[]`.** Omitting `matchTeams` on an `update` preserves the
+  saved assignments, so a consumer that does not know the field never erases
+  them. An empty array `[]` clears them. On `create`, omission stores no
+  selection (summaries and the editor then show `null`), while `[]` stores an
+  empty selection. A training never carries assignments: non-empty
+  `matchTeams` on a training is rejected, and `[]` is accepted and stores
+  nothing.
+- **Snapshots.** Clients never send snapshots. When a team is first assigned,
+  Logi captures `{name, shortCode, logo, team revision, capturedAt}` from its
+  directory entry and keeps that snapshot through slot or side edits and
+  through later directory renames, logo changes and archival of the team.
+  Assigning a different team to a slot captures that team's snapshot.
+- **Order.** Assignments are stored and returned sorted by slot. The
+  idempotency digest compares them by slot, so the same assignments listed in
+  another order replay the original receipt.
 
 **`refresh_match_team`.** This operation re-captures one assigned team's
-presentation from its active directory entry before the match concludes:
+presentation from its active directory entry:
 
 ```json
 {
@@ -206,25 +223,46 @@ presentation from its active directory entry before the match concludes:
 }
 ```
 
-It is audited and respects revision and idempotency semantics like `update`: a
-stale `expectedRevision` returns `revision_conflict`, and a reused
-`Idempotency-Key` with a different body returns `idempotency_conflict`.
+Unlike `update`, it stays available after meeting start until the match
+concludes. It changes only that assignment's snapshot, writes a directory
+audit entry, emits the event's normal change records (advancing the
+`event-summaries`/`match-summaries` revision) and returns a `200` receipt with
+`operation: "refresh_match_team"`. Receipts and idempotency work exactly as
+for `update`: a stale `expectedRevision` returns `revision_conflict`, the same
+`Idempotency-Key` and body replay the original receipt with `replayed: true`,
+and the same key with a different body returns `idempotency_conflict`.
 
-**`invalid_match_teams` (HTTP 400).** Any team-assignment rule violation returns
-this code: an unknown, foreign-workspace, archived or cross-game team; a bad
-slot or side; a duplicate team, slot or non-null side; a concluded match; or a
-training event.
+**Errors.** The checks run in this order and a rejected command writes
+nothing, including no receipt, so the key can be reused once the body is
+corrected:
+
+1. Body schema: when every failure lies in `event.matchTeams`, the answer is
+   `400 invalid_match_teams`; any other malformed body is
+   `400 invalid_request`.
+2. Authorization, receipt replay, `not_found` and `revision_conflict` as for
+   other commands.
+3. Event state: an `update` or `cancel` after meeting start, of a concluded
+   event or that changes `kind` is `409 invalid_state`. A
+   `refresh_match_team` of a training or of a concluded match is
+   `400 invalid_match_teams`. A match counts as concluded once it is stored as
+   concluded or 15 minutes after its game end, whichever is first.
+4. Team rules: an unknown, foreign-workspace, archived or cross-game team, a
+   slot or side the game does not have, a duplicate team, slot or non-null
+   side, teams on a training, or a refresh of a team that is not assigned to
+   the event is `400 invalid_match_teams`.
 
 **Reads.** The editor read (`GET /api/v1/clan/event-commands/{eventId}`) returns
 `data.matchTeams`, an array of
 `{teamId, slot, side, name, shortCode, logoUrl, teamRevision, capturedAt}`
-sorted by slot, or `null` for trainings and legacy events. It also returns
+sorted by slot, or `null` for a training or a match that never stored an
+assignment. When an assignment is stored (including `[]`), it also returns
 `data.event.matchTeams` with the current `{teamId, slot, side}` inputs, so a
-consumer can send them back unchanged in an update. The `event-summaries` and
+consumer can send them back unchanged in an update; otherwise the field is
+absent. Neither carries an image asset ID. The `event-summaries` and
 `match-summaries` documents gain `matchTeams` with the same summary array or
 `null` (OpenAPI `ClanMatchTeam`); the existing revision feed invalidates those
 summaries after an assignment change or refresh. Receiving snapshots does not
-grant the `teams` directory resource.
+grant the `teams` directory.
 
 ## Retries, concurrency and errors
 
@@ -268,7 +306,7 @@ receipt persistence fails; native hidden-field preservation; and cancellation
 without scoring. Run:
 
 ```shell
-node --import tsx --test src/domain/events/website-command.test.ts src/infrastructure/convex/website-event-commands.test.ts src/lib/api/website-event-command-route.test.ts src/app/api/v1/openapi.json/route.test.ts
+node --import tsx --test src/domain/events/website-command.test.ts src/infrastructure/convex/website-event-commands.test.ts src/infrastructure/convex/event-match-teams.test.ts src/lib/api/website-event-command-route.test.ts src/app/api/v1/openapi.json/route.test.ts
 npm run typecheck
 ```
 

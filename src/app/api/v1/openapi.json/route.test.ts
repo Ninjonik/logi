@@ -581,3 +581,27 @@ test("OpenAPI derives concrete Convex-backed success bodies", async () => {
         "#/components/schemas/ClanEventsDocument"
     )
 })
+
+test("bearer event writes document read-only match teams and complete records their internal snapshot fields", async () => {
+    const document = await (await GET()).json()
+    assert.equal(document.info.version, "1.10.0")
+    for (const operation of [
+        document.paths["/clan/events"].post,
+        document.paths["/clan/events/{id}"].patch,
+    ]) {
+        assert.match(operation.description, /matchTeams is read-only/)
+        assert.match(operation.description, /match_teams:team_game_mismatch/)
+        assert.match(operation.description, /\/clan\/event-commands/)
+        const property =
+            operation.requestBody.content["application/json"].schema.properties
+                .matchTeams
+        assert.equal(property.readOnly, true)
+    }
+    for (const operation of [
+        document.paths["/clan/events"].get,
+        document.paths["/clan/events/{id}"].get,
+    ]) {
+        assert.match(operation.description, /logoAssetId is an internal/)
+        assert.match(operation.description, /ClanMatchTeam, logoUrl only/)
+    }
+})

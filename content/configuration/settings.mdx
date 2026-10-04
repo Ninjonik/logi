@@ -235,6 +235,10 @@ and the saved one is kept; a game change that the saved teams no longer fit
 returns `validation_error`, and changing an unconcluded match into a training
 clears its teams. A connected website selects teams through the signed-in
 [website event commands](/wiki/operations/events#connected-clan-websites).
+Complete event records from `GET /api/v1/clan/events` keep each saved team's
+full snapshot, including an internal logo reference that is not a URL; show
+team names and logos from the `matchTeams` of the event or match summaries,
+which carry only the public `logoUrl`.
 
 Stratmaps and presets use `POST /api/v1/clan/stratmaps`,
 `POST /api/v1/clan/topic-presets`, and `POST /api/v1/clan/squad-presets`, with

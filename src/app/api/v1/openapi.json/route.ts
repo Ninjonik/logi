@@ -402,6 +402,9 @@ const paths: Record<string, unknown> = {
         },
     },
 }
+/** Complete event records keep internal snapshot fields; summaries are the presentation contract. */
+const completeEventRecordDescription =
+    "Complete native event records for the events grant. When present, matchTeams holds the stored team assignments with their full snapshots ({teamId, slot, side, snapshot: {name, shortCode, logoAssetId, logoUrl, teamRevision, capturedAt}}); snapshot.logoAssetId is an internal image-asset record ID, not a URL, and grants nothing. Present teams from the minimized event-summaries or match-summaries matchTeams (ClanMatchTeam, logoUrl only). matchTeams is absent when no assignment was ever stored."
 for (const resource of resources) {
     const gameDataDescription = [
         "server-snapshots",
@@ -433,6 +436,9 @@ for (const resource of resources) {
                       description:
                           "Allowlisted operational summaries. A separate matching readAccess resource grant is required for restricted keys. Website publication still requires its own approval. Match summaries use event IDs, exclude training events and report imported results as provisional; absent results remain unknown.",
                   }
+                : {}),
+            ...(resource === "events"
+                ? { description: completeEventRecordDescription }
                 : {}),
             ...(resource === "result-summaries"
                 ? {
@@ -468,6 +474,9 @@ for (const resource of resources) {
                 : `Get a clan ${resource} record`,
             ...(gameDataDescription
                 ? { description: gameDataDescription }
+                : {}),
+            ...(resource === "events"
+                ? { description: completeEventRecordDescription }
                 : {}),
             tags: [resourceTags[resource]!],
             security: [{ clanApiKey: [] }],
@@ -608,6 +617,8 @@ paths["/clan/events/{eventId}/signup"] = {
 const eventMutation = {
     tags: ["Clan API — Events"],
     security: [{ clanApiKey: [] }],
+    description:
+        "Creates or updates a native event with a service key. matchTeams is read-only on these bearer-key writes: an API key alone is not a writing actor, so a matchTeams field in the body is ignored (a GET -> PATCH round trip stays valid) and the saved team assignments are kept. When gameId or kind changes, the kept assignments are re-validated: a match that becomes a training drops them unless it has concluded, and a game the saved teams no longer fit is 400 validation_error with the message match_teams:<code> (for example match_teams:team_game_mismatch). Assign, clear or refresh teams with the actor-backed POST /clan/event-commands (operations create, update and refresh_match_team) or in the Logi dashboard. The response and the event.created/event.updated webhooks carry the complete event record; its matchTeams snapshots include the internal logoAssetId, so present teams from the event-summaries or match-summaries matchTeams (ClanMatchTeam, logoUrl only).",
     parameters: [idempotencyParameter],
     requestBody: {
         required: true,
@@ -648,6 +659,11 @@ const eventMutation = {
                         stratmapIds: {
                             type: "array",
                             items: { type: "string" },
+                        },
+                        matchTeams: {
+                            readOnly: true,
+                            description:
+                                "Read-only on bearer-key writes and ignored when sent; the saved assignments are kept. Use POST /clan/event-commands to change them.",
                         },
                     },
                 },
@@ -1902,7 +1918,7 @@ export async function GET() {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.9.0",
+                version: "1.10.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read

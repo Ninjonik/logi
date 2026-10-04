@@ -1,7 +1,10 @@
 # Workspace team directory for HLL and Wardogs
 
 - Date: 2026-10-03
-- Status: conversational design approved; written specification awaiting review
+- Status: implemented on `feat/valkyria-integration` (see the
+  [v0.15 handoff](../../integrations/website/v0.15/README.md)); synthetic tests
+  and static checks pass; the runtime acceptance under
+  [Verification](#verification-and-delivery-acceptance) is pending
 - Source baseline: `09567516c919f46e8aa668fda953af5924efcb68`
 - Delivery: existing Logi PR #158
 
@@ -26,8 +29,9 @@ The user approved this scope:
 - Prepare stable identities for later Wardogs League and HLL league linking;
   never infer identity from a similar name or short code.
 
-This document specifies proposed behavior. No team-directory implementation,
-runtime acceptance or production activation is claimed.
+This document specified the behavior that is now implemented. Runtime
+acceptance on the isolated Convex instance, in a browser and in the Discord
+test channel, and production activation, are not yet claimed.
 
 ## Existing behavior and chosen approach
 

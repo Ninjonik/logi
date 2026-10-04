@@ -83,7 +83,7 @@ remain website-owned normalized models, not these wire DTOs.
 | Event | `kind` (`match` or `training`), nullable stored `status`, nullable `startsAt` from `gameStart`, `endsAt` from `gameEnd` |
 | Match | `eventId`, `resultState` (`unknown` or `provisional`), nullable `result` |
 | Imported result | `mapId`, nullable `mapName`, `sideA`, `sideB`, numeric `score.sideA`/`score.sideB`, stored `outcome`, nullable `endedAt`, and `provenance: { type: "event_result_import", importedAt }` |
-| Team selection (Event and Match) | `matchTeams`: `null` for trainings and for events saved before team selection existed; otherwise an array sorted by `slot` (possibly empty) of `{ teamId, slot, side, name, shortCode, logoUrl, teamRevision, capturedAt }` |
+| Team selection (Event and Match) | `matchTeams`: `null` when no assignment was ever stored (trainings, events saved before team selection existed, and matches created by a client that omitted `matchTeams`, such as a bearer-key create, a website command without the field or a bot-created match); otherwise an array sorted by `slot` (possibly empty) of `{ teamId, slot, side, name, shortCode, logoUrl, teamRevision, capturedAt }`. Treat `null` and `[]` alike as "no assigned teams" |
 
 Each `matchTeams` entry names a workspace directory team (`teamId`), its
 stable display `slot` (`a`/`b`, plus `c` for Wardogs) and a nullable
@@ -91,8 +91,11 @@ match-specific `side` (`Allies`/`Axis` or `Valkyra`/`Manticore`/`Lonestar`).
 `name`, nullable `shortCode`, nullable public `logoUrl` and `teamRevision` are
 the snapshot Logi captured at `capturedAt` when the team was selected or
 explicitly refreshed; later directory renames, logo changes or archival do not
-rewrite it. No image asset IDs are exposed, and the selection does not change
-the event-level `side`, scores or result orientation.
+rewrite it. These summaries expose no image asset IDs (only the complete
+`events` record keeps the internal `logoAssetId` in its snapshots; see the
+[v0.15 handoff](../v0.15/README.md#complete-event-records-versus-minimized-summaries)),
+and the selection does not change the event-level `side`, scores or result
+orientation.
 
 Legacy events without `gameId` resolve to `hell_let_loose`; absent kind means
 `match`. Missing start/update/status data remains null. Do not manufacture a
