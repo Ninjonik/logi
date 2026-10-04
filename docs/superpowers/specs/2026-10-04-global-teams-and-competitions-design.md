@@ -16,12 +16,12 @@ global administrators (the superadmins configured in `config/superadmins.json`
 and attested by the authenticated web gateway). The following were chosen
 explicitly:
 
-| Question | Decision |
-| --- | --- |
-| Per-workspace team directory | Replaced by one global catalogue. Workspaces only select from it and request additions or changes. |
-| Competitions | Move from Logi workspaces (`guilds`, including placeholder "ghost" clans) to global teams. Existing ECL data is converted. |
-| Competition scope for global admins | Competitions, seasons, divisions, team registration per division, fixtures, results and standings in the existing league + playoff format. No new formats. |
-| Team requests | New-team requests and change requests for an existing team. Global admins can edit a request before approving it or merge it into an existing team. The requester is notified by a Discord DM. |
+| Question                            | Decision                                                                                                                                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Per-workspace team directory        | Replaced by one global catalogue. Workspaces only select from it and request additions or changes.                                                                                             |
+| Competitions                        | Move from Logi workspaces (`guilds`, including placeholder "ghost" clans) to global teams. Existing ECL data is converted.                                                                     |
+| Competition scope for global admins | Competitions, seasons, divisions, team registration per division, fixtures, results and standings in the existing league + playoff format. No new formats.                                     |
+| Team requests                       | New-team requests and change requests for an existing team. Global admins can edit a request before approving it or merge it into an existing team. The requester is notified by a Discord DM. |
 
 ## Global team catalogue
 
@@ -90,7 +90,17 @@ teams (`competitionTeams.teamId`, `competitionFixtures.sideATeamId` and
 existing documents stay valid. An idempotent internal migration converts them:
 each guild in a competition becomes (or matches) a global team of that game,
 linked to the guild when it is a real Logi workspace. The ECL seed creates
-global teams instead of placeholder clans.
+global teams instead of placeholder clans. After deploying, the operator runs
+`npx convex run competitionMigrations:adoptGlobalTeams` once; it works in
+batches of 100, schedules the rest itself and is safe to rerun. The ECL seed
+refuses to run while legacy rows remain.
+
+Competition administration has no `/api/v1` endpoints: it is a global
+administrator workflow with no workspace-scoped equivalent, so a workspace API
+key cannot represent it (recorded as an API-parity exception). Public reads stay
+available through `GET /api/v1/public/competitions/{slug}`. Linking a fixture to
+a native match event is also a global administrator action now; workspaces no
+longer link their own events.
 
 The public competition pages and `GET /api/v1/public/competitions/{slug}` now
 return global team IDs with name, short code and logo URL. This changes the IDs
