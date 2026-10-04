@@ -1,4 +1,5 @@
 import {
+    handleApplyEventScore,
     handleAppendAttendanceReminderLog,
     handleConcludeEvent,
     handleFindNoticeTarget,
@@ -9,13 +10,14 @@ import {
     handleUpsertNotice,
 } from "../src/infrastructure/convex/event-handlers"
 import {
+    ConvexEventCommandRepository,
+    ConvexEventScoreRepository,
+    DelegatingEventScorePort,
+} from "../src/infrastructure/convex/event-command-repositories"
+import {
     ConvexEventWorkflowRepository,
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
-import {
-    ConvexEventCommandRepository,
-    DelegatingEventScorePort,
-} from "../src/infrastructure/convex/event-command-repositories"
 import { ReconcileEventStatusesUseCase } from "../src/application/events/reconcile-event-statuses.use-case"
 import { syncEventAssetReferences } from "../src/infrastructure/convex/team-directory-repositories"
 import { CompleteTrainingUseCase } from "../src/application/events/complete-training.use-case"
@@ -24,6 +26,7 @@ import {
     getGuildByDiscordId,
     getGuildDiscordId,
 } from "./identity"
+import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
 import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case"
 import { UpsertNoticeUseCase } from "../src/application/events/upsert-notice.use-case"
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case"
@@ -33,8 +36,8 @@ import { normalizeEventRecord } from "../src/domain/events/normalization"
 import { currentEventStatus } from "../src/domain/events/status"
 import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
+import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import type { MutationCtx } from "./_generated/server"
-import { scheduleEventScore } from "./eventScoreQueue"
 import { resolveEventMatchTeams } from "./matchTeams"
 import { matchTeamInput } from "./teamValidators"
 import type { Id } from "./_generated/dataModel"
@@ -69,6 +72,15 @@ const eventResult = v.object({
         sideB: v.number(),
     }),
 })
+
+async function applyScoreToEventSignups(
+    ctx: MutationCtx,
+    eventId: Id<"events">
+) {
+    return await new ApplyEventScoreUseCase(
+        new ConvexEventScoreRepository(ctx, DEFAULT_ROSTER_SCORE_SETTINGS)
+    ).execute(String(eventId))
+}
 
 export const upsert = mutation({
     args: {
@@ -190,9 +202,10 @@ export const upsert = mutation({
                 new UpsertEventUseCase(
                     new ConvexEventCommandRepository(ctx),
                     new DelegatingEventScorePort((eventId) =>
-                        scheduleEventScore(ctx, eventId as Id<"events">).then(
-                            () => undefined
-                        )
+                        applyScoreToEventSignups(
+                            ctx,
+                            eventId as Id<"events">
+                        ).then(() => undefined)
                     ),
                     systemClock
                 ),
@@ -313,9 +326,10 @@ export const reconcileStatuses = mutation({
                 new ReconcileEventStatusesUseCase(
                     new ConvexEventCommandRepository(ctx),
                     new DelegatingEventScorePort((eventId) =>
-                        scheduleEventScore(ctx, eventId as Id<"events">).then(
-                            () => undefined
-                        )
+                        applyScoreToEventSignups(
+                            ctx,
+                            eventId as Id<"events">
+                        ).then(() => undefined)
                     ),
                     systemClock
                 ),
@@ -333,7 +347,16 @@ export const applyEventScore = mutation({
             throw new Error("Unauthorized.")
         }
 
-        return { queued: await scheduleEventScore(ctx, args.eventId) }
+        return await handleApplyEventScore({
+            eventId: String(args.eventId),
+            createUseCase: () =>
+                new ApplyEventScoreUseCase(
+                    new ConvexEventScoreRepository(
+                        ctx,
+                        DEFAULT_ROSTER_SCORE_SETTINGS
+                    )
+                ),
+        })
     },
 })
 
@@ -351,9 +374,10 @@ export const conclude = mutation({
                 new ConcludeEventUseCase(
                     new ConvexEventCommandRepository(ctx),
                     new DelegatingEventScorePort((eventId) =>
-                        scheduleEventScore(ctx, eventId as Id<"events">).then(
-                            () => undefined
-                        )
+                        applyScoreToEventSignups(
+                            ctx,
+                            eventId as Id<"events">
+                        ).then(() => undefined)
                     ),
                     systemClock
                 ),
@@ -380,7 +404,7 @@ export const completeTraining = mutation({
         return await new CompleteTrainingUseCase(
             new ConvexEventCommandRepository(ctx),
             new DelegatingEventScorePort((eventId) =>
-                scheduleEventScore(ctx, eventId as Id<"events">).then(
+                applyScoreToEventSignups(ctx, eventId as Id<"events">).then(
                     () => undefined
                 )
             ),
