@@ -33,6 +33,36 @@ type TopicMessage = {
     attachments: string[]
 }
 
+type ForumChannelCandidate = {
+    id: string
+    name: string
+    parentId: string | null
+    type: ChannelType
+    createdTimestamp: number
+}
+
+/**
+ * A Discord write can succeed even when the later sync-state write does not.
+ * Reuse the oldest matching forum in that recovery case rather than creating a
+ * duplicate event forum on the next sync attempt.
+ */
+export function findRecoverableEventForum(
+    channels: Iterable<ForumChannelCandidate>,
+    parentId: string,
+    name: string
+) {
+    return [...channels]
+        .filter(
+            (channel) =>
+                channel.type === ChannelType.GuildForum &&
+                channel.parentId === parentId &&
+                channel.name === name
+        )
+        .sort(
+            (left, right) => left.createdTimestamp - right.createdTimestamp
+        )[0]
+}
+
 function attachmentFilename(url: string, index: number) {
     try {
         const filename = decodeURIComponent(
@@ -128,9 +158,32 @@ export async function syncForumChannel(input: {
         reserveRoleId,
     } = input
     const messages = getClanDiscordMessages(config.defaultLanguage)
+    const forumName = buildForumThreadName(config, event)
     const existingForumChannel = forumChannelId
         ? await guild.channels.fetch(forumChannelId).catch(() => null)
         : null
+    const guildChannels = existingForumChannel
+        ? null
+        : await guild.channels.fetch().catch(() => null)
+    const recoveredForumChannel = existingForumChannel
+        ? null
+        : findRecoverableEventForum(
+              [...(guildChannels?.values() ?? [])].flatMap((channel) =>
+                  channel
+                      ? [
+                            {
+                                id: channel.id,
+                                name: channel.name,
+                                parentId: channel.parentId,
+                                type: channel.type,
+                                createdTimestamp: channel.createdTimestamp,
+                            },
+                        ]
+                      : []
+              ),
+              forumCategoryId,
+              forumName
+          )
 
     let channelId = forumChannelId
     let infoMessageId: string | undefined
@@ -138,17 +191,31 @@ export async function syncForumChannel(input: {
     let stateChanged = false
 
     let forumChannel: ForumChannel | null = null
-    if (existingForumChannel?.type === ChannelType.GuildForum) {
-        forumChannel = existingForumChannel as ForumChannel
+    const reusableForumChannel =
+        existingForumChannel?.type === ChannelType.GuildForum
+            ? existingForumChannel
+            : recoveredForumChannel
+    if (reusableForumChannel) {
+        forumChannel = reusableForumChannel as ForumChannel
+        channelId = forumChannel.id
+        stateChanged ||= channelId !== forumChannelId
+        if (recoveredForumChannel) {
+            logWarn("forum", "Recovered an unrecorded event forum channel", {
+                guildId: guild.id,
+                eventId: event.id,
+                forumChannelId: forumChannel.id,
+                forumCategoryId,
+            })
+        }
         await forumChannel
             .edit({
-                name: buildForumThreadName(config, event),
+                name: forumName,
                 parent: forumCategoryId,
             })
             .catch((error) => {
                 logWarn("forum", "Failed to update forum channel", {
                     guildId: guild.id,
-                    forumChannelId: forumChannelId ?? existingForumChannel.id,
+                    forumChannelId: forumChannelId ?? reusableForumChannel.id,
                     error,
                 })
                 void reportClanDiscordError({
@@ -169,7 +236,7 @@ export async function syncForumChannel(input: {
     } else {
         forumChannel = (await guild.channels
             .create({
-                name: buildForumThreadName(config, event),
+                name: forumName,
                 type: ChannelType.GuildForum,
                 parent: forumCategoryId,
                 permissionOverwrites: [attendeeRoleId, reserveRoleId]

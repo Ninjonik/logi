@@ -43,7 +43,8 @@ one. Test after changing channels so staff do not leave an old panel in use.
    a modal; otherwise Logi creates the ticket immediately.
 2. The bot creates a private thread under the configured ticket parent channel,
    assigns it a sequential workspace ticket number, and adds the requester plus
-   configured support members where Discord permissions allow.
+   configured category support members where Discord permissions allow.
+   Dashboard administrators are not automatically added.
 3. Logi stores the category, answers, creator, thread, and open state. Staff
    close the tracked thread with `/close_ticket`, optionally providing a reason.
 4. Logi records who closed it and when, posts a closing record, renames the
@@ -151,8 +152,8 @@ Choose whether category support-role members are added to an application thread
 individually or invited by the support-role mention in the
 opening message. Individual adds are the reliable default. Role mentions let
 Discord add eligible small roles, but Discord limits this to roles with fewer
-than 100 members and up to 10 mentioned roles; dashboard administrators remain
-directly added in either mode.
+than 100 members and up to 10 mentioned roles. Dashboard administrators can
+manage applications without being automatically added to their threads.
 
 Membership settings also contain the roster-score values used when a concluded
 event resolves player scores. They are per-workspace and determine the numeric
