@@ -313,7 +313,7 @@ This increment was verified locally with synthetic tests and static checks
 only:
 
 ```shell
-node --import tsx --test src/lib/api/teams-route.test.ts src/lib/api/team-fixtures.test.ts src/lib/api/authenticated-clan-route.test.ts src/app/api/v1/openapi.json/route.test.ts
+node --import tsx --test src/lib/api/teams-route.test.ts src/lib/api/team-fixtures.test.ts src/lib/api/authenticated-clan-route.test.ts src/lib/api/integration-query.test.ts src/app/api/v1/openapi.json/route.test.ts src/application/teams/*.test.ts src/infrastructure/convex/teams.test.ts src/infrastructure/convex/teams-authorization.test.ts
 npm run generate:openapi && node scripts/generate-convex-api-offline.mjs
 npx tsc --noEmit -p tsconfig.json
 npm run test
@@ -324,9 +324,16 @@ other-resource and legacy keys; HTTP mapping of Convex grant refusal, absent
 record and failure to `403`/`404`/`503`; generic error envelopes with
 `no-store` and rate-limit headers; the OpenAPI paths, schemas, tag and the
 `teams` entries in the `changes`/`sync-records` enumerations; and fixture
-conformance to the Zod contracts. The route tests mock Convex over HTTP; the
+conformance to the Zod contracts; signed collection cursors; and the Vietnam
+refusal on the `teams` change feed. The route tests mock Convex over HTTP; the
 `teamReads:list` and `teamReads:get` handlers themselves are exercised by
-[`teams.test.ts`](../../../../src/infrastructure/convex/teams.test.ts).
+[`teams.test.ts`](../../../../src/infrastructure/convex/teams.test.ts), and
+[`teams-authorization.test.ts`](../../../../src/infrastructure/convex/teams-authorization.test.ts)
+refuses revoked, expired and demoted dashboard actors on every directory,
+asset and refresh handler, and revoked, legacy and ungranted keys on the
+reads and the `teams` sync record. The directory writes and the snapshot
+refresh are application use-cases tested with fakes in
+[`src/application/teams`](../../../../src/application/teams).
 
 The event command fields, `refresh_match_team`, `invalid_match_teams` and the
 summary/editor `matchTeams` fields ship in the same change and are covered by
