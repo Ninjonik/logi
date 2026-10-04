@@ -10,9 +10,10 @@ a second operational match table.
 
 This contract supports Hell Let Loose and Wardogs. It does not reduce a Wardogs
 match to two teams: participant scores remain the independent N-participant
-reviewed-result read model. The native event editor currently contains schedule,
-name, kind, map, side and descriptive fields; structured three-team fixture
-creation and result submission are outside this command contract.
+reviewed-result read model. The native event editor contains schedule, name,
+kind, map, side and descriptive fields, plus optional workspace directory team
+assignments (see [Team directory](#team-directory)); result submission remains
+outside this command contract.
 
 ## Enable access explicitly
 
@@ -69,10 +70,10 @@ administrator checks apply to the form as to any other caller.
 
 The [generated OpenAPI endpoint](/api/v1/openapi.json) includes these operations:
 
-| Request                                                  | Purpose                                      |
-| -------------------------------------------------------- | -------------------------------------------- |
-| `POST /api/v1/clan/event-commands?game=wardogs`          | Create, update or cancel                     |
-| `GET /api/v1/clan/event-commands/{eventId}?game=wardogs` | Read the bounded editor and current revision |
+| Request                                                  | Purpose                                                   |
+| -------------------------------------------------------- | --------------------------------------------------------- |
+| `POST /api/v1/clan/event-commands?game=wardogs`          | Create, update, cancel or refresh one match team snapshot |
+| `GET /api/v1/clan/event-commands/{eventId}?game=wardogs` | Read the bounded editor and current revision              |
 
 Use `Authorization: Bearer <command-service-key>` and
 `X-Logi-Actor-Token: <current-opaque-SSO-access-token>` from the website backend.
@@ -102,7 +103,9 @@ Create:
 
 The required native kind is `match` or `training`. Optional bounded fields are
 `matchType` (80 characters), `description` (2,000), `map` (200), `side` (200) and
-`registrationStart` (UTC ISO timestamp). `name` is 1–160 trimmed characters.
+`registrationStart` (UTC ISO timestamp), plus `matchTeams` for directory team
+assignments (see [Team directory](#team-directory)). `name` is 1–160 trimmed
+characters.
 Times satisfy `registrationStart <= registrationEnd <= meetingStart <=
 gameStart < gameEnd`; meeting start must still be in the future.
 
@@ -143,6 +146,86 @@ GET returns `eventId`, `guildId`, `gameId`, `revision`, the bounded `event`, and
 `canEdit`/`canCancel`. It requires the same current write authorization even
 when the event can no longer be edited. All output objects are closed schemas.
 
+### Team directory
+
+Native match events can reference workspace directory teams; the directory,
+its read grant and the consumer fixtures are described in the
+[workspace team directory handoff](v0.15/README.md). Team assignment adds one
+optional event field, one operation and one error code. SSO actor checks,
+per-game event-write policy, `Idempotency-Key` and `expectedRevision` semantics
+are unchanged, and an API key alone is still not a writing actor.
+
+**`event.matchTeams` on create and update.** The `event` object of `create` and
+`update` accepts an optional `matchTeams` array of at most three entries. Each
+entry carries identity, position and side only:
+
+```json
+{
+    "operation": "update",
+    "eventId": "<native-event-id>",
+    "expectedRevision": "123",
+    "event": {
+        "kind": "match",
+        "name": "Hell Let Loose friendly",
+        "registrationEnd": "2030-01-01T17:00:00Z",
+        "meetingStart": "2030-01-01T18:00:00Z",
+        "gameStart": "2030-01-01T18:30:00Z",
+        "gameEnd": "2030-01-01T20:00:00Z",
+        "matchTeams": [
+            { "teamId": "<directory-team-id>", "slot": "a", "side": "Allies" },
+            { "teamId": "<directory-team-id>", "slot": "b", "side": null }
+        ]
+    }
+}
+```
+
+| Game             | Slots         | Sides (or `null` to leave the side open) |
+| ---------------- | ------------- | ---------------------------------------- |
+| `hell_let_loose` | `a`, `b`      | `Allies`, `Axis`                         |
+| `wardogs`        | `a`, `b`, `c` | `Valkyra`, `Manticore`, `Lonestar`       |
+
+- `teamId` is the stable directory ID of an active team in the same workspace
+  and game. Teams, slots and non-null sides are unique within one event.
+- **Omitting** `matchTeams` preserves the saved assignments, so a consumer that
+  does not know the field never erases them. An **empty array** `[]` clears them
+  while the event is still editable.
+- Clients never send snapshots. When a team is first assigned, Logi captures
+  `{name, shortCode, logo, team revision, capturedAt}` from its directory entry
+  and keeps that snapshot through slot or side edits and through later
+  directory renames, logo changes and archival of the team.
+
+**`refresh_match_team`.** This operation re-captures one assigned team's
+presentation from its active directory entry before the match concludes:
+
+```json
+{
+    "operation": "refresh_match_team",
+    "eventId": "<native-event-id>",
+    "expectedRevision": "123",
+    "teamId": "<directory-team-id>"
+}
+```
+
+It is audited and respects revision and idempotency semantics like `update`: a
+stale `expectedRevision` returns `revision_conflict`, and a reused
+`Idempotency-Key` with a different body returns `idempotency_conflict`.
+
+**`invalid_match_teams` (HTTP 400).** Any team-assignment rule violation returns
+this code: an unknown, foreign-workspace, archived or cross-game team; a bad
+slot or side; a duplicate team, slot or non-null side; a concluded match; or a
+training event.
+
+**Reads.** The editor read (`GET /api/v1/clan/event-commands/{eventId}`) returns
+`data.matchTeams`, an array of
+`{teamId, slot, side, name, shortCode, logoUrl, teamRevision, capturedAt}`
+sorted by slot, or `null` for trainings and legacy events. It also returns
+`data.event.matchTeams` with the current `{teamId, slot, side}` inputs, so a
+consumer can send them back unchanged in an update. The `event-summaries` and
+`match-summaries` documents gain `matchTeams` with the same summary array or
+`null` (OpenAPI `ClanMatchTeam`); the existing revision feed invalidates those
+summaries after an assignment change or refresh. Receiving snapshots does not
+grant the `teams` directory resource.
+
 ## Retries, concurrency and errors
 
 Store the intentional command, its key, actor subject and source configuration
@@ -164,6 +247,7 @@ overwrite. The event, schedule, change records and receipt commit atomically.
 | Status | Error codes / consumer action                                                                     |
 | ------ | ------------------------------------------------------------------------------------------------- |
 | 400    | `invalid_request`; correct the intentional command                                                |
+| 400    | `invalid_match_teams`; correct the team assignment (see [Team directory](#team-directory))        |
 | 401    | `unauthorized`; obtain a current central session/key                                              |
 | 403    | `insufficient_scope`, `policy_denied`, `membership_denied`; do not bypass authorization           |
 | 404    | `not_found`; event absent from this exact guild/game                                              |

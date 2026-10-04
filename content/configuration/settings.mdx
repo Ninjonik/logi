@@ -149,6 +149,20 @@ training events. No stored event result means `resultState: "unknown"` and
 concluded events. The website still approves publication and translations.
 These routes do not provide human result confirmation or public-member consent.
 
+For a workspace's opponent team directory, issue a restricted key that grants
+`teams` for each game the website may read, then use
+`GET /api/v1/clan/teams?game=hell_let_loose` (or `game=wardogs`) and
+`GET /api/v1/clan/teams/{id}?game=...`. Exactly one game is required; Hell Let
+Loose: Vietnam has no team directory. The reads return only active teams with
+their ID, game, name, short code, public logo URL, revision and update time;
+archived teams are omitted. Legacy full-access keys never grant this read.
+Event and match summaries carry the teams captured for each native match, which
+keep their names and logos after a team is renamed or archived. Creating,
+editing, archiving and restoring teams and uploading logos are dashboard-only
+administrator actions with no API-key equivalent. The
+[team directory handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.15/README.md)
+describes the change feed, fixtures and match assignment commands.
+
 Website integrations use the versioned API at `/api/v1`. Clan API requests
 use `Authorization: Bearer <API key>`. Game-owned clan data uses **Hell Let
 Loose** for legacy keys when no `game` query parameter is supplied, including legacy records;

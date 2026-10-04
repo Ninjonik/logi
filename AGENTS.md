@@ -51,6 +51,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Central login and connected website acceptance](./docs/integrations/website/v0.13/README.md) — paired SSO, roles, native event commands, local regression/browser proof and remaining activation
 - [Read-only people and player facts](./docs/integrations/website/v0.14/README.md) — scoped member directory, published roster/attendance, verified collected-session facts and bounded dependency resets
 - [PR #158 review and repaired-runtime proof](./docs/integrations/website/v0.14/evidence/2026-10-03-pr-review/README.md) — upstream integration fixes, security dispositions, exact runtime verification and activation limits
+- [Workspace team directory handoff](./docs/integrations/website/v0.15/README.md) — explicit `teams` grant, scoped collection/detail reads, change-feed protocol, immutable match snapshots, actor-backed `matchTeams` commands and the catalogue-write API-parity exception
 
 ### User-facing and legal Markdown
 

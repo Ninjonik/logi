@@ -21,6 +21,7 @@ not a deployment or approval to activate optional Logi SSO.
 | Do the supplied real CRCON/Warcon keys work, and what can we consume? | [Live provider read probe and Warcon API map](live-provider-probe.md) |
 | Is the Warcon adapter now implemented, including live players? | [Warcon 0.11: fifteen views, dashboard, website and history](../v0.11/README.md), [verification](../v0.11/verification.md) |
 | Can Logi read a public Wardogs League match link? | [League 0.12: HTML parser, URL preview and scoped API](../v0.12/README.md), [verification](../v0.12/verification.md) |
+| Can the website read the workspace's team directory and match team snapshots? | [Team directory 0.15: explicit `teams` grant, reads, change feed and command fields](../v0.15/README.md) |
 | Where are the architecture boundaries and review findings? | [Cumulative review guide](review-guide.md), [review record](review.md) |
 | How is the feature configured, deployed and recovered? | [Activation sequence below](#activation-and-recovery), versioned contracts below |
 | What is still missing, and who owns it? | [Remaining work below](#remaining-work-and-owners) |
@@ -79,6 +80,7 @@ role administrator. Reading data does not grant permission to publish it.
 | Signup presentation | Stable CS/EN/DE ordering and corrected compact layout | [Reliability proof](reliability-follow-up.md) |
 | Personal recap delivery | Explicit Discord recipient, correct unsubscribe and fresh consent check | [Recap handoff](recap-delivery-follow-up.md); not exactly-once delivery |
 | Discord game status | New private `/server-status` manager command for both games | [Command handoff](server-status-command.md); stored data, no on-demand RCON write |
+| Workspace team directory | Per-game HLL/Wardogs opponent catalogue, immutable native-match snapshots, explicit `teams` reads (`/api/v1/clan/teams`, `/api/v1/clan/teams/{id}`) and change feed | [0.15](../v0.15/README.md); catalogue writes and logo uploads stay session-bound dashboard operations (documented API-parity exception) |
 
 The [web catalog](web-capabilities.md) distinguishes minimized projections from
 legacy operational resources. The [Discord catalog](discord-reference.md) lists
@@ -166,6 +168,7 @@ Exact compatibility notes live with each versioned contract.
 | Real Convex contention, scheduling/load, migration and rollback | Operators and maintainers | Unrun on a target deployment |
 | Moderation, arbitrary role grants, game-server control, automatic public game-status panels | Later product work | Not delivered; needs explicit actor authority and audit design |
 | Formal result retraction and longer/exportable audit browsing | Later result workflow | Not delivered by confirmation/correction |
+| Team directory consumption: picker, snapshot rendering and `teams` change-feed ingestion | Website frontend/backend | Logi reads, change feed, fixtures and command contract are in [0.15](../v0.15/README.md); consumer not implemented by this Logi PR |
 
 Logi producer tasks D1–D4, W2, I1/I3/I5 have local implementations. A read-only
 website refresh at `d61c38fcd217c36f6a06ca6d273bb4de371afc71` found PR #37 merged
