@@ -123,6 +123,7 @@ export function UserAssignmentForm({
     const [isEditing, setIsEditing] = useState(createMode)
     const [serverError, setServerError] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
+    const selectedGameId = assignment?.gameId ?? gameId
 
     function getDefaultValues(): UserAssignmentInput {
         return {
@@ -281,7 +282,7 @@ export function UserAssignmentForm({
                 setIsEditing(false)
             }
             router.push(
-                `/${locale}/dashboard/servers/${server.id}/users${createMode ? `/${body.assignmentId}` : ""}`
+                `/${locale}/dashboard/servers/${server.id}/users${createMode ? `/${body.assignmentId}` : ""}${selectedGameId ? `?game=${selectedGameId}` : ""}`
             )
             router.refresh()
         })
@@ -310,7 +311,9 @@ export function UserAssignmentForm({
         toast.success(dictionary.userManagement.assignmentDeleted)
 
         startTransition(() => {
-            router.push(`/${locale}/dashboard/servers/${server.id}/users`)
+            router.push(
+                `/${locale}/dashboard/servers/${server.id}/users${selectedGameId ? `?game=${selectedGameId}` : ""}`
+            )
             router.refresh()
         })
     }
