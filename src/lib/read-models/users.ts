@@ -2,6 +2,7 @@ import { makeFunctionReference } from "convex/server"
 import { fetchQuery } from "convex/nextjs"
 
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
+import { getInternalAuthSecret } from "@/lib/env"
 import type { AppUser } from "@/types/domain"
 
 const getUsersByIdsReference = makeFunctionReference<"query">(
@@ -21,6 +22,7 @@ export async function getUsersReadModelByIds(
         [appCacheTags.users()],
         async () =>
             (await fetchQuery(getUsersByIdsReference, {
+                secret: getInternalAuthSecret(),
                 userIds,
                 guildId,
             })) as AppUser[]
@@ -32,10 +34,16 @@ export async function listUsersReadModel(guildId?: string) {
         ["users", guildId ?? "all"],
         [appCacheTags.users()],
         async () =>
-            (await fetchQuery(listUsersReference, { guildId })) as AppUser[]
+            (await fetchQuery(listUsersReference, {
+                secret: getInternalAuthSecret(),
+                guildId,
+            })) as AppUser[]
     )
 }
 
 export async function listUsersReadModelUncached(guildId?: string) {
-    return (await fetchQuery(listUsersReference, { guildId })) as AppUser[]
+    return (await fetchQuery(listUsersReference, {
+        secret: getInternalAuthSecret(),
+        guildId,
+    })) as AppUser[]
 }

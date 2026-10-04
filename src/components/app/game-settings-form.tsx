@@ -1,8 +1,7 @@
 "use client"
 
-import { makeFunctionReference } from "convex/server"
 import { useState, useTransition } from "react"
-import { useMutation } from "convex/react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import {
@@ -17,22 +16,16 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 
-const setEnabledGamesReference = makeFunctionReference<"mutation">(
-    "guilds:setEnabledGames"
-)
-
 export function GameSettingsForm({
     serverId,
-    userId,
     enabledGames,
     dictionary,
 }: {
     serverId: string
-    userId: string
     enabledGames?: GameId[]
     dictionary: Dictionary
 }) {
-    const setEnabledGames = useMutation(setEnabledGamesReference)
+    const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [selected, setSelected] = useState<GameId[]>(
         enabledGames === undefined ? [DEFAULT_GAME_ID] : enabledGames
@@ -75,17 +68,24 @@ export function GameSettingsForm({
                     disabled={isPending}
                     onClick={() =>
                         startTransition(async () => {
-                            try {
-                                await setEnabledGames({
-                                    guildId: serverId as never,
-                                    userId,
-                                    enabledGames: selected,
-                                })
-                                toast.success(dictionary.games.saved)
-                            } catch (error) {
-                                console.error(error)
+                            const response = await fetch(
+                                `/api/servers/${serverId}/enabled-games`,
+                                {
+                                    method: "POST",
+                                    headers: {
+                                        "content-type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                        enabledGames: selected,
+                                    }),
+                                }
+                            ).catch(() => null)
+                            if (!response?.ok) {
                                 toast.error(dictionary.games.saveError)
+                                return
                             }
+                            toast.success(dictionary.games.saved)
+                            router.refresh()
                         })
                     }
                 >

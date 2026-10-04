@@ -1,6 +1,7 @@
 import { query } from "./_generated/server"
 import { v } from "convex/values"
 
+import { assertInternalSecret } from "./discord_shared"
 import { getGuildDiscordId } from "./identity"
 
 /**
@@ -9,10 +10,12 @@ import { getGuildDiscordId } from "./identity"
  */
 export const getCalendarFeed = query({
     args: {
+        secret: v.string(),
         guildId: v.id("guilds"),
         token: v.string(),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const guild = await ctx.db.get(args.guildId)
         if (!guild) return null
 

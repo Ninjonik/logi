@@ -18,6 +18,7 @@ const upsertConfigReference = makeFunctionReference<"mutation">(
 
 export async function getDiscordConfigByGuild(guildId: string) {
     return (await fetchQuery(getConfigByGuildReference, {
+        secret: getInternalAuthSecret(),
         guildId: guildId as never,
     })) as DiscordConfig | null
 }

@@ -20,12 +20,10 @@ import { Label } from "@/components/ui/label"
 /** The clan role and the Discord role that grants dashboard access; both apply to the whole clan. */
 export function DiscordRoleSettingsForm({
     serverId,
-    userId,
     dictionary,
     config,
 }: {
     serverId: string
-    userId: string
     dictionary: Dictionary
     config: DiscordConfig | null
 }) {
@@ -95,10 +93,7 @@ export function DiscordRoleSettingsForm({
                     <p className="text-muted-foreground text-sm">
                         {dictionary.settingsHub.resyncHelp}
                     </p>
-                    <ResyncDashboardAdminsButton
-                        serverId={serverId}
-                        userId={userId}
-                    />
+                    <ResyncDashboardAdminsButton serverId={serverId} />
                 </div>
             </CardContent>
         </Card>

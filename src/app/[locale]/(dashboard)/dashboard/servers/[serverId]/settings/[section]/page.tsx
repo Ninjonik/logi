@@ -123,7 +123,6 @@ export default async function ServerSettingsSectionPage({
             content = (
                 <GameSettingsForm
                     serverId={serverId}
-                    userId={context.user.discordId}
                     enabledGames={server.enabledGames}
                     dictionary={dictionary}
                 />
@@ -154,7 +153,6 @@ export default async function ServerSettingsSectionPage({
             content = (
                 <DiscordRoleSettingsForm
                     serverId={serverId}
-                    userId={context.user.discordId}
                     dictionary={dictionary}
                     config={discordConfig}
                 />

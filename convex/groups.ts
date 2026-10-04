@@ -22,6 +22,7 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
 
 export const listForGuild = query({
     args: {
+        secret: v.string(),
         guildId: v.id("guilds"),
         gameScope: v.optional(
             v.union(
@@ -33,6 +34,7 @@ export const listForGuild = query({
         ),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const guild = await getGuildById(ctx, args.guildId)
         if (!guild) {
             return []
@@ -51,9 +53,11 @@ export const listForGuild = query({
 
 export const getById = query({
     args: {
+        secret: v.string(),
         groupId: v.id("groups"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const group = await ctx.db.get(args.groupId)
         return group ? normalizeDoc(group) : null
     },

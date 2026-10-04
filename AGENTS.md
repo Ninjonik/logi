@@ -213,7 +213,7 @@ Convex is the persistence and transaction boundary. Read `convex/schema.ts` and 
 
 Treat IDs for Convex records, Discord entities, platform accounts, servers, users, events, and rosters as distinct concepts even when they are represented as strings. Preserve tenant/server scoping in every query and mutation.
 
-Authentication and internal-secret checks belong at runtime boundaries. Never weaken an authorization check to make a client flow work. Never log tokens, secrets, OAuth codes, raw cookies, or unnecessary personal data.
+Authentication and internal-secret checks belong at runtime boundaries. Every public Convex function must check the internal secret, a dashboard session gateway or a client grant before it reads or writes anything (see ARCHITECTURE.md); never trust a `userId` sent by the browser. Never weaken an authorization check to make a client flow work. Never log tokens, secrets, OAuth codes, raw cookies, or unnecessary personal data.
 
 ## Environment and Secrets
 

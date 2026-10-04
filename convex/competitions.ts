@@ -45,6 +45,7 @@ import { dashboardActor, type DashboardActor } from "./dashboardActor"
 import { getGuildByDiscordId, getGuildDiscordId } from "./identity"
 import { resolveGameScope } from "../src/domain/games/game"
 import { authorizePlatformAdmin } from "./platformAdmin"
+import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
 import { assetPublicUrl } from "./imageAssets"
@@ -219,8 +220,9 @@ function teamViews(ctx: Db) {
 
 /** Public competition by slug; unpublished competitions read as absent. */
 export const getPublic = query({
-    args: { slug: v.string() },
+    args: { secret: v.string(), slug: v.string() },
     handler: async (ctx, args): Promise<PublicCompetition | null> => {
+        assertInternalSecret(args.secret)
         const competition = await competitionBySlug(ctx, args.slug)
         if (!competition || !isCompetitionPublished(competition)) return null
         const { divisions, registrations, fixtures } = await competitionParts(
@@ -279,11 +281,13 @@ export const getPublic = query({
 
 /** Slugs of published competitions, for the public listing. */
 export const listPublicSlugs = query({
-    args: {},
-    handler: async (ctx) =>
-        (await ctx.db.query("competitions").take(200))
+    args: { secret: v.string() },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        return (await ctx.db.query("competitions").take(200))
             .filter(isCompetitionPublished)
-            .map((competition) => competition.slug),
+            .map((competition) => competition.slug)
+    },
 })
 
 function summaryOf(competition: Doc<"competitions">): CompetitionSummary {

@@ -5,6 +5,7 @@ import {
     type GameScope,
 } from "../src/domain/games/game"
 import { internalAction, mutation, query } from "./_generated/server"
+import { assertInternalSecret } from "./discord_shared"
 import type { MutationCtx } from "./_generated/server"
 import { api } from "./_generated/api"
 import { v } from "convex/values"
@@ -429,10 +430,12 @@ function normalizeHistory<
 }
 export const getGuild = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         gameScope: v.optional(v.union(v.literal("all"), gameIdValidator)),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const history = normalizeHistory(
             await ctx.db
                 .query("guildPerformanceHistory")
@@ -449,11 +452,13 @@ export const getGuild = query({
 })
 export const getPlayer = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         userId: v.string(),
         gameScope: v.optional(v.union(v.literal("all"), gameIdValidator)),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const history = normalizeHistory(
             await ctx.db
                 .query("playerPerformanceHistory")
@@ -472,11 +477,13 @@ export const getPlayer = query({
 })
 export const getPlayers = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         userIds: v.array(v.string()),
         gameScope: v.optional(v.union(v.literal("all"), gameIdValidator)),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const rows = await Promise.all(
             [...new Set(args.userIds)].map((userId) =>
                 ctx.db

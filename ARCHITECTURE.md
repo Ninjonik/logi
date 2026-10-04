@@ -134,6 +134,25 @@ A Convex mutation or query should ideally do only this:
 
 Convex files should not be the long-term home of business rules.
 
+Every exported `query`, `mutation` and `action` is reachable by anyone who
+knows the deployment URL, which the browser bundle contains. Each one must
+therefore establish its caller itself, in one of three ways:
+
+- the internal secret (`secret` argument checked with `assertInternalSecret`)
+  for calls from the Next server, the bot and scripts;
+- a dashboard session or actor gateway (`assertSessionGateway`,
+  `authorizeDashboardAdmin`, `authorizePlatformAdmin`) when the server acts for
+  a signed-in person;
+- a client grant (`verifyClientGrant` in `convex/clientGrants.ts`) for the few
+  live browser subscriptions and edits. The page signs it with
+  `issueClientGrant` after checking the session; Convex takes the user from the
+  grant, never from a browser-supplied `userId`.
+
+A caller-supplied user ID is only trustworthy behind the internal secret.
+Browser writes to workspace settings go through Next routes, not `useMutation`.
+Responses for members must leave out manager secrets such as stats-server tokens
+and the calendar feed capability, and unpublished rosters.
+
 Read modules should also be split by feature. For example:
 
 - `convex/serverContext.ts` for dashboard server context

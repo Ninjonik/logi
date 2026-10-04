@@ -20,6 +20,7 @@ import {
     filterCollection,
     paginateCollection,
 } from "../src/domain/shared/collection-query"
+import { assertInternalSecret } from "./discord_shared"
 
 const gameIdValidator = v.union(
     v.literal("hell_let_loose"),
@@ -38,8 +39,9 @@ function sortedMatches(matches: Array<Record<string, unknown>>) {
 /** Public, intentionally limited player data. Never add Discord IDs, notes,
  * platform identifiers, assignment details, or unpublished roster data here. */
 export const getPlayer = query({
-    args: { playerId: v.string() },
+    args: { secret: v.string(), playerId: v.string() },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const user = await getUserByIdentifier(ctx, args.playerId)
         if (!user) return null
 
@@ -145,8 +147,9 @@ export const getPlayer = query({
 })
 
 export const getMatch = query({
-    args: { eventId: v.id("events") },
+    args: { secret: v.string(), eventId: v.id("events") },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const [event, match] = await Promise.all([
             ctx.db.get(args.eventId),
             ctx.db
@@ -218,8 +221,9 @@ export const getMatch = query({
 })
 
 export const getClan = query({
-    args: { guildId: v.string() },
+    args: { secret: v.string(), guildId: v.string() },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const guild = await getGuildByDiscordId(ctx, args.guildId)
         if (!guild) return null
         const guildId = getGuildDiscordId(guild)
@@ -306,10 +310,12 @@ export const getClan = query({
 
 export const listClans = query({
     args: {
+        secret: v.string(),
         paginationOpts: paginationOptsValidator,
         game: v.optional(gameIdValidator),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         // Filter before paging: otherwise recently-created ghost competition teams
         // can fill an entire page and hide eligible real clans behind it.
         const guilds = (await ctx.db.query("guilds").collect()).sort(
@@ -378,11 +384,13 @@ export const listClans = query({
 /** Finds public clans with a result-backed match in the selected game. */
 export const searchClans = query({
     args: {
+        secret: v.string(),
         term: v.string(),
         paginationOpts: paginationOptsValidator,
         game: gameIdValidator,
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const term = args.term.trim().toLocaleLowerCase()
         if (term.length < 2)
             return { page: [], isDone: true, continueCursor: "" }
@@ -442,6 +450,7 @@ export const searchClans = query({
  * partially imported matches. */
 export const listMatches = query({
     args: {
+        secret: v.string(),
         paginationOpts: paginationOptsValidator,
         game: v.optional(v.union(v.literal("all"), v.array(gameIdValidator))),
         filters: v.optional(
@@ -449,6 +458,7 @@ export const listMatches = query({
         ),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         // Game scope is checked against the linked event, so it cannot be
         // expressed by a matchStats index. Still page matchStats first: loading
         // the complete history for a selected game exceeds the query timeout.
@@ -531,11 +541,13 @@ export const listMatches = query({
 /** Finds only players with at least one result-backed public match. */
 export const searchPlayers = query({
     args: {
+        secret: v.string(),
         term: v.string(),
         paginationOpts: paginationOptsValidator,
         game: gameIdValidator,
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const term = args.term.trim().toLocaleLowerCase()
         if (term.length < 2)
             return { page: [], isDone: true, continueCursor: "" }

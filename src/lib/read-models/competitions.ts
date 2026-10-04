@@ -8,6 +8,7 @@ export type {
     PublicCompetitionFixture,
     PublicCompetitionTeam,
 } from "@/domain/competitions/competition"
+import { getInternalAuthSecret } from "@/lib/env"
 
 const getPublicReference = makeFunctionReference<"query">(
     "competitions:getPublic"
@@ -23,6 +24,7 @@ export async function getPublicCompetition(slug: string) {
         [appCacheTags.competition(slug)],
         async () =>
             (await fetchQuery(getPublicReference, {
+                secret: getInternalAuthSecret(),
                 slug,
             })) as PublicCompetition | null,
         300
@@ -31,7 +33,9 @@ export async function getPublicCompetition(slug: string) {
 
 /** Every published competition, for the public listing. */
 export async function listPublicCompetitions() {
-    const slugs = (await fetchQuery(listPublicSlugsReference, {})) as string[]
+    const slugs = (await fetchQuery(listPublicSlugsReference, {
+        secret: getInternalAuthSecret(),
+    })) as string[]
     return (await Promise.all(slugs.map(getPublicCompetition))).filter(
         (competition): competition is PublicCompetition => Boolean(competition)
     )

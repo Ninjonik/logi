@@ -8,6 +8,7 @@ import {
 } from "@/components/public/public-site-shell"
 import { PlatformIdLinkForm } from "@/components/app/platform-id-link-form"
 import { getDictionary } from "@/i18n/dictionaries"
+import { getInternalAuthSecret } from "@/lib/env"
 import { isLocale } from "@/i18n/config"
 
 const getPlatformIdLinkTokenReference = makeFunctionReference<"query">(
@@ -28,6 +29,7 @@ export default async function LocalizedPlatformIdLinkPage({
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
     const tokenRecord = await fetchQuery(getPlatformIdLinkTokenReference, {
+        secret: getInternalAuthSecret(),
         token,
     })
 

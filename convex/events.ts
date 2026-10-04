@@ -38,6 +38,7 @@ import { currentEventStatus } from "../src/domain/events/status"
 import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
+import { assertInternalSecret } from "./discord_shared"
 import type { MutationCtx } from "./_generated/server"
 import { resolveEventMatchTeams } from "./matchTeams"
 import { matchTeamInput } from "./teamValidators"
@@ -220,9 +221,11 @@ export const upsert = mutation({
 
 export const getById = query({
     args: {
+        secret: v.string(),
         eventId: v.id("events"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const event = await ctx.db.get(args.eventId)
         return event
             ? { ...normalizeEventRecord(event), id: String(event._id) }

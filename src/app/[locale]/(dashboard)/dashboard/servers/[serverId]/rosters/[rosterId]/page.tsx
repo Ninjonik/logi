@@ -2,9 +2,12 @@ import type { Metadata } from "next"
 
 import { getEventMetadata, getRosterMetadata } from "@/lib/server-metadata"
 import { LiveRosterBoard } from "@/components/app/live-roster-board"
+import { clientGrantScopes } from "@/domain/identity/client-grant"
 import { getUsersByIds } from "@/lib/server-user-management"
 import { PageHeader } from "@/components/app/page-header"
+import { Card, CardContent } from "@/components/ui/card"
 import { getServerContext } from "@/lib/server-context"
+import { issueClientGrant } from "@/lib/client-grants"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isGameId } from "@/domain/games/game"
 import { getLoggedInUser } from "@/lib/auth"
@@ -69,6 +72,21 @@ export default async function RosterDetailPage({
     const user = await getLoggedInUser()
     if (!user) return null
 
+    // Members never receive an unpublished roster, not even hidden in props.
+    if (roster && !roster.published && !canAdmin)
+        return (
+            <>
+                <PageHeader title={event ? `${event.name} roster` : "Roster"} />
+                <div className="px-4 lg:px-6">
+                    <Card className="border-border/80 rounded-2xl border-dashed">
+                        <CardContent className="text-muted-foreground py-16 text-center">
+                            {dictionary.roster.rosterNotAvailable}
+                        </CardContent>
+                    </Card>
+                </div>
+            </>
+        )
+
     return (
         <>
             <PageHeader title={event ? `${event.name} roster` : "Roster"} />
@@ -77,7 +95,10 @@ export default async function RosterDetailPage({
                     rosterId={rosterId}
                     serverId={serverId}
                     locale={locale}
-                    userId={user.discordId}
+                    grant={issueClientGrant(
+                        user.discordId,
+                        clientGrantScopes.roster(serverId, rosterId)
+                    )}
                     dictionary={dictionary}
                     initialRoster={roster}
                     initialEvent={event}
@@ -86,7 +107,15 @@ export default async function RosterDetailPage({
                     initialGroups={groups}
                     initialSquadPresets={squadPresets}
                     initialCanAdmin={canAdmin}
-                    initialDiscordConfig={discordConfig}
+                    initialDiscordConfig={
+                        discordConfig
+                            ? {
+                                  timezone: discordConfig.timezone,
+                                  meetingChannelId:
+                                      discordConfig.meetingChannelId,
+                              }
+                            : null
+                    }
                 />
             </div>
         </>

@@ -80,7 +80,7 @@ Create a private `.env.local` file at the repository root. Do not commit it. The
 | `DISCORD_BOT_TOKEN`                          | Required when running the Discord bot                                                                                                |
 | `DISCORD_SUPPORT_URL`                        | Public Discord support-server invite shown in Logi navigation                                                                        |
 | `LOGI_CREDENTIAL_KEYRING`                    | Operator keyring for encrypted game-server keys; identical in Convex and the Next server, never public (see the credentials runbook) |
-| `LOGI_GAME_DATA_SOURCES`                     | Optional operator-owned provider catalog in Convex; workspaces connect their own servers in Settings → Game servers                |
+| `LOGI_GAME_DATA_SOURCES`                     | Optional operator-owned provider catalog in Convex; workspaces connect their own servers in Settings → Game servers                  |
 | `LOGI_GAME_DATA_<NAME>_TOKEN`                | Legacy provider token in Convex for operator catalog entries; migrate it to an encrypted key                                         |
 
 Start the dashboard:

@@ -68,8 +68,9 @@ import {
 } from "./types"
 import { decideRemoteState } from "./state-sync"
 
-const getStratmapByIdReference =
-    makeFunctionReference<"query">("stratmaps:getById")
+const getStratmapByIdReference = makeFunctionReference<"query">(
+    "stratmaps:getLiveById"
+)
 const updateStratmapStateReference = makeFunctionReference<"mutation">(
     "stratmaps:updateState"
 )
@@ -80,7 +81,7 @@ const AUTOSAVE_DEBOUNCE_MS = 400
 
 export function useStratmapEditor(
     {
-        userId,
+        grant,
         stratmapId,
         initialCanAdmin,
         initialStratmap,
@@ -98,10 +99,10 @@ export function useStratmapEditor(
     )
     const svgRef = useRef<SVGSVGElement | null>(null)
     const rootRef = useRef<HTMLDivElement | null>(null)
-    const liveData = useQuery(getStratmapByIdReference, {
-        userId,
-        stratmapId: stratmapId as never,
-    }) as
+    const liveData = useQuery(
+        getStratmapByIdReference,
+        grant ? { grant, stratmapId: stratmapId as never } : "skip"
+    ) as
         | {
               canAdmin: boolean
               serverId: string
@@ -363,7 +364,7 @@ export function useStratmapEditor(
         let succeeded = false
         try {
             await updateStateMutation({
-                userId,
+                grant: grant ?? "",
                 stratmapId: stratmapId as never,
                 state: stateJson,
             })
@@ -674,7 +675,7 @@ export function useStratmapEditor(
                     }))
                 }
                 await updateMeta({
-                    userId,
+                    grant: grant ?? "",
                     stratmapId: stratmapId as never,
                     title: title.trim(),
                     description: description.trim() || undefined,

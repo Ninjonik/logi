@@ -181,12 +181,16 @@ test("competitions are created unpublished, edited with a unique slug and hidden
         updatedAt: NOW,
     })
     assert.equal(
-        await invoke(competitions.getPublic, ctx, { slug: "spring-cup" }),
+        await invoke(competitions.getPublic, ctx, {
+            secret,
+            slug: "spring-cup",
+        }),
         null
     )
-    assert.deepEqual(await invoke(competitions.listPublicSlugs, ctx), [
-        "legacy-cup",
-    ])
+    assert.deepEqual(
+        await invoke(competitions.listPublicSlugs, ctx, { secret }),
+        ["legacy-cup"]
+    )
     const listed = await invoke(competitions.adminList, ctx, platform)
     assert.deepEqual(
         listed
@@ -242,14 +246,15 @@ test("competitions are created unpublished, edited with a unique slug and hidden
     assert.equal(stored.description, undefined)
     assert.equal(stored.gameId, "hell_let_loose")
     const shown = await invoke(competitions.getPublic, ctx, {
+        secret,
         slug: "spring-cup-2026",
     })
     assert.equal(shown.name, "Spring Cup")
     assert.equal(shown.description, null)
-    assert.deepEqual((await invoke(competitions.listPublicSlugs, ctx)).sort(), [
-        "legacy-cup",
-        "spring-cup-2026",
-    ])
+    assert.deepEqual(
+        (await invoke(competitions.listPublicSlugs, ctx, { secret })).sort(),
+        ["legacy-cup", "spring-cup-2026"]
+    )
 })
 
 test("divisions are unique, reordered as a whole and deleted only when empty", async () => {
@@ -574,6 +579,7 @@ test("public competitions carry global team IDs, short codes and logos, with leg
         updatedAt: NOW,
     })
     const shown = await invoke(competitions.getPublic, ctx, {
+        secret,
         slug: "spring-cup",
     })
     assert.deepEqual(shown.divisions[0].teams, [

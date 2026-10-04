@@ -120,7 +120,7 @@ export default async function StratmapDetailPage({
                 <div className="h-full overflow-hidden">
                     <StratmapEditor
                         locale={locale}
-                        userId={detail.userId}
+                        grant={detail.grant}
                         stratmapId={stratmapId}
                         initialCanAdmin={detail.canAdmin}
                         initialStratmap={stratmap}

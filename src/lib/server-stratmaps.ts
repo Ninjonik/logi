@@ -2,7 +2,10 @@ import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 import { makeFunctionReference } from "convex/server"
 import { fetchQuery } from "convex/nextjs"
 
+import { clientGrantScopes } from "@/domain/identity/client-grant"
+import { issueClientGrant } from "@/lib/client-grants"
 import type { GameId } from "@/domain/games/game"
+import { getInternalAuthSecret } from "@/lib/env"
 import { getLoggedInUser } from "@/lib/auth"
 
 const getStratmapByIdReference =
@@ -21,6 +24,7 @@ export async function getStratmapDetail(stratmapId: string) {
     }
 
     const detail = (await fetchQuery(getStratmapByIdReference, {
+        secret: getInternalAuthSecret(),
         userId: user.discordId,
         stratmapId: stratmapId as never,
     })) as {
@@ -43,7 +47,15 @@ export async function getStratmapDetail(stratmapId: string) {
         }
     } | null
 
-    return detail ? { ...detail, userId: user.discordId } : null
+    return detail
+        ? {
+              ...detail,
+              grant: issueClientGrant(
+                  user.discordId,
+                  clientGrantScopes.stratmap(stratmapId)
+              ),
+          }
+        : null
 }
 
 export async function getPublicStratmapDetail(stratmapId: string) {
@@ -52,6 +64,7 @@ export async function getPublicStratmapDetail(stratmapId: string) {
         [appCacheTags.stratmap(stratmapId), appCacheTags.publicDiscovery()],
         async () =>
             (await fetchQuery(getPublicStratmapByIdReference, {
+                secret: getInternalAuthSecret(),
                 stratmapId: stratmapId as never,
             })) as {
                 id: string
@@ -79,6 +92,7 @@ export async function listServerStratmaps(serverId: string) {
     }
 
     return (await fetchQuery(listStratmapsByGuildReference, {
+        secret: getInternalAuthSecret(),
         userId: user.discordId,
         serverId: serverId as never,
     })) as {

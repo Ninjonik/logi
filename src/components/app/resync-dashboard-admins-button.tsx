@@ -1,26 +1,18 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { useMutation } from "convex/react"
 import { toast } from "sonner"
 
-import { makeFunctionReference } from "convex/server"
 import { Button } from "@/components/ui/button"
 
-const resyncDashboardAdminsReference = makeFunctionReference<"mutation">(
-    "guilds:resyncDashboardAdmins"
-)
-
+/** Rebuilds dashboard admin access from the current members of the dashboard role. */
 export function ResyncDashboardAdminsButton({
     serverId,
-    userId,
 }: {
     serverId: string
-    userId: string
 }) {
     const [isPending, startTransition] = useTransition()
     const [clicked, setClicked] = useState(false)
-    const resyncDashboardAdmins = useMutation(resyncDashboardAdminsReference)
 
     return (
         <Button
@@ -29,17 +21,16 @@ export function ResyncDashboardAdminsButton({
             disabled={isPending}
             onClick={() => {
                 startTransition(async () => {
-                    try {
-                        await resyncDashboardAdmins({
-                            userId,
-                            serverId: serverId as never,
-                        })
-                        setClicked(true)
-                        toast.success("Admin access resynced.")
-                    } catch (error) {
-                        console.error(error)
+                    const response = await fetch(
+                        `/api/servers/${serverId}/dashboard-admins`,
+                        { method: "POST" }
+                    ).catch(() => null)
+                    if (!response?.ok) {
                         toast.error("Unable to resync admin access.")
+                        return
                     }
+                    setClicked(true)
+                    toast.success("Admin access resynced.")
                 })
             }}
         >

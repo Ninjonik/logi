@@ -2,6 +2,7 @@ import { makeFunctionReference } from "convex/server"
 import { fetchQuery } from "convex/nextjs"
 
 import { buildICalendarFeed } from "@/domain/calendar/ical-feed"
+import { getInternalAuthSecret } from "@/lib/env"
 
 const getCalendarFeedReference = makeFunctionReference<"query">(
     "calendarFeed:getCalendarFeed"
@@ -16,6 +17,7 @@ export async function GET(
     if (!token) return new Response("Not found.", { status: 404 })
 
     const feed = await fetchQuery(getCalendarFeedReference, {
+        secret: getInternalAuthSecret(),
         guildId: serverId as never,
         token,
     })

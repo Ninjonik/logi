@@ -1,10 +1,8 @@
 "use client"
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, useContext, useMemo, useState } from "react"
 import type { Dispatch, ReactNode, SetStateAction } from "react"
-import { useQuery } from "convex/react"
 
-import { api } from "../../convex/_generated/api"
 import type { AppUser } from "@/types/domain"
 
 type NotificationObject = Record<string, never>
@@ -37,21 +35,6 @@ export function UserContextProvider({
 }) {
     const [user, setUser] = useState<AppUser | null | undefined>(initialUser)
     const [notifications, setNotifications] = useState<NotificationObject[]>([])
-
-    const liveUser = useQuery(
-        api.players.getById,
-        initialUser?.id
-            ? {
-                  userId: initialUser.id,
-              }
-            : "skip"
-    )
-
-    useEffect(() => {
-        if (liveUser !== undefined) {
-            setUser(liveUser)
-        }
-    }, [liveUser])
 
     const value = useMemo(
         () => ({

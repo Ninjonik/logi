@@ -6,19 +6,29 @@ import {
     normalizeEventDoc,
     normalizeUserDoc,
 } from "../src/infrastructure/convex/server-read-model"
+import { clientGrantScopes } from "../src/domain/identity/client-grant"
 import { getGuildDiscordId, getUserByDiscordId } from "./identity"
+import { verifyClientGrant } from "./clientGrants"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
 
+/**
+ * Live roster for the browser. The viewer comes from a grant the web server
+ * signed for this roster, never from a browser-supplied user ID.
+ */
 export const getRosterDetail = query({
     args: {
-        userId: v.string(),
+        grant: v.string(),
         serverId: v.id("guilds"),
         rosterId: v.id("rosters"),
     },
     handler: async (ctx, args) => {
+        const userId = await verifyClientGrant(
+            args.grant,
+            clientGrantScopes.roster(args.serverId, args.rosterId)
+        )
         const [user, server, roster] = await Promise.all([
-            getUserByDiscordId(ctx, args.userId),
+            getUserByDiscordId(ctx, userId),
             ctx.db.get(args.serverId),
             ctx.db.get(args.rosterId),
         ])
@@ -40,14 +50,14 @@ export const getRosterDetail = query({
         const discordAccess = await ctx.db
             .query("discordMemberAccess")
             .withIndex("guildId_userId", (q) =>
-                q.eq("guildId", serverDiscordId).eq("userId", args.userId)
+                q.eq("guildId", serverDiscordId).eq("userId", userId)
             )
             .unique()
 
         if (
             !canAccessServerContext({
                 user,
-                userId: args.userId,
+                userId,
                 serverDiscordId,
                 serverAdminIds: server.adminIds,
                 dashboardAdminIds: server.dashboardAdminIds,
@@ -62,9 +72,11 @@ export const getRosterDetail = query({
             serverAdminIds: server.adminIds,
             dashboardAdminIds: server.dashboardAdminIds,
             adminAccessOverrides: server.adminAccessOverrides,
-            userId: args.userId,
+            userId,
             discordAccess,
         })
+        // Members see a roster only after it is published.
+        if (!canAdmin && !roster.published) return null
         const [groups, assignments, discordConfig] = await Promise.all([
             ctx.db
                 .query("groups")
@@ -121,7 +133,14 @@ export const getRosterDetail = query({
             assignments: assignments.map((assignment) =>
                 normalizeAssignmentDoc(assignment, groupNameById)
             ),
-            discordConfig: discordConfig ? normalizeDoc(discordConfig) : null,
+            // Only what the board shows; the full config holds stats tokens
+            // and the calendar feed capability.
+            discordConfig: discordConfig
+                ? {
+                      timezone: discordConfig.timezone,
+                      meetingChannelId: discordConfig.meetingChannelId,
+                  }
+                : null,
         }
     },
 })

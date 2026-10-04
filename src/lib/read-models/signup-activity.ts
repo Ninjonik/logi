@@ -1,6 +1,7 @@
 import { makeFunctionReference } from "convex/server"
 import { fetchQuery } from "convex/nextjs"
 
+import { getInternalAuthSecret } from "@/lib/env"
 import { getLoggedInUser } from "@/lib/auth"
 
 const listSignupActivityReference = makeFunctionReference<"query">(
@@ -27,6 +28,7 @@ export async function getSignupActivity(
     if (!user) return []
 
     return (await fetchQuery(listSignupActivityReference, {
+        secret: getInternalAuthSecret(),
         serverId: serverId as never,
         userId: user.discordId,
         eventId: eventId as never,

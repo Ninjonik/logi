@@ -17,9 +17,11 @@ import { v } from "convex/values"
 
 export const getConfigByGuild = query({
     args: {
+        secret: v.string(),
         guildId: v.id("guilds"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const guild = await getGuildById(ctx, args.guildId)
         if (!guild) {
             return null
@@ -37,9 +39,11 @@ export const getConfigByGuild = query({
 
 export const getConfigByDiscordGuildId = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const config = await ctx.db
             .query("discordConfigs")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))

@@ -4,6 +4,8 @@ import { invoke, testContext } from "./testing/database"
 import assert from "node:assert/strict"
 import test from "node:test"
 
+const secret = (process.env.INTERNAL_AUTH_SECRET = "dev-internal-auth-secret")
+
 const NOW = "2026-10-01T00:00:00.000Z"
 const REAL_GUILD = "123456789012345678"
 
@@ -243,6 +245,7 @@ test("fixtures are converted with the same mapping; unresolvable references are 
     assert.equal(byId["competitionFixtures:3"].sideBTeamId, undefined)
     // Public standings now read global teams.
     const shown = await invoke(competitions.getPublic, ctx, {
+        secret,
         slug: "ecl-2026",
     })
     assert.deepEqual(

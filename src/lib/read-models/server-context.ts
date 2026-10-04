@@ -50,6 +50,7 @@ async function getServerContextSnapshot(
     gameScope?: GameScope
 ): Promise<ServerContextReadModel | null> {
     return (await fetchQuery(getServerContextReference, {
+        secret: getInternalAuthSecret(),
         userId,
         serverId: serverId as never,
         gameScope,

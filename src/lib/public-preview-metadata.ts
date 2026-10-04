@@ -1,4 +1,5 @@
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
+import { getInternalAuthSecret } from "@/lib/env"
 
 type PublicPreview = {
     title: string
@@ -29,7 +30,11 @@ export async function getPublicPreviewMetadata(
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     path: "publicPreviews:get",
-                    args: { entityType, entityId },
+                    args: {
+                        secret: getInternalAuthSecret(),
+                        entityType,
+                        entityId,
+                    },
                     format: "json",
                 }),
             })

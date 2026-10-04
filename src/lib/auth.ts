@@ -164,6 +164,7 @@ export const getVisibleGuildsForLoggedInUser = cache(
                         sessionGuilds.length > 0
                             ? sessionGuilds
                             : ((await fetchQuery(getVisibleGuildsReference, {
+                                  secret: getInternalAuthSecret(),
                                   userId: user.discordId,
                               })) as Guild[])
                     ),
@@ -188,7 +189,7 @@ export const getVisibleGuildsForLoggedInUser = cache(
             if (sessionGuilds.length > 0) {
                 const knownGuilds = (await fetchQuery(
                     getVisibleGuildsReference,
-                    { userId: user.discordId }
+                    { secret: getInternalAuthSecret(), userId: user.discordId }
                 )) as Guild[]
                 const mergedGuilds = new Map<string, Guild>()
 
@@ -208,6 +209,7 @@ export const getVisibleGuildsForLoggedInUser = cache(
             }
 
             return (await fetchQuery(getVisibleGuildsReference, {
+                secret: getInternalAuthSecret(),
                 userId: user.discordId,
             })) as Guild[]
         } catch {

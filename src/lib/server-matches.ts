@@ -35,6 +35,7 @@ export async function getServerMatchByEventId(eventId: string) {
         [appCacheTags.match(eventId)],
         () =>
             fetchQuery(getMatchByEventIdReference, {
+                secret: getInternalAuthSecret(),
                 eventId: eventId as never,
             }) as Promise<MatchRecord | null>
     )
@@ -46,6 +47,7 @@ export async function findServerMatchByIdentity(input: {
     matchId?: string
 }) {
     return (await fetchQuery(findMatchByIdentityReference, {
+        secret: getInternalAuthSecret(),
         guildId: input.guildId,
         sourceUrl: input.sourceUrl,
         matchId: input.matchId,

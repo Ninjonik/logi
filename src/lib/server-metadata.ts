@@ -1,5 +1,6 @@
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 import { makeFunctionReference } from "convex/server"
+import { getInternalAuthSecret } from "@/lib/env"
 import { fetchQuery } from "convex/nextjs"
 
 const getGuildByIdReference = makeFunctionReference<"query">("guilds:getById")
@@ -35,7 +36,11 @@ export async function getGuildMetadata(serverId: string) {
     return await cachedRead(
         ["guild", serverId],
         [appCacheTags.server(serverId)],
-        () => fetchQuery(getGuildByIdReference, { guildId: serverId as never })
+        () =>
+            fetchQuery(getGuildByIdReference, {
+                secret: getInternalAuthSecret(),
+                guildId: serverId as never,
+            })
     )
 }
 
@@ -43,7 +48,11 @@ export async function getGuildMetadataByDiscordId(discordId: string) {
     return await cachedRead(
         ["guild-discord", discordId],
         [appCacheTags.server(discordId)],
-        () => fetchQuery(getGuildByDiscordIdReference, { discordId })
+        () =>
+            fetchQuery(getGuildByDiscordIdReference, {
+                secret: getInternalAuthSecret(),
+                discordId,
+            })
     )
 }
 
@@ -52,7 +61,11 @@ export async function getEventMetadata(eventId: string) {
     return await cachedRead(
         ["event", eventId],
         [appCacheTags.event(eventId)],
-        () => fetchQuery(getEventByIdReference, { eventId: eventId as never })
+        () =>
+            fetchQuery(getEventByIdReference, {
+                secret: getInternalAuthSecret(),
+                eventId: eventId as never,
+            })
     )
 }
 
@@ -61,7 +74,11 @@ export async function getGroupMetadata(groupId: string) {
     return await cachedRead(
         ["group", groupId],
         [appCacheTags.group(groupId)],
-        () => fetchQuery(getGroupByIdReference, { groupId: groupId as never })
+        () =>
+            fetchQuery(getGroupByIdReference, {
+                secret: getInternalAuthSecret(),
+                groupId: groupId as never,
+            })
     )
 }
 
@@ -71,7 +88,10 @@ export async function getRosterMetadata(rosterId: string) {
         ["roster", rosterId],
         [appCacheTags.roster(rosterId)],
         () =>
-            fetchQuery(getRosterByIdReference, { rosterId: rosterId as never })
+            fetchQuery(getRosterByIdReference, {
+                secret: getInternalAuthSecret(),
+                rosterId: rosterId as never,
+            })
     )
 }
 
@@ -82,6 +102,7 @@ export async function getSquadPresetMetadata(presetId: string) {
         [appCacheTags.squadPreset(presetId)],
         () =>
             fetchQuery(getSquadPresetByIdReference, {
+                secret: getInternalAuthSecret(),
                 presetId: presetId as never,
             })
     )
@@ -94,6 +115,7 @@ export async function getTopicPresetMetadata(presetId: string) {
         [appCacheTags.topicPreset(presetId)],
         () =>
             fetchQuery(getTopicPresetByIdReference, {
+                secret: getInternalAuthSecret(),
                 presetId: presetId as never,
             })
     )
@@ -106,6 +128,7 @@ export async function getAssignmentMetadata(assignmentId: string) {
         [appCacheTags.assignment(assignmentId)],
         () =>
             fetchQuery(getAssignmentByIdReference, {
+                secret: getInternalAuthSecret(),
                 assignmentId: assignmentId as never,
             })
     )
@@ -115,7 +138,11 @@ export async function getPlayerMetadata(userId: string) {
     return await cachedRead(
         ["player", userId],
         [appCacheTags.player(userId), appCacheTags.users()],
-        () => fetchQuery(getPlayerByIdReference, { userId })
+        () =>
+            fetchQuery(getPlayerByIdReference, {
+                secret: getInternalAuthSecret(),
+                userId,
+            })
     )
 }
 
@@ -126,6 +153,7 @@ export async function getMatchMetadataByEventId(eventId: string) {
         [appCacheTags.match(eventId)],
         () =>
             fetchQuery(getMatchByEventIdReference, {
+                secret: getInternalAuthSecret(),
                 eventId: eventId as never,
             })
     )
