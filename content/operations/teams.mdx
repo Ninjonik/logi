@@ -1,17 +1,22 @@
 ---
 title: Teams
-description: Keep a per-game directory of opponents with names, short codes and logos, and reuse it in matches.
+description: Browse the Logi team catalogue, request missing teams or changes, and follow your workspace's requests.
 ---
 
 import { Callout, Steps } from "nextra/components"
 
 # Teams
 
-The team directory stores the teams your workspace plays against, once, so
-managers can pick them when preparing a match instead of retyping names. Each
-workspace owns its own directory, and Hell Let Loose and Wardogs keep separate
-lists: a team called the same in both games is two separate entries. Teams do
-not need a Logi account or a Discord community.
+Logi keeps one **team catalogue** for every workspace. Each entry is one
+sporting team in one game, with a name, an optional short code, logo,
+description and up to three links. Hell Let Loose and Wardogs have separate
+catalogues: a team called the same in both games is two separate entries.
+Teams do not need a Logi account or a Discord community.
+
+Logi's global administrators maintain the catalogue. Workspaces do not create
+or edit teams themselves: they browse the catalogue, select teams in their
+matches, and **request** a missing team or **suggest a change** to an existing
+one. A Logi administrator reviews each request.
 
 Open **Configuration → Teams** in the workspace navigation. The page is
 available to workspace administrators only.
@@ -21,90 +26,115 @@ available to workspace administrators only.
 The page follows the game selector in the sidebar:
 
 - **All games** shows one section for Hell Let Loose and one for Wardogs. The
-  two lists are never mixed.
-- **Hell Let Loose** or **Wardogs** shows only that game's directory.
-- **Hell Let Loose: Vietnam** has no team directory; the page says so.
+  two catalogues are never mixed.
+- **Hell Let Loose** or **Wardogs** shows only that game's catalogue.
+- **Hell Let Loose: Vietnam** has no team catalogue; the page says so.
 
-**Add team** appears only for games enabled in the workspace's clan settings.
-A section for a disabled game still lists its existing teams, which can be
-edited, archived and restored, and links to the settings where the game can be
-enabled.
+A section for a game that is not enabled in the workspace's clan settings still
+lists the catalogue and accepts requests, with a note and a link to the
+settings: its teams can be used in matches only after the game is enabled.
 
-## Add or edit a team (administrator)
+## Browse the catalogue
+
+Each team shows its logo (or, without one, its short code or the initials of
+the first two words of its name), name, short code, description and links.
+Links open in a new tab. Archived and merged teams are not listed.
+
+Search matches names and short codes. Lists load 50 teams at a time; use
+**Load more** for the next page. A search shows the 50 best matches.
+
+Catalogue reads, team requests and snapshot refreshes are limited to 120
+requests per minute for each administrator in a workspace. Above that, Logi
+asks you to wait a moment and try again.
+
+## Request a new team
 
 <Steps>
 
-### Open the form
+### Open the request
 
-Select **Add team** in the game's section, or **Edit** on an existing row.
+Select **Request a new team** in the game's section, or **Request a new team**
+in a match's team picker (see [Matches → Teams](/wiki/operations/matches#teams)).
 
-### Enter the name and short code
+### Enter the team's details
 
-The name is required and may have up to 120 characters. The optional short
-code (up to 16 characters) is shown where space is tight. Leading, trailing
-and repeated spaces are removed when the team is saved.
+The name is required and may have up to 120 characters. The optional short code
+(up to 16 characters) is shown where space is tight. The optional description
+may have up to 500 characters, and you can add up to three `https` links, such
+as the team's website or Discord invite. Leading, trailing and repeated spaces
+are removed.
 
 ### Upload a logo (optional)
 
 Choose a PNG, JPEG or WebP image of at most 2 MiB and at most 4096×4096
 pixels. Animated images are rejected. Logi stores a normalized copy no larger
-than 512×512 and shows it as a preview. **Remove logo** detaches it. Without a
-logo, Logi shows the short code or the initials of the first two words of the
-name. Each administrator can upload 10 images every 10 minutes in a workspace,
-counting team logos and public panel banners together; above that, the form
-says how many seconds to wait before uploading again.
+than 512×512 and shows it as a preview. **Remove logo** detaches it. Each
+administrator can upload 10 images every 10 minutes in a workspace, counting
+team logos and public panel banners together; above that, the form says how
+many seconds to wait before uploading again.
 
-### Save
+### Add a note and send
 
-**Save team** stores the entry. If the connection fails, select **Save team**
-again in the same form: the retry is recognised and does not create a second
-team.
+The optional **Note for the administrators** (up to 500 characters) can explain
+anything that helps the review. Select **Send request**. If the connection
+fails, select **Send request** again in the same form: the retry is recognised
+and does not create a second request. Your inputs stay in the form after any
+error.
 
 </Steps>
 
-Names are unique per workspace and game, ignoring letter case and repeated
-spaces; accents still count. When you add a team whose name is already used in
-that game, the form shows the existing team instead of creating a second one:
-**Use existing team** closes the form and keeps that entry, and for an archived
-team **Restore and use** restores it first. When you add the team from a
-match's Teams section, the existing team is then selected into the slot.
-Short codes do not need to be unique. Each game's directory holds at most 500
-teams.
+If a team with the same name already exists in that game's catalogue (ignoring
+letter case and repeated spaces; accents still count), the form says so instead
+of sending the request: select that team, or suggest a change to it.
 
-Directory searches, saves and snapshot refreshes are limited to 120 requests
-per minute for each administrator in a workspace. Above that, Logi asks you to
-wait a moment and try again.
+## Suggest a change
 
-If another administrator changed the team while you were editing, saving shows
-a message and loads the latest version. Fields you did not change now show the
-other administrator's values, and your own edits are kept. Review the form and
-save again; only the fields you changed are saved, so the other changes are not
-undone. If the latest version cannot be loaded, close the form and open the
-team again.
+Select **Suggest a change** next to a team. The form starts with the team's
+current details; change what should be different and add a note. A change
+request must change at least one detail; the note alone is not a change. The
+current logo stays proposed unless you upload a new one or remove it.
 
-## Find teams
+## Your team requests
 
-Search matches names and short codes. Lists load 50 teams at a time; use
-**Load more** for the next page. A search shows the 50 best matches. Turn on
-**Show archived** to include archived teams, which carry an **Archived** badge.
+**Your team requests**, below the catalogue, lists the requests sent from this
+workspace, newest first. Each shows the team, whether it is a new team or a
+change, the game, when it was requested and decided, your note, and its status:
 
-## Archive and restore
+| Status        | Meaning                                                                        |
+| ------------- | ------------------------------------------------------------------------------ |
+| **Pending**   | Waiting for a Logi administrator.                                              |
+| **Approved**  | The team was added, or the change applied. **Resulting team** names the team.  |
+| **Merged**    | The team already existed; the request was merged into it (**Resulting team**). |
+| **Rejected**  | Not accepted. **Reason** explains why.                                         |
+| **Cancelled** | Withdrawn by the workspace.                                                    |
 
-**Archive** removes a team from new match selection and from the active
-directory shared with connected websites. Nothing is deleted: matches that
-already used the team keep the name and logo they saved. **Restore** brings
-the same entry back. An archived team must be restored before it can be
-edited. There is no permanent deletion and no automatic merging of similar
-names.
+A Logi administrator may edit the proposed details before approving them, so
+the resulting team can differ slightly from your request. A workspace can have
+at most 20 pending requests; **Cancel request** withdraws a pending one.
 
 <Callout type="info">
-    A connected website can read the active directory only when its key has the
+    Every approval, merge or rejection sends the person who submitted the
+    request a Discord direct message, in the workspace's language, with the
+    outcome and the reason or the resulting team. If their direct messages are
+    closed, the decision still appears in **Your team requests**.
+</Callout>
+
+## Archived and merged teams
+
+Logi administrators can archive a team or merge a duplicate into the team that
+stays. Archived and merged teams leave the catalogue and cannot be newly
+selected, but nothing is deleted: matches that already used the team keep the
+name and logo they saved. Refreshing the snapshot of a merged team on a match
+uses the team it was merged into.
+
+<Callout type="info">
+    A connected website can read the active catalogue only when its key has the
     separate **Team directory** (`teams`) grant. That grant never allows the
-    website to change the directory.
+    website to change the catalogue or to send team requests.
 </Callout>
 
 ## Use teams in a match
 
 The match editor has a **Teams** section for Hell Let Loose and Wardogs
-matches. See [Matches → Teams](/wiki/operations/matches#teams) for slots, sides, snapshots and
-when the selection is frozen.
+matches. See [Matches → Teams](/wiki/operations/matches#teams) for slots, sides,
+snapshots and when the selection is frozen.
