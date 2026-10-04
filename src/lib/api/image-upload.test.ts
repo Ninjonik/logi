@@ -11,7 +11,7 @@ import sharp from "sharp"
 
 const origin = "https://logi.test"
 const route = (kind?: string) =>
-    `${origin}/api/servers/server-1/image-assets${kind ? `?kind=${kind}` : ""}`
+    `http://127.0.0.1:3000/api/servers/server-1/image-assets${kind ? `?kind=${kind}` : ""}`
 const pngBytes = async () =>
     new Uint8Array(
         await sharp({
@@ -232,7 +232,7 @@ test("animated and oversized-dimension sources are rejected before storage", asy
     assert.equal(calls.store, 0)
 })
 
-test("a valid logo is normalized, stored, recorded and returned", async () => {
+test("a valid logo behind a proxy is normalized, stored and returned with the public origin", async () => {
     const { calls, handlers } = fakePorts({ siteUrl: () => `${origin}/` })
     const response = await handlers.POST(
         upload(await pngBytes(), "image/png; charset=binary"),

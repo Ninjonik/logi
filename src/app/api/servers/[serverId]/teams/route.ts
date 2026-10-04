@@ -4,15 +4,16 @@ import {
 } from "@/lib/api/teams-dashboard-route"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { checkPublicApiRateLimit } from "@/lib/public-api"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
-import { getInternalAuthSecret } from "@/lib/env"
 
 export const runtime = "nodejs"
 type Context = { params: Promise<{ serverId: string }> }
 
 const handlers = teamsDashboardHandlers({
+    origin: new URL(getSiteUrl()).origin,
     access: async (serverId) => {
         const server = await getServerContextUncached(serverId),
             actor = await currentDashboardActor()

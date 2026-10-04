@@ -11,6 +11,7 @@ import { importServerEventsFromLinks } from "@/lib/server-match-results"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { eventSchema } from "@/lib/validation/event"
+import { getSiteUrl } from "@/lib/env"
 
 /** Current server admin with a live dashboard session. */
 async function canAdminServer(serverId: string) {
@@ -22,6 +23,7 @@ async function canAdminServer(serverId: string) {
 }
 
 const postHandler = createServerEventsPostHandler({
+    origin: new URL(getSiteUrl()).origin,
     eventSchema,
     canAdminServer,
     saveServerEvent,

@@ -1,10 +1,10 @@
 import { historyRetentionSettingsSchema } from "@/domain/game-data/history-retention"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { readBoundedJson } from "@/lib/api/request-json"
 import { makeFunctionReference } from "convex/server"
-import { getInternalAuthSecret } from "@/lib/env"
 
 export const runtime = "nodejs"
 type Context = { params: Promise<{ serverId: string }> }
@@ -40,7 +40,7 @@ export async function GET(_request: Request, context: Context) {
 }
 
 export async function POST(request: Request, context: Context) {
-    if (request.headers.get("origin") !== new URL(request.url).origin)
+    if (request.headers.get("origin") !== new URL(getSiteUrl()).origin)
         return json({ error: "Forbidden." }, 403)
     const args = await access(context)
     if (!args) return json({ error: "Forbidden." }, 403)

@@ -165,6 +165,7 @@ export function teamRateLimitedResponse(rate: TeamDashboardRateLimit) {
 
 type TeamDashboardAccess = { guildId: string; actor: { subject: string } }
 export type TeamsDashboardPorts<Access extends TeamDashboardAccess> = {
+    origin: string
     /** Current workspace admin and dashboard actor; null denies the request. */
     access(serverId: string): Promise<Access | null>
     rateLimit(bucket: string): Promise<TeamDashboardRateLimit>
@@ -223,7 +224,7 @@ export function teamsDashboardHandlers<Access extends TeamDashboardAccess>(
             }
         },
         async POST(request: Request, serverId: string): Promise<Response> {
-            if (request.headers.get("origin") !== new URL(request.url).origin)
+            if (request.headers.get("origin") !== ports.origin)
                 return noStore({ error: "forbidden" }, 403)
             try {
                 const admitted = await admit(serverId)

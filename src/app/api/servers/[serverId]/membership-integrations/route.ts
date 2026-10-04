@@ -1,9 +1,10 @@
 import { membershipPolicyHandlers } from "@/lib/api/membership-policy-route"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
-import { getInternalAuthSecret } from "@/lib/env"
 const handlers = membershipPolicyHandlers({
+    origin: new URL(getSiteUrl()).origin,
     authorize: async (serverId) => {
         const context = await getServerContextUncached(serverId)
         return context?.canAdmin ? context.server.discordId : null

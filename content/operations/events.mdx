@@ -188,6 +188,17 @@ members for Hell Let Loose matches. Matches that were created before this settin
 regular-member default as well, so members who had already responded are still
 excluded from their first reminder.
 
+## If saving is denied
+
+Creating or editing an event (including a Wardogs match registration), importing
+results and concluding events require a current workspace administrator session.
+If a save reports that only administrators can change the event, sign in again
+and check your access to that workspace. If an administrator still cannot save,
+ask the Logi operator to check that `SITE_URL` matches the public dashboard URL.
+This also applies when Logi runs behind a reverse proxy: its internal container
+address is not the browser's origin. API keys do not replace an administrator
+session for these dashboard actions.
+
 ## Event status and conclusion
 
 Managers can conclude an event when it is finished and record relevant results.
