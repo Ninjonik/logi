@@ -163,6 +163,51 @@ test("HTTP team selections pass through as IDs only; refresh is a 200 receipt an
         assert.equal((await g.http.POST(g.request(body))).status, 400)
         assert.equal(g.calls.length, 1, "only the rate limit was consulted")
     }
+    // Entries that fail the schema are team-assignment errors, like the
+    // dashboard's; a failure elsewhere in the body stays invalid_request.
+    const withTeams = (entries: unknown) => ({
+        ...create,
+        event: { ...fields, matchTeams: entries },
+    })
+    for (const [body, code] of [
+        [withTeams([{ ...matchTeams[0], slot: "d" }]), "invalid_match_teams"],
+        [withTeams([{ ...matchTeams[0], side: "" }]), "invalid_match_teams"],
+        [
+            withTeams([{ ...matchTeams[0], side: "x".repeat(33) }]),
+            "invalid_match_teams",
+        ],
+        [
+            withTeams([{ ...matchTeams[0], teamId: "t".repeat(65) }]),
+            "invalid_match_teams",
+        ],
+        [
+            withTeams([
+                ...matchTeams,
+                { teamId: "teamDirectory:c", slot: "b", side: null },
+                { teamId: "teamDirectory:d", slot: "a", side: null },
+            ]),
+            "invalid_match_teams",
+        ],
+        [withTeams("alpha"), "invalid_match_teams"],
+        [
+            {
+                ...withTeams([{ ...matchTeams[0], slot: "d" }]),
+                event: {
+                    ...fields,
+                    name: "",
+                    matchTeams: [{ ...matchTeams[0], slot: "d" }],
+                },
+            },
+            "invalid_request",
+        ],
+        [{ ...refresh, teamId: "" }, "invalid_request"],
+    ] as const) {
+        const g = fixture()
+        const response = await g.http.POST(g.request(body))
+        assert.equal(response.status, 400)
+        assert.deepEqual(await response.json(), { error: { code } })
+        assert.equal(g.calls.length, 1, "only the rate limit was consulted")
+    }
     const summary = {
         teamId: "teamDirectory:alpha",
         slot: "a",

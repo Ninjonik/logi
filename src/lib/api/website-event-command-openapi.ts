@@ -47,7 +47,7 @@ const failure = (description: string) => ({
 })
 const failures = {
     "400": failure(
-        "invalid_request: strict request, UTC timeline, ID, or body limit failed. invalid_match_teams: a team selection or snapshot refresh named an unknown, unassigned, archived, foreign or cross-game team, used a slot or side the game does not have, duplicated a team, slot or non-null side, targeted a training, or changed a concluded match."
+        "invalid_request: strict request, UTC timeline, ID, or body limit failed outside event.matchTeams. invalid_match_teams: every schema failure lies in event.matchTeams (more than three entries, a slot other than a, b or c, a side that is empty or over 32 characters, a team ID outside 1-64 characters, or unknown keys such as a snapshot), or a team selection or snapshot refresh named an unknown, unassigned, archived, foreign or cross-game team, used a slot or side the game does not have, duplicated a team, slot or non-null side, assigned teams to a training, or refreshed a snapshot of a training or of a match that has concluded (stored as concluded or past its end plus 15 minutes). An update or cancel after meeting start or of a concluded event is 409 invalid_state instead."
     ),
     "401": failure(
         "unauthorized: current service key, central session, SSO actor or exact guild/application binding failed."

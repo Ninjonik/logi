@@ -2,6 +2,7 @@ import {
     allowsWebsiteEventWrite,
     canonicalWebsiteCommand,
     websiteEventCommandSchema,
+    websiteEventSchemaError,
     websiteEventEditorSchema,
     websiteEventMembershipError,
     websiteEventReceiptSchema,
@@ -447,4 +448,40 @@ test("the command digest binds team selections independent of their listed order
             teamId: "teamDirectory:bravo",
         })
     )
+})
+
+test("schema failures inside event.matchTeams are team-assignment errors", () => {
+    const issues = (value: unknown) => {
+        const parsed = websiteEventCommandSchema.safeParse(value)
+        assert.equal(parsed.success, false)
+        return parsed.error!.issues
+    }
+    const event = {
+        kind: "match",
+        name: "Match",
+        registrationEnd: "2030-01-01T17:00:00Z",
+        meetingStart: "2030-01-01T18:00:00Z",
+        gameStart: "2030-01-01T18:30:00Z",
+        gameEnd: "2030-01-01T20:00:00Z",
+    }
+    const entry = { teamId: "teamDirectory:a", slot: "a", side: null }
+    assert.equal(
+        websiteEventSchemaError(
+            issues({
+                operation: "create",
+                event: { ...event, matchTeams: [{ ...entry, slot: "d" }] },
+            })
+        ),
+        "invalid_match_teams"
+    )
+    assert.equal(
+        websiteEventSchemaError(
+            issues({
+                operation: "create",
+                event: { ...event, name: "", matchTeams: [entry] },
+            })
+        ),
+        "invalid_request"
+    )
+    assert.equal(websiteEventSchemaError([]), "invalid_request")
 })

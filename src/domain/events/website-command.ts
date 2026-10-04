@@ -196,6 +196,22 @@ export const websiteEventEditorSchema = z.strictObject({
     canEdit: z.boolean(),
     canCancel: z.boolean(),
 })
+/**
+ * A schema failure confined to `event.matchTeams` (bad slot, side length,
+ * entry count, team ID or a client-sent snapshot) is a team-assignment error,
+ * as on the dashboard; any other failure is a malformed request.
+ */
+export function websiteEventSchemaError(
+    issues: readonly { path: readonly PropertyKey[] }[]
+): "invalid_match_teams" | "invalid_request" {
+    return issues.length > 0 &&
+        issues.every(
+            (issue) =>
+                issue.path[0] === "event" && issue.path[1] === "matchTeams"
+        )
+        ? "invalid_match_teams"
+        : "invalid_request"
+}
 export type WebsiteEventResult =
     { data: WebsiteEventReceipt } | { error: { code: WebsiteEventError } }
 export type WebsiteEventActor = {

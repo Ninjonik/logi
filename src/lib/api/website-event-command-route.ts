@@ -5,6 +5,7 @@ import {
     websiteEventIdSchema,
     websiteEventKeySchema,
     websiteEventReceiptSchema,
+    websiteEventSchemaError,
     type WebsiteEventCommand,
     type WebsiteEventGame,
 } from "../../domain/events/website-command"
@@ -180,7 +181,11 @@ export function websiteEventCommandHandlers(ports: WebsiteEventRoutePorts) {
                     return failure("invalid_request", 400)
                 }
                 const command = websiteEventCommandSchema.safeParse(raw)
-                if (!command.success) return failure("invalid_request", 400)
+                if (!command.success)
+                    return failure(
+                        websiteEventSchemaError(command.error.issues),
+                        400
+                    )
                 return response(
                     await ports.execute({
                         ...actor,
