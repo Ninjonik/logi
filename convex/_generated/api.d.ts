@@ -16,6 +16,7 @@ import type {
 import type * as apiKeyValidators from "../apiKeyValidators.js";
 import type * as articles from "../articles.js";
 import type * as calendarFeed from "../calendarFeed.js";
+import type * as competitionMigrations from "../competitionMigrations.js";
 import type * as competitions from "../competitions.js";
 import type * as crons from "../crons.js";
 import type * as dashboardActor from "../dashboardActor.js";
@@ -129,6 +130,7 @@ declare const fullApi: ApiFromModules<{
   apiKeyValidators: typeof apiKeyValidators;
   articles: typeof articles;
   calendarFeed: typeof calendarFeed;
+  competitionMigrations: typeof competitionMigrations;
   competitions: typeof competitions;
   crons: typeof crons;
   dashboardActor: typeof dashboardActor;

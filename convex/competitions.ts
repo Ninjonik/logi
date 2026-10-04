@@ -1,13 +1,66 @@
-import { query, type QueryCtx, type MutationCtx } from "./_generated/server"
-import type { Id } from "./_generated/dataModel"
+import {
+    checkDivisionDelete,
+    checkDivisionName,
+    checkDivisionOrder,
+    checkEventLink,
+    checkFixture,
+    checkRegistration,
+    checkRegistrationRemoval,
+    checkRegistrationUpdate,
+    COMPETITION_DIVISION_LIMIT,
+    COMPETITION_FIXTURE_LIMIT,
+    COMPETITION_REGISTRATION_LIMIT,
+    competitionCreateSchema,
+    competitionUpdateSchema,
+    divisionInputSchema,
+    divisionOrderSchema,
+    fixtureEventLinkSchema,
+    fixtureInputSchema,
+    isCompetitionPublished,
+    legacyTeamKey,
+    registrationCreateSchema,
+    registrationUpdateSchema,
+    type CompetitionCommandError,
+    type FixtureInput,
+    type PublicCompetition,
+    type RegisteredTeam,
+} from "../src/domain/competitions/competition"
+import type {
+    CompetitionAdminView,
+    CompetitionListItem,
+    CompetitionSummary,
+    CompetitionTeamView,
+    FixtureEventCandidate,
+} from "../src/domain/competitions/admin-view"
+import {
+    ConvexTeamDirectoryRepository,
+    currentTeam,
+    teamById,
+} from "../src/infrastructure/convex/team-directory-repositories"
+import { adoptCatalogueTeam } from "../src/application/competitions/adopt-catalogue-team.use-case"
+import { query, type MutationCtx, type QueryCtx } from "./_generated/server"
+import { dashboardActor, type DashboardActor } from "./dashboardActor"
+import { getGuildByDiscordId, getGuildDiscordId } from "./identity"
+import { resolveGameScope } from "../src/domain/games/game"
+import { authorizePlatformAdmin } from "./platformAdmin"
+import type { Doc, Id } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
+import { assetPublicUrl } from "./imageAssets"
 import { v } from "convex/values"
 
-import { resolveGameScope } from "../src/domain/games/game"
-
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
+/** Global-administrator access: superadmin attestation checked in the same transaction. */
+const platformAccess = { secret: v.string(), actor: dashboardActor }
+type Db = Pick<QueryCtx, "db">
+type Failure = { error: CompetitionCommandError }
+const fail = (error: CompetitionCommandError): Failure => ({ error })
 const NOW = () => new Date().toISOString()
+const FORMAT = {
+    kind: "league_with_playoffs",
+    standings: "ecl_cap_score",
+} as const
+const UNKNOWN_TEAM = "Unknown team"
+
+const ECL_SLUG = "ecl-2026"
 const ECL_DIVISIONS = [
     [
         "Division 1",
@@ -37,85 +90,980 @@ const ECL_DIVISIONS = [
         ],
     ],
 ] as const
+const ECL_WITHDRAWN = new Set<string>(["Bober Kurwa"])
 
-function normalizedName(value: string) {
-    return value
-        .normalize("NFKD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLocaleLowerCase()
-        .replace(/[^a-z0-9]+/g, "")
-}
-function assertSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized.")
-}
+/* ------------------------------------------------------------------ reads */
 
-async function findGuildByName(ctx: Pick<QueryCtx, "db">, name: string) {
-    return (await ctx.db.query("guilds").collect()).find(
-        (guild) => normalizedName(guild.name) === normalizedName(name)
-    )
+async function competitionBySlug(ctx: Db, slug: string) {
+    return await ctx.db
+        .query("competitions")
+        .withIndex("slug", (q) => q.eq("slug", slug))
+        .first()
 }
-
-async function resolveGuild(ctx: MutationCtx, name: string) {
-    const existing = await findGuildByName(ctx, name)
-    if (existing) return existing._id
-    const now = NOW()
-    return await ctx.db.insert("guilds", {
-        name,
-        avatar: "/logo.png",
-        botInside: false,
-        adminIds: [],
-        memberIds: [],
-        members: [],
-        mercenaryIds: [],
-        createdAt: now,
-        updatedAt: now,
-    })
+async function competitionById(ctx: Db, competitionId: string) {
+    const id = ctx.db.normalizeId("competitions", competitionId)
+    return id ? await ctx.db.get(id) : null
+}
+async function rowById<
+    T extends
+        "competitionDivisions" | "competitionTeams" | "competitionFixtures",
+>(ctx: Db, table: T, id: string): Promise<Doc<T> | null> {
+    const normalized = ctx.db.normalizeId(table, id)
+    return normalized ? await ctx.db.get(normalized) : null
 }
 
-export const seedEcl2026 = mutation({
-    args: { secret: v.string() },
-    handler: async (ctx, args) => {
-        assertSecret(args.secret)
-        let competition = await ctx.db
-            .query("competitions")
-            .withIndex("slug", (q) => q.eq("slug", "ecl-2026"))
-            .unique()
+type Parts = {
+    divisions: Doc<"competitionDivisions">[]
+    registrations: Doc<"competitionTeams">[]
+    fixtures: Doc<"competitionFixtures">[]
+}
+/** Every division, registration and fixture of one competition (bounded). */
+async function competitionParts(
+    ctx: Db,
+    competitionId: Id<"competitions">
+): Promise<Parts> {
+    const [divisions, registrations, fixtures] = await Promise.all([
+        ctx.db
+            .query("competitionDivisions")
+            .withIndex("competitionId", (q) =>
+                q.eq("competitionId", competitionId)
+            )
+            .take(COMPETITION_DIVISION_LIMIT + 1),
+        ctx.db
+            .query("competitionTeams")
+            .withIndex("competitionId", (q) =>
+                q.eq("competitionId", competitionId)
+            )
+            .take(COMPETITION_REGISTRATION_LIMIT + 1),
+        ctx.db
+            .query("competitionFixtures")
+            .withIndex("competitionId", (q) =>
+                q.eq("competitionId", competitionId)
+            )
+            .take(COMPETITION_FIXTURE_LIMIT + 1),
+    ])
+    return {
+        divisions: divisions.sort((a, b) => a.order - b.order),
+        registrations,
+        fixtures,
+    }
+}
+
+/** A side of a fixture or a registration: the global team, or its legacy workspace key. */
+function registrationKey(row: Doc<"competitionTeams">): string {
+    if (row.teamId) return String(row.teamId)
+    return row.guildId ? legacyTeamKey(String(row.guildId)) : String(row._id)
+}
+function fixtureSides(row: Doc<"competitionFixtures">): [string, string] {
+    const side = (
+        teamId: Id<"teamDirectory"> | undefined,
+        guildId: Id<"guilds"> | undefined
+    ) =>
+        teamId
+            ? String(teamId)
+            : guildId
+              ? legacyTeamKey(String(guildId))
+              : UNKNOWN_TEAM
+    return [
+        side(row.sideATeamId, row.teamAId),
+        side(row.sideBTeamId, row.teamBId),
+    ]
+}
+function involves(
+    fixture: Doc<"competitionFixtures">,
+    registration: Doc<"competitionTeams">
+) {
+    return fixtureSides(fixture).includes(registrationKey(registration))
+}
+function isLegacyRegistration(row: Doc<"competitionTeams">) {
+    return !row.teamId
+}
+function isLegacyFixture(row: Doc<"competitionFixtures">) {
+    return !row.sideATeamId || !row.sideBTeamId
+}
+
+/** Resolves global teams and legacy workspace references once per read. */
+function teamViews(ctx: Db) {
+    const cache = new Map<string, Promise<CompetitionTeamView>>()
+    async function load(key: string): Promise<CompetitionTeamView> {
+        if (key.startsWith("guild:")) {
+            const id = ctx.db.normalizeId("guilds", key.slice("guild:".length))
+            const guild = id ? await ctx.db.get(id) : null
+            return {
+                id: key,
+                name: guild?.name || UNKNOWN_TEAM,
+                shortCode: null,
+                logoUrl: null,
+                archived: false,
+                legacy: true,
+            }
+        }
+        const team = await teamById(ctx, key)
+        return {
+            id: key,
+            name: team?.name ?? UNKNOWN_TEAM,
+            shortCode: team?.shortCode ?? null,
+            logoUrl: team ? await assetPublicUrl(ctx, team.logoAssetId) : null,
+            archived: Boolean(team?.archivedAt || team?.mergedIntoTeamId),
+            legacy: false,
+        }
+    }
+    return (key: string) => {
+        let view = cache.get(key)
+        if (!view) cache.set(key, (view = load(key)))
+        return view
+    }
+}
+
+/** Public competition by slug; unpublished competitions read as absent. */
+export const getPublic = query({
+    args: { slug: v.string() },
+    handler: async (ctx, args): Promise<PublicCompetition | null> => {
+        const competition = await competitionBySlug(ctx, args.slug)
+        if (!competition || !isCompetitionPublished(competition)) return null
+        const { divisions, registrations, fixtures } = await competitionParts(
+            ctx,
+            competition._id
+        )
+        const view = teamViews(ctx)
+        return {
+            id: String(competition._id),
+            gameId: resolveGameScope(competition.gameId),
+            slug: competition.slug,
+            name: competition.name,
+            season: competition.season,
+            description: competition.description ?? null,
+            divisions: await Promise.all(
+                divisions.map(async (division) => ({
+                    id: String(division._id),
+                    name: division.name,
+                    teams: await Promise.all(
+                        registrations
+                            .filter((row) => row.divisionId === division._id)
+                            .map(async (row) => {
+                                const team = await view(registrationKey(row))
+                                return {
+                                    id: team.id,
+                                    name: team.name,
+                                    shortCode: team.shortCode,
+                                    logoUrl: team.logoUrl,
+                                    withdrawn: row.withdrawn,
+                                }
+                            })
+                    ),
+                    fixtures: fixtures
+                        .filter((row) => row.divisionId === division._id)
+                        .map((row) => {
+                            const [teamAId, teamBId] = fixtureSides(row)
+                            return {
+                                id: String(row._id),
+                                phase: row.phase,
+                                teamAId,
+                                teamBId,
+                                scoreA: row.scoreA,
+                                scoreB: row.scoreB,
+                                status: row.status,
+                                scheduledAt: row.scheduledAt,
+                                eventId: row.eventId
+                                    ? String(row.eventId)
+                                    : undefined,
+                            }
+                        }),
+                }))
+            ),
+        }
+    },
+})
+
+/** Slugs of published competitions, for the public listing. */
+export const listPublicSlugs = query({
+    args: {},
+    handler: async (ctx) =>
+        (await ctx.db.query("competitions").take(200))
+            .filter(isCompetitionPublished)
+            .map((competition) => competition.slug),
+})
+
+function summaryOf(competition: Doc<"competitions">): CompetitionSummary {
+    return {
+        id: String(competition._id),
+        gameId: resolveGameScope(competition.gameId),
+        slug: competition.slug,
+        name: competition.name,
+        season: competition.season,
+        description: competition.description ?? null,
+        published: isCompetitionPublished(competition),
+        createdAt: competition.createdAt,
+        updatedAt: competition.updatedAt,
+    }
+}
+
+/** Global administration: every competition, published or not, with record counts. */
+export const adminList = query({
+    args: platformAccess,
+    handler: async (ctx, args): Promise<CompetitionListItem[]> => {
+        await authorizePlatformAdmin(ctx, args)
+        const competitions = await ctx.db.query("competitions").take(200)
+        return await Promise.all(
+            competitions
+                .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+                .map(async (competition) => {
+                    const parts = await competitionParts(ctx, competition._id)
+                    return {
+                        ...summaryOf(competition),
+                        divisions: parts.divisions.length,
+                        registrations: parts.registrations.length,
+                        fixtures: parts.fixtures.length,
+                        legacyRows:
+                            parts.registrations.filter(isLegacyRegistration)
+                                .length +
+                            parts.fixtures.filter(isLegacyFixture).length,
+                    }
+                })
+        )
+    },
+})
+
+/** One competition with its divisions, registrations and fixtures for management. */
+export const adminGet = query({
+    args: { ...platformAccess, competitionId: v.string() },
+    handler: async (ctx, args): Promise<CompetitionAdminView | null> => {
+        await authorizePlatformAdmin(ctx, args)
+        const competition = await competitionById(ctx, args.competitionId)
+        if (!competition) return null
+        const { divisions, registrations, fixtures } = await competitionParts(
+            ctx,
+            competition._id
+        )
+        const view = teamViews(ctx)
+        return {
+            competition: summaryOf(competition),
+            divisions: divisions.map((division) => ({
+                id: String(division._id),
+                name: division.name,
+                order: division.order,
+            })),
+            registrations: await Promise.all(
+                registrations.map(async (row) => ({
+                    id: String(row._id),
+                    divisionId: row.divisionId ? String(row.divisionId) : null,
+                    withdrawn: row.withdrawn,
+                    team: await view(registrationKey(row)),
+                }))
+            ),
+            fixtures: await Promise.all(
+                fixtures
+                    .sort((a, b) =>
+                        (a.scheduledAt ?? a.createdAt).localeCompare(
+                            b.scheduledAt ?? b.createdAt
+                        )
+                    )
+                    .map(async (row) => {
+                        const [sideA, sideB] = fixtureSides(row)
+                        const event = row.eventId
+                            ? await ctx.db.get(row.eventId)
+                            : null
+                        const workspace = event
+                            ? await getGuildByDiscordId(ctx, event.guildId)
+                            : null
+                        return {
+                            id: String(row._id),
+                            divisionId: row.divisionId
+                                ? String(row.divisionId)
+                                : null,
+                            phase: row.phase,
+                            sideA: await view(sideA),
+                            sideB: await view(sideB),
+                            scheduledAt: row.scheduledAt ?? null,
+                            scoreA: row.scoreA ?? null,
+                            scoreB: row.scoreB ?? null,
+                            status: row.status,
+                            event: event
+                                ? {
+                                      id: String(event._id),
+                                      name: event.name,
+                                      gameStart: event.gameStart,
+                                      workspace: workspace?.name ?? null,
+                                  }
+                                : null,
+                        }
+                    })
+            ),
+            legacyRows:
+                registrations.filter(isLegacyRegistration).length +
+                fixtures.filter(isLegacyFixture).length,
+        }
+    },
+})
+
+/** The global team IDs an event's match-team assignments currently stand for (merges followed). */
+async function eventTeamIds(ctx: Db, event: Doc<"events">): Promise<string[]> {
+    const ids = new Set<string>()
+    for (const assignment of event.matchTeams ?? []) {
+        ids.add(assignment.teamId)
+        const current = await currentTeam(ctx, assignment.teamId)
+        if (current) ids.add(String(current._id))
+    }
+    return [...ids]
+}
+
+/**
+ * Native match events a fixture could link to: recent matches of the
+ * competition's game in the workspaces linked to either fixture team.
+ */
+export const linkCandidates = query({
+    args: { ...platformAccess, fixtureId: v.string() },
+    handler: async (ctx, args): Promise<FixtureEventCandidate[]> => {
+        await authorizePlatformAdmin(ctx, args)
+        const fixture = await rowById(
+            ctx,
+            "competitionFixtures",
+            args.fixtureId
+        )
+        const competition = fixture
+            ? await ctx.db.get(fixture.competitionId)
+            : null
+        if (!fixture || !competition) return []
+        const gameId = resolveGameScope(competition.gameId)
+        const sides = [fixture.sideATeamId, fixture.sideBTeamId].filter(
+            (id): id is Id<"teamDirectory"> => Boolean(id)
+        )
+        const candidates = new Map<string, FixtureEventCandidate>()
+        for (const teamId of sides) {
+            const team = await ctx.db.get(teamId)
+            const guild = team?.linkedGuildId
+                ? await getGuildByDiscordId(ctx, team.linkedGuildId)
+                : null
+            if (!guild) continue
+            const keys = new Set(
+                [getGuildDiscordId(guild), String(guild._id), guild.id].filter(
+                    (key): key is string => Boolean(key)
+                )
+            )
+            for (const key of keys) {
+                const events = await ctx.db
+                    .query("events")
+                    .withIndex("guildId", (q) => q.eq("guildId", key))
+                    .order("desc")
+                    .take(100)
+                for (const event of events) {
+                    if (
+                        candidates.has(String(event._id)) ||
+                        event.kind === "training" ||
+                        resolveGameScope(event.gameId) !== gameId ||
+                        (event.competitionFixtureId &&
+                            event.competitionFixtureId !== fixture._id)
+                    )
+                        continue
+                    const teamIds = await eventTeamIds(ctx, event)
+                    candidates.set(String(event._id), {
+                        id: String(event._id),
+                        name: event.name,
+                        gameStart: event.gameStart,
+                        workspace: guild.name,
+                        teamsMatch: sides.every((id) =>
+                            teamIds.includes(String(id))
+                        ),
+                        hasResult: Boolean(event.eventResult),
+                    })
+                }
+            }
+        }
+        return [...candidates.values()]
+            .sort((a, b) => b.gameStart.localeCompare(a.gameStart))
+            .slice(0, 25)
+    },
+})
+
+/* ----------------------------------------------------------------- writes */
+
+/** Authorizes the global administrator in the write's own transaction. */
+async function admin(
+    ctx: MutationCtx,
+    args: { secret: string; actor: DashboardActor }
+) {
+    return (await authorizePlatformAdmin(ctx, args)).session.subject
+}
+async function touch(ctx: MutationCtx, competition: Doc<"competitions">) {
+    await ctx.db.patch(competition._id, { updatedAt: NOW() })
+}
+type Ok<T extends object = object> = { ok: true; slug: string } & T
+function ok<T extends object>(
+    competition: Doc<"competitions">,
+    extra: T
+): Ok<T> {
+    return { ok: true, slug: competition.slug, ...extra }
+}
+
+/** Creates a competition; new competitions are unpublished unless requested. */
+export const create = mutation({
+    args: { ...platformAccess, input: v.any() },
+    handler: async (
+        ctx,
+        args
+    ): Promise<Ok<{ competitionId: string }> | Failure> => {
+        await admin(ctx, args)
+        const parsed = competitionCreateSchema.safeParse(args.input)
+        if (!parsed.success) return fail("invalid_competition")
+        const input = parsed.data
+        if (await competitionBySlug(ctx, input.slug))
+            return fail("duplicate_slug")
         const now = NOW()
-        if (!competition) {
+        const id = await ctx.db.insert("competitions", {
+            gameId: input.gameId,
+            slug: input.slug,
+            name: input.name,
+            season: input.season,
+            description: input.description ?? undefined,
+            format: FORMAT,
+            published: input.published,
+            createdAt: now,
+            updatedAt: now,
+        })
+        return { ok: true, slug: input.slug, competitionId: String(id) }
+    },
+})
+
+/** Edits details and the published flag; the game is fixed. */
+export const update = mutation({
+    args: { ...platformAccess, competitionId: v.string(), input: v.any() },
+    handler: async (
+        ctx,
+        args
+    ): Promise<Ok<{ previousSlug: string }> | Failure> => {
+        await admin(ctx, args)
+        const parsed = competitionUpdateSchema.safeParse(args.input)
+        if (!parsed.success) return fail("invalid_competition")
+        const competition = await competitionById(ctx, args.competitionId)
+        if (!competition) return fail("not_found")
+        const input = parsed.data,
+            previousSlug = competition.slug
+        if (input.slug !== undefined && input.slug !== competition.slug) {
+            const taken = await competitionBySlug(ctx, input.slug)
+            if (taken && taken._id !== competition._id)
+                return fail("duplicate_slug")
+        }
+        await ctx.db.patch(competition._id, {
+            ...(input.slug !== undefined ? { slug: input.slug } : {}),
+            ...(input.name !== undefined ? { name: input.name } : {}),
+            ...(input.season !== undefined ? { season: input.season } : {}),
+            ...(input.description !== undefined
+                ? { description: input.description ?? undefined }
+                : {}),
+            ...(input.published !== undefined
+                ? { published: input.published }
+                : {}),
+            updatedAt: NOW(),
+        })
+        return { ok: true, slug: input.slug ?? previousSlug, previousSlug }
+    },
+})
+
+export const createDivision = mutation({
+    args: { ...platformAccess, competitionId: v.string(), input: v.any() },
+    handler: async (
+        ctx,
+        args
+    ): Promise<Ok<{ divisionId: string }> | Failure> => {
+        await admin(ctx, args)
+        const parsed = divisionInputSchema.safeParse(args.input)
+        if (!parsed.success) return fail("invalid_competition")
+        const competition = await competitionById(ctx, args.competitionId)
+        if (!competition) return fail("not_found")
+        const { divisions } = await competitionParts(ctx, competition._id)
+        if (divisions.length >= COMPETITION_DIVISION_LIMIT)
+            return fail("limit_reached")
+        const conflict = checkDivisionName({
+            name: parsed.data.name,
+            divisions: divisions.map((row) => ({
+                id: String(row._id),
+                name: row.name,
+            })),
+        })
+        if (conflict) return fail(conflict)
+        const id = await ctx.db.insert("competitionDivisions", {
+            competitionId: competition._id,
+            name: parsed.data.name,
+            order: Math.max(-1, ...divisions.map((row) => row.order)) + 1,
+            createdAt: NOW(),
+        })
+        await touch(ctx, competition)
+        return ok(competition, { divisionId: String(id) })
+    },
+})
+
+export const renameDivision = mutation({
+    args: { ...platformAccess, divisionId: v.string(), input: v.any() },
+    handler: async (ctx, args): Promise<Ok | Failure> => {
+        await admin(ctx, args)
+        const parsed = divisionInputSchema.safeParse(args.input)
+        if (!parsed.success) return fail("invalid_competition")
+        const division = await rowById(
+            ctx,
+            "competitionDivisions",
+            args.divisionId
+        )
+        const competition = division
+            ? await ctx.db.get(division.competitionId)
+            : null
+        if (!division || !competition) return fail("division_not_found")
+        const { divisions } = await competitionParts(ctx, competition._id)
+        const conflict = checkDivisionName({
+            name: parsed.data.name,
+            divisionId: String(division._id),
+            divisions: divisions.map((row) => ({
+                id: String(row._id),
+                name: row.name,
+            })),
+        })
+        if (conflict) return fail(conflict)
+        await ctx.db.patch(division._id, { name: parsed.data.name })
+        await touch(ctx, competition)
+        return ok(competition, {})
+    },
+})
+
+export const reorderDivisions = mutation({
+    args: { ...platformAccess, competitionId: v.string(), input: v.any() },
+    handler: async (ctx, args): Promise<Ok | Failure> => {
+        await admin(ctx, args)
+        const parsed = divisionOrderSchema.safeParse(args.input)
+        if (!parsed.success) return fail("invalid_order")
+        const competition = await competitionById(ctx, args.competitionId)
+        if (!competition) return fail("not_found")
+        const { divisions } = await competitionParts(ctx, competition._id)
+        const invalid = checkDivisionOrder({
+            current: divisions.map((row) => String(row._id)),
+            requested: parsed.data.divisionIds,
+        })
+        if (invalid) return fail(invalid)
+        const byId = new Map(divisions.map((row) => [String(row._id), row]))
+        for (const [order, id] of parsed.data.divisionIds.entries()) {
+            const row = byId.get(id)!
+            if (row.order !== order) await ctx.db.patch(row._id, { order })
+        }
+        await touch(ctx, competition)
+        return ok(competition, {})
+    },
+})
+
+export const deleteDivision = mutation({
+    args: { ...platformAccess, divisionId: v.string() },
+    handler: async (ctx, args): Promise<Ok | Failure> => {
+        await admin(ctx, args)
+        const division = await rowById(
+            ctx,
+            "competitionDivisions",
+            args.divisionId
+        )
+        const competition = division
+            ? await ctx.db.get(division.competitionId)
+            : null
+        if (!division || !competition) return fail("division_not_found")
+        const { registrations, fixtures } = await competitionParts(
+            ctx,
+            competition._id
+        )
+        const blocked = checkDivisionDelete({
+            registrations: registrations.filter(
+                (row) => row.divisionId === division._id
+            ).length,
+            fixtures: fixtures.filter((row) => row.divisionId === division._id)
+                .length,
+        })
+        if (blocked) return fail(blocked)
+        await ctx.db.delete(division._id)
+        await touch(ctx, competition)
+        return ok(competition, {})
+    },
+})
+
+/** Registers an active global team of the competition's game into one division. */
+export const registerTeam = mutation({
+    args: { ...platformAccess, competitionId: v.string(), input: v.any() },
+    handler: async (
+        ctx,
+        args
+    ): Promise<Ok<{ registrationId: string }> | Failure> => {
+        await admin(ctx, args)
+        const parsed = registrationCreateSchema.safeParse(args.input)
+        if (!parsed.success) return fail("invalid_competition")
+        const competition = await competitionById(ctx, args.competitionId)
+        if (!competition) return fail("not_found")
+        const team = await teamById(ctx, parsed.data.teamId)
+        const division = await rowById(
+            ctx,
+            "competitionDivisions",
+            parsed.data.divisionId
+        )
+        const { registrations } = await competitionParts(ctx, competition._id)
+        const blocked = checkRegistration({
+            gameId: resolveGameScope(competition.gameId),
+            team: team
+                ? {
+                      gameId: team.gameId,
+                      archivedAt: team.archivedAt,
+                      mergedIntoTeamId: team.mergedIntoTeamId
+                          ? String(team.mergedIntoTeamId)
+                          : null,
+                  }
+                : null,
+            divisionExists: division?.competitionId === competition._id,
+            alreadyRegistered: Boolean(
+                team && registrations.some((row) => row.teamId === team._id)
+            ),
+            registrations: registrations.length,
+        })
+        if (blocked || !team || !division) return fail(blocked ?? "not_found")
+        const now = NOW()
+        const id = await ctx.db.insert("competitionTeams", {
+            competitionId: competition._id,
+            teamId: team._id,
+            divisionId: division._id,
+            withdrawn: false,
+            createdAt: now,
+            updatedAt: now,
+        })
+        await touch(ctx, competition)
+        return ok(competition, { registrationId: String(id) })
+    },
+})
+
+/** Moves a registration to another division and/or withdraws or reinstates the team. */
+export const updateRegistration = mutation({
+    args: { ...platformAccess, registrationId: v.string(), input: v.any() },
+    handler: async (ctx, args): Promise<Ok | Failure> => {
+        await admin(ctx, args)
+        const parsed = registrationUpdateSchema.safeParse(args.input)
+        if (!parsed.success) return fail("invalid_competition")
+        const registration = await rowById(
+            ctx,
+            "competitionTeams",
+            args.registrationId
+        )
+        const competition = registration
+            ? await ctx.db.get(registration.competitionId)
+            : null
+        if (!registration || !competition) return fail("not_found")
+        const target = parsed.data.divisionId
+            ? await rowById(ctx, "competitionDivisions", parsed.data.divisionId)
+            : null
+        const { fixtures } = await competitionParts(ctx, competition._id)
+        const blocked = checkRegistrationUpdate({
+            registration: {
+                divisionId: registration.divisionId
+                    ? String(registration.divisionId)
+                    : null,
+            },
+            input: parsed.data,
+            divisionExists: target?.competitionId === competition._id,
+            leagueFixturesInCurrentDivision: fixtures.filter(
+                (row) =>
+                    row.phase === "league" &&
+                    row.divisionId === registration.divisionId &&
+                    involves(row, registration)
+            ).length,
+        })
+        if (blocked) return fail(blocked)
+        await ctx.db.patch(registration._id, {
+            ...(target ? { divisionId: target._id } : {}),
+            ...(parsed.data.withdrawn !== undefined
+                ? { withdrawn: parsed.data.withdrawn }
+                : {}),
+            updatedAt: NOW(),
+        })
+        await touch(ctx, competition)
+        return ok(competition, {})
+    },
+})
+
+/** Removes a registration that no fixture references. */
+export const removeRegistration = mutation({
+    args: { ...platformAccess, registrationId: v.string() },
+    handler: async (ctx, args): Promise<Ok | Failure> => {
+        await admin(ctx, args)
+        const registration = await rowById(
+            ctx,
+            "competitionTeams",
+            args.registrationId
+        )
+        const competition = registration
+            ? await ctx.db.get(registration.competitionId)
+            : null
+        if (!registration || !competition) return fail("not_found")
+        const { fixtures } = await competitionParts(ctx, competition._id)
+        const blocked = checkRegistrationRemoval({
+            fixtures: fixtures.filter((row) => involves(row, registration))
+                .length,
+        })
+        if (blocked) return fail(blocked)
+        await ctx.db.delete(registration._id)
+        await touch(ctx, competition)
+        return ok(competition, {})
+    },
+})
+
+/** Validates a fixture write against the competition's divisions and registered teams. */
+async function fixtureWrite(
+    ctx: MutationCtx,
+    competition: Doc<"competitions">,
+    raw: unknown
+): Promise<
+    | {
+          fixture: FixtureInput
+          fields: {
+              divisionId: Id<"competitionDivisions">
+              sideATeamId: Id<"teamDirectory">
+              sideBTeamId: Id<"teamDirectory">
+          }
+      }
+    | Failure
+> {
+    const parsed = fixtureInputSchema.safeParse(raw)
+    if (!parsed.success) return fail("invalid_competition")
+    const fixture = parsed.data
+    const { divisions, registrations } = await competitionParts(
+        ctx,
+        competition._id
+    )
+    const registered = new Map<string, RegisteredTeam>()
+    for (const teamId of [fixture.sideATeamId, fixture.sideBTeamId]) {
+        const row = registrations.find(
+            (entry) => String(entry.teamId) === teamId
+        )
+        const team = row?.teamId ? await ctx.db.get(row.teamId) : null
+        if (row)
+            registered.set(teamId, {
+                divisionId: row.divisionId ? String(row.divisionId) : null,
+                gameId: team?.gameId ?? null,
+            })
+    }
+    const blocked = checkFixture({
+        gameId: resolveGameScope(competition.gameId),
+        fixture,
+        divisionIds: new Set(divisions.map((row) => String(row._id))),
+        registrations: registered,
+    })
+    if (blocked) return fail(blocked)
+    const divisionId = ctx.db.normalizeId(
+        "competitionDivisions",
+        fixture.divisionId
+    )
+    const sideATeamId = ctx.db.normalizeId("teamDirectory", fixture.sideATeamId)
+    const sideBTeamId = ctx.db.normalizeId("teamDirectory", fixture.sideBTeamId)
+    if (!divisionId || !sideATeamId || !sideBTeamId)
+        return fail("invalid_competition")
+    return { fixture, fields: { divisionId, sideATeamId, sideBTeamId } }
+}
+
+export const createFixture = mutation({
+    args: { ...platformAccess, competitionId: v.string(), input: v.any() },
+    handler: async (
+        ctx,
+        args
+    ): Promise<Ok<{ fixtureId: string }> | Failure> => {
+        await admin(ctx, args)
+        const competition = await competitionById(ctx, args.competitionId)
+        if (!competition) return fail("not_found")
+        const { fixtures } = await competitionParts(ctx, competition._id)
+        if (fixtures.length >= COMPETITION_FIXTURE_LIMIT)
+            return fail("limit_reached")
+        const write = await fixtureWrite(ctx, competition, args.input)
+        if ("error" in write) return write
+        const now = NOW()
+        const id = await ctx.db.insert("competitionFixtures", {
+            competitionId: competition._id,
+            ...write.fields,
+            phase: write.fixture.phase,
+            scheduledAt: write.fixture.scheduledAt ?? undefined,
+            scoreA: write.fixture.scoreA ?? undefined,
+            scoreB: write.fixture.scoreB ?? undefined,
+            status: write.fixture.status,
+            createdAt: now,
+            updatedAt: now,
+        })
+        await touch(ctx, competition)
+        return ok(competition, { fixtureId: String(id) })
+    },
+})
+
+/** Replaces a fixture's teams, division, phase, schedule, score and status; its event link stays. */
+export const updateFixture = mutation({
+    args: { ...platformAccess, fixtureId: v.string(), input: v.any() },
+    handler: async (ctx, args): Promise<Ok | Failure> => {
+        await admin(ctx, args)
+        const row = await rowById(ctx, "competitionFixtures", args.fixtureId)
+        const competition = row ? await ctx.db.get(row.competitionId) : null
+        if (!row || !competition) return fail("not_found")
+        const write = await fixtureWrite(ctx, competition, args.input)
+        if ("error" in write) return write
+        await ctx.db.patch(row._id, {
+            ...write.fields,
+            teamAId: undefined,
+            teamBId: undefined,
+            phase: write.fixture.phase,
+            scheduledAt: write.fixture.scheduledAt ?? undefined,
+            scoreA: write.fixture.scoreA ?? undefined,
+            scoreB: write.fixture.scoreB ?? undefined,
+            status: write.fixture.status,
+            updatedAt: NOW(),
+        })
+        await touch(ctx, competition)
+        return ok(competition, {})
+    },
+})
+
+/** Clears the event's back-reference when it still points at this fixture. */
+async function releaseEvent(
+    ctx: MutationCtx,
+    eventId: Id<"events"> | undefined,
+    fixtureId: Id<"competitionFixtures">
+) {
+    const event = eventId ? await ctx.db.get(eventId) : null
+    if (event?.competitionFixtureId === fixtureId)
+        await ctx.db.patch(event._id, { competitionFixtureId: undefined })
+}
+
+/** Deletes a fixture and releases its linked match event. */
+export const deleteFixture = mutation({
+    args: { ...platformAccess, fixtureId: v.string() },
+    handler: async (ctx, args): Promise<Ok | Failure> => {
+        await admin(ctx, args)
+        const row = await rowById(ctx, "competitionFixtures", args.fixtureId)
+        const competition = row ? await ctx.db.get(row.competitionId) : null
+        if (!row || !competition) return fail("not_found")
+        await releaseEvent(ctx, row.eventId, row._id)
+        await ctx.db.delete(row._id)
+        await touch(ctx, competition)
+        return ok(competition, {})
+    },
+})
+
+/**
+ * Links a fixture to a native match event of the competition's game, or
+ * unlinks it (`eventId: null`). The event's assigned match teams must include
+ * both fixture teams; an imported event result fills a still-scheduled
+ * fixture, and later results keep flowing through the event.
+ */
+export const linkEvent = mutation({
+    args: { ...platformAccess, fixtureId: v.string(), input: v.any() },
+    handler: async (ctx, args): Promise<Ok | Failure> => {
+        await admin(ctx, args)
+        const parsed = fixtureEventLinkSchema.safeParse(args.input)
+        if (!parsed.success) return fail("invalid_competition")
+        const fixture = await rowById(
+            ctx,
+            "competitionFixtures",
+            args.fixtureId
+        )
+        const competition = fixture
+            ? await ctx.db.get(fixture.competitionId)
+            : null
+        if (!fixture || !competition) return fail("not_found")
+        if (parsed.data.eventId === null) {
+            await releaseEvent(ctx, fixture.eventId, fixture._id)
+            if (fixture.eventId)
+                await ctx.db.patch(fixture._id, {
+                    eventId: undefined,
+                    updatedAt: NOW(),
+                })
+            await touch(ctx, competition)
+            return ok(competition, {})
+        }
+        if (!fixture.sideATeamId || !fixture.sideBTeamId)
+            return fail("migration_pending")
+        const eventId = ctx.db.normalizeId("events", parsed.data.eventId)
+        const event = eventId ? await ctx.db.get(eventId) : null
+        const other = event
+            ? await ctx.db
+                  .query("competitionFixtures")
+                  .withIndex("eventId", (q) => q.eq("eventId", event._id))
+                  .first()
+            : null
+        const blocked = checkEventLink({
+            gameId: resolveGameScope(competition.gameId),
+            fixtureId: String(fixture._id),
+            fixtureTeamIds: [
+                String(fixture.sideATeamId),
+                String(fixture.sideBTeamId),
+            ],
+            event: event
+                ? {
+                      kind: event.kind ?? "match",
+                      gameId: resolveGameScope(event.gameId),
+                      competitionFixtureId: event.competitionFixtureId
+                          ? String(event.competitionFixtureId)
+                          : null,
+                      teamIds: await eventTeamIds(ctx, event),
+                  }
+                : null,
+            otherFixtureId: other ? String(other._id) : null,
+        })
+        if (blocked || !event) return fail(blocked ?? "event_not_found")
+        if (fixture.eventId && fixture.eventId !== event._id)
+            await releaseEvent(ctx, fixture.eventId, fixture._id)
+        const score = event.eventResult?.score
+        await ctx.db.patch(fixture._id, {
+            eventId: event._id,
+            ...(score && fixture.status === "scheduled"
+                ? {
+                      scoreA: score.sideA,
+                      scoreB: score.sideB,
+                      status: "final" as const,
+                  }
+                : {}),
+            updatedAt: NOW(),
+        })
+        await ctx.db.patch(event._id, { competitionFixtureId: fixture._id })
+        await touch(ctx, competition)
+        return ok(competition, {})
+    },
+})
+
+/**
+ * Creates or completes ECL 2026: the competition (published), its official
+ * divisions and their teams as global catalogue teams (found by name or
+ * created). Re-running only fills what is missing.
+ */
+export const seedEcl2026 = mutation({
+    args: platformAccess,
+    handler: async (
+        ctx,
+        args
+    ): Promise<
+        Ok<{ competitionId: string; teamsCreated: number }> | Failure
+    > => {
+        const actor = await admin(ctx, args)
+        const now = NOW()
+        let existing = await competitionBySlug(ctx, ECL_SLUG)
+        if (!existing) {
             const id = await ctx.db.insert("competitions", {
                 gameId: "hell_let_loose",
-                slug: "ecl-2026",
+                slug: ECL_SLUG,
                 name: "European Community League",
                 season: "2026",
                 description: "European Community League 2026 season",
-                format: {
-                    kind: "league_with_playoffs",
-                    standings: "ecl_cap_score",
-                },
+                format: FORMAT,
+                published: true,
                 createdAt: now,
                 updatedAt: now,
             })
-            competition = await ctx.db.get(id)
+            existing = await ctx.db.get(id)
         }
-        if (!competition) throw new Error("Could not create ECL.")
-        if (!competition.gameId) {
-            await ctx.db.patch(competition._id, {
-                gameId: "hell_let_loose",
-                updatedAt: now,
-            })
-            competition = await ctx.db.get(competition._id)
+        const competition = existing
+        if (!competition) return fail("not_found")
+        if (resolveGameScope(competition.gameId) !== "hell_let_loose")
+            return fail("invalid_competition")
+        const parts = await competitionParts(ctx, competition._id)
+        if (parts.registrations.some(isLegacyRegistration))
+            return fail("migration_pending")
+        const ports = {
+            repository: new ConvexTeamDirectoryRepository(ctx),
+            now: NOW,
         }
-        if (!competition) throw new Error("Could not update ECL scope.")
-        for (let order = 0; order < ECL_DIVISIONS.length; order++) {
-            const [name, teams] = ECL_DIVISIONS[order]
-            let division = (
-                await ctx.db
-                    .query("competitionDivisions")
-                    .withIndex("competitionId", (q) =>
-                        q.eq("competitionId", competition!._id)
-                    )
-                    .collect()
-            ).find((item) => item.name === name)
+        let teamsCreated = 0
+        for (const [order, [name, teams]] of ECL_DIVISIONS.entries()) {
+            let division = parts.divisions.find((row) => row.name === name)
             if (!division) {
                 const id = await ctx.db.insert("competitionDivisions", {
                     competitionId: competition._id,
@@ -123,271 +1071,48 @@ export const seedEcl2026 = mutation({
                     order,
                     createdAt: now,
                 })
-                division = (await ctx.db.get(id)) ?? undefined
+                division = (await ctx.db.get(id))!
             }
-            if (!division) continue
             for (const teamName of teams) {
-                const guildId = await resolveGuild(ctx, teamName)
+                const adopted = await adoptCatalogueTeam(ports, actor, {
+                    gameId: "hell_let_loose",
+                    name: teamName,
+                    linkedGuildId: null,
+                })
+                if ("error" in adopted)
+                    return fail(
+                        adopted.error === "limit_reached"
+                            ? "limit_reached"
+                            : "invalid_competition"
+                    )
+                if (adopted.created) teamsCreated++
+                const teamId = ctx.db.normalizeId(
+                    "teamDirectory",
+                    adopted.teamId
+                )!
                 const joined = await ctx.db
                     .query("competitionTeams")
-                    .withIndex("competitionId_guildId", (q) =>
+                    .withIndex("competitionId_teamId", (q) =>
                         q
-                            .eq("competitionId", competition!._id)
-                            .eq("guildId", guildId)
+                            .eq("competitionId", competition._id)
+                            .eq("teamId", teamId)
                     )
-                    .unique()
+                    .first()
                 if (!joined)
                     await ctx.db.insert("competitionTeams", {
                         competitionId: competition._id,
-                        guildId,
+                        teamId,
                         divisionId: division._id,
-                        withdrawn: teamName === "Bober Kurwa",
+                        withdrawn: ECL_WITHDRAWN.has(teamName),
                         createdAt: now,
                         updatedAt: now,
                     })
             }
         }
-        return { competitionId: competition._id }
-    },
-})
-
-export const getPublic = query({
-    args: { slug: v.string() },
-    handler: async (ctx, args) => {
-        const competition = await ctx.db
-            .query("competitions")
-            .withIndex("slug", (q) => q.eq("slug", args.slug))
-            .unique()
-        if (!competition) return null
-        const [divisions, joins, fixtures] = await Promise.all([
-            ctx.db
-                .query("competitionDivisions")
-                .withIndex("competitionId", (q) =>
-                    q.eq("competitionId", competition._id)
-                )
-                .collect(),
-            ctx.db
-                .query("competitionTeams")
-                .withIndex("competitionId", (q) =>
-                    q.eq("competitionId", competition._id)
-                )
-                .collect(),
-            ctx.db
-                .query("competitionFixtures")
-                .withIndex("competitionId", (q) =>
-                    q.eq("competitionId", competition._id)
-                )
-                .collect(),
-        ])
-        // Transitional: legacy guild references until the competitions
-        // rework reads global teams.
-        const guildIds = [
-            ...new Set(
-                [
-                    ...joins.map((x) => x.guildId),
-                    ...fixtures.flatMap((x) => [x.teamAId, x.teamBId]),
-                ].filter((id): id is NonNullable<typeof id> => Boolean(id))
-            ),
-        ]
-        const guilds = new Map(
-            (await Promise.all(guildIds.map((id) => ctx.db.get(id))))
-                .filter(Boolean)
-                .map((g) => [g!._id, g!])
-        )
-        return {
-            id: String(competition._id),
-            gameId: resolveGameScope(competition.gameId),
-            slug: competition.slug,
-            name: competition.name,
-            season: competition.season,
-            divisions: divisions
-                .sort((a, b) => a.order - b.order)
-                .map((division) => ({
-                    id: String(division._id),
-                    name: division.name,
-                    teams: joins
-                        .filter((x) => x.divisionId === division._id)
-                        .map((x) => ({
-                            id: String(x.guildId),
-                            name:
-                                (x.guildId && guilds.get(x.guildId)?.name) ||
-                                "Unknown team",
-                            withdrawn: x.withdrawn,
-                        })),
-                    fixtures: fixtures
-                        .filter((x) => x.divisionId === division._id)
-                        .map((x) => ({
-                            id: String(x._id),
-                            phase: x.phase,
-                            teamAId: String(x.teamAId),
-                            teamBId: String(x.teamBId),
-                            scoreA: x.scoreA,
-                            scoreB: x.scoreB,
-                            status: x.status,
-                            scheduledAt: x.scheduledAt,
-                            eventId: x.eventId ? String(x.eventId) : undefined,
-                        })),
-                })),
-        }
-    },
-})
-
-export const listPublicSlugs = query({
-    args: {},
-    handler: async (ctx) =>
-        (await ctx.db.query("competitions").collect()).map(
-            (competition) => competition.slug
-        ),
-})
-
-export const listGuilds = query({
-    args: {},
-    handler: async (ctx) =>
-        (await ctx.db.query("guilds").collect())
-            .map((guild) => ({
-                id: String(guild._id),
-                name: guild.name,
-                isGhost: !guild.discordId && !guild.id,
-            }))
-            .sort((left, right) => left.name.localeCompare(right.name)),
-})
-
-export const mergeGuilds = mutation({
-    args: {
-        secret: v.string(),
-        primaryGuildId: v.id("guilds"),
-        secondaryGuildId: v.id("guilds"),
-    },
-    handler: async (ctx, args) => {
-        assertSecret(args.secret)
-        if (args.primaryGuildId === args.secondaryGuildId)
-            throw new Error("Pick two different clans.")
-        const [primary, secondary] = await Promise.all([
-            ctx.db.get(args.primaryGuildId),
-            ctx.db.get(args.secondaryGuildId),
-        ])
-        if (!primary || !secondary) throw new Error("Clan not found.")
-        const secondaryTeams = await ctx.db
-            .query("competitionTeams")
-            .withIndex("guildId", (q) => q.eq("guildId", args.secondaryGuildId))
-            .collect()
-        for (const membership of secondaryTeams) {
-            const existing = await ctx.db
-                .query("competitionTeams")
-                .withIndex("competitionId_guildId", (q) =>
-                    q
-                        .eq("competitionId", membership.competitionId)
-                        .eq("guildId", args.primaryGuildId)
-                )
-                .unique()
-            if (existing) await ctx.db.delete(membership._id)
-            else
-                await ctx.db.patch(membership._id, {
-                    guildId: args.primaryGuildId,
-                    updatedAt: NOW(),
-                })
-        }
-        const fixtures = await ctx.db.query("competitionFixtures").collect()
-        for (const fixture of fixtures) {
-            const patch: {
-                teamAId?: Id<"guilds">
-                teamBId?: Id<"guilds">
-                updatedAt?: string
-            } = {}
-            if (fixture.teamAId === args.secondaryGuildId)
-                patch.teamAId = args.primaryGuildId
-            if (fixture.teamBId === args.secondaryGuildId)
-                patch.teamBId = args.primaryGuildId
-            if (patch.teamAId || patch.teamBId) {
-                patch.updatedAt = NOW()
-                await ctx.db.patch(fixture._id, patch)
-            }
-        }
-        if (!secondary.discordId && !secondary.id)
-            await ctx.db.delete(args.secondaryGuildId)
-        return {
-            primaryGuildId: String(args.primaryGuildId),
-            secondaryDeleted: !secondary.discordId && !secondary.id,
-        }
-    },
-})
-
-export const linkEvent = mutation({
-    args: {
-        secret: v.string(),
-        competitionId: v.id("competitions"),
-        eventId: v.id("events"),
-        teamAId: v.id("guilds"),
-        teamBId: v.id("guilds"),
-        divisionId: v.optional(v.id("competitionDivisions")),
-    },
-    handler: async (ctx, args) => {
-        assertSecret(args.secret)
-        const event = await ctx.db.get(args.eventId)
-        if (!event || event.kind === "training")
-            throw new Error("Only matches can be added to a competition.")
-        const competition = await ctx.db.get(args.competitionId)
-        if (!competition) throw new Error("Competition not found.")
-        if (
-            resolveGameScope(event.gameId) !==
-            resolveGameScope(competition.gameId)
-        )
-            throw new Error("The match and competition must use the same game.")
-        const existing = await ctx.db
-            .query("competitionFixtures")
-            .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
-            .unique()
-        if (existing) return existing._id
-        const now = NOW()
-        const score = event.eventResult?.score
-        const fixtureId = await ctx.db.insert("competitionFixtures", {
-            competitionId: args.competitionId,
-            divisionId: args.divisionId,
-            phase: "league",
-            teamAId: args.teamAId,
-            teamBId: args.teamBId,
-            scoreA: score?.sideA,
-            scoreB: score?.sideB,
-            status: score ? "final" : "scheduled",
-            eventId: args.eventId,
-            createdAt: now,
-            updatedAt: now,
-        })
-        await ctx.db.patch(args.eventId, { competitionFixtureId: fixtureId })
-        return fixtureId
-    },
-})
-
-export const saveFixture = mutation({
-    args: {
-        secret: v.string(),
-        competitionId: v.id("competitions"),
-        divisionId: v.optional(v.id("competitionDivisions")),
-        phase: v.union(
-            v.literal("league"),
-            v.literal("playoff"),
-            v.literal("relegation")
-        ),
-        teamAId: v.id("guilds"),
-        teamBId: v.id("guilds"),
-        scheduledAt: v.optional(v.string()),
-        scoreA: v.optional(v.number()),
-        scoreB: v.optional(v.number()),
-        status: v.union(
-            v.literal("scheduled"),
-            v.literal("final"),
-            v.literal("forfeit")
-        ),
-    },
-    handler: async (ctx, args) => {
-        assertSecret(args.secret)
-        if (args.teamAId === args.teamBId)
-            throw new Error("A team cannot play itself.")
-        const now = NOW()
-        return await ctx.db.insert("competitionFixtures", {
-            ...args,
-            createdAt: now,
-            updatedAt: now,
+        await touch(ctx, competition)
+        return ok(competition, {
+            competitionId: String(competition._id),
+            teamsCreated,
         })
     },
 })
