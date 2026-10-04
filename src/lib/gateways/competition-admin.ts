@@ -9,11 +9,11 @@ import {
 } from "@/lib/api/competition-admin-route"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import type { DashboardActor } from "../../../convex/dashboardActor"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { currentDashboardActor } from "./dashboard-actor"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import type { TeamRecord } from "@/domain/teams/team"
 import { makeFunctionReference } from "convex/server"
-import { getInternalAuthSecret } from "@/lib/env"
 
 /** Convex access of the current global administrator. */
 export type CompetitionAdminAccess = { secret: string; actor: DashboardActor }
@@ -92,6 +92,7 @@ async function linkCandidates(
 
 /** Route handlers wired to Convex and the public competition cache. */
 export const competitionAdminRoutes = competitionAdminHandlers({
+    origin: new URL(getSiteUrl()).origin,
     access: competitionAdminAccess,
     list: listCompetitionsForAdmin,
     get: getCompetitionForAdmin,

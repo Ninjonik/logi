@@ -74,6 +74,8 @@ type Binding = {
 }
 /** What the route needs from the session, Convex and this process; injected for tests. */
 export type GameDataSourcePorts = {
+    /** The dashboard's public origin (`SITE_URL`) that writes must come from. */
+    origin: string
     /** Session, workspace administrator and the actor, re-checked by every Convex call. */
     authorize(serverId: string): Promise<{ guildId: string } | null>
     list(guildId: string): Promise<unknown>
@@ -331,8 +333,9 @@ export function gameDataSourceHandlers(ports: GameDataSourcePorts) {
             }
         },
         async POST(request: Request, serverId: string): Promise<Response> {
-            // Browser writes must come from this site; a missing Origin is refused too.
-            if (request.headers.get("origin") !== new URL(request.url).origin)
+            // Browser writes must come from this site's public origin, never the
+            // (internal, behind a proxy) request URL; a missing Origin is refused.
+            if (request.headers.get("origin") !== ports.origin)
                 return json({ error: "forbidden" }, 403)
             const scope = await ports.authorize(serverId)
             if (!scope) return json({ error: "forbidden" }, 403)

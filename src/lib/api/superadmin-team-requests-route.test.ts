@@ -45,6 +45,7 @@ function fakePorts(
 ) {
     const decided: TeamRequestDecideBody[] = []
     const ports: SuperadminTeamRequestsPorts<Access> = {
+        origin: "https://logi.test",
         access: async () => ({ secret: "s" }),
         get: async (_access, requestId) =>
             requestId === "req-1" ? { id: "req-1" } : null,

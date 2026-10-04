@@ -14,6 +14,8 @@ type EventSaveInput<TEventInput extends EventBody> = TEventInput & {
 }
 
 type EventRouteDeps<TEventInput extends EventBody> = {
+    /** Public origin from trusted server configuration, never request/proxy headers. */
+    origin: string
     eventSchema: ZodType<TEventInput>
     /** Whether the current dashboard user administers this server; never derived from the request body. */
     canAdminServer: (serverId: string) => Promise<boolean>
@@ -126,12 +128,12 @@ export function matchTeamErrorCode(error: unknown): string | null {
  * the body is read.
  */
 async function eventWriteDenied(
-    deps: Pick<EventRouteDeps<EventBody>, "canAdminServer">,
+    deps: Pick<EventRouteDeps<EventBody>, "canAdminServer" | "origin">,
     request: JsonRequest,
     serverId: string
 ) {
     const allowed =
-        request.headers.get("origin") === new URL(request.url).origin &&
+        request.headers.get("origin") === deps.origin &&
         (await deps.canAdminServer(serverId).catch(() => false))
     return allowed
         ? null

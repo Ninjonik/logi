@@ -41,6 +41,7 @@ function setup(overrides: Partial<GameDataSourcePorts> = {}) {
             return value
         }
     const ports: GameDataSourcePorts = {
+        origin: "https://logi.test",
         authorize: async () => ({ guildId: "guild-a" }),
         list: record("list", { sources: [], limit: 20 }),
         reserveTest: record("reserveTest", {
@@ -419,4 +420,27 @@ test("the list reports whether encryption is active and nothing else is added", 
         }),
     }).handlers.GET("server-1")
     assert.equal(leaky.status, 503)
+})
+
+test("behind a proxy the public site origin is required, not the request URL's", async () => {
+    const { handlers, calls } = setup()
+    const internal = (origin: string) =>
+        new Request(
+            "http://127.0.0.1:3000/api/servers/server-1/game-data-sources",
+            {
+                method: "POST",
+                headers: { "content-type": "application/json", origin },
+                body: JSON.stringify({ action: "test_stored", ref: "src-1" }),
+            }
+        )
+    assert.equal(
+        (await handlers.POST(internal("http://127.0.0.1:3000"), "server-1"))
+            .status,
+        403
+    )
+    assert.deepEqual(calls, [])
+    assert.equal(
+        (await handlers.POST(internal("https://logi.test"), "server-1")).status,
+        200
+    )
 })

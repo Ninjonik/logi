@@ -7,8 +7,8 @@ import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { gameDataSourceHandlers } from "@/lib/api/game-data-sources-route"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { fetchAction, fetchMutation, fetchQuery } from "convex/nextjs"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { makeFunctionReference } from "convex/server"
-import { getInternalAuthSecret } from "@/lib/env"
 
 export const runtime = "nodejs"
 type Context = { params: Promise<{ serverId: string }> }
@@ -22,6 +22,7 @@ async function access(guildId: string) {
 const mutation = (name: string) => makeFunctionReference<"mutation">(name)
 
 const handlers = gameDataSourceHandlers({
+    origin: new URL(getSiteUrl()).origin,
     authorize: async (serverId) => {
         const [server, actor] = await Promise.all([
             getServerContextUncached(serverId),

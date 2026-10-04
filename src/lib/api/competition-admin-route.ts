@@ -150,6 +150,8 @@ export const COMPETITION_TEAM_SEARCH_LIMIT = 20
 
 type Access = { secret: string; actor: { subject: string } }
 export type CompetitionAdminPorts<A extends Access> = {
+    /** The dashboard's public origin that writes must come from. */
+    origin: string
     /** The current global administrator's Convex access; null denies the request. */
     access(): Promise<A | null>
     list(access: A): Promise<unknown>
@@ -193,8 +195,7 @@ export function competitionAdminHandlers<A extends Access>(
         request: Request,
         fixed?: CompetitionCommand
     ): Promise<Response> {
-        if (request.headers.get("origin") !== new URL(request.url).origin)
-            return forbidden()
+        if (request.headers.get("origin") !== ports.origin) return forbidden()
         try {
             const access = await ports.access()
             if (!access) return forbidden()

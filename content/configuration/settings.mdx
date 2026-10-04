@@ -535,6 +535,17 @@ private player/reviewer identities and correction notes. Confirmation and
 correction require a signed-in manager in Logi; an integration key cannot do them.
 Existing match summaries retain their earlier import-only semantics.
 
+## Dashboard writes behind a reverse proxy
+
+The Logi operator must set `SITE_URL` to the public dashboard URL, such as
+`https://logibot.tech`. Dashboard writes check the browser's origin against that
+configured URL, even when a proxy forwards requests to an internal HTTP address.
+The check still requires the current session and each action's existing workspace
+permissions. If pages load but saving event registrations, provider sources,
+restricted API keys or integration policies is denied, check both the current
+administrator session and this public URL configuration. Do not substitute an
+API key or disable the origin check.
+
 ## Discord membership integrations
 
 Create a read-only key with the Discord membership resource and selected games in

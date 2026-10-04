@@ -26,6 +26,7 @@ function fixture(result: unknown = { ok: true, matchTeams: [assignment] }) {
     const calls: unknown[] = []
     const revalidated: unknown[] = []
     const ports: MatchTeamRefreshPorts = {
+        origin,
         access: async (serverId) => {
             calls.push({ access: serverId })
             return {
@@ -50,7 +51,7 @@ function fixture(result: unknown = { ok: true, matchTeams: [assignment] }) {
         headers: HeadersInit = { origin }
     ) =>
         new Request(
-            `${origin}/api/servers/guilds:one/events/events:one/match-teams`,
+            "http://127.0.0.1:3000/api/servers/guilds:one/events/events:one/match-teams",
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json", ...headers },
@@ -66,7 +67,7 @@ function fixture(result: unknown = { ok: true, matchTeams: [assignment] }) {
     }
 }
 
-test("refresh forwards the admin's server record, event, team and actor and returns the stored assignments", async () => {
+test("refresh behind a proxy forwards the admin's server record, event, team and actor and returns the stored assignments", async () => {
     const f = fixture()
     const response = await f.post(f.request())
     assert.equal(response.status, 200)

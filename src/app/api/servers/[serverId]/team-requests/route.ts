@@ -2,15 +2,16 @@ import { teamRequestsDashboardHandlers } from "@/lib/api/team-requests-route"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { TEAM_DASHBOARD_RATE_LIMIT } from "@/lib/api/teams-dashboard-route"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { checkPublicApiRateLimit } from "@/lib/public-api"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
-import { getInternalAuthSecret } from "@/lib/env"
 
 export const runtime = "nodejs"
 type Context = { params: Promise<{ serverId: string }> }
 
 const handlers = teamRequestsDashboardHandlers({
+    origin: new URL(getSiteUrl()).origin,
     access: async (serverId) => {
         const [server, actor] = await Promise.all([
             getServerContextUncached(serverId),

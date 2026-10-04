@@ -72,6 +72,8 @@ export const teamRequestDecideBodySchema = z.strictObject({
 export type TeamRequestDecideBody = z.infer<typeof teamRequestDecideBodySchema>
 
 export type SuperadminTeamRequestsPorts<Access> = {
+    /** The dashboard's public origin that writes must come from. */
+    origin: string
     /** The attested global administrator, or null to deny the request. */
     access(): Promise<Access | null>
     get(access: Access, requestId: string): Promise<unknown>
@@ -108,7 +110,7 @@ export function superadminTeamRequestsHandlers<Access>(
             }
         },
         async POST(request: Request): Promise<Response> {
-            if (!isSameOrigin(request))
+            if (!isSameOrigin(request, ports.origin))
                 return noStore({ error: "forbidden" }, 403)
             try {
                 const access = await ports.access()

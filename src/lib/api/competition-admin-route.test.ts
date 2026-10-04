@@ -15,6 +15,7 @@ function harness(overrides: Partial<CompetitionAdminPorts<Access>> = {}) {
     const calls: Array<{ mutation: string; args: Record<string, unknown> }> = []
     const revalidated: string[][] = []
     const ports: CompetitionAdminPorts<Access> = {
+        origin,
         access: async () => access,
         list: async () => [{ id: "c1" }],
         get: async (_access, competitionId) =>
@@ -234,4 +235,22 @@ test("reads return the listing, one competition, team search and link candidates
         },
     })
     assert.equal((await broken.handlers.list()).status, 503)
+})
+
+test("behind a proxy only the public site origin may write", async () => {
+    const { handlers } = harness()
+    const internal = (requestOrigin: string) =>
+        new Request("http://127.0.0.1:3000/api/competitions", {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                origin: requestOrigin,
+            },
+            body: JSON.stringify({ action: "create", input: {} }),
+        })
+    assert.notEqual((await handlers.command(internal(origin))).status, 403)
+    assert.equal(
+        (await handlers.command(internal("http://127.0.0.1:3000"))).status,
+        403
+    )
 })

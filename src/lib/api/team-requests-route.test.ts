@@ -211,6 +211,7 @@ function fixture(options: { limited?: boolean; failing?: boolean } = {}) {
         actor: { subject: "123456789" },
     }
     const handlers = teamRequestsDashboardHandlers({
+        origin: "https://logi.test",
         access: async (serverId) => {
             calls.push({ access: serverId })
             return serverId === "server-1" ? access : null
@@ -399,4 +400,27 @@ test("a thrown Convex call answers 503 unavailable", async () => {
         assert.equal(response.status, 503)
         assert.deepEqual(await response.json(), { error: "unavailable" })
     }
+})
+
+test("behind a proxy the public site origin is accepted and the internal one refused", async () => {
+    const f = fixture()
+    const internal = (origin: string) =>
+        new Request(
+            "http://127.0.0.1:3000/api/servers/server-1/team-requests",
+            {
+                method: "POST",
+                headers: { "content-type": "application/json", origin },
+                body: JSON.stringify(submitBody()),
+            }
+        )
+    assert.notEqual(
+        (await f.handlers.POST(internal("https://logi.test"), "server-1"))
+            .status,
+        403
+    )
+    assert.equal(
+        (await f.handlers.POST(internal("http://127.0.0.1:3000"), "server-1"))
+            .status,
+        403
+    )
 })

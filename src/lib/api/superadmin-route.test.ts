@@ -82,7 +82,14 @@ test("same-origin check compares the Origin header with the request URL", () => 
             method: "POST",
             headers: origin ? { origin } : {},
         })
-    assert.equal(isSameOrigin(at("https://logi.test")), true)
-    assert.equal(isSameOrigin(at("https://evil.test")), false)
-    assert.equal(isSameOrigin(at()), false)
+    const site = "https://logi.test"
+    assert.equal(isSameOrigin(at("https://logi.test"), site), true)
+    assert.equal(isSameOrigin(at("https://evil.test"), site), false)
+    assert.equal(isSameOrigin(at(), site), false)
+    // Behind a proxy the request URL is internal; only the public origin counts.
+    const internal = new Request("http://127.0.0.1:3000/api/superadmin/teams", {
+        method: "POST",
+        headers: { origin: "http://127.0.0.1:3000" },
+    })
+    assert.equal(isSameOrigin(internal, site), false)
 })

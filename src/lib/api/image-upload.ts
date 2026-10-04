@@ -84,7 +84,10 @@ export function imageAssetHandlers<Access>(ports: ImageAssetPorts<Access>) {
             }
         },
         POST: async (request: Request, serverId: string) => {
-            if (request.headers.get("origin") !== new URL(request.url).origin)
+            if (
+                request.headers.get("origin") !==
+                new URL(ports.siteUrl()).origin
+            )
                 return json({ error: "forbidden" }, 403)
             const access = await ports.authorize(serverId)
             if (!access) return json({ error: "forbidden" }, 403)

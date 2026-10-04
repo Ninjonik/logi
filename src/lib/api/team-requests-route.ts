@@ -88,6 +88,8 @@ export function teamRequestCommandResponse(result: unknown): {
 
 export type TeamRequestsDashboardPorts<Access extends TeamDashboardAccess> =
     TeamDashboardGate<Access> & {
+        /** The dashboard's public origin that writes must come from. */
+        origin: string
         list(access: Access, query: TeamRequestsQuery): Promise<unknown>
         submit(access: Access, input: TeamRequestSubmit): Promise<unknown>
         cancel(access: Access, requestId: string): Promise<unknown>
@@ -117,7 +119,7 @@ export function teamRequestsDashboardHandlers<
             }
         },
         async POST(request: Request, serverId: string): Promise<Response> {
-            if (request.headers.get("origin") !== new URL(request.url).origin)
+            if (request.headers.get("origin") !== ports.origin)
                 return teamNoStore({ error: "forbidden" }, 403)
             try {
                 const admitted = await admitTeamDashboard(ports, serverId)

@@ -63,6 +63,7 @@ type Access = { secret: string }
 function fakePorts(overrides: Partial<SuperadminTeamsPorts<Access>> = {}) {
     const calls: { mutation: string; payload: unknown }[] = []
     const ports: SuperadminTeamsPorts<Access> = {
+        origin: "https://logi.test",
         access: async () => ({ secret: "s" }),
         get: async (_access, teamId) =>
             teamId === "team-1" ? { id: "team-1" } : null,

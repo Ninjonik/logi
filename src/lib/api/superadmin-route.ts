@@ -63,7 +63,10 @@ export function noStore(value: unknown, status = 200): Response {
     })
 }
 
-/** Writes are accepted only from the dashboard's own origin. */
-export function isSameOrigin(request: Request): boolean {
-    return request.headers.get("origin") === new URL(request.url).origin
+/**
+ * Writes are accepted only from the dashboard's public origin (`SITE_URL`),
+ * never from the request URL, which is internal behind a proxy.
+ */
+export function isSameOrigin(request: Request, origin: string): boolean {
+    return request.headers.get("origin") === origin
 }

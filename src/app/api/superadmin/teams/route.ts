@@ -1,13 +1,14 @@
 import { superadminTeamsHandlers } from "@/lib/api/superadmin-teams-route"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { superadminAccess } from "@/lib/api/superadmin-route"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
-import { getInternalAuthSecret } from "@/lib/env"
 
 export const runtime = "nodejs"
 
 const handlers = superadminTeamsHandlers({
+    origin: new URL(getSiteUrl()).origin,
     access: async () =>
         superadminAccess(
             await currentDashboardActor(),
