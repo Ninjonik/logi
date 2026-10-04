@@ -1,0 +1,137 @@
+import {
+    MessageFlags,
+    type ChatInputCommandInteraction,
+    type ModalSubmitInteraction,
+} from "discord.js"
+import { createInteractionHandler } from "../interactions"
+import { ConvexReactClient } from "convex/react"
+import { closeConvexClient } from "../convex"
+import test, { afterEach } from "node:test"
+import assert from "node:assert/strict"
+
+afterEach(closeConvexClient)
+const handler = () =>
+    createInteractionHandler({
+        enqueueEventSync: () => {},
+        triggerPollSoon: () => {},
+    })
+const guildId = "111111111111111111",
+    actorId = "222222222222222222"
+
+for (const missing of [false, true]) {
+    test(`ticket closure rejects cached administrator when fresh membership is ${missing ? "unavailable" : "revoked"}`, async (t) => {
+        let writes = 0,
+            fetched = false,
+            answer = ""
+        t.mock.method(ConvexReactClient.prototype, "query", async () => ({
+            config: { guildId, defaultLanguage: "en" },
+            ticket: {
+                guildId,
+                status: "open",
+                creatorId: actorId,
+                ticketNumber: 1,
+            },
+            category: { supportRoleIds: [] },
+        }))
+        t.mock.method(ConvexReactClient.prototype, "mutation", async () => {
+            writes++
+            throw new Error("Unexpected write")
+        })
+        const command = {
+            commandName: "close_ticket",
+            guildId,
+            channelId: "333333333333333333",
+            inGuild: () => true,
+            user: { id: actorId },
+            channel: { isThread: () => true },
+            member: {
+                permissions: { has: () => true },
+                roles: { cache: new Map() },
+            },
+            guild: {
+                members: {
+                    fetch: async (args: { user: string; force: boolean }) => {
+                        assert.deepEqual(args, { user: actorId, force: true })
+                        fetched = true
+                        if (missing) throw new Error("Discord unavailable")
+                        return {
+                            permissions: { has: () => false },
+                            roles: { cache: new Map() },
+                        }
+                    },
+                },
+            },
+            options: { getString: () => "synthetic closure" },
+            deferReply: async () => {},
+            editReply: async (v: { content: string }) => {
+                answer = v.content
+            },
+        } as unknown as ChatInputCommandInteraction
+        await handler().handleChatInputCommand(command)
+        assert.equal(fetched, true)
+        assert.equal(writes, 0)
+        assert.ok(answer.length > 0)
+    })
+}
+
+test("link acknowledges privately before database and emoji reads", async (t) => {
+    let acknowledged = false,
+        edited = false
+    t.mock.method(ConvexReactClient.prototype, "query", async () => {
+        assert.equal(acknowledged, true)
+        return null
+    })
+    await handler().handleChatInputCommand({
+        commandName: "link",
+        guildId,
+        user: { id: actorId },
+        deferReply: async (v: { flags: number }) => {
+            assert.equal(v.flags, MessageFlags.Ephemeral)
+            acknowledged = true
+        },
+        editReply: async () => {
+            edited = true
+        },
+    } as unknown as ChatInputCommandInteraction)
+    assert.equal(edited, true)
+})
+
+test("notice submit acknowledges before persistence and cache revalidation", async (t) => {
+    let acknowledged = false,
+        writes = 0,
+        edited = false
+    t.mock.method(ConvexReactClient.prototype, "query", async () => {
+        assert.equal(acknowledged, true)
+        return { defaultLanguage: "en" }
+    })
+    t.mock.method(
+        ConvexReactClient.prototype,
+        "mutation",
+        async (_ref: unknown, input: { userId: string; reason: string }) => {
+            assert.equal(acknowledged, true)
+            assert.equal(input.userId, actorId)
+            assert.equal(input.reason, "Synthetic delay")
+            writes++
+        }
+    )
+    t.mock.method(
+        globalThis,
+        "fetch",
+        async () => new Response(null, { status: 204 })
+    )
+    await handler().handleModalSubmit({
+        customId: "notice-modal:event-id",
+        guildId,
+        user: { id: actorId },
+        fields: { getTextInputValue: () => "Synthetic delay" },
+        deferReply: async (v: { flags: number }) => {
+            assert.equal(v.flags, MessageFlags.Ephemeral)
+            acknowledged = true
+        },
+        editReply: async () => {
+            edited = true
+        },
+    } as unknown as ModalSubmitInteraction)
+    assert.equal(writes, 1)
+    assert.equal(edited, true)
+})

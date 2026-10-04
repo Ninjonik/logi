@@ -31,8 +31,8 @@ The refresh selector supports 30, 60 and 300 seconds. An independent bot worker
 checks settings every 15 seconds. Saving an existing feature requests a refresh.
 Discord errors back off; changing settings never discards an uncertain create.
 Last success, pending recovery, the owned message link and delivery errors are
-visible in settings. HLL uses the collector's snapshot; Warcon's scoped live read
-uses the existing shared cache, lease and provider budget.
+visible in settings. HLL CRCON and Warcon use scoped live reads with their shared
+cache, lease and provider budget. See [HLL live data and private reports](hll-live-and-player-reports.md).
 
 ## Content and privacy
 
@@ -47,8 +47,9 @@ uses the existing shared cache, lease and provider budget.
   may rank globally without being assigned to an invented team.
 - Warcon player details are optional, private, paginated (8 per page), and
   show names, faction, kills, deaths, cash and ping. Player freshness is separate
-  from server freshness. HLL's current snapshot contract has no public player
-  list; the panel does not invent one.
+  from server freshness. HLL CRCON has a separate live contract for connected
+  current-round players, with kills/deaths/combat/offense/defense/support scores.
+  HLL public leaders are opt-in and use kills overall and per team.
 - Player buttons acknowledge privately before loading. Each navigation button has
   a distinct component ID, including a one-page list. Loading is bounded to 12
   seconds; a failed read or response produces a private retry message. Current
@@ -61,6 +62,10 @@ uses the existing shared cache, lease and provider budget.
 - No platform IDs, Discord identity links, provider credentials, administrative
   links or join secrets are rendered. Mentions are disabled. Authorized legacy
   event role pings remain limited to creation.
+- `reportCategoryId` optionally adds private player reporting to CRCON/Warcon
+  server or scoreboard panels. The existing ticket category chooses its parent
+  and staff roles. Report text and provider IDs appear only inside the authorized
+  private report thread, never on the public card or website report API.
 - Results use only explicitly reviewed, game-matching event results. New reviews
   since feature creation publish one message per event. Corrections edit that
   binding. Withdrawal, deletion or disabling the results feature removes its

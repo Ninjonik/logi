@@ -378,6 +378,16 @@ export const closeTicketThread = mutation({
             closeReason: args.closeReason?.trim() || undefined,
             updatedAt: now,
         })
+        const report = await ctx.db
+            .query("playerReports")
+            .withIndex("ticketId", (q) => q.eq("ticketId", ticket._id))
+            .unique()
+        if (report)
+            await ctx.db.patch(report._id, {
+                state: "closed",
+                leaseUntil: 0,
+                updatedAt: Date.now(),
+            })
         return { ok: true }
     },
 })

@@ -1,6 +1,35 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+test("HLL live API requires its own explicit HLL read grant", async () => {
+    for (const [readAccess, expected] of [
+        [undefined, 403],
+        [{ resources: ["server-snapshots"], gameIds: ["hell_let_loose"] }, 403],
+        [{ resources: ["hll-live"], gameIds: ["wardogs"] }, 403],
+        [{ resources: ["hll-live"], gameIds: ["hell_let_loose"] }, 200],
+    ] as const) {
+        const result = await authenticateClanRequestWith(
+            new Request("https://logi.test/api/v1/clan/hll-live/one", {
+                headers: { authorization: "Bearer fixture" },
+            }),
+            createDependencies({
+                authenticateKey: async () => ({
+                    guildId: "guild-1",
+                    ...(readAccess
+                        ? {
+                              readAccess: {
+                                  resources: [...readAccess.resources],
+                                  gameIds: [...readAccess.gameIds],
+                              },
+                          }
+                        : {}),
+                }),
+            })
+        )
+        assert.equal(isAuthError(result) ? result.status : 200, expected)
+    }
+})
+
 test("retained history collection accepts the canonical explicit Wardogs game query and refuses legacy keys", async () => {
     for (const allowed of [true, false]) {
         const result = await authenticateClanRequestWith(

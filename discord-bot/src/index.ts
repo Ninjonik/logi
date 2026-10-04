@@ -144,8 +144,10 @@ import {
     startPublicPanelWorker,
     handlePublicPanelButton,
 } from "./public-panels/worker"
+import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
 client.once(Events.ClientReady, async (readyClient) => {
+    startReportRecovery(client)
     startLeagueWorker(client)
     startPublicPanelWorker(client)
     startManagedRoleWorker(client)

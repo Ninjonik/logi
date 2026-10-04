@@ -1,6 +1,6 @@
 # Discord follow-up: League cards, player reports and HLL live panels
 
-Status: **League discovery, manual tracking and compact cards implemented in PR #158; private reports and the HLL-specific extension remain follow-up work**. See [implementation and contract](../league-discovery.md).
+Status: **League discovery, manual tracking, compact cards, private player reports and the HLL live extension implemented in PR #158**. See [League contract](../league-discovery.md) and [HLL/report contract](../hll-live-and-player-reports.md). Production activation and provider-populated acceptance remain separate gates.
 Baseline: `76ae1bcaffde08c3e80eb1fc60d473f75f774450` in PR #158.
 This document records the next increment discussed after the feature gallery.
 The owner confirmed reports must be private to the reporter and designated staff,
@@ -18,9 +18,9 @@ hard-coded channel identities or permission to write production messages.
 | Surface | Intended destination | Current implementation | Missing work |
 | --- | --- | --- | --- |
 | Wardogs League matches | Wardogs `wd-league` and website | Safe parser/cache; scheduled discovery, manual registration, human-link ingestion, compact cards, durable persistence/refresh, explicit website collection/change feed | Production activation; website consumer UI for the new collection; verified completed-result extraction |
-| Wardogs server | Wardogs `server-info` | Live map/count/faction scores, opt-in leaders, private player pages, durable message recovery | Report-player entry point and visual refinements |
-| HLL servers | Hell Let Loose `server-info` | Basic current-map/count/score snapshot and shared public panels | Live player statistics, current-map artwork selection, HLL-specific layout and reporting |
-| Player reports | Configured private-thread parent and support roles | Existing private support-ticket workflow | Server/player context, report-specific intake, bounded duplicate/retry handling and panel entry point |
+| Wardogs server | Wardogs `server-info` | Live map/count/faction scores, opt-in leaders, private player pages, durable message recovery, private Report Player | Production activation; additional visual refinements |
+| HLL servers | Hell Let Loose `server-info` | CRCON live current-round players, kills leaders, map artwork, team scores, private details/reporting, scoped website API | Live populated-server acceptance and production activation |
+| Player reports | Configured private-thread parent and support roles | Source/player context, private modal/thread, durable deduplication/recovery and ticket closure | Production permissions; independent nonstaff account acceptance |
 
 The same channel name occurs under both game categories. Configuration and
 publishing must bind exact guild/channel/source IDs, not a name search result.

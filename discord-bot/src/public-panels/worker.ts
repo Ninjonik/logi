@@ -16,8 +16,12 @@ import {
     type Client,
 } from "discord.js"
 import type { WarconServed } from "../../../src/application/game-data/read-warcon"
+import type { ReportObservation } from "../../../src/domain/player-reports/report"
+import type { HllServed } from "../../../src/application/game-data/read-hll-live"
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
+import type { HllLive } from "../../../src/domain/game-data/hll-live"
 import type { Doc } from "../../../convex/_generated/dataModel"
+import { renderHllPanel, renderHllPlayers } from "./hll-render"
 import { completePrivatePlayerReply } from "./private-reply"
 import { publishManagedMessage } from "../sync/publication"
 import { factionAssets, panelArtwork } from "./assets"
@@ -60,6 +64,74 @@ async function live(panel: Panel): Promise<LiveData | null> {
         ? result.envelope.result.data
         : null
 }
+async function hllLive(panel: Panel): Promise<HllLive | null> {
+    if (!panel.enabled || panel.snapshot?.provider !== "hll_crcon") return null
+    const result: HllServed = await convex.action(
+        makeFunctionReference<"action">("hllLiveData:read"),
+        {
+            secret: env.internalSecret,
+            guildId: panel.guildId,
+            connectionId: panel.connectionId,
+            panelId: panel._id,
+            panelRevision: panel.revision,
+        }
+    )
+    return result.kind === "ready" ? result.envelope.data : null
+}
+export async function readReportObservation(
+    guildId: string,
+    panelId: string,
+    revision: number
+): Promise<ReportObservation> {
+    const panel = (await panels(guildId)).find(
+        (p) =>
+            p._id === panelId &&
+            p.enabled &&
+            p.revision === revision &&
+            p.reportCategoryId
+    )
+    if (!panel) throw Error("Report panel changed.")
+    const empty = {
+        map: panel.snapshot?.map ?? null,
+        serverName: panel.snapshot?.displayName ?? null,
+        observedAt: null,
+        players: [],
+    }
+    if (panel.gameId === "hell_let_loose") {
+        const data = await hllLive(panel)
+        return data
+            ? {
+                  map: data.status?.map ?? null,
+                  serverName: data.status?.serverName ?? null,
+                  observedAt: data.playersAt,
+                  players:
+                      data.playersFreshness === "fresh"
+                          ? data.players.map((p) => ({
+                                name: p.name,
+                                playerId: p.playerId,
+                                team: p.team,
+                            }))
+                          : [],
+              }
+            : empty
+    }
+    const data = await live(panel)
+    return data
+        ? {
+              map: data.status?.map ?? null,
+              serverName: data.status?.serverName ?? null,
+              observedAt: data.playersAt,
+              players:
+                  data.playersFreshness === "fresh"
+                      ? data.players.map((p) => ({
+                            name: p.name,
+                            playerId: p.steamId,
+                            team: p.faction,
+                        }))
+                      : [],
+          }
+        : empty
+}
 async function icons(client: Client): Promise<FactionIcons> {
     try {
         const values = await client.application?.emojis.fetch()
@@ -100,10 +172,12 @@ export function startPublicPanelWorker(client: Client) {
                             await syncResults(client, panel, cachedIcons)
                         else {
                             const current = await live(panel)
+                            const hll = await hllLive(panel)
                             const artwork = panel.artwork
                                 ? await panelArtwork(
                                       panel.gameId,
-                                      current?.status?.map ??
+                                      hll?.status?.map ??
+                                          current?.status?.map ??
                                           panel.snapshot?.map
                                   )
                                 : null
@@ -113,14 +187,20 @@ export function startPublicPanelWorker(client: Client) {
                                 revision: panel.revision,
                                 channelId: panel.channelId,
                                 message: {
-                                    ...renderPanel(
-                                        { ...panel, id: panel._id },
-                                        panel.snapshot,
-                                        current,
-                                        cachedIcons,
-                                        env.appSiteUrl,
-                                        artwork?.url
-                                    ),
+                                    ...(hll
+                                        ? renderHllPanel(
+                                              { ...panel, id: panel._id },
+                                              hll,
+                                              artwork?.url
+                                          )
+                                        : renderPanel(
+                                              { ...panel, id: panel._id },
+                                              panel.snapshot,
+                                              current,
+                                              cachedIcons,
+                                              env.appSiteUrl,
+                                              artwork?.url
+                                          )),
                                     ...(artwork
                                         ? {
                                               files: [
@@ -208,7 +288,7 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
     await completePrivatePlayerReply(
         (reply) => interaction.editReply(reply),
         async () => {
-            const result = await loadPlayerDetails<Panel, LiveData>(
+            const result = await loadPlayerDetails<Panel, LiveData | HllLive>(
                 interaction,
                 {
                     readPanel: async (id) =>
@@ -217,7 +297,10 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
                                   (p) => p._id === id
                               ) ?? null)
                             : null,
-                    readLive: live,
+                    readLive: (panel) =>
+                        panel.gameId === "hell_let_loose"
+                            ? hllLive(panel)
+                            : live(panel),
                     canView: async (panel) => {
                         if (
                             !interaction.guild ||
@@ -255,6 +338,12 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
                         "Player details unavailable or this panel changed. Open the current panel in its channel.",
                     components: [],
                 }
+            if ("statusFreshness" in result.data)
+                return renderHllPlayers(
+                    { id: result.panel._id, revision: result.panel.revision },
+                    result.data,
+                    result.page
+                )
             return renderPlayers(
                 { id: result.panel._id, revision: result.panel.revision },
                 result.data,

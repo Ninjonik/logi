@@ -9,6 +9,7 @@ export const apiKeyReadAccess = v.object({
             v.literal("league-matches"),
             v.literal("league-fixtures"),
             v.literal("warcon-data"),
+            v.literal("hll-live"),
             v.literal("server-game-history"),
             v.literal("membership-summaries"),
             v.literal("server-snapshots"),

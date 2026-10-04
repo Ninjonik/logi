@@ -14,6 +14,7 @@ import {
 import type { WarconRead } from "../../../src/domain/game-data/warcon-contracts"
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
 import { playerLeaders } from "../../../src/domain/game-data/player-leaders"
+import { hllMapArtwork } from "../../../src/domain/game-data/hll-live"
 import { playerControl } from "./player-details"
 export type LiveData = Extract<WarconRead, { view: "live" }>["data"]
 type Panel = {
@@ -23,6 +24,7 @@ type Panel = {
     enabled: boolean
     showPlayers: boolean
     showLeaders?: boolean
+    reportCategoryId?: string
     artwork: boolean
 }
 export type FactionIcons = Partial<
@@ -64,7 +66,7 @@ export function artworkPath(game: string, map?: string | null) {
     return game === "wardogs"
         ? "/img/games/wardogs.jpg"
         : game === "hell_let_loose"
-          ? "/img/games/hll.jpg"
+          ? hllMapArtwork(map)
           : null
 }
 export function renderPanel(
@@ -154,6 +156,15 @@ export function renderPanel(
                 )
             )
     }
+    if (panel.enabled && panel.reportCategoryId)
+        container.addActionRowComponents(
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`report:open:${panel.id}:${panel.revision}`)
+                    .setLabel("Report Player")
+                    .setStyle(ButtonStyle.Danger)
+            )
+        )
     return {
         components: [container],
         flags: MessageFlags.IsComponentsV2,

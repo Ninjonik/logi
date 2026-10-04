@@ -8,11 +8,6 @@
  * @module
  */
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
 import type * as apiKeyValidators from "../apiKeyValidators.js";
 import type * as articles from "../articles.js";
 import type * as calendarFeed from "../calendarFeed.js";
@@ -43,6 +38,8 @@ import type * as gameHistoryStore from "../gameHistoryStore.js";
 import type * as groups from "../groups.js";
 import type * as guildGames from "../guildGames.js";
 import type * as guilds from "../guilds.js";
+import type * as hllLiveData from "../hllLiveData.js";
+import type * as hllLiveReads from "../hllLiveReads.js";
 import type * as identity from "../identity.js";
 import type * as integrationChangeLog from "../integrationChangeLog.js";
 import type * as integrationChanges from "../integrationChanges.js";
@@ -72,6 +69,7 @@ import type * as platformIdLinks from "../platformIdLinks.js";
 import type * as platformIdentityLinks from "../platformIdentityLinks.js";
 import type * as platformIdentityStore from "../platformIdentityStore.js";
 import type * as platformSettings from "../platformSettings.js";
+import type * as playerReports from "../playerReports.js";
 import type * as playerStats from "../playerStats.js";
 import type * as players from "../players.js";
 import type * as privacy from "../privacy.js";
@@ -105,14 +103,12 @@ import type * as webhookQueue from "../webhookQueue.js";
 import type * as webhooks from "../webhooks.js";
 import type * as websiteEventCommands from "../websiteEventCommands.js";
 
-/**
- * A utility for referencing Convex functions in your app's API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
+
 declare const fullApi: ApiFromModules<{
   apiKeyValidators: typeof apiKeyValidators;
   articles: typeof articles;
@@ -144,6 +140,8 @@ declare const fullApi: ApiFromModules<{
   groups: typeof groups;
   guildGames: typeof guildGames;
   guilds: typeof guilds;
+  hllLiveData: typeof hllLiveData;
+  hllLiveReads: typeof hllLiveReads;
   identity: typeof identity;
   integrationChangeLog: typeof integrationChangeLog;
   integrationChanges: typeof integrationChanges;
@@ -173,6 +171,7 @@ declare const fullApi: ApiFromModules<{
   platformIdentityLinks: typeof platformIdentityLinks;
   platformIdentityStore: typeof platformIdentityStore;
   platformSettings: typeof platformSettings;
+  playerReports: typeof playerReports;
   playerStats: typeof playerStats;
   players: typeof players;
   privacy: typeof privacy;
@@ -206,10 +205,28 @@ declare const fullApi: ApiFromModules<{
   webhooks: typeof webhooks;
   websiteEventCommands: typeof websiteEventCommands;
 }>;
+
+/**
+ * A utility for referencing Convex functions in your app's public API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 export declare const api: FilterApi<
   typeof fullApi,
   FunctionReference<any, "public">
 >;
+
+/**
+ * A utility for referencing Convex functions in your app's internal API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = internal.myModule.myFunction;
+ * ```
+ */
 export declare const internal: FilterApi<
   typeof fullApi,
   FunctionReference<any, "internal">

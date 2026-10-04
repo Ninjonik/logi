@@ -20,6 +20,7 @@ export const panelSettings = {
     enabled: v.boolean(),
     showPlayers: v.boolean(),
     showLeaders: v.optional(v.boolean()),
+    reportCategoryId: v.optional(v.string()),
     artwork: v.boolean(),
     refreshSeconds: v.number(),
 }

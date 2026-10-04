@@ -1,8 +1,9 @@
 import { getDefaultWorkspaceCandidatesFromMemberships } from "../src/domain/workspaces/default-workspace"
+import { parseSteamId } from "../src/domain/player-stats/player-stats"
 import { revokePlatformIdentity } from "./platformIdentityStore"
 import { invalidateUserSessions } from "./dashboardSessionStore"
+import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { matchesGameScope } from "../src/domain/games/game"
-import type { MutationCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
 import { query } from "./_generated/server"
@@ -24,6 +25,20 @@ function assertInternalSecret(secret: string) {
     if (secret !== INTERNAL_AUTH_SECRET) {
         throw new Error("Unauthorized.")
     }
+}
+
+// A legacy/import ID is not proof of ownership of the corresponding Discord account.
+function platformLinkSubject(ctx: Pick<QueryCtx, "db">, discordId: string) {
+    if (!/^\d{17,20}$/.test(discordId))
+        throw new Error("Invalid Discord account.")
+    return ctx.db
+        .query("users")
+        .withIndex("discordId", (q) => q.eq("discordId", discordId))
+        .unique()
+}
+
+function platformComparisonKey(value: string) {
+    return parseSteamId(value) ?? value
 }
 
 function normalizePlatformIds(value: string | string[] | undefined) {
@@ -1079,15 +1094,38 @@ export const linkDiscordPlatformId = mutation({
             throw new Error("Platform ID is required.")
         }
 
-        const existing = await getUserByDiscordId(ctx, args.userId)
-        const allUsers = await ctx.db.query("users").collect()
+        const existing = await platformLinkSubject(ctx, args.userId)
+        if (
+            !existing &&
+            (await ctx.db
+                .query("users")
+                .withIndex("id", (q) => q.eq("id", args.userId))
+                .unique())
+        ) {
+            throw new Error("Identity conflict. Contact an administrator.")
+        }
+        for (const value of normalizedPlatformIds) {
+            const steamId = parseSteamId(value)
+            if (!steamId) continue
+            const verified = await ctx.db
+                .query("platformIdentityLinks")
+                .withIndex("platform_platformId_active", (q) =>
+                    q
+                        .eq("platform", "steam")
+                        .eq("platformId", steamId)
+                        .eq("active", true)
+                )
+                .unique()
+            if (verified && verified.discordUserId !== args.userId)
+                throw new Error(
+                    "This platform ID is already linked to another player."
+                )
+        }
+        const allUsers = await ctx.db.query("users").take(5001)
+        if (allUsers.length > 5000)
+            throw new Error("Platform link requires administrator review.")
         for (const candidate of allUsers) {
-            const candidateDiscordId = getUserDiscordId(candidate)
-            if (
-                existing
-                    ? candidate._id === existing._id
-                    : candidateDiscordId === args.userId
-            ) {
+            if (candidate._id === existing?._id) {
                 continue
             }
 
@@ -1103,7 +1141,11 @@ export const linkDiscordPlatformId = mutation({
 
             if (
                 normalizedPlatformIds.some((platformId) =>
-                    candidatePlatformIds.includes(platformId)
+                    candidatePlatformIds.some(
+                        (candidateId) =>
+                            platformComparisonKey(candidateId) ===
+                            platformComparisonKey(platformId)
+                    )
                 )
             ) {
                 throw new Error(
@@ -1164,7 +1206,7 @@ export const unlinkDiscordPlatformId = mutation({
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
 
-        const user = await getUserByDiscordId(ctx, args.userId)
+        const user = await platformLinkSubject(ctx, args.userId)
         if (!user) {
             throw new Error("Player not found.")
         }
@@ -1175,7 +1217,9 @@ export const unlinkDiscordPlatformId = mutation({
         }
 
         const nextPlatformIds = normalizePlatformIds(user.platformIds).filter(
-            (platformId) => platformId !== target
+            (platformId) =>
+                platformComparisonKey(platformId) !==
+                platformComparisonKey(target)
         )
         await ctx.db.patch(user._id, {
             platformIds: nextPlatformIds,
@@ -1194,7 +1238,7 @@ export const getDiscordPlatformLinkState = query({
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
 
-        const user = await getUserByDiscordId(ctx, args.userId)
+        const user = await platformLinkSubject(ctx, args.userId)
         if (!user) {
             return null
         }

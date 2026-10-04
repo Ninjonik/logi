@@ -20,6 +20,11 @@ import {
 } from "../src/infrastructure/convex/event-workflow-repositories"
 import { ReconcileEventStatusesUseCase } from "../src/application/events/reconcile-event-statuses.use-case"
 import { CompleteTrainingUseCase } from "../src/application/events/complete-training.use-case"
+import {
+    getGuildById,
+    getGuildByDiscordId,
+    getGuildDiscordId,
+} from "./identity"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
 import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case"
 import { UpsertNoticeUseCase } from "../src/application/events/upsert-notice.use-case"
@@ -27,7 +32,6 @@ import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
-import { getGuildById, getGuildDiscordId } from "./identity"
 import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
@@ -204,15 +208,32 @@ export const getById = query({
 
 export const findNoticeTarget = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         userId: v.string(),
         query: v.string(),
     },
     handler: async (ctx, args) => {
-        const events = await ctx.db
-            .query("events")
-            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-            .collect()
+        if (args.secret !== INTERNAL_AUTH_SECRET)
+            throw new Error("Unauthorized.")
+        const guild = await getGuildByDiscordId(ctx, args.guildId)
+        if (guild && getGuildDiscordId(guild) !== args.guildId) return []
+        const keys = new Set([
+            args.guildId,
+            ...(guild
+                ? [String(guild._id), ...(guild.id ? [guild.id] : [])]
+                : []),
+        ])
+        const events = (
+            await Promise.all(
+                [...keys].map((guildId) =>
+                    ctx.db
+                        .query("events")
+                        .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                        .collect()
+                )
+            )
+        ).flat()
 
         const eventsWithReserves = await Promise.all(
             events.map(async (event) => {

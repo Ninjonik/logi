@@ -1071,6 +1071,54 @@ export default defineSchema({
     })
         .index("status", ["status"])
         .index("guildId", ["guildId"]),
+    playerReportDrafts: defineTable({
+        guildId: v.string(),
+        reporterId: v.string(),
+        panelId: v.id("discordPublicPanels"),
+        revision: v.number(),
+        channelId: v.string(),
+        interactionId: v.string(),
+        policyJson: v.string(),
+        observationJson: v.string(),
+        expiresAt: v.number(),
+    })
+        .index("interactionId", ["interactionId"])
+        .index("guild_reporter", ["guildId", "reporterId"]),
+    playerReports: defineTable({
+        guildId: v.string(),
+        reporterId: v.string(),
+        draftId: v.id("playerReportDrafts"),
+        panelId: v.id("discordPublicPanels"),
+        revision: v.number(),
+        channelId: v.string(),
+        policyJson: v.string(),
+        contextJson: v.string(),
+        parentChannelId: v.string(),
+        state: v.union(
+            v.literal("pending"),
+            v.literal("creating"),
+            v.literal("uncertain"),
+            v.literal("open"),
+            v.literal("blocked"),
+            v.literal("closed")
+        ),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+        fence: v.number(),
+        leaseUntil: v.number(),
+        threadId: v.optional(v.string()),
+        ticketId: v.optional(v.id("ticketThreads")),
+    })
+        .index("draftId", ["draftId"])
+        .index("ticketId", ["ticketId"])
+        .index("guildId", ["guildId"])
+        .index("guild_reporter_createdAt", [
+            "guildId",
+            "reporterId",
+            "createdAt",
+        ])
+        .index("guild_reporter_state", ["guildId", "reporterId", "state"])
+        .index("guild_state_leaseUntil", ["guildId", "state", "leaseUntil"]),
     ticketThreads: defineTable({
         guildId: v.string(),
         threadId: v.string(),
@@ -1324,6 +1372,15 @@ export default defineSchema({
         blockedUntil: v.number(),
         cachedEntries: v.number(),
     }).index("key", ["key"]),
+    hllLiveCache: defineTable({
+        connectionId: v.id("gameDataConnections"),
+        generation: v.number(),
+        fence: v.number(),
+        leaseUntil: v.number(),
+        nextAt: v.number(),
+        retainUntil: v.number(),
+        dataJson: v.optional(v.string()),
+    }).index("connectionId", ["connectionId"]),
     warconReadCache: defineTable({
         connectionId: v.id("gameDataConnections"),
         queryJson: v.string(),

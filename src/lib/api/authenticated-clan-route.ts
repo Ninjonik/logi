@@ -98,8 +98,8 @@ export async function authenticateClanRequestWith(
             },
             { status: 401, headers }
         )
-    const wardogsGrant =
-        /^\/api\/v1\/clan\/(warcon-data|server-game-history|league-matches|league-fixtures)(\/|$)/.exec(
+    const providerGrant =
+        /^\/api\/v1\/clan\/(warcon-data|server-game-history|league-matches|league-fixtures|hll-live)(\/|$)/.exec(
             new URL(request.url).pathname
         )?.[1]
     const peopleResource = new URL(request.url).pathname.split("/")[4]
@@ -138,19 +138,23 @@ export async function authenticateClanRequestWith(
             )
         return { key, guildId: authenticated.guildId, headers }
     }
-    if (wardogsGrant) {
+    if (providerGrant) {
         headers["Cache-Control"] = "no-store"
         if (
             request.method !== "GET" ||
             !isApiKeyReadAccess(authenticated.readAccess) ||
-            !allowsApiKeyRead(authenticated.readAccess, wardogsGrant, "wardogs")
+            !allowsApiKeyRead(
+                authenticated.readAccess,
+                providerGrant,
+                providerGrant === "hll-live" ? "hell_let_loose" : "wardogs"
+            )
         )
             return NextResponse.json(
                 {
                     error: {
                         code: "insufficient_scope",
                         message:
-                            "An explicit read grant for this Wardogs resource is required.",
+                            "An explicit read grant for this provider resource and game is required.",
                     },
                 },
                 { status: 403, headers }

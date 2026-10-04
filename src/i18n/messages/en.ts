@@ -218,6 +218,8 @@ export const enMessages = {
                 "Retained server games (player names and Steam IDs)",
             "league-matches": "Wardogs League",
             "league-fixtures": "Tracked Wardogs League fixtures",
+            "hll-live":
+                "HLL live scoreboard (including player names and platform IDs)",
             "warcon-data":
                 "Warcon gameplay data (includes player names and Steam IDs)",
             "member-summaries": "Member directory (read-only)",

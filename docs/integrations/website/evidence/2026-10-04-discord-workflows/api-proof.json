@@ -1,0 +1,41 @@
+{
+  "at": "2026-10-04T01:19:13.781Z",
+  "localBackend": true,
+  "realCrcon": true,
+  "records": [
+    {
+      "name": "missing-key",
+      "status": 401,
+      "expected": 401,
+      "noStore": "no-store",
+      "errorCode": "missing_api_key"
+    },
+    {
+      "name": "aggregate-key",
+      "status": 403,
+      "expected": 403,
+      "noStore": "no-store",
+      "errorCode": "insufficient_scope"
+    },
+    {
+      "name": "explicit-hll-grant",
+      "status": 200,
+      "expected": 200,
+      "noStore": "no-store",
+      "gameId": "hell_let_loose",
+      "playerCount": 0
+    },
+    {
+      "name": "query-rejected",
+      "status": 400,
+      "expected": 400,
+      "noStore": "no-store",
+      "errorCode": "invalid_query"
+    },
+    {
+      "name": "revoked-key",
+      "status": 401,
+      "expected": 401
+    }
+  ]
+}

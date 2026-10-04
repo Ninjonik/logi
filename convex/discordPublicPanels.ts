@@ -44,6 +44,26 @@ export const configure = mutation({
         const connection = id ? await ctx.db.get(id) : null
         if (!connection || connection.guildId !== args.guildId)
             throw new Error("Source not found.")
+        if (settings.reportCategoryId) {
+            const config = await ctx.db
+                .query("discordConfigs")
+                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+                .unique()
+            if (
+                settings.kind === "results" ||
+                !["hll_crcon", "wardogs_warcon"].includes(
+                    connection.provider
+                ) ||
+                !config?.ticketSettings?.enabled ||
+                !config.ticketSettings.ticketParentChannelId ||
+                !config.ticketSettings.categories.some(
+                    (c) => c.id === settings.reportCategoryId
+                )
+            )
+                throw new Error(
+                    "Configure a private ticket destination and category first."
+                )
+        }
         const rows = await ctx.db
             .query("discordPublicPanels")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
@@ -100,7 +120,19 @@ export const list = query({
             .query("discordPublications")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .collect()
+        const config = await ctx.db
+            .query("discordConfigs")
+            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+            .unique()
         return {
+            reportCategories: config?.ticketSettings?.enabled
+                ? config.ticketSettings.categories.map((c) => ({
+                      id: c.id,
+                      label: c.label || c.id,
+                      parentChannelId:
+                          config.ticketSettings!.ticketParentChannelId ?? null,
+                  }))
+                : [],
             panels: panels.map((p) => ({
                 ...p,
                 publications: publications

@@ -95,6 +95,7 @@ import { handleMatchRecapPreference } from "./interactions/match-recap-preferenc
 import { statsController } from "./interactions/stats-live"
 import { reportClanDiscordError } from "./error-reporting"
 import { buildStatsCommand } from "./interactions/stats"
+import { handlePlayerReport } from "./player-reports"
 import { logError, logInfo, logWarn } from "./log"
 import { convex, references } from "./convex"
 import { slugifyTicketLabel } from "./utils"
@@ -481,7 +482,7 @@ function buildTicketCloseEmbed(input: {
     return embed
 }
 
-function buildMembershipApplicationCloseEmbed(input: {
+export function buildMembershipApplicationCloseEmbed(input: {
     messages: ReturnType<typeof getClanDiscordMessages>
     applicationNumber: number
     closerId: string
@@ -498,7 +499,7 @@ function buildMembershipApplicationCloseEmbed(input: {
         reason,
     } = input
 
-    return new EmbedBuilder()
+    const embed = new EmbedBuilder()
         .setColor(0x5865f2)
         .setTitle(
             `${messages.membership.closeEmbedTitle} #${applicationNumber}`
@@ -514,19 +515,27 @@ function buildMembershipApplicationCloseEmbed(input: {
                 value: formatDiscordTimestamp(closedAt),
                 inline: true,
             },
-            reason
-                ? { name: messages.membership.reasonLabel, value: reason }
-                : {
-                      name: messages.membership.outcomeLabel,
-                      value: outcomeLabel,
-                  }
+            {
+                name: messages.membership.outcomeLabel,
+                value: outcomeLabel,
+                inline: true,
+            }
         )
         .setTimestamp(closedAt)
+
+    if (reason) {
+        embed.addFields({
+            name: messages.membership.reasonLabel,
+            value: reason,
+        })
+    }
+    return embed
 }
 
 export function createInteractionHandler(options: InteractionHandlerOptions) {
     return {
         async handleButtonInteraction(interaction: ButtonInteraction) {
+            if (await handlePlayerReport(interaction)) return
             if (interaction.customId.startsWith("stats:")) {
                 await statsController.button(interaction)
                 return
@@ -597,6 +606,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         async handleStringSelectMenuInteraction(
             interaction: StringSelectMenuInteraction
         ) {
+            if (await handlePlayerReport(interaction)) return
             if (interaction.customId.startsWith("signup:")) {
                 await handleEventButtonInteraction(interaction, options)
                 return
@@ -607,6 +617,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         },
 
         async handleModalSubmit(interaction: ModalSubmitInteraction) {
+            if (await handlePlayerReport(interaction)) return
             if (interaction.customId.startsWith("stats:")) {
                 await statsController.modal(interaction)
             } else if (interaction.customId.startsWith("ticket-modal:")) {
@@ -959,6 +970,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const messages = getClanDiscordMessages(guildConfig?.defaultLanguage)
 
         const matches = (await convex.query(references.findNoticeTarget, {
+            secret: env.internalSecret,
             guildId: interaction.guildId,
             userId: interaction.user.id,
             query: eventSelection,
@@ -1134,6 +1146,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         const matches = (await convex
             .query(references.findNoticeTarget, {
+                secret: env.internalSecret,
                 guildId: interaction.guildId,
                 userId: interaction.user.id,
                 query: String(query.value ?? ""),
@@ -1220,6 +1233,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         const eventId = interaction.customId.replace("notice-modal:", "")
         const guildConfig = (await convex
             .query(references.getConfigByDiscordGuildId, {
@@ -1245,10 +1259,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         options.enqueueEventSync(eventId)
         options.triggerPollSoon()
 
-        await interaction.reply({
-            content: messages.commands.noticeSaved,
-            flags: MessageFlags.Ephemeral,
-        })
+        await interaction.editReply({ content: messages.commands.noticeSaved })
     }
 
     async function handleLinkCommand(interaction: ChatInputCommandInteraction) {
@@ -1261,6 +1272,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         const guildConfig = (await convex
             .query(references.getConfigByDiscordGuildId, {
                 guildId: interaction.guildId,
@@ -1273,7 +1285,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             interaction.user.id
         )
         const emojis = await getPlatformEmojis()
-        await interaction.reply({
+        await interaction.editReply({
             ...(linkState?.platformIds?.length
                 ? buildPlatformLinkManageMessage({
                       language,
@@ -1281,7 +1293,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                       emojis,
                   })
                 : buildPlatformLinkStartMessage(language, { mode: "link" })),
-            flags: MessageFlags.Ephemeral,
         })
     }
 
@@ -3064,7 +3075,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const member = interaction.member as GuildMember | null
+        const member = await interaction.guild?.members
+            .fetch({ user: interaction.user.id, force: true })
+            .catch(() => null)
         if (!member) {
             await interaction.editReply({
                 content: messages.ticket.unableToVerifyPermissions,

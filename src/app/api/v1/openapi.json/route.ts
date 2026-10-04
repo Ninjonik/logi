@@ -25,6 +25,7 @@ import { clanResultSummarySchema } from "@/domain/api/result-summaries"
 import { leagueFixtureSchema } from "@/domain/wardogs-league/fixture"
 import { leagueReadSchema } from "@/domain/wardogs-league/contracts"
 import { warconQuerySchema } from "@/domain/game-data/warcon-query"
+import { hllLiveEnvelopeSchema } from "@/domain/game-data/hll-live"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { NextResponse } from "next/server"
 import { z } from "zod"
@@ -40,6 +41,7 @@ const summaryResponseSchemas = {
     LeagueFixture: z.toJSONSchema(leagueFixtureSchema),
     LeagueMatchRead: z.toJSONSchema(leagueReadSchema),
     WarconEnvelope: z.toJSONSchema(warconEnvelopeSchema),
+    HllLiveEnvelope: z.toJSONSchema(hllLiveEnvelopeSchema),
     WarconQuery: z.toJSONSchema(warconQuerySchema),
     MembershipObservation: z.toJSONSchema(membershipObservationSchema),
     IntegrationChange: z.toJSONSchema(integrationChangeSchema),
@@ -1424,6 +1426,56 @@ paths["/clan/league-matches"] = {
         },
     },
 }
+paths["/clan/hll-live/{connectionId}"] = {
+    get: {
+        tags: ["Game data"],
+        summary: "Read the current HLL round and connected-player scoreboard",
+        "x-logi-read-access": {
+            resource: "hll-live",
+            games: ["hell_let_loose"],
+            explicitGrantRequired: true,
+        },
+        description:
+            "Requires explicit hll-live and hell_let_loose readAccess grants; legacy and aggregate server-snapshots keys are denied. Uses an enabled Logi connection ID, never a provider address. Includes game display names and provider player IDs, not verified Logi membership or lifetime statistics. Status and players have independent timestamps/freshness. Disconnected players are excluded; missing metrics remain null. Unknown or changing round identity suppresses player rows. A failed player read preserves aggregate status; status failure can return clearly stale last-known status with no players. Always no-store to consumers. Reads share a persisted per-connection cache/lease and respect upstream refresh interval and Retry-After; source, key and panel revocation are rechecked after network access. No query parameters. No administration URLs, credentials, raw Steam profiles or ban data are returned.",
+        parameters: [
+            {
+                name: "connectionId",
+                in: "path",
+                required: true,
+                schema: { type: "string" },
+            },
+        ],
+        responses: {
+            "200": {
+                description:
+                    "Typed observations; inspect freshness and warnings",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/HllLiveEnvelope",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "400": { description: "Unexpected query parameters" },
+            "401": { description: "Invalid API key" },
+            "403": {
+                description:
+                    "Explicit resource/game grant or enabled source missing",
+            },
+            "429": {
+                description:
+                    "A read is already in progress or provider backoff applies; Retry-After is returned",
+            },
+            "503": { description: "Read unavailable" },
+        },
+    },
+}
 paths["/clan/warcon-data/{connectionId}"] = {
     get: {
         tags: ["Clan API — Game data"],
@@ -1659,6 +1711,7 @@ for (const [path, operations] of Object.entries(paths)) {
                 "league-matches",
                 "league-fixtures",
                 "server-game-history",
+                "hll-live",
             ].includes(resource) &&
             method === "get"
         )

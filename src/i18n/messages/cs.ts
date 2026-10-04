@@ -216,6 +216,7 @@ export const csMessages = {
                 "Historie serverových her (jména hráčů a Steam ID)",
             "league-matches": "Veřejné zápasy Wardogs League",
             "league-fixtures": "Sledované zápasy Wardogs League",
+            "hll-live": "Živý HLL scoreboard (včetně jmen hráčů a platform ID)",
             "warcon-data": "Herní data Warconu (včetně jmen hráčů a Steam ID)",
             "member-summaries": "Seznam členů (pouze čtení)",
             "roster-summaries": "Publikované sestavy a účast (pouze čtení)",

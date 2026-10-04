@@ -148,11 +148,14 @@ test("every clan operation documents runtime scope denial and its read-access re
                     "league-matches",
                     "league-fixtures",
                     "server-game-history",
+                    "hll-live",
                 ].includes(resource)
             ) {
                 assert.deepEqual(operation["x-logi-read-access"], {
                     resource,
-                    games: ["wardogs"],
+                    games: [
+                        resource === "hll-live" ? "hell_let_loose" : "wardogs",
+                    ],
                     explicitGrantRequired: true,
                 })
                 continue

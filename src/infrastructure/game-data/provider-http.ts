@@ -178,6 +178,7 @@ export function createProviderHttp(
         source.provider === "hll_crcon"
             ? [
                   "/api/get_public_info",
+                  "/api/get_live_game_stats",
                   "/api/get_scoreboard_maps",
                   "/api/get_map_scoreboard",
               ]

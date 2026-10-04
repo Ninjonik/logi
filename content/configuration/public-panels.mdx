@@ -22,12 +22,24 @@ earnings; these live rankings are not confirmed match results.
 
 **Private player details** enables a button for Warcon player names, factions,
 kills, deaths, cash and ping. Its response is visible only to the person pressing
-the button. HLL currently provides server counts and scores without this player
-list. Stale data is labeled; missing counts are not shown as zero.
+the button. HLL CRCON panels show connected players and current-round kills,
+deaths, combat, offense, defense and support scores. Public HLL leaders use kills
+overall and per team, with Allies/Axis scores, remaining time and map artwork.
+The HLL live website endpoint requires an explicit **HLL live data** read grant;
+ordinary aggregate keys cannot read player lists. Stale data is labeled; missing
+metrics stay unknown. HLL Records profile stats are a separate data source.
 Use **Previous** and **Next** to navigate eight players per page. If loading fails,
 the bot gives a private retry message instead of leaving the response loading.
 The button requires current access to the panel's channel. After the panel moves
 or its settings change, open its current message again; old private controls expire.
+
+Select a **Report Player** ticket category to add a private reporting button to a
+CRCON or Warcon server/score panel. The category shows the configured destination
+parent; choose or change that room in [Tickets](/configuration/tickets). A person
+can select a current player or enter a name for someone who left, then submit a
+reason and optional evidence link. Only the reporter and designated staff receive
+the resulting private thread. Staff close it with `/close_ticket`; reports do not
+automatically ban players. Leaving the category empty disables this feature.
 
 Public messages accept text or announcement channels. Ticket and recruitment
 private-thread parents must use ordinary text channels; the shared picker labels

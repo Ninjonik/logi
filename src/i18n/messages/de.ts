@@ -225,6 +225,8 @@ export const deMessages = {
                 "Gespeicherte Serverspiele (Spielernamen und Steam-IDs)",
             "league-matches": "Öffentliche Wardogs League Spiele",
             "league-fixtures": "Verfolgte Wardogs League Spiele",
+            "hll-live":
+                "HLL Live-Scoreboard (mit Spielernamen und Plattform-IDs)",
             "warcon-data": "Warcon-Spieldaten (mit Spielernamen und Steam-IDs)",
             "member-summaries": "Mitgliederverzeichnis (nur lesen)",
             "roster-summaries":

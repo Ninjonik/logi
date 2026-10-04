@@ -56,6 +56,9 @@ export function DiscordPublicPanelsForm({
         [settings, setSettings] = useState(defaults),
         [message, setMessage] = useState(""),
         [busy, setBusy] = useState(false)
+    const [reportCategories, setReportCategories] = useState<
+        { id: string; label: string; parentChannelId: string | null }[]
+    >([])
     const base = `/api/servers/${serverId}/discord-public-panels`
     const load = useCallback(async () => {
         try {
@@ -70,6 +73,7 @@ export function DiscordPublicPanelsForm({
             )
             const parsed = gameDataSettingsSchema.parse(data)
             setPanels(saved.panels)
+            setReportCategories(saved.reportCategories ?? [])
             setChannels(metadata.channels)
             setSources(
                 parsed.connections
@@ -184,6 +188,9 @@ export function DiscordPublicPanelsForm({
                                 ...s,
                                 kind: e.target
                                     .value as PublicPanelSettings["kind"],
+                                ...(e.target.value === "results"
+                                    ? { reportCategoryId: "" }
+                                    : {}),
                             }))
                         }
                     >
@@ -226,6 +233,39 @@ export function DiscordPublicPanelsForm({
                 placeholder={cs ? "Cílová místnost" : "Destination channel"}
             />
             <div className="flex flex-wrap gap-4">
+                <label>
+                    {cs
+                        ? "Report Player · kategorie soukromého ticketu"
+                        : "Report Player · private ticket category"}
+                    <select
+                        className="bg-background block rounded border p-2"
+                        value={settings.reportCategoryId ?? ""}
+                        onChange={(e) =>
+                            setSettings((s) => ({
+                                ...s,
+                                reportCategoryId: e.target.value,
+                            }))
+                        }
+                        disabled={settings.kind === "results"}
+                    >
+                        <option value="">{cs ? "Vypnuto" : "Disabled"}</option>
+                        {reportCategories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                                {c.label} ·{" "}
+                                {channels.find(
+                                    (ch) => ch.id === c.parentChannelId
+                                )?.name ??
+                                    c.parentChannelId ??
+                                    "—"}
+                            </option>
+                        ))}
+                    </select>
+                    <p className="text-muted-foreground text-xs">
+                        {cs
+                            ? "Místnost a role správců nastavíš v sekci Tickety. Bot před odesláním ověří soukromí a přístup."
+                            : "Choose the destination channel and staff roles in Tickets. The bot checks privacy and access before submission."}
+                    </p>
+                </label>
                 {(
                     [
                         "enabled",
@@ -251,8 +291,8 @@ export function DiscordPublicPanelsForm({
                                 : "Enabled"
                             : key === "showPlayers"
                               ? cs
-                                  ? "Soukromý detail hráčů (Warcon)"
-                                  : "Private player details (Warcon)"
+                                  ? "Soukromý detail hráčů (Warcon / CRCON)"
+                                  : "Private player details (Warcon / CRCON)"
                               : key === "showLeaders"
                                 ? cs
                                     ? "Veřejní TOP hráči (jména + statistiky)"
