@@ -144,6 +144,7 @@ import {
     startPublicPanelWorker,
     handlePublicPanelButton,
 } from "./public-panels/worker"
+import { startTeamRequestNotificationWorker } from "./sync/team-request-worker"
 import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
 client.once(Events.ClientReady, async (readyClient) => {
@@ -151,6 +152,7 @@ client.once(Events.ClientReady, async (readyClient) => {
     startLeagueWorker(client)
     startPublicPanelWorker(client)
     startManagedRoleWorker(client)
+    startTeamRequestNotificationWorker(client)
     try {
         logInfo("bot", "Discord bot ready", {
             user: readyClient.user.tag,

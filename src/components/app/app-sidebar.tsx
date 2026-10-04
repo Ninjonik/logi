@@ -15,6 +15,8 @@ import {
     Radio,
     Trophy,
     ServerCog,
+    UsersRound,
+    Inbox,
 } from "lucide-react"
 import { usePathname, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -270,6 +272,16 @@ export function AppSidebar({
                               title: dictionary.sidebar.competitions,
                               url: `/${locale}/dashboard/competitions${superadminWorkspaceQuery}`,
                               icon: Trophy,
+                          },
+                          {
+                              title: dictionary.sidebar.teamCatalog,
+                              url: `/${locale}/dashboard/teams${superadminWorkspaceQuery}`,
+                              icon: UsersRound,
+                          },
+                          {
+                              title: dictionary.sidebar.teamRequests,
+                              url: `/${locale}/dashboard/team-requests${superadminWorkspaceQuery}`,
+                              icon: Inbox,
                           },
                           {
                               title: dictionary.sidebar.bot,
