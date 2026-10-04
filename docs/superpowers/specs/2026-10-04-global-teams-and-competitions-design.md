@@ -39,9 +39,10 @@ team, records `mergedIntoTeamId`, and moves its competition registrations,
 fixtures and pending requests to the target. Saved match snapshots are never
 rewritten; a refresh of a merged team follows the merge pointer.
 
-Legacy workspace-owned records keep their old `guildId` only as provenance.
-A one-time internal migration turns them into global records and reports name
-collisions for an administrator to merge. No workspace keeps a private team list.
+Legacy workspace-owned records keep their old `guildId` only as provenance
+and already read as global entries. A read-only internal report
+(`npx convex run teamMigrations:legacyCollisionReport`) lists same-name entries
+per game for an administrator to merge. No workspace keeps a private team list.
 
 ## Team requests
 

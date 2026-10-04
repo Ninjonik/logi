@@ -476,7 +476,7 @@ pending (see below).
 | Consume `teams` changes and sync records, including the merge `remove`/`upsert` pair              | Website backend              |
 | Adopt global catalogue team IDs from the public competition API                                   | Website frontend/backend     |
 | Issue a restricted key with `teams` and the required games; keep it server-side                   | Workspace administrator      |
-| Merge legacy duplicate teams reported by name collisions                                          | Global administrators        |
+| Merge legacy duplicate teams listed by `npx convex run teamMigrations:legacyCollisionReport`      | Global administrators        |
 | Deploy the compatible Convex backend, dashboard and bot together before relying on the reads      | Operators                    |
 | Runtime acceptance on the authorized isolated Convex instance and Discord test channel            | Maintainers                  |
 | Explicit league identity mapping and import UI                                                    | Later provider-contract work |

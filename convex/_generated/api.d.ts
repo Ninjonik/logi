@@ -102,6 +102,7 @@ import type * as squadPresets from "../squadPresets.js";
 import type * as sso from "../sso.js";
 import type * as ssoTokenStore from "../ssoTokenStore.js";
 import type * as stratmaps from "../stratmaps.js";
+import type * as teamMigrations from "../teamMigrations.js";
 import type * as teamReads from "../teamReads.js";
 import type * as teamRequests from "../teamRequests.js";
 import type * as teamValidators from "../teamValidators.js";
@@ -215,6 +216,7 @@ declare const fullApi: ApiFromModules<{
   sso: typeof sso;
   ssoTokenStore: typeof ssoTokenStore;
   stratmaps: typeof stratmaps;
+  teamMigrations: typeof teamMigrations;
   teamReads: typeof teamReads;
   teamRequests: typeof teamRequests;
   teamValidators: typeof teamValidators;
