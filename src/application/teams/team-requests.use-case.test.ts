@@ -263,6 +263,65 @@ test("a change request updates the target at the reviewed revision; reject needs
     )
 })
 
+test("a change request keeps the team's platform logo without taking a workspace reference", async () => {
+    const { ports, requestLogos, directory, logos } = fixture()
+    directory.teams.push({
+        id: "team-y",
+        gameId: "hell_let_loose",
+        name: "Valkyria",
+        shortCode: "VLK",
+        logoAssetId: "logo-platform",
+        description: null,
+        links: [],
+        linkedGuildId: null,
+        mergedIntoTeamId: null,
+        normalizedName: "valkyria",
+        archivedAt: null,
+        revision: 2,
+        createdAt: "2026-10-01T00:00:00.000Z",
+        updatedAt: "2026-10-01T00:00:00.000Z",
+    })
+    const change = {
+        kind: "update",
+        teamId: "team-y",
+        proposal: {
+            name: "Valkyria",
+            shortCode: "VLK",
+            logoAssetId: "logo-platform",
+            description: "New description",
+            links: [],
+        },
+        note: null,
+        idempotencyKey: "change-key-0101",
+    }
+    assert.deepEqual(await submitTeamRequest(ports, workspace, change), {
+        ok: true,
+        requestId: "request-1",
+        replayed: false,
+    })
+    assert.deepEqual(requestLogos.references.get("request-1"), [])
+    assert.deepEqual(
+        await decideTeamRequest(ports, admin, "request-1", {
+            decision: "approve",
+            targetRevision: 2,
+        }),
+        { ok: true, status: "approved", teamId: "team-y" }
+    )
+    assert.equal(directory.teams[0]?.logoAssetId, "logo-platform")
+    assert.equal(directory.teams[0]?.description, "New description")
+    assert.deepEqual(logos.references.get("team-y"), ["logo-platform"])
+    // Another platform logo is not the team's own and is not a workspace upload.
+    logos.owned["logo-other"] = "platform"
+    assert.deepEqual(
+        await submitTeamRequest(ports, workspace, {
+            ...change,
+            proposal: { ...change.proposal, logoAssetId: "logo-other" },
+            idempotencyKey: "change-key-0102",
+        }),
+        { error: "asset_unavailable" }
+    )
+})
+
 test("only the requesting workspace can cancel, only while pending, without a DM", async () => {
     const { ports, requests, requestLogos } = fixture()
     await submitTeamRequest(ports, workspace, createRequest)

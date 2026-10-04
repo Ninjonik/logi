@@ -67,20 +67,28 @@ export async function submitTeamRequest(
         return fail("limit_reached")
     let gameId = input.kind === "create" ? input.gameId : null
     let teamId: string | null = null
+    let currentLogo: string | null = null
     if (input.kind === "update") {
         const team = await ports.directory.get(input.teamId)
         const denied = changeRequestTargetError(team)
         if (denied || !team) return fail(denied ?? "not_found")
         gameId = team.gameId
         teamId = team.id
+        currentLogo = team.logoAssetId
     }
     if (!gameId) return fail("invalid_request")
-    const logo = input.proposal.logoAssetId
-        ? await ports.requestLogos.attachable(
-              scope.guildId,
-              input.proposal.logoAssetId
-          )
-        : null
+    // A change request may keep the target's current, platform-owned logo; any
+    // other logo must be uploaded in the requesting workspace.
+    const keptLogo =
+        currentLogo !== null && input.proposal.logoAssetId === currentLogo
+    const logo = keptLogo
+        ? currentLogo
+        : input.proposal.logoAssetId
+          ? await ports.requestLogos.attachable(
+                scope.guildId,
+                input.proposal.logoAssetId
+            )
+          : null
     if (input.proposal.logoAssetId && !logo) return fail("asset_unavailable")
     const now = ports.now()
     const request = await ports.requests.insert({
@@ -95,10 +103,11 @@ export async function submitTeamRequest(
         idempotencyKey: input.idempotencyKey,
         fingerprint,
     })
+    // Only a workspace upload is held by the request; the team keeps its own logo.
     await ports.requestLogos.syncReferences(
         scope.guildId,
         request.id,
-        logo ? [logo] : []
+        logo && !keptLogo ? [logo] : []
     )
     return { ok: true, requestId: request.id, replayed: false }
 }
