@@ -583,3 +583,67 @@ test("maximum-length custom emoji keep the public panel within the component tex
     ).join("").length
     assert.ok(total <= 4000, `Text budget exceeded: ${total}`)
 })
+
+test("private player pages show only workspace faction emoji overrides and stay within the content limit", () => {
+    const live = appearanceLive()
+    live.players = [
+        { ...live.players[0], name: "Vk", faction: "Valkyra" },
+        { ...live.players[0], name: "Mt", faction: "Manticore" },
+        { ...live.players[0], name: "Al", faction: "Alpha" },
+    ]
+    const legacy = renderPlayers({ id: "panel", revision: 1 }, live, 0)
+    assert.equal(
+        JSON.stringify(
+            renderPlayers(
+                {
+                    id: "panel",
+                    revision: 1,
+                    presentation: panelPresentationSchema.parse({}),
+                },
+                live,
+                0
+            )
+        ),
+        JSON.stringify(legacy)
+    )
+    assert.match(legacy.content, /\*\*Vk\*\* · Valkyra\n/)
+    const presentation = panelPresentationSchema.parse({
+        factionEmoji: { valkyra: "<:vk:123456789012345678>" },
+    })
+    const marked = renderPlayers(
+        { id: "panel", revision: 1, presentation },
+        live,
+        0
+    ).content
+    assert.match(marked, /\*\*Vk\*\* · <:vk:123456789012345678> Valkyra\n/)
+    // No override: no marker, not even the installed application emoji.
+    assert.match(marked, /\*\*Mt\*\* · Manticore\n/)
+    assert.match(marked, /\*\*Al\*\* · Alpha\n/)
+
+    const emoji = `<a:${"x".repeat(32)}:${"9".repeat(20)}>`
+    live.players = Array.from({ length: 8 }, (_, index) => ({
+        ...live.players[0],
+        steamId: `7656119800000000${index}`,
+        name: "*".repeat(200),
+        faction: "Valkyra",
+        kills: Number.MAX_SAFE_INTEGER,
+        deaths: Number.MAX_SAFE_INTEGER,
+        cash: Number.MAX_VALUE,
+        ping: Number.MAX_VALUE,
+    }))
+    const long = renderPlayers(
+        {
+            id: "panel",
+            revision: 1,
+            presentation: panelPresentationSchema.parse({
+                factionEmoji: { valkyra: emoji },
+            }),
+        },
+        live,
+        0
+    ).content
+    assert.ok(long.length <= 2000, `Discord content limit: ${long.length}`)
+    // Eight 58-character emoji would overflow this page, so they are dropped.
+    assert.ok(!long.includes(emoji))
+    assert.match(long, /\*\* · Valkyra\n/)
+})

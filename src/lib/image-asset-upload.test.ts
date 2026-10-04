@@ -1,4 +1,5 @@
 import {
+    listImageAssets,
     precheckImageFile,
     readImageUploadResponse,
     uploadImageAsset,
@@ -134,4 +135,41 @@ test("a network failure is reported as unavailable", async () => {
         ),
         { ok: false, error: "unavailable", retryAfterMs: null }
     )
+})
+
+test("lists this workspace's uploads of one kind, newest first", async () => {
+    const urls: string[] = []
+    const older = {
+        ...asset,
+        id: "imageAssets:0",
+        createdAt: "2026-10-01T00:00:00.000Z",
+    }
+    const logo = { ...asset, id: "imageAssets:2", kind: "team-logo" }
+    const result = await listImageAssets(
+        "server/1",
+        "panel-banner",
+        async (url) => {
+            urls.push(String(url))
+            return Response.json({ assets: [older, asset, logo] })
+        }
+    )
+    assert.deepEqual(result, { ok: true, assets: [asset, older] })
+    assert.deepEqual(urls, [
+        "/api/servers/server%2F1/image-assets?kind=panel-banner",
+    ])
+})
+
+test("a refused, malformed or failed listing offers no assets", async () => {
+    for (const fetcher of [
+        async () => Response.json({ error: "forbidden" }, { status: 403 }),
+        async () => Response.json({ error: "unavailable" }, { status: 503 }),
+        async () => Response.json({ assets: [{ id: 1 }] }),
+        async () => new Response("not json"),
+        async () => {
+            throw new Error("offline")
+        },
+    ])
+        assert.deepEqual(await listImageAssets("s", "panel-banner", fetcher), {
+            ok: false,
+        })
 })

@@ -179,6 +179,15 @@ export const csMessages = {
         bannerNone:
             "Bez banneru. Panel zobrazí obrázek mapy, pokud je zapnutý.",
         bannerUploaded: "Banner je nahraný. Ulož panel, aby se zveřejnil.",
+        bannerSelected: "Banner je vybraný. Ulož panel, aby se zveřejnil.",
+        bannerLibrary: "Nahrané bannery",
+        bannerLibraryShow: "Vybrat nahraný banner",
+        bannerLibraryHide: "Skrýt nahrané bannery",
+        bannerLibraryLoading: "Načítám nahrané bannery…",
+        bannerLibraryEmpty:
+            "V tomto workspace zatím nikdo nenahrál žádný banner.",
+        bannerLibraryError: "Nahrané bannery nelze načíst. Zkus to později.",
+        bannerLibraryItem: "Použít banner {width} × {height} px nahraný {date}",
         factionEmoji: "Emoji frakcí",
         factionEmojiHelp:
             "Jedno Unicode emoji, nebo vlastní Discord emoji ve tvaru <:nazev:id> (animované: <a:nazev:id>). Vlastní emoji musí patřit serveru, na kterém je bot, nebo aplikaci bota. Prázdné pole ponechá výchozí hodnotu zobrazenou jako nápověda.",

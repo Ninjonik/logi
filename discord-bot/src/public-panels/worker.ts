@@ -382,7 +382,11 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
                     result.page
                 )
             return renderPlayers(
-                { id: result.panel._id, revision: result.panel.revision },
+                {
+                    id: result.panel._id,
+                    revision: result.panel.revision,
+                    presentation: result.panel.presentation,
+                },
                 result.data,
                 result.page
             )

@@ -4,29 +4,88 @@ import {
     isPanelAccentColorDraft,
     isPanelFactionEmojiDraft,
     PANEL_ACCENT_COLOR_PATTERN,
+    resolvePanelPresentation,
     type PanelFaction,
     type PanelLayout,
     type ResolvedPanelPresentation,
 } from "@/domain/discord-publications/panel-presentation"
 import {
+    listImageAssets,
     uploadImageAsset,
     type ImageUploadError,
+    type ImageUploadResult,
 } from "@/lib/image-asset-upload"
+import {
+    IMAGE_INPUT_TYPES,
+    type ImageAssetDto,
+} from "@/domain/assets/image-asset"
 import type { PublicPanelSettings } from "@/domain/discord-publications/settings"
-import { IMAGE_INPUT_TYPES } from "@/domain/assets/image-asset"
+import { useEffect, useId, useRef, useState } from "react"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { useId, useState } from "react"
+import { cn } from "@/lib/utils"
 
 /** Appearance state edited in the form; `bannerUrl` is only a preview of the stored asset. */
 export type PanelAppearanceDraft = Omit<
     ResolvedPanelPresentation,
     "factionEmoji"
 > & { factionEmoji: Partial<Record<string, string>> }
+/**
+ * Every edit is applied to the draft that is current when it lands, so a slow
+ * banner upload never reverts changes made while it was in flight.
+ */
+export type PanelAppearanceUpdate = (
+    current: PanelAppearanceDraft
+) => PanelAppearanceDraft
+/** The form's draft is null until edited; an update then starts from the defaults. */
+export function applyPanelAppearanceUpdate(
+    current: PanelAppearanceDraft | null,
+    update: PanelAppearanceUpdate
+): PanelAppearanceDraft {
+    return update(current ?? resolvePanelPresentation(null))
+}
+/** Sets or clears only the banner fields. */
+export function withPanelBanner(
+    asset: Pick<ImageAssetDto, "id" | "url"> | null
+): PanelAppearanceUpdate {
+    return (current) => ({
+        ...current,
+        bannerAssetId: asset?.id ?? null,
+        bannerUrl: asset?.url ?? null,
+    })
+}
+/**
+ * One banner upload. The form is told while it is in flight so saving and
+ * switching panels wait. A result arriving after the editor was remounted for
+ * another panel is dropped; otherwise only the banner fields are merged.
+ */
+export async function runPanelBannerUpload(
+    upload: () => Promise<ImageUploadResult>,
+    hooks: {
+        isCurrent: () => boolean
+        onUploadingChange: (uploading: boolean) => void
+        onChange: (update: PanelAppearanceUpdate) => void
+        onResult: (result: ImageUploadResult) => void
+    }
+): Promise<void> {
+    hooks.onUploadingChange(true)
+    let result: ImageUploadResult
+    try {
+        result = await upload()
+    } finally {
+        hooks.onUploadingChange(false)
+    }
+    if (!hooks.isCurrent()) return
+    hooks.onResult(result)
+    if (result.ok) hooks.onChange(withPanelBanner(result.asset))
+}
 type Texts = Dictionary["publicPanelAppearance"]
+type Library =
+    | { state: "closed" | "loading" | "error" }
+    | { state: "ready"; assets: ImageAssetDto[] }
 const LIVE_LAYOUT: readonly (keyof PanelLayout)[] = [
     "showMap",
     "showScoreboard",
@@ -55,6 +114,7 @@ export function DiscordPanelAppearance({
     disabled,
     t,
     onChange,
+    onUploadingChange,
 }: {
     serverId: string
     kind: PublicPanelSettings["kind"]
@@ -62,33 +122,62 @@ export function DiscordPanelAppearance({
     factions: readonly PanelFaction[]
     disabled: boolean
     t: Texts
-    onChange: (next: PanelAppearanceDraft) => void
+    onChange: (update: PanelAppearanceUpdate) => void
+    onUploadingChange: (uploading: boolean) => void
 }) {
     const id = useId()
     const [uploading, setUploading] = useState(false),
         [uploadError, setUploadError] = useState(""),
-        [uploaded, setUploaded] = useState(false)
+        [bannerStatus, setBannerStatus] = useState<
+            "uploaded" | "selected" | null
+        >(null),
+        [library, setLibrary] = useState<Library>({ state: "closed" })
+    // The form remounts this editor for another panel or after a save.
+    const mounted = useRef(false)
+    useEffect(() => {
+        mounted.current = true
+        return () => {
+            mounted.current = false
+        }
+    }, [])
     const accentValid = isPanelAccentColorDraft(value.accentColor)
     const accent = value.accentColor?.trim() ?? ""
     async function upload(file: File | undefined) {
         if (!file) return
-        setUploading(true)
         setUploadError("")
-        setUploaded(false)
-        const result = await uploadImageAsset(serverId, "panel-banner", file)
-        setUploading(false)
-        if (!result.ok) {
-            setUploadError(
-                uploadErrorMessage(t, result.error, result.retryAfterMs)
-            )
-            return
-        }
-        setUploaded(true)
-        onChange({
-            ...value,
-            bannerAssetId: result.asset.id,
-            bannerUrl: result.asset.url,
-        })
+        setBannerStatus(null)
+        await runPanelBannerUpload(
+            () => uploadImageAsset(serverId, "panel-banner", file),
+            {
+                isCurrent: () => mounted.current,
+                onUploadingChange: (next) => {
+                    setUploading(next)
+                    onUploadingChange(next)
+                },
+                onChange,
+                onResult: (result) =>
+                    result.ok
+                        ? setBannerStatus("uploaded")
+                        : setUploadError(
+                              uploadErrorMessage(
+                                  t,
+                                  result.error,
+                                  result.retryAfterMs
+                              )
+                          ),
+            }
+        )
+    }
+    async function toggleLibrary() {
+        if (library.state === "ready") return setLibrary({ state: "closed" })
+        setLibrary({ state: "loading" })
+        const result = await listImageAssets(serverId, "panel-banner")
+        if (!mounted.current) return
+        setLibrary(
+            result.ok
+                ? { state: "ready", assets: result.assets }
+                : { state: "error" }
+        )
     }
     return (
         <fieldset className="space-y-4 rounded border p-3">
@@ -105,13 +194,13 @@ export function DiscordPanelAppearance({
                                     checked={value.layout[key]}
                                     disabled={disabled}
                                     onCheckedChange={(checked) =>
-                                        onChange({
-                                            ...value,
+                                        onChange((current) => ({
+                                            ...current,
                                             layout: {
-                                                ...value.layout,
+                                                ...current.layout,
                                                 [key]: checked,
                                             },
-                                        })
+                                        }))
                                     }
                                 />
                                 <Label htmlFor={`${id}-${key}`}>{t[key]}</Label>
@@ -136,9 +225,10 @@ export function DiscordPanelAppearance({
                                 ? accent.toLowerCase()
                                 : DEFAULT_ACCENT
                         }
-                        onChange={(e) =>
-                            onChange({ ...value, accentColor: e.target.value })
-                        }
+                        onChange={(e) => {
+                            const accentColor = e.target.value
+                            onChange((current) => ({ ...current, accentColor }))
+                        }}
                     />
                     <Input
                         id={`${id}-accent`}
@@ -149,12 +239,10 @@ export function DiscordPanelAppearance({
                         value={value.accentColor ?? ""}
                         aria-invalid={!accentValid}
                         aria-describedby={`${id}-accent-help`}
-                        onChange={(e) =>
-                            onChange({
-                                ...value,
-                                accentColor: e.target.value || null,
-                            })
-                        }
+                        onChange={(e) => {
+                            const accentColor = e.target.value || null
+                            onChange((current) => ({ ...current, accentColor }))
+                        }}
                     />
                     <Button
                         type="button"
@@ -162,7 +250,10 @@ export function DiscordPanelAppearance({
                         size="sm"
                         disabled={disabled || !value.accentColor}
                         onClick={() =>
-                            onChange({ ...value, accentColor: null })
+                            onChange((current) => ({
+                                ...current,
+                                accentColor: null,
+                            }))
                         }
                     >
                         {t.accentColorReset}
@@ -216,13 +307,9 @@ export function DiscordPanelAppearance({
                             size="sm"
                             disabled={disabled || uploading}
                             onClick={() => {
-                                setUploaded(false)
+                                setBannerStatus(null)
                                 setUploadError("")
-                                onChange({
-                                    ...value,
-                                    bannerAssetId: null,
-                                    bannerUrl: null,
-                                })
+                                onChange(withPanelBanner(null))
                             }}
                         >
                             {t.bannerRemove}
@@ -240,11 +327,97 @@ export function DiscordPanelAppearance({
                         {uploadError}
                     </p>
                 )}
-                {uploaded && !uploadError && (
+                {bannerStatus && !uploadError && (
                     <p role="status" className="text-xs">
-                        {t.bannerUploaded}
+                        {bannerStatus === "uploaded"
+                            ? t.bannerUploaded
+                            : t.bannerSelected}
                     </p>
                 )}
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    aria-expanded={library.state === "ready"}
+                    aria-controls={`${id}-library`}
+                    disabled={
+                        disabled || uploading || library.state === "loading"
+                    }
+                    onClick={() => void toggleLibrary()}
+                >
+                    {library.state === "ready"
+                        ? t.bannerLibraryHide
+                        : library.state === "loading"
+                          ? t.bannerLibraryLoading
+                          : t.bannerLibraryShow}
+                </Button>
+                {library.state === "error" && (
+                    <p role="alert" className="text-destructive text-xs">
+                        {t.bannerLibraryError}
+                    </p>
+                )}
+                {library.state === "ready" &&
+                    (library.assets.length === 0 ? (
+                        <p
+                            id={`${id}-library`}
+                            className="text-muted-foreground text-xs"
+                        >
+                            {t.bannerLibraryEmpty}
+                        </p>
+                    ) : (
+                        <ul
+                            id={`${id}-library`}
+                            aria-label={t.bannerLibrary}
+                            className="flex flex-wrap gap-2"
+                        >
+                            {library.assets.map((asset) => {
+                                const chosen = asset.id === value.bannerAssetId
+                                return (
+                                    <li key={asset.id}>
+                                        <button
+                                            type="button"
+                                            aria-pressed={chosen}
+                                            disabled={disabled || uploading}
+                                            className={cn(
+                                                "focus-visible:ring-ring/50 block rounded border p-1 outline-none focus-visible:ring-[3px] disabled:opacity-50",
+                                                chosen &&
+                                                    "border-primary ring-primary ring-2"
+                                            )}
+                                            onClick={() => {
+                                                setUploadError("")
+                                                setBannerStatus("selected")
+                                                onChange(withPanelBanner(asset))
+                                            }}
+                                        >
+                                            {/* Immutable public asset URL, as in the preview above. */}
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={asset.url}
+                                                loading="lazy"
+                                                alt={t.bannerLibraryItem
+                                                    .replace(
+                                                        "{width}",
+                                                        String(asset.width)
+                                                    )
+                                                    .replace(
+                                                        "{height}",
+                                                        String(asset.height)
+                                                    )
+                                                    .replace(
+                                                        "{date}",
+                                                        asset.createdAt.slice(
+                                                            0,
+                                                            10
+                                                        )
+                                                    )}
+                                                className="h-16 w-28 rounded object-cover"
+                                            />
+                                        </button>
+                                    </li>
+                                )
+                            })}
+                        </ul>
+                    ))}
             </div>
             {factions.length > 0 && (
                 <div className="space-y-2">
@@ -272,15 +445,16 @@ export function DiscordPanelAppearance({
                                         }
                                         aria-invalid={!valid}
                                         aria-describedby={`${id}-emoji-help`}
-                                        onChange={(e) =>
-                                            onChange({
-                                                ...value,
+                                        onChange={(e) => {
+                                            const emoji = e.target.value
+                                            onChange((current) => ({
+                                                ...current,
                                                 factionEmoji: {
-                                                    ...value.factionEmoji,
-                                                    [faction]: e.target.value,
+                                                    ...current.factionEmoji,
+                                                    [faction]: emoji,
                                                 },
-                                            })
-                                        }
+                                            }))
+                                        }}
                                     />
                                     {!valid && (
                                         <p className="text-destructive text-xs">

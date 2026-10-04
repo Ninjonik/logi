@@ -173,8 +173,11 @@ Records without `presentation` resolve to the defaults, and the renderers are
 byte-identical for a missing and a fully defaulted appearance. A save without
 `presentation` clears a stored appearance and its banner reference. Result
 messages apply map, compact, accent, banner and emoji; they ignore the
-scoreboard and player-count switches. Private player lists are unchanged apart
-from the HLL embed color.
+scoreboard and player-count switches. Private player pages use the accent color
+for the HLL embed and prefix only workspace emoji overrides (never the
+application-emoji defaults) to semantically matched factions; a Warcon page
+whose overrides would exceed Discord's 2000-character content limit is sent
+without them. Without overrides both pages are byte-identical to before.
 
 **Banner reference rule.** The client sends only `bannerAssetId`; `bannerUrl` in
 the request is ignored by the route and rejected by the Convex validator. The
@@ -190,7 +193,11 @@ banner or saving without appearance releases it. Referenced banners survive the
 unattached-upload sweep; released or never-saved uploads are removed after 24
 hours. Uploads use `POST /api/servers/{serverId}/image-assets?kind=panel-banner`
 (PNG, JPEG or WebP up to 2 MiB and 4096 × 4096 px, normalized to WebP of at most
-1920 × 1080 px).
+1920 × 1080 px); **Choose an uploaded banner** reads `GET` on the same path to
+reuse one of the workspace's banners, which the save verifies the same way.
+While an upload is in flight the form disables saving, verification and
+switching panels; the result merges only `bannerAssetId`/`bannerUrl` into the
+current draft and is dropped if the editor was remounted for another panel.
 
 ## API and activation
 

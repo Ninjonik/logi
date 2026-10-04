@@ -181,6 +181,17 @@ export const deMessages = {
             "Kein Banner. Das Panel zeigt das Kartenbild, sofern aktiviert.",
         bannerUploaded:
             "Banner hochgeladen. Speichere das Panel, um es zu veröffentlichen.",
+        bannerSelected:
+            "Banner ausgewählt. Speichere das Panel, um es zu veröffentlichen.",
+        bannerLibrary: "Hochgeladene Banner",
+        bannerLibraryShow: "Hochgeladenes Banner wählen",
+        bannerLibraryHide: "Hochgeladene Banner ausblenden",
+        bannerLibraryLoading: "Hochgeladene Banner werden geladen…",
+        bannerLibraryEmpty:
+            "In diesem Workspace wurden noch keine Banner hochgeladen.",
+        bannerLibraryError:
+            "Hochgeladene Banner konnten nicht geladen werden. Versuche es später erneut.",
+        bannerLibraryItem: "Banner {width} × {height} px vom {date} verwenden",
         factionEmoji: "Fraktions-Emojis",
         factionEmojiHelp:
             "Ein Unicode-Emoji oder ein eigenes Discord-Emoji im Format <:name:id> (animiert: <a:name:id>). Eigene Emojis müssen zu einem Server gehören, auf dem der Bot ist, oder zur Bot-Anwendung. Leer lassen, um den als Platzhalter gezeigten Standard zu behalten.",

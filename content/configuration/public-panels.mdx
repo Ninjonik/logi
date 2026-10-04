@@ -86,17 +86,22 @@ appearance is never changed, look exactly as before.
 - **Banner** uploads a PNG, JPEG or WebP image of up to 2 MiB and at most
   4096 × 4096 pixels. Logi converts it to WebP of at most 1920 × 1080 pixels and
   shows it as the main image above the panel header, in place of the map
-  thumbnail. An upload is attached only after you save the panel; **Remove
+  thumbnail. **Choose an uploaded banner** lists the banners already uploaded in
+  this workspace, so several panels can share one without uploading it again.
+  Saving waits until a running upload finishes, and changes made meanwhile are
+  kept. An upload or choice is attached only after you save the panel; **Remove
   banner** detaches it on the next save. Uploads that are never saved to a panel
   are removed automatically after a day. If a banner is no longer available to
   the workspace, saving asks you to upload it again or remove it. Discord shows
   the banner only when Logi runs on a public HTTPS address.
 - **Faction emoji** set the marker shown before each faction or team name on
-  scores, leader lists and results, for the games of the selected source:
+  scores, leader lists, results and private player pages, for the games of the
+  selected source:
   Allies and Axis for Hell Let Loose, Valkyra, Manticore and Lonestar for
   Wardogs. Enter one Unicode emoji such as 🦅, or a custom Discord emoji as
   `<:name:id>` (animated: `<a:name:id>`). A custom emoji must belong to a
   server the bot is in or to the bot application. An empty field keeps the
   default shown as the placeholder: the installed Wardogs application emoji or
-  ◈, and no emoji for Hell Let Loose teams. Provider labels such as Alpha or
-  Bravo always keep the neutral ◈ marker.
+  ◈, and no emoji for Hell Let Loose teams. Private player pages show only the
+  emoji you set, and drop them if they would make a page too long for Discord.
+  Provider labels such as Alpha or Bravo always keep the neutral ◈ marker.

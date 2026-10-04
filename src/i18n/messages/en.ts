@@ -179,6 +179,16 @@ export const enMessages = {
         bannerNone:
             "No banner. The panel shows map artwork when it is enabled.",
         bannerUploaded: "Banner uploaded. Save the panel to publish it.",
+        bannerSelected: "Banner selected. Save the panel to publish it.",
+        bannerLibrary: "Uploaded banners",
+        bannerLibraryShow: "Choose an uploaded banner",
+        bannerLibraryHide: "Hide uploaded banners",
+        bannerLibraryLoading: "Loading uploaded banners…",
+        bannerLibraryEmpty:
+            "No banners have been uploaded in this workspace yet.",
+        bannerLibraryError:
+            "Uploaded banners could not be loaded. Retry later.",
+        bannerLibraryItem: "Use banner {width} × {height} px uploaded {date}",
         factionEmoji: "Faction emoji",
         factionEmojiHelp:
             "One Unicode emoji, or a custom Discord emoji written as <:name:id> (animated: <a:name:id>). Custom emoji must belong to a server the bot is in or to the bot application. Leave empty to keep the default shown as the placeholder.",

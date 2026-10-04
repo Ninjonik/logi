@@ -337,3 +337,64 @@ test("legacy saves without presentation clear a stored appearance and its banner
     })
     assert.equal(listed.panels[0].presentation, undefined)
 })
+test("panels can share one workspace banner; clearing it on one keeps the other's reference", async () => {
+    const ctx = testContext()
+    seedDashboardActor(ctx.db)
+    ctx.db.tables.gameDataConnections = [
+        {
+            _id: "gameDataConnections:a",
+            guildId: "guild-a",
+            gameId: "wardogs",
+            enabled: true,
+        },
+    ]
+    seedBanner(ctx, "imageAssets:shared")
+    const save = (kind: string, channelId: string, banner: string | null) =>
+        invoke(configure, ctx, {
+            secret,
+            guildId: "guild-a",
+            actor: actorFixture,
+            settings: {
+                kind,
+                connectionId: "gameDataConnections:a",
+                channelId,
+                enabled: true,
+                showPlayers: false,
+                artwork: true,
+                refreshSeconds: 60,
+                presentation: { bannerAssetId: banner },
+            },
+            verifiedChannel: {
+                id: channelId,
+                guildId: "guild-a",
+                type: 0,
+                canPublish: true,
+            },
+        })
+    const server = await save(
+        "server",
+        "100000000000000004",
+        "imageAssets:shared"
+    )
+    const board = await save(
+        "scoreboard",
+        "100000000000000005",
+        "imageAssets:shared"
+    )
+    assert.equal(server.ok, true)
+    assert.equal(board.ok, true)
+    assert.notEqual(server.id, board.id)
+    const references = () =>
+        ctx.db.tables.imageAssetReferences
+            .map((r) => `${r.ownerId}:${r.assetId}`)
+            .sort()
+    assert.deepEqual(
+        references(),
+        [
+            `${server.id}:imageAssets:shared`,
+            `${board.id}:imageAssets:shared`,
+        ].sort()
+    )
+    await save("server", "100000000000000004", null)
+    assert.deepEqual(references(), [`${board.id}:imageAssets:shared`])
+})

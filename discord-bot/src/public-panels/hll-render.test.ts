@@ -74,6 +74,10 @@ test("HLL legacy panels render exactly like the defaulted appearance and show no
     )
     assert.equal(parsed(legacy).components[0].accent_color, 0x77b255)
     assert.match(allTexts(legacy).join("\n"), /\n\*\*Allies · 3\*\*/)
+    assert.match(
+        JSON.stringify(renderHllPlayers(panel, data, 0)),
+        / · Allies\\n/
+    )
     assert.equal(
         JSON.stringify(
             renderHllPlayers(
@@ -107,14 +111,12 @@ test("HLL appearance applies team emoji, accent, banner and layout toggles", () 
     assert.match(text, /🇺🇸 \*\*Allies · 3\*\*/)
     assert.match(text, /<:axis:123456789012345678> \*\*Axis · 2\*\*/)
     assert.match(text, /kills · 🇺🇸 Allies/)
-    assert.equal(
-        JSON.parse(
-            JSON.stringify(
-                renderHllPlayers({ ...panel, presentation }, data, 0)
-            )
-        ).embeds[0].color,
-        0x123456
-    )
+    const players = JSON.parse(
+        JSON.stringify(renderHllPlayers({ ...panel, presentation }, data, 0))
+    ).embeds[0]
+    assert.equal(players.color, 0x123456)
+    assert.match(players.description, / · 🇺🇸 Allies\n/)
+    assert.match(players.description, / · <:axis:123456789012345678> Axis\n/)
     const compact = renderHllPanel(
         {
             ...panel,

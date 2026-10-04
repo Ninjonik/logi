@@ -225,19 +225,24 @@ export function renderPanel(
     }
 }
 export function renderPlayers(
-    panel: { id: string; revision: number },
+    panel: PanelPresentationCarrier & { id: string; revision: number },
     live: LiveData,
     requestedPage: number
 ) {
     const size = 8
     const pages = Math.max(1, Math.ceil(live.players.length / size))
     const page = Math.max(0, Math.min(Math.floor(requestedPage), pages - 1))
-    const rows = live.players
-        .slice(page * size, (page + 1) * size)
-        .map(
-            (p) =>
-                `**${clean(p.name, 45)}** · ${clean(p.faction, 20)}\n⚔ ${p.kills} kills · ☠ ${p.deaths} deaths · 💵 ${p.cash} cash · 📶 ${count(p.ping)} ms`
-        )
+    // Only workspace overrides mark factions here; without one the page is unchanged.
+    const overrides = resolvePanelPresentation(panel).factionEmoji
+    const rows = (marked: boolean) =>
+        live.players.slice(page * size, (page + 1) * size).map((p) => {
+            const faction = panelFactionOf(p.faction)
+            const emoji = marked && faction ? overrides[faction] : undefined
+            return `**${clean(p.name, 45)}** · ${emoji ? `${emoji} ` : ""}${clean(p.faction, 20)}\n⚔ ${p.kills} kills · ☠ ${p.deaths} deaths · 💵 ${p.cash} cash · 📶 ${count(p.ping)} ms`
+        })
+    const content = (lines: string[]) =>
+        `**Players · ${live.playersFreshness} · ${page + 1}/${pages}**\nObserved ${at(live.playersAt)}\n${lines.join("\n\n") || (live.playersFreshness === "fresh" ? "No players reported." : "Player data unavailable.")}`
+    const marked = content(rows(true))
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId(
@@ -265,7 +270,8 @@ export function renderPlayers(
             .setDisabled(page === pages - 1)
     )
     return {
-        content: `**Players · ${live.playersFreshness} · ${page + 1}/${pages}**\nObserved ${at(live.playersAt)}\n${rows.join("\n\n") || (live.playersFreshness === "fresh" ? "No players reported." : "Player data unavailable.")}`,
+        // Long custom emoji are dropped rather than exceed Discord's content limit.
+        content: marked.length <= 2000 ? marked : content(rows(false)),
         components: [row],
         allowedMentions: { parse: [] as never[] },
     }

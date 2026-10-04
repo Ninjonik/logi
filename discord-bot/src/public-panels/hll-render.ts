@@ -180,8 +180,9 @@ export function renderHllPlayers(
     const size = 8,
         pages = Math.max(1, Math.ceil(data.players.length / size)),
         page = Math.max(0, Math.min(requestedPage, pages - 1))
+    const look = resolvePanelPresentation(panel)
     const embed = new EmbedBuilder()
-        .setColor(panelAccentColor(resolvePanelPresentation(panel), 0x5865f2))
+        .setColor(panelAccentColor(look, 0x5865f2))
         .setTitle("HELL LET LOOSE · Connected players")
         .setDescription(
             `**${clean(data.status?.map ?? null)}**\nPlayers: **${data.playersFreshness}** · observed ${at(data.playersAt)}\nCurrent round only · page ${page + 1}/${pages}\n\n${
@@ -189,7 +190,7 @@ export function renderHllPlayers(
                     .slice(page * size, (page + 1) * size)
                     .map(
                         (p) =>
-                            `**${clean(p.name, 40)}** · ${team(p.team)}\n⚔ ${metric(p.kills)} kills · ☠ ${metric(p.deaths)} deaths\nCombat ${metric(p.combat)} · Attack ${metric(p.offense)} · Defence ${metric(p.defense)} · Support ${metric(p.support)}`
+                            `**${clean(p.name, 40)}** · ${teamMark(look, p.team)}${team(p.team)}\n⚔ ${metric(p.kills)} kills · ☠ ${metric(p.deaths)} deaths\nCombat ${metric(p.combat)} · Attack ${metric(p.offense)} · Defence ${metric(p.defense)} · Support ${metric(p.support)}`
                     )
                     .join("\n\n") ||
                 (data.playersFreshness === "fresh"

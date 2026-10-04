@@ -6,6 +6,7 @@ import {
     resolvePanelPresentation,
 } from "@/domain/discord-publications/panel-presentation"
 import {
+    applyPanelAppearanceUpdate,
     DiscordPanelAppearance,
     uploadErrorMessage,
     type PanelAppearanceDraft,
@@ -64,6 +65,8 @@ export function DiscordPublicPanelsForm({
     )
     // Remounting clears upload status after a save or when another panel loads.
     const [appearanceKey, setAppearanceKey] = useState(0)
+    // A banner upload in flight blocks saving and switching panels until it lands.
+    const [uploading, setUploading] = useState(false)
     const [channels, setChannels] = useState<SelectableDiscordChannel[]>([]),
         [sources, setSources] = useState<
             {
@@ -386,12 +389,17 @@ export function DiscordPublicPanelsForm({
                 factions={factions}
                 disabled={busy}
                 t={appearanceText}
-                onChange={setAppearance}
+                onChange={(update) =>
+                    setAppearance((current) =>
+                        applyPanelAppearanceUpdate(current, update)
+                    )
+                }
+                onUploadingChange={setUploading}
             />
             <div className="flex gap-2">
                 <Button
                     type="button"
-                    disabled={busy}
+                    disabled={busy || uploading}
                     onClick={() => void save()}
                 >
                     {cs ? "Uložit / obnovit panel" : "Save / refresh panel"}
@@ -399,7 +407,7 @@ export function DiscordPublicPanelsForm({
                 <Button
                     type="button"
                     variant="outline"
-                    disabled={busy}
+                    disabled={busy || uploading}
                     onClick={() => void save(true)}
                 >
                     {cs ? "Ověřit místnost" : "Verify channel"}
@@ -437,6 +445,7 @@ export function DiscordPublicPanelsForm({
                         <Button
                             type="button"
                             variant="outline"
+                            disabled={uploading}
                             onClick={() => {
                                 setSettings(
                                     publicPanelSettingsSchema.strip().parse(p)

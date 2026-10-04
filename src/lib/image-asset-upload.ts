@@ -105,3 +105,32 @@ export async function uploadImageAsset(
         return { ok: false, error: "unavailable", retryAfterMs: null }
     }
 }
+
+const listSchema = z.object({ assets: z.array(imageAssetDtoSchema) })
+export type ImageAssetListResult =
+    { ok: true; assets: ImageAssetDto[] } | { ok: false }
+
+/** Same-origin list of this workspace's ready uploads of one kind, newest first. */
+export async function listImageAssets(
+    serverId: string,
+    kind: ImageAssetKind,
+    fetcher: typeof fetch = fetch
+): Promise<ImageAssetListResult> {
+    try {
+        const response = await fetcher(
+            `/api/servers/${encodeURIComponent(serverId)}/image-assets?kind=${kind}`
+        )
+        const parsed = listSchema.safeParse(
+            await response.json().catch(() => null)
+        )
+        if (!response.ok || !parsed.success) return { ok: false }
+        return {
+            ok: true,
+            assets: parsed.data.assets
+                .filter((asset) => asset.kind === kind)
+                .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+        }
+    } catch {
+        return { ok: false }
+    }
+}
