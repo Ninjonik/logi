@@ -1240,7 +1240,7 @@ export const csMessages = {
             asset_unavailable: "Logo už není dostupné. Nahrajte ho znovu.",
             limit_reached: "Katalog pro tuto hru je plný.",
             invalid_merge:
-                "Tyto týmy nelze sloučit. Vyberte aktivní tým stejné hry; sloučený tým nelze obnovit ani znovu sloučit.",
+                "Tyto týmy nelze sloučit. Vyberte aktivní tým stejné hry, který proti tomuto týmu nikdy nehrál v soutěži; sloučený tým nelze obnovit ani znovu sloučit.",
             forbidden:
                 "Katalog týmů mohou spravovat pouze globální administrátoři.",
             unavailable:

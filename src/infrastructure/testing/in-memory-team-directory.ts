@@ -35,6 +35,8 @@ export class InMemoryTeamDirectory implements TeamDirectoryRepository {
     audits: InMemoryAudit[] = []
     changes: { id: string; operation: "upsert" | "remove" }[] = []
     repoints: { from: string; to: string }[] = []
+    /** Competition fixtures as [side A, side B] team IDs. */
+    fixtures: [string, string][] = []
     private sequence = 0
 
     async findCreate(idempotencyKey: string) {
@@ -100,6 +102,13 @@ export class InMemoryTeamDirectory implements TeamDirectoryRepository {
     }
     async repoint(from: string, to: string) {
         this.repoints.push({ from, to })
+    }
+    async playedEachOther(teamId: string, otherTeamId: string) {
+        return this.fixtures.some(
+            ([a, b]) =>
+                (a === teamId && b === otherTeamId) ||
+                (a === otherTeamId && b === teamId)
+        )
     }
 }
 

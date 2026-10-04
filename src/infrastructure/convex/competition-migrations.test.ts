@@ -368,3 +368,65 @@ test("an unknown cursor is rejected", async () => {
         /Invalid migration cursor/
     )
 })
+
+test("same-name clans that played each other keep separate teams and no fixture becomes a self-match", async () => {
+    const ctx = setup()
+    ctx.db.seed("guilds", {
+        _id: "guilds:wolves-real",
+        name: "Wolves",
+        discordId: "223456789012345678",
+        botInside: true,
+    })
+    ctx.db.seed("guilds", {
+        _id: "guilds:wolves-ghost",
+        name: "wolves ",
+        botInside: false,
+    })
+    for (const guildId of ["guilds:wolves-real", "guilds:wolves-ghost"])
+        ctx.db.seed("competitionTeams", {
+            _id: `competitionTeams:${guildId.slice(7)}`,
+            competitionId: "competitions:ecl",
+            guildId,
+            divisionId: "competitionDivisions:d1",
+            withdrawn: false,
+            createdAt: NOW,
+            updatedAt: NOW,
+        })
+    ctx.db.seed("competitionFixtures", {
+        _id: "competitionFixtures:wolves",
+        competitionId: "competitions:ecl",
+        divisionId: "competitionDivisions:d1",
+        phase: "league",
+        teamAId: "guilds:wolves-real",
+        teamBId: "guilds:wolves-ghost",
+        scoreA: 3,
+        scoreB: 2,
+        status: "final",
+        createdAt: NOW,
+        updatedAt: NOW,
+    })
+    await runToCompletion(ctx)
+    const wolves = ctx.db.tables.competitionTeams.filter((row) =>
+        String(row.guildId).startsWith("guilds:wolves")
+    )
+    assert.equal(wolves.length, 2)
+    assert.notEqual(wolves[0]!.teamId, wolves[1]!.teamId)
+    const fixture = ctx.db.tables.competitionFixtures.find(
+        (row) => row._id === "competitionFixtures:wolves"
+    )!
+    assert.notEqual(fixture.sideATeamId, fixture.sideBTeamId)
+    assert.deepEqual(
+        new Set([fixture.sideATeamId, fixture.sideBTeamId]),
+        new Set(wolves.map((row) => row.teamId))
+    )
+    // No converted fixture anywhere has a team playing itself.
+    for (const row of ctx.db.tables.competitionFixtures)
+        if (row.sideATeamId) assert.notEqual(row.sideATeamId, row.sideBTeamId)
+    // The aliases that never met are still folded into one team.
+    assert.equal(
+        ctx.db.tables.competitionTeams.filter(
+            (row) => row.guildId === "guilds:omen-alias"
+        ).length,
+        0
+    )
+})

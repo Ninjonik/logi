@@ -315,3 +315,26 @@ test("merge archives the source with a pointer, repoints records and emits both 
         false
     )
 })
+
+test("teams that played each other in a competition cannot be merged", async () => {
+    const { repository, ports } = fixture()
+    await createTeam(ports, scope, createInput)
+    await createTeam(ports, scope, {
+        ...createInput,
+        name: "Valkyria Main",
+        logoAssetId: null,
+        idempotencyKey: "create-main-0001",
+    })
+    repository.fixtures.push(["team-2", "team-1"])
+    const before = structuredClone(repository.teams)
+    assert.deepEqual(
+        await mergeTeam(ports, scope, "team-1", {
+            expectedRevision: 1,
+            targetTeamId: "team-2",
+            targetRevision: 1,
+        }),
+        { error: "invalid_merge" }
+    )
+    assert.deepEqual(repository.teams, before)
+    assert.deepEqual(repository.repoints, [])
+})

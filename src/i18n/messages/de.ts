@@ -1279,7 +1279,7 @@ export const deMessages = {
                 "Das Logo ist nicht mehr verfügbar. Lade es erneut hoch.",
             limit_reached: "Der Katalog für dieses Spiel ist voll.",
             invalid_merge:
-                "Diese Teams können nicht zusammengeführt werden. Wähle ein aktives Team desselben Spiels; ein zusammengeführtes Team kann weder wiederhergestellt noch erneut zusammengeführt werden.",
+                "Diese Teams können nicht zusammengeführt werden. Wähle ein aktives Team desselben Spiels, das in keinem Wettbewerb gegen dieses Team gespielt hat; ein zusammengeführtes Team kann weder wiederhergestellt noch erneut zusammengeführt werden.",
             forbidden:
                 "Nur globale Administratoren können den Teamkatalog verwalten.",
             unavailable:

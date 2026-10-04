@@ -34,7 +34,8 @@ linked to one Logi workspace (`linkedGuildId`), which records that the team is
 that clan; linking grants no permissions.
 
 Only global administrators create, edit, archive, restore, link and merge
-teams. Every write is revision-checked and audited. Merge archives the source
+teams. Every write is revision-checked and audited. Two teams that played each
+other in a competition cannot be merged. Merge archives the source
 team, records `mergedIntoTeamId`, and moves its competition registrations,
 fixtures and pending requests to the target. Saved match snapshots are never
 rewritten; a refresh of a merged team follows the merge pointer.

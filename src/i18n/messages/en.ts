@@ -1240,7 +1240,7 @@ export const enMessages = {
                 "The logo is no longer available. Upload it again.",
             limit_reached: "The catalogue for this game is full.",
             invalid_merge:
-                "These teams cannot be merged. Choose an active team of the same game; a merged team cannot be restored or merged again.",
+                "These teams cannot be merged. Choose an active team of the same game that never played this team in a competition; a merged team cannot be restored or merged again.",
             forbidden:
                 "Only global administrators can manage the team catalogue.",
             unavailable:

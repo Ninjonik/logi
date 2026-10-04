@@ -70,6 +70,8 @@ export interface TeamDirectoryRepository {
     emit(team: TeamEntity, operation: "upsert" | "remove"): Promise<void>
     /** Moves competition registrations, fixtures and pending requests from one team to another. */
     repoint(sourceTeamId: string, targetTeamId: string): Promise<void>
+    /** Whether a competition fixture has these two teams on opposite sides. */
+    playedEachOther(teamId: string, otherTeamId: string): Promise<boolean>
 }
 
 /** Team-logo ownership: platform attach checks and the references that keep assets alive. */

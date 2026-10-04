@@ -214,6 +214,10 @@ export async function mergeTeam(
     })
     if (!decision.ok || !target)
         return fail(decision.ok ? "not_found" : decision.error)
+    // Teams that met in a competition are different teams: merging them would
+    // turn their fixtures into a team playing itself.
+    if (await ports.repository.playedEachOther(source.id, target.id))
+        return fail("invalid_merge")
     const wasActive = source.archivedAt === null
     const merged = await ports.repository.update(
         source,

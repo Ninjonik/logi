@@ -290,6 +290,24 @@ export class ConvexTeamDirectoryRepository implements TeamDirectoryRepository {
             })
     }
 
+    async playedEachOther(teamId: string, otherTeamId: string) {
+        const team = this.ctx.db.normalizeId("teamDirectory", teamId)
+        const other = this.ctx.db.normalizeId("teamDirectory", otherTeamId)
+        if (!team || !other) return false
+        for (const [side, opposite] of [
+            ["sideATeamId", "sideBTeamId"],
+            ["sideBTeamId", "sideATeamId"],
+        ] as const) {
+            const fixtures = await this.ctx.db
+                .query("competitionFixtures")
+                .withIndex(side, (q) => q.eq(side, team))
+                .collect()
+            if (fixtures.some((fixture) => fixture[opposite] === other))
+                return true
+        }
+        return false
+    }
+
     async repoint(sourceTeamId: string, targetTeamId: string) {
         const source = this.ctx.db.normalizeId("teamDirectory", sourceTeamId)
         const target = this.ctx.db.normalizeId("teamDirectory", targetTeamId)

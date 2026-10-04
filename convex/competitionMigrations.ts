@@ -43,19 +43,28 @@ function teamAdopter(ctx: MutationCtx, counts: Counts) {
     const cache = new Map<string, Id<"teamDirectory"> | null>()
     return async (
         gameId: TeamGame,
-        guildId: Id<"guilds">
+        guildId: Id<"guilds">,
+        options: { distinct?: boolean } = {}
     ): Promise<Id<"teamDirectory"> | null> => {
-        const key = `${gameId}:${guildId}`
+        const key = `${gameId}:${guildId}:${options.distinct ? "distinct" : "name"}`
         if (cache.has(key)) return cache.get(key)!
         const guild = await ctx.db.get(guildId)
         let teamId: Id<"teamDirectory"> | null = null
         if (guild) {
+            // A same-name clan proven different keeps its own team under a
+            // stable, distinguishable name an administrator can rename later.
+            const suffix = guild.discordId ?? String(guildId).slice(-6)
             const adopted = await adoptCatalogueTeam(
                 ports,
                 COMPETITION_MIGRATION_ACTOR,
                 {
                     gameId,
-                    name: adoptedTeamName(guild.name, `Team ${guildId}`),
+                    name: options.distinct
+                        ? adoptedTeamName(
+                              `${guild.name} (${suffix})`,
+                              `Team ${guildId}`
+                          )
+                        : adoptedTeamName(guild.name, `Team ${guildId}`),
                     linkedGuildId: guild.discordId ?? null,
                 }
             )
@@ -69,6 +78,24 @@ function teamAdopter(ctx: MutationCtx, counts: Counts) {
         cache.set(key, teamId)
         return teamId
     }
+}
+
+/** Whether two legacy clans of one competition played a fixture against each other. */
+async function metInCompetition(
+    ctx: MutationCtx,
+    competitionId: Id<"competitions">,
+    guildId: Id<"guilds">,
+    otherGuildId: Id<"guilds">
+): Promise<boolean> {
+    const fixtures = await ctx.db
+        .query("competitionFixtures")
+        .withIndex("competitionId", (q) => q.eq("competitionId", competitionId))
+        .collect()
+    return fixtures.some(
+        (fixture) =>
+            (fixture.teamAId === guildId && fixture.teamBId === otherGuildId) ||
+            (fixture.teamAId === otherGuildId && fixture.teamBId === guildId)
+    )
 }
 
 /** Competition game as a catalogue game; Hell Let Loose: Vietnam has no catalogue. */
@@ -120,19 +147,44 @@ export const adoptGlobalTeams = internalMutation({
             for (const row of page.page) {
                 if (row.teamId || !row.guildId) continue
                 const gameId = await competitionGame(ctx, row.competitionId)
-                const teamId = gameId ? await adopt(gameId, row.guildId) : null
+                let teamId = gameId ? await adopt(gameId, row.guildId) : null
                 if (!teamId) {
                     counts.unresolved++
                     continue
                 }
-                const existing = await ctx.db
-                    .query("competitionTeams")
-                    .withIndex("competitionId_teamId", (q) =>
-                        q
-                            .eq("competitionId", row.competitionId)
-                            .eq("teamId", teamId)
-                    )
-                    .first()
+                const registered = (candidate: Id<"teamDirectory">) =>
+                    ctx.db
+                        .query("competitionTeams")
+                        .withIndex("competitionId_teamId", (q) =>
+                            q
+                                .eq("competitionId", row.competitionId)
+                                .eq("teamId", candidate)
+                        )
+                        .first()
+                let existing = await registered(teamId)
+                // Same-name clans that met in this competition are different
+                // teams: folding them would make the team play itself.
+                if (
+                    gameId &&
+                    existing &&
+                    existing._id !== row._id &&
+                    existing.guildId &&
+                    (await metInCompetition(
+                        ctx,
+                        row.competitionId,
+                        row.guildId,
+                        existing.guildId
+                    ))
+                ) {
+                    teamId = await adopt(gameId, row.guildId, {
+                        distinct: true,
+                    })
+                    if (!teamId) {
+                        counts.unresolved++
+                        continue
+                    }
+                    existing = await registered(teamId)
+                }
                 if (existing && existing._id !== row._id) {
                     await ctx.db.delete(row._id)
                     counts.registrationsMerged++
@@ -149,12 +201,26 @@ export const adoptGlobalTeams = internalMutation({
             for (const row of page.page) {
                 if (row.sideATeamId && row.sideBTeamId) continue
                 const gameId = await competitionGame(ctx, row.competitionId)
+                // A clan's team in this competition is the one its registration
+                // received, so fixtures follow the same mapping.
                 const resolve = async (
                     current: Id<"teamDirectory"> | undefined,
                     guildId: Id<"guilds"> | undefined
-                ) =>
-                    current ??
-                    (gameId && guildId ? await adopt(gameId, guildId) : null)
+                ) => {
+                    if (current) return current
+                    if (!gameId || !guildId) return null
+                    const registration = await ctx.db
+                        .query("competitionTeams")
+                        .withIndex("competitionId_guildId", (q) =>
+                            q
+                                .eq("competitionId", row.competitionId)
+                                .eq("guildId", guildId)
+                        )
+                        .first()
+                    return (
+                        registration?.teamId ?? (await adopt(gameId, guildId))
+                    )
+                }
                 const sideATeamId = await resolve(row.sideATeamId, row.teamAId)
                 const sideBTeamId = await resolve(row.sideBTeamId, row.teamBId)
                 if (!sideATeamId || !sideBTeamId) {
