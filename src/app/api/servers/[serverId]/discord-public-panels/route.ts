@@ -1,4 +1,8 @@
-import { publicPanelSettingsSchema } from "@/domain/discord-publications/settings"
+import {
+    publicPanelSaveResultSchema,
+    publicPanelSettingsInput,
+    publicPanelSettingsSchema,
+} from "@/domain/discord-publications/settings"
 import { verifyPublicChannel } from "@/lib/gateways/discord-public-channel"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
@@ -68,11 +72,21 @@ export async function POST(request: Request, context: Context) {
             )
         if (new URL(request.url).searchParams.get("verify") === "1")
             return json({ ok: true })
-        const id = await fetchMutation(
-            makeFunctionReference<"mutation">("discordPublicPanels:configure"),
-            { ...args, settings, verifiedChannel }
+        // The banner URL is resolved by Convex from the verified asset, never forwarded.
+        const result = publicPanelSaveResultSchema.parse(
+            await fetchMutation(
+                makeFunctionReference<"mutation">(
+                    "discordPublicPanels:configure"
+                ),
+                {
+                    ...args,
+                    settings: publicPanelSettingsInput(settings),
+                    verifiedChannel,
+                }
+            )
         )
-        return json({ ok: true, id })
+        if ("error" in result) return json({ error: result.error }, 400)
+        return json({ ok: true, id: result.id })
     } catch {
         return json(
             {

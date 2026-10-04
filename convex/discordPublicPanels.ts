@@ -1,9 +1,14 @@
-import { publicPanelSettingsSchema } from "../src/domain/discord-publications/settings"
+import {
+    publicPanelSettingsSchema,
+    type PublicPanelSaveResult,
+} from "../src/domain/discord-publications/settings"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
+import { mutation, query, type MutationCtx } from "./_generated/server"
+import { attachableAsset, syncAssetReferences } from "./imageAssets"
 import { projectSnapshot } from "../src/domain/game-data/policy"
-import { panelSettings } from "./discordPublicationTable"
-import { mutation, query } from "./_generated/server"
+import { panelSettingsInput } from "./discordPublicationTable"
 import { catalogSources } from "./gameDataCatalog"
+import type { Id } from "./_generated/dataModel"
 import { getGuildByDiscordId } from "./identity"
 import { v } from "convex/values"
 
@@ -14,12 +19,31 @@ function secretGuard(secret: string) {
     )
         throw new Error("Unauthorized.")
 }
+/** A banner must be this workspace's live `panel-banner` upload; the URL is read from the asset. */
+async function resolveBanner(
+    ctx: MutationCtx,
+    guildId: string,
+    bannerAssetId: string | null
+): Promise<
+    | { id: Id<"imageAssets"> | null; url: string | null }
+    | { error: "asset_unavailable" }
+> {
+    if (!bannerAssetId) return { id: null, url: null }
+    const asset = await attachableAsset(ctx, {
+        assetId: bannerAssetId,
+        guildId,
+        kind: "panel-banner",
+    })
+    return asset
+        ? { id: asset._id, url: asset.publicUrl }
+        : { error: "asset_unavailable" }
+}
 export const configure = mutation({
     args: {
         secret: v.string(),
         guildId: v.string(),
         actor: dashboardActor,
-        settings: v.object(panelSettings),
+        settings: v.object(panelSettingsInput),
         verifiedChannel: v.object({
             id: v.string(),
             guildId: v.string(),
@@ -27,7 +51,7 @@ export const configure = mutation({
             canPublish: v.boolean(),
         }),
     },
-    handler: async (ctx, args) => {
+    handler: async (ctx, args): Promise<PublicPanelSaveResult> => {
         await authorizeDashboardAdmin(ctx, args)
         const settings = publicPanelSettingsSchema.parse(args.settings)
         const channel = args.verifiedChannel
@@ -38,11 +62,11 @@ export const configure = mutation({
             (settings.enabled && !channel.canPublish)
         )
             throw new Error("Channel cannot publish.")
-        const id = ctx.db.normalizeId(
+        const connectionId = ctx.db.normalizeId(
             "gameDataConnections",
             settings.connectionId
         )
-        const connection = id ? await ctx.db.get(id) : null
+        const connection = connectionId ? await ctx.db.get(connectionId) : null
         if (!connection || connection.guildId !== args.guildId)
             throw new Error("Source not found.")
         if (settings.reportCategoryId) {
@@ -89,24 +113,50 @@ export const configure = mutation({
             throw new Error(
                 "Use a different channel for a separate scoreboard."
             )
+        const banner = await resolveBanner(
+            ctx,
+            args.guildId,
+            settings.presentation?.bannerAssetId ?? null
+        )
+        if ("error" in banner) return { error: banner.error }
         const now = Date.now()
         const value = {
             ...settings,
+            // Saving without presentation clears a previous appearance together
+            // with its banner reference, so stored URL and reference stay aligned.
+            presentation: settings.presentation
+                ? {
+                      ...settings.presentation,
+                      bannerAssetId: banner.id ? String(banner.id) : null,
+                      bannerUrl: banner.url,
+                  }
+                : undefined,
             guildId: args.guildId,
             gameId: connection.gameId,
             revision: Math.max(now, (old?.revision ?? 0) + 1),
         }
+        let panelId: Id<"discordPublicPanels">
         if (old) {
             await ctx.db.patch(old._id, value)
-            return String(old._id)
-        }
-        if (rows.length >= 20) throw new Error("Panel limit reached.")
-        return String(
-            await ctx.db.insert("discordPublicPanels", {
+            panelId = old._id
+        } else {
+            if (rows.length >= 20) throw new Error("Panel limit reached.")
+            panelId = await ctx.db.insert("discordPublicPanels", {
                 ...value,
                 createdAt: now,
             })
-        )
+        }
+        // ownerId is the panel document ID: one source/feature pair keeps the
+        // same row across edits, so each save replaces exactly this panel's
+        // references. A referenced banner survives the unattached-upload sweep;
+        // clearing it (or saving without appearance) releases it in this transaction.
+        await syncAssetReferences(ctx, {
+            guildId: args.guildId,
+            owner: "panel",
+            ownerId: String(panelId),
+            assetIds: banner.id ? [banner.id] : [],
+        })
+        return { ok: true, id: String(panelId) }
     },
 })
 export const list = query({

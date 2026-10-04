@@ -1,5 +1,17 @@
 "use client"
 import {
+    isPanelFactionGame,
+    PANEL_FACTION_GAMES,
+    panelPresentationFromDraft,
+    resolvePanelPresentation,
+} from "@/domain/discord-publications/panel-presentation"
+import {
+    applyPanelAppearanceUpdate,
+    DiscordPanelAppearance,
+    uploadErrorMessage,
+    type PanelAppearanceDraft,
+} from "./discord-panel-appearance"
+import {
     publicPanelSettingsSchema,
     type PublicPanelSettings,
 } from "@/domain/discord-publications/settings"
@@ -11,7 +23,8 @@ import {
     gameDataSettingsSchema,
     type ServerSnapshot,
 } from "@/domain/game-data/contracts"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 import { useLocale } from "next-intl"
 type SavedPanel = PublicPanelSettings & {
@@ -38,11 +51,22 @@ const defaults: PublicPanelSettings = {
 export function DiscordPublicPanelsForm({
     serverId,
     gameId,
+    dictionary,
 }: {
     serverId: string
     gameId?: string
+    dictionary: Dictionary
 }) {
     const cs = useLocale() === "cs"
+    const appearanceText = dictionary.publicPanelAppearance
+    // Null until edited or loaded: an untouched new panel keeps the legacy look.
+    const [appearance, setAppearance] = useState<PanelAppearanceDraft | null>(
+        null
+    )
+    // Remounting clears upload status after a save or when another panel loads.
+    const [appearanceKey, setAppearanceKey] = useState(0)
+    // A banner upload in flight blocks saving and switching panels until it lands.
+    const [uploading, setUploading] = useState(false)
     const [channels, setChannels] = useState<SelectableDiscordChannel[]>([]),
         [sources, setSources] = useState<
             {
@@ -98,8 +122,36 @@ export function DiscordPublicPanelsForm({
         // eslint-disable-next-line react-hooks/set-state-in-effect
         void load()
     }, [load])
+    const panelGame = sources.find(
+        (source) => source.id === settings.connectionId
+    )?.gameId
+    const factions = useMemo(
+        () =>
+            [
+                ...new Set(
+                    panelGame
+                        ? [panelGame]
+                        : gameId
+                          ? [gameId]
+                          : sources.map((source) => source.gameId)
+                ),
+            ]
+                .filter(isPanelFactionGame)
+                .flatMap((game) => PANEL_FACTION_GAMES[game]),
+        [panelGame, gameId, sources]
+    )
     async function save(verify = false) {
-        const parsed = publicPanelSettingsSchema.safeParse(settings)
+        const presentation = appearance
+            ? panelPresentationFromDraft(appearance, factions)
+            : undefined
+        if (presentation === null) {
+            setMessage(appearanceText.invalid)
+            return
+        }
+        const parsed = publicPanelSettingsSchema.safeParse({
+            ...settings,
+            presentation,
+        })
         if (!parsed.success) {
             setMessage(
                 cs
@@ -129,10 +181,18 @@ export function DiscordPublicPanelsForm({
                       ? "Uloženo. Bot změnu načte do 15 sekund; případný přesun čeká na odstranění původní zprávy."
                       : "Saved. Bot picks up changes within 15 seconds; moves wait for removal of the original message."
             )
+            if (!verify) setAppearanceKey((key) => key + 1)
             await load()
         } catch (error) {
             setMessage(
-                error instanceof Error ? error.message : "Request failed."
+                error instanceof Error
+                    ? error.message === "asset_unavailable"
+                        ? uploadErrorMessage(
+                              appearanceText,
+                              "asset_unavailable"
+                          )
+                        : error.message
+                    : "Request failed."
             )
         } finally {
             setBusy(false)
@@ -297,9 +357,7 @@ export function DiscordPublicPanelsForm({
                                 ? cs
                                     ? "Veřejní TOP hráči (jména + statistiky)"
                                     : "Public leaders (names + stats)"
-                                : cs
-                                  ? "Mapa / banner"
-                                  : "Map / banner"}
+                                : appearanceText.mapArtwork}
                     </label>
                 ))}
                 <label>
@@ -323,10 +381,25 @@ export function DiscordPublicPanelsForm({
                     </select>
                 </label>
             </div>
+            <DiscordPanelAppearance
+                key={appearanceKey}
+                serverId={serverId}
+                kind={settings.kind}
+                value={appearance ?? resolvePanelPresentation(null)}
+                factions={factions}
+                disabled={busy}
+                t={appearanceText}
+                onChange={(update) =>
+                    setAppearance((current) =>
+                        applyPanelAppearanceUpdate(current, update)
+                    )
+                }
+                onUploadingChange={setUploading}
+            />
             <div className="flex gap-2">
                 <Button
                     type="button"
-                    disabled={busy}
+                    disabled={busy || uploading}
                     onClick={() => void save()}
                 >
                     {cs ? "Uložit / obnovit panel" : "Save / refresh panel"}
@@ -334,7 +407,7 @@ export function DiscordPublicPanelsForm({
                 <Button
                     type="button"
                     variant="outline"
-                    disabled={busy}
+                    disabled={busy || uploading}
                     onClick={() => void save(true)}
                 >
                     {cs ? "Ověřit místnost" : "Verify channel"}
@@ -372,11 +445,18 @@ export function DiscordPublicPanelsForm({
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() =>
+                            disabled={uploading}
+                            onClick={() => {
                                 setSettings(
                                     publicPanelSettingsSchema.strip().parse(p)
                                 )
-                            }
+                                setAppearance(
+                                    p.presentation
+                                        ? resolvePanelPresentation(p)
+                                        : null
+                                )
+                                setAppearanceKey((key) => key + 1)
+                            }}
                         >
                             {label(p.kind)} · {p.enabled ? "●" : "⏸"} · #
                             {channels.find((c) => c.id === p.channelId)?.name ??

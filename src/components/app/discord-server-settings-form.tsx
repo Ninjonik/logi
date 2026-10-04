@@ -634,7 +634,11 @@ export function DiscordServerSettingsForm({
                 >
                     {dictionary.serverSettings.saveDiscordSettings}
                 </Button>
-                <DiscordPublicPanelsForm serverId={serverId} gameId={gameId} />
+                <DiscordPublicPanelsForm
+                    serverId={serverId}
+                    gameId={gameId}
+                    dictionary={dictionary}
+                />
             </CardContent>
         </Card>
     )

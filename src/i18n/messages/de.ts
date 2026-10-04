@@ -149,6 +149,86 @@ export const deMessages = {
         invalid:
             "Verwende gültige Discord-Rollen-IDs, höchstens 64 pro Spiel, für in diesem Arbeitsbereich aktivierte Spiele.",
     },
+    publicPanelAppearance: {
+        title: "Darstellung",
+        description:
+            "Layout, Akzentfarbe, Banner und Fraktions-Emojis dieses Panels. Panels, die vor Einführung dieser Einstellungen gespeichert wurden, behalten ihr bisheriges Aussehen, bis du sie hier änderst.",
+        mapArtwork: "Kartenbild",
+        layout: "Layout",
+        showMap: "Kartenname und Kartenbild anzeigen",
+        showScoreboard: "Punktestand anzeigen",
+        showPlayerCount: "Spielerzahl anzeigen",
+        compact: "Kompakte Kopfzeile",
+        layoutHelp:
+            "Kompakt nutzt eine zweizeilige Kopfzeile, Punktestände in einer Zeile und keine Trennlinien. Das Kartenbild erfordert zusätzlich die Einstellung Kartenbild.",
+        resultsLayoutHelp:
+            "Ergebnismeldungen nutzen die Karten- und Kompakt-Einstellung; Punktestand und Spielerzahl gelten für Live-Panels.",
+        accentColor: "Akzentfarbe",
+        accentColorPicker: "Akzentfarbe wählen",
+        accentColorPlaceholder: "#77B255",
+        accentColorHelp:
+            "#RRGGBB. Ersetzt das Grün des Live-Panels; veraltete oder pausierte Panels behalten die orange Warnfarbe. Leer lassen für die Standardfarbe.",
+        accentColorReset: "Standardfarbe",
+        accentColorInvalid: "Gib eine Farbe im Format #RRGGBB ein.",
+        banner: "Banner",
+        bannerHelp:
+            "PNG, JPEG oder WebP bis 2 MiB und 4096 × 4096 px. Logi wandelt es in WebP mit höchstens 1920 × 1080 px um. Ein Banner ersetzt das Kartenvorschaubild.",
+        bannerUpload: "Banner hochladen",
+        bannerUploading: "Wird hochgeladen…",
+        bannerRemove: "Banner entfernen",
+        bannerPreview: "Bannervorschau",
+        bannerNone:
+            "Kein Banner. Das Panel zeigt das Kartenbild, sofern aktiviert.",
+        bannerUploaded:
+            "Banner hochgeladen. Speichere das Panel, um es zu veröffentlichen.",
+        bannerSelected:
+            "Banner ausgewählt. Speichere das Panel, um es zu veröffentlichen.",
+        bannerLibrary: "Hochgeladene Banner",
+        bannerLibraryShow: "Hochgeladenes Banner wählen",
+        bannerLibraryHide: "Hochgeladene Banner ausblenden",
+        bannerLibraryLoading: "Hochgeladene Banner werden geladen…",
+        bannerLibraryEmpty:
+            "In diesem Workspace wurden noch keine Banner hochgeladen.",
+        bannerLibraryError:
+            "Hochgeladene Banner konnten nicht geladen werden. Versuche es später erneut.",
+        bannerLibraryItem: "Banner {width} × {height} px vom {date} verwenden",
+        factionEmoji: "Fraktions-Emojis",
+        factionEmojiHelp:
+            "Ein Unicode-Emoji oder ein eigenes Discord-Emoji im Format <:name:id> (animiert: <a:name:id>). Eigene Emojis müssen zu einem Server gehören, auf dem der Bot ist, oder zur Bot-Anwendung. Leer lassen, um den als Platzhalter gezeigten Standard zu behalten.",
+        factionEmojiInvalid: "Gib ein Emoji oder <:name:id> ein.",
+        noDefaultEmoji: "Keins",
+        factions: {
+            allies: "Alliierte",
+            axis: "Achsenmächte",
+            valkyra: "Valkyra",
+            manticore: "Manticore",
+            lonestar: "Lonestar",
+        },
+        invalid:
+            "Korrigiere vor dem Speichern die markierten Darstellungseinstellungen.",
+        errors: {
+            invalid_kind:
+                "Dieser Bildtyp kann nicht als Banner verwendet werden.",
+            unsupported_type: "Verwende ein PNG-, JPEG- oder WebP-Bild.",
+            type_mismatch:
+                "Der Dateiinhalt passt nicht zum Dateityp. Exportiere die Datei erneut als PNG, JPEG oder WebP.",
+            bad_dimensions:
+                "Das Bild darf höchstens 4096 × 4096 Pixel groß sein.",
+            animated: "Animierte Bilder werden nicht unterstützt.",
+            undecodable:
+                "Das Bild konnte nicht gelesen werden. Exportiere es erneut und versuche es noch einmal.",
+            invalid_asset:
+                "Das Bild konnte nicht gespeichert werden. Lade es erneut hoch.",
+            forbidden: "Nur Workspace-Administratoren können Banner hochladen.",
+            too_large: "Das Bild ist größer als 2 MiB.",
+            upload_limited:
+                "Zu viele Uploads. Versuche es in {seconds} s erneut.",
+            unavailable:
+                "Bild-Uploads sind derzeit nicht verfügbar. Versuche es später erneut.",
+            asset_unavailable:
+                "Das Banner ist für diesen Workspace nicht mehr verfügbar. Lade es erneut hoch oder entferne es und speichere dann.",
+        },
+    },
     gameData: {
         sourcesTitle: "Anbieterquellen",
         sourcesDescription:

@@ -56,7 +56,52 @@ is lost, the bot searches for its exact marker. A pending recovery that cannot b
 resolved from recent history needs operator attention; repeatedly saving does
 not send a duplicate.
 
-Map artwork uses the packaged map or game image as a compact, clickable thumbnail.
-The bot uploads it once and reuses the attachment on updates and restart. Application
-emoji are installed once by the operator; workspace administrators do not need
-to upload faction logos. Missing artwork and icons have readable fallbacks.
+**Map artwork** uses the packaged map or game image as a compact, clickable
+thumbnail. The bot uploads it once and reuses the attachment on updates and
+restart. Application emoji are installed once by the operator; workspace
+administrators do not need to upload faction logos. Missing artwork and icons
+have readable fallbacks.
+
+## Appearance
+
+The **Appearance** section of the panel form changes how one panel looks in
+Discord. Save the panel to apply it; the bot updates the message within about
+15 seconds. Panels saved before these settings existed, and panels whose
+appearance is never changed, look exactly as before.
+
+- **Layout** switches:
+    - **Show map name and artwork** hides or shows the map line and the map
+      thumbnail. The thumbnail additionally needs **Map artwork**.
+    - **Show scoreboard** hides or shows the faction or team score section.
+    - **Show player count** hides or shows connected players and capacity.
+    - **Compact header** uses a two-line header, puts scores on one line and
+      removes section separators.
+
+    Confirmed result messages use only the map and compact switches.
+
+- **Accent color** takes a `#RRGGBB` value, typed or picked with the color
+  picker. It replaces the green color of a live panel and the color of result
+  messages. Stale or paused panels keep the amber warning color. **Default
+  color** restores the standard green.
+- **Banner** uploads a PNG, JPEG or WebP image of up to 2 MiB and at most
+  4096 × 4096 pixels. Logi converts it to WebP of at most 1920 × 1080 pixels and
+  shows it as the main image above the panel header, in place of the map
+  thumbnail. **Choose an uploaded banner** lists the banners already uploaded in
+  this workspace, so several panels can share one without uploading it again.
+  Saving waits until a running upload finishes, and changes made meanwhile are
+  kept. An upload or choice is attached only after you save the panel; **Remove
+  banner** detaches it on the next save. Uploads that are never saved to a panel
+  are removed automatically after a day. If a banner is no longer available to
+  the workspace, saving asks you to upload it again or remove it. Discord shows
+  the banner only when Logi runs on a public HTTPS address.
+- **Faction emoji** set the marker shown before each faction or team name on
+  scores, leader lists, results and private player pages, for the games of the
+  selected source:
+  Allies and Axis for Hell Let Loose, Valkyra, Manticore and Lonestar for
+  Wardogs. Enter one Unicode emoji such as 🦅, or a custom Discord emoji as
+  `<:name:id>` (animated: `<a:name:id>`). A custom emoji must belong to a
+  server the bot is in or to the bot application. An empty field keeps the
+  default shown as the placeholder: the installed Wardogs application emoji or
+  ◈, and no emoji for Hell Let Loose teams. Private player pages show only the
+  emoji you set, and drop them if they would make a page too long for Discord.
+  Provider labels such as Alpha or Bravo always keep the neutral ◈ marker.
