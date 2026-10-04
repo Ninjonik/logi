@@ -76,6 +76,8 @@ export function AppBreadcrumbs({
             label = dictionary.sidebar.memberships
         } else if (segment === "tickets") {
             label = dictionary.sidebar.tickets
+        } else if (segment === "teams") {
+            label = dictionary.sidebar.teams
         } else if (segment === "bot") {
             label = dictionary.sidebar.bot
         } else if (segment === "create") {

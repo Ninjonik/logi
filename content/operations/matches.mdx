@@ -37,6 +37,49 @@ After play, enter the result and conclude the event when your workflow is comple
 
 </Steps>
 
+## Teams
+
+Hell Let Loose and Wardogs matches have a **Teams** section next to the map and
+side details. It uses the workspace [team directory](/wiki/operations/teams).
+Hell Let Loose: Vietnam matches and trainings have no Teams section.
+
+- **Hell Let Loose:** up to two teams (Team A and Team B), each with an
+  optional side: **Allies** or **Axis**.
+- **Wardogs:** up to three teams (Team A, Team B and Team C), each with an
+  optional faction: **Valkyra**, **Manticore** or **Lonestar**.
+
+Each slot has a searchable picker that lists the game's active teams with logo,
+name and short code. Open it with the keyboard or mouse, type to search, and
+choose with the arrow keys and Enter. **No team** empties the slot. **Add team**
+opens the team form; the new team is selected into that slot and the rest of
+the unsaved match form is kept. **No side** leaves the side open.
+
+A team can occupy only one slot, and a side can be given to only one team; the
+editor marks such conflicts before saving. A match can be saved with empty or
+partly filled slots while the opponent is unknown, and clearing every slot then
+saving removes the assignments. Choosing teams does not change the match's own
+**Side** field, its roster, attendance or results.
+
+### Saved team details
+
+Saving a newly selected team stores a snapshot of its name, short code and
+logo on the match. Later directory renames, logo changes and archiving do not
+change saved matches. Moving a team to another slot or changing its side keeps
+its snapshot; replacing it with a different team captures that team's details.
+If a newly selected team is archived before you save, the save is rejected with
+a message so you can choose another team.
+
+A saved team that has since been archived stays on the match with an
+**Archived** badge until you replace it; archived teams cannot be newly
+selected. To pick up directory changes for a saved team, use **Refresh
+snapshot** on a saved match. It works only while the team is active in the
+directory and the match is not concluded, and it updates the stored snapshot
+immediately without saving other changes in the form.
+
+Once a match is concluded, its teams and snapshots are frozen: the Teams
+section becomes read-only and saving other match fields leaves them unchanged.
+Result corrections continue through the reviewed-result workflow below.
+
 ## Competition links
 
 Eligible matches can be connected to competition information. The match must satisfy the available matching context; select the correct event and opponent carefully. Linking a match does not replace the organiser’s official competition rules or results process.

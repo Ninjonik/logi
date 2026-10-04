@@ -6,6 +6,7 @@ import {
     LayoutDashboard,
     Settings,
     Shield,
+    Swords,
     UserCog,
     ListTodo,
     CalendarIcon,
@@ -232,6 +233,11 @@ export function AppSidebar({
                                                 url: `${base}/groups`,
                                             },
                                         ],
+                                    },
+                                    {
+                                        title: dictionary.sidebar.teams,
+                                        url: `${base}/teams`,
+                                        icon: Swords,
                                     },
                                     {
                                         title: dictionary.sidebar.tickets,
