@@ -14,16 +14,17 @@ import {
     syncScheduledDiscordEvent,
 } from "../scheduled-events"
 import {
+    buildAnnouncementMessage,
+    buildAnnouncementV2Message,
+    buildMatchTeamLogoEmbeds,
+} from "../message-builders"
+import {
     buildRosterImageUrl,
     getRosterImageVersion,
     warmRosterImage,
     withTimeout,
 } from "../utils"
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
-import {
-    buildAnnouncementMessage,
-    buildAnnouncementV2Message,
-} from "../message-builders"
 import { eventMessageIdentity } from "../../../src/domain/discord-publications/legacy-bindings"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
@@ -147,6 +148,50 @@ export async function resolveAnnouncementDisplayNames(
     return resolvedDisplayNames
 }
 
+/**
+ * Content of a split-channel event message. Legacy embed messages stay legacy
+ * so their identity survives edits; new messages use Components V2. The event
+ * information card (`includeSignup === false`) also carries one logo card per
+ * assigned match team; events without assignments render exactly as before.
+ */
+export function buildEventMessageContent(input: {
+    payload: SyncPayload
+    event: EventRecord
+    userDisplayNames: Record<string, string>
+    legacyEmbeds: boolean
+    includeSignup: boolean
+    forumChannelId?: string
+    pingRoleIds: string[]
+}) {
+    const { payload, event, includeSignup, forumChannelId } = input
+    if (input.legacyEmbeds) {
+        const { embed, components } = buildAnnouncementMessage(
+            payload,
+            event,
+            input.userDisplayNames,
+            {
+                showPublishedRosterImage: !includeSignup,
+                forumChannelId,
+            }
+        )
+        return {
+            embeds: includeSignup
+                ? [embed]
+                : [embed, ...buildMatchTeamLogoEmbeds(event, embed.data.color)],
+            components: includeSignup ? components : [],
+        }
+    }
+    return {
+        ...buildAnnouncementV2Message(payload, event, input.userDisplayNames, {
+            showPublishedRosterImage: !includeSignup,
+            forumChannelId,
+            pingRoleIds: input.pingRoleIds,
+            matchTeamCards: !includeSignup,
+        }),
+        flags: MessageFlags.IsComponentsV2 as const,
+    }
+}
+
 async function syncEventMessage(
     channel: TextChannel,
     messageId: string | undefined,
@@ -234,36 +279,17 @@ async function syncEventMessage(
     const pingRoleIds = includeSignup
         ? getAnnouncementPingRoleIds(payload, event)
         : []
-    const message =
-        existing && !existing.flags.has(MessageFlags.IsComponentsV2)
-            ? (() => {
-                  const { embed, components } = buildAnnouncementMessage(
-                      displayPayload,
-                      displayEvent,
-                      names,
-                      {
-                          showPublishedRosterImage: !includeSignup,
-                          forumChannelId,
-                      }
-                  )
-                  return {
-                      embeds: [embed],
-                      components: includeSignup ? components : [],
-                  }
-              })()
-            : {
-                  ...buildAnnouncementV2Message(
-                      displayPayload,
-                      displayEvent,
-                      names,
-                      {
-                          showPublishedRosterImage: !includeSignup,
-                          forumChannelId,
-                          pingRoleIds,
-                      }
-                  ),
-                  flags: MessageFlags.IsComponentsV2 as const,
-              }
+    const message = buildEventMessageContent({
+        payload: displayPayload,
+        event: displayEvent,
+        userDisplayNames: names,
+        legacyEmbeds: Boolean(
+            existing && !existing.flags.has(MessageFlags.IsComponentsV2)
+        ),
+        includeSignup,
+        forumChannelId,
+        pingRoleIds,
+    })
     return (
         (await publishManagedMessage(guild.client, {
             guildId: guild.id,
@@ -783,6 +809,9 @@ async function syncEvent(
                             forumChannelId,
                             pingRoleIds,
                             rosterImageUrl: rosterImageAttachment?.mediaUrl,
+                            // Without a separate event-info room this single
+                            // message is the event information card.
+                            matchTeamCards: true,
                         }
                     ),
                     files: rosterImageAttachment

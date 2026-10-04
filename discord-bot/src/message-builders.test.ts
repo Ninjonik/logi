@@ -7,7 +7,10 @@ import {
     buildCompactV2FieldText,
     buildEventComponents,
     buildEventEmbed,
+    buildMatchTeamLogoEmbeds,
+    buildMatchTeamV2Sections,
     buildMembershipPanelComponents,
+    escapeMatchTeamText,
 } from "./message-builders"
 import type {
     CalendarItem,
@@ -15,6 +18,7 @@ import type {
     EventCategory,
     EventRecord,
     Group,
+    MatchTeamAssignment,
     Roster,
     SyncPayload,
 } from "./types"
@@ -703,4 +707,441 @@ test("Components V2 signup reminders can hide signup details and retain DM-safe 
     assert.doesNotMatch(rendered, /Alpha/)
     assert.match(rendered, /signup:event-1:PRIMARY_GROUP:guild-1/)
     assert.match(rendered, /check-signup:event-1:guild-1/)
+})
+
+function createMatchTeam(
+    slot: MatchTeamAssignment["slot"],
+    name: string,
+    patch: {
+        side?: string | null
+        shortCode?: string | null
+        logoUrl?: string | null
+    } = {}
+): MatchTeamAssignment {
+    const logoUrl =
+        patch.logoUrl === undefined
+            ? `https://assets.example.test/${slot}.png`
+            : patch.logoUrl
+    return {
+        teamId: `team-${slot}`,
+        slot,
+        side: patch.side ?? null,
+        snapshot: {
+            name,
+            shortCode: patch.shortCode ?? null,
+            logoAssetId: logoUrl ? `asset-${slot}` : null,
+            logoUrl,
+            teamRevision: 1,
+            capturedAt: "2026-07-29T09:00:00.000Z",
+        },
+    }
+}
+
+function toPlainJson(value: unknown) {
+    return JSON.parse(JSON.stringify(value)) as unknown
+}
+
+function v2Sections(message: ReturnType<typeof buildAnnouncementV2Message>) {
+    const container = message.components?.[0]?.toJSON()
+    const components =
+        container && "components" in container ? container.components : []
+    return components.flatMap((component) =>
+        "accessory" in component && component.accessory.type === 11
+            ? [component]
+            : []
+    )
+}
+
+test("buildEventEmbed lists match teams by slot next to the side line", () => {
+    const description =
+        buildEventEmbed(
+            config,
+            groups,
+            eventCategories,
+            createMatchEvent({
+                gameId: "wardogs",
+                side: "Valkyra",
+                matchTeams: [
+                    createMatchTeam("c", "Charlie", { shortCode: "CH" }),
+                    createMatchTeam("a", "Alpha", {
+                        shortCode: "ALP",
+                        side: "Valkyra",
+                    }),
+                    createMatchTeam("b", "Bravo", { side: "Manticore" }),
+                ],
+            })
+        ).toJSON().description ?? ""
+    const lines = description.split("\n")
+    const sideIndex = lines.findIndex((line) => line.includes("⚔️ Strana"))
+
+    assert.ok(sideIndex >= 0)
+    assert.equal(
+        lines[sideIndex + 1],
+        "**🛡️ Týmy:** Alpha [ALP] (Valkyra) vs Bravo (Manticore) vs Charlie [CH]"
+    )
+})
+
+test("buildEventEmbed uses localized team wording and omits empty assignments", () => {
+    const event = createMatchEvent({
+        matchTeams: [
+            createMatchTeam("a", "Alpha", { side: "Allies" }),
+            createMatchTeam("b", "Bravo", { side: "Axis" }),
+        ],
+    })
+    const english = buildEventEmbed(
+        { ...config, defaultLanguage: "en" },
+        groups,
+        eventCategories,
+        event
+    ).toJSON().description
+    const german = buildEventEmbed(
+        { ...config, defaultLanguage: "de" },
+        groups,
+        eventCategories,
+        event
+    ).toJSON().description
+
+    assert.match(
+        english ?? "",
+        /\*\*🛡️ Teams:\*\* Alpha \(Allies\) vs Bravo \(Axis\)/
+    )
+    assert.match(german ?? "", /\*\*🛡️ Teams:\*\* Alpha \(Allies\) vs Bravo/)
+
+    const legacy = buildEventEmbed(
+        config,
+        groups,
+        eventCategories,
+        createMatchEvent()
+    ).toJSON()
+    assert.deepEqual(
+        buildEventEmbed(
+            config,
+            groups,
+            eventCategories,
+            createMatchEvent({ matchTeams: [] })
+        ).toJSON(),
+        legacy
+    )
+    assert.doesNotMatch(legacy.description ?? "", /🛡️/)
+    assert.doesNotMatch(
+        buildEventEmbed(
+            config,
+            groups,
+            eventCategories,
+            createTrainingEvent({
+                matchTeams: [createMatchTeam("a", "Alpha")],
+            })
+        ).toJSON().description ?? "",
+        /🛡️/
+    )
+})
+
+test("match team labels escape Markdown, neutralize mentions and never form links", () => {
+    const description =
+        buildEventEmbed(
+            { ...config, defaultLanguage: "en" },
+            groups,
+            eventCategories,
+            createMatchEvent({
+                matchTeams: [
+                    createMatchTeam(
+                        "a",
+                        "<@123> *Bold* __u__ @everyone [x](https://evil.example)",
+                        { shortCode: "<#9>", side: "Allies" }
+                    ),
+                    createMatchTeam("b", "Line\nbreak <:emoji:1> <@&5>", {
+                        shortCode: "x](https://evil.example)",
+                    }),
+                ],
+            })
+        ).toJSON().description ?? ""
+    const teamsLine =
+        description.split("\n").find((line) => line.includes("🛡️")) ?? ""
+
+    assert.ok(teamsLine)
+    assert.doesNotMatch(teamsLine, /<@|<#|<:|@everyone|https:\/\//)
+    assert.doesNotMatch(teamsLine, /assets\.example\.test/)
+    assert.match(teamsLine, /@\u200Beveryone/)
+    assert.match(teamsLine, /<\u200B@\u200B123>/)
+    assert.match(teamsLine, /\\\*Bold\\\* \\_\\_u\\_\\_/)
+    assert.match(teamsLine, /\\\[x\\\]\\\(https:\u200B\/\/evil\.example\\\)/)
+    assert.match(teamsLine, /\[<\u200B#9>\] \(Allies\)/)
+    assert.match(teamsLine, /Line break <\u200B:emoji:1> <\u200B@\u200B&5>/)
+    assert.match(teamsLine, /\[x\\\]\\\(https:\u200B\/\/evil\.example\\\)\]$/)
+})
+
+test("escapeMatchTeamText neutralizes block Markdown at the start of a line", () => {
+    assert.equal(escapeMatchTeamText("> quote"), "\\> quote")
+    assert.equal(escapeMatchTeamText("# Heading"), "\\# Heading")
+    assert.equal(escapeMatchTeamText("- item"), "\\- item")
+    assert.equal(escapeMatchTeamText("- # item"), "\\- \\# item")
+    assert.equal(escapeMatchTeamText("Alpha-Bravo"), "Alpha\\-Bravo")
+    assert.equal(
+        escapeMatchTeamText(`Alpha${"-".repeat(20)}Squad`),
+        `Alpha${"\\-".repeat(20)}Squad`
+    )
+    assert.doesNotMatch(escapeMatchTeamText("-".repeat(120)), /--/)
+    assert.equal(escapeMatchTeamText("1. first"), "1\\. first")
+    assert.equal(escapeMatchTeamText("  Alpha\tSquad  "), "Alpha Squad")
+    assert.equal(
+        escapeMatchTeamText("<t:1:R> </cmd:1> <a:wave:2> <id:browse>"),
+        "<\u200Bt:1:R> <\u200B/cmd:1> <\u200Ba:wave:2> <\u200Bid:browse>"
+    )
+})
+
+test("buildMatchTeamLogoEmbeds renders one small card per team logo within game limits", () => {
+    const hll = createMatchEvent({
+        gameId: "hell_let_loose",
+        matchTeams: [
+            createMatchTeam("b", "Bravo", { side: "Axis" }),
+            createMatchTeam("a", "Alpha @here", {
+                shortCode: "A_1",
+                side: "Allies",
+            }),
+            createMatchTeam("c", "Charlie"),
+        ],
+    })
+    const embeds = buildMatchTeamLogoEmbeds(hll, 0xdc2626).map(toPlainJson)
+
+    assert.deepEqual(embeds, [
+        {
+            author: {
+                name: "Alpha @\u200Bhere [A_1]",
+                icon_url: "https://assets.example.test/a.png",
+            },
+            color: 0xdc2626,
+            description: "Allies",
+        },
+        {
+            author: {
+                name: "Bravo",
+                icon_url: "https://assets.example.test/b.png",
+            },
+            color: 0xdc2626,
+            description: "Axis",
+        },
+    ])
+
+    const wardogs = createMatchEvent({
+        gameId: "wardogs",
+        matchTeams: [
+            createMatchTeam("a", "Alpha"),
+            createMatchTeam("b", "Bravo"),
+            createMatchTeam("c", "Charlie", { side: "Lonestar" }),
+        ],
+    })
+    const wardogsEmbeds = buildMatchTeamLogoEmbeds(wardogs, 0x123456).map(
+        (embed) => embed.toJSON()
+    )
+    assert.deepEqual(
+        wardogsEmbeds.map((embed) => embed.author?.name),
+        ["Alpha", "Bravo", "Charlie"]
+    )
+    assert.equal(wardogsEmbeds[0]?.description, undefined)
+    assert.equal(wardogsEmbeds[2]?.description, "Lonestar")
+    assert.equal(buildMatchTeamLogoEmbeds(wardogs, 0x123456, 9).length, 1)
+    assert.equal(buildMatchTeamLogoEmbeds(wardogs, 0x123456, 10).length, 0)
+    assert.equal(
+        buildMatchTeamLogoEmbeds(
+            createTrainingEvent({ matchTeams: wardogs.matchTeams }),
+            0x123456
+        ).length,
+        0
+    )
+})
+
+test("buildMatchTeamLogoEmbeds skips teams without an http(s) logo", () => {
+    const event = createMatchEvent({
+        gameId: "wardogs",
+        matchTeams: [
+            createMatchTeam("a", "Alpha", { logoUrl: null }),
+            createMatchTeam("b", "Bravo", {
+                logoUrl: "javascript:alert(1)",
+            }),
+            createMatchTeam("c", "Charlie", { logoUrl: "not a url" }),
+        ],
+    })
+    assert.deepEqual(buildMatchTeamLogoEmbeds(event, 0x123456), [])
+
+    const http = buildMatchTeamLogoEmbeds(
+        createMatchEvent({
+            matchTeams: [
+                createMatchTeam("a", "Alpha", {
+                    logoUrl: "http://assets.example.test/a.png",
+                }),
+                createMatchTeam("b", "Bravo", {
+                    logoUrl: "ftp://assets.example.test/b.png",
+                }),
+            ],
+        }),
+        undefined
+    ).map(toPlainJson)
+    assert.deepEqual(http, [
+        {
+            author: {
+                name: "Alpha",
+                icon_url: "http://assets.example.test/a.png",
+            },
+        },
+    ])
+})
+
+test("Components V2 information cards add one logo section per team only when requested", () => {
+    const payload = {
+        config: { ...config, defaultLanguage: "en" },
+        groups,
+        guild: { eventCategories },
+        rosters: [],
+        userDisplayNames: {},
+    } as unknown as SyncPayload
+    const event = createMatchEvent({
+        matchTeams: [
+            createMatchTeam("b", "Bravo *B*", { side: "Axis" }),
+            createMatchTeam("a", "Alpha", {
+                shortCode: "ALP",
+                side: "Allies",
+                logoUrl: null,
+            }),
+        ],
+    })
+
+    const card = buildAnnouncementV2Message(
+        payload,
+        event,
+        {},
+        {
+            matchTeamCards: true,
+        }
+    )
+    const sections = v2Sections(card)
+    assert.equal(sections.length, 1)
+    assert.deepEqual(sections[0], {
+        type: 9,
+        components: [{ type: 10, content: "**Bravo \\*B\\***\nAxis" }],
+        accessory: {
+            type: 11,
+            media: { url: "https://assets.example.test/b.png" },
+            description: "Bravo *B*",
+        },
+    })
+    const rendered = JSON.stringify(card.components?.[0]?.toJSON())
+    assert.match(rendered, /🛡️ Teams:\*\* Alpha \[ALP\] \(Allies\) vs Bravo/)
+
+    assert.deepEqual(
+        v2Sections(buildAnnouncementV2Message(payload, event, {})),
+        []
+    )
+    const legacyEvent = createMatchEvent()
+    assert.deepEqual(
+        toPlainJson(
+            buildAnnouncementV2Message(
+                payload,
+                legacyEvent,
+                {},
+                {
+                    matchTeamCards: true,
+                }
+            )
+        ),
+        toPlainJson(buildAnnouncementV2Message(payload, legacyEvent, {}))
+    )
+})
+
+test("Components V2 cards keep hyphen-run team names in one literal Teams line", () => {
+    const payload = {
+        config: { ...config, defaultLanguage: "en" },
+        groups,
+        guild: { eventCategories },
+        rosters: [],
+        userDisplayNames: {},
+    } as unknown as SyncPayload
+    const event = createMatchEvent({
+        matchTeams: [
+            createMatchTeam("a", `${"-".repeat(20)}# Pwned heading`, {
+                side: "Allies",
+            }),
+            createMatchTeam("b", `Bravo${"-".repeat(20)}> quoted`, {
+                side: "Axis",
+            }),
+        ],
+    })
+    const message = buildAnnouncementV2Message(payload, event, {})
+    const container = message.components?.[0]?.toJSON()
+    const contents = (
+        container && "components" in container ? container.components : []
+    ).flatMap((component) => {
+        if (component.type === 10) return [component.content]
+        if (component.type === 9)
+            return component.components.map((text) => text.content)
+        return []
+    })
+    const teamsBlocks = contents.filter((content) => content.includes("🛡️"))
+
+    assert.equal(teamsBlocks.length, 1)
+    const teamsLine =
+        teamsBlocks[0]?.split("\n").find((line) => line.includes("🛡️")) ?? ""
+    assert.match(teamsLine, /Pwned heading \(Allies\) vs Bravo/)
+    assert.match(teamsLine, /> quoted \(Axis\)$/)
+    assert.doesNotMatch(teamsLine, /--/)
+    for (const content of contents.slice(1)) {
+        assert.doesNotMatch(content, /^(#|>)/m)
+    }
+})
+
+test("match team logo labels stay within Discord UTF-16 limits and never contain URLs", () => {
+    const longName = `${"@".repeat(108)}${"😀".repeat(6)}`
+    const longCode = "@".repeat(16)
+    const loneSurrogate =
+        /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/
+    const event = createMatchEvent({
+        matchTeams: [
+            createMatchTeam("a", longName, { shortCode: longCode }),
+            createMatchTeam("b", "B".repeat(300)),
+        ],
+    })
+
+    const embeds = buildMatchTeamLogoEmbeds(event, 0x123456).map((embed) =>
+        embed.toJSON()
+    )
+    assert.equal(embeds.length, 2)
+    for (const embed of embeds) {
+        const name = embed.author?.name ?? ""
+        assert.ok(name.length > 0 && name.length <= 256)
+        assert.doesNotMatch(name, loneSurrogate)
+    }
+    assert.equal(embeds[1]?.author?.name, "B".repeat(256))
+    assert.ok(
+        buildMatchTeamV2Sections(event).every((section) => {
+            const accessory = section.toJSON().accessory
+            return (
+                accessory.type === 11 &&
+                (accessory.description ?? "").length <= 1024
+            )
+        })
+    )
+
+    const linked = createMatchEvent({
+        matchTeams: [
+            createMatchTeam("a", "Visit https://evil.example/join", {
+                shortCode: "x://y",
+            }),
+        ],
+    })
+    const [linkedEmbed] = buildMatchTeamLogoEmbeds(linked, 0x123456).map(
+        (embed) => embed.toJSON()
+    )
+    assert.equal(
+        linkedEmbed?.author?.name,
+        "Visit https:\u200B//evil.example/join [x:\u200B//y]"
+    )
+    const [linkedSection] = buildMatchTeamV2Sections(linked).map((section) =>
+        section.toJSON()
+    )
+    assert.ok(linkedSection?.accessory.type === 11)
+    assert.doesNotMatch(
+        linkedSection.accessory.type === 11
+            ? (linkedSection.accessory.description ?? "")
+            : "",
+        /:\/\//
+    )
 })
