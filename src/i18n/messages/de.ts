@@ -1386,7 +1386,7 @@ export const deMessages = {
             "Das Ticket-System ist aktiviert, aber das Discord-Ticket-Panel wird nicht gepostet und Ticket-Threads können nicht geöffnet werden, bis du fertigstellst: {items}.",
         routingInfoTitle: "So funktioniert Ticket-Routing",
         routingInfoDescription:
-            "Kategorie-Support-Rollen werden automatisch in neue Ticket-Threads eingeladen. Nutzer mit der Dashboard-Admin-Rolle gelten ebenfalls als Support-Personal für die Ticket-Bearbeitung.",
+            "Kategorie-Support-Rollen werden automatisch in neue Ticket-Threads eingeladen. Dashboard-Administratoren können Tickets verwalten, werden aber nicht jedem Thread hinzugefügt.",
     },
     memberRoleOperations: {
         unlinkedTarget: "Logi-ID (Discord nicht verknüpft)",
@@ -1450,7 +1450,7 @@ export const deMessages = {
         inviteSupportMembersIndividuallyTitle:
             "Mitglieder der Support-Rolle einzeln hinzufügen",
         inviteSupportMembersIndividuallyDescription:
-            "Wenn deaktiviert, erwähnt Logi stattdessen die Support-Rollen der Kategorie. Discord fügt Mitglieder geeigneter kleiner Rollen hinzu; Dashboard-Administratoren werden weiterhin direkt hinzugefügt.",
+            "Wenn deaktiviert, erwähnt Logi stattdessen die Support-Rollen der Kategorie. Discord fügt Mitglieder geeigneter kleiner Rollen hinzu; Dashboard-Administratoren können Bewerbungen verwalten, ohne jedem Thread hinzugefügt zu werden.",
         panelTitle: "Panel-Titel",
         panelDescription: "Panel-Beschreibung",
         welcomeMessage: "Begrüßungsnachricht im Bewerbungs-Thread",

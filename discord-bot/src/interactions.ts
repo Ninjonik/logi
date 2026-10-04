@@ -3208,8 +3208,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         const supportMemberIds = resolveSupportMemberIds(
             interaction.guild,
-            category.supportRoleIds,
-            categoryContext.config.dashboardAdminRoleId
+            category.supportRoleIds
         )
         const participantIds = [
             ...new Set([interaction.user.id, ...supportMemberIds]),
@@ -3575,7 +3574,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const supportMemberIds = resolveSupportMemberIds(
             interaction.guild,
             category.supportRoleIds,
-            categoryContext.config.dashboardAdminRoleId,
             membershipSettings.inviteSupportMembersIndividually !== false
         )
         const participantIds = [

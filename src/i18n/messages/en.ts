@@ -1347,7 +1347,7 @@ export const enMessages = {
             "The ticket system is enabled, but the Discord ticket panel will not be posted and ticket threads cannot open until you finish: {items}.",
         routingInfoTitle: "How ticket routing works",
         routingInfoDescription:
-            "Category support roles are invited into new ticket threads automatically. Users with the dashboard admin role are also treated as support staff for ticket handling.",
+            "Category support roles are invited into new ticket threads automatically. Dashboard administrators can manage tickets but are not added to every thread.",
     },
     memberRoleOperations: {
         unlinkedTarget: "Logi ID (Discord not linked)",
@@ -1411,7 +1411,7 @@ export const enMessages = {
         inviteSupportMembersIndividuallyTitle:
             "Add support-role members individually",
         inviteSupportMembersIndividuallyDescription:
-            "When off, Logi pings the category support roles instead. Discord adds members of eligible small roles; dashboard administrators are still added directly.",
+            "When off, Logi pings the category support roles instead. Discord adds members of eligible small roles; dashboard administrators can manage applications without being added to every thread.",
         panelTitle: "Panel title",
         panelDescription: "Panel description",
         welcomeMessage: "Application thread welcome message",

@@ -1348,7 +1348,7 @@ export const csMessages = {
             "Ticket systém je zapnutý, ale Discord ticket panel se nezveřejní a ticket thready nepůjde otevírat, dokud nedokončíte: {items}.",
         routingInfoTitle: "Jak funguje ticket routing",
         routingInfoDescription:
-            "Support role z kategorií se do nových ticket threadů přidávají automaticky. Uživatelé s dashboard admin rolí se také berou jako support staff pro zpracování ticketů.",
+            "Support role z kategorií se do nových ticket threadů přidávají automaticky. Dashboard administrátoři mohou tickety spravovat, ale nepřidávají se do každého threadu.",
     },
     memberRoleOperations: {
         unlinkedTarget: "Logi ID (Discord není propojen)",
@@ -1411,7 +1411,7 @@ export const csMessages = {
         inviteSupportMembersIndividuallyTitle:
             "Přidávat členy support rolí jednotlivě",
         inviteSupportMembersIndividuallyDescription:
-            "Když je vypnuto, Logi místo toho pingne support role kategorie. Discord přidá členy podporovaných malých rolí; dashboard administrátoři se stále přidávají přímo.",
+            "Když je vypnuto, Logi místo toho pingne support role kategorie. Discord přidá členy podporovaných malých rolí; dashboard administrátoři mohou přihlášky spravovat, aniž by se přidávali do každého threadu.",
         panelTitle: "Nadpis panelu",
         panelDescription: "Popis panelu",
         welcomeMessage: "Uvítací zpráva v application threadu",

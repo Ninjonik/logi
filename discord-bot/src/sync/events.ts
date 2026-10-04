@@ -580,6 +580,34 @@ async function syncEvent(
             ) {
                 topicMessageIds = forumSyncResult.topicMessageIds
             }
+            // Store the Discord resource as soon as it exists. The remainder
+            // of an event sync can take longer for Wardogs (three team cards,
+            // uploads, and rate limits), and a later failure must not make the
+            // next attempt create another event forum.
+            if (forumSyncResult.stateChanged && forumChannelId) {
+                await convex.mutation(references.updateEventSyncState, {
+                    secret: env.internalSecret,
+                    eventId: event.id as never,
+                    guildId: payload.config.guildId,
+                    announcementChannelId: state?.announcementChannelId,
+                    announcementMessageId,
+                    eventInfoMessageId,
+                    eventInfoMessageRenderVersion:
+                        state?.eventInfoMessageRenderVersion,
+                    scheduledEventId,
+                    scheduledEventStatus,
+                    forumChannelId,
+                    forumThreadId,
+                    infoMessageId,
+                    topicMessageIds,
+                    lastEventUpdatedAt: event.updatedAt,
+                    lastRosterUpdatedAt: roster?.updatedAt,
+                    lastConfigUpdatedAt: payload.config.updatedAt,
+                    lastCalendarSyncVersion: getCalendarSyncVersion(event),
+                    squadVoiceChannelIds,
+                    lastSyncedAt: new Date().toISOString(),
+                })
+            }
             logInfo("forum", "Forum sync completed", {
                 eventId: event.id,
                 guildId: payload.config.guildId,
