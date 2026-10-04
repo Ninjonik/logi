@@ -725,11 +725,18 @@ function toSingleLine(value: string) {
     return value.replace(/[\s\p{Cc}]+/gu, " ").trim()
 }
 
-function truncateCodePoints(value: string, maxLength: number) {
-    const codePoints = Array.from(value)
-    return codePoints.length > maxLength
-        ? codePoints.slice(0, maxLength).join("")
-        : value
+/**
+ * Cuts to a Discord length limit, which counts UTF-16 code units, without
+ * splitting a surrogate pair.
+ */
+function truncateUtf16(value: string, maxLength: number) {
+    if (value.length <= maxLength) return value
+    let truncated = ""
+    for (const codePoint of value) {
+        if (truncated.length + codePoint.length > maxLength) break
+        truncated += codePoint
+    }
+    return truncated
 }
 
 /**
@@ -743,27 +750,35 @@ export function neutralizeDiscordMentions(value: string) {
         .replace(/<(?=[@#:&/]|[a-z]+:)/gi, "<\u200B")
 }
 
+/** Breaks `://` with a zero-width space so text never becomes a URL. */
+function breakUrlSchemes(value: string) {
+    return value.replace(/:\/\//g, ":\u200B//")
+}
+
 /**
  * Escapes stored team text for Discord surfaces that render Markdown. Brackets
  * and parentheses are escaped so labels cannot form masked links, and `://` is
- * broken so a label never becomes a clickable URL.
+ * broken so a label never becomes a clickable URL. Every `-` is escaped (which
+ * also covers bulleted lists) so stored text can never contain the `-{20,}`
+ * run that splits Components V2 cards into separate blocks.
  */
 export function escapeMatchTeamText(value: string) {
     const escaped = escapeMarkdown(toSingleLine(value), {
         heading: true,
-        bulletedList: true,
         numberedList: true,
     })
-        .replace(/[[\]()]/g, "\\$&")
+        .replace(/[[\]()-]/g, "\\$&")
         .replace(/^>/, "\\>")
-    return neutralizeDiscordMentions(escaped).replace(/:\/\//g, ":\u200B//")
+    return breakUrlSchemes(neutralizeDiscordMentions(escaped))
 }
 
 /** Plain-text label for Discord fields that do not render Markdown. */
 function plainMatchTeamLabel(assignment: MatchTeamAssignment) {
     const name = toSingleLine(assignment.snapshot.name)
     const code = toSingleLine(assignment.snapshot.shortCode ?? "")
-    return neutralizeDiscordMentions(code ? `${name} [${code}]` : name)
+    return breakUrlSchemes(
+        neutralizeDiscordMentions(code ? `${name} [${code}]` : name)
+    )
 }
 
 function formatMatchTeamLabel(
@@ -832,7 +847,7 @@ export function buildMatchTeamLogoEmbeds(
             // Embed author names render as plain text, so Markdown escaping
             // would show literal backslashes; mentions are still neutralized.
             const embed = new EmbedBuilder().setAuthor({
-                name: truncateCodePoints(
+                name: truncateUtf16(
                     plainMatchTeamLabel(assignment),
                     DISCORD_EMBED_AUTHOR_NAME_LIMIT
                 ),
@@ -862,7 +877,7 @@ export function buildMatchTeamV2Sections(event: EventRecord) {
             .setThumbnailAccessory(
                 new ThumbnailBuilder({
                     media: { url: logoUrl },
-                    description: truncateCodePoints(
+                    description: truncateUtf16(
                         plainMatchTeamLabel(assignment),
                         DISCORD_THUMBNAIL_DESCRIPTION_LIMIT
                     ),

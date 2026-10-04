@@ -8,6 +8,7 @@ import {
     buildEventComponents,
     buildEventEmbed,
     buildMatchTeamLogoEmbeds,
+    buildMatchTeamV2Sections,
     buildMembershipPanelComponents,
     escapeMatchTeamText,
 } from "./message-builders"
@@ -873,6 +874,13 @@ test("escapeMatchTeamText neutralizes block Markdown at the start of a line", ()
     assert.equal(escapeMatchTeamText("> quote"), "\\> quote")
     assert.equal(escapeMatchTeamText("# Heading"), "\\# Heading")
     assert.equal(escapeMatchTeamText("- item"), "\\- item")
+    assert.equal(escapeMatchTeamText("- # item"), "\\- \\# item")
+    assert.equal(escapeMatchTeamText("Alpha-Bravo"), "Alpha\\-Bravo")
+    assert.equal(
+        escapeMatchTeamText(`Alpha${"-".repeat(20)}Squad`),
+        `Alpha${"\\-".repeat(20)}Squad`
+    )
+    assert.doesNotMatch(escapeMatchTeamText("-".repeat(120)), /--/)
     assert.equal(escapeMatchTeamText("1. first"), "1\\. first")
     assert.equal(escapeMatchTeamText("  Alpha\tSquad  "), "Alpha Squad")
     assert.equal(
@@ -1036,5 +1044,104 @@ test("Components V2 information cards add one logo section per team only when re
             )
         ),
         toPlainJson(buildAnnouncementV2Message(payload, legacyEvent, {}))
+    )
+})
+
+test("Components V2 cards keep hyphen-run team names in one literal Teams line", () => {
+    const payload = {
+        config: { ...config, defaultLanguage: "en" },
+        groups,
+        guild: { eventCategories },
+        rosters: [],
+        userDisplayNames: {},
+    } as unknown as SyncPayload
+    const event = createMatchEvent({
+        matchTeams: [
+            createMatchTeam("a", `${"-".repeat(20)}# Pwned heading`, {
+                side: "Allies",
+            }),
+            createMatchTeam("b", `Bravo${"-".repeat(20)}> quoted`, {
+                side: "Axis",
+            }),
+        ],
+    })
+    const message = buildAnnouncementV2Message(payload, event, {})
+    const container = message.components?.[0]?.toJSON()
+    const contents = (
+        container && "components" in container ? container.components : []
+    ).flatMap((component) => {
+        if (component.type === 10) return [component.content]
+        if (component.type === 9)
+            return component.components.map((text) => text.content)
+        return []
+    })
+    const teamsBlocks = contents.filter((content) => content.includes("🛡️"))
+
+    assert.equal(teamsBlocks.length, 1)
+    const teamsLine =
+        teamsBlocks[0]?.split("\n").find((line) => line.includes("🛡️")) ?? ""
+    assert.match(teamsLine, /Pwned heading \(Allies\) vs Bravo/)
+    assert.match(teamsLine, /> quoted \(Axis\)$/)
+    assert.doesNotMatch(teamsLine, /--/)
+    for (const content of contents.slice(1)) {
+        assert.doesNotMatch(content, /^(#|>)/m)
+    }
+})
+
+test("match team logo labels stay within Discord UTF-16 limits and never contain URLs", () => {
+    const longName = `${"@".repeat(108)}${"😀".repeat(6)}`
+    const longCode = "@".repeat(16)
+    const loneSurrogate =
+        /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/
+    const event = createMatchEvent({
+        matchTeams: [
+            createMatchTeam("a", longName, { shortCode: longCode }),
+            createMatchTeam("b", "B".repeat(300)),
+        ],
+    })
+
+    const embeds = buildMatchTeamLogoEmbeds(event, 0x123456).map((embed) =>
+        embed.toJSON()
+    )
+    assert.equal(embeds.length, 2)
+    for (const embed of embeds) {
+        const name = embed.author?.name ?? ""
+        assert.ok(name.length > 0 && name.length <= 256)
+        assert.doesNotMatch(name, loneSurrogate)
+    }
+    assert.equal(embeds[1]?.author?.name, "B".repeat(256))
+    assert.ok(
+        buildMatchTeamV2Sections(event).every((section) => {
+            const accessory = section.toJSON().accessory
+            return (
+                accessory.type === 11 &&
+                (accessory.description ?? "").length <= 1024
+            )
+        })
+    )
+
+    const linked = createMatchEvent({
+        matchTeams: [
+            createMatchTeam("a", "Visit https://evil.example/join", {
+                shortCode: "x://y",
+            }),
+        ],
+    })
+    const [linkedEmbed] = buildMatchTeamLogoEmbeds(linked, 0x123456).map(
+        (embed) => embed.toJSON()
+    )
+    assert.equal(
+        linkedEmbed?.author?.name,
+        "Visit https:\u200B//evil.example/join [x:\u200B//y]"
+    )
+    const [linkedSection] = buildMatchTeamV2Sections(linked).map((section) =>
+        section.toJSON()
+    )
+    assert.ok(linkedSection?.accessory.type === 11)
+    assert.doesNotMatch(
+        linkedSection.accessory.type === 11
+            ? (linkedSection.accessory.description ?? "")
+            : "",
+        /:\/\//
     )
 })
