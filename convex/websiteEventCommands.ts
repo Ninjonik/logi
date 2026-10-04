@@ -18,15 +18,16 @@ import {
     DelegatingEventScorePort,
 } from "../src/infrastructure/convex/event-command-repositories"
 import {
-    matchTeamsEditability,
-    refreshMatchTeamSnapshot,
-} from "../src/domain/teams/match-teams"
+    ConvexMatchTeamSnapshotPorts,
+    syncEventAssetReferences,
+} from "../src/infrastructure/convex/team-directory-repositories"
 import {
     mutation,
     query,
     type MutationCtx,
     type QueryCtx,
 } from "./_generated/server"
+import { refreshAssignedMatchTeam } from "../src/application/teams/refresh-match-team.use-case"
 import {
     assertSessionGateway,
     activeDashboardSession,
@@ -37,11 +38,9 @@ import { canAdminServerContext } from "../src/infrastructure/convex/server-read-
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { CancelEventUseCase } from "../src/application/events/cancel-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
-import { resolveEventMatchTeams, syncEventAssetReferences } from "./matchTeams"
 import type { EventUpsertInput } from "../src/domain/events/upsert-policy"
 import { projectEventMatchTeams } from "../src/domain/api/event-summaries"
 import { memberObservation, membershipGuild } from "./membership_shared"
-import { directoryLookup, recordTeamAudit, teamById } from "./teams"
 import { isApiKeyReadAccess } from "../src/domain/api/key-access"
 import { nextRevision } from "../src/domain/integrations/change"
 import { currentEventStatus } from "../src/domain/events/status"
@@ -50,6 +49,7 @@ import { resolveGameScope } from "../src/domain/games/game"
 import { integrationRecord } from "./integrationChangeLog"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import type { Doc, Id } from "./_generated/dataModel"
+import { resolveEventMatchTeams } from "./matchTeams"
 import { resolveSsoActor } from "./ssoTokenStore"
 import { v } from "convex/values"
 
@@ -178,52 +178,31 @@ function editableFields(event: Doc<"events">): WebsiteEventFields | null {
 /**
  * Explicit, audited re-capture of one assigned team's presentation from its
  * active directory entry. Runs inside the tracked command transaction so the
- * event change feed emits; a rejection writes nothing.
+ * event change feed emits; any rejection writes nothing and is reported as
+ * invalid_match_teams.
  */
 async function refreshMatchTeam(
     tracked: MutationCtx,
     actor: WebsiteEventActor,
-    gameId: WebsiteEventGame,
     command: { eventId: string; teamId: string }
 ): Promise<{ eventId: string } | { error: "invalid_match_teams" }> {
-    const rejected = { error: "invalid_match_teams" as const }
     const id = tracked.db.normalizeId("events", command.eventId)
     const event = id ? await tracked.db.get(id) : null
-    const assignment = event?.matchTeams?.find(
-        (entry) => entry.teamId === command.teamId
+    if (!event || event.guildId !== actor.guildId)
+        return { error: "invalid_match_teams" }
+    const refreshed = await refreshAssignedMatchTeam(
+        new ConvexMatchTeamSnapshotPorts(tracked),
+        {
+            guildId: actor.guildId,
+            event: { ...event, id: String(event._id) },
+            teamId: command.teamId,
+            actor: actor.subject,
+            now: new Date(),
+        }
     )
-    if (
-        !event?.matchTeams ||
-        event.guildId !== actor.guildId ||
-        !assignment ||
-        matchTeamsEditability({
-            kind: event.kind,
-            status: currentEventStatus(event),
-        })
-    )
-        return rejected
-    const now = new Date().toISOString()
-    const refreshed = refreshMatchTeamSnapshot({
-        guildId: actor.guildId,
-        gameId,
-        assignment,
-        team: (
-            await directoryLookup(tracked, actor.guildId, [command.teamId])
-        ).get(command.teamId),
-        now,
-    })
-    if (!refreshed.ok) return rejected
-    const matchTeams = event.matchTeams.map((entry) =>
-        entry.teamId === command.teamId ? refreshed.assignment : entry
-    )
-    await tracked.db.patch(event._id, { matchTeams, updatedAt: now })
-    await syncEventAssetReferences(tracked, { ...event, matchTeams })
-    const row = await teamById(tracked, actor.guildId, command.teamId)
-    if (row)
-        await recordTeamAudit(tracked, row, "snapshot_refresh", actor.subject, {
-            eventId: String(event._id),
-        })
-    return { eventId: String(event._id) }
+    return refreshed.ok
+        ? { eventId: String(event._id) }
+        : { error: "invalid_match_teams" }
 }
 
 export const readEditor = query({
@@ -328,7 +307,6 @@ export const execute = mutation({
                                 return await refreshMatchTeam(
                                     tracked,
                                     actor,
-                                    gameId,
                                     input
                                 )
                             const clock = { now: () => new Date() }

@@ -19,6 +19,7 @@ import {
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
 import { ReconcileEventStatusesUseCase } from "../src/application/events/reconcile-event-statuses.use-case"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/team-directory-repositories"
 import { CompleteTrainingUseCase } from "../src/application/events/complete-training.use-case"
 import {
     getGuildById,
@@ -31,13 +32,13 @@ import { UpsertNoticeUseCase } from "../src/application/events/upsert-notice.use
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case"
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
-import { resolveEventMatchTeams, syncEventAssetReferences } from "./matchTeams"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
 import { currentEventStatus } from "../src/domain/events/status"
 import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import type { MutationCtx } from "./_generated/server"
+import { resolveEventMatchTeams } from "./matchTeams"
 import { matchTeamInput } from "./teamValidators"
 import type { Id } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"

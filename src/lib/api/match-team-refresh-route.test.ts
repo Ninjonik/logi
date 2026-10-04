@@ -31,7 +31,7 @@ function fixture(result: unknown = { ok: true, matchTeams: [assignment] }) {
             return {
                 serverRecordId: "guilds:record",
                 guildId: "910000000000000001",
-                actor: "123456789",
+                actor: { subject: "123456789" },
             }
         },
         rateLimit: async (bucket) => {
@@ -82,7 +82,7 @@ test("refresh forwards the admin's server record, event, team and actor and retu
             serverRecordId: "guilds:record",
             eventId: "events:one",
             teamId: assignment.teamId,
-            actor: "123456789",
+            actor: { subject: "123456789" },
         },
     ])
     assert.deepEqual(f.revalidated, [["guilds:one", "events:one"]])

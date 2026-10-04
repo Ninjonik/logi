@@ -29,12 +29,15 @@ const MATCH_TEAM_ERRORS = new Set<string>([
 ] satisfies MatchTeamError[])
 const refreshedSchema = z.array(matchTeamAssignmentSchema).max(3)
 
-export type MatchTeamRefreshPorts = {
+/** The dashboard actor is passed through so Convex can recheck its session. */
+export type MatchTeamRefreshPorts<
+    Actor extends { subject: string } = { subject: string },
+> = {
     /** Current workspace admin and dashboard actor; null denies the request. */
     access(serverId: string): Promise<{
         serverRecordId: string
         guildId: string
-        actor: string
+        actor: Actor
     } | null>
     /** The directory bucket shared with team reads and writes. */
     rateLimit(bucket: string): Promise<TeamDashboardRateLimit>
@@ -42,7 +45,7 @@ export type MatchTeamRefreshPorts = {
         serverRecordId: string
         eventId: string
         teamId: string
-        actor: string
+        actor: Actor
     }): Promise<unknown>
     revalidate(serverId: string, eventId: string): void
 }
@@ -51,7 +54,9 @@ export type MatchTeamRefreshPorts = {
  * Explicit, audited re-capture of one assigned team's presentation before a
  * match concludes. Same-origin admin only; Convex enforces every match rule.
  */
-export function matchTeamRefreshHandler(ports: MatchTeamRefreshPorts) {
+export function matchTeamRefreshHandler<Actor extends { subject: string }>(
+    ports: MatchTeamRefreshPorts<Actor>
+) {
     return async function POST(
         request: Request,
         params: { serverId: string; eventId: string }
@@ -63,7 +68,7 @@ export function matchTeamRefreshHandler(ports: MatchTeamRefreshPorts) {
             if (!access) return json({ error: "forbidden" }, 403)
             // Every refresh writes an audit row, so it consumes the directory bucket.
             const rate = await ports.rateLimit(
-                teamDashboardRateBucket(access.guildId, access.actor)
+                teamDashboardRateBucket(access.guildId, access.actor.subject)
             )
             if (!rate.allowed) return teamRateLimitedResponse(rate)
             const input = matchTeamRefreshCommandSchema.safeParse(

@@ -519,7 +519,7 @@ test("an explicit refresh re-captures from an active team and records an audit e
         serverId: "guilds:admin",
         eventId: "events:match",
         teamId: a.teamId,
-        actor: actorFixture.subject,
+        actor: actorFixture,
     })
     assert.equal(refreshed.ok, true)
     assert.equal(
@@ -547,7 +547,7 @@ test("an explicit refresh re-captures from an active team and records an audit e
             serverId: "guilds:admin",
             eventId: "events:match",
             teamId: a.teamId,
-            actor: actorFixture.subject,
+            actor: actorFixture,
         }),
         { error: "match_concluded" }
     )

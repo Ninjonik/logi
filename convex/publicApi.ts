@@ -38,6 +38,7 @@ import {
 } from "../src/domain/games/game"
 import { UpsertAssignmentUseCase } from "../src/application/assignments/upsert-assignment.use-case"
 import { RemoveAssignmentUseCase } from "../src/application/assignments/remove-assignment.use-case"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/team-directory-repositories"
 import {
     buildDefaultStratmapState,
     stringifyStratmapState,
@@ -54,13 +55,13 @@ import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertCommand } from "../src/application/events/command-ports"
 import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
-import { resolveEventMatchTeams, syncEventAssetReferences } from "./matchTeams"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
 import { currentEventStatus } from "../src/domain/events/status"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import { apiKeyReadAccess } from "./apiKeyValidators"
+import { resolveEventMatchTeams } from "./matchTeams"
 import { getGuildByDiscordId } from "./identity"
 
 const INTERNAL_AUTH_SECRET =

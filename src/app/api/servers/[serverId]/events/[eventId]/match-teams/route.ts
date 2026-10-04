@@ -24,7 +24,7 @@ const handler = matchTeamRefreshHandler({
             ? {
                   serverRecordId: server.server.id,
                   guildId: server.server.discordId,
-                  actor: actor.subject,
+                  actor,
               }
             : null
     },

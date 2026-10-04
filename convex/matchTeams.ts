@@ -1,24 +1,24 @@
 import {
     matchTeamInputsSchema,
     matchTeamsEditability,
-    refreshMatchTeamSnapshot,
     resolveMatchTeams,
     validatePreservedMatchTeams,
     type MatchTeamAssignment,
     type MatchTeamError,
 } from "../src/domain/teams/match-teams"
-import { directoryLookup, recordTeamAudit, teamById } from "./teams"
-import { currentEventStatus } from "../src/domain/events/status"
-import type { MutationCtx, QueryCtx } from "./_generated/server"
+import {
+    ConvexMatchTeamSnapshotPorts,
+    directoryLookup,
+} from "../src/infrastructure/convex/team-directory-repositories"
+import { refreshAssignedMatchTeam } from "../src/application/teams/refresh-match-team.use-case"
+import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
+import { assertSessionGateway } from "./dashboardSessionStore"
 import { getGuildById, getGuildDiscordId } from "./identity"
 import { teamGameSchema } from "../src/domain/teams/team"
-import type { Doc, Id } from "./_generated/dataModel"
-import { syncAssetReferences } from "./imageAssets"
+import type { QueryCtx } from "./_generated/server"
+import type { Doc } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
 import { v } from "convex/values"
-
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 
 export type MatchTeamResolution =
     | { ok: true; matchTeams: MatchTeamAssignment[] | undefined }
@@ -70,7 +70,6 @@ export async function resolveEventMatchTeams(
             assignments: input.previous,
             teams: await directoryLookup(
                 ctx,
-                input.guildId,
                 input.previous.map((entry) => entry.teamId)
             ),
         })
@@ -108,7 +107,6 @@ export async function resolveEventMatchTeams(
         previous: input.previous,
         teams: await directoryLookup(
             ctx,
-            input.guildId,
             parsed.data.map((entry) => entry.teamId)
         ),
         now: input.now,
@@ -118,78 +116,44 @@ export async function resolveEventMatchTeams(
         : { ok: false, error: resolved.error }
 }
 
-/** Keeps snapshot logos alive for as long as the event references them. */
-export async function syncEventAssetReferences(
-    ctx: MutationCtx,
-    event: Pick<Doc<"events">, "_id" | "guildId" | "matchTeams">
-) {
-    const assetIds: Id<"imageAssets">[] = []
-    for (const assignment of event.matchTeams ?? []) {
-        const id = assignment.snapshot.logoAssetId
-            ? ctx.db.normalizeId("imageAssets", assignment.snapshot.logoAssetId)
-            : null
-        if (id && !assetIds.includes(id)) assetIds.push(id)
-    }
-    await syncAssetReferences(ctx, {
-        guildId: event.guildId,
-        owner: "event",
-        ownerId: String(event._id),
-        assetIds,
-    })
-}
-
-/** Explicit, audited re-capture of one assignment's presentation before a match concludes. */
+/**
+ * Explicit, audited re-capture of one assignment's presentation before a match
+ * concludes. The dashboard session and admin access are rechecked in this
+ * transaction, and the audit names the authorized session subject.
+ */
 export const refreshSnapshot = mutation({
     args: {
         secret: v.string(),
         serverId: v.id("guilds"),
         eventId: v.id("events"),
         teamId: v.string(),
-        actor: v.string(),
+        actor: dashboardActor,
     },
     handler: async (ctx, args) => {
-        if (args.secret !== INTERNAL_AUTH_SECRET)
-            throw new Error("Unauthorized.")
+        assertSessionGateway(args.secret)
         const guild = await getGuildById(ctx, String(args.serverId))
         if (!guild) throw new Error("Server not found.")
         const guildId = getGuildDiscordId(guild)
+        const admin = await authorizeDashboardAdmin(ctx, {
+            secret: args.secret,
+            guildId,
+            actor: args.actor,
+        })
         const event = await ctx.db.get(args.eventId)
         if (!event || event.guildId !== guildId)
             throw new Error("Event not found.")
-        // A match past its end is frozen even before the bot records the conclusion.
-        const frozen = matchTeamsEditability({
-            kind: event.kind,
-            status: currentEventStatus(event),
-        })
-        if (frozen) return { error: frozen }
-        const game = teamGameSchema.safeParse(event.gameId ?? "hell_let_loose")
-        if (!game.success) return { error: "team_game_mismatch" as const }
-        const assignment = event.matchTeams?.find(
-            (entry) => entry.teamId === args.teamId
+        const refreshed = await refreshAssignedMatchTeam(
+            new ConvexMatchTeamSnapshotPorts(ctx),
+            {
+                guildId,
+                event: { ...event, id: String(event._id) },
+                teamId: args.teamId,
+                actor: admin.session.subject,
+                now: new Date(),
+            }
         )
-        if (!assignment) return { error: "team_not_found" as const }
-        const team = (await directoryLookup(ctx, guildId, [args.teamId])).get(
-            args.teamId
-        )
-        const now = new Date().toISOString()
-        const refreshed = refreshMatchTeamSnapshot({
-            guildId,
-            gameId: game.data,
-            assignment,
-            team,
-            now,
-        })
-        if (!refreshed.ok) return { error: refreshed.error }
-        const matchTeams = event.matchTeams!.map((entry) =>
-            entry.teamId === args.teamId ? refreshed.assignment : entry
-        )
-        await ctx.db.patch(event._id, { matchTeams, updatedAt: now })
-        await syncEventAssetReferences(ctx, { ...event, matchTeams })
-        const row = await teamById(ctx, guildId, args.teamId)
-        if (row)
-            await recordTeamAudit(ctx, row, "snapshot_refresh", args.actor, {
-                eventId: String(event._id),
-            })
-        return { ok: true as const, matchTeams }
+        return refreshed.ok
+            ? { ok: true as const, matchTeams: refreshed.matchTeams }
+            : { error: refreshed.error }
     },
 })

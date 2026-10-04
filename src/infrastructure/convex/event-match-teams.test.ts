@@ -295,7 +295,7 @@ test("a match past its end is frozen before the stored status says concluded", a
             serverId: "guilds:admin",
             eventId,
             teamId: alpha,
-            actor: actorFixture.subject,
+            actor: actorFixture,
         }),
         { error: "match_concluded" }
     )

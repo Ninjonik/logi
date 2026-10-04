@@ -7,9 +7,10 @@ import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
+import { teamById } from "../src/infrastructure/convex/team-directory-repositories"
 import { assertSessionGateway } from "./dashboardSessionStore"
 import { query, type QueryCtx } from "./_generated/server"
-import { teamById, teamDtoOf } from "./teams"
+import { teamDtoOf } from "./teams"
 import { v } from "convex/values"
 
 const credentials = {
