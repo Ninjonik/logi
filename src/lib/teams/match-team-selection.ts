@@ -4,7 +4,12 @@ import {
     type MatchTeamInput,
     type MatchTeamSlot,
 } from "@/domain/teams/match-teams"
-import { TEAM_GAMES, type TeamGame } from "@/domain/teams/team"
+import {
+    normalizeTeamName,
+    TEAM_GAMES,
+    TEAM_NAME_MAX,
+    type TeamGame,
+} from "@/domain/teams/team"
 import type { GameId } from "@/domain/games/game"
 
 /** The directory game a native match uses; a missing legacy game is HLL, HLL: Vietnam has none. */
@@ -70,4 +75,45 @@ export function matchTeamSelectionIssues(
             issues[entry.slot] = "duplicateSide"
     }
     return issues
+}
+
+/**
+ * The picker's typed search as the name of a team to request: `null` when
+ * nothing is typed or a listed catalogue team already has that name (it can
+ * be selected instead). Requested teams become selectable after approval.
+ */
+export function requestableTeamName(
+    query: string,
+    listed: readonly { name: string }[]
+): string | null {
+    const name = [...query.trim().replace(/\s+/g, " ")]
+        .slice(0, TEAM_NAME_MAX)
+        .join("")
+    if (!name) return null
+    const wanted = normalizeTeamName(name)
+    return listed.some((team) => normalizeTeamName(team.name) === wanted)
+        ? null
+        : name
+}
+
+/**
+ * After a snapshot refresh, which follows merge pointers, the saved slot of
+ * `teamId` may name the surviving team instead. The unsaved inputs then
+ * follow it, keeping their slot and side, so saving does not reselect the
+ * merged (archived) team.
+ */
+export function followRefreshedTeam(
+    value: readonly MatchTeamInput[],
+    teamId: string,
+    before: readonly MatchTeamAssignment[],
+    after: readonly MatchTeamAssignment[]
+): MatchTeamInput[] {
+    const slot = before.find((entry) => entry.teamId === teamId)?.slot
+    const next = slot
+        ? after.find((entry) => entry.slot === slot)?.teamId
+        : undefined
+    if (!next || next === teamId) return [...value]
+    return value.map((entry) =>
+        entry.teamId === teamId ? { ...entry, teamId: next } : entry
+    )
 }

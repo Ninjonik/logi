@@ -815,16 +815,8 @@ export const csMessages = {
     teams: {
         title: "Týmy",
         description:
-            "Udržujte pro každou hru adresář týmů, proti kterým hrajete zápasy. Názvy, zkratky a loga používá výběr týmů v zápase i připojené weby.",
-        add: "Přidat tým",
-        edit: "Upravit",
-        archive: "Archivovat",
-        restore: "Obnovit",
-        save: "Uložit tým",
-        saving: "Ukládání…",
+            "Procházejte katalog týmů Logi pro jednotlivé hry. Spravují ho administrátoři Logi: o chybějící tým požádejte nebo navrhněte změnu a schválené týmy vybírejte ve svých zápasech.",
         cancel: "Zrušit",
-        createTitle: "Nový tým",
-        editTitle: "Upravit tým",
         name: "Název",
         shortCode: "Zkratka",
         shortCodeHelp:
@@ -837,45 +829,36 @@ export const csMessages = {
         removeLogo: "Odebrat logo",
         search: "Hledat týmy…",
         loadMore: "Načíst další",
-        showArchived: "Zobrazit archivované",
         archivedBadge: "Archivováno",
-        empty: "V tomto adresáři zatím nejsou žádné týmy.",
+        empty: "Katalog pro tuto hru zatím neobsahuje žádné týmy.",
         emptySearch: "Tomuto hledání neodpovídá žádný tým.",
         loading: "Načítání týmů…",
-        notAvailableForGame: "Adresář týmů není pro tuto hru dostupný.",
-        gameDisabled: "Před přidáním týmů zapněte tuto hru v nastavení klanu.",
-        saved: "Tým byl uložen.",
-        archivedNotice:
-            "Tým byl archivován. Historické zápasy si jeho snímek ponechají.",
-        restoredNotice: "Tým byl obnoven.",
+        notAvailableForGame: "Katalog týmů není pro tuto hru dostupný.",
+        gameDisabled:
+            "Tato hra není v pracovním prostoru zapnutá. Týmy můžete procházet i o ně žádat, ale v zápasech je lze použít až po zapnutí hry v nastavení klanu.",
         retry: "Zkusit znovu",
-        editTeam: "Upravit tým {name}",
-        archiveTeam: "Archivovat tým {name}",
-        restoreTeam: "Obnovit tým {name}",
-        conflictReloadFailed:
-            "Tým byl mezitím změněn a nejnovější verzi se nepodařilo načíst. Zavřete dialog a zkuste to znovu.",
-        duplicateActive:
-            "Tým s tímto názvem pro tuto hru již existuje. Místo vytvoření druhého použijte tento tým.",
-        duplicateArchived:
-            "Tento název už používá archivovaný tým. Obnovte ho, abyste ho mohli znovu použít.",
-        useExisting: "Použít existující tým",
-        restoreExisting: "Obnovit a použít",
+        requestNew: "Požádat o nový tým",
+        suggestChange: "Navrhnout změnu",
+        suggestChangeTeam: "Navrhnout změnu týmu {name}",
+        teamLinks: "Odkazy týmu {name}",
         errors: {
             invalid_team: "Zkontrolujte údaje týmu a zkuste to znovu.",
             game_disabled: "Tato hra není v pracovním prostoru zapnutá.",
-            duplicate_name: "Tým s tímto názvem pro tuto hru již existuje.",
+            duplicate_name:
+                "Tým s tímto názvem už v katalogu pro tuto hru existuje.",
             revision_conflict:
-                "Tým byl mezitím změněn. Načetla se nejnovější verze; zkontrolujte ji a zkuste to znovu.",
+                "Tým byl mezitím změněn. Načtěte ho znovu a zkuste to znovu.",
             idempotency_conflict:
                 "Tento požadavek už byl použit s jinými údaji. Zavřete dialog a začněte znovu.",
             not_found: "Tým již neexistuje.",
-            archived: "Tým je archivován. Před úpravou ho obnovte.",
+            archived: "Tým je archivován.",
             not_archived: "Tým není archivován.",
             asset_unavailable:
                 "Nahrané logo již není dostupné. Nahrajte ho znovu.",
-            limit_reached: "Adresář této hry dosáhl limitu 500 týmů.",
-            forbidden: "Nemáte oprávnění zde spravovat týmy.",
-            unavailable: "Adresář týmů je dočasně nedostupný.",
+            limit_reached: "Katalog této hry dosáhl limitu 2000 týmů.",
+            invalid_merge: "Tyto týmy nelze sloučit.",
+            forbidden: "Nemáte zde přístup ke katalogu týmů.",
+            unavailable: "Katalog týmů je dočasně nedostupný.",
             rate_limited:
                 "Příliš mnoho požadavků; chvíli počkejte a zkuste to znovu.",
         },
@@ -897,7 +880,7 @@ export const csMessages = {
         picker: {
             title: "Týmy",
             description:
-                "Vyberte týmy, které tento zápas hrají. Každý tým si ponechá název a logo z doby výběru, dokud ho neobnovíte.",
+                "Vyberte z katalogu týmů Logi týmy, které tento zápas hrají. Každý tým si ponechá název a logo z doby výběru, dokud ho neobnovíte.",
             slots: { a: "Tým A", b: "Tým B", c: "Tým C" },
             team: "Tým",
             side: "Strana",
@@ -907,28 +890,120 @@ export const csMessages = {
             noResults: "Nebyly nalezeny žádné aktivní týmy.",
             unknownTeam: "Údaje o týmu nejsou dostupné",
             savedSelections: "Uloženo u tohoto zápasu",
-            addTeam: "Přidat tým",
+            requestTeam: "Požádat o nový tým",
+            requestNamed: "Požádat o tým „{name}“",
+            requestHint:
+                "Chybí tým? Požádejte o něj; vybrat ho půjde, jakmile ho administrátor Logi schválí.",
+            requestSent:
+                "Žádost byla odeslána. Tým zde půjde vybrat, jakmile ho administrátor Logi schválí; žadatel dostane rozhodnutí soukromou zprávou na Discordu.",
             refreshSnapshot: "Obnovit snímek",
             refreshing: "Obnovování…",
-            snapshotRefreshed: "Snímek byl obnoven z adresáře.",
+            snapshotRefreshed: "Snímek byl obnoven z katalogu týmů.",
             archivedSelection:
                 "Archivovaný tým; uložený snímek u tohoto zápasu zůstává.",
+            mergedBadge: "Sloučeno",
+            mergedSelection:
+                "Tým byl sloučen s jiným týmem v katalogu. Obnovením snímku na něj tento zápas převedete.",
             duplicateTeam: "Každý tým může být zařazen jen do jednoho slotu.",
             duplicateSide: "Každou stranu lze přiřadit jen jednomu týmu.",
             errors: {
                 invalid_match_teams: "Přiřazení týmů je neplatné.",
-                team_not_found: "Tým v adresáři již neexistuje.",
-                team_archived:
-                    "Tým je archivován; vyberte jiný tým nebo ho obnovte v adresáři týmů.",
+                team_not_found: "Tým v katalogu již neexistuje.",
+                team_archived: "Tým je archivován; vyberte jiný tým.",
                 team_game_mismatch: "Tým patří k jiné hře.",
                 match_concluded:
                     "Ukončené zápasy si své snímky týmů ponechávají.",
                 training_event: "Tréninky nemají zápasové týmy.",
                 forbidden: "Nemáte oprávnění měnit týmy zápasu.",
-                unavailable: "Adresář týmů je dočasně nedostupný.",
+                unavailable: "Katalog týmů je dočasně nedostupný.",
                 rate_limited:
                     "Příliš mnoho požadavků; chvíli počkejte a zkuste to znovu.",
             },
+        },
+    },
+    teamRequests: {
+        title: "Vaše žádosti o týmy",
+        description:
+            "Žádosti odeslané z tohoto pracovního prostoru. Administrátoři Logi každou schválí, sloučí nebo zamítnou a žadatel dostane rozhodnutí soukromou zprávou na Discordu. Pracovní prostor může mít nejvýše 20 čekajících žádostí.",
+        empty: "Tento pracovní prostor zatím o žádné týmy nežádal.",
+        loading: "Načítání žádostí…",
+        loadMore: "Načíst další",
+        retry: "Zkusit znovu",
+        kinds: { create: "Nový tým", update: "Změna" },
+        statuses: {
+            pending: "Čeká",
+            approved: "Schváleno",
+            merged: "Sloučeno",
+            rejected: "Zamítnuto",
+            cancelled: "Zrušeno",
+        },
+        requestedOn: "Odesláno {date}",
+        decidedOn: "Rozhodnuto {date}",
+        note: "Vaše poznámka",
+        reason: "Důvod",
+        resultTeam: "Výsledný tým",
+        resultTeamUnavailable: "Údaje o týmu nejsou dostupné",
+        cancel: "Zrušit žádost",
+        cancelRequest: "Zrušit žádost o tým {name}",
+        cancelling: "Rušení…",
+        cancelled: "Žádost byla zrušena.",
+        submitted:
+            "Žádost byla odeslána. Administrátoři Logi ji posoudí a rozhodnutí přijde soukromou zprávou na Discordu.",
+        dialog: {
+            createTitle: "Žádost o nový tým",
+            updateTitle: "Návrh změny",
+            createDescription:
+                "{game} · Administrátoři Logi posuzují každou žádost. Po schválení půjde tým vybrat v zápasech.",
+            updateDescription:
+                "{game} · Navrhněte nové údaje týmu {name}. Administrátoři Logi změnu posoudí dříve, než se použije.",
+            description: "Popis",
+            descriptionHelp: "Nepovinné, nejvýše 500 znaků.",
+            links: "Odkazy",
+            linksHelp:
+                "Nejvýše 3 odkazy https, například web týmu nebo pozvánka na Discord.",
+            link: "Odkaz {index}",
+            addLink: "Přidat odkaz",
+            removeLink: "Odebrat odkaz {index}",
+            note: "Poznámka pro administrátory",
+            noteHelp:
+                "Nepovinné, nejvýše 500 znaků. Uveďte cokoli, co pomůže při posouzení.",
+            submit: "Odeslat žádost",
+            submitting: "Odesílání…",
+            cancel: "Zrušit",
+            unchanged: "Před odesláním změňte alespoň jeden údaj týmu.",
+            duplicate:
+                "Tým {name} už v katalogu pro tuto hru je. Vyberte ho, nebo k němu navrhněte změnu.",
+        },
+        validation: {
+            nameRequired: "Zadejte název týmu.",
+            nameInvalid: "Použijte nejvýše 120 znaků bez zalomení řádku.",
+            shortCodeInvalid: "Použijte nejvýše 16 znaků bez zalomení řádku.",
+            descriptionInvalid:
+                "Použijte nejvýše 500 znaků bez řídicích znaků.",
+            linksInvalid:
+                "Každý odkaz musí být adresa https bez uživatelského jména a hesla.",
+            linksDuplicate: "Každý odkaz lze uvést jen jednou.",
+            linksTooMany: "Uveďte nejvýše 3 odkazy.",
+            noteInvalid: "Použijte nejvýše 500 znaků bez řídicích znaků.",
+            invalid: "Zkontrolujte údaje žádosti a zkuste to znovu.",
+        },
+        errors: {
+            invalid_request: "Zkontrolujte údaje žádosti a zkuste to znovu.",
+            not_found: "Žádost nebo její tým již neexistuje.",
+            not_pending:
+                "O této žádosti už bylo rozhodnuto, nebo byla zrušena.",
+            limit_reached:
+                "Tento pracovní prostor už má 20 čekajících žádostí. Počkejte na rozhodnutí, nebo některou zrušte.",
+            idempotency_conflict:
+                "Tato žádost už byla odeslána s jinými údaji. Zavřete dialog a vytvořte novou žádost.",
+            team_archived:
+                "Tým je archivován, změny k němu už nelze navrhovat.",
+            team_game_mismatch: "Tým patří k jiné hře.",
+            invalid_decision: "Toto rozhodnutí není pro žádost možné.",
+            forbidden: "Nemáte oprávnění zde spravovat žádosti o týmy.",
+            rate_limited:
+                "Příliš mnoho požadavků; chvíli počkejte a zkuste to znovu.",
+            unavailable: "Žádosti o týmy jsou dočasně nedostupné.",
         },
     },
     signupActivity: {
