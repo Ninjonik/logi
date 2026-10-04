@@ -40,3 +40,8 @@ export function appendTeamPage(
     const seen = new Set(items.map((item) => item.id))
     return [...items, ...page.filter((item) => !seen.has(item.id))]
 }
+
+/** Inserts a team name into a `{name}` label literally; `$` patterns in the name are not expanded. */
+export function teamActionLabel(template: string, name: string): string {
+    return template.split("{name}").join(name)
+}

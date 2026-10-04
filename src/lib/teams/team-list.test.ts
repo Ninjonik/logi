@@ -1,4 +1,9 @@
-import { appendTeamPage, removeTeamRecord, upsertTeamRecord } from "./team-list"
+import {
+    appendTeamPage,
+    removeTeamRecord,
+    teamActionLabel,
+    upsertTeamRecord,
+} from "./team-list"
 import type { TeamRecord } from "@/domain/teams/team"
 import assert from "node:assert/strict"
 import test from "node:test"
@@ -52,4 +57,16 @@ test("removed records disappear and further pages never duplicate rows", () => {
         names(appendTeamPage(list, [team("2", "Bravo"), team("3", "Charlie")])),
         ["Alpha", "Bravo", "Charlie"]
     )
+})
+
+test("row action labels insert team names literally, including $ patterns", () => {
+    assert.equal(
+        teamActionLabel("Restore {name}", "Alpha $& Co"),
+        "Restore Alpha $& Co"
+    )
+    assert.equal(
+        teamActionLabel("{name} archivieren", "Rock$'n Roll"),
+        "Rock$'n Roll archivieren"
+    )
+    assert.equal(teamActionLabel("Edit {name}", "$` $$ $1"), "Edit $` $$ $1")
 })

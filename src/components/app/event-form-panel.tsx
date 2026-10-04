@@ -598,6 +598,14 @@ export function EventFormPanel({
     const [savedMatchTeams, setSavedMatchTeams] = useState<
         MatchTeamAssignment[]
     >(() => event.matchTeams ?? [])
+    // A save re-renders this page in place with a new event; the saved assignments follow it.
+    const [savedMatchTeamsSource, setSavedMatchTeamsSource] = useState(
+        event.matchTeams
+    )
+    if (savedMatchTeamsSource !== event.matchTeams) {
+        setSavedMatchTeamsSource(event.matchTeams)
+        setSavedMatchTeams(event.matchTeams ?? [])
+    }
 
     const form = useForm<EventInput>({
         resolver: zodResolver(eventSchema),

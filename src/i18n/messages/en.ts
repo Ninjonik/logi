@@ -782,6 +782,8 @@ export const enMessages = {
         editTeam: "Edit {name}",
         archiveTeam: "Archive {name}",
         restoreTeam: "Restore {name}",
+        conflictReloadFailed:
+            "This team changed in the meantime, and the latest version could not be loaded. Close the dialog and try again.",
         errors: {
             invalid_team: "Check the team details and try again.",
             game_disabled: "This game is not enabled for the workspace.",
@@ -840,7 +842,7 @@ export const enMessages = {
                 invalid_match_teams: "The team assignment is invalid.",
                 team_not_found: "The team no longer exists in the directory.",
                 team_archived:
-                    "The team is archived; restore it to refresh the snapshot.",
+                    "The team is archived; choose another team or restore it in the team directory.",
                 team_game_mismatch: "The team belongs to a different game.",
                 match_concluded: "Concluded matches keep their team snapshots.",
                 training_event: "Trainings do not have match teams.",

@@ -1,13 +1,6 @@
 "use client"
 
 import {
-    fetchTeamRecord,
-    sendTeamCommand,
-    uploadTeamLogo,
-    type TeamCommandRequest,
-    type TeamErrorCode,
-} from "@/lib/teams/team-client"
-import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -16,11 +9,22 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import {
+    fetchTeamRecord,
+    sendTeamCommand,
+    uploadTeamLogo,
+    type TeamErrorCode,
+} from "@/lib/teams/team-client"
+import {
     TEAM_NAME_MAX,
     TEAM_SHORT_CODE_MAX,
     type TeamGame,
     type TeamRecord,
 } from "@/domain/teams/team"
+import {
+    rebaseTeamFormValues,
+    teamFormCommand,
+    teamFormValues,
+} from "@/lib/teams/team-form"
 import { IMAGE_INPUT_TYPES } from "@/domain/assets/image-asset"
 import { useId, useRef, useState, type FormEvent } from "react"
 import { TeamLogo } from "@/components/app/team-logo"
@@ -58,7 +62,6 @@ export function TeamFormDialog(props: TeamFormDialogProps) {
     )
 }
 
-type Logo = { assetId: string | null; url: string | null }
 const ACCEPT = IMAGE_INPUT_TYPES.join(",")
 /** Errors after which the stored record is re-read so the next attempt uses its revision. */
 const STALE: ReadonlySet<TeamErrorCode> = new Set([
@@ -79,14 +82,12 @@ function TeamFormBody({
     const t = dictionary.teams,
         id = useId()
     const [idempotencyKey] = useState(() => crypto.randomUUID())
-    // The revision the next update is checked against; refreshed after a conflict.
+    // The record the inputs were last synchronized with; refreshed after a conflict.
     const [base, setBase] = useState<TeamRecord | null>(team ?? null)
-    const [name, setName] = useState(team?.name ?? "")
-    const [shortCode, setShortCode] = useState(team?.shortCode ?? "")
-    const [logo, setLogo] = useState<Logo>({
-        assetId: team?.logoAssetId ?? null,
-        url: team?.logoUrl ?? null,
-    })
+    const [initial] = useState(() => teamFormValues(team))
+    const [name, setName] = useState(initial.name)
+    const [shortCode, setShortCode] = useState(initial.shortCode)
+    const [logo, setLogo] = useState(initial.logo)
     const [pending, setPending] = useState(false),
         [uploading, setUploading] = useState(false),
         [failure, setFailure] = useState<string | null>(null)
@@ -108,69 +109,63 @@ function TeamFormBody({
         }
     }
 
-    function command(
-        trimmedName: string,
-        code: string | null
-    ): TeamCommandRequest | null {
-        if (!base)
-            return {
-                action: "create",
-                input: {
-                    gameId,
-                    name: trimmedName,
-                    shortCode: code,
-                    logoAssetId: logo.assetId,
-                    idempotencyKey,
-                },
-            }
-        const input = {
-            expectedRevision: base.revision,
-            ...(trimmedName !== base.name ? { name: trimmedName } : {}),
-            ...(code !== base.shortCode ? { shortCode: code } : {}),
-            ...(logo.assetId !== base.logoAssetId
-                ? { logoAssetId: logo.assetId }
-                : {}),
-        }
-        return Object.keys(input).length > 1
-            ? { action: "update", teamId: base.id, input }
-            : null
-    }
-
-    async function reloadAfter(error: TeamErrorCode, teamId: string) {
+    async function reloadAfter(error: TeamErrorCode, previous: TeamRecord) {
+        let latest: TeamRecord | null
         try {
-            const latest = await fetchTeamRecord(serverId, teamId)
-            if (latest) setBase(latest)
-            onStale?.(teamId, latest)
-            if (!latest) setFailure(t.errors.not_found)
-            else if (latest.archivedAt) setFailure(t.errors.archived)
-            else setFailure(t.errors[error])
+            latest = await fetchTeamRecord(serverId, previous.id)
         } catch {
-            setFailure(t.errors[error])
+            // Nothing was reloaded, so the conflict message must not claim it was.
+            setFailure(
+                error === "revision_conflict"
+                    ? t.conflictReloadFailed
+                    : t.errors[error]
+            )
+            return
         }
+        onStale?.(previous.id, latest)
+        if (!latest) {
+            setFailure(t.errors.not_found)
+            return
+        }
+        // Untouched fields show the latest values; the user's own edits are kept.
+        const next = rebaseTeamFormValues(
+            { name, shortCode, logo },
+            previous,
+            latest
+        )
+        setBase(latest)
+        setName(next.name)
+        setShortCode(next.shortCode)
+        setLogo(next.logo)
+        setFailure(latest.archivedAt ? t.errors.archived : t.errors[error])
     }
 
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
         // The dialog may be portaled out of another form (the match editor); keep its submit local.
         event.stopPropagation()
-        const trimmedName = name.trim().replace(/\s+/g, " "),
-            code = shortCode.trim() || null
-        if (!trimmedName) {
+        const command = teamFormCommand({
+            base,
+            values: { name, shortCode, logo },
+            gameId,
+            idempotencyKey,
+        })
+        if (command.kind === "invalid") {
             setFailure(t.errors.invalid_team)
             return
         }
-        const request = command(trimmedName, code)
-        if (!request) {
+        if (command.kind === "unchanged") {
             onOpenChange(false)
             return
         }
+        const { request } = command
         setPending(true)
         setFailure(null)
         try {
             const result = await sendTeamCommand(serverId, request)
             if (!result.ok) {
                 if (base && STALE.has(result.code))
-                    await reloadAfter(result.code, base.id)
+                    await reloadAfter(result.code, base)
                 else setFailure(t.errors[result.code])
                 return
             }

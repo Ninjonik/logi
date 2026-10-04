@@ -797,6 +797,8 @@ export const deMessages = {
         editTeam: "{name} bearbeiten",
         archiveTeam: "{name} archivieren",
         restoreTeam: "{name} wiederherstellen",
+        conflictReloadFailed:
+            "Dieses Team wurde zwischenzeitlich geändert, und die neueste Version konnte nicht geladen werden. Schließe den Dialog und versuche es erneut.",
         errors: {
             invalid_team: "Prüfe die Teamangaben und versuche es erneut.",
             game_disabled:
@@ -863,7 +865,7 @@ export const deMessages = {
                 invalid_match_teams: "Die Teamzuweisung ist ungültig.",
                 team_not_found: "Das Team existiert im Verzeichnis nicht mehr.",
                 team_archived:
-                    "Das Team ist archiviert; stelle es wieder her, um den Schnappschuss zu aktualisieren.",
+                    "Das Team ist archiviert; wähle ein anderes Team oder stelle es im Teamverzeichnis wieder her.",
                 team_game_mismatch: "Das Team gehört zu einem anderen Spiel.",
                 match_concluded:
                     "Abgeschlossene Matches behalten ihre Teamschnappschüsse.",

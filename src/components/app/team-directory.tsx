@@ -10,6 +10,7 @@ import {
 import {
     appendTeamPage,
     removeTeamRecord,
+    teamActionLabel,
     upsertTeamRecord,
 } from "@/lib/teams/team-list"
 import {
@@ -354,8 +355,8 @@ function GameTeams({
                                         variant="outline"
                                         size="sm"
                                         disabled={pendingId !== null}
-                                        aria-label={t.restoreTeam.replace(
-                                            "{name}",
+                                        aria-label={teamActionLabel(
+                                            t.restoreTeam,
                                             team.name
                                         )}
                                         onClick={() =>
@@ -371,8 +372,8 @@ function GameTeams({
                                             variant="outline"
                                             size="sm"
                                             disabled={pendingId !== null}
-                                            aria-label={t.editTeam.replace(
-                                                "{name}",
+                                            aria-label={teamActionLabel(
+                                                t.editTeam,
                                                 team.name
                                             )}
                                             onClick={() =>
@@ -386,8 +387,8 @@ function GameTeams({
                                             variant="ghost"
                                             size="sm"
                                             disabled={pendingId !== null}
-                                            aria-label={t.archiveTeam.replace(
-                                                "{name}",
+                                            aria-label={teamActionLabel(
+                                                t.archiveTeam,
                                                 team.name
                                             )}
                                             onClick={() =>

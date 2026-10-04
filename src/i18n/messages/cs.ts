@@ -779,6 +779,8 @@ export const csMessages = {
         editTeam: "Upravit tým {name}",
         archiveTeam: "Archivovat tým {name}",
         restoreTeam: "Obnovit tým {name}",
+        conflictReloadFailed:
+            "Tým byl mezitím změněn a nejnovější verzi se nepodařilo načíst. Zavřete dialog a zkuste to znovu.",
         errors: {
             invalid_team: "Zkontrolujte údaje týmu a zkuste to znovu.",
             game_disabled: "Tato hra není v pracovním prostoru zapnutá.",
@@ -836,7 +838,7 @@ export const csMessages = {
                 invalid_match_teams: "Přiřazení týmů je neplatné.",
                 team_not_found: "Tým v adresáři již neexistuje.",
                 team_archived:
-                    "Tým je archivován; pro obnovení snímku ho nejprve obnovte.",
+                    "Tým je archivován; vyberte jiný tým nebo ho obnovte v adresáři týmů.",
                 team_game_mismatch: "Tým patří k jiné hře.",
                 match_concluded:
                     "Ukončené zápasy si své snímky týmů ponechávají.",
