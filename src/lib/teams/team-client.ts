@@ -9,15 +9,13 @@ import {
     type TeamUpdateInput,
 } from "@/domain/teams/team"
 import {
-    IMAGE_INPUT_TYPES,
-    IMAGE_MAX_INPUT_BYTES,
-    imageAssetDtoSchema,
-    type ImageAssetDto,
-} from "@/domain/assets/image-asset"
-import {
     matchTeamAssignmentSchema,
     type MatchTeamAssignment,
 } from "@/domain/teams/match-teams"
+import {
+    uploadImageAsset,
+    type ImageUploadResult,
+} from "@/lib/image-asset-upload"
 import { z } from "zod"
 
 /** Dashboard error vocabularies; each code has a localized message under `dictionary.teams`. */
@@ -37,21 +35,6 @@ export const TEAM_ERROR_CODES = [
     "unavailable",
 ] as const
 export type TeamErrorCode = (typeof TEAM_ERROR_CODES)[number]
-
-export const UPLOAD_ERROR_CODES = [
-    "unsupported_type",
-    "type_mismatch",
-    "bad_dimensions",
-    "animated",
-    "undecodable",
-    "invalid_kind",
-    "invalid_asset",
-    "too_large",
-    "upload_limited",
-    "forbidden",
-    "unavailable",
-] as const
-export type UploadErrorCode = (typeof UPLOAD_ERROR_CODES)[number]
 
 export const MATCH_TEAM_ERROR_CODES = [
     "invalid_match_teams",
@@ -96,8 +79,6 @@ function narrow<T extends string>(
 }
 export const teamErrorCode = (body: unknown) =>
     narrow(body, TEAM_ERROR_CODES, "unavailable")
-export const uploadErrorCode = (body: unknown) =>
-    narrow(body, UPLOAD_ERROR_CODES, "unavailable")
 export const matchTeamErrorCode = (body: unknown) =>
     narrow(body, MATCH_TEAM_ERROR_CODES, "unavailable")
 /** A match-team rule violation from the event save, or `null` for any other failure. */
@@ -113,9 +94,6 @@ export function matchTeamSaveErrorCode(
 
 export function teamsEndpoint(serverId: string) {
     return `/api/servers/${encodeURIComponent(serverId)}/teams`
-}
-export function teamLogoUploadEndpoint(serverId: string) {
-    return `/api/servers/${encodeURIComponent(serverId)}/image-assets?kind=team-logo`
 }
 export function matchTeamsEndpoint(serverId: string, eventId: string) {
     return `/api/servers/${encodeURIComponent(serverId)}/events/${encodeURIComponent(eventId)}/match-teams`
@@ -242,38 +220,20 @@ export async function restoreTeam(
         : { ok: false, code: "unavailable" }
 }
 
-export type LogoUploadResult =
-    { ok: true; asset: ImageAssetDto } | { ok: false; code: UploadErrorCode }
-
-/** Checks type and size locally, then posts the raw bytes to the team-logo upload route. */
+/**
+ * Uploads a team logo through the shared image-asset client, so local checks,
+ * error codes and the rate-limit retry hint match every other upload; an
+ * asset of any other kind is refused.
+ */
 export async function uploadTeamLogo(
     serverId: string,
-    file: Blob
-): Promise<LogoUploadResult> {
-    if (!(IMAGE_INPUT_TYPES as readonly string[]).includes(file.type))
-        return { ok: false, code: "unsupported_type" }
-    if (file.size > IMAGE_MAX_INPUT_BYTES)
-        return { ok: false, code: "too_large" }
-    let response: Response
-    try {
-        response = await fetch(teamLogoUploadEndpoint(serverId), {
-            method: "POST",
-            headers: { "content-type": file.type },
-            body: file,
-        })
-    } catch {
-        return { ok: false, code: "unavailable" }
-    }
-    const body: unknown = await response.json().catch(() => null)
-    if (!response.ok) return { ok: false, code: uploadErrorCode(body) }
-    const asset = imageAssetDtoSchema.safeParse(
-        body && typeof body === "object" && "asset" in body
-            ? (body as { asset?: unknown }).asset
-            : null
-    )
-    return asset.success && asset.data.kind === "team-logo"
-        ? { ok: true, asset: asset.data }
-        : { ok: false, code: "unavailable" }
+    file: Blob,
+    fetcher: typeof fetch = fetch
+): Promise<ImageUploadResult> {
+    const result = await uploadImageAsset(serverId, "team-logo", file, fetcher)
+    return !result.ok || result.asset.kind === "team-logo"
+        ? result
+        : { ok: false, error: "unavailable", retryAfterMs: null }
 }
 
 const matchTeamsRefreshResponseSchema = z.object({

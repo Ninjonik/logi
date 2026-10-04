@@ -1,3 +1,7 @@
+import {
+    formatImageUploadMessage,
+    type ImageUploadError,
+} from "@/lib/image-asset-upload"
 import type { TeamCommandRequest } from "@/lib/teams/team-client"
 import type { TeamGame, TeamRecord } from "@/domain/teams/team"
 
@@ -19,6 +23,17 @@ export function teamFormValues(
             url: team?.logoUrl ?? null,
         },
     }
+}
+
+/** The localized message for a failed logo upload; a rate-limited one names the wait in seconds. */
+export function teamLogoUploadMessage(
+    messages: Readonly<Record<ImageUploadError, string>>,
+    failure: { error: ImageUploadError; retryAfterMs: number | null }
+): string {
+    return formatImageUploadMessage(
+        messages[failure.error],
+        failure.retryAfterMs
+    )
 }
 
 /** The name as the directory stores it: trimmed with whitespace collapsed. */

@@ -8,7 +8,6 @@ import {
     teamErrorCode,
     teamListUrl,
     TeamRequestError,
-    uploadErrorCode,
     uploadTeamLogo,
 } from "./team-client"
 import { afterEach, test } from "node:test"
@@ -81,8 +80,6 @@ test("unknown or missing error codes read as unavailable", () => {
     assert.equal(teamErrorCode({ error: "duplicate_name" }), "duplicate_name")
     assert.equal(teamErrorCode({ error: "Something odd." }), "unavailable")
     assert.equal(teamErrorCode(null), "unavailable")
-    assert.equal(uploadErrorCode({ error: "too_large" }), "too_large")
-    assert.equal(uploadErrorCode({ error: 5 }), "unavailable")
     assert.equal(
         matchTeamSaveErrorCode({ error: "team_archived" }),
         "team_archived"
@@ -169,14 +166,14 @@ test("commands post JSON and surface conflicts with the existing ID", async () =
     )
 })
 
-test("logo uploads check type and size locally and send raw bytes", async () => {
+test("logo uploads use the shared image client, keep its retry hint and refuse other kinds", async () => {
     let calls = stubFetch(() => json({}))
     assert.deepEqual(
         await uploadTeamLogo(
             "srv",
             new Blob(["<svg/>"], { type: "image/svg+xml" })
         ),
-        { ok: false, code: "unsupported_type" }
+        { ok: false, error: "unsupported_type", retryAfterMs: null }
     )
     assert.deepEqual(
         await uploadTeamLogo(
@@ -185,7 +182,7 @@ test("logo uploads check type and size locally and send raw bytes", async () => 
                 type: "image/png",
             })
         ),
-        { ok: false, code: "too_large" }
+        { ok: false, error: "too_large", retryAfterMs: null }
     )
     assert.equal(calls.length, 0, "rejected files are never sent")
 
@@ -205,19 +202,40 @@ test("logo uploads check type and size locally and send raw bytes", async () => 
     })
     assert.deepEqual(await uploadTeamLogo("srv", file), { ok: true, asset })
     assert.equal(calls[0]?.url, "/api/servers/srv/image-assets?kind=team-logo")
-    assert.deepEqual(calls[0]?.init?.headers, { "content-type": "image/png" })
+    assert.equal(calls[0]?.init?.method, "POST")
+    assert.deepEqual(calls[0]?.init?.headers, { "Content-Type": "image/png" })
     assert.equal(calls[0]?.init?.body, file)
 
     stubFetch(() => json({ error: "upload_limited", retryAfterMs: 5000 }, 429))
     assert.deepEqual(await uploadTeamLogo("srv", file), {
         ok: false,
-        code: "upload_limited",
+        error: "upload_limited",
+        retryAfterMs: 5000,
+    })
+    stubFetch(() => json({ error: "bad_dimensions" }, 400))
+    assert.deepEqual(await uploadTeamLogo("srv", file), {
+        ok: false,
+        error: "bad_dimensions",
+        retryAfterMs: null,
     })
     stubFetch(() => json({ asset: { ...asset, kind: "panel-banner" } }))
     assert.deepEqual(await uploadTeamLogo("srv", file), {
         ok: false,
-        code: "unavailable",
+        error: "unavailable",
+        retryAfterMs: null,
     })
+    const injected: string[] = []
+    const fetcher = (async (input: RequestInfo | URL) => {
+        injected.push(String(input))
+        return json({ asset })
+    }) as typeof fetch
+    assert.deepEqual(await uploadTeamLogo("srv 1", file, fetcher), {
+        ok: true,
+        asset,
+    })
+    assert.deepEqual(injected, [
+        "/api/servers/srv%201/image-assets?kind=team-logo",
+    ])
 })
 
 test("snapshot refresh returns the stored assignments or a match-team code", async () => {

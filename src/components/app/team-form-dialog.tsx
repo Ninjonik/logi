@@ -16,16 +16,17 @@ import {
     type TeamErrorCode,
 } from "@/lib/teams/team-client"
 import {
+    rebaseTeamFormValues,
+    teamFormCommand,
+    teamFormValues,
+    teamLogoUploadMessage,
+} from "@/lib/teams/team-form"
+import {
     TEAM_NAME_MAX,
     TEAM_SHORT_CODE_MAX,
     type TeamGame,
     type TeamRecord,
 } from "@/domain/teams/team"
-import {
-    rebaseTeamFormValues,
-    teamFormCommand,
-    teamFormValues,
-} from "@/lib/teams/team-form"
 import { IMAGE_INPUT_TYPES } from "@/domain/assets/image-asset"
 import { useId, useRef, useState, type FormEvent } from "react"
 import { TeamLogo } from "@/components/app/team-logo"
@@ -110,7 +111,7 @@ function TeamFormBody({
             const result = await uploadTeamLogo(serverId, file)
             if (result.ok)
                 setLogo({ assetId: result.asset.id, url: result.asset.url })
-            else setFailure(t.uploadErrors[result.code])
+            else setFailure(teamLogoUploadMessage(t.uploadErrors, result))
         } finally {
             setUploading(false)
             if (fileInput.current) fileInput.current.value = ""

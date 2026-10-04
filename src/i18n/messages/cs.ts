@@ -890,7 +890,7 @@ export const csMessages = {
             invalid_asset: "Nahraný obrázek se nepodařilo uložit.",
             too_large: "Obrázek přesahuje 2 MiB.",
             upload_limited:
-                "Příliš mnoho nahrávání; chvíli počkejte a zkuste to znovu.",
+                "Příliš mnoho nahrávání. Zkuste to znovu za {seconds} s.",
             forbidden: "Nemáte oprávnění zde nahrávat loga.",
             unavailable: "Nahrávání je dočasně nedostupné.",
         },

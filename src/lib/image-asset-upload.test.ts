@@ -1,4 +1,5 @@
 import {
+    formatImageUploadMessage,
     listImageAssets,
     precheckImageFile,
     readImageUploadResponse,
@@ -172,4 +173,24 @@ test("a refused, malformed or failed listing offers no assets", async () => {
         assert.deepEqual(await listImageAssets("s", "panel-banner", fetcher), {
             ok: false,
         })
+})
+
+test("upload messages show the retry wait in whole seconds, at least one", () => {
+    const limited = "Too many uploads. Retry in {seconds} s."
+    assert.equal(
+        formatImageUploadMessage(limited, 41_200),
+        "Too many uploads. Retry in 42 s."
+    )
+    assert.equal(
+        formatImageUploadMessage(limited, 0),
+        "Too many uploads. Retry in 1 s."
+    )
+    assert.equal(
+        formatImageUploadMessage(limited, null),
+        "Too many uploads. Retry in 1 s."
+    )
+    assert.equal(
+        formatImageUploadMessage("The image exceeds 2 MiB.", 5000),
+        "The image exceeds 2 MiB."
+    )
 })

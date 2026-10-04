@@ -2,9 +2,12 @@ import {
     rebaseTeamFormValues,
     teamFormCommand,
     teamFormValues,
+    teamLogoUploadMessage,
     type TeamFormValues,
 } from "./team-form"
+import { IMAGE_UPLOAD_ERRORS } from "@/lib/image-asset-upload"
 import type { TeamRecord } from "@/domain/teams/team"
+import { getDictionary } from "@/i18n/dictionaries"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -147,3 +150,24 @@ test("untouched inputs with only extra whitespace follow the latest record", () 
         logo: teamFormValues(latest).logo,
     })
 })
+
+for (const locale of ["en", "cs", "de"] as const) {
+    test(`logo upload failures read from the ${locale} team messages with the retry wait`, () => {
+        const messages = getDictionary(locale).teams.uploadErrors
+        for (const error of IMAGE_UPLOAD_ERRORS) {
+            const message = teamLogoUploadMessage(messages, {
+                error,
+                retryAfterMs: null,
+            })
+            assert.ok(message.length > 0, `${locale} ${error}`)
+            if (error !== "upload_limited")
+                assert.equal(message, messages[error])
+        }
+        const limited = teamLogoUploadMessage(messages, {
+            error: "upload_limited",
+            retryAfterMs: 41_200,
+        })
+        assert.ok(limited.includes("42"), limited)
+        assert.ok(!limited.includes("{seconds}"), limited)
+    })
+}

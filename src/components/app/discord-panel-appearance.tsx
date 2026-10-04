@@ -10,6 +10,7 @@ import {
     type ResolvedPanelPresentation,
 } from "@/domain/discord-publications/panel-presentation"
 import {
+    formatImageUploadMessage,
     listImageAssets,
     uploadImageAsset,
     type ImageUploadError,
@@ -100,10 +101,7 @@ export function uploadErrorMessage(
     error: ImageUploadError | "asset_unavailable",
     retryAfterMs: number | null = null
 ) {
-    return t.errors[error].replace(
-        "{seconds}",
-        String(Math.max(1, Math.ceil((retryAfterMs ?? 0) / 1000)))
-    )
+    return formatImageUploadMessage(t.errors[error], retryAfterMs)
 }
 
 export function DiscordPanelAppearance({

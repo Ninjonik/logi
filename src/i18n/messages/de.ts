@@ -923,7 +923,7 @@ export const deMessages = {
                 "Das hochgeladene Bild konnte nicht gespeichert werden.",
             too_large: "Das Bild überschreitet 2 MiB.",
             upload_limited:
-                "Zu viele Uploads; warte einen Moment und versuche es erneut.",
+                "Zu viele Uploads. Versuche es in {seconds} s erneut.",
             forbidden: "Du darfst hier keine Logos hochladen.",
             unavailable: "Uploads sind vorübergehend nicht verfügbar.",
         },

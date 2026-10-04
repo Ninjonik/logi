@@ -892,7 +892,7 @@ export const enMessages = {
             invalid_kind: "This upload is not a team logo.",
             invalid_asset: "The uploaded image could not be stored.",
             too_large: "The image exceeds 2 MiB.",
-            upload_limited: "Too many uploads; wait a moment and try again.",
+            upload_limited: "Too many uploads. Retry in {seconds} s.",
             forbidden: "You are not allowed to upload logos here.",
             unavailable: "Uploads are temporarily unavailable.",
         },

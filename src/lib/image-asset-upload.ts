@@ -77,6 +77,20 @@ export function readImageUploadResponse(
     return { ok: false, error, retryAfterMs }
 }
 
+/**
+ * Fills a localized upload message's `{seconds}` placeholder with the route's
+ * retry hint, rounded up to at least one second; other messages pass unchanged.
+ */
+export function formatImageUploadMessage(
+    message: string,
+    retryAfterMs: number | null
+): string {
+    return message.replace(
+        "{seconds}",
+        String(Math.max(1, Math.ceil((retryAfterMs ?? 0) / 1000)))
+    )
+}
+
 /** Same-origin upload of the raw file bytes; the response's asset ID is what settings store. */
 export async function uploadImageAsset(
     serverId: string,
