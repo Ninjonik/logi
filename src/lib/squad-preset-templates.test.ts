@@ -13,10 +13,12 @@ test("squad preset icon options are scoped to their game", () => {
     const wardogsSquadIcons = getSquadIconOptions("wardogs")
 
     assert.deepEqual(vietnamIcons, hllIcons)
+    assert.notEqual(vietnamIcons, hllIcons)
     assert.ok(hllIcons.includes("/img/roles/icn_officer.png"))
     assert.ok(!hllIcons.includes("/img/roles/icn_builder.png"))
     assert.ok(wardogsIcons.includes("/img/roles/icn_builder.png"))
     assert.ok(!wardogsIcons.includes("/img/roles/icn_officer.png"))
+    assert.ok(!wardogsIcons.includes("/stratmap/icons/wardogs/artillery.webp"))
     assert.ok(
         wardogsSquadIcons.includes("/stratmap/icons/wardogs/artillery.webp")
     )
