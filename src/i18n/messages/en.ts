@@ -148,6 +148,68 @@ export const enMessages = {
         invalid:
             "Use valid Discord role IDs, at most 64 per game, for games enabled in this workspace.",
     },
+    publicPanelAppearance: {
+        title: "Appearance",
+        description:
+            "Layout, accent color, banner and faction emoji for this panel. Panels saved before these settings existed keep their previous look until you change them here.",
+        mapArtwork: "Map artwork",
+        layout: "Layout",
+        showMap: "Show map name and artwork",
+        showScoreboard: "Show scoreboard",
+        showPlayerCount: "Show player count",
+        compact: "Compact header",
+        layoutHelp:
+            "Compact uses a two-line header, inline scores and no separators. Map artwork also needs the Map artwork setting.",
+        resultsLayoutHelp:
+            "Result announcements use the map and compact settings; the scoreboard and player count apply to live panels.",
+        accentColor: "Accent color",
+        accentColorPicker: "Pick the accent color",
+        accentColorPlaceholder: "#77B255",
+        accentColorHelp:
+            "#RRGGBB. Replaces the green live color; stale or paused panels keep the amber warning. Leave empty for the default.",
+        accentColorReset: "Default color",
+        accentColorInvalid: "Use a color in #RRGGBB format.",
+        banner: "Banner",
+        bannerHelp:
+            "PNG, JPEG or WebP up to 2 MiB and 4096 × 4096 px. Logi converts it to WebP of at most 1920 × 1080 px. A banner replaces the map thumbnail.",
+        bannerUpload: "Upload banner",
+        bannerUploading: "Uploading…",
+        bannerRemove: "Remove banner",
+        bannerPreview: "Banner preview",
+        bannerNone:
+            "No banner. The panel shows map artwork when it is enabled.",
+        bannerUploaded: "Banner uploaded. Save the panel to publish it.",
+        factionEmoji: "Faction emoji",
+        factionEmojiHelp:
+            "One Unicode emoji, or a custom Discord emoji written as <:name:id> (animated: <a:name:id>). Custom emoji must belong to a server the bot is in or to the bot application. Leave empty to keep the default shown as the placeholder.",
+        factionEmojiInvalid: "Use one emoji or <:name:id>.",
+        noDefaultEmoji: "None",
+        factions: {
+            allies: "Allies",
+            axis: "Axis",
+            valkyra: "Valkyra",
+            manticore: "Manticore",
+            lonestar: "Lonestar",
+        },
+        invalid: "Fix the highlighted appearance settings before saving.",
+        errors: {
+            invalid_kind: "This image type cannot be used as a banner.",
+            unsupported_type: "Use a PNG, JPEG or WebP image.",
+            type_mismatch:
+                "The file content does not match its type. Export it again as PNG, JPEG or WebP.",
+            bad_dimensions: "The image must be at most 4096 × 4096 pixels.",
+            animated: "Animated images are not supported.",
+            undecodable:
+                "The image could not be read. Export it again and retry.",
+            invalid_asset: "The image could not be stored. Retry the upload.",
+            forbidden: "Only workspace administrators can upload banners.",
+            too_large: "The image is larger than 2 MiB.",
+            upload_limited: "Too many uploads. Retry in {seconds} s.",
+            unavailable: "Image uploads are unavailable. Retry later.",
+            asset_unavailable:
+                "The banner is no longer available to this workspace. Upload it again or remove it, then save.",
+        },
+    },
     gameData: {
         sourcesTitle: "Provider sources",
         sourcesDescription:

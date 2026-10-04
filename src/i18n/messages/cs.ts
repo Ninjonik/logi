@@ -148,6 +148,70 @@ export const csMessages = {
         invalid:
             "Použijte platná ID rolí Discordu, nejvýše 64 na hru, pro hry zapnuté v tomto pracovním prostoru.",
     },
+    publicPanelAppearance: {
+        title: "Vzhled",
+        description:
+            "Rozvržení, barva zvýraznění, banner a emoji frakcí tohoto panelu. Panely uložené před zavedením těchto nastavení si ponechají dosavadní vzhled, dokud je zde nezměníš.",
+        mapArtwork: "Obrázek mapy",
+        layout: "Rozvržení",
+        showMap: "Zobrazit název a obrázek mapy",
+        showScoreboard: "Zobrazit skóre",
+        showPlayerCount: "Zobrazit počet hráčů",
+        compact: "Kompaktní záhlaví",
+        layoutHelp:
+            "Kompaktní režim používá dvouřádkové záhlaví, skóre na jednom řádku a žádné oddělovače. Obrázek mapy navíc vyžaduje zapnutý Obrázek mapy.",
+        resultsLayoutHelp:
+            "Oznámení výsledků používají nastavení mapy a kompaktního režimu; skóre a počet hráčů platí pro živé panely.",
+        accentColor: "Barva zvýraznění",
+        accentColorPicker: "Vybrat barvu zvýraznění",
+        accentColorPlaceholder: "#77B255",
+        accentColorHelp:
+            "#RRGGBB. Nahrazuje zelenou barvu živého panelu; zastaralé nebo pozastavené panely si ponechají oranžové varování. Prázdné pole použije výchozí barvu.",
+        accentColorReset: "Výchozí barva",
+        accentColorInvalid: "Zadej barvu ve formátu #RRGGBB.",
+        banner: "Banner",
+        bannerHelp:
+            "PNG, JPEG nebo WebP do 2 MiB a 4096 × 4096 px. Logi jej převede na WebP o velikosti nejvýše 1920 × 1080 px. Banner nahrazuje náhled mapy.",
+        bannerUpload: "Nahrát banner",
+        bannerUploading: "Nahrávám…",
+        bannerRemove: "Odebrat banner",
+        bannerPreview: "Náhled banneru",
+        bannerNone:
+            "Bez banneru. Panel zobrazí obrázek mapy, pokud je zapnutý.",
+        bannerUploaded: "Banner je nahraný. Ulož panel, aby se zveřejnil.",
+        factionEmoji: "Emoji frakcí",
+        factionEmojiHelp:
+            "Jedno Unicode emoji, nebo vlastní Discord emoji ve tvaru <:nazev:id> (animované: <a:nazev:id>). Vlastní emoji musí patřit serveru, na kterém je bot, nebo aplikaci bota. Prázdné pole ponechá výchozí hodnotu zobrazenou jako nápověda.",
+        factionEmojiInvalid: "Zadej jedno emoji nebo <:nazev:id>.",
+        noDefaultEmoji: "Žádné",
+        factions: {
+            allies: "Spojenci",
+            axis: "Osa",
+            valkyra: "Valkyra",
+            manticore: "Manticore",
+            lonestar: "Lonestar",
+        },
+        invalid: "Před uložením oprav zvýrazněná nastavení vzhledu.",
+        errors: {
+            invalid_kind: "Tento typ obrázku nelze použít jako banner.",
+            unsupported_type: "Použij obrázek PNG, JPEG nebo WebP.",
+            type_mismatch:
+                "Obsah souboru neodpovídá jeho typu. Exportuj jej znovu jako PNG, JPEG nebo WebP.",
+            bad_dimensions: "Obrázek smí mít nejvýše 4096 × 4096 pixelů.",
+            animated: "Animované obrázky nejsou podporované.",
+            undecodable:
+                "Obrázek nelze přečíst. Exportuj jej znovu a zkus to znovu.",
+            invalid_asset:
+                "Obrázek se nepodařilo uložit. Zkus nahrání zopakovat.",
+            forbidden: "Bannery mohou nahrávat jen správci workspace.",
+            too_large: "Obrázek je větší než 2 MiB.",
+            upload_limited:
+                "Příliš mnoho nahrání. Zkus to znovu za {seconds} s.",
+            unavailable: "Nahrávání obrázků není dostupné. Zkus to později.",
+            asset_unavailable:
+                "Banner už pro tento workspace není dostupný. Nahraj jej znovu nebo jej odeber a pak ulož.",
+        },
+    },
     gameData: {
         sourcesTitle: "Zdroje poskytovatelů",
         sourcesDescription:

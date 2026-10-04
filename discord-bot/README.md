@@ -45,7 +45,9 @@ npm run dev:all
   see [player statistics](../docs/integrations/website/discord-player-stats.md)
 - Refresh configured public server/score panels, optional player leaders and
   private Wardogs player pages; publish reviewed results with durable message
-  ownership and restart recovery
+  ownership and restart recovery. Each panel's optional appearance (layout,
+  accent color, workspace banner, faction emoji) is applied at render time;
+  panels without one render as before
 - Write sync state back to Convex
 - Reconcile actor-backed membership roles through a durable queue, including
   independent recovery after reconnect. `src/sync/managed-member-roles.ts` owns

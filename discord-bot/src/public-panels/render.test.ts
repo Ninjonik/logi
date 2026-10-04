@@ -1,6 +1,13 @@
+import {
+    factionIcon,
+    panelArtworkWanted,
+    renderPanel,
+    renderPlayers,
+    renderResult,
+} from "./render"
+import { panelPresentationSchema } from "../../../src/domain/discord-publications/panel-presentation"
 import { publicPanelSettingsSchema } from "../../../src/domain/discord-publications/settings"
 import { warconLive } from "../../../src/infrastructure/testing/warcon"
-import { renderPanel, renderPlayers, factionIcon } from "./render"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -200,4 +207,379 @@ test("missing source remains unavailable, not zero or offline; disabled panel ha
     )
     assert.match(unavailable, /unavailable/)
     assert.ok(!unavailable.includes("0/"))
+})
+
+type Node = { type?: number; [key: string]: unknown }
+const tree = (value: unknown): Node[] =>
+    value && typeof value === "object"
+        ? [
+              ...("type" in value ? [value as Node] : []),
+              ...Object.values(value).flatMap(tree),
+          ]
+        : []
+const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown
+const container = (value: unknown) =>
+    tree(json(value)).find((node) => node.type === 17)!
+const texts = (value: unknown) =>
+    tree(json(value))
+        .filter((node) => node.type === 10)
+        .map((node) => String(node.content))
+const appearanceLive = () => {
+    const live = {
+        ...warconLive(),
+        freshness: "fresh" as const,
+        playersFreshness: "fresh" as const,
+    }
+    live.status!.scores = [
+        { name: "Valkyra", score: 5, colorHex: "#111111" },
+        { name: "Manticore", score: 0, colorHex: "#222222" },
+        { name: "Alpha", score: 2, colorHex: "#333333" },
+    ]
+    live.players = [{ ...live.players[0], faction: "Valkyra", kills: 9 }]
+    return live
+}
+const wardogsPanel = {
+    id: "panel",
+    revision: 1,
+    gameId: "wardogs",
+    enabled: true,
+    showPlayers: true,
+    showLeaders: true,
+    artwork: true,
+}
+const appIcons = {
+    valkyra: "<:logi_valkyra:111111111111111111>",
+    manticore: "<:logi_manticore:222222222222222222>",
+}
+const artworkUrl = "attachment://logi-panel-bakurani-0123456789ab.webp"
+const banner =
+    "https://logi.example/api/image-assets/0123456789abcdef0123456789abcdef.webp"
+
+test("a legacy panel without presentation renders exactly like the defaulted appearance", () => {
+    const live = appearanceLive()
+    const legacy = renderPanel(
+        wardogsPanel,
+        null,
+        live,
+        appIcons,
+        undefined,
+        artworkUrl
+    )
+    const defaulted = renderPanel(
+        { ...wardogsPanel, presentation: panelPresentationSchema.parse({}) },
+        null,
+        live,
+        appIcons,
+        undefined,
+        artworkUrl
+    )
+    assert.equal(JSON.stringify(defaulted), JSON.stringify(legacy))
+    assert.equal(container(legacy).accent_color, 0x77b255)
+    assert.equal(tree(json(legacy)).filter((n) => n.type === 12).length, 0)
+    assert.match(
+        JSON.stringify(legacy),
+        /"url":"attachment:\/\/logi-panel-bakurani/
+    )
+    assert.equal(
+        texts(legacy)[0],
+        "### WARDOGS · SERVER LIVE\n**Synthetic Wardogs**\nLive · score in progress\n🗺️ **Bakurani**  ·  👥 **1 / 100** players"
+    )
+    assert.equal(tree(json(legacy)).filter((n) => n.type === 14).length, 2)
+    assert.equal(panelArtworkWanted(wardogsPanel), true)
+    const event = {
+        id: "e",
+        name: "Match",
+        map: "Ozeti",
+        result: {
+            status: "confirmed",
+            version: 1,
+            reviewedAt: null,
+            participants: [{ label: "Valkyra", score: 3 }],
+        },
+    }
+    assert.equal(
+        JSON.stringify(
+            renderResult(event, appIcons, {
+                presentation: panelPresentationSchema.parse({}),
+            })
+        ),
+        JSON.stringify(renderResult(event, appIcons))
+    )
+})
+
+test("custom faction emoji replace application emoji on scores, leaders and results; unknown factions stay neutral", () => {
+    const presentation = panelPresentationSchema.parse({
+        factionEmoji: {
+            valkyra: "<:vk:123456789012345678>",
+            lonestar: "<a:ls:12345678901234567890>",
+        },
+    })
+    const view = texts(
+        renderPanel(
+            { ...wardogsPanel, presentation },
+            null,
+            appearanceLive(),
+            appIcons
+        )
+    ).join("\n")
+    assert.match(
+        view,
+        /<:vk:123456789012345678> \*\*Valkyra\*\* · \*\*5\*\* pts/
+    )
+    assert.match(view, /<:logi_manticore:222222222222222222> \*\*Manticore\*\*/)
+    assert.match(view, /◈ \*\*Alpha\*\*/)
+    assert.match(view, /kills · <:vk:123456789012345678> Valkyra/)
+    assert.ok(!view.includes("<:logi_valkyra:111111111111111111>"))
+    const result = texts(
+        renderResult(
+            {
+                id: "e",
+                name: "Match",
+                map: "Ozeti",
+                result: {
+                    status: "confirmed",
+                    version: 1,
+                    reviewedAt: null,
+                    participants: [
+                        { label: "Lonestar", score: 3 },
+                        { label: "Clan", score: 1 },
+                    ],
+                },
+            },
+            appIcons,
+            { presentation }
+        )
+    ).join("\n")
+    assert.match(result, /<a:ls:12345678901234567890> \*\*Lonestar\*\* · 3/)
+    assert.match(result, /◈ \*\*Clan\*\* · 1/)
+    assert.equal(factionIcon("Allies", { allies: "🇺🇸" }), "🇺🇸")
+})
+
+test("the accent color replaces the live color; stale and paused panels keep the warning color", () => {
+    const presentation = panelPresentationSchema.parse({
+        accentColor: "#FF8800",
+    })
+    const live = appearanceLive()
+    assert.equal(
+        container(renderPanel({ ...wardogsPanel, presentation }, null, live))
+            .accent_color,
+        0xff8800
+    )
+    assert.equal(
+        container(
+            renderPanel({ ...wardogsPanel, presentation }, null, {
+                ...live,
+                freshness: "stale" as const,
+            })
+        ).accent_color,
+        0xd99a37
+    )
+    assert.equal(
+        container(
+            renderPanel(
+                { ...wardogsPanel, enabled: false, presentation },
+                null,
+                null
+            )
+        ).accent_color,
+        0xd99a37
+    )
+    assert.equal(
+        container(
+            renderResult(
+                {
+                    id: "e",
+                    name: "Match",
+                    map: null,
+                    result: {
+                        status: "corrected",
+                        version: 2,
+                        reviewedAt: null,
+                        participants: [],
+                    },
+                },
+                {},
+                { presentation }
+            )
+        ).accent_color,
+        0xff8800
+    )
+})
+
+test("an HTTPS banner becomes the main image and replaces the map thumbnail", () => {
+    const presentation = panelPresentationSchema.parse({
+        bannerAssetId: "imageAssets:1",
+        bannerUrl: banner,
+    })
+    const panel = { ...wardogsPanel, presentation }
+    const data = json(
+        renderPanel(panel, null, appearanceLive(), {}, undefined, artworkUrl)
+    )
+    const gallery = tree(data).find((n) => n.type === 12)
+    assert.ok(gallery)
+    assert.deepEqual(
+        (gallery.items as { media: { url: string } }[]).map((i) => i.media.url),
+        [banner]
+    )
+    assert.equal((container(data).components as Node[])[0].type, 12)
+    assert.equal(
+        tree(data).filter((n) => n.type === 11 || n.type === 9).length,
+        0
+    )
+    assert.ok(!JSON.stringify(data).includes("attachment://"))
+    assert.equal(panelArtworkWanted(panel), false)
+    // A non-HTTPS URL cannot be fetched by Discord; the map artwork stays.
+    const insecure = {
+        ...wardogsPanel,
+        presentation: { ...presentation, bannerUrl: "http://localhost/x.webp" },
+    }
+    assert.equal(panelArtworkWanted(insecure), true)
+    assert.equal(
+        tree(
+            json(
+                renderPanel(
+                    insecure,
+                    null,
+                    appearanceLive(),
+                    {},
+                    undefined,
+                    artworkUrl
+                )
+            )
+        ).filter((n) => n.type === 12).length,
+        0
+    )
+    assert.equal(
+        tree(
+            json(
+                renderResult(
+                    {
+                        id: "e",
+                        name: "Match",
+                        map: null,
+                        result: {
+                            status: "confirmed",
+                            version: 1,
+                            reviewedAt: null,
+                            participants: [],
+                        },
+                    },
+                    {},
+                    { presentation }
+                )
+            )
+        ).filter((n) => n.type === 12).length,
+        1
+    )
+})
+
+test("layout toggles each change the rendered panel", () => {
+    const live = appearanceLive()
+    const render = (layout: Record<string, boolean>) =>
+        renderPanel(
+            {
+                ...wardogsPanel,
+                showLeaders: false,
+                presentation: panelPresentationSchema.parse({ layout }),
+            },
+            null,
+            live,
+            appIcons,
+            undefined,
+            artworkUrl
+        )
+    const noMap = render({ showMap: false })
+    assert.ok(!texts(noMap)[0].includes("🗺️"))
+    assert.equal(tree(json(noMap)).filter((n) => n.type === 11).length, 0)
+    assert.equal(
+        panelArtworkWanted({
+            artwork: true,
+            presentation: {
+                layout: {
+                    showMap: false,
+                    showScoreboard: true,
+                    showPlayerCount: true,
+                    compact: false,
+                },
+            },
+        }),
+        false
+    )
+    const noScores = texts(render({ showScoreboard: false })).join("\n")
+    assert.ok(!noScores.includes("FACTION SCORE"))
+    assert.ok(!noScores.includes("pts"))
+    const noCount = texts(render({ showPlayerCount: false }))[0]
+    assert.ok(!noCount.includes("players"))
+    assert.match(noCount, /🗺️ \*\*Bakurani\*\*$/)
+    const compact = render({ compact: true })
+    const [header, scores] = texts(compact)
+    assert.equal(
+        header,
+        "**WARDOGS · Synthetic Wardogs**\n-# Live · score in progress · 🗺️ **Bakurani** · 👥 **1 / 100** players"
+    )
+    assert.match(scores, /\*\*5\*\* pts {2}· {2}<:logi_manticore/)
+    assert.ok(!scores.includes("FACTION SCORE"))
+    assert.equal(tree(json(compact)).filter((n) => n.type === 14).length, 0)
+    const compactResult = texts(
+        renderResult(
+            {
+                id: "e",
+                name: "Match",
+                map: "Ozeti",
+                result: {
+                    status: "confirmed",
+                    version: 1,
+                    reviewedAt: null,
+                    participants: [
+                        { label: "Valkyra", score: 3 },
+                        { label: "Manticore", score: 1 },
+                    ],
+                },
+            },
+            appIcons,
+            {
+                presentation: panelPresentationSchema.parse({
+                    layout: { compact: true, showMap: false },
+                }),
+            }
+        )
+    )[0]
+    assert.ok(!compactResult.startsWith("###"))
+    assert.ok(!compactResult.includes("Ozeti"))
+    assert.match(compactResult, /· 3 {2}· {2}<:logi_manticore/)
+})
+
+test("maximum-length custom emoji keep the public panel within the component text budget", () => {
+    const live = appearanceLive()
+    live.players = Array.from({ length: 16 }, (_, i) => ({
+        ...live.players[0],
+        name: "*".repeat(200),
+        faction: ["Valkyra", "Manticore", "Lonestar"][i % 3],
+        kills: Number.MAX_SAFE_INTEGER,
+        cash: Number.MAX_VALUE,
+    }))
+    live.status!.scores = Array.from({ length: 8 }, (_, i) => ({
+        name: ["Valkyra", "Manticore", "Lonestar"][i % 3],
+        score: Number.MAX_SAFE_INTEGER,
+        colorHex: "#777777",
+    }))
+    live.status!.serverName = "*".repeat(200)
+    const emoji = `<a:${"x".repeat(32)}:${"9".repeat(20)}>`
+    const total = texts(
+        renderPanel(
+            {
+                ...wardogsPanel,
+                presentation: panelPresentationSchema.parse({
+                    factionEmoji: {
+                        valkyra: emoji,
+                        manticore: emoji,
+                        lonestar: emoji,
+                    },
+                }),
+            },
+            null,
+            live
+        )
+    ).join("").length
+    assert.ok(total <= 4000, `Text budget exceeded: ${total}`)
 })

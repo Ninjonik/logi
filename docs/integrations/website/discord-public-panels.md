@@ -70,8 +70,9 @@ cache, lease and provider budget. See [HLL live data and private reports](hll-li
   since feature creation publish one message per event. Corrections edit that
   binding. Withdrawal, deletion or disabling the results feature removes its
   owned messages. Existing historical results are not backfilled automatically.
-- The dashboard controls have Czech and English labels. Public bot copy currently
-  uses an intentional English fallback, consistent across supported games.
+- The dashboard controls have Czech and English labels; the Appearance section
+  also has German labels. Public bot copy currently uses an intentional English
+  fallback, consistent across supported games.
 - Website deep links are not guessed: different Logi guilds have different public
   sites and event identifiers. This iteration exposes player details and the
   dashboard's exact Discord message link; public site links need a confirmed
@@ -133,7 +134,8 @@ and filename; signed CDN query strings are not persisted. Disabling artwork clea
 the old attachment. Real Discord acceptance verified this update/restart path.
 
 Map images are the existing tactical artwork, not newly licensed promotional
-banners. Faction names are matched semantically; unknown/provider labels such as
+banners; a workspace may upload its own banner (see [Appearance](#appearance)).
+Faction names are matched semantically; unknown/provider labels such as
 Alpha/Bravo/Charlie retain a neutral icon. Metric symbols use Unicode.
 
 The three existing faction marker assets keep their adjacent MIT license and
@@ -151,6 +153,45 @@ looks up the exact current catalog names; absent assets fall back to text.
 See [Discord's application emoji API](https://docs.discord.com/developers/resources/emoji#application-owned-emoji)
 and [channel permission rules](https://docs.discord.com/developers/topics/permissions).
 
+## Appearance
+
+Each panel record has an optional `presentation`, edited in the dashboard's
+**Appearance** section and validated by
+`src/domain/discord-publications/panel-presentation.ts`:
+
+| Field                                                   | Values                                                                                                                         | Rendering                                                                                                                                                                                                                  |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layout.showMap`                                        | boolean, default `true`                                                                                                        | Map line and map thumbnail. The thumbnail still needs `artwork`; hidden maps upload no artwork.                                                                                                                            |
+| `layout.showScoreboard`                                 | boolean, default `true`                                                                                                        | Faction/team score section of live panels, including per-team leaders.                                                                                                                                                     |
+| `layout.showPlayerCount`                                | boolean, default `true`                                                                                                        | Connected players / capacity in the live header.                                                                                                                                                                           |
+| `layout.compact`                                        | boolean, default `false`                                                                                                       | Two-line header with subtext facts, inline scores, no separators; results use a condensed title.                                                                                                                           |
+| `accentColor`                                           | `#RRGGBB` or `null`                                                                                                            | Replaces the green live color and the result color. Stale and paused cards keep the amber warning. The HLL private player embed uses it too.                                                                               |
+| `bannerAssetId` / `bannerUrl`                           | image asset ID or `null`; the URL is server-resolved                                                                           | An HTTPS banner is a Components V2 media gallery above the header and replaces the map thumbnail and its upload. A non-HTTPS URL (local development) is ignored and artwork rules apply.                                   |
+| `factionEmoji.{allies,axis,valkyra,manticore,lonestar}` | one Unicode emoji (Extended_Pictographic, flag pair, skin tone, up to three ZWJ joins) or `<:name:id>` / `<a:name:id>`, max 64 | Overrides the marker before semantically matched faction names on scores, leaders and results. Wardogs falls back to the installed application emoji, then `◈`; HLL CRCON teams have no default. Provider labels keep `◈`. |
+
+Records without `presentation` resolve to the defaults, and the renderers are
+byte-identical for a missing and a fully defaulted appearance. A save without
+`presentation` clears a stored appearance and its banner reference. Result
+messages apply map, compact, accent, banner and emoji; they ignore the
+scoreboard and player-count switches. Private player lists are unchanged apart
+from the HLL embed color.
+
+**Banner reference rule.** The client sends only `bannerAssetId`; `bannerUrl` in
+the request is ignored by the route and rejected by the Convex validator. The
+`discordPublicPanels:configure` mutation verifies the asset with
+`attachableAsset` (same workspace, kind `panel-banner`, state `ready`) and, if it
+is foreign, of another kind, being deleted or missing, returns
+`{ error: "asset_unavailable" }` without writing; the dashboard shows a localized
+message. Otherwise it stores the asset's `publicUrl` as `bannerUrl` and, in the
+same transaction, calls `syncAssetReferences` with owner `panel` and the panel
+document ID as `ownerId`. A source/feature pair keeps that document across
+edits, so each save replaces exactly that panel's references; clearing the
+banner or saving without appearance releases it. Referenced banners survive the
+unattached-upload sweep; released or never-saved uploads are removed after 24
+hours. Uploads use `POST /api/servers/{serverId}/image-assets?kind=panel-banner`
+(PNG, JPEG or WebP up to 2 MiB and 4096 × 4096 px, normalized to WebP of at most
+1920 × 1080 px).
+
 ## API and activation
 
 The dashboard session API is `GET/POST
@@ -160,7 +201,8 @@ reject cross-origin callers. The final mutation takes the server-attested actor,
 never an actor supplied in the request body.
 
 **Deliberate v1 exclusion:** existing website bearer read grants cannot configure
-Discord publication or application emoji. These actions cause messages in a
+Discord publication, panel appearance, banner uploads or application emoji.
+These actions cause messages in a
 third-party guild and require the current interactive administrator, including
 revocation checks. There is no new bearer management endpoint or broadened key
 scope. Game-data and reviewed-result read APIs remain unchanged.

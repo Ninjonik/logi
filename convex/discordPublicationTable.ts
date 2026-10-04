@@ -9,7 +9,41 @@ export const publicationState = {
     ),
     hash: v.union(v.string(), v.null()),
 }
-export const panelSettings = {
+const panelFactionEmoji = v.object({
+    allies: v.optional(v.string()),
+    axis: v.optional(v.string()),
+    valkyra: v.optional(v.string()),
+    manticore: v.optional(v.string()),
+    lonestar: v.optional(v.string()),
+})
+/** Client appearance input; the domain schema fills defaults and rejects malformed values. */
+export const panelPresentationInput = v.object({
+    layout: v.optional(
+        v.object({
+            showMap: v.optional(v.boolean()),
+            showScoreboard: v.optional(v.boolean()),
+            showPlayerCount: v.optional(v.boolean()),
+            compact: v.optional(v.boolean()),
+        })
+    ),
+    accentColor: v.optional(v.union(v.string(), v.null())),
+    bannerAssetId: v.optional(v.union(v.string(), v.null())),
+    factionEmoji: v.optional(panelFactionEmoji),
+})
+/** Stored appearance is complete; `bannerUrl` comes from the verified asset, never the client. */
+export const panelPresentation = v.object({
+    layout: v.object({
+        showMap: v.boolean(),
+        showScoreboard: v.boolean(),
+        showPlayerCount: v.boolean(),
+        compact: v.boolean(),
+    }),
+    accentColor: v.union(v.string(), v.null()),
+    bannerAssetId: v.union(v.string(), v.null()),
+    bannerUrl: v.union(v.string(), v.null()),
+    factionEmoji: panelFactionEmoji,
+})
+const panelFeatureSettings = {
     kind: v.union(
         v.literal("server"),
         v.literal("scoreboard"),
@@ -23,6 +57,15 @@ export const panelSettings = {
     reportCategoryId: v.optional(v.string()),
     artwork: v.boolean(),
     refreshSeconds: v.number(),
+}
+export const panelSettingsInput = {
+    ...panelFeatureSettings,
+    presentation: v.optional(panelPresentationInput),
+}
+/** Legacy rows have no presentation and keep their previous rendering. */
+export const panelSettings = {
+    ...panelFeatureSettings,
+    presentation: v.optional(panelPresentation),
 }
 export const discordPublicPanels = defineTable({
     guildId: v.string(),

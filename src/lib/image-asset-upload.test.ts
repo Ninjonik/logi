@@ -1,0 +1,137 @@
+import {
+    precheckImageFile,
+    readImageUploadResponse,
+    uploadImageAsset,
+} from "./image-asset-upload"
+import assert from "node:assert/strict"
+import test from "node:test"
+
+const asset = {
+    id: "imageAssets:1",
+    kind: "panel-banner",
+    contentType: "image/webp",
+    width: 1920,
+    height: 1080,
+    bytes: 4096,
+    url: "https://logi.test/api/image-assets/0123456789abcdef0123456789abcdef.webp",
+    createdAt: "2026-10-04T00:00:00.000Z",
+}
+
+test("uploads the raw file with its MIME type to the scoped asset route", async () => {
+    const calls: { url: string; init: RequestInit | undefined }[] = []
+    const file = new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" })
+    const result = await uploadImageAsset(
+        "server/1",
+        "panel-banner",
+        file,
+        async (url, init) => {
+            calls.push({ url: String(url), init })
+            return Response.json({ asset })
+        }
+    )
+    assert.deepEqual(result, { ok: true, asset })
+    assert.equal(
+        calls[0]!.url,
+        "/api/servers/server%2F1/image-assets?kind=panel-banner"
+    )
+    assert.equal(calls[0]!.init?.method, "POST")
+    assert.deepEqual(calls[0]!.init?.headers, { "Content-Type": "image/png" })
+    assert.equal(calls[0]!.init?.body, file)
+})
+
+test("unsupported or oversized files are refused before any request", async () => {
+    let called = false
+    const fetcher = async () => {
+        called = true
+        return Response.json({ asset })
+    }
+    assert.deepEqual(
+        await uploadImageAsset(
+            "s",
+            "panel-banner",
+            new Blob(["gif"], { type: "image/gif" }),
+            fetcher
+        ),
+        { ok: false, error: "unsupported_type", retryAfterMs: null }
+    )
+    assert.equal(
+        precheckImageFile({ size: 2 * 1024 * 1024 + 1, type: "image/webp" }),
+        "too_large"
+    )
+    assert.equal(
+        precheckImageFile({ size: 0, type: "image/webp" }),
+        "too_large"
+    )
+    assert.equal(
+        precheckImageFile({ size: 2 * 1024 * 1024, type: "image/jpeg" }),
+        null
+    )
+    assert.equal(called, false)
+})
+
+test("each documented failure maps to its code, with the rate-limit delay", () => {
+    for (const error of [
+        "invalid_kind",
+        "unsupported_type",
+        "type_mismatch",
+        "bad_dimensions",
+        "animated",
+        "undecodable",
+        "invalid_asset",
+    ])
+        assert.deepEqual(readImageUploadResponse(400, { error }, null), {
+            ok: false,
+            error,
+            retryAfterMs: null,
+        })
+    assert.equal(
+        readImageUploadResponse(403, { error: "forbidden" }, null).ok,
+        false
+    )
+    assert.deepEqual(
+        readImageUploadResponse(413, { error: "too_large" }, null),
+        {
+            ok: false,
+            error: "too_large",
+            retryAfterMs: null,
+        }
+    )
+    assert.deepEqual(
+        readImageUploadResponse(
+            429,
+            { error: "upload_limited", retryAfterMs: 42_000 },
+            "42"
+        ),
+        { ok: false, error: "upload_limited", retryAfterMs: 42_000 }
+    )
+    assert.deepEqual(readImageUploadResponse(429, "Too Many", "30"), {
+        ok: false,
+        error: "upload_limited",
+        retryAfterMs: 30_000,
+    })
+    assert.deepEqual(readImageUploadResponse(503, null, null), {
+        ok: false,
+        error: "unavailable",
+        retryAfterMs: null,
+    })
+    // An unexpected success body is never trusted as an asset.
+    assert.deepEqual(readImageUploadResponse(200, { asset: { id: 1 } }, null), {
+        ok: false,
+        error: "unavailable",
+        retryAfterMs: null,
+    })
+})
+
+test("a network failure is reported as unavailable", async () => {
+    assert.deepEqual(
+        await uploadImageAsset(
+            "s",
+            "panel-banner",
+            new Blob(["x"], { type: "image/webp" }),
+            async () => {
+                throw new Error("offline")
+            }
+        ),
+        { ok: false, error: "unavailable", retryAfterMs: null }
+    )
+})

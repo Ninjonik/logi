@@ -1,4 +1,5 @@
 import {
+    panelArtworkWanted,
     renderPanel,
     renderPlayers,
     renderResult,
@@ -203,7 +204,8 @@ export function startPublicPanelWorker(client: Client) {
                                 hllRead?.kind === "ready"
                                     ? hllRead.envelope.data
                                     : null
-                            const artwork = panel.artwork
+                            // A banner replaces map artwork; a hidden map uploads nothing.
+                            const artwork = panelArtworkWanted(panel)
                                 ? await panelArtwork(
                                       panel.gameId,
                                       hll?.status?.map ??
@@ -302,7 +304,8 @@ async function syncResults(client: Client, panel: Panel, emoji: FactionIcons) {
                     message: event?.result
                         ? renderResult(
                               { ...event, result: event.result },
-                              emoji
+                              emoji,
+                              panel
                           )
                         : {},
                 })
@@ -370,7 +373,11 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
                 }
             if ("statusFreshness" in result.data)
                 return renderHllPlayers(
-                    { id: result.panel._id, revision: result.panel.revision },
+                    {
+                        id: result.panel._id,
+                        revision: result.panel.revision,
+                        presentation: result.panel.presentation,
+                    },
                     result.data,
                     result.page
                 )
