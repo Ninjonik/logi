@@ -49,6 +49,7 @@ function fixture() {
                     gameId: receipt.gameId,
                     revision: receipt.revision,
                     event: fields,
+                    matchTeams: null,
                     canEdit: true,
                     canCancel: true,
                 },
@@ -107,6 +108,99 @@ test("HTTP editor uses the same actor credentials and strips no fields by silent
     assert.equal((await rejected.text()).includes("private"), false)
 })
 
+test("HTTP team selections pass through as IDs only; refresh is a 200 receipt and the editor round-trips assignments", async () => {
+    const f = fixture()
+    const matchTeams = [
+        { teamId: "teamDirectory:alpha", slot: "a", side: "Valkyra" },
+        { teamId: "teamDirectory:bravo", slot: "c", side: null },
+    ]
+    const create = { operation: "create", event: { ...fields, matchTeams } }
+    assert.equal((await f.http.POST(f.request(create))).status, 201)
+    assert.deepEqual(
+        (f.calls[1] as { command: unknown }).command,
+        create,
+        "assignments are forwarded unchanged"
+    )
+    const refresh = {
+        operation: "refresh_match_team",
+        eventId: "event-one",
+        expectedRevision: "123",
+        teamId: "teamDirectory:alpha",
+    }
+    f.ports.execute = async (input) => {
+        f.calls.push(input)
+        return { data: { ...receipt, operation: "refresh_match_team" } }
+    }
+    const refreshed = await f.http.POST(f.request(refresh))
+    assert.equal(refreshed.status, 200)
+    assert.equal((await refreshed.json()).data.operation, "refresh_match_team")
+    for (const body of [
+        // Clients never send snapshots or a fourth slot.
+        {
+            ...create,
+            event: {
+                ...fields,
+                matchTeams: [
+                    { ...matchTeams[0], snapshot: { name: "Forged" } },
+                ],
+            },
+        },
+        {
+            ...create,
+            event: {
+                ...fields,
+                matchTeams: [
+                    ...matchTeams,
+                    { teamId: "teamDirectory:c", slot: "b", side: null },
+                    { teamId: "teamDirectory:d", slot: "a", side: null },
+                ],
+            },
+        },
+        { ...refresh, teamId: undefined },
+        { ...refresh, event: fields },
+    ]) {
+        const g = fixture()
+        assert.equal((await g.http.POST(g.request(body))).status, 400)
+        assert.equal(g.calls.length, 1, "only the rate limit was consulted")
+    }
+    const summary = {
+        teamId: "teamDirectory:alpha",
+        slot: "a",
+        side: "Valkyra",
+        name: "Alpha",
+        shortCode: "ALP",
+        logoUrl: null,
+        teamRevision: 2,
+        capturedAt: "2026-10-04T10:00:00.000Z",
+    }
+    f.ports.editor = async () => ({
+        data: {
+            eventId: receipt.eventId,
+            guildId: receipt.guildId,
+            gameId: receipt.gameId,
+            revision: receipt.revision,
+            event: { ...fields, matchTeams: [matchTeams[0]] },
+            matchTeams: [summary],
+            canEdit: true,
+            canCancel: true,
+        },
+    })
+    const editor = await (await f.http.GET(f.request(), "event-one")).json()
+    assert.deepEqual(editor.data.event.matchTeams, [matchTeams[0]])
+    assert.deepEqual(editor.data.matchTeams, [summary])
+    f.ports.editor = async () => ({
+        data: {
+            ...editor.data,
+            matchTeams: [{ ...summary, logoAssetId: "imageAssets:private" }],
+        },
+    })
+    assert.equal(
+        (await f.http.GET(f.request(), "event-one")).status,
+        503,
+        "asset identifiers never leave through the editor"
+    )
+})
+
 test("HTTP boundary rejects missing actor, ambiguous scope, unsafe keys, and body authority fields", async () => {
     for (const [headers, query, body, expected] of [
         [{ "X-Logi-Actor-Token": "" }, "game=wardogs", command, 401],
@@ -149,6 +243,7 @@ test("HTTP boundary rejects missing actor, ambiguous scope, unsafe keys, and bod
 test("HTTP service errors are stable and never echo adapter diagnostics or credentials", async () => {
     for (const [code, status] of Object.entries({
         invalid_request: 400,
+        invalid_match_teams: 400,
         unauthorized: 401,
         insufficient_scope: 403,
         policy_denied: 403,

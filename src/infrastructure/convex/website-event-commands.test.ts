@@ -400,3 +400,421 @@ test("configuration requires a current dashboard admin and a restricted key; dis
         error: { code: "policy_denied" },
     })
 })
+
+const logoUrl = (id: string) =>
+    `https://logi.test/api/image-assets/${id.repeat(32)}.png`
+function seedTeams(f: ReturnType<typeof fixture>) {
+    for (const id of ["a", "b"])
+        f.ctx.db.seed("imageAssets", {
+            _id: `imageAssets:${id}`,
+            guildId,
+            kind: "team-logo",
+            publicId: id.repeat(32),
+            storageId: `storage:${id}`,
+            contentType: "image/png",
+            width: 512,
+            height: 512,
+            bytes: 1000,
+            sha256: id.repeat(64),
+            publicUrl: logoUrl(id),
+            state: "ready",
+            createdAt: "2026-10-01T00:00:00.000Z",
+            createdBy: subject,
+        })
+    const team = (id: string, patch: Record<string, unknown> = {}) => ({
+        _id: `teamDirectory:${id}`,
+        guildId,
+        gameId: "wardogs",
+        name: id[0].toUpperCase() + id.slice(1),
+        shortCode: null,
+        logoAssetId: null,
+        normalizedName: id,
+        searchText: id,
+        archivedAt: null,
+        revision: 1,
+        createdAt: "2026-10-01T00:00:00.000Z",
+        updatedAt: "2026-10-01T00:00:00.000Z",
+        createdBy: subject,
+        updatedBy: subject,
+        ...patch,
+    })
+    f.ctx.db.seed(
+        "teamDirectory",
+        team("alpha", { shortCode: "ALP", logoAssetId: "imageAssets:a" })
+    )
+    f.ctx.db.seed("teamDirectory", team("bravo"))
+    f.ctx.db.seed("teamDirectory", team("foreign", { guildId: "999" }))
+    f.ctx.db.seed(
+        "teamDirectory",
+        team("archived", { archivedAt: "2026-10-02T00:00:00.000Z" })
+    )
+    f.ctx.db.seed("teamDirectory", team("hll", { gameId: "hell_let_loose" }))
+    return (id: string) =>
+        f.ctx.db.tables.teamDirectory.find(
+            (row) => row._id === `teamDirectory:${id}`
+        )!
+}
+const selection = [
+    { teamId: "teamDirectory:alpha", slot: "a", side: "Valkyra" },
+    { teamId: "teamDirectory:bravo", slot: "c", side: null },
+]
+const editorFor = (
+    f: ReturnType<typeof fixture>,
+    eventId: string
+): Promise<{
+    data: {
+        revision: string
+        event: Record<string, unknown>
+        matchTeams: Array<Record<string, unknown>> | null
+    }
+}> =>
+    invoke(commands.readEditor, f.ctx, {
+        secret,
+        keyHash: input.keyHash,
+        actorTokenHash: input.actorTokenHash,
+        gameId: "wardogs",
+        eventId,
+    })
+const eventReferences = (f: ReturnType<typeof fixture>, eventId: string) =>
+    (f.ctx.db.tables.imageAssetReferences ?? []).filter(
+        (row) => row.owner === "event" && row.ownerId === eventId
+    )
+
+test("commands capture team snapshots on create, preserve them when omitted and clear them with []", async (t) => {
+    const f = fixture(t)
+    seedTeams(f)
+    const create = {
+        operation: "create",
+        event: { ...fields, matchTeams: selection },
+    }
+    const created = await f.run({ command: create })
+    assert.equal(created.data.operation, "create")
+    const event = f.ctx.db.tables.events[0]
+    assert.deepEqual(
+        event.matchTeams.map(
+            (entry: {
+                teamId: string
+                slot: string
+                side: string | null
+                snapshot: { name: string; logoAssetId: string | null }
+            }) => [
+                entry.slot,
+                entry.side,
+                entry.snapshot.name,
+                entry.snapshot.logoAssetId,
+            ]
+        ),
+        [
+            ["a", "Valkyra", "Alpha", "imageAssets:a"],
+            ["c", null, "Bravo", null],
+        ]
+    )
+    assert.deepEqual(
+        eventReferences(f, event._id).map((row) => row.assetId),
+        ["imageAssets:a"]
+    )
+    // The same assignments listed in another order replay the receipt.
+    const replay = await f.run({
+        command: {
+            ...create,
+            event: { ...fields, matchTeams: [...selection].reverse() },
+        },
+    })
+    assert.equal(replay.data.replayed, true)
+    assert.equal(replay.data.receiptId, created.data.receiptId)
+
+    const editor = await editorFor(f, event._id)
+    assert.deepEqual(editor.data.event.matchTeams, selection)
+    assert.deepEqual(editor.data.matchTeams, [
+        {
+            teamId: "teamDirectory:alpha",
+            slot: "a",
+            side: "Valkyra",
+            name: "Alpha",
+            shortCode: "ALP",
+            logoUrl: logoUrl("a"),
+            teamRevision: 1,
+            capturedAt: event.matchTeams[0].snapshot.capturedAt,
+        },
+        {
+            teamId: "teamDirectory:bravo",
+            slot: "c",
+            side: null,
+            name: "Bravo",
+            shortCode: null,
+            logoUrl: null,
+            teamRevision: 1,
+            capturedAt: event.matchTeams[1].snapshot.capturedAt,
+        },
+    ])
+    assert.equal(JSON.stringify(editor).includes("imageAssets:"), false)
+
+    const saved = structuredClone(event.matchTeams)
+    const omitted = await f.run({
+        idempotencyKey: "update-omitted-0001",
+        command: {
+            operation: "update",
+            eventId: event._id,
+            expectedRevision: editor.data.revision,
+            event: { ...fields, name: "Renamed without teams" },
+        },
+    })
+    assert.equal(omitted.data.operation, "update")
+    assert.equal(event.name, "Renamed without teams")
+    assert.deepEqual(event.matchTeams, saved)
+
+    // Round-tripping the editor's inputs keeps the captured snapshots.
+    const roundTrip = await editorFor(f, event._id)
+    await f.run({
+        idempotencyKey: "update-roundtrip-01",
+        command: {
+            operation: "update",
+            eventId: event._id,
+            expectedRevision: roundTrip.data.revision,
+            event: roundTrip.data.event,
+        },
+    })
+    assert.deepEqual(event.matchTeams, saved)
+
+    const cleared = await f.run({
+        idempotencyKey: "update-cleared-0001",
+        command: {
+            operation: "update",
+            eventId: event._id,
+            expectedRevision: (await editorFor(f, event._id)).data.revision,
+            event: { ...fields, matchTeams: [] },
+        },
+    })
+    assert.equal(cleared.data.replayed, false)
+    assert.deepEqual(event.matchTeams, [])
+    assert.equal(eventReferences(f, event._id).length, 0)
+    assert.deepEqual((await editorFor(f, event._id)).data.matchTeams, [])
+    assert.equal(f.ctx.db.tables.websiteEventCommandReceipts.length, 4)
+})
+
+test("foreign, archived, cross-game and duplicate selections return invalid_match_teams and write nothing", async (t) => {
+    const f = fixture(t)
+    seedTeams(f)
+    for (const matchTeams of [
+        [{ teamId: "teamDirectory:foreign", slot: "a", side: null }],
+        [{ teamId: "teamDirectory:archived", slot: "a", side: null }],
+        [{ teamId: "teamDirectory:hll", slot: "a", side: null }],
+        [{ teamId: "teamDirectory:unknown", slot: "a", side: null }],
+        [{ teamId: "teamDirectory:alpha", slot: "a", side: "Allies" }],
+        [
+            { teamId: "teamDirectory:alpha", slot: "a", side: "Valkyra" },
+            { teamId: "teamDirectory:bravo", slot: "b", side: "Valkyra" },
+        ],
+    ])
+        assert.deepEqual(
+            await f.run({
+                command: {
+                    operation: "create",
+                    event: { ...fields, matchTeams },
+                },
+            }),
+            { error: { code: "invalid_match_teams" } }
+        )
+    assert.deepEqual(
+        await f.run({
+            command: {
+                operation: "create",
+                event: { ...fields, kind: "training", matchTeams: selection },
+            },
+        }),
+        { error: { code: "invalid_match_teams" } }
+    )
+    for (const table of [
+        "events",
+        "eventScheduleJobs",
+        "integrationChanges",
+        "websiteEventCommandReceipts",
+        "imageAssetReferences",
+    ])
+        assert.equal(f.ctx.db.tables[table]?.length ?? 0, 0, table)
+
+    // A rejected update leaves the event and its saved selection unchanged,
+    // and its key stays usable for the corrected command.
+    const created = await f.run({
+        command: {
+            operation: "create",
+            event: { ...fields, matchTeams: selection },
+        },
+    })
+    const event = f.ctx.db.tables.events[0]
+    const saved = structuredClone(event.matchTeams)
+    const changes = f.ctx.db.tables.integrationChanges.length
+    const update = {
+        operation: "update",
+        eventId: created.data.eventId,
+        expectedRevision: created.data.revision,
+        event: {
+            ...fields,
+            name: "Should not apply",
+            matchTeams: [
+                { teamId: "teamDirectory:foreign", slot: "a", side: null },
+            ],
+        },
+    }
+    assert.deepEqual(
+        await f.run({ idempotencyKey: "update-foreign-0001", command: update }),
+        { error: { code: "invalid_match_teams" } }
+    )
+    assert.equal(event.name, fields.name)
+    assert.deepEqual(event.matchTeams, saved)
+    assert.equal(f.ctx.db.tables.integrationChanges.length, changes)
+    assert.equal(f.ctx.db.tables.websiteEventCommandReceipts.length, 1)
+    const corrected = await f.run({
+        idempotencyKey: "update-foreign-0001",
+        command: { ...update, event: { ...update.event, matchTeams: [] } },
+    })
+    assert.equal(corrected.data.operation, "update")
+    assert.deepEqual(event.matchTeams, [])
+})
+
+test("refresh re-captures one assigned team with audit, change feed, receipt and replay", async (t) => {
+    const f = fixture(t)
+    const team = seedTeams(f)
+    const created = await f.run({
+        command: {
+            operation: "create",
+            event: { ...fields, matchTeams: selection },
+        },
+    })
+    const event = f.ctx.db.tables.events[0]
+    Object.assign(team("alpha"), {
+        name: "Alpha Prime",
+        shortCode: "APX",
+        logoAssetId: "imageAssets:b",
+        revision: 2,
+    })
+    // Directory edits never rewrite saved snapshots by themselves.
+    assert.equal(event.matchTeams[0].snapshot.name, "Alpha")
+    const refresh = {
+        operation: "refresh_match_team",
+        eventId: created.data.eventId,
+        expectedRevision: "0",
+        teamId: "teamDirectory:alpha",
+    }
+    assert.deepEqual(
+        await f.run({ idempotencyKey: "refresh-alpha-0001", command: refresh }),
+        { error: { code: "revision_conflict" } }
+    )
+    assert.equal(event.matchTeams[0].snapshot.name, "Alpha")
+
+    const changes = f.ctx.db.tables.integrationChanges.length
+    const command = { ...refresh, expectedRevision: created.data.revision }
+    const refreshed = await f.run({
+        idempotencyKey: "refresh-alpha-0001",
+        command,
+    })
+    assert.equal(refreshed.data.operation, "refresh_match_team")
+    assert.equal(refreshed.data.replayed, false)
+    assert.notEqual(refreshed.data.revision, created.data.revision)
+    assert.deepEqual(
+        {
+            name: event.matchTeams[0].snapshot.name,
+            shortCode: event.matchTeams[0].snapshot.shortCode,
+            logoAssetId: event.matchTeams[0].snapshot.logoAssetId,
+            teamRevision: event.matchTeams[0].snapshot.teamRevision,
+            side: event.matchTeams[0].side,
+        },
+        {
+            name: "Alpha Prime",
+            shortCode: "APX",
+            logoAssetId: "imageAssets:b",
+            teamRevision: 2,
+            side: "Valkyra",
+        }
+    )
+    assert.equal(event.matchTeams[1].snapshot.name, "Bravo")
+    assert.deepEqual(
+        eventReferences(f, event._id).map((row) => row.assetId),
+        ["imageAssets:b"]
+    )
+    assert.ok(
+        f.ctx.db.tables.integrationChanges
+            .slice(changes)
+            .some((row) => row.resource === "event-summaries")
+    )
+    const audit = f.ctx.db.tables.teamDirectoryAudit
+    assert.equal(audit.length, 1)
+    assert.equal(audit[0].operation, "snapshot_refresh")
+    assert.equal(audit[0].actor, subject)
+    assert.equal(audit[0].eventId, event._id)
+    assert.equal(audit[0].teamId, "teamDirectory:alpha")
+    const receipt = f.ctx.db.tables.websiteEventCommandReceipts.at(-1)!
+    assert.equal(receipt.operation, "refresh_match_team")
+    assert.equal(receipt.revision, refreshed.data.revision)
+
+    const replay = await f.run({
+        idempotencyKey: "refresh-alpha-0001",
+        command,
+    })
+    assert.equal(replay.data.replayed, true)
+    assert.equal(replay.data.receiptId, refreshed.data.receiptId)
+    assert.equal(f.ctx.db.tables.teamDirectoryAudit.length, 1)
+
+    // A team that is not assigned, or no longer active, cannot be refreshed.
+    for (const [key, teamId] of [
+        ["refresh-unassigned1", "teamDirectory:foreign"],
+        ["refresh-archived-01", "teamDirectory:bravo"],
+    ] as const) {
+        if (teamId === "teamDirectory:bravo")
+            team("bravo").archivedAt = "2026-10-03T00:00:00.000Z"
+        assert.deepEqual(
+            await f.run({
+                idempotencyKey: key,
+                command: {
+                    ...refresh,
+                    teamId,
+                    expectedRevision: refreshed.data.revision,
+                },
+            }),
+            { error: { code: "invalid_match_teams" } }
+        )
+    }
+    assert.equal(event.matchTeams[1].snapshot.name, "Bravo")
+    assert.equal(f.ctx.db.tables.teamDirectoryAudit.length, 1)
+
+    // Unlike an update, a refresh stays available after meeting start until
+    // the match concludes.
+    const minutes = (value: number) =>
+        new Date(Date.now() + value * 60_000).toISOString()
+    Object.assign(event, {
+        registrationEnd: minutes(-20),
+        meetingStart: minutes(-10),
+        gameStart: minutes(-5),
+        gameEnd: minutes(60),
+    })
+    const started = await f.run({
+        idempotencyKey: "refresh-started-001",
+        command: { ...command, expectedRevision: refreshed.data.revision },
+    })
+    assert.equal(started.data.operation, "refresh_match_team")
+    assert.equal(started.data.replayed, false)
+    assert.equal(f.ctx.db.tables.teamDirectoryAudit.length, 2)
+
+    // Concluded matches keep their snapshots.
+    event.status = "concluded"
+    assert.deepEqual(
+        await f.run({
+            idempotencyKey: "refresh-concluded01",
+            command: { ...command, expectedRevision: started.data.revision },
+        }),
+        { error: { code: "invalid_match_teams" } }
+    )
+    assert.equal(f.ctx.db.tables.teamDirectoryAudit.length, 2)
+    assert.equal(f.ctx.db.tables.websiteEventCommandReceipts.length, 3)
+})
+
+test("a match created with an explicit [] reads as an empty selection, not a legacy null", async (t) => {
+    const f = fixture(t)
+    const created = await f.run({
+        command: { operation: "create", event: { ...fields, matchTeams: [] } },
+    })
+    assert.equal(created.data.operation, "create")
+    const editor = await editorFor(f, created.data.eventId)
+    assert.deepEqual(editor.data.matchTeams, [])
+    assert.deepEqual(editor.data.event.matchTeams, [])
+})

@@ -3,12 +3,12 @@ import { NextResponse } from "next/server"
 import type { ZodType } from "zod"
 import { z } from "zod"
 
-type JsonRequest = {
-    json(): Promise<unknown>
-}
+type JsonRequest = Pick<Request, "json" | "headers" | "url">
 
 type EventRouteDeps<TEventInput> = {
     eventSchema: ZodType<TEventInput>
+    /** Whether the current dashboard user administers this server; never derived from the request body. */
+    canAdminServer: (serverId: string) => Promise<boolean>
     saveServerEvent: (input: any) => Promise<string>
     concludeServerEvent: (input: { eventId: string }) => Promise<void>
     completeServerTraining: (input: {
@@ -80,6 +80,71 @@ type EventRouteDeps<TEventInput> = {
 
 type EventCreateParams = { serverId: string }
 type EventActionParams = { serverId: string; eventId: string }
+
+/**
+ * Convex rejects an invalid team selection with `match_teams:<code>`. The
+ * dashboard receives that bare code so it can localize it, instead of the
+ * generic fallback message. The wrapped Convex error text is searched, not
+ * matched exactly.
+ */
+const MATCH_TEAM_ERROR = new RegExp(
+    `match_teams:(${[
+        "invalid_match_teams",
+        "team_not_found",
+        "team_archived",
+        "team_game_mismatch",
+        "match_concluded",
+        "training_event",
+    ].join("|")})`
+)
+export function matchTeamErrorCode(error: unknown): string | null {
+    // A malformed selection (unknown slot, too many entries, an overlong side
+    // or a client snapshot) fails the request schema before Convex sees it;
+    // it is the same team-selection rule violation.
+    if (error instanceof z.ZodError)
+        return error.issues.length > 0 &&
+            error.issues.every((issue) => issue.path[0] === "matchTeams")
+            ? "invalid_match_teams"
+            : null
+    return error instanceof Error
+        ? (MATCH_TEAM_ERROR.exec(error.message)?.[1] ?? null)
+        : null
+}
+
+/**
+ * Every dashboard event write (save, import, conclude, training completion,
+ * result import) needs a same-origin request from a current server admin,
+ * the boundary the match-team refresh route also uses. Denial happens before
+ * the body is read.
+ */
+async function eventWriteDenied(
+    deps: Pick<EventRouteDeps<unknown>, "canAdminServer">,
+    request: JsonRequest,
+    serverId: string
+) {
+    const allowed =
+        request.headers.get("origin") === new URL(request.url).origin &&
+        (await deps.canAdminServer(serverId).catch(() => false))
+    return allowed
+        ? null
+        : NextResponse.json({ error: "forbidden" }, { status: 403 })
+}
+function saveErrorResponse(
+    deps: Pick<EventRouteDeps<unknown>, "getUserSafeErrorMessage">,
+    error: unknown
+) {
+    return NextResponse.json(
+        {
+            error:
+                matchTeamErrorCode(error) ??
+                deps.getUserSafeErrorMessage(
+                    error,
+                    "Unable to save the event."
+                ),
+        },
+        { status: 400 }
+    )
+}
 
 const trainingCompletionSchema = z.object({
     action: z.literal("completeTraining"),
@@ -189,8 +254,10 @@ export function createServerEventsPostHandler<TEventInput>(
         request: JsonRequest,
         { params }: { params: Promise<EventCreateParams> }
     ) {
+        const { serverId } = await params
+        const denied = await eventWriteDenied(deps, request, serverId)
+        if (denied) return denied
         try {
-            const { serverId } = await params
             const rawBody = await request.json()
 
             if (
@@ -291,15 +358,7 @@ export function createServerEventsPostHandler<TEventInput>(
             return NextResponse.json({ eventId })
         } catch (error) {
             deps.logRouteError("events.create", error)
-            return NextResponse.json(
-                {
-                    error: deps.getUserSafeErrorMessage(
-                        error,
-                        "Unable to save the event."
-                    ),
-                },
-                { status: 400 }
-            )
+            return saveErrorResponse(deps, error)
         }
     }
 }
@@ -311,12 +370,14 @@ export function createServerEventPatchHandler<TEventInput>(
         request: JsonRequest,
         { params }: { params: Promise<EventActionParams> }
     ) {
+        const { serverId, eventId } = await params
+        const denied = await eventWriteDenied(deps, request, serverId)
+        if (denied) return denied
         try {
             const body = deps.eventSchema.parse(await request.json()) as Record<
                 string,
                 unknown
             >
-            const { serverId, eventId } = await params
             const updatedEventId = await deps.saveServerEvent({
                 eventId,
                 serverId,
@@ -334,15 +395,7 @@ export function createServerEventPatchHandler<TEventInput>(
             return NextResponse.json({ eventId: updatedEventId })
         } catch (error) {
             deps.logRouteError("events.update", error)
-            return NextResponse.json(
-                {
-                    error: deps.getUserSafeErrorMessage(
-                        error,
-                        "Unable to save the event."
-                    ),
-                },
-                { status: 400 }
-            )
+            return saveErrorResponse(deps, error)
         }
     }
 }
@@ -354,12 +407,14 @@ export function createServerEventPostHandler<TEventInput>(
         request: JsonRequest,
         { params }: { params: Promise<EventActionParams> }
     ) {
+        const { serverId, eventId } = await params
+        const denied = await eventWriteDenied(deps, request, serverId)
+        if (denied) return denied
         try {
             const body = (await request.json()) as {
                 action?: string
                 matchLink?: unknown
             }
-            const { serverId, eventId } = await params
 
             if (body?.action === "conclude") {
                 await deps.concludeServerEvent({ eventId })

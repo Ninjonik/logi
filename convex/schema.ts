@@ -1658,7 +1658,8 @@ export default defineSchema({
         operation: v.union(
             v.literal("create"),
             v.literal("update"),
-            v.literal("cancel")
+            v.literal("cancel"),
+            v.literal("refresh_match_team")
         ),
         eventId: v.id("events"),
         revision: v.string(),

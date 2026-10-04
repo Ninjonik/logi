@@ -1,4 +1,11 @@
+import {
+    matchTeamInputsSchema,
+    matchTeamsEditability,
+    matchTeamSummarySchema,
+    sortAssignments,
+} from "../teams/match-teams"
 import { isApiKeyReadAccess } from "../api/key-access"
+import { teamIdSchema } from "../teams/team"
 import { deriveEventStatus } from "./status"
 import type { EventStatus } from "./types"
 import { z } from "zod"
@@ -101,6 +108,8 @@ export const websiteEventFieldsSchema = z
         meetingStart: instant,
         gameStart: instant,
         gameEnd: instant,
+        /** Directory team IDs, slots and sides. Omitted preserves the saved selection; [] clears it. */
+        matchTeams: matchTeamInputsSchema.optional(),
     })
     .refine(
         (event) =>
@@ -129,6 +138,19 @@ export const websiteEventCommandSchema = z.discriminatedUnion("operation", [
         eventId: websiteEventIdSchema,
         expectedRevision: websiteEventRevisionSchema,
     }),
+    /** Explicit re-capture of one assigned team's presentation from the active directory entry. */
+    z.strictObject({
+        operation: z.literal("refresh_match_team"),
+        eventId: websiteEventIdSchema,
+        expectedRevision: websiteEventRevisionSchema,
+        teamId: teamIdSchema,
+    }),
+])
+const websiteEventOperationSchema = z.enum([
+    "create",
+    "update",
+    "cancel",
+    "refresh_match_team",
 ])
 export type WebsiteEventCommand = z.infer<typeof websiteEventCommandSchema>
 export type WebsiteEventFields = z.infer<typeof websiteEventFieldsSchema>
@@ -144,6 +166,7 @@ export type WebsiteEventError =
     | "idempotency_conflict"
     | "invalid_state"
     | "invalid_request"
+    | "invalid_match_teams"
 export type WebsiteEventReceipt = {
     eventId: string
     guildId: string
@@ -158,7 +181,7 @@ export const websiteEventReceiptSchema = z.strictObject({
     guildId: z.string().regex(/^\d{17,20}$/),
     gameId: websiteEventGameSchema,
     revision: websiteEventRevisionSchema,
-    operation: z.enum(["create", "update", "cancel"]),
+    operation: websiteEventOperationSchema,
     receiptId: websiteEventIdSchema,
     replayed: z.boolean(),
 })
@@ -168,6 +191,8 @@ export const websiteEventEditorSchema = z.strictObject({
     gameId: websiteEventGameSchema,
     revision: websiteEventRevisionSchema,
     event: websiteEventFieldsSchema,
+    /** Current assignments with captured labels/logos; null for trainings and legacy events. */
+    matchTeams: z.array(matchTeamSummarySchema).nullable(),
     canEdit: z.boolean(),
     canCancel: z.boolean(),
 })
@@ -181,6 +206,10 @@ export type WebsiteEventActor = {
     guildId: string
 }
 
+/**
+ * Digest input for idempotency. Team selections are compared by slot, so the
+ * same assignments listed in another order replay the original receipt.
+ */
 export function canonicalWebsiteCommand(
     gameId: WebsiteEventGame,
     command: WebsiteEventCommand
@@ -196,7 +225,17 @@ export function canonicalWebsiteCommand(
             )
         return value
     }
-    return JSON.stringify(sort({ gameId, command }))
+    const semantic =
+        "event" in command && command.event.matchTeams
+            ? {
+                  ...command,
+                  event: {
+                      ...command.event,
+                      matchTeams: sortAssignments(command.event.matchTeams),
+                  },
+              }
+            : command
+    return JSON.stringify(sort({ gameId, command: semantic }))
 }
 
 /** No legacy full-access grant, global permission, login claim or assignment fallback. */
@@ -264,7 +303,12 @@ export function canEditWebsiteEvent(
     )
 }
 
-/** Existing Logi pre-meeting conclusion semantics; no new cancelled status or result. */
+/**
+ * Existing Logi pre-meeting conclusion semantics; no new cancelled status or
+ * result. A team snapshot refresh stays available until the match concludes,
+ * like the dashboard refresh, so it may follow meeting start; a concluded
+ * match or a training is a team-assignment rule violation.
+ */
 export function websiteEventStateError(
     command: WebsiteEventCommand,
     existing: {
@@ -275,12 +319,20 @@ export function websiteEventStateError(
         status?: EventStatus
     } | null,
     now: number
-): "invalid_state" | null {
+): "invalid_state" | "invalid_match_teams" | null {
     if (command.operation === "create")
         return Date.parse(command.event.meetingStart) > now
             ? null
             : "invalid_state"
-    if (!existing || !canEditWebsiteEvent(existing, now)) return "invalid_state"
+    if (!existing) return "invalid_state"
+    if (command.operation === "refresh_match_team")
+        return matchTeamsEditability({
+            kind: existing.kind === "training" ? "training" : "match",
+            status: deriveEventStatus(existing, new Date(now)),
+        })
+            ? "invalid_match_teams"
+            : null
+    if (!canEditWebsiteEvent(existing, now)) return "invalid_state"
     if (
         command.operation === "update" &&
         ((existing.kind ?? "match") !== command.event.kind ||

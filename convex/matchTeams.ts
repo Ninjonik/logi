@@ -36,6 +36,10 @@ const canonical = (
  * Authoritative resolution for an event save. Omitted input preserves the
  * current assignments (re-validated after a game change); an explicit list
  * is resolved against active directory entries, keeping existing snapshots.
+ * An explicit [] on an unconcluded match stores [] ("no teams selected"), so
+ * summaries keep null for trainings and legacy records only. A training never
+ * carries assignments: an unconcluded match that becomes one drops them, which
+ * also releases their logo references.
  */
 export async function resolveEventMatchTeams(
     ctx: Pick<QueryCtx, "db">,
@@ -50,9 +54,13 @@ export async function resolveEventMatchTeams(
     }
 ): Promise<MatchTeamResolution> {
     const game = teamGameSchema.safeParse(input.gameId ?? "hell_let_loose")
+    const training = (input.kind ?? "match") === "training"
+    const concluded = input.status === "concluded"
     if (input.inputs === undefined) {
         if (!input.previous?.length)
             return { ok: true, matchTeams: input.previous }
+        if (training)
+            return { ok: true, matchTeams: concluded ? input.previous : [] }
         if (!game.success) return { ok: false, error: "team_game_mismatch" }
         const denied = validatePreservedMatchTeams({
             gameId: game.data,
@@ -72,8 +80,10 @@ export async function resolveEventMatchTeams(
     if (parsed.data.length === 0 && !input.previous?.length)
         return {
             ok: true,
-            matchTeams: input.previous === undefined ? undefined : [],
+            matchTeams: training || concluded ? input.previous : [],
         }
+    if (parsed.data.length === 0 && training && !concluded)
+        return { ok: true, matchTeams: [] }
     const frozen = matchTeamsEditability({
         kind: input.kind,
         status: input.status,

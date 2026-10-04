@@ -228,6 +228,7 @@ async function trackIntegrationChanges<T>(
                           "eventResult",
                           "reviewedResult",
                           "reviewedResultGameId",
+                          "matchTeams",
                       ]
                     : [
                           "provider",

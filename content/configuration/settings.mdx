@@ -229,6 +229,13 @@ belong to the authenticated workspace. Successful creates emit `event.created`;
 updates and `POST /api/v1/clan/events/{eventId}/actions/conclude` emit
 `event.updated`.
 
+Match team selections (`matchTeams`) are read-only on these two endpoints,
+because an API key alone is not a writing actor. A sent selection is ignored
+and the saved one is kept; a game change that the saved teams no longer fit
+returns `validation_error`, and changing an unconcluded match into a training
+clears its teams. A connected website selects teams through the signed-in
+[website event commands](/wiki/operations/events#connected-clan-websites).
+
 Stratmaps and presets use `POST /api/v1/clan/stratmaps`,
 `POST /api/v1/clan/topic-presets`, and `POST /api/v1/clan/squad-presets`, with
 the corresponding `PATCH /{id}` paths for complete dashboard-equivalent

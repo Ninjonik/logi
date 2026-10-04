@@ -1,6 +1,7 @@
 import { makeFunctionReference } from "convex/server"
 import { fetchMutation } from "convex/nextjs"
 
+import type { MatchTeamInput } from "@/domain/teams/match-teams"
 import type { GameId } from "@/domain/games/game"
 import { getInternalAuthSecret } from "@/lib/env"
 
@@ -68,6 +69,8 @@ export async function saveServerEventCommand(input: {
     createForumChannel: boolean
     topicPresetId?: string
     stratmapIds?: string[]
+    /** Forwarded unchanged; Convex resolves and snapshots the selection. */
+    matchTeams?: MatchTeamInput[]
 }) {
     return await fetchMutation(upsertEventReference, {
         secret: getInternalAuthSecret(),
@@ -110,6 +113,7 @@ export async function saveServerEventCommand(input: {
         createForumChannel: input.createForumChannel,
         topicPresetId: input.topicPresetId as never,
         stratmapIds: input.stratmapIds,
+        matchTeams: input.matchTeams,
     })
 }
 

@@ -54,6 +54,7 @@ import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertCommand } from "../src/application/events/command-ports"
 import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
+import { resolveEventMatchTeams, syncEventAssetReferences } from "./matchTeams"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
 import { systemClock } from "../src/domain/shared/clock"
@@ -498,7 +499,13 @@ export const mutateClanEvent = mutation({
                 response = { data: apiDocument(event!) }
                 eventType = "event.updated"
             } else {
-                const event = args.event as Record<string, unknown>
+                // Team selections are read-only for bearer-key event writes: an API
+                // key alone is not a writing actor, so selections change only through
+                // the actor-backed website event commands. A returned selection is
+                // ignored like other stored fields; the saved one is kept and
+                // re-validated against game or kind changes below.
+                const { matchTeams: _readOnlyMatchTeams, ...event } =
+                    args.event as Record<string, unknown>
                 const references = [
                     ...((event.signupGroupIds as string[] | undefined) ?? []),
                     ...((event.stratmapIds as string[] | undefined) ?? []),
@@ -537,6 +544,17 @@ export const mutateClanEvent = mutation({
                             "Referenced topic preset was not found."
                         )
                 }
+                const kept = await resolveEventMatchTeams(ctx, {
+                    guildId: key.guildId,
+                    gameId:
+                        (event as EventUpsertCommand).gameId ?? current?.gameId,
+                    kind: (event as EventUpsertCommand).kind ?? current?.kind,
+                    status: current?.status,
+                    inputs: undefined,
+                    previous: current?.matchTeams,
+                    now: new Date().toISOString(),
+                })
+                if (!kept.ok) throw new Error(`match_teams:${kept.error}`)
                 const eventId = await new UpsertEventUseCase(
                     new ConvexEventCommandRepository(ctx),
                     new DelegatingEventScorePort((id) =>
@@ -546,8 +564,11 @@ export const mutateClanEvent = mutation({
                 ).execute({
                     ...(event as EventUpsertCommand),
                     guildId: key.guildId,
+                    matchTeams: kept.matchTeams,
                     ...(args.eventId ? { eventId: String(args.eventId) } : {}),
                 })
+                const written = await ctx.db.get(eventId as Id<"events">)
+                if (written) await syncEventAssetReferences(ctx, written)
                 await refreshEventSchedule(ctx, eventId as Id<"events">)
                 const saved = await ctx.db.get(eventId as Id<"events">)
                 response = { data: apiDocument(saved!) }

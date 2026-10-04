@@ -1,6 +1,7 @@
 export type Timestamp = string
 
 import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
+import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import type { GameId } from "@/domain/games/game"
 export type { GameId, GameScope } from "@/domain/games/game"
 
@@ -368,6 +369,7 @@ export type EventRecord = {
     }[]
     createdAt: Timestamp
     updatedAt: Timestamp
+    matchTeams?: MatchTeamAssignment[]
 }
 
 export type StratmapRecord = {

@@ -30,6 +30,7 @@ test("summary HTTP routes preserve page filters, detail identity and no-store", 
         startsAt: null,
         endsAt: "2030-01-01T02:00:00.000Z",
         updatedAt: null,
+        matchTeams: null,
     }
     const matchSummary = {
         id: "fixture-event",
@@ -40,6 +41,7 @@ test("summary HTTP routes preserve page filters, detail identity and no-store", 
         updatedAt: null,
         resultState: "unknown",
         result: null,
+        matchTeams: null,
     }
     t.mock.method(
         globalThis,
@@ -376,4 +378,70 @@ test("stored game data reaches the real HTTP route with scoped filters and nulla
             )
         }
     }
+})
+
+test("event writes drop a returned team selection before validation and forwarding", async (t) => {
+    const previous = {
+        url: process.env.NEXT_PUBLIC_CONVEX_URL,
+        secret: process.env.INTERNAL_AUTH_SECRET,
+    }
+    process.env.NEXT_PUBLIC_CONVEX_URL = "https://offline-test.convex.cloud"
+    process.env.INTERNAL_AUTH_SECRET = "synthetic-test-secret"
+    t.after(() => {
+        if (previous.url === undefined)
+            delete process.env.NEXT_PUBLIC_CONVEX_URL
+        else process.env.NEXT_PUBLIC_CONVEX_URL = previous.url
+        if (previous.secret === undefined)
+            delete process.env.INTERNAL_AUTH_SECRET
+        else process.env.INTERNAL_AUTH_SECRET = previous.secret
+    })
+    const forwarded: Array<Record<string, unknown>> = []
+    t.mock.method(
+        globalThis,
+        "fetch",
+        async (_input: unknown, init?: RequestInit) => {
+            const request = JSON.parse(String(init?.body))
+            let value: unknown
+            if (request.path === "publicApi:checkRateLimit")
+                value = { allowed: true, remaining: 299, resetAt: 0 }
+            else if (request.path === "publicApi:authenticateKey")
+                value = { guildId: "guild-a" }
+            else if (request.path === "publicApi:mutateClanEvent") {
+                forwarded.push(request.args[0].event)
+                value = { status: 201, body: '{"data":{"id":"event"}}' }
+            } else throw new Error(`Unexpected offline call: ${request.path}`)
+            return Response.json({ status: "success", value })
+        }
+    )
+    // A stored selection as an event read returns it, snapshot included.
+    const matchTeams = [
+        {
+            teamId: "teamDirectory:alpha",
+            slot: "a",
+            side: "Allies",
+            snapshot: { name: "Alpha" },
+        },
+    ]
+    const response = await POST(
+        new Request("https://logi.test/api/v1/clan/events", {
+            method: "POST",
+            headers: {
+                authorization: "Bearer fixture",
+                "idempotency-key": "event-create-0001",
+            },
+            body: JSON.stringify({
+                kind: "training",
+                name: "Training",
+                registrationEnd: "2030-01-01T18:00:00Z",
+                meetingStart: "2030-01-01T19:00:00Z",
+                pingClan: false,
+                matchTeams,
+            }),
+        }),
+        { params: Promise.resolve({ path: ["events"] }) }
+    )
+    assert.equal(response.status, 201)
+    assert.equal(forwarded.length, 1)
+    assert.equal(forwarded[0]!.name, "Training")
+    assert.equal("matchTeams" in forwarded[0]!, false)
 })

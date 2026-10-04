@@ -212,7 +212,17 @@ async function mutateEvent(
                 auth.headers
             )
         }
-        const parsed = eventSchema.safeParse(body)
+        // Team selections are read-only here (see publicApi:mutateClanEvent);
+        // dropping a returned selection keeps a GET -> PATCH round trip valid.
+        const fields =
+            body && typeof body === "object" && !Array.isArray(body)
+                ? Object.fromEntries(
+                      Object.entries(body).filter(
+                          ([name]) => name !== "matchTeams"
+                      )
+                  )
+                : body
+        const parsed = eventSchema.safeParse(fields)
         if (!parsed.success)
             return error(
                 "validation_error",
