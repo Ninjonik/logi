@@ -56,6 +56,7 @@ export function GroupForm({
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
+    const selectedGameId = group?.gameId ?? gameId
     const form = useForm<z.input<typeof groupSchema>, unknown, GroupInput>({
         resolver: zodResolver(groupSchema),
         defaultValues: {
@@ -121,7 +122,7 @@ export function GroupForm({
 
         startTransition(() => {
             router.push(
-                `/${locale}/dashboard/servers/${serverId}/groups${createMode ? `/${body.groupId}` : ""}`
+                `/${locale}/dashboard/servers/${serverId}/groups${createMode ? `/${body.groupId}` : ""}${selectedGameId ? `?game=${selectedGameId}` : ""}`
             )
             router.refresh()
         })
@@ -147,7 +148,9 @@ export function GroupForm({
         toast.success(dictionary.common.clear)
 
         startTransition(() => {
-            router.push(`/${locale}/dashboard/servers/${serverId}/groups`)
+            router.push(
+                `/${locale}/dashboard/servers/${serverId}/groups${selectedGameId ? `?game=${selectedGameId}` : ""}`
+            )
             router.refresh()
         })
     }

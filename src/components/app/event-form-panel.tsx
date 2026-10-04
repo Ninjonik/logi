@@ -988,7 +988,7 @@ export function EventFormPanel({
         )
         startTransition(() => {
             router.push(
-                `/${locale}/dashboard/servers/${serverId}/${detailBasePath}/${createMode ? body.eventId : event.id}`
+                `/${locale}/dashboard/servers/${serverId}/${detailBasePath}/${createMode ? body.eventId : event.id}?game=${event.gameId}`
             )
             router.refresh()
         })
@@ -1131,7 +1131,7 @@ export function EventFormPanel({
                                         className="rounded-full"
                                         onClick={() =>
                                             router.push(
-                                                `/${locale}/dashboard/servers/${serverId}/matches/${event.id}/match-stats`
+                                                `/${locale}/dashboard/servers/${serverId}/matches/${event.id}/match-stats?game=${event.gameId}`
                                             )
                                         }
                                     >
