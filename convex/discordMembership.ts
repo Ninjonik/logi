@@ -13,6 +13,159 @@ import { mutation, query } from "./_generated/server"
 import { getUserByDiscordId } from "./identity"
 import { v } from "convex/values"
 
+const gameIdValidator = v.union(
+    v.literal("hell_let_loose"),
+    v.literal("hell_let_loose_vietnam"),
+    v.literal("wardogs")
+)
+
+const membershipAnswerValidator = v.object({
+    questionId: v.string(),
+    label: v.string(),
+    value: v.string(),
+})
+
+export const createMembershipApplicationDraft = mutation({
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        creatorId: v.string(),
+        categoryId: v.string(),
+        gameId: v.optional(gameIdValidator),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const config = await ctx.db
+            .query("discordConfigs")
+            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+            .unique()
+        const category = config?.membershipSettings?.categories.find(
+            (item) =>
+                item.id === args.categoryId &&
+                (item.gameId ?? "hell_let_loose") ===
+                    (args.gameId ?? "hell_let_loose")
+        )
+        if (!config?.membershipSettings?.enabled || !category) {
+            throw new Error("Membership applications are not enabled.")
+        }
+        const gameId = args.gameId ?? "hell_let_loose"
+        const now = new Date()
+        const draftId = await ctx.db.insert("membershipApplicationDrafts", {
+            guildId: args.guildId,
+            creatorId: args.creatorId,
+            categoryId: args.categoryId,
+            gameId,
+            answers: [],
+            step: "account",
+            expiresAt: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
+            createdAt: now.toISOString(),
+            updatedAt: now.toISOString(),
+        })
+        return { id: String(draftId) }
+    },
+})
+
+export const updateMembershipApplicationDraft = mutation({
+    args: {
+        secret: v.string(),
+        draftId: v.id("membershipApplicationDrafts"),
+        guildId: v.string(),
+        creatorId: v.string(),
+        gameId: v.optional(gameIdValidator),
+        specialization: v.optional(
+            v.union(v.literal("infantry"), v.literal("armour"))
+        ),
+        answers: v.optional(v.array(membershipAnswerValidator)),
+        step: v.union(
+            v.literal("specialization"),
+            v.literal("account"),
+            v.literal("questions"),
+            v.literal("review")
+        ),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const draft = await ctx.db.get(args.draftId)
+        if (
+            !draft ||
+            draft.guildId !== args.guildId ||
+            draft.creatorId !== args.creatorId ||
+            Date.parse(draft.expiresAt) <= Date.now()
+        ) {
+            throw new Error("Membership application draft has expired.")
+        }
+        const config = await ctx.db
+            .query("discordConfigs")
+            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+            .unique()
+        const effectiveConfig = config
+        if (
+            args.gameId &&
+            (!effectiveConfig?.membershipSettings?.enabled ||
+                !effectiveConfig.membershipSettings.categories.some(
+                    (category) => category.id === draft.categoryId
+                ))
+        ) {
+            throw new Error(
+                "Membership applications are unavailable for this game."
+            )
+        }
+        await ctx.db.patch(draft._id, {
+            ...(args.gameId ? { gameId: args.gameId } : {}),
+            ...(args.specialization
+                ? { specialization: args.specialization }
+                : {}),
+            ...(args.answers ? { answers: args.answers } : {}),
+            step: args.step,
+            updatedAt: new Date().toISOString(),
+        })
+    },
+})
+
+export const getMembershipApplicationDraft = query({
+    args: {
+        secret: v.string(),
+        draftId: v.id("membershipApplicationDrafts"),
+        guildId: v.string(),
+        creatorId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const draft = await ctx.db.get(args.draftId)
+        if (
+            !draft ||
+            draft.guildId !== args.guildId ||
+            draft.creatorId !== args.creatorId ||
+            Date.parse(draft.expiresAt) <= Date.now()
+        ) {
+            throw new Error("Membership application draft has expired.")
+        }
+        return normalizeDoc(draft)
+    },
+})
+
+export const discardMembershipApplicationDraft = mutation({
+    args: {
+        secret: v.string(),
+        draftId: v.id("membershipApplicationDrafts"),
+        guildId: v.string(),
+        creatorId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const draft = await ctx.db.get(args.draftId)
+        if (
+            !draft ||
+            draft.guildId !== args.guildId ||
+            draft.creatorId !== args.creatorId ||
+            Date.parse(draft.expiresAt) <= Date.now()
+        ) {
+            throw new Error("Membership application draft has expired.")
+        }
+        await ctx.db.delete(draft._id)
+    },
+})
+
 export const getTicketCategoryContext = query({
     args: { secret: v.string(), guildId: v.string(), categoryId: v.string() },
     handler: async (ctx, args) => {
@@ -50,11 +203,12 @@ export const getMembershipCategoryContext = query({
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .unique()
         const effectiveConfig = config
-            ? withGameOverrides(config, config.gameOverrides, args.gameId)
-            : null
         if (!effectiveConfig?.membershipSettings?.enabled) return null
         const category = effectiveConfig.membershipSettings.categories.find(
-            (item) => item.id === args.categoryId
+            (item) =>
+                item.id === args.categoryId &&
+                (item.gameId ?? "hell_let_loose") ===
+                    (args.gameId ?? "hell_let_loose")
         )
         if (!category) return null
         return { config: normalizeConfigDoc(effectiveConfig), category }
@@ -82,11 +236,12 @@ export const getMembershipApplicationPrereq = query({
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .unique()
         const effectiveConfig = config
-            ? withGameOverrides(config, config.gameOverrides, args.gameId)
-            : null
         if (!effectiveConfig?.membershipSettings?.enabled) return null
         const category = effectiveConfig.membershipSettings.categories.find(
-            (item) => item.id === args.categoryId
+            (item) =>
+                item.id === args.categoryId &&
+                (item.gameId ?? "hell_let_loose") ===
+                    (args.gameId ?? "hell_let_loose")
         )
         if (!category) return null
 
@@ -228,12 +383,13 @@ export const createMembershipApplicationThread = mutation({
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .unique()
         const effectiveConfig = config
-            ? withGameOverrides(config, config.gameOverrides, args.gameId)
-            : null
         if (!effectiveConfig?.membershipSettings?.enabled)
             throw new Error("Membership applications are not enabled.")
         const category = effectiveConfig.membershipSettings.categories.find(
-            (item) => item.id === args.categoryId
+            (item) =>
+                item.id === args.categoryId &&
+                (item.gameId ?? "hell_let_loose") ===
+                    (args.gameId ?? "hell_let_loose")
         )
         if (!category) throw new Error("Application category not found.")
         const nextApplicationNumber =

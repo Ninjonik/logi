@@ -5,9 +5,12 @@ import {
     buildPlatformLinkApplyModalId,
     buildPlatformLinkCustomId,
     buildPlatformLinkModalId,
+    buildPlatformLinkSearchModalId,
+    getPlatformFlowMessages,
     parsePlatformLinkApplyModalId,
     parsePlatformLinkInteractionId,
     parsePlatformLinkModalId,
+    parsePlatformLinkSearchModalId,
 } from "./platform-link"
 
 test("Wardogs membership platform-link IDs preserve the game scope", () => {
@@ -43,5 +46,26 @@ test("legacy HLL platform-link IDs remain readable", () => {
             context: { mode: "membership", categoryId: "recruit" },
             extra: "steam",
         }
+    )
+})
+
+test("membership player-search IDs retain the wizard draft", () => {
+    const context = {
+        mode: "membership" as const,
+        categoryId: "recruit",
+        gameId: "wardogs" as const,
+        draftId: "draft-1",
+    }
+
+    assert.deepEqual(
+        parsePlatformLinkSearchModalId(buildPlatformLinkSearchModalId(context)),
+        context
+    )
+})
+
+test("Czech platform-flow copy is localized", () => {
+    assert.equal(
+        getPlatformFlowMessages("cs").startButton,
+        "Propojit platform ID"
     )
 })

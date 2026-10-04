@@ -145,6 +145,8 @@ export type TicketCategory = {
 
 export type MembershipCategory = {
     id: string
+    /** Missing legacy values are Hell Let Loose. */
+    gameId?: GameId
     emoji?: string
     label?: string
     description?: string
@@ -174,6 +176,8 @@ export type MembershipSettings = {
     panelImageUrl?: string
     /** Optional first message posted in each application thread. */
     applicationWelcomeMessage?: string
+    /** Ask infantry/tank preference for supported games during application. */
+    collectSpecialization?: boolean
     autoAssignRecruitOnApply: boolean
     /** Defaults to true for legacy configurations. */
     inviteSupportMembersIndividually?: boolean

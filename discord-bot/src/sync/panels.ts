@@ -1,15 +1,14 @@
 import {
     buildCalendarPanelEmbed,
-    buildMembershipPanelComponents,
-    buildMembershipPanelEmbed,
+    buildMembershipPanelMessage,
     buildTicketPanelComponents,
     buildTicketPanelEmbed,
 } from "../message-builders"
-import { membershipPanelConfig } from "../../../src/domain/discord-publications/legacy-bindings"
+import { MessageFlags, type Client } from "discord.js"
 import { publishManagedMessage } from "./publication"
 import { convex, references } from "../convex"
+import { revalidateAppData } from "../cache"
 import type { SyncPayload } from "../types"
-import type { Client } from "discord.js"
 import { env } from "../environment"
 
 export async function syncTicketPanel(client: Client, payload: SyncPayload) {
@@ -53,51 +52,42 @@ export async function syncMembershipPanel(
     client: Client,
     payload: SyncPayload
 ) {
-    for (const gameId of [
-        "hell_let_loose",
-        "hell_let_loose_vietnam",
-        "wardogs",
-    ] as const) {
-        const override = payload.config.gameOverrides?.[gameId]
-        if (!override?.membershipSettings && gameId !== "hell_let_loose")
-            continue
-        const config = override?.membershipSettings
-            ? membershipPanelConfig(payload.config, override)
-            : payload.config
-        const settings = config.membershipSettings
-        const embed = buildMembershipPanelEmbed(config)
-        if (
-            !settings?.enabled ||
-            !settings.submitChannelId ||
-            !settings.applicationParentChannelId ||
-            !settings.categories.length ||
-            !embed
-        )
-            continue
-        const messageId = await publishManagedMessage(client, {
+    const config = payload.config
+    const settings = config.membershipSettings
+    const message = buildMembershipPanelMessage(config)
+    if (
+        !settings?.enabled ||
+        !settings.submitChannelId ||
+        !settings.applicationParentChannelId ||
+        !settings.categories.length ||
+        !message
+    )
+        return
+    // One shared panel: the wizard asks for the game, so no per-game message.
+    const messageId = await publishManagedMessage(client, {
+        guildId: config.guildId,
+        key: "membership",
+        revision: Date.parse(config.updatedAt),
+        channelId: settings.submitChannelId,
+        legacyChannelId: settings.submitChannelId,
+        legacyMessageId: config.membershipPanelMessageId,
+        message: { ...message, flags: MessageFlags.IsComponentsV2 },
+    })
+    if (
+        messageId &&
+        (messageId !== config.membershipPanelMessageId ||
+            config.membershipPanelLastConfigUpdatedAt !== config.updatedAt)
+    ) {
+        await convex.mutation(references.updateMembershipPanelState, {
+            secret: env.internalSecret,
             guildId: config.guildId,
-            key: `membership:${gameId}`,
-            revision: Date.parse(config.updatedAt),
-            channelId: settings.submitChannelId,
-            legacyChannelId: settings.submitChannelId,
-            legacyMessageId: config.membershipPanelMessageId,
-            message: {
-                embeds: [embed],
-                components: buildMembershipPanelComponents(config, gameId),
-            },
+            membershipPanelMessageId: messageId,
+            membershipPanelLastConfigUpdatedAt: config.updatedAt,
         })
-        if (
-            messageId &&
-            (messageId !== config.membershipPanelMessageId ||
-                config.membershipPanelLastConfigUpdatedAt !== config.updatedAt)
-        )
-            await convex.mutation(references.updateMembershipPanelState, {
-                secret: env.internalSecret,
-                guildId: config.guildId,
-                gameId,
-                membershipPanelMessageId: messageId,
-                membershipPanelLastConfigUpdatedAt: config.updatedAt,
-            })
+        await revalidateAppData({
+            type: "discord-config-changed",
+            serverId: config.guildId,
+        })
     }
 }
 

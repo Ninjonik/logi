@@ -92,3 +92,31 @@ test("role-ping application invitations allow no more than ten support roles", (
         assert.match(result.error.issues[0]?.message ?? "", /10 roles/)
     }
 })
+
+test("membership categories retain their selected game", () => {
+    const parsed = discordSettingsSchema.parse({
+        timezone: "UTC",
+        defaultLanguage: "en",
+        membershipSettings: {
+            enabled: false,
+            submitChannelId: undefined,
+            applicationParentChannelId: undefined,
+            panelTitle: "",
+            panelDescription: "",
+            autoAssignRecruitOnApply: false,
+            categories: [
+                {
+                    id: "wardogs-member",
+                    gameId: "wardogs",
+                    supportRoleIds: [],
+                    recruitRoleIds: [],
+                    finalRoleIds: [],
+                    modalQuestions: [],
+                    assignmentType: "member",
+                },
+            ],
+        },
+    })
+
+    assert.equal(parsed.membershipSettings?.categories[0]?.gameId, "wardogs")
+})

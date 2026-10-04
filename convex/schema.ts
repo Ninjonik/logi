@@ -186,6 +186,14 @@ const ticketCategory = v.object({
 
 const membershipCategory = v.object({
     id: v.string(),
+    // Missing legacy values are Hell Let Loose.
+    gameId: v.optional(
+        v.union(
+            v.literal("hell_let_loose"),
+            v.literal("hell_let_loose_vietnam"),
+            v.literal("wardogs")
+        )
+    ),
     emoji: v.optional(v.string()),
     label: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -251,6 +259,7 @@ const membershipSettings = v.object({
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
     applicationWelcomeMessage: v.optional(v.string()),
+    collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),
     inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(rosterScoreSettings),
@@ -1191,6 +1200,34 @@ export default defineSchema({
         .index("guildId", ["guildId"])
         .index("threadId", ["threadId"])
         .index("guildId_applicationNumber", ["guildId", "applicationNumber"]),
+    membershipApplicationDrafts: defineTable({
+        guildId: v.string(),
+        creatorId: v.string(),
+        categoryId: v.string(),
+        gameId: v.optional(gameId),
+        specialization: v.optional(
+            v.union(v.literal("infantry"), v.literal("armour"))
+        ),
+        answers: v.array(
+            v.object({
+                questionId: v.string(),
+                label: v.string(),
+                value: v.string(),
+            })
+        ),
+        step: v.union(
+            v.literal("game"),
+            v.literal("specialization"),
+            v.literal("account"),
+            v.literal("questions"),
+            v.literal("review")
+        ),
+        expiresAt: v.string(),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId_creatorId", ["guildId", "creatorId"])
+        .index("expiresAt", ["expiresAt"]),
     platformIdLinkTokens: defineTable({
         token: v.string(),
         guildId: v.string(),

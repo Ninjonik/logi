@@ -5,12 +5,14 @@ import {
     ContainerBuilder,
     EmbedBuilder,
     MediaGalleryBuilder,
+    MessageFlags,
     SectionBuilder,
     SeparatorBuilder,
     TextDisplayBuilder,
     ThumbnailBuilder,
     type APIEmbedField,
 } from "discord.js"
+import { buildMembershipFlowHeader } from "./interactions/membership-flow"
 
 import { formatDiscordMarkdown } from "../../src/lib/discord-markdown"
 import { formatHllPresetLabel } from "../../src/lib/hll-map-presets"
@@ -1009,49 +1011,161 @@ export function buildMembershipPanelEmbed(config: DiscordConfig) {
     return embed
 }
 
-export function buildMembershipPanelComponents(
-    config: DiscordConfig,
-    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
-) {
+export function buildMembershipPanelComponents(config: DiscordConfig) {
     const membershipSettings = config.membershipSettings
     if (!membershipSettings?.categories.length) {
         return []
     }
 
-    const buttons = membershipSettings.categories.map((category) => {
-        const button = new ButtonBuilder()
-            .setCustomId(
-                gameId
-                    ? `membership:${gameId}:${category.id}`
-                    : `membership:${category.id}`
-            )
-            .setStyle(ButtonStyle.Success)
+    return [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+                .setCustomId("membership:apply")
+                .setLabel(
+                    getClanDiscordMessages(config.defaultLanguage).panels
+                        .membershipApply
+                )
+                .setStyle(ButtonStyle.Success)
+        ),
+    ]
+}
 
-        const label = category.label?.trim()
-        const emoji = category.emoji?.trim()
-
-        if (emoji) {
-            button.setEmoji(emoji)
-        }
-        if (label) {
-            button.setLabel(label.slice(0, 80))
-        } else if (!emoji) {
-            button.setLabel(category.id.slice(0, 80))
-        }
-
-        return button
-    })
-
-    const rows: Array<ActionRowBuilder<ButtonBuilder>> = []
-    for (let index = 0; index < buttons.length; index += 5) {
-        rows.push(
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                buttons.slice(index, index + 5)
-            )
-        )
+export function buildMembershipPanelMessage(config: DiscordConfig) {
+    const membershipSettings = config.membershipSettings
+    if (!membershipSettings?.categories.length) {
+        return null
     }
 
-    return rows
+    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const container = new ContainerBuilder().setAccentColor(0x16a34a)
+    if (membershipSettings.panelImageUrl) {
+        container.addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems({
+                media: { url: membershipSettings.panelImageUrl },
+                description: membershipSettings.panelTitle.slice(0, 1024),
+            })
+        )
+    }
+    container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+            [
+                `# ${membershipSettings.panelTitle.slice(0, 256)}`,
+                formatDiscordMarkdown(
+                    membershipSettings.panelDescription,
+                    4000
+                ),
+            ]
+                .filter(Boolean)
+                .join("\n")
+        )
+    )
+    container.addActionRowComponents(
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+                .setCustomId("membership:apply")
+                .setLabel(messages.panels.membershipApply)
+                .setStyle(ButtonStyle.Success)
+        )
+    )
+    return { components: [container], flags: MessageFlags.IsComponentsV2 }
+}
+
+function membershipGameLabel(gameId: MembershipCategory["gameId"]) {
+    return gameId === "hell_let_loose_vietnam"
+        ? "Hell Let Loose: Vietnam"
+        : gameId === "wardogs"
+          ? "Wardogs"
+          : "Hell Let Loose"
+}
+
+function buildMembershipSelectionMessage(input: {
+    config: DiscordConfig
+    gameId?: MembershipCategory["gameId"]
+}) {
+    const settings = input.config.membershipSettings
+    const messages = getClanDiscordMessages(input.config.defaultLanguage)
+    const container = new ContainerBuilder().setAccentColor(0x5865f2)
+
+    if (!input.gameId) {
+        const games = [
+            ...new Set(
+                settings?.categories.map(
+                    (category) => category.gameId ?? "hell_let_loose"
+                )
+            ),
+        ]
+        container.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                messages.panels.membershipChooseGame
+            )
+        )
+        container.addActionRowComponents(
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+                games.map((gameId) =>
+                    new ButtonBuilder()
+                        .setCustomId(`membership:game:${gameId}`)
+                        .setLabel(membershipGameLabel(gameId))
+                        .setStyle(ButtonStyle.Primary)
+                )
+            )
+        )
+    } else {
+        const categories =
+            settings?.categories.filter(
+                (category) =>
+                    (category.gameId ?? "hell_let_loose") === input.gameId
+            ) ?? []
+        container.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                `${membershipGameLabel(input.gameId)}\n${messages.panels.membershipChooseCategory}`
+            )
+        )
+        for (let index = 0; index < categories.length; index += 5) {
+            container.addActionRowComponents(
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                    categories.slice(index, index + 5).map((category) => {
+                        const button = new ButtonBuilder()
+                            .setCustomId(
+                                `membership:${input.gameId}:${category.id}`
+                            )
+                            .setLabel(
+                                (category.label?.trim() || category.id).slice(
+                                    0,
+                                    80
+                                )
+                            )
+                            .setStyle(ButtonStyle.Primary)
+                        if (category.emoji?.trim()) {
+                            button.setEmoji(category.emoji.trim())
+                        }
+                        return button
+                    })
+                )
+            )
+        }
+    }
+
+    return {
+        components: [
+            buildMembershipFlowHeader(
+                input.config.defaultLanguage,
+                input.gameId ? "specialization" : "game"
+            ),
+            container,
+        ],
+        flags: MessageFlags.IsComponentsV2,
+    }
+}
+
+export function buildMembershipGameSelectionMessage(config: DiscordConfig) {
+    return buildMembershipSelectionMessage({ config })
+}
+
+export function buildMembershipCategorySelectionMessage(
+    config: DiscordConfig,
+    gameId: MembershipCategory["gameId"]
+) {
+    return buildMembershipSelectionMessage({ config, gameId })
 }
 
 function resolveCalendarEventLabel(

@@ -111,7 +111,7 @@ test("buildCompactV2FieldText removes padding and preserves row order when compa
     )
 })
 
-test("membership panel components keep Wardogs scoped while HLL stays legacy-compatible", () => {
+test("membership panel categories open the shared membership wizard", () => {
     const membershipConfig: DiscordConfig = {
         ...config,
         membershipSettings: {
@@ -129,30 +129,21 @@ test("membership panel components keep Wardogs scoped while HLL stays legacy-com
                     finalRoleIds: [],
                     modalQuestions: [],
                     assignmentType: "member",
+                    gameId: "wardogs",
                 },
             ],
         },
     }
 
-    const legacyButton =
+    const applyButton =
         buildMembershipPanelComponents(membershipConfig)[0]?.toJSON()
             .components[0]
-    const wardogsButton = buildMembershipPanelComponents(
-        membershipConfig,
-        "wardogs"
-    )[0]?.toJSON().components[0]
 
     assert.equal(
-        legacyButton && "custom_id" in legacyButton
-            ? legacyButton.custom_id
+        applyButton && "custom_id" in applyButton
+            ? applyButton.custom_id
             : undefined,
-        "membership:recruit"
-    )
-    assert.equal(
-        wardogsButton && "custom_id" in wardogsButton
-            ? wardogsButton.custom_id
-            : undefined,
-        "membership:wardogs:recruit"
+        "membership:apply"
     )
 })
 

@@ -80,6 +80,7 @@ export function EmojiPickerInput({
     placeholder,
     labels,
     noneLabel,
+    hidePickerLabel = false,
     className,
 }: {
     value?: string
@@ -88,6 +89,7 @@ export function EmojiPickerInput({
     placeholder: string
     labels: EmojiPickerInputLabels
     noneLabel?: string
+    hidePickerLabel?: boolean
     className?: string
 }) {
     const { theme } = useTheme()
@@ -174,13 +176,16 @@ export function EmojiPickerInput({
     )
 
     return (
-        <div className={cn("flex items-center gap-2", className)}>
+        <div className={cn("relative", className)}>
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                     <Button
                         type="button"
                         variant="outline"
-                        className="w-full justify-between rounded-xl"
+                        className={cn(
+                            "w-full justify-between rounded-xl",
+                            value && "pr-10"
+                        )}
                     >
                         <span className="flex min-w-0 items-center gap-2 truncate">
                             {selectedCustomEmoji?.imageUrl ? (
@@ -203,9 +208,11 @@ export function EmojiPickerInput({
                                         : (noneLabel ?? placeholder))}
                             </span>
                         </span>
-                        <span className="text-muted-foreground text-xs">
-                            {labels.pickEmoji}
-                        </span>
+                        {!hidePickerLabel ? (
+                            <span className="text-muted-foreground text-xs">
+                                {labels.pickEmoji}
+                            </span>
+                        ) : null}
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -237,7 +244,7 @@ export function EmojiPickerInput({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="shrink-0 rounded-xl"
+                    className="absolute top-1/2 right-1 size-8 -translate-y-1/2 rounded-lg"
                     onClick={() => onChange(undefined)}
                     aria-label={labels.clear}
                 >
