@@ -18,6 +18,10 @@ const hllRoleIconOptions = [
     "/img/roles/icn_medic.png",
 ] as const
 
+// Vietnam currently uses the same role artwork as classic HLL, but it remains
+// a distinct game catalog so either game's options can diverge independently.
+const hllVietnamRoleIconOptions = [...hllRoleIconOptions] as const
+
 const wardogsRoleIconOptions = [
     "/img/roles/icn_builder.png",
     "/img/roles/icn_havoc.png",
@@ -67,7 +71,7 @@ const wardogsSquadIconOptions = [
 /** Role icons are intentionally available only for their supported game. */
 export const roleIconOptionsByGame: Record<GameId, readonly string[]> = {
     hell_let_loose: hllRoleIconOptions,
-    hell_let_loose_vietnam: hllRoleIconOptions,
+    hell_let_loose_vietnam: hllVietnamRoleIconOptions,
     wardogs: wardogsRoleIconOptions,
 }
 
@@ -76,7 +80,9 @@ export function getRoleIconOptions(gameId: GameId) {
 }
 
 export function getSquadIconOptions(gameId: GameId): readonly string[] {
-    return gameId === "wardogs" ? wardogsSquadIconOptions : hllRoleIconOptions
+    return gameId === "wardogs"
+        ? wardogsSquadIconOptions
+        : roleIconOptionsByGame[gameId]
 }
 
 // Retained for roster layout editing until that editor receives a game context.

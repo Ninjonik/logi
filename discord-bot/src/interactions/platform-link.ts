@@ -82,23 +82,58 @@ function decodeContext(
     gameId?: string,
     draftId?: string
 ): PlatformLinkContext | null {
-    if (mode !== "membership" && mode !== "link") {
+    const parsedMode =
+        mode === "membership" || mode === "m"
+            ? "membership"
+            : mode === "link" || mode === "l"
+              ? "link"
+              : undefined
+    if (!parsedMode) {
         return null
     }
 
-    const parsedGameId =
-        gameId === "hell_let_loose" ||
-        gameId === "hell_let_loose_vietnam" ||
-        gameId === "wardogs"
-            ? gameId
-            : undefined
+    const parsedGameId = decodeGameId(gameId)
 
     return {
-        mode,
+        mode: parsedMode,
         ...(categoryId && categoryId !== "_" ? { categoryId } : {}),
         ...(parsedGameId ? { gameId: parsedGameId } : {}),
         ...(draftId ? { draftId } : {}),
     }
+}
+
+function decodeGameId(gameId: string | undefined) {
+    return gameId === "hell_let_loose" || gameId === "h"
+        ? "hell_let_loose"
+        : gameId === "hell_let_loose_vietnam" || gameId === "v"
+          ? "hell_let_loose_vietnam"
+          : gameId === "wardogs" || gameId === "w"
+            ? "wardogs"
+            : undefined
+}
+
+function encodeMode(mode: PlatformLinkMode) {
+    return mode === "membership" ? "m" : "l"
+}
+
+function encodeGameId(gameId: PlatformLinkContext["gameId"]) {
+    switch (gameId) {
+        case "hell_let_loose":
+            return "h"
+        case "hell_let_loose_vietnam":
+            return "v"
+        case "wardogs":
+            return "w"
+        default:
+            return "_"
+    }
+}
+
+function getDraftIdFromToken(token: string | undefined) {
+    if (!token) return undefined
+    if (token.startsWith("draft_")) return token.slice("draft_".length)
+    if (token.startsWith("d_")) return token.slice("d_".length)
+    return undefined
 }
 
 export function buildPlatformLinkCustomId(
@@ -109,10 +144,10 @@ export function buildPlatformLinkCustomId(
     return [
         FLOW_PREFIX,
         step,
-        context.mode,
+        encodeMode(context.mode),
         context.categoryId ?? "_",
-        context.gameId ?? "_",
-        context.draftId ? `draft_${context.draftId}` : undefined,
+        encodeGameId(context.gameId),
+        context.draftId ? `d_${context.draftId}` : undefined,
         extra,
     ]
         .filter(Boolean)
@@ -123,7 +158,7 @@ export function buildPlatformLinkModalId(
     context: PlatformLinkContext,
     platform: PlatformKey
 ) {
-    return `${MODAL_PREFIX}:${context.mode}:${context.categoryId ?? "_"}:${context.gameId ?? "_"}:${platform}${context.draftId ? `:draft_${context.draftId}` : ""}`
+    return `${MODAL_PREFIX}:${encodeMode(context.mode)}:${context.categoryId ?? "_"}:${encodeGameId(context.gameId)}:${platform}${context.draftId ? `:d_${context.draftId}` : ""}`
 }
 
 export function buildPlatformLinkApplyModalId(
@@ -149,20 +184,20 @@ export function parsePlatformLinkInteractionId(customId: string) {
         return null
     }
 
-    const hasGameId =
-        gameIdOrExtra === "_" ||
-        gameIdOrExtra === "hell_let_loose" ||
-        gameIdOrExtra === "hell_let_loose_vietnam" ||
-        gameIdOrExtra === "wardogs"
-    const draftToken = rest.find((item) => item.startsWith("draft_"))
-    const extraParts = rest.filter((item) => !item.startsWith("draft_"))
+    const hasGameId = Boolean(
+        gameIdOrExtra === "_" || decodeGameId(gameIdOrExtra)
+    )
+    const draftToken = rest.find(
+        (item) => item.startsWith("draft_") || item.startsWith("d_")
+    )
+    const extraParts = rest.filter((item) => item !== draftToken)
     return {
         step,
         context: decodeContext(
             mode,
             categoryId,
             hasGameId ? gameIdOrExtra : undefined,
-            draftToken?.slice("draft_".length)
+            getDraftIdFromToken(draftToken)
         ),
         extra: hasGameId
             ? extraParts.length
@@ -200,16 +235,14 @@ export function parsePlatformLinkModalId(customId: string) {
             mode,
             categoryId,
             maybePlatform ? gameIdOrPlatform : undefined,
-            draftToken?.startsWith("draft_")
-                ? draftToken.slice("draft_".length)
-                : undefined
+            getDraftIdFromToken(draftToken)
         ),
         platform,
     } satisfies { context: PlatformLinkContext | null; platform: PlatformKey }
 }
 
 export function buildPlatformLinkSearchModalId(context: PlatformLinkContext) {
-    return `${SEARCH_MODAL_PREFIX}:${context.mode}:${context.categoryId ?? "_"}:${context.gameId ?? "_"}${context.draftId ? `:draft_${context.draftId}` : ""}`
+    return `${SEARCH_MODAL_PREFIX}:${encodeMode(context.mode)}:${context.categoryId ?? "_"}:${encodeGameId(context.gameId)}${context.draftId ? `:d_${context.draftId}` : ""}`
 }
 
 export function parsePlatformLinkSearchModalId(customId: string) {
@@ -222,9 +255,7 @@ export function parsePlatformLinkSearchModalId(customId: string) {
         mode,
         categoryId,
         gameId,
-        draftToken?.startsWith("draft_")
-            ? draftToken.slice("draft_".length)
-            : undefined
+        getDraftIdFromToken(draftToken)
     )
 }
 

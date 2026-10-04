@@ -63,6 +63,26 @@ test("membership player-search IDs retain the wizard draft", () => {
     )
 })
 
+test("long membership platform-link IDs remain within Discord's limit", () => {
+    const context = {
+        mode: "membership" as const,
+        categoryId: "membership-0lf7ad1b",
+        gameId: "hell_let_loose_vietnam" as const,
+        draftId: "vx7f04ge2g8rdgp68kqv81dyr98fm9mw",
+    }
+
+    const ids = [
+        buildPlatformLinkCustomId("platform", context),
+        buildPlatformLinkCustomId("manual", context, "playstation"),
+        buildPlatformLinkModalId(context, "playstation"),
+        buildPlatformLinkSearchModalId(context),
+    ]
+
+    for (const id of ids) {
+        assert.ok(id.length <= 100, `${id} exceeds Discord's custom ID limit`)
+    }
+})
+
 test("Czech platform-flow copy is localized", () => {
     assert.equal(
         getPlatformFlowMessages("cs").startButton,
