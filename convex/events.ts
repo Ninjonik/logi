@@ -33,6 +33,7 @@ import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import { resolveEventMatchTeams, syncEventAssetReferences } from "./matchTeams"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
+import { currentEventStatus } from "../src/domain/events/status"
 import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
@@ -186,7 +187,7 @@ export const upsert = mutation({
                     guildId,
                     gameId: args.gameId ?? existing?.gameId,
                     kind: args.kind ?? existing?.kind,
-                    status: existing?.status,
+                    status: existing ? currentEventStatus(existing) : undefined,
                     inputs: args.matchTeams,
                     previous: existing?.matchTeams,
                     now: new Date().toISOString(),

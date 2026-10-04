@@ -8,6 +8,7 @@ import {
     type MatchTeamError,
 } from "../src/domain/teams/match-teams"
 import { directoryLookup, recordTeamAudit, teamById } from "./teams"
+import { currentEventStatus } from "../src/domain/events/status"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { getGuildById, getGuildDiscordId } from "./identity"
 import { teamGameSchema } from "../src/domain/teams/team"
@@ -36,8 +37,10 @@ const canonical = (
  * Authoritative resolution for an event save. Omitted input preserves the
  * current assignments (re-validated after a game change); an explicit list
  * is resolved against active directory entries, keeping existing snapshots.
- * An explicit [] on an unconcluded match stores [] ("no teams selected"), so
- * summaries keep null for trainings and legacy records only. A training never
+ * An explicit [] on an unconcluded match stores [] ("no teams selected"); an
+ * event that never stored a selection keeps none (null in summaries). Callers
+ * pass the schedule-derived `currentEventStatus`, so a match past its end is
+ * frozen before the stored status catches up. A training never
  * carries assignments: an unconcluded match that becomes one drops them, which
  * also releases their logo references.
  */
@@ -153,9 +156,10 @@ export const refreshSnapshot = mutation({
         const event = await ctx.db.get(args.eventId)
         if (!event || event.guildId !== guildId)
             throw new Error("Event not found.")
+        // A match past its end is frozen even before the bot records the conclusion.
         const frozen = matchTeamsEditability({
             kind: event.kind,
-            status: event.status,
+            status: currentEventStatus(event),
         })
         if (frozen) return { error: frozen }
         const game = teamGameSchema.safeParse(event.gameId ?? "hell_let_loose")

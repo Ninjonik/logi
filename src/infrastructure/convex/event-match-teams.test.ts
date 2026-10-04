@@ -1,4 +1,5 @@
 import { actorFixture, seedDashboardActor } from "./testing/dashboard-actor"
+import * as matchTeams from "../../../convex/matchTeams"
 import { invoke, testContext } from "./testing/database"
 import * as events from "../../../convex/events"
 import * as teams from "../../../convex/teams"
@@ -262,6 +263,44 @@ test("concluded matches freeze assignments; trainings, cross-game, foreign and a
         /match_teams:invalid_match_teams/
     )
     assert.equal(ctx.db.tables.events.length, 1)
+})
+
+test("a match past its end is frozen before the stored status says concluded", async () => {
+    const ctx = setup()
+    const alpha = await createTeam(ctx, "hell_let_loose", "Alpha")
+    const bravo = await createTeam(ctx, "hell_let_loose", "Bravo")
+    const eventId = await upsert(ctx, {
+        gameId: "hell_let_loose",
+        matchTeams: [{ teamId: alpha, slot: "a", side: null }],
+    })
+    // The bot has not recorded the conclusion: the stored status lags behind.
+    Object.assign(eventRow(ctx), {
+        status: "starting",
+        registrationEnd: "2026-01-01T17:00:00.000Z",
+        meetingStart: "2026-01-01T18:00:00.000Z",
+        gameStart: "2026-01-01T18:30:00.000Z",
+        gameEnd: "2026-01-01T20:00:00.000Z",
+    })
+    const saved = structuredClone(eventRow(ctx).matchTeams)
+    await assert.rejects(
+        upsert(ctx, {
+            eventId,
+            matchTeams: [{ teamId: bravo, slot: "a", side: null }],
+        }),
+        /match_teams:match_concluded/
+    )
+    assert.deepEqual(
+        await invoke(matchTeams.refreshSnapshot, ctx, {
+            secret,
+            serverId: "guilds:admin",
+            eventId,
+            teamId: alpha,
+            actor: actorFixture.subject,
+        }),
+        { error: "match_concluded" }
+    )
+    assert.deepEqual(eventRow(ctx).matchTeams, saved)
+    assert.equal(eventRow(ctx).status, "starting")
 })
 
 test("an explicit [] on a new match stores an empty selection; omission keeps the legacy shape", async () => {

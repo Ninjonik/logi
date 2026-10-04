@@ -57,6 +57,7 @@ import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
 import { resolveEventMatchTeams, syncEventAssetReferences } from "./matchTeams"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
+import { currentEventStatus } from "../src/domain/events/status"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import { apiKeyReadAccess } from "./apiKeyValidators"
@@ -549,7 +550,7 @@ export const mutateClanEvent = mutation({
                     gameId:
                         (event as EventUpsertCommand).gameId ?? current?.gameId,
                     kind: (event as EventUpsertCommand).kind ?? current?.kind,
-                    status: current?.status,
+                    status: current ? currentEventStatus(current) : undefined,
                     inputs: undefined,
                     previous: current?.matchTeams,
                     now: new Date().toISOString(),

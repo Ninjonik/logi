@@ -44,6 +44,7 @@ import { memberObservation, membershipGuild } from "./membership_shared"
 import { directoryLookup, recordTeamAudit, teamById } from "./teams"
 import { isApiKeyReadAccess } from "../src/domain/api/key-access"
 import { nextRevision } from "../src/domain/integrations/change"
+import { currentEventStatus } from "../src/domain/events/status"
 import { withIntegrationChanges } from "./integrationMutation"
 import { resolveGameScope } from "../src/domain/games/game"
 import { integrationRecord } from "./integrationChangeLog"
@@ -195,7 +196,10 @@ async function refreshMatchTeam(
         !event?.matchTeams ||
         event.guildId !== actor.guildId ||
         !assignment ||
-        matchTeamsEditability(event)
+        matchTeamsEditability({
+            kind: event.kind,
+            status: currentEventStatus(event),
+        })
     )
         return rejected
     const now = new Date().toISOString()
@@ -375,7 +379,9 @@ export const execute = mutation({
                                     guildId: actor.guildId,
                                     gameId,
                                     kind: fields.kind,
-                                    status: current?.status,
+                                    status: current
+                                        ? currentEventStatus(current)
+                                        : undefined,
                                     inputs: requested,
                                     previous: current?.matchTeams,
                                     now: new Date().toISOString(),

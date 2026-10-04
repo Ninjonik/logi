@@ -17,7 +17,10 @@ export function assertInternalSecret(secret: string, expectedSecret: string) {
 export type UpsertExistingEvent = Pick<
     EventLike,
     "gameId" | "kind" | "status" | "matchTeams"
-> & { guildId?: string }
+> &
+    Partial<Pick<EventLike, "registrationEnd" | "meetingStart" | "gameEnd">> & {
+        guildId?: string
+    }
 
 export async function handleUpsertEvent(input: {
     secret: string
@@ -42,7 +45,7 @@ export async function handleUpsertEvent(input: {
         guildId: string
         existing: UpsertExistingEvent | null
     }) => Promise<MatchTeamAssignment[] | undefined>
-    createUseCase: () => ExecuteUseCase<any, unknown>
+    createUseCase: () => ExecuteUseCase<Record<string, unknown>, unknown>
 }) {
     assertInternalSecret(input.secret, input.expectedSecret)
 
