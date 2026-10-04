@@ -26,6 +26,20 @@ carry embeds. Registration cards keep only the text line. Sign-up components,
 map/banner details, rooms and durable message identity are unchanged, and
 events without assignments render exactly as before.
 
+## Team request decision DMs
+
+Every minute the bot claims due decision notifications from
+`teamRequests:claimNotifications` (leased, so overlapping passes or a second
+bot process do not send the same DM within a lease), fetches the requester and
+sends one embed in the requesting workspace's language: approved, merged or
+rejected, with the requested name, the resulting catalogue team or the
+rejection reason, and the game. Names and reasons are Markdown-escaped, mentions
+are broken with zero-width spaces and no mentions are allowed. Each claim is
+confirmed with `teamRequests:markNotified`: `sent` after Discord accepted the
+DM, `failed` when the user cannot be fetched, has DMs closed or the payload is
+unusable; Convex then retries with backoff until the attempts run out. Failures
+are logged with the request ID and Discord error code only.
+
 ## Run
 
 From the repository root:
