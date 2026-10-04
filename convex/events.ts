@@ -183,9 +183,8 @@ export const upsert = mutation({
             getGuildDiscordId,
             getEventById: async (eventId) =>
                 await ctx.db.get(eventId as Id<"events">),
-            resolveMatchTeams: async ({ guildId, existing }) => {
+            resolveMatchTeams: async ({ existing }) => {
                 const resolved = await resolveEventMatchTeams(ctx, {
-                    guildId,
                     gameId: args.gameId ?? existing?.gameId,
                     kind: args.kind ?? existing?.kind,
                     status: existing ? currentEventStatus(existing) : undefined,

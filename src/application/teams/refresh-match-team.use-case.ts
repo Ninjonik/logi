@@ -23,14 +23,13 @@ export type RefreshableEvent = {
 
 /**
  * Explicit, audited re-capture of one assigned team's presentation from its
- * active directory entry, until the match concludes by its schedule-derived
- * status. A rejection writes nothing. Shared by the dashboard refresh and the
- * website `refresh_match_team` command.
+ * active catalogue entry (after following merge pointers), until the match
+ * concludes by its schedule-derived status. A rejection writes nothing. Shared
+ * by the dashboard refresh and the website `refresh_match_team` command.
  */
 export async function refreshAssignedMatchTeam(
     ports: MatchTeamSnapshotPorts,
     input: {
-        guildId: string
         event: RefreshableEvent
         teamId: string
         actor: string
@@ -55,17 +54,17 @@ export async function refreshAssignedMatchTeam(
         return { ok: false, error: "team_not_found" }
     const now = input.now.toISOString()
     const refreshed = refreshMatchTeamSnapshot({
-        guildId: input.guildId,
         gameId: game.data,
         assignment,
+        others: event.matchTeams.filter((entry) => entry !== assignment),
         team: await ports.lookupTeam(input.teamId),
         now,
     })
     if (!refreshed.ok) return refreshed
     const matchTeams = event.matchTeams.map((entry) =>
-        entry.teamId === input.teamId ? refreshed.assignment : entry
+        entry === assignment ? refreshed.assignment : entry
     )
     await ports.saveAssignments(event.id, matchTeams, now)
-    await ports.auditRefresh(input.guildId, input.teamId, input.actor, event.id)
+    await ports.auditRefresh(refreshed.assignment.teamId, input.actor, event.id)
     return { ok: true, matchTeams }
 }

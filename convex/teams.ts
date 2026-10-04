@@ -11,8 +11,8 @@ import {
 import {
     changeTeamLifecycle,
     createTeam,
+    mergeTeam,
     updateTeam,
-    type TeamDirectoryActor,
     type TeamDirectoryPorts,
 } from "../src/application/teams/team-directory.use-case"
 import {
@@ -28,15 +28,19 @@ import {
     type QueryCtx,
 } from "./_generated/server"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
+import { authorizePlatformAdmin } from "./platformAdmin"
 import type { Doc } from "./_generated/dataModel"
 import { assetPublicUrl } from "./imageAssets"
 import { v } from "convex/values"
 
-const access = {
+/** Workspace-administrator reads: the catalogue is global but read in a workspace's dashboard. */
+const workspaceAccess = {
     secret: v.string(),
     guildId: v.string(),
     actor: dashboardActor,
 }
+/** Global-administrator access: no workspace, superadmin attestation required. */
+const platformAccess = { secret: v.string(), actor: dashboardActor }
 type Db = Pick<QueryCtx, "db">
 
 export async function teamRecordOf(
@@ -73,130 +77,145 @@ function assertPagination(limit: number, cursor: string | null) {
         throw new Error("Invalid pagination.")
 }
 
-/** Active (or all, when `archived`) directory entries for one game, optionally searched. */
-export const list = query({
+/**
+ * One page of the catalogue for a game. `archived` includes archived and
+ * merged entries (administration only); search is bounded and unpaged.
+ */
+async function readCatalogue(
+    ctx: Db,
     args: {
-        ...access,
-        gameId: v.string(),
-        archived: v.boolean(),
-        search: v.optional(v.string()),
-        cursor: v.union(v.string(), v.null()),
-        limit: v.number(),
-    },
-    handler: async (
-        ctx,
-        args
-    ): Promise<{ items: TeamRecord[]; nextCursor: string | null }> => {
-        await authorizeDashboardAdmin(ctx, args)
-        const gameId = parseGame(args.gameId)
-        assertPagination(args.limit, args.cursor)
-        const search = args.search?.trim().slice(0, TEAM_SEARCH_MAX)
-        if (search) {
-            const rows = await ctx.db
-                .query("teamDirectory")
-                .withSearchIndex("search", (q) => {
-                    const scoped = q
-                        .search("searchText", search)
-                        .eq("guildId", args.guildId)
-                        .eq("gameId", gameId)
-                    return args.archived
-                        ? scoped
-                        : scoped.eq("archivedAt", null)
-                })
-                .take(args.limit)
-            return {
-                items: await Promise.all(
-                    rows.map((row) => teamRecordOf(ctx, row))
-                ),
-                nextCursor: null,
-            }
-        }
-        const page = args.archived
-            ? await ctx.db
-                  .query("teamDirectory")
-                  .withIndex("guildId_gameId_normalizedName", (q) =>
-                      q.eq("guildId", args.guildId).eq("gameId", gameId)
-                  )
-                  .paginate({ cursor: args.cursor, numItems: args.limit })
-            : await ctx.db
-                  .query("teamDirectory")
-                  .withIndex("guildId_gameId_archivedAt_normalizedName", (q) =>
-                      q
-                          .eq("guildId", args.guildId)
-                          .eq("gameId", gameId)
-                          .eq("archivedAt", null)
-                  )
-                  .paginate({ cursor: args.cursor, numItems: args.limit })
+        gameId: string
+        archived: boolean
+        search?: string
+        cursor: string | null
+        limit: number
+    }
+): Promise<{ items: TeamRecord[]; nextCursor: string | null }> {
+    const gameId = parseGame(args.gameId)
+    assertPagination(args.limit, args.cursor)
+    const search = args.search?.trim().slice(0, TEAM_SEARCH_MAX)
+    if (search) {
+        const rows = await ctx.db
+            .query("teamDirectory")
+            .withSearchIndex("search", (q) => {
+                const scoped = q
+                    .search("searchText", search)
+                    .eq("gameId", gameId)
+                return args.archived ? scoped : scoped.eq("archivedAt", null)
+            })
+            .take(args.limit)
         return {
-            items: await Promise.all(
-                page.page.map((row) => teamRecordOf(ctx, row))
-            ),
-            nextCursor: page.isDone ? null : page.continueCursor,
+            items: await Promise.all(rows.map((row) => teamRecordOf(ctx, row))),
+            nextCursor: null,
         }
+    }
+    const page = args.archived
+        ? await ctx.db
+              .query("teamDirectory")
+              .withIndex("gameId_normalizedName", (q) => q.eq("gameId", gameId))
+              .paginate({ cursor: args.cursor, numItems: args.limit })
+        : await ctx.db
+              .query("teamDirectory")
+              .withIndex("gameId_archivedAt_normalizedName", (q) =>
+                  q.eq("gameId", gameId).eq("archivedAt", null)
+              )
+              .paginate({ cursor: args.cursor, numItems: args.limit })
+    return {
+        items: await Promise.all(
+            page.page.map((row) => teamRecordOf(ctx, row))
+        ),
+        nextCursor: page.isDone ? null : page.continueCursor,
+    }
+}
+
+const listArgs = {
+    gameId: v.string(),
+    search: v.optional(v.string()),
+    cursor: v.union(v.string(), v.null()),
+    limit: v.number(),
+}
+
+/** Active catalogue teams of one game for a workspace's picker and Teams page. */
+export const list = query({
+    args: { ...workspaceAccess, ...listArgs },
+    handler: async (ctx, args) => {
+        await authorizeDashboardAdmin(ctx, args)
+        return await readCatalogue(ctx, { ...args, archived: false })
     },
 })
 
+/** One catalogue team for a workspace; archived and merged entries stay readable for history. */
 export const get = query({
-    args: { ...access, teamId: v.string() },
+    args: { ...workspaceAccess, teamId: v.string() },
     handler: async (ctx, args): Promise<TeamRecord | null> => {
         await authorizeDashboardAdmin(ctx, args)
-        const row = await teamById(ctx, args.guildId, args.teamId)
+        const row = await teamById(ctx, args.teamId)
         return row ? await teamRecordOf(ctx, row) : null
     },
 })
 
-/**
- * Authorizes the current workspace administrator in this transaction and
- * wires the directory use-cases to Convex persistence.
- */
-async function directoryWriter(
+/** Global administration listing, optionally including archived and merged entries. */
+export const adminList = query({
+    args: { ...platformAccess, ...listArgs, archived: v.boolean() },
+    handler: async (ctx, args) => {
+        await authorizePlatformAdmin(ctx, args)
+        return await readCatalogue(ctx, args)
+    },
+})
+
+export const adminGet = query({
+    args: { ...platformAccess, teamId: v.string() },
+    handler: async (ctx, args): Promise<TeamRecord | null> => {
+        await authorizePlatformAdmin(ctx, args)
+        const row = await teamById(ctx, args.teamId)
+        return row ? await teamRecordOf(ctx, row) : null
+    },
+})
+
+/** Authorizes the global administrator in this transaction and wires the use-cases. */
+async function catalogueWriter(
     ctx: MutationCtx,
     args: {
         secret: string
-        guildId: string
-        actor: Parameters<typeof authorizeDashboardAdmin>[1]["actor"]
+        actor: Parameters<typeof authorizePlatformAdmin>[1]["actor"]
     }
-): Promise<{ ports: TeamDirectoryPorts; scope: TeamDirectoryActor }> {
-    const admin = await authorizeDashboardAdmin(ctx, args)
+): Promise<{ ports: TeamDirectoryPorts; actor: string }> {
+    const admin = await authorizePlatformAdmin(ctx, args)
     return {
         ports: {
             repository: new ConvexTeamDirectoryRepository(ctx),
             logos: new ConvexTeamLogoPort(ctx),
             now: () => new Date().toISOString(),
         },
-        scope: {
-            guildId: args.guildId,
-            actor: admin.session.subject,
-            enabledGames: admin.server.enabledGames ?? ["hell_let_loose"],
-        },
+        actor: admin.session.subject,
     }
 }
 
 /** Idempotent create: a retried key with the same payload replays the original result. */
 export const create = mutation({
-    args: { ...access, input: v.any() },
+    args: { ...platformAccess, input: v.any() },
     handler: async (ctx, args) => {
-        const { ports, scope } = await directoryWriter(ctx, args)
-        return await createTeam(ports, scope, args.input)
+        const { ports, actor } = await catalogueWriter(ctx, args)
+        return await createTeam(ports, { actor }, args.input)
     },
 })
 
 export const update = mutation({
-    args: { ...access, teamId: v.string(), input: v.any() },
+    args: { ...platformAccess, teamId: v.string(), input: v.any() },
     handler: async (ctx, args) => {
-        const { ports, scope } = await directoryWriter(ctx, args)
-        return await updateTeam(ports, scope, args.teamId, args.input)
+        const { ports, actor } = await catalogueWriter(ctx, args)
+        return await updateTeam(ports, { actor }, args.teamId, args.input)
     },
 })
 
-/** Archive hides a team from new selection and the website directory; history keeps its snapshots. */
+/** Archive hides a team from new selection and the website catalogue; history keeps its snapshots. */
 export const archive = mutation({
-    args: { ...access, teamId: v.string(), input: v.any() },
+    args: { ...platformAccess, teamId: v.string(), input: v.any() },
     handler: async (ctx, args) => {
-        const { ports, scope } = await directoryWriter(ctx, args)
+        const { ports, actor } = await catalogueWriter(ctx, args)
         return await changeTeamLifecycle(
             ports,
-            scope,
+            { actor },
             args.teamId,
             args.input,
             "archive"
@@ -204,15 +223,24 @@ export const archive = mutation({
     },
 })
 export const restore = mutation({
-    args: { ...access, teamId: v.string(), input: v.any() },
+    args: { ...platformAccess, teamId: v.string(), input: v.any() },
     handler: async (ctx, args) => {
-        const { ports, scope } = await directoryWriter(ctx, args)
+        const { ports, actor } = await catalogueWriter(ctx, args)
         return await changeTeamLifecycle(
             ports,
-            scope,
+            { actor },
             args.teamId,
             args.input,
             "restore"
         )
+    },
+})
+
+/** Merges a duplicate into the team that stays; see the use-case for what moves. */
+export const merge = mutation({
+    args: { ...platformAccess, teamId: v.string(), input: v.any() },
+    handler: async (ctx, args) => {
+        const { ports, actor } = await catalogueWriter(ctx, args)
+        return await mergeTeam(ports, { actor }, args.teamId, args.input)
     },
 })

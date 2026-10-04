@@ -132,6 +132,9 @@ test("commands post JSON and surface conflicts with the existing ID", async () =
             name: "Red Wolves",
             shortCode: null,
             logoAssetId: null,
+            description: null,
+            links: [],
+            linkedGuildId: null,
             idempotencyKey: "0b3c9e4a-8f4e-4b1c-9c37-1b2a3c4d5e6f",
         },
     })

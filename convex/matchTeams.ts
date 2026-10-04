@@ -36,7 +36,7 @@ const canonical = (
 /**
  * Authoritative resolution for an event save. Omitted input preserves the
  * current assignments (re-validated after a game change); an explicit list
- * is resolved against active directory entries, keeping existing snapshots.
+ * is resolved against active catalogue entries, keeping existing snapshots.
  * An explicit [] on an unconcluded match stores [] ("no teams selected"); an
  * event that never stored a selection keeps none (null in summaries). Callers
  * pass the schedule-derived `currentEventStatus`, so a match past its end is
@@ -47,7 +47,6 @@ const canonical = (
 export async function resolveEventMatchTeams(
     ctx: Pick<QueryCtx, "db">,
     input: {
-        guildId: string
         gameId: string | undefined
         kind: "match" | "training" | undefined
         status: Doc<"events">["status"]
@@ -101,7 +100,6 @@ export async function resolveEventMatchTeams(
     }
     if (!game.success) return { ok: false, error: "team_game_mismatch" }
     const resolved = resolveMatchTeams({
-        guildId: input.guildId,
         gameId: game.data,
         inputs: parsed.data,
         previous: input.previous,
@@ -145,7 +143,6 @@ export const refreshSnapshot = mutation({
         const refreshed = await refreshAssignedMatchTeam(
             new ConvexMatchTeamSnapshotPorts(ctx),
             {
-                guildId,
                 event: { ...event, id: String(event._id) },
                 teamId: args.teamId,
                 actor: admin.session.subject,

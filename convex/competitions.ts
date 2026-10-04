@@ -179,11 +179,15 @@ export const getPublic = query({
                 )
                 .collect(),
         ])
+        // Transitional: legacy guild references until the competitions
+        // rework reads global teams.
         const guildIds = [
-            ...new Set([
-                ...joins.map((x) => x.guildId),
-                ...fixtures.flatMap((x) => [x.teamAId, x.teamBId]),
-            ]),
+            ...new Set(
+                [
+                    ...joins.map((x) => x.guildId),
+                    ...fixtures.flatMap((x) => [x.teamAId, x.teamBId]),
+                ].filter((id): id is NonNullable<typeof id> => Boolean(id))
+            ),
         ]
         const guilds = new Map(
             (await Promise.all(guildIds.map((id) => ctx.db.get(id))))
@@ -205,7 +209,9 @@ export const getPublic = query({
                         .filter((x) => x.divisionId === division._id)
                         .map((x) => ({
                             id: String(x.guildId),
-                            name: guilds.get(x.guildId)?.name ?? "Unknown team",
+                            name:
+                                (x.guildId && guilds.get(x.guildId)?.name) ||
+                                "Unknown team",
                             withdrawn: x.withdrawn,
                         })),
                     fixtures: fixtures

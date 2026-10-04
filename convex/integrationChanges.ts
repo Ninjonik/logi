@@ -226,12 +226,7 @@ export const readSyncRecord = query({
                   }
                 : null
         if (resource === "teams") {
-            const data = await readTeamDto(
-                ctx,
-                key.guildId,
-                args.gameId,
-                args.id
-            )
+            const data = await readTeamDto(ctx, args.gameId, args.id)
             return data
                 ? {
                       ...identity,

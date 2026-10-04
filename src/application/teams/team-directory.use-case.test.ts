@@ -1,6 +1,7 @@
 import {
     changeTeamLifecycle,
     createTeam,
+    mergeTeam,
     updateTeam,
     type TeamDirectoryPorts,
 } from "./team-directory.use-case"
@@ -12,16 +13,12 @@ import { TEAM_DIRECTORY_LIMIT } from "@/domain/teams/team"
 import assert from "node:assert/strict"
 import test from "node:test"
 
-const scope = {
-    guildId: "guild-a",
-    actor: "100000000000000001",
-    enabledGames: ["hell_let_loose", "wardogs"],
-}
+const scope = { actor: "100000000000000001" }
 function fixture() {
     const repository = new InMemoryTeamDirectory()
     const logos = new InMemoryTeamLogos({
-        "asset-a": "guild-a",
-        "asset-b": "guild-a",
+        "asset-a": "platform",
+        "asset-b": "platform",
         "asset-foreign": "guild-b",
     })
     let tick = 0
@@ -50,10 +47,7 @@ test("create writes the team, its logo reference, audit and upsert, and replays 
         replayed: false,
     })
     assert.equal(repository.teams[0]?.normalizedName, "valkyria")
-    assert.deepEqual(logos.references.get("team-1"), {
-        guildId: "guild-a",
-        assetIds: ["asset-a"],
-    })
+    assert.deepEqual(logos.references.get("team-1"), ["asset-a"])
     assert.deepEqual(
         repository.audits.map((row) => [row.operation, row.actor]),
         [["create", scope.actor]]
@@ -75,7 +69,7 @@ test("create writes the team, its logo reference, audit and upsert, and replays 
     assert.equal(repository.changes.length, 1)
 })
 
-test("create rejects duplicates with the existing ID, disabled games, foreign logos and a full directory", async () => {
+test("create rejects duplicates with the existing ID, workspace-owned logos and a full catalogue", async () => {
     const { repository, ports } = fixture()
     await createTeam(ports, scope, createInput)
     assert.deepEqual(
@@ -85,14 +79,6 @@ test("create rejects duplicates with the existing ID, disabled games, foreign lo
             idempotencyKey: "create-valkyria-2",
         }),
         { error: "duplicate_name", existingId: "team-1" }
-    )
-    assert.deepEqual(
-        await createTeam(
-            ports,
-            { ...scope, enabledGames: ["hell_let_loose"] },
-            { ...createInput, gameId: "wardogs", idempotencyKey: "k-wardogs1" }
-        ),
-        { error: "game_disabled" }
     )
     assert.deepEqual(
         await createTeam(ports, scope, {
@@ -163,13 +149,6 @@ test("update checks the revision, uniqueness and a changed logo, then audits and
         { error: "not_found" }
     )
     assert.deepEqual(
-        await updateTeam(ports, { ...scope, guildId: "guild-b" }, "team-1", {
-            expectedRevision: 1,
-            name: "Hijack",
-        }),
-        { error: "not_found" }
-    )
-    assert.deepEqual(
         await updateTeam(ports, scope, "team-1", {
             expectedRevision: 1,
             name: "Valkyria Prime",
@@ -178,7 +157,7 @@ test("update checks the revision, uniqueness and a changed logo, then audits and
         { ok: true, revision: 2 }
     )
     assert.equal(repository.teams[0]?.normalizedName, "valkyria prime")
-    assert.deepEqual(logos.references.get("team-1")?.assetIds, ["asset-b"])
+    assert.deepEqual(logos.references.get("team-1"), ["asset-b"])
     assert.deepEqual(
         repository.audits.map((row) => row.operation),
         ["create", "create", "update"]
@@ -247,5 +226,92 @@ test("archive emits a removal, restore an upsert, and both require the current r
     assert.deepEqual(
         repository.audits.map((row) => row.operation),
         ["create", "archive", "restore"]
+    )
+})
+
+test("restore refuses a merged team and a name another active team took", async () => {
+    const { repository, ports } = fixture()
+    await createTeam(ports, scope, createInput)
+    await changeTeamLifecycle(
+        ports,
+        scope,
+        "team-1",
+        { expectedRevision: 1 },
+        "archive"
+    )
+    // A legacy duplicate active under the same name blocks the restore.
+    repository.teams.push({
+        ...repository.teams[0]!,
+        id: "legacy",
+        archivedAt: null,
+    })
+    assert.deepEqual(
+        await changeTeamLifecycle(
+            ports,
+            scope,
+            "team-1",
+            { expectedRevision: 2 },
+            "restore"
+        ),
+        { error: "duplicate_name", existingId: "legacy" }
+    )
+    repository.teams = repository.teams.filter((team) => team.id !== "legacy")
+    repository.teams[0]!.mergedIntoTeamId = "team-9"
+    assert.deepEqual(
+        await changeTeamLifecycle(
+            ports,
+            scope,
+            "team-1",
+            { expectedRevision: 2 },
+            "restore"
+        ),
+        { error: "invalid_merge" }
+    )
+})
+
+test("merge archives the source with a pointer, repoints records and emits both changes", async () => {
+    const { repository, ports } = fixture()
+    await createTeam(ports, scope, createInput)
+    await createTeam(ports, scope, {
+        ...createInput,
+        name: "Valkyria Main",
+        logoAssetId: null,
+        idempotencyKey: "create-main-0001",
+    })
+    assert.deepEqual(
+        await mergeTeam(ports, scope, "team-1", {
+            expectedRevision: 1,
+            targetTeamId: "team-2",
+            targetRevision: 9,
+        }),
+        { error: "revision_conflict" }
+    )
+    assert.deepEqual(
+        await mergeTeam(ports, scope, "team-1", {
+            expectedRevision: 1,
+            targetTeamId: "team-2",
+            targetRevision: 1,
+        }),
+        { ok: true, revision: 2, targetRevision: 2 }
+    )
+    const source = repository.teams.find((team) => team.id === "team-1")
+    assert.equal(source?.mergedIntoTeamId, "team-2")
+    assert.ok(source?.archivedAt)
+    assert.deepEqual(repository.repoints, [{ from: "team-1", to: "team-2" }])
+    assert.deepEqual(repository.changes.slice(-2), [
+        { id: "team-1", operation: "remove" },
+        { id: "team-2", operation: "upsert" },
+    ])
+    assert.equal(repository.audits.at(-1)?.operation, "merge")
+    assert.equal(repository.audits.at(-1)?.mergedIntoTeamId, "team-2")
+    // The merged name no longer blocks a new entry with that name.
+    assert.equal(
+        (
+            await createTeam(ports, scope, {
+                ...createInput,
+                idempotencyKey: "create-again-0001",
+            })
+        ).hasOwnProperty("error"),
+        false
     )
 })
