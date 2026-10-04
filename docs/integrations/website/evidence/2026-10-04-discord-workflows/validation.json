@@ -1,0 +1,27 @@
+{
+  "testedRevision": "20b52805b190e0152c6a91911eee88c014d6fc07",
+  "baseline": "0eec5d4b6dce1daf2f5f9aea3026136308b49196",
+  "tests": {
+    "command": "node --import tsx --test src/**/*.test.ts discord-bot/src/**/*.test.ts",
+    "logSha256": "55aac693aa3cafb10d5c21bf3a0d4b125e21a7cc1af6699025f0089adb38d89c",
+    "failed": 0,
+    "skipped": 0,
+    "passed": 931
+  },
+  "typecheck": {
+    "exitCode": 0,
+    "command": "tsc --noEmit"
+  },
+  "build": {
+    "command": "next build --webpack",
+    "credentials": "synthetic",
+    "exitCode": 0,
+    "logSha256": "3386dc9c9e673ff39646cce81c5e09c94857853be3bd568919dd99b0d34f32a6"
+  },
+  "convex": {
+    "codegenExit": 0,
+    "target": "isolated loopback only",
+    "deployExit": 0
+  },
+  "productionChanged": false
+}

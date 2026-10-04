@@ -1,8 +1,11 @@
 # Discord workflow and HLL live acceptance — 2026-10-04
 
 Baseline: `0eec5d4b6dce1daf2f5f9aea3026136308b49196`. This evidence belongs to
-the HLL live/private-report increment in PR #158. The final PR comment identifies
-the pushed revision and subsequent security-review status.
+the HLL live/private-report increment in PR #158. Tested and pushed implementation:
+`20b52805b190e0152c6a91911eee88c014d6fc07`. The permission-refresh repair at
+`ba7af186f98e569a16a68a6a3455afc99c31d22e` has separate automated evidence below;
+the real Discord screenshots remain proof of `20b5280`. See the [initial check
+results and log digests](validation.json) and [security follow-up](security-review.md).
 
 ## Automated checks
 
@@ -39,6 +42,8 @@ report/application text in this proof is explicitly synthetic.
 | HLL live panel | Real St. Marie Du Mont Warfare, 0/100 online, Allies/Axis 2:2, packaged map artwork | [HLL panel](hll-live-panel.jpg) |
 | HLL player button | Actual ephemeral reply, empty connected-player list, no Steam IDs | [Private details](hll-private-players.jpg) |
 | Report Player | Private selection/modal → one tracked private thread → staff/reporter members → `/close_ticket` → archived/locked, stored closed state and DM | [Form](report-player-form.jpg), [Private report](report-player-private.jpg), [Closed](report-player-closed.jpg) |
+| Final report layout | Repeated create/close on the pushed implementation; final card omits the internal connection ID | [Final private card](report-player-private-final.jpg), [Final closure](report-player-closed-final.jpg) |
+| Dashboard configuration | Saved the HLL panel with private players, public leaders and its private-report category; republishing retained the same message | [Settings and save confirmation](dashboard-report-settings.jpg) |
 | Restart/replay | New process republishes HLL into the same message ID; replay of the closed report keeps its thread and message count | [Replay record](report-replay-proof.json) |
 
 Report thread: `1556111041325178962`; HLL panel message:
@@ -49,8 +54,20 @@ players. Unit fixtures cover observed-player selection and populated leaders.
 The initial application closing screenshot exposed a missing-outcome bug when a
 reason was present. The source now includes both outcome and reason, verified by
 English/Czech renderer regression tests; that screenshot predates the repair.
-The report screenshot likewise predates removal of an unnecessary internal
-connection ID from the private card. Do not treat either as final-layout proof.
+The initial report screenshots predate removal of an unnecessary internal
+connection ID. The separate final-layout images above show the repaired card in
+thread `1556119223359512711`. Do not treat the initial images as final-layout proof.
+
+[Discord state readback](discord-proof.json) confirms all four synthetic support,
+report and application threads are private/non-invitable and closed/locked/archived,
+with recorded starters, closure cards and four closure DMs. The dedicated test bot
+was stopped afterward; backed-up local ticket/recruitment/admin/source settings
+were restored and the temporary HLL source/panel disabled. Closed local fixtures
+remain as evidence. Production data and roles were not changed.
+
+See the [configuration coverage inventory](../../configuration-coverage.md) for
+which features have UI controls and which still require backend/operator setup.
+The browser save above covers this panel, not every form in that inventory.
 
 ## Actual website API acceptance
 
@@ -86,6 +103,17 @@ remain unverified. The new report recovery tests cover injected ambiguous create
 the actual restart proof reuses existing bindings and does not induce transport
 loss on Discord.
 
-Security review of this increment is pending at the initial push. Its scope and
-result will be appended after review; prior PR security reviews do not certify
-these newly added files.
+## Security follow-up
+
+The incremental Codex Security scan reported one low-severity stale Discord
+permission finding. Commit `ba7af186f98e569a16a68a6a3455afc99c31d22e` refreshes
+guild ownership and role definitions before evaluating current staff membership.
+Its full suite passes **936/936**; the focused suite passes **9/9**. TypeScript
+and the clean synthetic-credential production build also pass. No Convex
+persistence changes were needed for this bot-only repair.
+
+The sealed scan still labels coverage **partial** because it retained a previous
+discovery checkpoint; the final inventory accounts for 71 unique changed paths.
+Read the [report, repair proof and exact coverage qualification](security-review.md)
+before treating it as a security sign-off. Older PR changes and hosted acceptance
+are outside this incremental review.

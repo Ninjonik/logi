@@ -1,0 +1,19 @@
+◇ injected env (1) from .env.local // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+✔ ticket closure uses current guild and role permissions: revoked-admin-role (1.5328ms)
+✔ ticket closure uses current guild and role permissions: former-owner (0.1965ms)
+✔ ticket closure uses current guild and role permissions: roles-unavailable (0.1764ms)
+✔ ticket closure uses current guild and role permissions: guild-unavailable (0.16ms)
+✔ ticket closure uses current guild and role permissions: current-admin (1.4973ms)
+✔ ticket closure rejects cached administrator when fresh membership is revoked (0.7405ms)
+✔ ticket closure rejects cached administrator when fresh membership is unavailable (0.1807ms)
+✔ link acknowledges privately before database and emoji reads (0.8124ms)
+✔ notice submit acknowledges before persistence and cache revalidation (0.8956ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1223.6635
