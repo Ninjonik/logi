@@ -320,7 +320,7 @@ function FixtureRow({
                 linking && adminAccent.surface
             )}
         >
-            <span className="min-w-0 flex-[1_1_12.5rem] text-sm font-semibold">
+            <span className="min-w-0 basis-full text-sm font-semibold sm:flex-[1_1_12.5rem]">
                 {title.score ? (
                     <>
                         {title.a}{" "}

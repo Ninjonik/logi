@@ -1403,6 +1403,15 @@ export const enMessages = {
         },
     },
     teamRequestAdmin: {
+        changeSummary: "Changes {fields}",
+        changeFields: {
+            logo: "logo",
+            name: "name",
+            shortCode: "short code",
+            links: "links",
+            description: "description",
+        },
+        listAnd: " and ",
         kindBadges: {
             create: "New",
             update: "Change",

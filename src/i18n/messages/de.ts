@@ -1450,6 +1450,15 @@ export const deMessages = {
         },
     },
     teamRequestAdmin: {
+        changeSummary: "Ändert {fields}",
+        changeFields: {
+            logo: "Logo",
+            name: "Namen",
+            shortCode: "Kürzel",
+            links: "Links",
+            description: "Beschreibung",
+        },
+        listAnd: " und ",
         kindBadges: {
             create: "Neu",
             update: "Änderung",

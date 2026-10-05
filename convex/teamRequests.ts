@@ -19,6 +19,7 @@ import {
     type TeamRequestPorts,
 } from "../src/application/teams/team-requests.use-case"
 import {
+    changedTeamFields,
     similarTeams,
     TEAM_USAGE_IDS_MAX,
     type TeamRequestContext,
@@ -237,7 +238,8 @@ async function similarActiveTeams(ctx: Db, row: Doc<"teamRequests">) {
 
 /**
  * Moderation context for listed requests (design I2): the requester's
- * Logi name and avatar, and active teams that look like the requested one.
+ * Logi name and avatar, active teams that look like the requested one and
+ * the fields a change request changes.
  * Global administrators only; unknown IDs are skipped.
  */
 export const queueContext = query({
@@ -259,6 +261,10 @@ export const queueContext = query({
                 .first()
             const name =
                 user?.nicknames?.[row.guildId]?.trim() || user?.name.trim()
+            const team =
+                row.kind === "update" && row.teamId
+                    ? await ctx.db.get(row.teamId)
+                    : null
             items.push({
                 requestId: String(row._id),
                 requester: name
@@ -268,6 +274,25 @@ export const queueContext = query({
                     row.kind === "create"
                         ? await similarActiveTeams(ctx, row)
                         : [],
+                changes: team
+                    ? changedTeamFields(
+                          {
+                              ...row.proposal,
+                              logoAssetId: row.proposal.logoAssetId
+                                  ? String(row.proposal.logoAssetId)
+                                  : null,
+                          },
+                          {
+                              name: team.name,
+                              shortCode: team.shortCode,
+                              description: team.description ?? null,
+                              links: team.links ?? [],
+                              logoAssetId: team.logoAssetId
+                                  ? String(team.logoAssetId)
+                                  : null,
+                          }
+                      )
+                    : [],
             })
         }
         return { items }

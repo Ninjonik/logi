@@ -456,6 +456,7 @@ export function TeamCatalogueAdmin({
                                     type="button"
                                     variant="ghost"
                                     size="sm"
+                                    className="text-foreground/80 text-[13px] font-medium"
                                     disabled={loadingMore}
                                     onClick={() => void loadMore()}
                                 >
@@ -590,8 +591,8 @@ function CatalogueRow({
             aria-current={current ? "true" : undefined}
             onClick={onSelect}
             className={cn(
-                "hover:bg-muted/50 focus-visible:ring-ring flex w-full items-center gap-3 px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset",
-                current && adminAccent.surface
+                "focus-visible:ring-ring flex w-full items-center gap-3 px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset",
+                current ? adminAccent.surface : "hover:bg-muted/50"
             )}
         >
             <TeamLogo

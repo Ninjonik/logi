@@ -655,9 +655,11 @@ export function TeamCatalogueDetail({
                             />
                         ) : null}
                     </div>
-                    <p className="text-muted-foreground text-xs">
-                        {labels.endHelp}
-                    </p>
+                    {actions.archive ? (
+                        <p className="text-muted-foreground text-xs">
+                            {labels.endHelp}
+                        </p>
+                    ) : null}
                 </div>
             ) : null}
         </section>

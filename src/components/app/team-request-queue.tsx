@@ -549,6 +549,18 @@ function RequestListItem({
         request.workspaceName ??
         fillTemplate(t.unknownWorkspace, { id: request.guildId })
     const similar = context?.similarTeams[0]
+    const changes = (context?.changes ?? []).map(
+        (field) => t.changeFields[field]
+    )
+    const changed =
+        changes.length === 0
+            ? null
+            : fillTemplate(t.changeSummary, {
+                  fields:
+                      changes.length === 1
+                          ? changes.join("")
+                          : `${changes.slice(0, -1).join(", ")}${t.listAnd}${changes.at(-1) ?? ""}`,
+              })
     return (
         <button
             type="button"
@@ -581,8 +593,10 @@ function RequestListItem({
                     {fillTemplate(t.similarExists, { name: similar.name })}
                 </span>
             ) : (
-                <span className="text-foreground/80 truncate text-[13px]">
-                    {fillTemplate(t.fromClan, { clan })}
+                <span className="text-foreground/80 line-clamp-2 text-[13px]">
+                    {[changed, fillTemplate(t.fromClan, { clan })]
+                        .filter(Boolean)
+                        .join(" · ")}
                 </span>
             )}
             <span
@@ -772,10 +786,10 @@ function RequestDetail({
                     )}
                 </div>
                 <p
-                    className="text-foreground/80 flex flex-wrap items-center gap-1.5 text-[13px] break-words"
+                    className="text-foreground/80 flex items-start gap-1.5 text-[13px] break-words"
                     suppressHydrationWarning
                 >
-                    <Avatar className="size-5">
+                    <Avatar className="mt-px size-5 shrink-0">
                         {context?.requester?.avatarUrl ? (
                             <AvatarImage
                                 src={context.requester.avatarUrl}
@@ -786,7 +800,7 @@ function RequestDetail({
                             {initials(requester) || "?"}
                         </AvatarFallback>
                     </Avatar>
-                    <span>
+                    <span className="min-w-0">
                         {fillTemplate(t.requestedBy, { requester, clan })} ·{" "}
                         {GAME_LABELS[request.gameId]} ·{" "}
                         <time

@@ -106,18 +106,57 @@ export function similarTeams<
         .slice(0, limit)
 }
 
+/** Presentation fields a change request can change, in the order they are compared. */
+export const TEAM_CHANGE_FIELDS = [
+    "logo",
+    "name",
+    "shortCode",
+    "links",
+    "description",
+] as const
+export type TeamChangeField = (typeof TEAM_CHANGE_FIELDS)[number]
+
+type Presentation = {
+    name: string
+    shortCode: string | null
+    description: string | null
+    links: readonly string[]
+    logoAssetId: string | null
+}
+
+/** The fields a proposal changes compared with the team as it is now. */
+export function changedTeamFields(
+    proposal: Presentation,
+    team: Presentation
+): TeamChangeField[] {
+    const differs: Record<TeamChangeField, boolean> = {
+        logo: proposal.logoAssetId !== team.logoAssetId,
+        name: proposal.name !== team.name,
+        shortCode: proposal.shortCode !== team.shortCode,
+        links:
+            proposal.links.length !== team.links.length ||
+            proposal.links.some((link, index) => link !== team.links[index]),
+        description: proposal.description !== team.description,
+    }
+    return TEAM_CHANGE_FIELDS.filter((field) => differs[field])
+}
+
 export const similarTeamSchema = z.strictObject({
     id: z.string(),
     name: z.string(),
     shortCode: z.string().nullable(),
 })
-/** Moderation context of one request: who asked and which active teams look the same. */
+/**
+ * Moderation context of one request: who asked, which active teams look the
+ * same (new teams) and which fields a change request changes.
+ */
 export const teamRequestContextSchema = z.strictObject({
     requestId: z.string(),
     requester: z
         .strictObject({ name: z.string(), avatarUrl: z.string().nullable() })
         .nullable(),
     similarTeams: z.array(similarTeamSchema).max(3),
+    changes: z.array(z.enum(TEAM_CHANGE_FIELDS)).max(TEAM_CHANGE_FIELDS.length),
 })
 export type TeamRequestContext = z.infer<typeof teamRequestContextSchema>
 export const teamRequestContextListSchema = z.strictObject({

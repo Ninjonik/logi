@@ -1,4 +1,5 @@
 import {
+    changedTeamFields,
     isSimilarTeam,
     similarTeams,
     teamCatalogueState,
@@ -100,5 +101,32 @@ test("usage rows are strict and bounded", () => {
     assert.equal(
         teamUsageSchema.safeParse({ ...usage, pendingRequests: -1 }).success,
         false
+    )
+})
+
+test("a change request names the presentation fields it changes, in table order", () => {
+    const team = {
+        name: "ROG",
+        shortCode: "ROG",
+        description: null,
+        links: [],
+        logoAssetId: "a1",
+    }
+    assert.deepEqual(changedTeamFields(team, team), [])
+    assert.deepEqual(
+        changedTeamFields(
+            {
+                ...team,
+                logoAssetId: "a2",
+                links: ["https://rog.example"],
+                description: "Since 2023.",
+            },
+            team
+        ),
+        ["logo", "links", "description"]
+    )
+    assert.deepEqual(
+        changedTeamFields({ ...team, name: "Rogue", shortCode: null }, team),
+        ["name", "shortCode"]
     )
 })

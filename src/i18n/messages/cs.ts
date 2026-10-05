@@ -1404,6 +1404,15 @@ export const csMessages = {
         },
     },
     teamRequestAdmin: {
+        changeSummary: "Mění {fields}",
+        changeFields: {
+            logo: "logo",
+            name: "název",
+            shortCode: "zkratku",
+            links: "odkazy",
+            description: "popis",
+        },
+        listAnd: " a ",
         kindBadges: {
             create: "Nový",
             update: "Změna",

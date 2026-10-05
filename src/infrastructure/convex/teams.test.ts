@@ -491,6 +491,7 @@ test("request context names the requester and active teams that look alike", asy
                 avatarUrl: "https://cdn.test/avatar.png",
             },
             similarTeams: [{ id: def.teamId, name: "DEF", shortCode: null }],
+            changes: [],
         },
         {
             requestId: other.requestId,
@@ -499,8 +500,29 @@ test("request context names the requester and active teams that look alike", asy
                 avatarUrl: "https://cdn.test/avatar.png",
             },
             similarTeams: [],
+            changes: [],
         },
     ])
+    // A change request names the fields it changes.
+    const change = await invoke(teamRequests.submit, ctx, {
+        ...workspace,
+        input: {
+            kind: "update",
+            teamId: def.teamId,
+            proposal: {
+                name: "DEF",
+                links: ["https://def.example"],
+                description: "Since 2023.",
+            },
+            idempotencyKey: "change-def-00001",
+        },
+    })
+    const changed = await invoke(teamRequests.queueContext, ctx, {
+        ...platform,
+        requestIds: [change.requestId],
+    })
+    assert.deepEqual(changed.items[0].changes, ["links", "description"])
+    assert.deepEqual(changed.items[0].similarTeams, [])
     // The requester's nickname in the requesting clan wins over the account name.
     ctx.db.tables.users[0].nicknames = { [guildId]: "Hráč 05" }
     const renamed = await invoke(teamRequests.queueContext, ctx, {

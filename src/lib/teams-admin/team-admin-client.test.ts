@@ -119,6 +119,7 @@ test("usage and request context reads are batched, parsed and skipped when empty
         requestId: "r1",
         requester: { name: "Hráč 05", avatarUrl: null },
         similarTeams: [{ id: "t2", name: "DEF", shortCode: null }],
+        changes: [],
     }
     const { fetcher, calls } = fakeFetch(({ url }) =>
         url.includes("usage=")
