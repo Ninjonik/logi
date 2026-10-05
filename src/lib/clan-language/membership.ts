@@ -109,6 +109,8 @@ export type MembershipMessages = {
         unableToVerifyPermissions: string
         noClosePermission: string
         closeDmClosed: string
+        /** Stands in for `{guildName}` when the server name cannot be read. */
+        serverFallback: string
         noCloseReasonProvided: string
         closeEmbedTitle: string
         closedByLabel: string
@@ -145,6 +147,8 @@ export type MembershipMessages = {
         unableToVerifyPermissions: string
         noClosePermission: string
         closeDmClosed: string
+        /** Stands in for `{guildName}` when the server name cannot be read. */
+        serverFallback: string
         noCloseReasonProvided: string
         closeEmbedTitle: string
         closedByLabel: string
@@ -383,6 +387,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
                 "You do not have permission to close this ticket.",
             closeDmClosed:
                 "Your ticket #{number} in **{guildName}** has been closed.",
+            serverFallback: "Discord",
             noCloseReasonProvided: "No close reason was provided.",
             closeEmbedTitle: "Ticket closed",
             closedByLabel: "Closed by",
@@ -434,6 +439,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
                 "You do not have permission to close this application.",
             closeDmClosed:
                 "Your clan application #{number} in **{guildName}** has been closed.",
+            serverFallback: "Discord",
             noCloseReasonProvided: "No close reason was provided.",
             closeEmbedTitle: "Application closed",
             closedByLabel: "Closed by",
@@ -507,6 +513,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
             noClosePermission: "Nemáte oprávnění tento ticket uzavřít.",
             closeDmClosed:
                 "Váš ticket #{number} v **{guildName}** byl uzavřen.",
+            serverFallback: "Discordu",
             noCloseReasonProvided: "Nebyl uveden důvod uzavření.",
             closeEmbedTitle: "Ticket uzavřen",
             closedByLabel: "Uzavřel",
@@ -554,6 +561,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
             noClosePermission: "Nemáte oprávnění tuto přihlášku uzavřít.",
             closeDmClosed:
                 "Vaše klanová přihláška #{number} v **{guildName}** byla uzavřena.",
+            serverFallback: "Discordu",
             noCloseReasonProvided: "Nebyl uveden důvod uzavření.",
             closeEmbedTitle: "Přihláška uzavřena",
             closedByLabel: "Uzavřel",
@@ -723,6 +731,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
                 "Sie haben keine Berechtigung, dieses Ticket zu schließen.",
             closeDmClosed:
                 "Ihr Ticket #{number} in **{guildName}** wurde geschlossen.",
+            serverFallback: "Discord",
             noCloseReasonProvided: "Es wurde kein Schließungsgrund angegeben.",
             closeEmbedTitle: "Ticket geschlossen",
             closedByLabel: "Geschlossen von",
@@ -774,6 +783,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
                 "Sie haben keine Berechtigung, diese Bewerbung zu schließen.",
             closeDmClosed:
                 "Ihre Clan-Bewerbung #{number} in **{guildName}** wurde geschlossen.",
+            serverFallback: "Discord",
             noCloseReasonProvided: "Es wurde kein Schließungsgrund angegeben.",
             closeEmbedTitle: "Bewerbung geschlossen",
             closedByLabel: "Geschlossen von",

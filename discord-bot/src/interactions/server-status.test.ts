@@ -66,6 +66,8 @@ function fixture(t: TestContext) {
         return ctx.db.tables.gameDataConnections.at(-1)!
     }
     const requests: unknown[] = []
+    /** The clan language per guild, as stored in the Discord settings. */
+    const languages = new Map<string, string>()
     let deferred = false
     t.mock.method(
         ConvexReactClient.prototype,
@@ -79,6 +81,14 @@ function fixture(t: TestContext) {
                 true,
                 "Acknowledge before waiting for the backend"
             )
+            if (
+                getFunctionName(reference) ===
+                "discordConfig:getConfigByDiscordGuildId"
+            )
+                return {
+                    defaultLanguage:
+                        languages.get(String(args.guildId)) ?? "en",
+                }
             requests.push(args)
             assert.equal(getFunctionName(reference), "gameData:listConnections")
             return invoke(listConnections, ctx, args)
@@ -87,16 +97,19 @@ function fixture(t: TestContext) {
     async function run(
         options: {
             locale?: string
+            language?: string
             game?: string
             guild?: string | null
             manager?: boolean
         } = {}
     ) {
+        const target = options.guild === undefined ? guildId : options.guild
+        if (target && options.language) languages.set(target, options.language)
         let response: Reply | undefined
         let flags: unknown
         await handlers().handleChatInputCommand({
             commandName: "server-status",
-            guildId: options.guild === undefined ? guildId : options.guild,
+            guildId: target,
             locale: options.locale ?? "en-US",
             memberPermissions: new PermissionsBitField(
                 options.manager === false
@@ -188,18 +201,36 @@ test("server-status distinguishes disabled collection, no observation and known 
     assert.match(embed!.fields![2].value, /Offline/)
 })
 
-for (const [locale, expected] of [
-    ["cs", /Žádný/],
-    ["en-US", /No/],
-    ["de", /Keine/],
+for (const [language, expected, guild] of [
+    ["cs", /Žádný/, "111111111111111201"],
+    ["en", /No/, "111111111111111202"],
+    ["de", /Keine/, "111111111111111203"],
 ] as const) {
-    test(`server-status explains missing configuration in ${locale}`, async (t) => {
+    test(`server-status explains missing configuration in the clan language ${language}`, async (t) => {
         const f = fixture(t)
-        const { json } = await f.run({ locale })
+        const { json } = await f.run({ language, guild })
         assert.match(json, expected)
         assert.doesNotMatch(json, /0 \/ 0|Offline/)
     })
 }
+
+test("server-status follows the clan language, not the member's Discord language (M3-02)", async (t) => {
+    const f = fixture(t)
+    const guild = "111111111111111204"
+    const forbidden = await f.run({
+        language: "cs",
+        locale: "de",
+        guild,
+        manager: false,
+    })
+    assert.equal(
+        forbidden.response.content,
+        "Příkaz použij na serveru, kde máš oprávnění Spravovat server."
+    )
+    const empty = await f.run({ locale: "en-US", guild })
+    assert.match(empty.json, /Žádný/)
+    assert.doesNotMatch(empty.json, /No stored|Keine/)
+})
 
 test("server-status retains public-directory attribution and bounds hostile display text", async (t) => {
     const f = fixture(t)
@@ -252,13 +283,17 @@ test("server-status stops waiting after ten seconds and ignores a later backend 
     t.mock.method(
         ConvexReactClient.prototype,
         "query",
-        () =>
-            new Promise((resolve) => {
-                release = resolve
-            })
+        (reference: Parameters<typeof getFunctionName>[0]) =>
+            getFunctionName(reference) ===
+            "discordConfig:getConfigByDiscordGuildId"
+                ? Promise.resolve({ defaultLanguage: "en" })
+                : new Promise((resolve) => {
+                      release = resolve
+                  })
     )
     const result = f.run()
-    await Promise.resolve()
+    // The language is read after the acknowledgement, then the status.
+    for (let tick = 0; tick < 50 && !release; tick++) await Promise.resolve()
     assert.ok(release)
     t.mock.timers.tick(10_001)
     await Promise.resolve()

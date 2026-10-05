@@ -11,6 +11,7 @@ import {
     gameDataSettingsSchema,
 } from "../../../src/domain/game-data/contracts"
 import { getCommandMessages } from "../../../src/lib/clan-language/commands"
+import { clanLanguageForGuild } from "../runtime/clan-language"
 import { convex, references } from "../convex"
 import { withTimeout } from "../utils"
 import { env } from "../environment"
@@ -110,26 +111,25 @@ export function buildServerStatusReply(
 export async function handleServerStatusCommand(
     interaction: ChatInputCommandInteraction
 ) {
-    const messages = getCommandMessages(interaction.locale).serverStatus
+    // Acknowledge privately first, then read the clan language: every reply
+    // is in the clan language, never the member's Discord language (M3-02).
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+    const language = interaction.guildId
+        ? await clanLanguageForGuild(interaction.guildId)
+        : undefined
+    const messages = getCommandMessages(language).serverStatus
     if (
         !interaction.guildId ||
         !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)
     ) {
-        await interaction.reply({
-            content: messages.forbidden,
-            flags: MessageFlags.Ephemeral,
-        })
+        await interaction.editReply({ content: messages.forbidden })
         return
     }
     const game = dataGameSchema.safeParse(interaction.options.getString("game"))
     if (!game.success) {
-        await interaction.reply({
-            content: messages.invalidGame,
-            flags: MessageFlags.Ephemeral,
-        })
+        await interaction.editReply({ content: messages.invalidGame })
         return
     }
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral })
     let settings: Settings
     try {
         settings = gameDataSettingsSchema.parse(
@@ -148,7 +148,7 @@ export async function handleServerStatusCommand(
     }
     await interaction.editReply(
         buildServerStatusReply(
-            interaction.locale,
+            language ?? "en",
             interaction.guildId,
             game.data,
             settings

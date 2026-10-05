@@ -13,7 +13,6 @@ import {
     TextDisplayBuilder,
     SeparatorBuilder,
     MediaGalleryBuilder,
-    GuildMember,
     MessageFlags,
     ModalBuilder,
     ModalSubmitInteraction,
@@ -111,10 +110,12 @@ import {
 } from "./message-builders"
 import { buildMembershipApplicationWelcomeContent } from "./interactions/membership-welcome"
 import { handleMatchRecapPreference } from "./interactions/match-recap-preference"
+import { checkCloseAuthority } from "./interactions/close-authority"
 import { statsController } from "./interactions/stats-live"
 import { reportClanDiscordError } from "./error-reporting"
 import { buildStatsCommand } from "./interactions/stats"
 import { handlePlayerReport } from "./player-reports"
+import { interactionLanguage } from "./ui/replies"
 import { logError, logInfo, logWarn } from "./log"
 import { convex, references } from "./convex"
 import { slugifyTicketLabel } from "./utils"
@@ -3850,6 +3851,18 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         })
     }
 
+    /** The server's name for DMs, read again when it is not cached. */
+    async function resolveGuildName(interaction: ChatInputCommandInteraction) {
+        if (interaction.guild?.name) return interaction.guild.name
+        if (!interaction.guildId) return undefined
+        try {
+            return (await interaction.client.guilds.fetch(interaction.guildId))
+                .name
+        } catch {
+            return undefined
+        }
+    }
+
     async function handleCloseTicketCommand(
         interaction: ChatInputCommandInteraction
     ) {
@@ -3859,16 +3872,15 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             !interaction.guildId
         ) {
             await interaction.reply({
-                content:
-                    getMembershipMessages("en").ticket.closeCommandThreadOnly,
+                content: getMembershipMessages(
+                    await interactionLanguage(interaction.guildId)
+                ).ticket.closeCommandThreadOnly,
                 flags: MessageFlags.Ephemeral,
             })
             return
         }
 
         await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-        const guildName = interaction.guild?.name ?? "this server"
 
         const context = (await convex.query(references.getTicketThreadContext, {
             secret: env.internalSecret,
@@ -3879,6 +3891,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             category: TicketCategory | null
         } | null
         const messages = getMembershipMessages(context?.config.defaultLanguage)
+        const guildName =
+            (await resolveGuildName(interaction)) ??
+            messages.ticket.serverFallback
 
         if (!context) {
             await interaction.editReply({ content: messages.ticket.notTracked })
@@ -3892,40 +3907,21 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        let member: GuildMember | null = null
-        try {
-            if (interaction.guild) {
-                // Member permissions also depend on guild ownership and role
-                // definitions, not only the member's assigned role IDs.
-                const guild = await interaction.guild.fetch()
-                await guild.roles.fetch()
-                member = await guild.members.fetch({
-                    user: interaction.user.id,
-                    force: true,
-                })
+        // Same fresh check as /close_application (M3-04).
+        const authority = await checkCloseAuthority(
+            interaction.guild,
+            interaction.user.id,
+            {
+                dashboardAdminRoleId: context.config.dashboardAdminRoleId,
+                supportRoleIds: context.category?.supportRoleIds,
             }
-        } catch {
-            // Withhold closure when current authority cannot be established.
-        }
-        if (!member) {
+        )
+        if (authority !== "allowed") {
             await interaction.editReply({
-                content: messages.ticket.unableToVerifyPermissions,
-            })
-            return
-        }
-
-        const roleIds = [...member.roles.cache.keys()]
-        const supportRoleIds = context.category?.supportRoleIds ?? []
-        const canClose =
-            member.permissions.has("Administrator") ||
-            (context.config.dashboardAdminRoleId
-                ? roleIds.includes(context.config.dashboardAdminRoleId)
-                : false) ||
-            supportRoleIds.some((roleId) => roleIds.includes(roleId))
-
-        if (!canClose) {
-            await interaction.editReply({
-                content: messages.ticket.noClosePermission,
+                content:
+                    authority === "denied"
+                        ? messages.ticket.noClosePermission
+                        : messages.ticket.unableToVerifyPermissions,
             })
             return
         }
@@ -4001,9 +3997,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             !interaction.guildId
         ) {
             await interaction.reply({
-                content:
-                    getMembershipMessages("en").membership
-                        .closeCommandThreadOnly,
+                content: getMembershipMessages(
+                    await interactionLanguage(interaction.guildId)
+                ).membership.closeCommandThreadOnly,
                 flags: MessageFlags.Ephemeral,
             })
             return
@@ -4012,8 +4008,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const guild = interaction.guild
         if (!guild) {
             await interaction.reply({
-                content:
-                    getMembershipMessages("en").membership.guildUnavailable,
+                content: getMembershipMessages(
+                    await interactionLanguage(interaction.guildId)
+                ).membership.guildUnavailable,
                 flags: MessageFlags.Ephemeral,
             })
             return
@@ -4054,28 +4051,21 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const member = await guild.members
-            .fetch({ user: interaction.user.id, force: true })
-            .catch(() => null)
-        if (!member) {
+        // Same fresh check as /close_ticket (M3-04).
+        const authority = await checkCloseAuthority(
+            guild,
+            interaction.user.id,
+            {
+                dashboardAdminRoleId: context.config.dashboardAdminRoleId,
+                supportRoleIds: context.category?.supportRoleIds,
+            }
+        )
+        if (authority !== "allowed") {
             await interaction.editReply({
-                content: messages.membership.unableToVerifyPermissions,
-            })
-            return
-        }
-
-        const roleIds = [...member.roles.cache.keys()]
-        const supportRoleIds = context.category?.supportRoleIds ?? []
-        const canClose =
-            member.permissions.has("Administrator") ||
-            (context.config.dashboardAdminRoleId
-                ? roleIds.includes(context.config.dashboardAdminRoleId)
-                : false) ||
-            supportRoleIds.some((roleId) => roleIds.includes(roleId))
-
-        if (!canClose) {
-            await interaction.editReply({
-                content: messages.membership.noClosePermission,
+                content:
+                    authority === "denied"
+                        ? messages.membership.noClosePermission
+                        : messages.membership.unableToVerifyPermissions,
             })
             return
         }
@@ -4163,7 +4153,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             const lines = [
                 formatTemplate(messages.membership.closeDmClosed, {
                     number: String(context.application.applicationNumber),
-                    guildName: interaction.guild?.name ?? "this server",
+                    guildName:
+                        (await resolveGuildName(interaction)) ??
+                        messages.membership.serverFallback,
                 }),
                 `${messages.membership.outcomeLabel}: ${outcomeLabel}`,
                 reason

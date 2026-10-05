@@ -13,8 +13,8 @@ import { getCommandMessages } from "../../../src/lib/clan-language/commands"
 import type { ClanLanguage } from "../../../src/lib/clan-language/core"
 import { buildDiscordMessageUrl } from "../../../src/lib/discord"
 
-import { reportClanDiscordError } from "../error-reporting"
 import type { EventInteractionContext } from "../types"
+import { reportToErrorsChannel } from "../ui/replies"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
@@ -194,7 +194,7 @@ async function sendPlatformIdDmWithCopy(
             error,
         })
         if (interaction.guildId) {
-            void reportClanDiscordError({
+            void reportToErrorsChannel({
                 client: interaction.client,
                 guildId: interaction.guildId,
                 error,
@@ -215,7 +215,7 @@ export async function cleanupThread(thread: ThreadChannel, reason: string) {
             reason,
             error,
         })
-        void reportClanDiscordError({
+        void reportToErrorsChannel({
             client: thread.client,
             guildId: thread.guildId,
             error,
