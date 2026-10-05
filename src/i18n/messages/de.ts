@@ -231,6 +231,16 @@ export const deMessages = {
     },
     gameData: {
         servers: {
+            emptyTitle: "Noch kein Spielserver verbunden",
+            emptyDescription:
+                "Verbinde einen CRCON- oder Warcon-Server, damit Logi Ergebnisse und Statistiken sammelt. Der API-Schlüssel wird verschlüsselt gespeichert und ist danach für niemanden mehr sichtbar.",
+            closeForm: "Schließen",
+            keyLabel: "API-Schlüssel",
+            lastTestLabel: "Letzter Test",
+            notTested: "Noch nicht getestet",
+            collectionLabel: "Sammeln",
+            moreActions: "Weitere Aktionen für {name}",
+            historyTitle: "Spielverlauf",
             title: "Spielserver",
             description:
                 "Verbinde die Hell-Let-Loose-CRCON- oder Wardogs-Warcon-Server, von denen dieser Arbeitsbereich Daten sammelt: die HTTPS-Adresse des Servers, seine ID beim Anbieter und den API-Schlüssel. Logi testet die Verbindung und speichert den Schlüssel verschlüsselt. Ein gespeicherter Schlüssel kann weder angezeigt noch exportiert werden; um ihn zu ändern, gib einen neuen ein.",

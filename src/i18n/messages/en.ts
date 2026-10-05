@@ -222,6 +222,16 @@ export const enMessages = {
     },
     gameData: {
         servers: {
+            emptyTitle: "No game server connected yet",
+            emptyDescription:
+                "Connect a CRCON or Warcon server so Logi can collect results and statistics. The API key is stored encrypted and nobody sees it again.",
+            closeForm: "Close",
+            keyLabel: "API key",
+            lastTestLabel: "Last test",
+            notTested: "Not tested yet",
+            collectionLabel: "Collection",
+            moreActions: "More actions for {name}",
+            historyTitle: "Game history",
             title: "Game servers",
             description:
                 "Connect the Hell Let Loose CRCON or Wardogs Warcon servers this workspace collects from: the server's HTTPS address, its ID at the provider and the API key. Logi tests the connection and stores the key encrypted. A saved key can't be shown or exported; to change it, enter a new one.",

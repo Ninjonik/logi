@@ -17,18 +17,28 @@ import {
     type GameId,
 } from "@/lib/game-data/game-server-form"
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { useCallback, useEffect, useId, useState } from "react"
+import { EmptyState } from "@/components/app/empty-state"
+import { Ellipsis, Plus, Server, X } from "lucide-react"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 type Props = {
     serverId: string
@@ -73,6 +83,7 @@ function Servers({ serverId, dictionary, onChanged }: Props) {
     const [loading, setLoading] = useState(true)
     const [pending, setPending] = useState(false)
     const [notice, setNotice] = useState<Notice | null>(null)
+    const [formOpen, setFormOpen] = useState(false)
 
     const load = useCallback(
         async (signal?: AbortSignal) => {
@@ -82,12 +93,17 @@ function Servers({ serverId, dictionary, onChanged }: Props) {
                 await response.json()
             )
             if (!signal?.aborted) setList(value)
+            return value
         },
         [url]
     )
     useEffect(() => {
         const controller = new AbortController()
         void load(controller.signal)
+            .then((value) => {
+                if (value && !controller.signal.aborted)
+                    setFormOpen(value.sources.length === 0)
+            })
             .catch(() => {
                 if (!controller.signal.aborted)
                     setNotice({ kind: "error", text: t.errors.unavailable })
@@ -134,10 +150,27 @@ function Servers({ serverId, dictionary, onChanged }: Props) {
         list?.sources.filter((source) => source.managed === "workspace")
             .length ?? 0
     return (
-        <section className="space-y-4 rounded-lg border p-4" aria-busy={busy}>
-            <div className="space-y-1">
-                <h3 className="font-medium">{t.title}</h3>
-                <p className="text-muted-foreground text-sm">{t.description}</p>
+        <section className="space-y-4" aria-busy={busy}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <p className="text-muted-foreground max-w-prose min-w-0 flex-1 text-sm">
+                    {t.description}
+                </p>
+                <Button
+                    type="button"
+                    variant={formOpen ? "ghost" : "default"}
+                    className="rounded-xl"
+                    aria-expanded={formOpen}
+                    aria-controls="game-server-add"
+                    disabled={!list}
+                    onClick={() => setFormOpen((open) => !open)}
+                >
+                    {formOpen ? (
+                        <X className="size-4" />
+                    ) : (
+                        <Plus className="size-4" />
+                    )}
+                    {formOpen ? t.closeForm : t.add}
+                </Button>
             </div>
             {list?.encryption === "unavailable" && (
                 <p
@@ -157,8 +190,12 @@ function Servers({ serverId, dictionary, onChanged }: Props) {
             >
                 {notice?.text}
             </p>
-            {list?.sources.length === 0 && (
-                <p className="text-muted-foreground text-sm">{t.none}</p>
+            {list?.sources.length === 0 && !formOpen && (
+                <EmptyState
+                    icon={Server}
+                    title={t.emptyTitle}
+                    description={t.emptyDescription}
+                />
             )}
             {list?.sources.map((source) => (
                 <ServerRow
@@ -172,8 +209,9 @@ function Servers({ serverId, dictionary, onChanged }: Props) {
                     report={report}
                 />
             ))}
-            {list && (
+            {list && formOpen && (
                 <AddServer
+                    onSaved={() => setFormOpen(false)}
                     copy={t}
                     disabled={busy || workspaceCount >= list.limit}
                     limit={list.limit}
@@ -187,6 +225,7 @@ function Servers({ serverId, dictionary, onChanged }: Props) {
 }
 
 function AddServer({
+    onSaved,
     copy: t,
     disabled,
     limit,
@@ -194,6 +233,7 @@ function AddServer({
     post,
     report,
 }: {
+    onSaved(): void
     copy: Copy
     disabled: boolean
     limit: number
@@ -223,7 +263,8 @@ function AddServer({
     const canSaveKey = encryption === "active" || requirement === "hidden"
     return (
         <form
-            className="space-y-3 border-t pt-4"
+            id="game-server-add"
+            className="space-y-3 rounded-xl border p-4"
             onSubmit={async (event) => {
                 event.preventDefault()
                 const result = await post({
@@ -239,6 +280,7 @@ function AddServer({
                         result,
                         result.enabled ? t.saved.created : t.saved.draft
                     )
+                    onSaved()
                 } else report(result, "")
             }}
         >
@@ -472,68 +514,101 @@ function ServerRow({
     const [key, setKey] = useState("")
     const [allowUnverified, setAllowUnverified] = useState(false)
     const [name, setName] = useState(source.displayName)
+    const [confirm, setConfirm] = useState<"removeKey" | "remove" | null>(null)
     const workspace = source.managed === "workspace"
     const requirement = keyField(source.provider)
     const enabled = source.collection?.enabled ?? false
     const base = { ref: source.ref, expectedRevision: source.revision }
     return (
         <article
-            className="space-y-2 rounded-md border p-3"
+            className="space-y-3 rounded-xl border p-4"
             aria-labelledby={`${id}-name`}
         >
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h4 id={`${id}-name`} className="text-sm font-medium break-all">
-                    {source.displayName}
-                </h4>
-                <span className="text-muted-foreground text-xs">
-                    {t.managed[source.managed]}
-                </span>
-            </div>
-            <p className="text-muted-foreground text-xs break-all">
-                {t.games[source.gameId]} · {t.providers[source.provider]} ·{" "}
-                {source.providerServerId} · {new URL(source.origin).host}
-            </p>
-            <ul className="space-y-0.5 text-xs">
-                <li>
-                    {t.key[source.key.state]}
-                    {source.key.changedAt &&
-                        ` · ${fill(t.keyChanged, { date: date(source.key.changedAt) })}`}
-                    {source.key.state === "set" &&
-                        ` · ${source.key.verified ? t.verified : t.unverified}`}
-                </li>
-                {source.key.failure && (
-                    <li className="text-destructive">
-                        {t.failure[source.key.failure]}
-                    </li>
-                )}
-                <li>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <span
+                        aria-hidden="true"
+                        className={cn(
+                            "mt-1.5 size-2.5 shrink-0 rounded-full",
+                            enabled
+                                ? "bg-emerald-500"
+                                : "bg-muted-foreground/40"
+                        )}
+                    />
+                    <div className="min-w-0">
+                        <h4 id={`${id}-name`} className="font-medium break-all">
+                            {source.displayName}
+                        </h4>
+                        <p className="text-muted-foreground text-xs break-all">
+                            {t.games[source.gameId]} ·{" "}
+                            {t.providers[source.provider]} ·{" "}
+                            {new URL(source.origin).host} ·{" "}
+                            {source.providerServerId}
+                        </p>
+                    </div>
+                </div>
+                <span
+                    className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
+                        enabled
+                            ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300"
+                            : "bg-muted text-muted-foreground"
+                    )}
+                >
                     {source.collection
                         ? source.collection.enabled
                             ? t.collection.enabled
                             : t.collection.disabled
                         : t.collection.none}
-                    {" · "}
-                    {source.collection?.lastSuccessAt
-                        ? fill(t.collection.lastSuccess, {
-                              date: date(source.collection.lastSuccessAt),
-                          })
-                        : t.collection.never}
-                </li>
-                {source.collection?.errorCategory && (
-                    <li className="text-destructive">
-                        {errors[source.collection.errorCategory]}
-                    </li>
-                )}
-                {source.lastTest && (
-                    <li>
-                        {fill(t.lastTest, {
-                            date: date(source.lastTest.at),
-                            outcome: t.outcomes[source.lastTest.outcome],
-                        })}
-                    </li>
-                )}
-            </ul>
-            <div className="flex flex-wrap gap-2">
+                </span>
+            </div>
+            <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                <div className="min-w-0">
+                    <dt className="text-muted-foreground text-xs">
+                        {t.keyLabel}
+                    </dt>
+                    <dd>
+                        {t.key[source.key.state]}
+                        {source.key.changedAt &&
+                            ` · ${fill(t.keyChanged, { date: date(source.key.changedAt) })}`}
+                        {source.key.state === "set" &&
+                            ` · ${source.key.verified ? t.verified : t.unverified}`}
+                    </dd>
+                </div>
+                <div className="min-w-0">
+                    <dt className="text-muted-foreground text-xs">
+                        {t.lastTestLabel}
+                    </dt>
+                    <dd>
+                        {source.lastTest
+                            ? `${t.outcomes[source.lastTest.outcome]} · ${date(source.lastTest.at)}`
+                            : t.notTested}
+                    </dd>
+                </div>
+                <div className="min-w-0">
+                    <dt className="text-muted-foreground text-xs">
+                        {t.collectionLabel}
+                    </dt>
+                    <dd>
+                        {source.collection?.lastSuccessAt
+                            ? fill(t.collection.lastSuccess, {
+                                  date: date(source.collection.lastSuccessAt),
+                              })
+                            : t.collection.never}
+                    </dd>
+                </div>
+            </dl>
+            {source.key.failure && (
+                <p className="text-destructive text-sm">
+                    {t.failure[source.key.failure]}
+                </p>
+            )}
+            {source.collection?.errorCategory && (
+                <p className="text-destructive text-sm">
+                    {errors[source.collection.errorCategory]}
+                </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
                 <Button
                     size="sm"
                     variant="outline"
@@ -551,6 +626,17 @@ function ServerRow({
                 >
                     {t.actions.testStored}
                 </Button>
+                {requirement !== "hidden" && encryption === "active" && (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={disabled}
+                        aria-expanded={mode === "key"}
+                        onClick={() => setMode(mode === "key" ? "view" : "key")}
+                    >
+                        {t.actions.changeKey}
+                    </Button>
+                )}
                 <Button
                     size="sm"
                     variant="outline"
@@ -569,77 +655,75 @@ function ServerRow({
                 >
                     {enabled ? t.actions.disable : t.actions.enable}
                 </Button>
-                {requirement !== "hidden" && encryption === "active" && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={disabled}
-                        aria-expanded={mode === "key"}
-                        onClick={() => setMode(mode === "key" ? "view" : "key")}
-                    >
-                        {t.actions.changeKey}
-                    </Button>
-                )}
                 {workspace && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={disabled}
-                        aria-expanded={mode === "rename"}
-                        onClick={() =>
-                            setMode(mode === "rename" ? "view" : "rename")
-                        }
-                    >
-                        {t.actions.rename}
-                    </Button>
+                    <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8"
+                                disabled={disabled}
+                                aria-label={fill(t.moreActions, {
+                                    name: source.displayName,
+                                })}
+                            >
+                                <Ellipsis className="size-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                                onSelect={() => setMode("rename")}
+                            >
+                                {t.actions.rename}
+                            </DropdownMenuItem>
+                            {source.key.state === "set" && (
+                                <DropdownMenuItem
+                                    onSelect={() => setConfirm("removeKey")}
+                                >
+                                    {t.actions.removeKey}
+                                </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => setConfirm("remove")}
+                            >
+                                {t.actions.remove}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )}
-                {workspace && source.key.state === "set" && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={disabled}
-                        onClick={async () => {
-                            if (
-                                !window.confirm(
-                                    fill(t.confirm.removeKey, {
-                                        name: source.displayName,
-                                    })
-                                )
-                            )
-                                return
-                            report(
-                                await post({ action: "remove_key", ...base }),
-                                t.saved.removedKey
-                            )
-                        }}
-                    >
-                        {t.actions.removeKey}
-                    </Button>
-                )}
-                {workspace && (
-                    <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={disabled}
-                        onClick={async () => {
-                            if (
-                                !window.confirm(
-                                    fill(t.confirm.remove, {
-                                        name: source.displayName,
-                                    })
-                                )
-                            )
-                                return
-                            report(
-                                await post({ action: "remove", ...base }),
-                                t.saved.removed
-                            )
-                        }}
-                    >
-                        {t.actions.remove}
-                    </Button>
-                )}
+                <span className="text-muted-foreground ml-auto text-xs">
+                    {t.managed[source.managed]}
+                </span>
             </div>
+            <ConfirmActionDialog
+                open={confirm === "removeKey"}
+                onOpenChange={(open) => setConfirm(open ? "removeKey" : null)}
+                title={fill(t.confirm.removeKeyTitle, {
+                    name: source.displayName,
+                })}
+                description={t.confirm.removeKey}
+                confirmLabel={t.actions.removeKey}
+                cancelLabel={t.confirm.cancel}
+                onConfirm={async () => {
+                    const result = await post({ action: "remove_key", ...base })
+                    report(result, t.saved.removedKey)
+                }}
+            />
+            <ConfirmActionDialog
+                open={confirm === "remove"}
+                onOpenChange={(open) => setConfirm(open ? "remove" : null)}
+                title={fill(t.confirm.removeTitle, {
+                    name: source.displayName,
+                })}
+                description={t.confirm.remove}
+                confirmLabel={t.actions.remove}
+                cancelLabel={t.confirm.cancel}
+                onConfirm={async () => {
+                    const result = await post({ action: "remove", ...base })
+                    report(result, t.saved.removed)
+                }}
+            />
             {mode === "key" && (
                 <form
                     className="grid gap-2 md:grid-cols-[1fr_auto]"

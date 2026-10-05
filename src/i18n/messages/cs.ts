@@ -223,6 +223,16 @@ export const csMessages = {
     },
     gameData: {
         servers: {
+            emptyTitle: "Zatím žádný připojený herní server",
+            emptyDescription:
+                "Připojte server CRCON nebo Warcon a Logi začne sbírat výsledky a statistiky. API klíč se uloží šifrovaně a už ho nikdo neuvidí.",
+            closeForm: "Zavřít",
+            keyLabel: "API klíč",
+            lastTestLabel: "Poslední test",
+            notTested: "Zatím netestováno",
+            collectionLabel: "Sběr dat",
+            moreActions: "Další akce pro {name}",
+            historyTitle: "Historie her",
             title: "Herní servery",
             description:
                 "Připojte servery Hell Let Loose CRCON nebo Wardogs Warcon, ze kterých tento prostor sbírá data: HTTPS adresu serveru, jeho ID u poskytovatele a API klíč. Logi ověří připojení a klíč uloží šifrovaně. Uložený klíč nejde zobrazit ani exportovat; chcete-li ho změnit, zadejte nový.",
