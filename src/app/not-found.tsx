@@ -1,18 +1,18 @@
-import { getLocale } from "next-intl/server"
-
 import { PublicNotFoundPage } from "@/components/app/not-found-page"
 import { RootDocument } from "@/components/providers/root-document"
-import { defaultLocale, isLocale } from "@/i18n/config"
+import { defaultLocale } from "@/i18n/config"
 
 /**
- * 404 for addresses no route matches. It renders above `[locale]/layout.tsx`,
- * so it brings its own document, in the language the i18n proxy resolved.
+ * 404 for addresses no route matches. It sits above `[locale]/layout.tsx`,
+ * so it brings its own document, and it is static and in the default
+ * language: reading the request here (for its locale) would make every page
+ * dynamic. A localized page that calls `notFound()` gets the localized 404
+ * (`[locale]/not-found.tsx`) instead.
  */
-export default async function NotFound() {
-    const locale = await getLocale().catch(() => defaultLocale)
+export default function NotFound() {
     return (
-        <RootDocument lang={isLocale(locale) ? locale : defaultLocale}>
-            <PublicNotFoundPage />
+        <RootDocument lang={defaultLocale}>
+            <PublicNotFoundPage locale={defaultLocale} />
         </RootDocument>
     )
 }
