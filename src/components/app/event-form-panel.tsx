@@ -130,6 +130,26 @@ function normalizeMatchValue(value?: string) {
     return value?.trim().toLowerCase() ?? ""
 }
 
+type PresetMatchField = "map" | "time" | "mode" | "side" | "cap"
+
+function presetMatchFieldLabel(
+    field: PresetMatchField,
+    dictionary: Dictionary
+) {
+    switch (field) {
+        case "map":
+            return dictionary.event.fields.map
+        case "time":
+            return dictionary.event.fields.mapVariant
+        case "mode":
+            return dictionary.event.fields.mapMode
+        case "side":
+            return dictionary.event.fields.side
+        case "cap":
+            return dictionary.event.fields.capMode
+    }
+}
+
 type TopicPresetMatchContext = {
     mapCode?: string
     mapId?: string
@@ -186,12 +206,12 @@ function getPresetMatch(
         normalizeMatchValue(context.cap) === normalizeMatchValue(preset.cap)
 
     const matchedFields = [
-        exactMapCodeMatch || mapIdMatch ? "Map" : null,
-        timeMatch ? "Time" : null,
-        modeMatch ? "Mode" : null,
-        sideMatch ? "Side" : null,
-        capMatch ? "Point" : null,
-    ].filter((value): value is string => Boolean(value))
+        exactMapCodeMatch || mapIdMatch ? "map" : null,
+        timeMatch ? "time" : null,
+        modeMatch ? "mode" : null,
+        sideMatch ? "side" : null,
+        capMatch ? "cap" : null,
+    ].filter((value): value is PresetMatchField => Boolean(value))
 
     const score =
         (exactMapCodeMatch ? 200 : 0) +
@@ -214,7 +234,7 @@ function getPresetMatch(
         isFullMatch:
             comparableFieldCount > 0 &&
             matchedFields.length === comparableFieldCount,
-        label: matchedFields.join(" + "),
+        matchedFields,
         metaLabel: formatHllPresetLabel(preset.map, gameId) ?? preset.map ?? "",
     }
 }
@@ -362,6 +382,18 @@ function TopicPresetSelect({
                                             {match.metaLabel ? (
                                                 <div className="text-muted-foreground truncate text-xs">
                                                     {match.metaLabel}
+                                                </div>
+                                            ) : null}
+                                            {match.matchedFields.length ? (
+                                                <div className="text-muted-foreground truncate text-xs">
+                                                    {match.matchedFields
+                                                        .map((field) =>
+                                                            presetMatchFieldLabel(
+                                                                field,
+                                                                dictionary
+                                                            )
+                                                        )
+                                                        .join(" + ")}
                                                 </div>
                                             ) : null}
                                         </div>
@@ -768,7 +800,8 @@ export function EventFormPanel({
                 .sort(
                     (left, right) =>
                         right.match.score - left.match.score ||
-                        right.match.label.length - left.match.label.length ||
+                        right.match.matchedFields.length -
+                            left.match.matchedFields.length ||
                         left.preset.name.localeCompare(right.preset.name)
                 ),
         [presetMatchContext, topicPresets]
@@ -1554,8 +1587,11 @@ export function EventFormPanel({
                                         </p>
                                     ) : null}
                                 </div>
-                                {createMode && canEdit ? (
-                                    <div className="border-border/60 space-y-4 rounded-2xl border p-4 md:col-span-2">
+                                {canEdit ? (
+                                    <div
+                                        id="recurrence"
+                                        className="border-border/60 scroll-mt-4 space-y-4 rounded-2xl border p-4 md:col-span-2"
+                                    >
                                         <div className="flex items-center gap-3 md:flex-row">
                                             <Checkbox
                                                 id="recurring-match"
@@ -1882,7 +1918,11 @@ export function EventFormPanel({
                                             </div>
                                         ) : null}
                                         <p className="text-muted-foreground text-sm">
-                                            {dictionary.event.recurrenceHelp}
+                                            {createMode
+                                                ? dictionary.event
+                                                      .recurrenceHelp
+                                                : dictionary.event
+                                                      .recurrenceEditHelp}
                                         </p>
                                     </div>
                                 ) : null}
@@ -3334,7 +3374,11 @@ export function EventFormPanel({
                                     form.formState.isSubmitting
                                 }
                             >
-                                {dictionary.common.save}
+                                {createMode
+                                    ? eventKind === "training"
+                                        ? dictionary.event.createTrainingAction
+                                        : dictionary.event.createMatchAction
+                                    : dictionary.common.save}
                             </Button>
                             {!createMode &&
                             event.kind === "match" &&

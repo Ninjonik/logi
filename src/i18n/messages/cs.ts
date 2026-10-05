@@ -2561,6 +2561,75 @@ export const csMessages = {
         updateDmDeliveryFailed:
             "Soupiska byla uložena, ale jednomu nebo více hráčům se nepodařilo doručit DM.",
     },
+    matchList: {
+        title: "Zápasy a tréninky",
+        description:
+            "Nejbližší nahoře. U každé akce je vidět, v jaké fázi je a co chybí.",
+        recurring: "Opakované",
+        newMatch: "Nový zápas",
+        editTemplates: "Upravit šablony",
+        emptyTitle: "Zatím žádný zápas",
+        emptyAdmin:
+            "Založte první zápas. Šablona předvyplní časy, přihlášky i zprávu v Discordu.",
+        emptyMember: "Klan zatím nenaplánoval žádný zápas ani trénink.",
+        emptyTrainingsTitle: "Zatím žádný trénink",
+        emptyTrainingsAdmin:
+            "Založte trénink. Členové se přihlásí v Discordu a po tréninku zapíšete, kdo prošel.",
+        emptyTrainingsMember: "Klan zatím nenaplánoval žádný trénink.",
+        unknownChannel: "Kanál nenalezen",
+        tabsLabel: "Zobrazit",
+        tabs: {
+            upcoming: "Nadcházející",
+            played: "Odehrané",
+        },
+        filters: {
+            matches: "Zápasy",
+            trainings: "Tréninky",
+            game: "Hra",
+            allGames: "Všechny hry",
+            searchLabel: "Hledat zápas",
+            searchPlaceholder: "Soupeř, mapa…",
+        },
+        weeks: {
+            thisWeek: "Tento týden",
+            nextWeek: "Příští týden",
+            lastWeek: "Minulý týden",
+            weekOf: "Týden od {date}",
+        },
+        recentlyPlayed: "Nedávno odehrané",
+        noUpcoming: "Filtrům neodpovídá žádná nadcházející akce.",
+        noPlayed: "Filtrům neodpovídá žádná odehraná akce.",
+        signedUp: "{count} přihlášeno",
+        trainingOutcome: "{passed} prošlo, {failed} neprošlo",
+        phase: {
+            registration: "Přihlášky do {when}",
+            registrationClosed: "Přihlášky uzavřeny",
+            rosterMissing: "Soupiska chybí",
+            rosterDraft: "Soupiska · koncept",
+            rosterPublished: "Soupiska zveřejněna",
+            unconfirmed: "{count} bez potvrzení",
+            awaitingResult: "Výsledek chybí",
+            concluded: "Uzavřeno",
+        },
+        queue: {
+            title: "Čeká na vás",
+            publishRoster: "Zveřejnit soupisku",
+            confirmAttendance: "Zkontrolovat docházku",
+            openSlots: "volná místa: {count}",
+            unconfirmed: "hráči bez potvrzení: {count}",
+        },
+        recurrence: {
+            weekly: "Každý týden: {days}",
+            everyWeeks: "Každý {count}. týden: {days}",
+            monthlyDate: "Měsíčně {day}. den",
+            monthlyWeekday: "Měsíčně, {nth}. {day}",
+        },
+        recurringStopHint:
+            "Sérii změníte nebo ukončíte v jejím zápase v nastavení opakování.",
+        editSeries: "Upravit sérii",
+        recurringEmptyAdmin:
+            "Při zakládání zápasu zapněte opakování a vznikne série.",
+    },
     event: {
         signupStatusSignedUpAs: "Jste přihlášeni jako: {type}.",
         signupStatusGeneral: "obecný účastník",
@@ -2789,6 +2858,10 @@ export const csMessages = {
             "Spáruje importované HLL hráče s databází, doplní chybějící platform ID a podle potřeby vytvoří nové hráče.",
         importEventPlayersHint:
             "Jména hráčů se porovnávají po odebrání clan tagu, převodu na malá písmena a odstranění speciálních znaků.",
+        createMatchAction: "Vytvořit zápas",
+        createTrainingAction: "Vytvořit trénink",
+        recurrenceEditHelp:
+            "Vypnutím opakování sérii ukončíte. Už založené zápasy zůstanou.",
     },
     presets: {
         topicTitle: "Šablony témat",
@@ -2849,6 +2922,28 @@ export const csMessages = {
             topics: "Témata",
             groups: "Skupiny",
             roleSlots: "Sloty rolí",
+            squads: "Čety",
+        },
+        emptySquadTitle: "Zatím žádná předvolba čet",
+        emptySquadAdmin:
+            "Předvolba čet je výchozí podoba soupisky: čety, role a místa. Vytvořte ji a nové soupisky ji zkopírují.",
+        emptyTopicTitle: "Zatím žádná předvolba témat",
+        emptyTopicAdmin:
+            "Předvolba témat obsahuje témata briefingu, která zápas zkopíruje do svého fóra v Discordu.",
+        emptyMember: "Správci klanu zatím nevytvořili žádnou předvolbu.",
+        delete: {
+            action: "Smazat předvolbu",
+            title: "Smazat předvolbu {name}?",
+            squadConsequence:
+                "Existující soupisky si své čety ponechají. Nové soupisky už z této předvolby nepůjde založit.",
+            topicConsequence:
+                "Uzavřené zápasy si už zveřejněná témata ponechají. Smazání zablokuje zápas, který ještě není uzavřený a předvolbu používá.",
+            confirm: "Smazat",
+            done: "Předvolba smazána.",
+            inUse: "Neuzavřené zápasy, které předvolbu používají: {count}. Nejdřív u nich vyberte jinou.",
+            forbidden:
+                "Předvolby mohou mazat jen správci klanu. Pokud vám vypršelo přihlášení, přihlaste se znovu.",
+            failed: "Předvolbu se nepodařilo smazat.",
         },
     },
     groups: {

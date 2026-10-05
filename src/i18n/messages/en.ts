@@ -2566,6 +2566,75 @@ export const enMessages = {
         updateDmDeliveryFailed:
             "Roster saved, but one or more player DMs could not be delivered.",
     },
+    matchList: {
+        title: "Matches and trainings",
+        description:
+            "Soonest first. Each event shows which phase it is in and what is missing.",
+        recurring: "Recurring",
+        newMatch: "New match",
+        editTemplates: "Edit templates",
+        emptyTitle: "No matches yet",
+        emptyAdmin:
+            "Create the first match. A template pre-fills the times, sign-ups and the Discord message.",
+        emptyMember: "Your clan has not planned any matches or trainings yet.",
+        emptyTrainingsTitle: "No trainings yet",
+        emptyTrainingsAdmin:
+            "Create a training. Members sign up in Discord and afterwards you record who passed.",
+        emptyTrainingsMember: "Your clan has not planned any trainings yet.",
+        unknownChannel: "Channel not found",
+        tabsLabel: "Show",
+        tabs: {
+            upcoming: "Upcoming",
+            played: "Played",
+        },
+        filters: {
+            matches: "Matches",
+            trainings: "Trainings",
+            game: "Game",
+            allGames: "All games",
+            searchLabel: "Search matches",
+            searchPlaceholder: "Opponent, map…",
+        },
+        weeks: {
+            thisWeek: "This week",
+            nextWeek: "Next week",
+            lastWeek: "Last week",
+            weekOf: "Week of {date}",
+        },
+        recentlyPlayed: "Recently played",
+        noUpcoming: "No upcoming events match the filters.",
+        noPlayed: "No played events match the filters.",
+        signedUp: "{count} signed up",
+        trainingOutcome: "{passed} passed, {failed} failed",
+        phase: {
+            registration: "Sign-ups until {when}",
+            registrationClosed: "Sign-ups closed",
+            rosterMissing: "Roster missing",
+            rosterDraft: "Roster · draft",
+            rosterPublished: "Roster published",
+            unconfirmed: "{count} not confirmed",
+            awaitingResult: "No result yet",
+            concluded: "Closed",
+        },
+        queue: {
+            title: "Waiting for you",
+            publishRoster: "Publish the roster",
+            confirmAttendance: "Check attendance",
+            openSlots: "{count} open slots",
+            unconfirmed: "{count} players without confirmation",
+        },
+        recurrence: {
+            weekly: "Every week: {days}",
+            everyWeeks: "Every {count} weeks: {days}",
+            monthlyDate: "Monthly on day {day}",
+            monthlyWeekday: "Monthly, {nth}. {day}",
+        },
+        recurringStopHint:
+            "To change or stop a series, open its match and change the repeat settings.",
+        editSeries: "Edit series",
+        recurringEmptyAdmin:
+            "Turn on repeating when you create a match to start a series.",
+    },
     event: {
         signupStatusSignedUpAs: "You are signed up as: {type}.",
         signupStatusGeneral: "general attendee",
@@ -2792,6 +2861,10 @@ export const enMessages = {
         discordPreview: "Discord preview",
         previewUntitled: "Untitled event",
         previewNoDescription: "Your event description will appear here.",
+        createMatchAction: "Create match",
+        createTrainingAction: "Create training",
+        recurrenceEditHelp:
+            "Turn repeating off to stop the series. Matches that already exist stay.",
     },
     presets: {
         topicTitle: "Topic presets",
@@ -2850,6 +2923,28 @@ export const enMessages = {
             topics: "Topics",
             groups: "Groups",
             roleSlots: "Role slots",
+            squads: "Squads",
+        },
+        emptySquadTitle: "No squad presets yet",
+        emptySquadAdmin:
+            "A squad preset is the starting shape of a roster: squads, roles and slots. Create one and new rosters copy it.",
+        emptyTopicTitle: "No topic presets yet",
+        emptyTopicAdmin:
+            "A topic preset holds briefing topics that a match copies into its Discord forum.",
+        emptyMember: "Your clan admins have not created any presets yet.",
+        delete: {
+            action: "Delete preset",
+            title: "Delete the preset {name}?",
+            squadConsequence:
+                "Existing rosters keep their squads. New rosters can no longer start from this preset.",
+            topicConsequence:
+                "Concluded matches keep the topics they already posted. A match that is not concluded and uses this preset blocks the deletion.",
+            confirm: "Delete",
+            done: "Preset deleted.",
+            inUse: "Open matches still using this preset: {count}. Choose another preset there first.",
+            forbidden:
+                "Only clan admins can delete presets. Sign in again if your session has expired.",
+            failed: "The preset could not be deleted.",
         },
     },
     groups: {

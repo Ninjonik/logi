@@ -2644,6 +2644,75 @@ export const deMessages = {
         updateDmDeliveryFailed:
             "Roster gespeichert, aber eine oder mehrere Spieler-DMs konnten nicht zugestellt werden.",
     },
+    matchList: {
+        title: "Matches und Trainings",
+        description:
+            "Die nächsten zuerst. Bei jedem Event siehst du, in welcher Phase es ist und was fehlt.",
+        recurring: "Wiederkehrend",
+        newMatch: "Neues Match",
+        editTemplates: "Vorlagen bearbeiten",
+        emptyTitle: "Noch keine Matches",
+        emptyAdmin:
+            "Lege das erste Match an. Eine Vorlage füllt Zeiten, Anmeldungen und die Discord-Nachricht vor.",
+        emptyMember: "Dein Clan hat noch keine Matches oder Trainings geplant.",
+        emptyTrainingsTitle: "Noch keine Trainings",
+        emptyTrainingsAdmin:
+            "Lege ein Training an. Mitglieder melden sich in Discord an, und danach trägst du ein, wer bestanden hat.",
+        emptyTrainingsMember: "Dein Clan hat noch keine Trainings geplant.",
+        unknownChannel: "Kanal nicht gefunden",
+        tabsLabel: "Anzeigen",
+        tabs: {
+            upcoming: "Anstehend",
+            played: "Gespielt",
+        },
+        filters: {
+            matches: "Matches",
+            trainings: "Trainings",
+            game: "Spiel",
+            allGames: "Alle Spiele",
+            searchLabel: "Matches durchsuchen",
+            searchPlaceholder: "Gegner, Karte …",
+        },
+        weeks: {
+            thisWeek: "Diese Woche",
+            nextWeek: "Nächste Woche",
+            lastWeek: "Letzte Woche",
+            weekOf: "Woche ab {date}",
+        },
+        recentlyPlayed: "Kürzlich gespielt",
+        noUpcoming: "Keine anstehenden Events passen zu den Filtern.",
+        noPlayed: "Keine gespielten Events passen zu den Filtern.",
+        signedUp: "{count} angemeldet",
+        trainingOutcome: "{passed} bestanden, {failed} nicht bestanden",
+        phase: {
+            registration: "Anmeldung bis {when}",
+            registrationClosed: "Anmeldung geschlossen",
+            rosterMissing: "Aufstellung fehlt",
+            rosterDraft: "Aufstellung · Entwurf",
+            rosterPublished: "Aufstellung veröffentlicht",
+            unconfirmed: "{count} nicht bestätigt",
+            awaitingResult: "Ergebnis fehlt",
+            concluded: "Abgeschlossen",
+        },
+        queue: {
+            title: "Wartet auf dich",
+            publishRoster: "Aufstellung veröffentlichen",
+            confirmAttendance: "Anwesenheit prüfen",
+            openSlots: "freie Plätze: {count}",
+            unconfirmed: "Spieler ohne Bestätigung: {count}",
+        },
+        recurrence: {
+            weekly: "Jede Woche: {days}",
+            everyWeeks: "Alle {count} Wochen: {days}",
+            monthlyDate: "Monatlich am {day}.",
+            monthlyWeekday: "Monatlich, {nth}. {day}",
+        },
+        recurringStopHint:
+            "Eine Serie änderst oder beendest du in ihrem Match bei den Wiederholungseinstellungen.",
+        editSeries: "Serie bearbeiten",
+        recurringEmptyAdmin:
+            "Schalte beim Anlegen eines Matches die Wiederholung ein, um eine Serie zu starten.",
+    },
     event: {
         signupStatusSignedUpAs: "Du bist angemeldet als: {type}.",
         signupStatusGeneral: "allgemeiner Teilnehmer",
@@ -2877,6 +2946,10 @@ export const deMessages = {
         discordPreview: "Discord-Vorschau",
         previewUntitled: "Event ohne Titel",
         previewNoDescription: "Deine Event-Beschreibung erscheint hier.",
+        createMatchAction: "Match erstellen",
+        createTrainingAction: "Training erstellen",
+        recurrenceEditHelp:
+            "Schalte die Wiederholung aus, um die Serie zu beenden. Bereits angelegte Matches bleiben.",
     },
     presets: {
         topicTitle: "Themen-Presets",
@@ -2937,6 +3010,29 @@ export const deMessages = {
             topics: "Themen",
             groups: "Gruppen",
             roleSlots: "Rollen-Slots",
+            squads: "Squads",
+        },
+        emptySquadTitle: "Noch keine Squad-Presets",
+        emptySquadAdmin:
+            "Ein Squad-Preset ist die Ausgangsform einer Aufstellung: Squads, Rollen und Plätze. Lege eines an, und neue Aufstellungen übernehmen es.",
+        emptyTopicTitle: "Noch keine Themen-Presets",
+        emptyTopicAdmin:
+            "Ein Themen-Preset enthält Briefing-Themen, die ein Match in sein Discord-Forum übernimmt.",
+        emptyMember:
+            "Die Admins deines Clans haben noch keine Presets angelegt.",
+        delete: {
+            action: "Preset löschen",
+            title: "Preset {name} löschen?",
+            squadConsequence:
+                "Bestehende Aufstellungen behalten ihre Squads. Neue Aufstellungen können nicht mehr mit diesem Preset starten.",
+            topicConsequence:
+                "Abgeschlossene Matches behalten die bereits geposteten Themen. Ein nicht abgeschlossenes Match, das dieses Preset nutzt, verhindert das Löschen.",
+            confirm: "Löschen",
+            done: "Preset gelöscht.",
+            inUse: "Offene Matches, die dieses Preset noch nutzen: {count}. Wähle dort zuerst ein anderes.",
+            forbidden:
+                "Nur Clan-Admins können Presets löschen. Melde dich neu an, falls deine Sitzung abgelaufen ist.",
+            failed: "Das Preset konnte nicht gelöscht werden.",
         },
     },
     groups: {

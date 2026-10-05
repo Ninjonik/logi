@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { PresetDeleteButton } from "@/components/app/preset-delete-button"
 import { TopicPresetForm } from "@/components/app/topic-preset-form"
 import { getTopicPresetMetadata } from "@/lib/server-metadata"
 import { PageHeader } from "@/components/app/page-header"
@@ -32,7 +33,22 @@ export default async function TopicPresetDetailPage({
 
     return (
         <>
-            <PageHeader title={preset.name} description={preset.notes} />
+            <PageHeader
+                title={preset.name}
+                description={preset.notes}
+                actions={
+                    canAdmin ? (
+                        <PresetDeleteButton
+                            serverId={serverId}
+                            locale={locale}
+                            kind="topic"
+                            presetId={preset.id}
+                            presetName={preset.name}
+                            dictionary={dictionary}
+                        />
+                    ) : undefined
+                }
+            />
             <div className="px-4 lg:px-6">
                 <TopicPresetForm
                     preset={preset}
