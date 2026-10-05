@@ -21,6 +21,10 @@ import {
     formatCount,
     resolveMessageAccentColor,
 } from "../../src/domain/discord-messages/format"
+import {
+    messageLineIcon,
+    type MessageLine,
+} from "../../src/domain/discord-messages/message-style"
 import { formatDiscordMarkdown } from "../../src/lib/discord-markdown"
 import { formatHllPresetLabel } from "../../src/lib/hll-map-presets"
 import { getClanDiscordMessages } from "../../src/lib/clan-language"
@@ -594,18 +598,22 @@ function buildEventDescription(
     options: { signedUpCount?: number; forumChannelId?: string }
 ) {
     const messages = getClanDiscordMessages(config.defaultLanguage)
+    const density = config.messageStyle?.iconDensity
+    const icon = (line: MessageLine) => messageLineIcon(line, density)
     const header: string[] = []
     if (event.kind === "match" && event.side) {
-        header.push(`**${messages.embed.side}:** ${event.side}`)
+        header.push(`**${icon("side")}${messages.embed.side}:** ${event.side}`)
     }
     const matchTeamsSummary = formatMatchTeamsSummary(event)
     if (matchTeamsSummary) {
-        header.push(`**🛡️ ${messages.embed.teams}:** ${matchTeamsSummary}`)
+        header.push(
+            `**${icon("teams")}${messages.embed.teams}:** ${matchTeamsSummary}`
+        )
     }
     const start = discordTimestamp(event.gameStart, "F")
     if (start) {
         header.push(
-            `**${event.kind === "training" ? messages.embed.trainingStart : messages.embed.matchStart}:** ${start}`
+            `**${icon("start")}${event.kind === "training" ? messages.embed.trainingStart : messages.embed.matchStart}:** ${start}`
         )
     }
     const meeting = discordTimestamp(event.meetingStart, "t")
@@ -629,10 +637,12 @@ function buildEventDescription(
               })
             : undefined,
     ].filter((fact): fact is string => Boolean(fact))
-    if (facts.length) header.push(facts.join(" · "))
+    if (facts.length) header.push(`${icon("details")}${facts.join(" · ")}`)
     // Trainings have no roster assignment to carry the server privately.
     if (event.kind === "training" && event.server) {
-        header.push(`**${messages.embed.server}:** ${event.server}`)
+        header.push(
+            `**${icon("server")}${messages.embed.server}:** ${event.server}`
+        )
     }
 
     const notes = formatDiscordMarkdown(event.notes || event.description)
@@ -647,9 +657,9 @@ function buildEventDescription(
         .filter(Boolean)
         .join(" · ")
     const footer = [
-        status,
+        `${icon("status")}${status}`,
         options.forumChannelId
-            ? `${messages.embed.eventForum}: <#${options.forumChannelId}>`
+            ? `${icon("forum")}${messages.embed.eventForum}: <#${options.forumChannelId}>`
             : undefined,
     ].filter(Boolean)
 
@@ -720,6 +730,7 @@ export function buildEventEmbed(
             resolveMessageAccentColor({
                 categoryColor: findEventCategory(categories, event.matchType)
                     ?.color,
+                messageStyle: config.messageStyle,
             })
         )
         .setFooter({ text: messages.embed.managedFooter })

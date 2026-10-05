@@ -1,3 +1,4 @@
+import type { MessageStyle } from "../../src/domain/discord-messages/message-style"
 import type { GameId } from "../../src/domain/games/game"
 
 export type ClanLanguage = "en" | "cs" | "de"
@@ -127,6 +128,8 @@ export type DiscordConfig = {
     membershipPanelLastConfigUpdatedAt?: string
     ticketCounter?: number
     membershipApplicationCounter?: number
+    /** Clan colour and icon density of every bot message. */
+    messageStyle?: MessageStyle
     updatedAt: string
 }
 

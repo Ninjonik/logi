@@ -3091,8 +3091,6 @@ export const deMessages = {
         messagesPage: {
             lookTitle: "Aussehen aller Nachrichten",
             language: "Sprache",
-            languageHelp:
-                "Wird unter Kanäle und Sprache festgelegt und gilt für alle Bot-Nachrichten.",
             languages: { en: "Englisch", cs: "Tschechisch", de: "Deutsch" },
             languageLink: "Kanäle und Sprache",
             listTitle: "Nachrichten",
@@ -3103,19 +3101,45 @@ export const deMessages = {
             channelUnknown: "festgelegter Kanal",
             announcement: "Match-Ankündigung",
             announcementDetail: "mit Anmeldeschaltflächen",
-            eventInfo: "Match-Informationen",
-            eventInfoDetail: "eigene Nachricht neben der Ankündigung",
+            eventInfo: "Aufstellung und Einteilung",
+            eventInfoDetail: "nach Veröffentlichung der Aufstellung",
             reminders: "Erinnerungen",
             remindersDetail:
                 "DM · Anmeldung täglich bis Anmeldeschluss, Anwesenheit 24, 18, 12 und 6 h vor dem Treffen",
-            remindersNote: "Wird bei jedem Match gewählt",
-            panels: "Live-Ergebnis und Ergebnisse",
-            panelsDetail:
-                "Panels deiner Spielserver; Ergebnisse nach der Bestätigung in Logi",
             league: "Liga-Karten",
             leagueDetail: "Wardogs-League-Matches",
             errors: "Bot-Fehler",
             errorsDetail: "nur für die Verwaltung",
+            clanColor: "Clanfarbe",
+            clanColorHelp:
+                "Events mit Kategorie nutzen die Farbe der Kategorie.",
+            clanColorPicker: "Farbe auswählen",
+            clanColorInvalid: "Gib die Farbe als #E8A33D ein.",
+            clanColorDefault:
+                "Ohne eigene Farbe nutzen Nachrichten das Logi-Orange.",
+            icons: "Symbole in Nachrichten",
+            iconsHelp: "Fraktionen behalten immer ihr Zeichen.",
+            iconsSparse: "Sparsam",
+            iconsRich: "Emoji in jeder Zeile",
+            languageFrom: "Aus",
+            languageScope: ", gilt für alle Nachrichten",
+            channel: "Kanal",
+            noChannel: "Kein Kanal",
+            gameException: "{game} hat einen eigenen Kanal {channel}.",
+            announcementHelp:
+                "Gilt für alle Spiele. Neue Matches behalten den Kanal, mit dem sie erstellt wurden.",
+            eventInfoHelp:
+                "Hier postet der Bot Aufstellung und Einteilung, sobald die Aufstellung veröffentlicht ist. Funktioniert nur zusammen mit dem Ankündigungskanal.",
+            errorsHelp:
+                "Hier meldet der Bot Probleme mit Rechten und Kanälen. Nur Verwalter sollten ihn sehen.",
+            liveScore: "Live-Punktestand",
+            liveScoreDetail: "{channel} · aktualisiert alle {refresh}",
+            liveScoreOff: "Aus · ein Panel von deinen Spielservern",
+            seconds: "{count} s",
+            minutes: "{count} min",
+            results: "Ergebnisse",
+            resultsDetail: "nach Bestätigung eines Match-Ergebnisses",
+            off: "Aus",
         },
         panelsForm: {
             regionLabel: "Öffentliche Discord-Panels",

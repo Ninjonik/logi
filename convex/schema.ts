@@ -289,6 +289,11 @@ const playerStatsServer = v.object({
     url: v.string(),
 })
 
+const messageStyle = v.object({
+    accentColor: v.optional(v.string()),
+    iconDensity: v.optional(v.union(v.literal("sparse"), v.literal("rich"))),
+})
+
 // Optional everywhere so existing Hell Let Loose data remains valid.
 const gameId = v.union(
     v.literal("hell_let_loose"),
@@ -725,6 +730,9 @@ export default defineSchema({
         membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
         ticketCounter: v.optional(v.number()),
         membershipApplicationCounter: v.optional(v.number()),
+        // Clan colour and icon density of every bot message (Discord messages
+        // settings). Missing means Logi amber and the sparse look.
+        messageStyle: v.optional(messageStyle),
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),

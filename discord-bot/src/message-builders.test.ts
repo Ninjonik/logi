@@ -250,6 +250,62 @@ test("buildEventEmbed shows the match start, meeting and sign-up deadline as sho
     )
 })
 
+test("buildEventEmbed uses the clan colour and icon density of the message style", () => {
+    const styled = {
+        ...config,
+        defaultLanguage: "en" as const,
+        messageStyle: { accentColor: "#5865F2", iconDensity: "rich" as const },
+    }
+    const plain = buildEventEmbed(
+        styled,
+        groups,
+        eventCategories,
+        createMatchEvent({ map: "Foy", side: "Allies" })
+    ).toJSON()
+    // Without a category the clan colour is the accent.
+    assert.equal(plain.color, 0x5865f2)
+    const [header] = (plain.description ?? "").split(/\n-{20,}\n/)
+    assert.match(header ?? "", /^\*\*⚔️ Side:\*\* Allies$/m)
+    assert.match(header ?? "", /^\*\*🕒 Match Start:\*\* <t:\d+:F>$/m)
+    assert.match(header ?? "", /^🗺️ Foy · /m)
+    assert.match(
+        plain.description ?? "",
+        /^📋 \*\*Signed up 0\*\* · Status: Registration$/m
+    )
+
+    // An event category keeps its own colour.
+    assert.equal(
+        buildEventEmbed(
+            styled,
+            groups,
+            eventCategories,
+            createMatchEvent({ matchType: "competitive" })
+        ).toJSON().color,
+        0xdc2626
+    )
+
+    // The sparse style, also the default, has no line icons.
+    const sparse = buildEventEmbed(
+        {
+            ...styled,
+            messageStyle: { accentColor: "#5865F2", iconDensity: "sparse" },
+        },
+        groups,
+        eventCategories,
+        createMatchEvent({ map: "Foy", side: "Allies" })
+    ).toJSON()
+    assert.doesNotMatch(sparse.description ?? "", /⚔️|🕒|🗺️|📋/)
+    assert.equal(
+        buildEventEmbed(
+            config,
+            groups,
+            eventCategories,
+            createMatchEvent()
+        ).toJSON().color,
+        0xffb000
+    )
+})
+
 test("public event cards never contain the server or its password", () => {
     const event = createMatchEvent({
         server: "VLK Scrim",

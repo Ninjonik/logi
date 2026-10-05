@@ -35,6 +35,25 @@ test("message accent prefers the category, then the clan colour, then Logi amber
     )
 })
 
+test("the clan's message style supplies the clan colour", () => {
+    const messageStyle = { accentColor: "#5865F2" }
+    assert.equal(resolveMessageAccentColor({ messageStyle }), 0x5865f2)
+    // An event category still wins.
+    assert.equal(
+        resolveMessageAccentColor({ categoryColor: "#dc2626", messageStyle }),
+        0xdc2626
+    )
+    // A broken or missing style falls back to Logi amber.
+    assert.equal(
+        resolveMessageAccentColor({ messageStyle: { accentColor: "blue" } }),
+        DEFAULT_MESSAGE_ACCENT_COLOR
+    )
+    assert.equal(
+        resolveMessageAccentColor({ messageStyle: null }),
+        DEFAULT_MESSAGE_ACCENT_COLOR
+    )
+})
+
 test("discordTimestamp renders Discord markup and rejects invalid dates", () => {
     assert.equal(
         discordTimestamp("2026-10-11T18:00:00.000Z", "t"),

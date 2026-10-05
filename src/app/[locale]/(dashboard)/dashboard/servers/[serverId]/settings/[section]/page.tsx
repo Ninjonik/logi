@@ -173,8 +173,24 @@ export default async function ServerSettingsSectionPage({
                     config={discordConfig}
                     enabledGames={snapshot.enabledGames}
                     hrefs={{
-                        channels: `/${locale}/dashboard/servers/${serverId}/settings/channels${gameId ? `?game=${gameId}` : ""}`,
-                        league: `/${locale}/dashboard/servers/${serverId}/settings/league${gameId ? `?game=${gameId}` : ""}`,
+                        channels: settingsHref(
+                            locale,
+                            serverId,
+                            "channels",
+                            gameId
+                        ),
+                        league: settingsHref(
+                            locale,
+                            serverId,
+                            "league",
+                            gameId
+                        ),
+                        matchTemplates: settingsHref(
+                            locale,
+                            serverId,
+                            "match-templates",
+                            gameId
+                        ),
                     }}
                     dictionary={dictionary}
                 />
