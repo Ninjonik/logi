@@ -416,6 +416,16 @@ export const generatedOpenApiSchemas = {
                                 }
                             ]
                         },
+                        "requestedGroup": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
                         "completed": {
                             "anyOf": [
                                 {
@@ -490,6 +500,16 @@ export const generatedOpenApiSchemas = {
                         },
                         "excusedBy": {
                             "type": "string"
+                        },
+                        "kind": {
+                            "anyOf": [
+                                {
+                                    "const": "late"
+                                },
+                                {
+                                    "const": "cannot_come"
+                                }
+                            ]
                         }
                     },
                     "required": [
@@ -721,6 +741,7 @@ export const generatedOpenApiSchemas = {
                     "userId": "string",
                     "status": "attending",
                     "group": "string",
+                    "requestedGroup": "string",
                     "completed": "passed",
                     "updatedAt": "string"
                 }
@@ -738,7 +759,8 @@ export const generatedOpenApiSchemas = {
                     "userId": "string",
                     "reason": "string",
                     "createdAt": "string",
-                    "excusedBy": "string"
+                    "excusedBy": "string",
+                    "kind": "late"
                 }
             ],
             "matchTeams": [
