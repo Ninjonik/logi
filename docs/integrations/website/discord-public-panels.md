@@ -86,10 +86,17 @@ delivery health. `discordPublicPanels` stores public feature configuration.
 The shared application publisher is used by public panels and the existing
 ticket, per-game recruitment, calendar and event announcement paths.
 
-Creation records its marker **before** the Discord POST. A lost response is
-reconciled against an exact marker on a message authored by the current bot in
-the recorded channel. It never uses a title/name match or deletes unrelated
-messages. Recovery currently searches the latest 100 messages. If an uncertain
+Creation records its marker **before** the Discord POST. Ownership is the
+stored message ID: existence checks, edits and removal use only
+`discordPublications.messageId`. The marker never appears in Discord: there is
+no "Automatic updates" button. Instead the create request sets the numeric
+component `id` (invisible to members) of the message's first top-level
+component to a value derived from the marker
+(`discord-bot/src/sync/publication-marker.ts`). A lost response is reconciled
+against that exact id on a message authored by the current bot in the recorded
+channel. It never uses a title/name match or deletes unrelated messages. A
+message without components carries no id, so its uncertain create waits for an
+operator. Recovery currently searches the latest 100 messages. If an uncertain
 message falls outside that window, the operator must reconcile the stored attempt;
 automatic retries remain blocked rather than risk a duplicate. Discord nonce
 deduplication is additional protection, not the durable guarantee.

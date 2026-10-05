@@ -62,9 +62,10 @@ page. Without team codes the card names the match instead.
 
 The bot retains message IDs across restarts and edits the same message. Changing
 channels waits for removal of the old message. If Discord's response to a send
-is lost, the bot searches for its exact marker. A pending recovery that cannot be
-resolved from recent history needs operator attention; repeatedly saving does
-not send a duplicate.
+is lost, the bot searches recent messages for an invisible identifier it set on
+that message; members never see a marker or an "Automatic updates" button. A
+pending recovery that cannot be resolved from recent history needs operator
+attention; repeatedly saving does not send a duplicate.
 
 **Map artwork** uses the packaged map or game image as a compact, clickable
 thumbnail. The bot uploads it once and reuses the attachment on updates and
