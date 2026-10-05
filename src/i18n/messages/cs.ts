@@ -2969,13 +2969,29 @@ export const csMessages = {
             noResults: "Žádná odpovídající role.",
             rolesUnavailable:
                 "Role z Discordu se nenačetly. Vaše nastavení se nezměnilo; zkuste stránku načíst znovu.",
-            resyncTitle: "Přístup z Discordu",
-            resyncHelp:
-                "Načtěte znovu, když se role správců v Discordu změnila a Logi to ještě neví.",
+            resyncHelp: "Když se role změní a Logi to ještě neví.",
             resyncNeedsRole: "Nejdřív vyberte a uložte roli správců.",
             resync: "Načíst znovu z Discordu",
             resynced: "Přístup správců je znovu načtený z Discordu.",
             resyncError: "Přístup správců se nepodařilo načíst.",
+            holders: {
+                one: "{count} člověk má tuto roli",
+                few: "{count} lidé mají tuto roli",
+                many: "{count} člověka má tuto roli",
+                other: "{count} lidí má tuto roli",
+            },
+            accessNow: "Kdo má teď přístup",
+            updated: "aktualizováno {time}",
+            accessUnavailable:
+                "Přehled přístupu se teď nepodařilo načíst. Role můžete měnit dál.",
+            noManagers:
+                "Zatím nikdo. Uložte roli správců nebo dejte někomu v Discordu oprávnění Administrator.",
+            reasonAdministrator: "oprávnění Administrator",
+            reasonRole: "role {role}",
+            reasonManagerRole: "role správců",
+            reasonGranted: "přidáno v Logi",
+            unknownMember: "Člen bez účtu v Logi",
+            moreManagers: "a další: {count}",
         },
         statsPage: {
             enable: "Povolit /stats",

@@ -2971,13 +2971,29 @@ export const enMessages = {
             noResults: "No matching role.",
             rolesUnavailable:
                 "Discord roles could not be loaded. Your settings are unchanged; reload the page to try again.",
-            resyncTitle: "Access from Discord",
-            resyncHelp:
-                "Reload when the manager role changed in Discord and Logi does not know it yet.",
+            resyncHelp: "When roles changed and Logi does not know yet.",
             resyncNeedsRole: "Choose and save a manager role first.",
             resync: "Reload from Discord",
             resynced: "Manager access reloaded from Discord.",
             resyncError: "Manager access could not be reloaded.",
+            holders: {
+                one: "{count} person has this role",
+                few: "{count} people have this role",
+                many: "{count} people have this role",
+                other: "{count} people have this role",
+            },
+            accessNow: "Who has access now",
+            updated: "updated {time}",
+            accessUnavailable:
+                "The access overview could not be loaded right now. You can still change the roles.",
+            noManagers:
+                "Nobody yet. Save a manager role or give someone the Administrator permission in Discord.",
+            reasonAdministrator: "Administrator permission",
+            reasonRole: "role {role}",
+            reasonManagerRole: "manager role",
+            reasonGranted: "added in Logi",
+            unknownMember: "Member without a Logi account",
+            moreManagers: "and {count} more",
         },
         statsPage: {
             enable: "Allow /stats",

@@ -3059,15 +3059,32 @@ export const deMessages = {
             noResults: "Keine passende Rolle.",
             rolesUnavailable:
                 "Die Discord-Rollen konnten nicht geladen werden. Deine Einstellungen sind unverändert; lade die Seite neu, um es erneut zu versuchen.",
-            resyncTitle: "Zugriff aus Discord",
             resyncHelp:
-                "Neu laden, wenn sich die Verwaltungsrolle in Discord geändert hat und Logi es noch nicht weiß.",
+                "Wenn sich Rollen geändert haben und Logi es noch nicht weiß.",
             resyncNeedsRole:
                 "Wähle und speichere zuerst eine Verwaltungsrolle.",
             resync: "Aus Discord neu laden",
             resynced: "Verwaltungszugriff aus Discord neu geladen.",
             resyncError:
                 "Der Verwaltungszugriff konnte nicht neu geladen werden.",
+            holders: {
+                one: "{count} Person hat diese Rolle",
+                few: "{count} Personen haben diese Rolle",
+                many: "{count} Personen haben diese Rolle",
+                other: "{count} Personen haben diese Rolle",
+            },
+            accessNow: "Wer gerade Zugriff hat",
+            updated: "aktualisiert {time}",
+            accessUnavailable:
+                "Die Zugriffsübersicht konnte gerade nicht geladen werden. Du kannst die Rollen trotzdem ändern.",
+            noManagers:
+                "Noch niemand. Speichere eine Verwalterrolle oder gib jemandem in Discord die Administrator-Berechtigung.",
+            reasonAdministrator: "Administrator-Berechtigung",
+            reasonRole: "Rolle {role}",
+            reasonManagerRole: "Verwalterrolle",
+            reasonGranted: "in Logi hinzugefügt",
+            unknownMember: "Mitglied ohne Logi-Konto",
+            moreManagers: "und {count} weitere",
         },
         statsPage: {
             enable: "/stats erlauben",
