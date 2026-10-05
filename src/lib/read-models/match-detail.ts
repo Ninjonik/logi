@@ -5,6 +5,7 @@ import {
     resultReviewSchema,
     type ResultRevision,
 } from "@/domain/match-results/result-revision"
+import type { DashboardActor } from "../../../convex/dashboardActor"
 import type { GameId } from "@/domain/games/game"
 import { getInternalAuthSecret } from "@/lib/env"
 
@@ -91,6 +92,46 @@ export async function getEventResultReview(scope: {
         )
     } catch {
         return null
+    }
+}
+
+const listPublicPanelsReference = makeFunctionReference<"query">(
+    "discordPublicPanels:list"
+)
+
+/**
+ * The channel of the clan's enabled Discord results panel for a game, where a
+ * confirmed result appears; null when there is none, undefined when it cannot
+ * be read. Convex checks that the actor is a clan admin.
+ */
+export async function getResultsPanelChannelId(input: {
+    guildId: string
+    gameId: GameId
+    actor: DashboardActor
+}): Promise<string | null | undefined> {
+    try {
+        const result = (await fetchQuery(listPublicPanelsReference, {
+            secret: getInternalAuthSecret(),
+            guildId: input.guildId,
+            actor: input.actor,
+        })) as {
+            panels?: Array<{
+                kind?: string
+                gameId?: string
+                enabled?: boolean
+                channelId?: string
+            }>
+        } | null
+        const panel = result?.panels?.find(
+            (item) =>
+                item.kind === "results" &&
+                item.enabled &&
+                item.gameId === input.gameId &&
+                item.channelId
+        )
+        return panel?.channelId ?? null
+    } catch {
+        return undefined
     }
 }
 

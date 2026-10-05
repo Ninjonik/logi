@@ -1,13 +1,15 @@
 "use client"
 
-import { ClipboardList, Headphones, Loader2, Save } from "lucide-react"
+import { ClipboardList, Loader2, Radio, Save } from "lucide-react"
 import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Link from "next/link"
 
 import {
+    applyAttendanceExcuses,
     buildMatchAttendance,
+    planAttendanceChanges,
     setRosterPresence,
     type AttendanceMark,
     type MatchAttendanceEntry,
@@ -25,8 +27,11 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import {
+    ReminderButton,
+    type ReminderAudienceState,
+} from "@/components/app/match-detail/reminder-button"
 import { ConcludeEventButton } from "@/components/app/conclude-event-button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { AppUser, EventRecord, Roster } from "@/types/domain"
 import { EmptyState } from "@/components/app/empty-state"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -39,6 +44,31 @@ const MARKS: AttendanceMark[] = ["present", "excused", "absent"]
 
 function formatDelta(delta: number) {
     return delta > 0 ? `+${delta}` : delta < 0 ? `−${Math.abs(delta)}` : "0"
+}
+
+function deltaClass(delta: number) {
+    return delta > 0
+        ? "text-emerald-700 dark:text-emerald-400"
+        : delta < 0
+          ? "text-red-600 dark:text-red-400"
+          : undefined
+}
+
+/** Counts in a summary line are bold, as in the design. */
+function BoldNumbers({ text }: { text: string }) {
+    return (
+        <>
+            {text.split(/(\d+)/).map((part, index) =>
+                /^\d+$/.test(part) ? (
+                    <strong key={index} className="font-semibold">
+                        {part}
+                    </strong>
+                ) : (
+                    part
+                )
+            )}
+        </>
+    )
 }
 
 /**
@@ -57,6 +87,10 @@ export function MatchAttendancePanel({
     closeSummary,
     canAdmin,
     meetingChannelConfigured,
+    meetingChannelName,
+    reminder,
+    locale,
+    timeZone,
     closeAvailable,
     signupHistoryHref,
     createRosterHref,
@@ -71,6 +105,12 @@ export function MatchAttendancePanel({
     closeSummary: RosterScoreChangeSummary
     canAdmin: boolean
     meetingChannelConfigured: boolean
+    /** Name of the meeting voice channel from Discord, when known. */
+    meetingChannelName?: string
+    /** Members who have not answered, for the reminder in that filter. */
+    reminder: ReminderAudienceState
+    locale: string
+    timeZone: string
     /** Closing is possible once the meeting has started. */
     closeAvailable: boolean
     signupHistoryHref: string
@@ -79,7 +119,7 @@ export function MatchAttendancePanel({
 }) {
     const t = dictionary.matchDetail.attendance
     const router = useRouter()
-    const [overrides, setOverrides] = useState<Map<string, boolean>>(
+    const [overrides, setOverrides] = useState<Map<string, AttendanceMark>>(
         () => new Map()
     )
     const [filter, setFilter] = useState<Filter>("roster")
@@ -102,52 +142,56 @@ export function MatchAttendancePanel({
             }),
         [event.absenceNotices, event.participants, memberIds, roster]
     )
-    const savedPresence = useMemo(
+    // Presence is saved on the roster, admin excuses on the match; only real
+    // differences from the saved state count as changes.
+    const plan = useMemo(
         () =>
-            new Map(
-                savedAttendance.entries.map((entry) => [
-                    entry.userId,
-                    entry.mark === "present",
-                ])
-            ),
-        [savedAttendance]
+            planAttendanceChanges({
+                entries: savedAttendance.entries,
+                marks: overrides,
+            }),
+        [overrides, savedAttendance.entries]
     )
-    // Only real differences from the saved roster count as changes.
-    const changes = useMemo(
-        () =>
-            new Map(
-                [...overrides].filter(
-                    ([userId, present]) =>
-                        savedPresence.has(userId) &&
-                        savedPresence.get(userId) !== present
-                )
-            ),
-        [overrides, savedPresence]
-    )
+    const changeCount = new Set([
+        ...plan.presence.keys(),
+        ...plan.excuses.keys(),
+    ]).size
     const board = useMemo(() => {
         if (!roster) return null
         let next = roster
-        for (const [userId, present] of changes) {
+        for (const [userId, present] of plan.presence) {
             next = setRosterPresence(next, userId, present)
         }
         return next
-    }, [changes, roster])
+    }, [plan.presence, roster])
+    const notices = useMemo(
+        () =>
+            plan.excuses.size === 0
+                ? event.absenceNotices
+                : applyAttendanceExcuses({
+                      notices: event.absenceNotices,
+                      excuses: plan.excuses,
+                      actorId: "pending",
+                      now: event.updatedAt,
+                  }),
+        [event.absenceNotices, event.updatedAt, plan.excuses]
+    )
     const attendance = useMemo(
         () =>
-            changes.size === 0
+            changeCount === 0
                 ? savedAttendance
                 : buildMatchAttendance({
                       roster: board,
                       participants: event.participants,
-                      notices: event.absenceNotices,
+                      notices,
                       memberIds,
                   }),
         [
             board,
-            changes.size,
-            event.absenceNotices,
+            changeCount,
             event.participants,
             memberIds,
+            notices,
             savedAttendance,
         ]
     )
@@ -157,7 +201,7 @@ export function MatchAttendancePanel({
             resolveRosterScoreCategory({
                 userId,
                 participants: event.participants,
-                notices: event.absenceNotices,
+                notices,
                 roster: board,
             })
         ]
@@ -178,35 +222,59 @@ export function MatchAttendancePanel({
     function setMark(entry: MatchAttendanceEntry, mark: AttendanceMark) {
         setOverrides((current) => {
             const next = new Map(current)
-            next.set(entry.userId, mark === "present")
+            next.set(entry.userId, mark)
             return next
         })
     }
 
     function save() {
-        if (!board || changes.size === 0) return
+        if (!board || changeCount === 0) return
         startSaving(async () => {
-            const response = await fetch(`/api/servers/${serverId}/rosters`, {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                    rosterId: board.id,
-                    eventId: event.id,
-                    squadPresetId: board.squadPresetId || undefined,
-                    squads: board.squads,
-                    reservePlayerIds: board.reservePlayerIds,
-                    reserveAttendances: board.reserveAttendances ?? [],
-                    notAttendingPlayerIds: board.notAttendingPlayerIds,
-                    streamerId: board.streamerId,
-                    published: board.published,
-                }),
-            }).catch(() => null)
-            const body = (await response?.json().catch(() => null)) as {
-                error?: string
-            } | null
-            if (!response?.ok) {
-                toast.error(body?.error ?? dictionary.common.error)
-                return
+            if (plan.presence.size > 0) {
+                const response = await fetch(
+                    `/api/servers/${serverId}/rosters`,
+                    {
+                        method: "POST",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({
+                            rosterId: board.id,
+                            eventId: event.id,
+                            squadPresetId: board.squadPresetId || undefined,
+                            squads: board.squads,
+                            reservePlayerIds: board.reservePlayerIds,
+                            reserveAttendances: board.reserveAttendances ?? [],
+                            notAttendingPlayerIds: board.notAttendingPlayerIds,
+                            streamerId: board.streamerId,
+                            published: board.published,
+                        }),
+                    }
+                ).catch(() => null)
+                const body = (await response?.json().catch(() => null)) as {
+                    error?: string
+                } | null
+                if (!response?.ok) {
+                    toast.error(body?.error ?? dictionary.common.error)
+                    return
+                }
+            }
+            if (plan.excuses.size > 0) {
+                const response = await fetch(
+                    `/api/servers/${encodeURIComponent(serverId)}/events/${encodeURIComponent(event.id)}/excuses`,
+                    {
+                        method: "POST",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({
+                            excuses: [...plan.excuses].map(
+                                ([userId, excused]) => ({ userId, excused })
+                            ),
+                        }),
+                    }
+                ).catch(() => null)
+                if (!response?.ok) {
+                    toast.error(dictionary.common.error)
+                    router.refresh()
+                    return
+                }
             }
             setOverrides(new Map())
             toast.success(t.saved)
@@ -245,6 +313,24 @@ export function MatchAttendancePanel({
     }
 
     const counts = attendance.counts
+    const foundInVoice = new Set(roster?.meetingAttendance?.foundUserIds ?? [])
+    const lastLoaded = roster?.meetingAttendance
+        ? t.lastLoaded
+              .replace(
+                  "{time}",
+                  new Intl.DateTimeFormat(locale, {
+                      timeZone,
+                      hour: "2-digit",
+                      minute: "2-digit",
+                  }).format(new Date(roster.meetingAttendance.loadedAt))
+              )
+              .replace("{count}", String(roster.meetingAttendance.voiceCount))
+              .replace(
+                  "{channel}",
+                  meetingChannelName ??
+                      dictionary.matchDetail.discord.meetingChannel
+              )
+        : null
     const summaryCards = [
         {
             label: t.rosterSummary.replace(
@@ -305,18 +391,23 @@ export function MatchAttendancePanel({
         <div className="space-y-4 pb-24 sm:pb-0">
             <section
                 aria-label={t.summaryLabel}
-                className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
+                className="border-border/70 bg-card grid grid-cols-2 overflow-hidden rounded-2xl border xl:grid-cols-4"
             >
-                {summaryCards.map((card) => (
+                {summaryCards.map((card, index) => (
                     <div
                         key={card.label}
-                        className="border-border/60 bg-card rounded-xl border px-4 py-3"
+                        className={cn(
+                            "border-border/70 px-4 py-3",
+                            index % 2 === 0 && "border-r",
+                            index < 2 && "border-b xl:border-b-0",
+                            index === 1 && "xl:border-r"
+                        )}
                     >
-                        <div className="text-muted-foreground text-xs">
+                        <div className="text-muted-foreground text-[11px] font-semibold tracking-[0.08em] uppercase">
                             {card.label}
                         </div>
-                        <div className="mt-1 text-sm font-medium">
-                            {card.value}
+                        <div className="mt-1 text-sm">
+                            <BoldNumbers text={card.value} />
                         </div>
                     </div>
                 ))}
@@ -351,7 +442,7 @@ export function MatchAttendancePanel({
                                     {isLoadingVoice ? (
                                         <Loader2 className="size-4 animate-spin" />
                                     ) : (
-                                        <Headphones className="size-4" />
+                                        <Radio className="size-4" />
                                     )}
                                     {isLoadingVoice
                                         ? t.loadingFromVoice
@@ -362,22 +453,27 @@ export function MatchAttendancePanel({
                                 <span className="text-muted-foreground text-xs">
                                     {t.voiceNotConfigured}
                                 </span>
+                            ) : lastLoaded ? (
+                                <span className="text-muted-foreground text-sm">
+                                    {lastLoaded}
+                                </span>
                             ) : null}
                         </div>
                         <ConcludeEventButton
                             serverId={serverId}
                             eventId={event.id}
                             disabled={
-                                !closeAvailable || changes.size > 0 || isSaving
+                                !closeAvailable || changeCount > 0 || isSaving
                             }
                             dictionary={dictionary}
                             summary={closeSummary}
                             label={t.closeMatch}
+                            primary
                         />
                     </div>
-                    <p className="text-muted-foreground text-xs">
-                        {t.help} {t.autoClose}
-                        {changes.size > 0 ? ` ${t.saveFirst}` : ""}
+                    <p className="text-muted-foreground text-sm">
+                        {t.help}
+                        {changeCount > 0 ? ` ${t.saveFirst}` : ""}
                     </p>
                 </div>
             ) : null}
@@ -405,32 +501,33 @@ export function MatchAttendancePanel({
                 className="flex flex-wrap gap-2"
             >
                 {filters.map((item) => (
-                    <Button
+                    <button
                         key={item.id}
                         type="button"
-                        size="sm"
-                        variant={filter === item.id ? "default" : "outline"}
                         aria-pressed={filter === item.id}
-                        className="rounded-full"
+                        className={cn(
+                            "h-8 rounded-full border px-3 text-sm transition-colors",
+                            filter === item.id
+                                ? "border-foreground text-foreground font-medium"
+                                : "border-border text-muted-foreground hover:text-foreground"
+                        )}
                         onClick={() => setFilter(item.id)}
                     >
                         {item.label}
-                    </Button>
+                    </button>
                 ))}
-                <Button
-                    asChild
-                    size="sm"
-                    variant="ghost"
-                    className="rounded-full"
+                <Link
+                    href={signupHistoryHref}
+                    className="border-border text-muted-foreground hover:text-foreground inline-flex h-8 items-center rounded-full border px-3 text-sm transition-colors"
                 >
-                    <Link href={signupHistoryHref}>{t.signupHistory}</Link>
-                </Button>
+                    {t.signupHistory}
+                </Link>
             </div>
 
             {filter === "roster" ? (
-                <div className="border-border/60 overflow-x-auto rounded-2xl border">
+                <div className="border-border/70 bg-card overflow-x-auto rounded-2xl border">
                     <Table>
-                        <TableHeader>
+                        <TableHeader className="bg-muted/40">
                             <TableRow>
                                 <TableHead scope="col">
                                     {t.columns.player}
@@ -470,22 +567,30 @@ export function MatchAttendancePanel({
                                     <TableRow key={entry.userId}>
                                         <TableHead
                                             scope="row"
-                                            className="max-w-32 font-medium sm:max-w-none"
+                                            className="max-w-28 font-normal sm:max-w-none"
                                         >
-                                            <PlayerName
-                                                user={usersById.get(
-                                                    entry.userId
-                                                )}
-                                                fallback={nameOf(entry.userId)}
-                                            />
-                                            <span className="text-muted-foreground mt-0.5 block text-xs font-normal md:hidden">
+                                            <span className="text-foreground block truncate">
+                                                {nameOf(entry.userId)}
+                                            </span>
+                                            <span className="text-muted-foreground mt-0.5 block truncate text-xs font-normal md:hidden">
                                                 {placeOf(entry)}
                                             </span>
                                         </TableHead>
                                         <TableCell className="text-muted-foreground hidden md:table-cell">
                                             {placeOf(entry)}
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground hidden max-w-56 truncate lg:table-cell">
+                                        <TableCell
+                                            className={cn(
+                                                "hidden max-w-64 truncate lg:table-cell",
+                                                entry.before.kind ===
+                                                    "acknowledged"
+                                                    ? "text-emerald-700 dark:text-emerald-400"
+                                                    : entry.before.kind ===
+                                                        "notice"
+                                                      ? "text-amber-700 dark:text-amber-400"
+                                                      : "text-muted-foreground"
+                                            )}
+                                        >
                                             {entry.before.kind === "notice"
                                                 ? t.before.notice.replace(
                                                       "{reason}",
@@ -494,21 +599,40 @@ export function MatchAttendancePanel({
                                                 : t.before[entry.before.kind]}
                                         </TableCell>
                                         <TableCell>
-                                            <MarkGroup
-                                                entry={entry}
-                                                label={t.markGroupLabel.replace(
-                                                    "{name}",
-                                                    nameOf(entry.userId)
-                                                )}
-                                                labels={t.marks}
-                                                excusedHelp={t.excusedHelp}
-                                                disabled={!editable || isSaving}
-                                                onChange={(mark) =>
-                                                    setMark(entry, mark)
-                                                }
-                                            />
+                                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                <MarkGroup
+                                                    entry={entry}
+                                                    label={t.markGroupLabel.replace(
+                                                        "{name}",
+                                                        nameOf(entry.userId)
+                                                    )}
+                                                    labels={t.marks}
+                                                    excusedHelp={t.excusedHelp}
+                                                    disabled={
+                                                        !editable || isSaving
+                                                    }
+                                                    onChange={(mark) =>
+                                                        setMark(entry, mark)
+                                                    }
+                                                />
+                                                {entry.mark === "present" &&
+                                                foundInVoice.has(
+                                                    entry.userId
+                                                ) ? (
+                                                    <span className="text-muted-foreground hidden text-xs sm:inline">
+                                                        {t.fromVoice}
+                                                    </span>
+                                                ) : null}
+                                            </div>
                                         </TableCell>
-                                        <TableCell className="text-right font-medium tabular-nums">
+                                        <TableCell
+                                            className={cn(
+                                                "text-right font-semibold tabular-nums",
+                                                deltaClass(
+                                                    pointsFor(entry.userId)
+                                                )
+                                            )}
+                                        >
                                             {formatDelta(
                                                 pointsFor(entry.userId)
                                             )}
@@ -520,35 +644,54 @@ export function MatchAttendancePanel({
                     </Table>
                 </div>
             ) : (
-                <SimplePlayerList
-                    userIds={
-                        filter === "declined"
-                            ? attendance.declinedUserIds
-                            : attendance.noResponseUserIds
-                    }
-                    before={
-                        filter === "declined"
-                            ? t.before.declined
-                            : t.before.noResponse
-                    }
-                    points={
-                        filter === "declined"
-                            ? scoreSettings.declined
-                            : scoreSettings.noCategory
-                    }
-                    usersById={usersById}
-                    fallbackName={dictionary.common.unknown}
-                    columns={t.columns}
-                    empty={t.empty}
-                />
+                <div className="space-y-3">
+                    {filter === "noResponse" && canAdmin && !concluded ? (
+                        <div className="border-border/70 bg-card flex flex-wrap items-center justify-between gap-2 rounded-2xl border px-4 py-3">
+                            <span className="text-muted-foreground text-sm">
+                                {t.noResponseHint.replace(
+                                    "{count}",
+                                    String(reminder.count)
+                                )}
+                            </span>
+                            <ReminderButton
+                                serverId={serverId}
+                                eventId={event.id}
+                                audience="unanswered"
+                                state={reminder}
+                                dictionary={dictionary}
+                            />
+                        </div>
+                    ) : null}
+                    <SimplePlayerList
+                        userIds={
+                            filter === "declined"
+                                ? attendance.declinedUserIds
+                                : attendance.noResponseUserIds
+                        }
+                        before={
+                            filter === "declined"
+                                ? t.before.declined
+                                : t.before.noResponse
+                        }
+                        points={
+                            filter === "declined"
+                                ? scoreSettings.declined
+                                : scoreSettings.noCategory
+                        }
+                        usersById={usersById}
+                        fallbackName={dictionary.common.unknown}
+                        columns={t.columns}
+                        empty={t.empty}
+                    />
+                </div>
             )}
 
-            {changes.size > 0 ? (
+            {changeCount > 0 ? (
                 <div className="bg-background/95 border-border/70 fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t px-4 py-3 sm:static sm:rounded-xl sm:border sm:px-4">
                     <span className="text-muted-foreground text-sm">
                         {t.unsavedChanges.replace(
                             "{count}",
-                            String(changes.size)
+                            String(changeCount)
                         )}
                     </span>
                     <Button
@@ -566,26 +709,6 @@ export function MatchAttendancePanel({
                 </div>
             ) : null}
         </div>
-    )
-}
-
-function PlayerName({
-    user,
-    fallback,
-}: {
-    user: AppUser | undefined
-    fallback: string
-}) {
-    return (
-        <span className="flex min-w-0 items-center gap-2">
-            <Avatar className="hidden size-6 rounded-md sm:flex">
-                {user?.avatar ? <AvatarImage src={user.avatar} alt="" /> : null}
-                <AvatarFallback className="rounded-md text-[10px]">
-                    {fallback.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-            </Avatar>
-            <span className="truncate">{user?.name ?? fallback}</span>
-        </span>
     )
 }
 
@@ -608,15 +731,13 @@ function MarkGroup({
         <div
             role="radiogroup"
             aria-label={label}
-            className="border-border/70 inline-flex rounded-lg border p-0.5"
+            className="bg-muted inline-flex rounded-lg p-0.5"
         >
             {MARKS.map((mark) => {
                 const checked = entry.mark === mark
-                // An absence notice decides between excused and absent; only
-                // the player can send one, so the other choice is unavailable.
-                const unavailable =
-                    (mark === "excused" && !entry.hasNotice) ||
-                    (mark === "absent" && entry.hasNotice)
+                // A player who sent a late notice stays excused at least;
+                // an admin can excuse anyone else.
+                const unavailable = mark === "absent" && entry.hasNotice
                 return (
                     <button
                         key={mark}
@@ -624,16 +745,12 @@ function MarkGroup({
                         role="radio"
                         aria-checked={checked}
                         disabled={disabled || unavailable}
-                        title={mark === "excused" ? excusedHelp : undefined}
+                        title={unavailable ? excusedHelp : undefined}
                         onClick={() => onChange(mark)}
                         className={cn(
-                            "rounded-md px-1.5 py-1 text-xs font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed sm:px-2.5",
+                            "rounded-md px-1.5 py-1 text-[11px] whitespace-nowrap transition-colors disabled:cursor-not-allowed sm:px-2.5 sm:text-xs",
                             checked
-                                ? mark === "present"
-                                    ? "bg-primary text-primary-foreground"
-                                    : mark === "absent"
-                                      ? "bg-destructive/15 text-destructive"
-                                      : "bg-secondary text-secondary-foreground"
+                                ? "bg-background text-foreground font-semibold shadow-sm"
                                 : "text-muted-foreground hover:text-foreground disabled:opacity-40"
                         )}
                     >
@@ -663,9 +780,9 @@ function SimplePlayerList({
     empty: string
 }) {
     return (
-        <div className="border-border/60 overflow-x-auto rounded-2xl border">
+        <div className="border-border/70 bg-card overflow-x-auto rounded-2xl border">
             <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/40">
                     <TableRow>
                         <TableHead scope="col">{columns.player}</TableHead>
                         <TableHead scope="col">{columns.before}</TableHead>
@@ -687,19 +804,21 @@ function SimplePlayerList({
                     ) : (
                         userIds.map((userId) => (
                             <TableRow key={userId}>
-                                <TableHead scope="row" className="font-medium">
-                                    <PlayerName
-                                        user={usersById.get(userId)}
-                                        fallback={
-                                            usersById.get(userId)?.name ??
-                                            fallbackName
-                                        }
-                                    />
+                                <TableHead scope="row" className="font-normal">
+                                    <span className="text-foreground">
+                                        {usersById.get(userId)?.name ??
+                                            fallbackName}
+                                    </span>
                                 </TableHead>
                                 <TableCell className="text-muted-foreground">
                                     {before}
                                 </TableCell>
-                                <TableCell className="text-right font-medium tabular-nums">
+                                <TableCell
+                                    className={cn(
+                                        "text-right font-semibold tabular-nums",
+                                        deltaClass(points)
+                                    )}
+                                >
                                     {formatDelta(points)}
                                 </TableCell>
                             </TableRow>

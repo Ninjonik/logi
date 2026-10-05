@@ -18,15 +18,20 @@ import {
     publicPlatformLink,
 } from "./platformIdentityStore"
 import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
+import type { ResultRevision } from "../src/domain/match-results/result-revision"
 import { confirmResult } from "../src/application/match-results/confirm-result"
+import { fixtureScoreFromEvent } from "../src/domain/competitions/competition"
+import { axisAlliesScore } from "../src/domain/match-results/result-sides"
 import { providerSessionSchema } from "../src/domain/game-data/contracts"
 import { resolveGameScope, isGameId } from "../src/domain/games/game"
 import { assertMembershipSecret } from "./membership_shared"
 import { query, type QueryCtx } from "./_generated/server"
+import type { MutationCtx } from "./_generated/server"
 import { resultCommand } from "./resultValidators"
 import type { Doc } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
 import { getGuildByDiscordId } from "./identity"
+import { eventTeamSides } from "./competitions"
 import { v } from "convex/values"
 
 const scope = {
@@ -155,13 +160,44 @@ async function buildDraft(
         ),
     })
 }
+/**
+ * A confirmed or corrected result fills the competition fixture the match is
+ * linked to, as an imported result already does (design E2 "Po potvrzení").
+ * The fixture takes each team's score by the Axis/Allies side it played;
+ * without both sides known it is left to the competition admins.
+ */
+async function applyReviewedResultToFixture(
+    ctx: MutationCtx,
+    event: Doc<"events">,
+    revision: ResultRevision
+) {
+    if (revision.status === "provisional" || !event.competitionFixtureId) return
+    const fixture = await ctx.db.get(event.competitionFixtureId)
+    const score = axisAlliesScore(revision.participants)
+    if (!fixture?.sideATeamId || !fixture.sideBTeamId || !score) return
+    const fixtureScore = fixtureScoreFromEvent({
+        fixture: {
+            sideATeamId: String(fixture.sideATeamId),
+            sideBTeamId: String(fixture.sideBTeamId),
+        },
+        eventTeams: await eventTeamSides(ctx, event),
+        score,
+    })
+    if (!fixtureScore) return
+    await ctx.db.patch(fixture._id, {
+        ...fixtureScore,
+        status: "final",
+        updatedAt: revision.createdAt,
+    })
+}
+
 export const review = mutation({
     args: { ...scope, command: resultCommand },
     handler: async (ctx, args) => {
         assertMembershipSecret(args.secret)
         const event = await authorize(ctx, args),
             command = resultCommandSchema.parse(args.command)
-        return confirmResult(
+        const revision = await confirmResult(
             {
                 ...command,
                 eventId: event._id,
@@ -205,6 +241,8 @@ export const review = mutation({
                 now: () => new Date().toISOString(),
             }
         )
+        await applyReviewedResultToFixture(ctx, event, revision)
+        return revision
     },
 })
 export const get = query({

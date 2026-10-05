@@ -108,14 +108,18 @@ After play, enter the result and conclude the event when your workflow is comple
 
 ## The match page
 
-Opening a match shows its name, game, map, side and time (meeting and start, or
-when it was played), and **View in Discord** once the bot has posted the sign-up
-announcement. Below is the match's progress in five steps:
+Opening a match shows its name, game, map and time (meeting and start, or when
+it was played), **View in Discord** once the bot has posted the sign-up
+announcement (until the match is played) and, for managers, a **⋯** menu with
+**Edit match**, **Open the roster page** and **Sign-up history**. On a phone
+the top shrinks to a back arrow, the match name and the current step ("Step 3
+of 5 · Roster"), the Discord tab is left out and the ⋯ menu also holds the
+Discord link. Below is the match's progress in five steps:
 
 | Step     | Shows                                                                       |
 | -------- | --------------------------------------------------------------------------- |
 | Draft    | When the match was created, or when its sign-ups open                       |
-| Sign-ups | Until when people can sign up, then how many signed up                      |
+| Sign-ups | Until when people can sign up, when sign-ups closed, then how many signed up |
 | Roster   | Not created yet, a draft to publish before the meeting, or the player count |
 | Match    | The meeting time, then how many players attended                            |
 | Result   | Import from the server, awaiting confirmation, confirmed or corrected       |
@@ -125,7 +129,9 @@ closed 15 minutes after its game end even before Logi records it, and a match
 with a confirmed or corrected result has every step done. Members see the
 result step without the review state, which only managers can read.
 
-The page has five tabs:
+The page has five tabs. Before the match the sign-ups tab is called
+**Sign-ups** with the number of players signed up; after it, **Sign-ups and
+attendance**.
 
 - **Overview**: the match form (details, schedule, Discord options, teams).
 - **Sign-ups and attendance**: see below.
@@ -150,16 +156,27 @@ sign-up activity.
 
 - **Attended** records manager-confirmed attendance on the roster, the same
   status as **Confirmed** on the roster board.
-- **Excused** applies only to players who sent an absence notice in Discord;
-  managers cannot excuse someone themselves. Without a notice, a player who did
+- **Before the match** shows **Confirmed attendance**, **Not confirmed**,
+  **Reserve**, or **Running late** with the text a player sent through the
+  **Running late** button in Discord.
+- **Excused** can be set by a manager for any roster player or reserve; it
+  scores like a running-late notice (the **Excused absence** rule). A player
+  who sent a running-late notice stays at least excused, so **Did not attend**
+  is not available for them. Without a notice or an excuse, a player who did
   not come is **Did not attend**.
 - Changes show as **Unsaved changes: N** until you **Save attendance**.
 - **Load from voice channel** marks roster players and reserves who are in the
   meeting voice channel as attended (see
-  [rosters](/wiki/operations/rosters#attendance-and-late-changes)).
+  [rosters](/wiki/operations/rosters#attendance-and-late-changes)). Next to the
+  button Logi says when it was last read, for example "Last read at 20:05: 19
+  players in Sraz", and the table marks players it found with **from the voice
+  channel**.
+- The **No response** filter lists members who never answered the sign-up.
+  While sign-ups are open, **Remind** sends them the sign-up reminder by
+  Discord DM.
 
 Attendance can change until the match is closed. **Close match and award
-points** (also in the match header) first shows how many players each rule
+points** first shows how many players each rule
 covers and the points it gives, for example "19 attended from the roster +3",
 and how many players' points change. Save attendance first: closing is not
 available with unsaved changes. Closing cannot be undone. A match nobody closes
@@ -283,7 +300,10 @@ failure between sending and recording success can cause a duplicate.
 
 ## Review a result (manager)
 
-Open the match's **Result** tab. **Where the result comes from** names the
+Open the match's **Result** tab. The score board puts your clan's side first
+(found from the side the match was played on and the teams picked for it), with
+the team names and logos, the two scores and **Win**, **Loss** or **Draw**.
+**Where the result comes from** names the
 collected HLL server game the scores came from. Before anything is saved, Logi
 suggests the game that started closest to the match start (within three hours)
 and fills in its scores; **Other game** picks a different game, an existing
@@ -308,6 +328,18 @@ entered IDs and player names do not verify an account. Unlinking affects future
 reviews; it does not rewrite past review history. Counts do not establish team
 membership, attendance or game ownership.
 
-Reviewed results are separate from the legacy imported scoreboard, competition
-fixture finalization and event conclusion described above. A confirmed result
-does not automatically publish anything on an external website.
+**After confirmation** lists what confirming does:
+
+- the result appears in the channel of the workspace's Discord results panel,
+  when one is set up for the game (otherwise the page says it stays in Logi and
+  the clan API);
+- players get their personal summary by DM, which today is already sent when
+  the statistics are imported;
+- for a match linked to a competition fixture, a confirmed or corrected HLL
+  result fills the fixture score, the same way an imported result does: each
+  fixture team takes the score of the Axis or Allies side it played. Without
+  both sides known the fixture is left to the competition administrators.
+
+Reviewed results are separate from the legacy imported scoreboard and event
+conclusion described above. A confirmed result does not automatically publish
+anything on an external website.

@@ -452,6 +452,9 @@ export const generatedOpenApiSchemas = {
                         },
                         "createdAt": {
                             "type": "string"
+                        },
+                        "excusedBy": {
+                            "type": "string"
                         }
                     },
                     "required": [
@@ -687,7 +690,8 @@ export const generatedOpenApiSchemas = {
                 {
                     "userId": "string",
                     "reason": "string",
-                    "createdAt": "string"
+                    "createdAt": "string",
+                    "excusedBy": "string"
                 }
             ],
             "matchTeams": [
@@ -914,6 +918,32 @@ export const generatedOpenApiSchemas = {
             "published": {
                 "type": "boolean"
             },
+            "meetingAttendance": {
+                "type": "object",
+                "properties": {
+                    "loadedAt": {
+                        "type": "string"
+                    },
+                    "channelId": {
+                        "type": "string"
+                    },
+                    "voiceCount": {
+                        "type": "number"
+                    },
+                    "foundUserIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "loadedAt",
+                    "channelId",
+                    "voiceCount",
+                    "foundUserIds"
+                ]
+            },
             "createdAt": {
                 "type": "string"
             },
@@ -975,6 +1005,14 @@ export const generatedOpenApiSchemas = {
             ],
             "streamerId": "string",
             "published": true,
+            "meetingAttendance": {
+                "loadedAt": "string",
+                "channelId": "string",
+                "voiceCount": 0,
+                "foundUserIds": [
+                    "string"
+                ]
+            },
             "createdAt": "string",
             "updatedAt": "string",
             "id": "string"

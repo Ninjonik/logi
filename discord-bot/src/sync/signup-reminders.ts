@@ -40,6 +40,50 @@ export function isSignupReminderRecipient(input: {
     )
 }
 
+/**
+ * The sign-up reminder DM: the match announcement without its sign-up
+ * details, with links to the registration channel and the match forum. Used
+ * by the scheduled reminder and by reminders an admin sends from the
+ * dashboard.
+ */
+export function buildSignupReminderMessage(
+    payload: SyncPayload,
+    event: SyncPayload["events"][number]
+) {
+    const syncState = payload.syncStates.find(
+        (state) => state.eventId === event.id
+    )
+    const registrationUrl = buildDiscordMessageLink(
+        payload.config.guildId,
+        event.announcementChannelId ?? payload.config.announcementsChannelId
+    )
+    const forumUrl = buildDiscordMessageLink(
+        payload.config.guildId,
+        syncState?.forumChannelId
+    )
+    const messages = getClanDiscordMessages(payload.config.defaultLanguage)
+    const eventLinks = [
+        registrationUrl
+            ? {
+                  label: messages.buttons.openRegistrationChannel,
+                  url: registrationUrl,
+              }
+            : null,
+        forumUrl
+            ? { label: messages.buttons.openEventForum, url: forumUrl }
+            : null,
+    ].filter((link): link is { label: string; url: string } => link !== null)
+    return buildAnnouncementV2Message(
+        payload,
+        event,
+        {},
+        {
+            hideSignupDetails: true,
+            eventLinks,
+        }
+    )
+}
+
 export async function processSignupReminders(
     client: Client,
     payload: SyncPayload,
@@ -62,41 +106,7 @@ export async function processSignupReminders(
         const respondedUserIds = new Set(
             event.participants.map((participant) => participant.userId)
         )
-
-        const syncState = payload.syncStates.find(
-            (state) => state.eventId === event.id
-        )
-        const registrationUrl = buildDiscordMessageLink(
-            payload.config.guildId,
-            event.announcementChannelId ?? payload.config.announcementsChannelId
-        )
-        const forumUrl = buildDiscordMessageLink(
-            payload.config.guildId,
-            syncState?.forumChannelId
-        )
-        const messages = getClanDiscordMessages(payload.config.defaultLanguage)
-        const eventLinks = [
-            registrationUrl
-                ? {
-                      label: messages.buttons.openRegistrationChannel,
-                      url: registrationUrl,
-                  }
-                : null,
-            forumUrl
-                ? { label: messages.buttons.openEventForum, url: forumUrl }
-                : null,
-        ].filter(
-            (link): link is { label: string; url: string } => link !== null
-        )
-        const message = buildAnnouncementV2Message(
-            payload,
-            event,
-            {},
-            {
-                hideSignupDetails: true,
-                eventLinks,
-            }
-        )
+        const message = buildSignupReminderMessage(payload, event)
         // Assignments were not included in older cached payloads. Treat them
         // as an empty recipient set while a rolling deployment catches up.
         const recipients = (payload.assignments ?? []).filter((assignment) =>

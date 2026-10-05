@@ -3786,6 +3786,30 @@ export const deMessages = {
             result: "Ergebnis",
         },
         openInDiscord: "In Discord ansehen",
+        tabSignups: "Anmeldungen",
+        moreActions: "Weitere Aktionen",
+        backLabel: "Zurück zu den Matches",
+        stepOf: "Schritt {current} von {total} · {label}",
+        actions: {
+            edit: "Match bearbeiten",
+            openRoster: "Aufstellungsseite öffnen",
+            signupHistory: "Anmeldeverlauf",
+        },
+        reminders: {
+            remind: "Erinnern",
+            sending: "Wird gesendet…",
+            queued: "Eine Erinnerung geht per DM an {count} Spieler.",
+            nobody: "Niemand zu erinnern.",
+            rateLimited: "Du kannst die Erinnerung um {time} wieder senden.",
+            unavailable: {
+                concluded: "Das Match ist abgeschlossen.",
+                draft: "Ein Entwurf wird nicht an Spieler geschickt.",
+                signups_closed: "Die Anmeldung ist geschlossen.",
+                no_roster: "Es gibt noch keine Aufstellung.",
+                roster_unpublished: "Die Aufstellung ist nicht veröffentlicht.",
+                meeting_started: "Das Treffen hat begonnen.",
+            },
+        },
         scheduleLine: "{date} · Treffpunkt {meeting} · Start {start}",
         playedLine: "Gespielt am {date} um {time}",
         phases: {
@@ -3804,6 +3828,7 @@ export const deMessages = {
             createdAt: "erstellt {date}",
             opensAt: "öffnet {date}",
             closesAt: "bis {date}",
+            closedAt: "geschlossen {date}",
             signedUp: "{count} angemeldet",
             rosterMissing: "noch nicht erstellt",
             rosterDraft: "vor dem Treffpunkt veröffentlichen",
@@ -3835,6 +3860,15 @@ export const deMessages = {
             pickPlayer: "Spieler wählen",
             reservesCount: "{count} · angemeldet ohne Platz",
             notAttendingCount: "{count}",
+            noResponse: "Ohne Antwort: {count} Mitglieder",
+            dropHere: "Hier ablegen: {name}",
+            removeFromSlot: "{name} aus dem Platz entfernen",
+            occupied: "{assigned}/{total} besetzt",
+            moreActions: "Weitere Aktionen der Aufstellung",
+            playerActions: "Aktionen für {name}",
+            autoFill: "Automatisch füllen",
+            save: "Speichern",
+            meetingTime: "Treffzeit",
         },
         attendance: {
             summaryLabel: "Anwesenheit im Überblick",
@@ -3882,12 +3916,12 @@ export const deMessages = {
                 acknowledged: "Teilnahme bestätigt",
                 pending: "Nicht bestätigt",
                 reserve: "Reserve",
-                notice: "Abmeldung: „{reason}“",
+                notice: "Verspätung: „{reason}“",
                 declined: "Abgesagt",
                 noResponse: "Keine Antwort",
             },
             excusedHelp:
-                "Entschuldigt setzt eine Abmeldung voraus, die Spieler in Discord senden.",
+                "Der Spieler hat in Discord eine Verspätung gemeldet und bleibt daher mindestens entschuldigt.",
             unsavedChanges: "Ungespeicherte Änderungen: {count}",
             save: "Anwesenheit speichern",
             saved: "Anwesenheit gespeichert.",
@@ -3903,6 +3937,11 @@ export const deMessages = {
             noRosterDescription:
                 "Die Anwesenheit wird in der Aufstellung erfasst. Erstelle zuerst die Aufstellung.",
             empty: "Niemand in dieser Liste.",
+            lastLoaded:
+                "Zuletzt um {time} gelesen: {count} Spieler in {channel}",
+            fromVoice: "aus dem Sprachkanal",
+            noResponseHint:
+                "{count} Spieler haben auf die Anmeldung noch nicht geantwortet.",
         },
         close: {
             title: "Match abschließen und Punkte vergeben?",
@@ -3997,6 +4036,27 @@ export const deMessages = {
             notYetTitle: "Noch kein Ergebnis",
             notYetDescription:
                 "Das Ergebnis wird hier geprüft, sobald das Match gespielt ist.",
+            outcome: {
+                win: "Sieg",
+                loss: "Niederlage",
+                draw: "Unentschieden",
+            },
+            afterConfirm: "Nach der Bestätigung",
+            effectResultsChannel: "Das Ergebnis erscheint in #{channel}.",
+            effectNoResultsChannel:
+                "Es ist kein Ergebnis-Panel in Discord eingerichtet, das Ergebnis bleibt in Logi und in der Clan-API.",
+            effectRecaps:
+                "Spieler bekommen eine persönliche Zusammenfassung per DM. Heute kommt sie schon beim Import.",
+            showPlayers: "Spieler anzeigen",
+            effectCompetition:
+                "Bei einem Ligamatch wird es auch in die Wettbewerbstabelle eingetragen.",
+            correctionNoteUpdates:
+                "Ein bestätigtes Ergebnis lässt sich nur mit Begründung korrigieren. Die Korrektur wird hier festgehalten und aktualisiert {targets}.",
+            correctionTargets: {
+                discord: "die Discord-Nachricht",
+                competition: "die Wettbewerbstabelle",
+                and: " und ",
+            },
         },
         stats: {
             killTypes: {
