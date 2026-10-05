@@ -44,6 +44,7 @@ export function SettingsSectionFrame({
     headerActions,
     legend,
     ownHeader = false,
+    breadcrumbParent,
     children,
 }: {
     locale: string
@@ -59,6 +60,8 @@ export function SettingsSectionFrame({
     legend?: ReactNode
     /** The page renders its own `SettingsSectionHeader` because its title action is part of its form. */
     ownHeader?: boolean
+    /** A page that belongs under another one adds that page to the breadcrumb. */
+    breadcrumbParent?: string
     children: ReactNode
 }) {
     const hub = dictionary.settingsHub
@@ -99,6 +102,12 @@ export function SettingsSectionFrame({
                 <ChevronRight className="size-3.5" aria-hidden="true" />
                 <span>{hub.groups[group]}</span>
                 <ChevronRight className="size-3.5" aria-hidden="true" />
+                {breadcrumbParent ? (
+                    <>
+                        <span>{breadcrumbParent}</span>
+                        <ChevronRight className="size-3.5" aria-hidden="true" />
+                    </>
+                ) : null}
                 <span aria-current="page" className="text-foreground">
                     {text.title}
                 </span>
