@@ -3572,7 +3572,7 @@ export const csMessages = {
             "match-templates": {
                 title: "Šablony zápasů",
                 description:
-                    "S čím začíná nový zápas nebo trénink: časy, přihlášky a Discord.",
+                    "Co se předvyplní při zakládání nového zápasu. V konkrétním zápase to jde změnit.",
             },
             presets: {
                 title: "Předvolby čet a témat",

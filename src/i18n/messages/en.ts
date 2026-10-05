@@ -3578,7 +3578,7 @@ export const enMessages = {
             "match-templates": {
                 title: "Match templates",
                 description:
-                    "What a new match or training starts with: times, sign-ups and Discord.",
+                    "What is filled in when you create a new match. You can still change it in the match itself.",
             },
             presets: {
                 title: "Squad and topic presets",

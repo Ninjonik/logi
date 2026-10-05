@@ -3679,7 +3679,7 @@ export const deMessages = {
             "match-templates": {
                 title: "Match-Vorlagen",
                 description:
-                    "Womit ein neues Match oder Training startet: Zeiten, Anmeldungen und Discord.",
+                    "Was beim Anlegen eines neuen Matches vorausgefüllt wird. Im Match selbst kannst du es noch ändern.",
             },
             presets: {
                 title: "Squad- und Themen-Presets",
