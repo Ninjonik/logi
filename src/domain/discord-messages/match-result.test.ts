@@ -122,8 +122,8 @@ test("calendar day offsets use the clan's time zone", () => {
 })
 
 test("faction emblems prefer installed emoji and fall back per faction", () => {
-    assert.equal(factionEmblem("Allies"), "🟦")
-    assert.equal(factionEmblem("axis"), "🟥")
+    assert.equal(factionEmblem("Allies"), "★")
+    assert.equal(factionEmblem("axis"), "✚")
     assert.equal(factionEmblem("Valkyra"), "◈")
     assert.equal(
         factionEmblem("Valkyra", { valkyra: "<:logi_valkyra:1>" }),

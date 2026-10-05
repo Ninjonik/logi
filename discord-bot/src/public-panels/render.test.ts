@@ -752,7 +752,7 @@ test("result cards show the category, teams, the clan's outcome, who confirmed a
     assert.deepEqual(texts(rendered), [
         [
             "-# VÝSLEDEK · PŘÁTELÁK",
-            "## 🟦 **VLK**  3 : 2  **DEF** 🟥",
+            "## ★ **VLK**  3 : 2  **DEF** ✚",
             "**Výhra** · Carentan · den · potvrdil Hráč \\*01\\*",
         ].join("\n"),
     ])
@@ -795,7 +795,7 @@ test("result cards show the category, teams, the clan's outcome, who confirmed a
         [
             "-# VÝSLEDEK · PŘÁTELÁK",
             "**VLK vs DEF**",
-            "## 🟦 **Spojenci**  3 : 2  **Osa** 🟥",
+            "## ★ **Spojenci**  3 : 2  **Osa** ✚",
             "Carentan · den · Potvrzeno <t:1791142800:R>",
         ].join("\n"),
     ])

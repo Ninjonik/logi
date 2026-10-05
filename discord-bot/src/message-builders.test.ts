@@ -297,7 +297,7 @@ test("buildEventEmbed shows the start, map, meeting and sign-up deadline as Disc
     assert.equal(
         header,
         [
-            "**Side:** 🟦 Allies",
+            "**Side:** ★ Allies",
             "**<t:1785333600:F>**",
             "Foy · day · Cap 50 · meeting <t:1785330000:t> · sign-ups close <t:1785328200:R>",
         ].join("\n")
@@ -892,14 +892,14 @@ test("sides use the clan language and events without teams show the clan side", 
             ).toJSON().description ?? ""
         ).split("\n")[0]
 
-    assert.equal(firstLine("cs"), "🟦 **Alpha** Spojenci  vs  🟥 **Bravo** Osa")
+    assert.equal(firstLine("cs"), "★ **Alpha** Spojenci  vs  ✚ **Bravo** Osa")
     assert.equal(
         firstLine("de"),
-        "🟦 **Alpha** Alliierte  vs  🟥 **Bravo** Achsenmächte"
+        "★ **Alpha** Alliierte  vs  ✚ **Bravo** Achsenmächte"
     )
     assert.equal(
         firstLine("cs", createMatchEvent({ side: "Axis", matchTeams: [] })),
-        "**Strana:** 🟥 Osa"
+        "**Strana:** ✚ Osa"
     )
     assert.equal(
         firstLine("en", createMatchEvent({ side: "Blue team" })),
@@ -1110,7 +1110,7 @@ test("Components V2 information cards add one logo section per team only when re
         },
     })
     const rendered = JSON.stringify(card.components?.[0]?.toJSON())
-    assert.match(rendered, /🟦 \*\*ALP\*\* Allies {2}vs {2}🟥 \*\*Bravo/)
+    assert.match(rendered, /★ \*\*ALP\*\* Allies {2}vs {2}✚ \*\*Bravo/)
 
     assert.deepEqual(
         v2Sections(buildAnnouncementV2Message(payload, event, {})),
@@ -1162,7 +1162,7 @@ test("Components V2 cards keep hyphen-run team names on one literal sides line",
     })
     const sidesLine = contents[0]?.split("\n")[1] ?? ""
 
-    assert.match(sidesLine, /Pwned heading\*\* Allies {2}vs {2}🟥 \*\*Bravo/)
+    assert.match(sidesLine, /Pwned heading\*\* Allies {2}vs {2}✚ \*\*Bravo/)
     assert.match(sidesLine, /> quoted\*\* Axis$/)
     assert.doesNotMatch(sidesLine, /--/)
     for (const content of contents) {

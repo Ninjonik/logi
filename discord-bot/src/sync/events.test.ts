@@ -220,7 +220,7 @@ test("event information messages add team logos until the roster is published", 
     assert.match(main?.description ?? "", /Foy · day · meeting <t:\d+:t>/)
     assert.equal(
         main?.description?.split("\n")[0],
-        "🟦 **Alpha** Allies  vs  🟥 **Bravo** Axis"
+        "★ **Alpha** Allies  vs  ✚ **Bravo** Axis"
     )
     assert.deepEqual(toPlainJson(teams), [
         {

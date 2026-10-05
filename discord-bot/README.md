@@ -28,8 +28,8 @@ text line, and the published roster card shows only the roster.
 
 Faction emblems are the application emoji installed with
 `scripts/provision-discord-panel-emoji.ts` (read through
-`src/runtime/faction-emoji.ts`, cached for an hour), else fixed markers: 🟦
-Allies, 🟥 Axis and `◈` for a Wardogs faction
+`src/runtime/faction-emoji.ts`, cached for an hour), else fixed monochrome
+markers: ★ Allies, ✚ Axis and `◈` for a Wardogs faction
 (`src/domain/discord-messages/faction-emblem.ts`).
 
 ## Message style and server passwords
