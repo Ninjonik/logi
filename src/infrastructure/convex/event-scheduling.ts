@@ -63,7 +63,9 @@ export async function refreshEventSchedule(
             const dueAt = getSignupReminderDueAt(
                 event.createdAt,
                 event.registrationEnd,
-                nowDate
+                nowDate,
+                false,
+                event.registrationStart
             )
             return event.kind === "match" &&
                 resolveSignupReminderStatuses(event.signupReminderStatuses)

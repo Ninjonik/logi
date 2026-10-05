@@ -49,6 +49,11 @@ import {
     getUserSignupLabel,
 } from "@/lib/roster-assignment"
 import {
+    RosterPublishDialog,
+    type RosterPublishChoice,
+    type RosterPublishContext,
+} from "@/components/app/roster-publish-dialog"
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -91,6 +96,7 @@ import { getUserScoreForGuild } from "@/lib/user-scores"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { pluralize } from "@/i18n/plural"
 import { cn } from "@/lib/utils"
 
 function getCustomPlayerName(
@@ -129,6 +135,7 @@ export function RosterBoard({
     meetingChannelId,
     meetingChannelName,
     reminder,
+    publishContext,
     defaultMode = "view",
 }: {
     roster?: Roster
@@ -147,6 +154,8 @@ export function RosterBoard({
     meetingChannelName?: string
     /** Members who have not answered, for the reserves box reminder. */
     reminder?: ReminderAudienceState
+    /** The clan's Discord settings for the publish dialog (board D5). */
+    publishContext?: RosterPublishContext
     defaultMode?: RosterBoardMode
 }) {
     const router = useRouter()
@@ -162,8 +171,6 @@ export function RosterBoard({
     const [publishDialogOpen, setPublishDialogOpen] = useState(false)
     const [publishedUpdateDialogOpen, setPublishedUpdateDialogOpen] =
         useState(false)
-    const [notifyRosterChanges, setNotifyRosterChanges] = useState(true)
-    const [postRosterChanges, setPostRosterChanges] = useState(false)
     const [autoFillDialogOpen, setAutoFillDialogOpen] = useState(false)
     const [templateChangeDialogOpen, setTemplateChangeDialogOpen] =
         useState(false)
@@ -1243,12 +1250,53 @@ export function RosterBoard({
         }
     }
 
+    /**
+     * Follows the bot's change DMs after a re-publish and says how many did
+     * not arrive (board L2-64): the bot sends them, the dialog only asks.
+     */
+    const watchRosterChanges = async (rosterId: string, requestId: string) => {
+        const t = dictionary.rosterPublish
+        for (let attempt = 0; attempt < 15; attempt += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 2_000))
+            const response = await fetch(
+                `/api/servers/${serverId}/rosters/${rosterId}/update-notifications?requestId=${encodeURIComponent(requestId)}`,
+                { cache: "no-store" }
+            ).catch(() => null)
+            const status = (await response?.json().catch(() => null)) as {
+                status?: string
+                dmFailedUserIds?: string[]
+            } | null
+            if (status?.status === "failed") {
+                toast.error(t.requestFailed)
+                return
+            }
+            if (status?.status !== "sent") continue
+            const failed = status.dmFailedUserIds ?? []
+            if (failed.length) {
+                const names = failed
+                    .map(
+                        (id) =>
+                            usersById.get(id)?.name ?? dictionary.common.unknown
+                    )
+                    .join(", ")
+                toast.warning(
+                    pluralize(locale, failed.length, t.dmFailed).replace(
+                        "{names}",
+                        names
+                    )
+                )
+            }
+            return
+        }
+    }
+
     const executeSave = async (
         published: boolean = false,
-        options?: { postAnnouncement?: boolean; notifyPlayers?: boolean }
+        choice?: RosterPublishChoice
     ) => {
         if (!board || !event) return
         const previousRoster = roster
+        const republishing = Boolean(previousRoster?.published && published)
 
         startTransition(async () => {
             try {
@@ -1304,6 +1352,18 @@ export function RosterBoard({
                             notAttendingPlayerIds: cleanNotAttendingPlayerIds,
                             streamerId: board.streamerId,
                             published: published,
+                            // The Discord roster message for this publish (D5);
+                            // a re-publish pings through the bot's reply.
+                            ...(published && choice
+                                ? {
+                                      discordPublish: {
+                                          variant: choice.variant,
+                                          mentionPlayers:
+                                              !republishing &&
+                                              choice.mentionPlayers,
+                                      },
+                                  }
+                                : {}),
                         }),
                     }
                 )
@@ -1336,6 +1396,7 @@ export function RosterBoard({
                 )
                 setIsDirty(false)
                 setPublishDialogOpen(false)
+                setPublishedUpdateDialogOpen(false)
 
                 if (wasDraft) {
                     router.replace(
@@ -1353,7 +1414,7 @@ export function RosterBoard({
                     }),
                 }).catch(() => null)
 
-                if (previousRoster?.published && published) {
+                if (republishing && previousRoster) {
                     const notificationResponse = await fetch(
                         `/api/servers/${serverId}/rosters/${nextRosterId}/update-notifications`,
                         {
@@ -1375,36 +1436,33 @@ export function RosterBoard({
                                         })
                                     ),
                                 },
-                                postAnnouncement:
-                                    options?.postAnnouncement ?? false,
-                                notifyPlayers: options?.notifyPlayers ?? true,
+                                postAnnouncement: choice?.postChanges ?? false,
+                                notifyPlayers: choice?.notifyPlayers ?? true,
+                                mentionPlayers: choice?.mentionPlayers ?? false,
                             }),
                         }
                     )
                     const notificationBody = (await notificationResponse
                         .json()
                         .catch(() => null)) as {
-                        dmFailedUserIds?: string[]
+                        requestId?: string
                     } | null
 
                     if (!notificationResponse.ok) {
-                        throw new Error(
-                            "Unable to send roster update notifications."
+                        toast.error(dictionary.rosterPublish.requestFailed)
+                    } else if (notificationBody?.requestId) {
+                        void watchRosterChanges(
+                            nextRosterId,
+                            notificationBody.requestId
                         )
-                    }
-
-                    if (notificationBody?.dmFailedUserIds?.length) {
-                        toast.warning(dictionary.roster.updateDmDeliveryFailed)
                     }
                 }
 
                 toast.success(
-                    previousRoster?.published && published
-                        ? options?.postAnnouncement
-                            ? dictionary.roster.updatePosted
-                            : dictionary.roster.updateSavedWithoutPost
+                    republishing
+                        ? dictionary.rosterPublish.republished
                         : published
-                          ? dictionary.roster.published
+                          ? dictionary.rosterPublish.published
                           : dictionary.roster.saved
                 )
             } catch (error) {
@@ -1412,6 +1470,24 @@ export function RosterBoard({
                 toast.error(dictionary.common.error)
             }
         })
+    }
+
+    const memberIds = useMemo(
+        () => new Set(userAssignments.map((assignment) => assignment.userId)),
+        [userAssignments]
+    )
+    // Without the page's settings the dialog still works with the defaults.
+    const resolvedPublishContext: RosterPublishContext = publishContext ?? {
+        language: locale,
+        timeZone: timezone ?? "UTC",
+        meetingChannelId,
+        meetingChannelName,
+        defaultVariant: "photo_text",
+        changesPostDefault: true,
+        changesDmDefault: true,
+        messagesSettingsHref: `/${locale}/dashboard/servers/${serverId}/settings/messages`,
+        channelsSettingsHref: `/${locale}/dashboard/servers/${serverId}/settings/channels`,
+        rosterUrl: "",
     }
 
     const handleSave = async (published: boolean = false) => {
@@ -2285,40 +2361,24 @@ export function RosterBoard({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            <Dialog
-                open={publishDialogOpen}
-                onOpenChange={setPublishDialogOpen}
-            >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            {dictionary.roster.publishConfirmTitle}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {dictionary.roster.publishConfirmDescription}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <DialogClose asChild>
-                            <Button variant="outline" className="rounded-xl">
-                                {dictionary.common.cancel}
-                            </Button>
-                        </DialogClose>
-                        <Button
-                            className="rounded-xl"
-                            onClick={() => handleSave(true)}
-                            disabled={isPending || isConfirmingMeetingChannel}
-                        >
-                            {isPending ? (
-                                <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                                <Send className="size-4" />
-                            )}
-                            {dictionary.roster.publishRoster}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {board && event ? (
+                <RosterPublishDialog
+                    open={publishDialogOpen}
+                    onOpenChange={setPublishDialogOpen}
+                    mode="publish"
+                    dictionary={dictionary}
+                    locale={locale}
+                    event={event}
+                    saved={roster}
+                    draft={board}
+                    users={users}
+                    memberIds={memberIds}
+                    groups={groups}
+                    context={resolvedPublishContext}
+                    pending={isPending || isConfirmingMeetingChannel}
+                    onPublish={(choice) => void executeSave(true, choice)}
+                />
+            ) : null}
             <Dialog
                 open={Boolean(unsignedPlayerAssignment)}
                 onOpenChange={(open) =>
@@ -2362,85 +2422,24 @@ export function RosterBoard({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            <Dialog
-                open={publishedUpdateDialogOpen}
-                onOpenChange={setPublishedUpdateDialogOpen}
-            >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            {dictionary.roster.updatePublishedPromptTitle}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {dictionary.roster.updatePublishedPromptDescription}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <label className="flex items-center gap-2 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={notifyRosterChanges}
-                            onChange={(event) =>
-                                setNotifyRosterChanges(event.target.checked)
-                            }
-                        />{" "}
-                        {dictionary.roster.notifyRosterChanges}
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={postRosterChanges}
-                            onChange={(event) =>
-                                setPostRosterChanges(event.target.checked)
-                            }
-                        />{" "}
-                        {dictionary.roster.postRosterChanges}
-                    </label>
-                    <DialogFooter>
-                        <div
-                            className={
-                                "flex w-full flex-row items-center justify-center gap-2"
-                            }
-                        >
-                            <Button
-                                variant="outline"
-                                className="rounded-xl"
-                                onClick={() => {
-                                    setPublishedUpdateDialogOpen(false)
-                                    void executeSave(true, {
-                                        postAnnouncement: postRosterChanges,
-                                        notifyPlayers: notifyRosterChanges,
-                                    })
-                                }}
-                                disabled={
-                                    isPending || isConfirmingMeetingChannel
-                                }
-                            >
-                                <Save className="size-4" />
-                                {dictionary.roster.updatePublishedPromptSkip}
-                            </Button>
-                            <Button
-                                className="rounded-xl"
-                                onClick={() => {
-                                    setPublishedUpdateDialogOpen(false)
-                                    void executeSave(true, {
-                                        postAnnouncement: true,
-                                        notifyPlayers: notifyRosterChanges,
-                                    })
-                                }}
-                                disabled={
-                                    isPending || isConfirmingMeetingChannel
-                                }
-                            >
-                                <Send className="size-4" />
-                                {
-                                    dictionary.roster
-                                        .updatePublishedPromptAnnounce
-                                }
-                            </Button>
-                        </div>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {board && event ? (
+                <RosterPublishDialog
+                    open={publishedUpdateDialogOpen}
+                    onOpenChange={setPublishedUpdateDialogOpen}
+                    mode="republish"
+                    dictionary={dictionary}
+                    locale={locale}
+                    event={event}
+                    saved={roster}
+                    draft={board}
+                    users={users}
+                    memberIds={memberIds}
+                    groups={groups}
+                    context={resolvedPublishContext}
+                    pending={isPending || isConfirmingMeetingChannel}
+                    onPublish={(choice) => void executeSave(true, choice)}
+                />
+            ) : null}
             <Dialog
                 open={autoFillDialogOpen}
                 onOpenChange={setAutoFillDialogOpen}

@@ -4198,9 +4198,6 @@ export const enMessages = {
         changeSquadTemplateAction: "Change template and reset assignments",
         squadTemplateChanged:
             "Squad template changed. Save the roster to apply it.",
-        publishConfirmTitle: "Publish roster?",
-        publishConfirmDescription:
-            "Members will see the published version immediately.",
         setupRoster: "Setup Roster",
         selectEvent: "Select Event",
         selectEventPlaceholder: "Choose an event",
@@ -4258,20 +4255,6 @@ export const enMessages = {
         saved: "Roster saved",
         published: "Roster published",
         attendanceUpdated: "Attendance updated",
-        updatePublishedPromptTitle: "Post a roster update too?",
-        updatePublishedPromptDescription:
-            "This roster is already live. Pick whether to send a fresh football-style update into the same announcements channel while the affected players are DM'd either way.",
-        updatePublishedPromptAnnounce: "Save and post update",
-        updatePublishedPromptSkip: "Save without post",
-        updatePublishedPromptCancel: "Keep editing",
-        updatePublishedPromptHint:
-            "⚽ We can call out who got in, who got dropped, squad moves, and role changes.",
-        notifyRosterChanges: "Notify affected players by DM",
-        postRosterChanges: "Post this roster update in the event info channel",
-        updatePosted: "Roster saved and update posted.",
-        updateSavedWithoutPost: "Roster saved. Player DMs were sent.",
-        updateDmDeliveryFailed:
-            "Roster saved, but one or more player DMs could not be delivered.",
     },
     newMatch: {
         title: "New match",
@@ -5710,6 +5693,91 @@ export const enMessages = {
             "Roster board with reserves, role slots, publish state, and acknowledgements.",
         rosterPageDescription:
             "Inspired by competitive roster boards: grouped squads, visible reserves, assignment status, and a future-ready acknowledgement flow.",
+    },
+    rosterPublish: {
+        publishTitle: "Publish roster",
+        republishTitle: "Publish again",
+        publishedAt: "published {time}",
+        close: "Close",
+        contentLabel: "What goes to Discord",
+        variantPhotoText: "Photo and text roster",
+        variantPhotoTextDescription:
+            "The roster image with the squads as text below it. Searchable and readable on a phone.",
+        variantPhoto: "Photo only",
+        variantPhotoDescription:
+            "Only the roster image, as the old bot posted it.",
+        defaultChip: "default",
+        defaultNote: "Set the default look in",
+        defaultNoteLink: "Messages and panels → Roster",
+        channelLabel: "Channel",
+        channelFrom: "from",
+        channelFromLink: "Channels and language",
+        channelMissing: "no channel set",
+        mentionLabel: "Mention rostered players",
+        mentionFirstHint: {
+            one: "The message will mention the {count} player on the roster.",
+            few: "The message will mention all {count} players on the roster.",
+            many: "The message will mention all {count} players on the roster.",
+            other: "The message will mention all {count} players on the roster.",
+        },
+        mentionRepeatHint: "Repeating it only disturbs; the DMs are enough.",
+        laterNote:
+            "Change DMs and the change summary are offered from the next publish.",
+        dmLabel: "Tell players about changes by DM",
+        dmHint: {
+            one: "Only the {count} player the change affects.",
+            few: "Only the {count} players the change affects.",
+            many: "Only the {count} players the change affects.",
+            other: "Only the {count} players the change affects.",
+        },
+        postLabel: "Post the change summary to the channel",
+        postHint: "A short message under the roster.",
+        rostered: "on the roster",
+        reserves: {
+            one: "reserve",
+            few: "reserves",
+            many: "reserves",
+            other: "reserves",
+        },
+        notAttending: "not attending",
+        changesTitle: "Changes since the last version",
+        changesMoved: "{count} moved",
+        changesAgainst: "Against the version published {time}.",
+        noChanges: "No player changed since the last version.",
+        toReserves: "to the reserves",
+        previewTitle: "Preview in {channel}",
+        previewCaption: "Simplified preview of the message.",
+        republishCaption:
+            "The message in {channel} is edited, no new one is posted. The change summary follows below it.",
+        photoPlaceholder: "roster photo (PNG)",
+        cancel: "Cancel",
+        publish: "Publish roster",
+        republish: "Publish again",
+        published: "Roster published",
+        republished: "Roster published again",
+        dmFailed: {
+            one: "The DM did not reach {count} player: {names}. Their direct messages from server members are off.",
+            few: "The DM did not reach {count} players: {names}. Their direct messages from server members are off.",
+            many: "The DM did not reach {count} players: {names}. Their direct messages from server members are off.",
+            other: "The DM did not reach {count} players: {names}. Their direct messages from server members are off.",
+        },
+        requestFailed:
+            "The roster is saved, but the changes were not sent to Discord. Please try again.",
+    },
+    reminderDelivery: {
+        title: "The reminder reached {sent} of {total} players",
+        body: "{names} have direct messages from server members turned off in Discord. Reach them another way, or ask them to allow messages from the {clan} server.",
+        bodyOne:
+            "{names} has direct messages from server members turned off in Discord. Reach them another way, or ask them to allow messages from the {clan} server.",
+        failedAll:
+            "The reminder could not be sent. Please try again in a moment.",
+        copyNames: "Copy names",
+        copied: "Names copied",
+        howTo: "How to allow messages from a server",
+        meta: "{kind} · sent {time} · by {name}",
+        kindUnanswered: "Sign-up reminder",
+        kindUnconfirmed: "Attendance reminder",
+        unknownSender: "an admin",
     },
     discordPreview: {
         regionLabel: "Discord message preview",

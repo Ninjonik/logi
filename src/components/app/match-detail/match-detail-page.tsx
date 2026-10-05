@@ -19,6 +19,7 @@ import {
     deriveMatchPhases,
     type MatchResultState,
 } from "@/domain/events/match-phase"
+import { getRosterPublishContext } from "@/lib/read-models/roster-publish-context"
 import { MatchDetailView } from "@/components/app/match-detail/match-detail-view"
 import { describeManualReminderAudience } from "@/domain/events/manual-reminders"
 import { getDiscordChannelNames } from "@/lib/read-models/discord-channel-names"
@@ -292,6 +293,17 @@ export async function MatchDetailPage({
     const meetingChannelName = meetingChannelId
         ? channelNames.get(meetingChannelId)
         : undefined
+    const publishContext =
+        canAdmin && activeTab === "roster" && roster
+            ? await getRosterPublishContext({
+                  serverId,
+                  locale,
+                  server: context.server,
+                  event,
+                  discordConfig,
+                  channelNames,
+              })
+            : undefined
     const resultsChannelName =
         resultsChannelId === undefined
             ? undefined
@@ -397,6 +409,7 @@ export async function MatchDetailPage({
                         reminder={
                             canAdmin ? reminderState("unanswered") : undefined
                         }
+                        publishContext={publishContext}
                     />
                 ) : null
             }

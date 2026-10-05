@@ -244,6 +244,11 @@ export type DiscordConfig = {
     membershipApplicationCounter?: number
     /** Clan colour and icon density of every bot message. */
     messageStyle?: MessageStyle
+    /** Match message settings (board N1); missing reads the defaults. */
+    rosterMessageVariant?: "photo_text" | "photo"
+    rosterChangesPostDefault?: boolean
+    rosterChangesDmDefault?: boolean
+    attendanceNoticesInThread?: boolean
     createdAt: Timestamp
     updatedAt: Timestamp
 }
@@ -654,6 +659,11 @@ export type Roster = {
     notAttendingPlayerIds: string[]
     streamerId?: string
     published: boolean
+    /** The Discord roster message chosen at the last publish (board D5). */
+    discordMessageVariant?: "photo_text" | "photo"
+    discordMentionPlayers?: boolean
+    /** When the roster was last published from the dashboard. */
+    publishedAt?: Timestamp
     /** The last time attendance was read from the meeting voice channel. */
     meetingAttendance?: {
         loadedAt: Timestamp

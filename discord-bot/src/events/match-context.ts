@@ -8,18 +8,17 @@
 
 import type { Client, Guild } from "discord.js"
 
-import { matchTitle } from "../../../src/domain/discord-messages/match-text"
-import type { DmFrame } from "../../../src/domain/discord-messages/direct-message-views"
 import type {
     RosterCardContext,
     RosterCardEvent,
     RosterCardGroup,
 } from "../../../src/domain/discord-messages/roster-message"
-import { getEventMessages } from "../../../src/lib/clan-language/events"
-import { getRosterMessages } from "../../../src/lib/clan-language/rosters"
-import { resolveClanLanguage } from "../../../src/lib/clan-language/core"
-import { formatMapLabel } from "../map-label"
+import type { DmFrame } from "../../../src/domain/discord-messages/direct-message-views"
 import type { DiscordConfig, EventCategory, EventRecord, Group } from "../types"
+import { matchTitle } from "../../../src/domain/discord-messages/match-text"
+import { getRosterMessages } from "../../../src/lib/clan-language/rosters"
+import { formatDiscordMapLabel } from "../../../src/lib/discord-map-label"
+import { resolveClanLanguage } from "../../../src/lib/clan-language/core"
 import { buildPublicRosterUrl } from "../utils"
 import { env } from "../environment"
 
@@ -44,7 +43,7 @@ export function eventMapLabel(
     event: Pick<EventRecord, "map" | "gameId">,
     language: string | undefined
 ) {
-    return formatMapLabel(event.map, event.gameId, getEventMessages(language))
+    return formatDiscordMapLabel(event.map, event.gameId, language)
 }
 
 /** The meeting voice channel: the event's own, else the clan's. */
