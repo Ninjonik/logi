@@ -14,6 +14,7 @@ export function DiscordEntitySelect({
     placeholder,
     allowNone = true,
     noneLabel = "None",
+    emptyLabel,
 }: {
     value?: string
     onChange: (value?: string) => void
@@ -21,6 +22,7 @@ export function DiscordEntitySelect({
     placeholder: string
     allowNone?: boolean
     noneLabel?: string
+    emptyLabel?: string
 }) {
     return (
         <EntitySelect
@@ -30,6 +32,7 @@ export function DiscordEntitySelect({
             placeholder={placeholder}
             allowNone={allowNone}
             noneLabel={noneLabel}
+            emptyLabel={emptyLabel}
         />
     )
 }

@@ -392,6 +392,31 @@ role permissions required for the relevant action.
 | Dashboard admin role        | Dashboard manager access; Player-page admin changes add or remove this role        | A configured, manageable role is required for Logi to mirror Player-page admin changes. Discord Administrator remains an independent bootstrap access path.                                           |
 | Player statistics command   | Whether `/stats` answers in this server, per game, and its default sharing channel | With the command or a game switched off the bot replies privately that statistics are unavailable here. Without a default channel, Share asks for one. Discord's own command permissions still apply. |
 
+### Discord messages, Roles and access, and /stats
+
+**Discord messages** lists what the bot sends and where: the match
+announcement, the separate match information message, reminders (direct
+messages: sign-up reminders daily until registration closes for the
+memberships chosen on each match, attendance reminders 24, 18, 12 and 6 hours
+before the meeting), live score and result panels, Wardogs League cards and bot
+errors. Each row names its channel and opens the page where it is changed; the
+public panel editor opens inline under **Live score and results**. The language
+of every bot message is shown here and changed under **Channels and language**.
+
+**Roles and access** has the clan role and the manager role. People with the
+manager role can change settings, matches and rosters. **Reload from Discord**
+rebuilds manager access from the current members of the saved manager role; it
+is available once a manager role is saved and the page has no unsaved changes.
+
+**/stats command** has the command switch, the games it answers for with their
+data source (public HLL Records profiles by Steam account; Wardogs games stored
+from your game servers), the default sharing channel, and the old stats server
+connections with their per-game exceptions. New connections belong under
+**Game servers**.
+
+On these pages a bar at the bottom counts unsaved changes; **Discard** returns
+to the saved values and **Save** stores them.
+
 Event-level Discord channel selections can override workspace defaults at event
 creation. Those message locations are then retained for that event; later
 editing an event does not move its existing Discord messages between channels.

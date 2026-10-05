@@ -44,7 +44,29 @@ valid Discord configuration.
 
 ## Workspace overview
 
-The overview is the starting point for a selected server. It summarises current information and gives you a path into the calendar, articles, events, and other workspace tools.
+The overview is the starting point for a selected server. When a game is
+selected in the sidebar, every block shows only that game.
+
+- **Greeting and date** in the clan's time zone, with the clan's games. Links to
+  all matches and, for managers, to a new match.
+- **Next match**: the earliest match that has not ended, with its category, map,
+  side and meeting time, the teams when they are set, and the roster state
+  (no roster, draft or published). With a roster it shows how many places are
+  filled. It also counts sign-ups and members who have not answered yet: clan
+  members of that game whose membership may sign up, without paused members and
+  applicants. That count is left out when the match also requires Discord roles,
+  because Logi cannot check them for every member. Managers get a button to
+  create or finish the roster; members see the published roster.
+- **Waiting for you** (managers only): staged results that wait for
+  confirmation, required settings that are still missing, and membership
+  applications in the pending phase with the date of the oldest one. Below it
+  is the clan setup progress, which opens the clan settings.
+- **This week**: today and the next six days with their matches and trainings.
+- **Form**: the outcomes of the last ten matches with a known result, oldest
+  first. A result with a dashed border still waits for confirmation.
+
+The overview does not send reminders itself: signup reminders go out on the
+match's own schedule.
 
 When you have a default workspace, the signed-in landing page opens it directly,
 but only while you can still open that clan; otherwise you see the list of your

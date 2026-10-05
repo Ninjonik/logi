@@ -32,6 +32,7 @@ export function EntitySelect({
     placeholder,
     allowNone = true,
     noneLabel = "None",
+    emptyLabel = "No results.",
 }: {
     value?: string
     onChange: (value?: string) => void
@@ -39,6 +40,8 @@ export function EntitySelect({
     placeholder: string
     allowNone?: boolean
     noneLabel?: string
+    /** Shown when the search matches nothing. */
+    emptyLabel?: string
 }) {
     const [open, setOpen] = useState(false)
     const selected = useMemo(
@@ -73,7 +76,7 @@ export function EntitySelect({
                 <Command>
                     <CommandInput placeholder={placeholder} />
                     <CommandList>
-                        <CommandEmpty>No results.</CommandEmpty>
+                        <CommandEmpty>{emptyLabel}</CommandEmpty>
                         <CommandGroup>
                             {allowNone ? (
                                 <CommandItem
