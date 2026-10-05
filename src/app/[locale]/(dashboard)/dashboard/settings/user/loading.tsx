@@ -23,7 +23,7 @@ export default async function Loading() {
                 {[3, 2, 2, 2].map((rows, section) => (
                     <div
                         key={section}
-                        className="bg-card flex flex-col rounded-2xl border px-4 py-2 sm:px-6"
+                        className="bg-card flex flex-col rounded-[14px] border px-4 py-2 sm:px-[22px]"
                     >
                         <Skeleton className="mt-3.5 mb-3 h-5 w-36 rounded" />
                         {Array.from({ length: rows }, (_, row) => (

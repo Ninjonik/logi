@@ -1,3 +1,5 @@
+import { isDraftRecord } from "@/domain/events/drafts"
+
 export type GuildRuntimeDataLike<
     TConfig,
     TGroup,
@@ -46,7 +48,8 @@ export function buildGuildPayload<
         (
             context
         ): context is EventSyncContextLike<TEvent, TRoster, TSyncState> =>
-            Boolean(context)
+            // Convex already leaves drafts out; a draft must never reach Discord.
+            Boolean(context) && !isDraftRecord(context?.event)
     )
 
     return {

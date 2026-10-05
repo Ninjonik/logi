@@ -26,7 +26,9 @@ export function isClanApiResourceDocument(
     if (!isRecord(value)) return false
     switch (resource) {
         case "events":
+            // Unpublished drafts are not part of the API: they read as missing.
             return (
+                value.isDraft !== true &&
                 typeof value.name === "string" &&
                 typeof value.registrationEnd === "string" &&
                 typeof value.meetingStart === "string" &&

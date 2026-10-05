@@ -54,6 +54,9 @@ export const references = {
     acknowledgeAttendance: makeFunctionReference<"mutation">(
         "rosters:acknowledgeAttendance"
     ),
+    declineAttendance: makeFunctionReference<"mutation">(
+        "rosters:declineAttendance"
+    ),
     applyEventScore: makeFunctionReference<"mutation">(
         "events:applyEventScore"
     ),
@@ -107,6 +110,18 @@ export const references = {
     ),
     listPendingMeetingAttendanceRequests: makeFunctionReference<"query">(
         "meetingAttendance:listPendingMeetingAttendanceRequests"
+    ),
+    listPendingManualReminders: makeFunctionReference<"query">(
+        "eventReminders:listPending"
+    ),
+    claimManualReminder: makeFunctionReference<"mutation">(
+        "eventReminders:claim"
+    ),
+    completeManualReminder: makeFunctionReference<"mutation">(
+        "eventReminders:complete"
+    ),
+    failManualReminder: makeFunctionReference<"mutation">(
+        "eventReminders:fail"
     ),
     getPendingMatchRecaps: makeFunctionReference<"query">(
         "matchRecaps:listPendingForEvent"
@@ -184,6 +199,9 @@ export const references = {
     ),
     backfillMissingScheduledJobs: makeFunctionReference<"mutation">(
         "scheduledJobs:backfillMissing"
+    ),
+    generateRecurringEvents: makeFunctionReference<"mutation">(
+        "eventRecurrence:generateDue"
     ),
     recoverScheduledJobQueue: makeFunctionReference<"mutation">(
         "scheduledJobs:recoverQueue"

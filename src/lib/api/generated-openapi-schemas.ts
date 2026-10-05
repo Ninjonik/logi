@@ -163,6 +163,41 @@ export const generatedOpenApiSchemas = {
                     "weekdays"
                 ]
             },
+            "recurrenceSeriesId": {
+                "type": "string",
+                "description": "Convex ID for events"
+            },
+            "signupGroupLimits": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "groupId": {
+                            "type": "string"
+                        },
+                        "max": {
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "groupId",
+                        "max"
+                    ]
+                }
+            },
+            "attendanceReminderHours": {
+                "type": "array",
+                "items": {
+                    "type": "number"
+                }
+            },
+            "createParticipantRoles": {
+                "type": "boolean"
+            },
+            "squadPresetId": {
+                "type": "string",
+                "description": "Convex ID for squadPresets"
+            },
             "attendeeRoleId": {
                 "type": "string"
             },
@@ -452,6 +487,9 @@ export const generatedOpenApiSchemas = {
                         },
                         "createdAt": {
                             "type": "string"
+                        },
+                        "excusedBy": {
+                            "type": "string"
                         }
                     },
                     "required": [
@@ -617,6 +655,18 @@ export const generatedOpenApiSchemas = {
                 "nth": 0,
                 "weekday": 0
             },
+            "recurrenceSeriesId": "string",
+            "signupGroupLimits": [
+                {
+                    "groupId": "string",
+                    "max": 0
+                }
+            ],
+            "attendanceReminderHours": [
+                0
+            ],
+            "createParticipantRoles": true,
+            "squadPresetId": "string",
             "attendeeRoleId": "string",
             "reserveRoleId": "string",
             "server": "string",
@@ -687,7 +737,8 @@ export const generatedOpenApiSchemas = {
                 {
                     "userId": "string",
                     "reason": "string",
-                    "createdAt": "string"
+                    "createdAt": "string",
+                    "excusedBy": "string"
                 }
             ],
             "matchTeams": [
@@ -914,6 +965,32 @@ export const generatedOpenApiSchemas = {
             "published": {
                 "type": "boolean"
             },
+            "meetingAttendance": {
+                "type": "object",
+                "properties": {
+                    "loadedAt": {
+                        "type": "string"
+                    },
+                    "channelId": {
+                        "type": "string"
+                    },
+                    "voiceCount": {
+                        "type": "number"
+                    },
+                    "foundUserIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "loadedAt",
+                    "channelId",
+                    "voiceCount",
+                    "foundUserIds"
+                ]
+            },
             "createdAt": {
                 "type": "string"
             },
@@ -975,6 +1052,14 @@ export const generatedOpenApiSchemas = {
             ],
             "streamerId": "string",
             "published": true,
+            "meetingAttendance": {
+                "loadedAt": "string",
+                "channelId": "string",
+                "voiceCount": 0,
+                "foundUserIds": [
+                    "string"
+                ]
+            },
             "createdAt": "string",
             "updatedAt": "string",
             "id": "string"

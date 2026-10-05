@@ -5,14 +5,17 @@ import {
     calendarDayDistance,
     calendarDayKeys,
     eventsByDay,
+    monthAttendanceLeaders,
     nextUpcomingMatch,
     pendingApplications,
     recentForm,
     resultsAwaitingConfirmation,
     rosterFill,
     signupSummary,
+    upcomingEvents,
     type OverviewAssignment,
     type OverviewEvent,
+    type ScoredEvent,
 } from "./clan-overview"
 
 const now = new Date("2026-10-11T12:00:00.000Z")
@@ -87,6 +90,26 @@ test("the next match is the earliest one not concluded", () => {
         "sooner"
     )
     assert.equal(nextUpcomingMatch([past, training], now), null)
+})
+
+test("upcoming events include trainings and leave out concluded ones", () => {
+    const upcoming = upcomingEvents(
+        [
+            event({ id: "later", gameStart: "2026-10-14T18:00:00.000Z" }),
+            event({
+                id: "training",
+                kind: "training",
+                gameStart: "2026-10-12T18:00:00.000Z",
+            }),
+            event({ id: "done", status: "concluded" }),
+            event({ id: "broken", gameStart: "not-a-date" }),
+        ],
+        now
+    )
+    assert.deepEqual(
+        upcoming.map((item) => item.id),
+        ["training", "later"]
+    )
 })
 
 test("a match in progress still counts as the next match", () => {
@@ -276,5 +299,183 @@ test("events are grouped under their start day and sorted", () => {
             ["2026-10-11", ["early", "late"]],
             ["2026-10-12", []],
         ]
+    )
+})
+
+const scoreRules = {
+    noCategory: 0,
+    declined: -1,
+    rosterPresent: 3,
+    reservePresent: 2,
+    rosterAbsent: -2,
+    reserveAbsent: 0,
+    excusedAbsence: 1,
+}
+
+function scoredEvent(
+    overrides: Partial<ScoredEvent> & { id: string }
+): ScoredEvent {
+    return {
+        gameStart: "2026-10-04T18:00:00.000Z",
+        status: "concluded",
+        scoreResolution: "applied",
+        participants: [],
+        absenceNotices: [],
+        ...overrides,
+    }
+}
+
+function scoredRoster(
+    eventId: string,
+    players: Array<{ id: string; confirmed?: boolean }>,
+    reserves: Array<{ userId: string; confirmed?: boolean }> = []
+) {
+    return {
+        eventId,
+        squads: [{ players }],
+        reservePlayerIds: reserves.map((reserve) => reserve.userId),
+        reserveAttendances: reserves,
+    }
+}
+
+const monthKeyOf = (iso: string) => iso.slice(0, 7)
+
+test("month attendance points apply the clan's rules to applied matches of the month", () => {
+    const attending = (userId: string) => ({
+        userId,
+        status: "attending" as const,
+    })
+    const result = monthAttendanceLeaders({
+        events: [
+            scoredEvent({
+                id: "a",
+                participants: [
+                    attending("u1"),
+                    attending("u2"),
+                    attending("u3"),
+                    { userId: "u4", status: "not_attending" },
+                ],
+                absenceNotices: [{ userId: "u3" }],
+            }),
+            scoredEvent({
+                id: "b",
+                gameStart: "2026-10-18T18:00:00.000Z",
+                participants: [attending("u1"), attending("u2")],
+            }),
+            // Not counted: other month, skipped, not concluded.
+            scoredEvent({
+                id: "september",
+                gameStart: "2026-09-30T18:00:00.000Z",
+                participants: [attending("u2")],
+            }),
+            scoredEvent({
+                id: "skipped",
+                scoreResolution: "skipped",
+                participants: [attending("u2")],
+            }),
+            scoredEvent({
+                id: "open",
+                status: "starting",
+                scoreResolution: undefined,
+                participants: [attending("u2")],
+            }),
+        ],
+        rosters: [
+            scoredRoster("a", [
+                { id: "u1", confirmed: true },
+                { id: "u2", confirmed: true },
+                { id: "u3" },
+            ]),
+            scoredRoster(
+                "b",
+                [{ id: "u1", confirmed: true }],
+                [{ userId: "u2", confirmed: true }]
+            ),
+            scoredRoster("september", [{ id: "u2", confirmed: true }]),
+            scoredRoster("skipped", [{ id: "u2", confirmed: true }]),
+            scoredRoster("open", [{ id: "u2", confirmed: true }]),
+        ],
+        assignments: [
+            { userId: "u1", paused: false },
+            // A second game's assignment does not count the member twice.
+            { userId: "u1", paused: false },
+            { userId: "u2", paused: false },
+            { userId: "u3", paused: false },
+            { userId: "u4", paused: false },
+            { userId: "u5", paused: true },
+        ],
+        settings: scoreRules,
+        monthKey: "2026-10",
+        monthKeyOf,
+    })
+
+    assert.equal(result.events, 2)
+    // u1: 3 + 3, u2: 3 + 2, u3: excused 1, u4: declined -1 (not listed).
+    assert.deepEqual(result.leaders, [
+        { userId: "u1", points: 6 },
+        { userId: "u2", points: 5 },
+        { userId: "u3", points: 1 },
+    ])
+})
+
+test("month attendance points rank ties by user ID and respect the limit", () => {
+    const events = ["x", "y"].map((id) =>
+        scoredEvent({
+            id,
+            participants: ["u3", "u1", "u2"].map((userId) => ({
+                userId,
+                status: "attending" as const,
+            })),
+        })
+    )
+    const result = monthAttendanceLeaders({
+        events,
+        rosters: events.map((item) =>
+            scoredRoster(item.id, [
+                { id: "u1", confirmed: true },
+                { id: "u2", confirmed: true },
+                { id: "u3", confirmed: true },
+            ])
+        ),
+        assignments: ["u3", "u2", "u1"].map((userId) => ({
+            userId,
+            paused: false,
+        })),
+        settings: scoreRules,
+        monthKey: "2026-10",
+        monthKeyOf,
+        limit: 2,
+    })
+    assert.deepEqual(result.leaders, [
+        { userId: "u1", points: 6 },
+        { userId: "u2", points: 6 },
+    ])
+})
+
+test("month attendance points are empty with the default rules or no matches", () => {
+    const result = monthAttendanceLeaders({
+        events: [
+            scoredEvent({
+                id: "a",
+                participants: [{ userId: "u1", status: "not_attending" }],
+            }),
+        ],
+        rosters: [],
+        assignments: [{ userId: "u1", paused: false }],
+        settings: { ...scoreRules, rosterPresent: 0, excusedAbsence: 0 },
+        monthKey: "2026-10",
+        monthKeyOf,
+    })
+    assert.deepEqual(result, { leaders: [], events: 1 })
+    assert.deepEqual(
+        monthAttendanceLeaders({
+            events: [],
+            rosters: [],
+            assignments: [],
+            settings: scoreRules,
+            monthKey: "2026-10",
+            monthKeyOf,
+        }),
+        { leaders: [], events: 0 }
     )
 })

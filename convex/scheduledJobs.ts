@@ -2,6 +2,7 @@ import {
     getAttendanceReminderDueAt,
     getSignupReminderDueAt,
     isExpiredScheduledJobClaim,
+    resolveAttendanceReminderHours,
     resolveSignupReminderStatuses,
     shouldDiscardScheduledJob,
 } from "../src/domain/events/scheduled-job-policy"
@@ -49,6 +50,7 @@ export const claimDue = mutation({
                     eventStatus: event.status,
                     gameEnd: event.gameEnd,
                     now,
+                    isDraft: event.isDraft,
                 })
             ) {
                 await ctx.db.delete(job._id)
@@ -144,6 +146,7 @@ export const recoverQueue = mutation({
                     eventStatus: event.status,
                     gameEnd: event.gameEnd,
                     now,
+                    isDraft: event.isDraft,
                 })
             ) {
                 await ctx.db.delete(job._id)
@@ -178,7 +181,7 @@ export const backfillMissing = mutation({
             const historical =
                 new Date(event.gameEnd).getTime() <
                 Date.now() - 7 * 24 * 60 * 60 * 1000
-            if (historical) continue
+            if (historical || event.isDraft === true) continue
             const existingJobs = await ctx.db
                 .query("eventScheduleJobs")
                 .withIndex("eventId", (q) => q.eq("eventId", event._id))
@@ -208,7 +211,9 @@ export const backfillMissing = mutation({
                             EVENT_CONCLUSION_RESERVE_MS
                     ).toISOString(),
                 ],
-                ...[24, 18, 12, 6].flatMap((hours) => {
+                ...resolveAttendanceReminderHours(
+                    event.attendanceReminderHours
+                ).flatMap((hours) => {
                     const dueAt = getAttendanceReminderDueAt(
                         event.meetingStart,
                         hours,

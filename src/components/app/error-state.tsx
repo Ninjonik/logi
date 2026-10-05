@@ -57,7 +57,7 @@ export function ErrorState({
         <section
             role="alert"
             className={cn(
-                "border-status-danger-border bg-card flex flex-col gap-3 rounded-2xl border p-5",
+                "border-status-danger-border bg-card flex flex-col gap-3 rounded-[14px] border p-5",
                 className
             )}
         >
@@ -68,7 +68,7 @@ export function ErrorState({
                 />
                 <div className="flex min-w-0 flex-col gap-1">
                     <h2 className="text-[15px] font-semibold">{title}</h2>
-                    <p className="text-muted-foreground text-sm leading-5">
+                    <p className="text-foreground/80 text-sm leading-5">
                         {description}
                     </p>
                 </div>

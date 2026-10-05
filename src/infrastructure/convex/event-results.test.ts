@@ -329,3 +329,42 @@ test("generic event reads cannot bypass the reviewed-result grant or game bounda
         "confirmed"
     )
 })
+
+test("clan review list returns staged and reviewed heads for one clan only", async () => {
+    const ctx = fixture()
+    const list = (args: Record<string, unknown> = {}) =>
+        invoke(results.listClanReviews, ctx, {
+            secret,
+            guildId: "guild",
+            ...args,
+        })
+    assert.deepEqual(await list(), [])
+    await stage(ctx)
+    assert.deepEqual(await list(), [
+        {
+            eventId: "events:a",
+            status: "provisional",
+            origin: "collected",
+            participants: scores,
+        },
+    ])
+    // The list carries the head only: no players, sources or reviewers.
+    assert.equal(JSON.stringify(await list()).includes("76561198"), false)
+    await confirm(ctx)
+    assert.equal((await list())[0].status, "confirmed")
+    assert.deepEqual(await list({ guildId: "other" }), [])
+    await assert.rejects(list({ secret: "wrong" }), /Unauthorized/)
+})
+
+test("clan review list skips drafts, trainings and heads of another game scope", async () => {
+    const ctx = fixture()
+    await stage(ctx)
+    const list = () =>
+        invoke(results.listClanReviews, ctx, { secret, guildId: "guild" })
+    await ctx.db.patch("events:a", { isDraft: true })
+    assert.deepEqual(await list(), [])
+    await ctx.db.patch("events:a", { isDraft: undefined, kind: "training" })
+    assert.deepEqual(await list(), [])
+    await ctx.db.patch("events:a", { kind: "match", gameId: "wardogs" })
+    assert.deepEqual(await list(), [])
+})

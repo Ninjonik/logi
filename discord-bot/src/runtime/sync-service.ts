@@ -136,6 +136,15 @@ export class DiscordSyncService {
         return this.guildCache.get(guildId)?.config
     }
 
+    /** The current payload of one event, for DMs sent outside the sync loop. */
+    async loadEventPayload(eventId: string): Promise<SyncPayload | null> {
+        const context = await this.loadEventSyncContext(eventId)
+        if (!context) return null
+        const runtime = this.guildCache.get(context.event.guildId)
+        if (!runtime?.config) return null
+        return buildGuildPayload(runtime, [context])
+    }
+
     triggerSoon(delayMs = 2000) {
         logInfo("sync-service", "Triggering scheduled flush", {
             delayMs,

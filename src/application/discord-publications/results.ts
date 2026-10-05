@@ -1,7 +1,11 @@
+import type { ResultCardFacts } from "@/domain/discord-publications/result-card"
+
 export type ResultEvent = {
     id: string
     name: string
     map: string | null
+    /** Category, sides, confirming admin and public page; absent from older backends. */
+    card?: ResultCardFacts | null
     result: {
         status: string
         version: number

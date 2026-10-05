@@ -17,7 +17,12 @@ export async function syncEventRoles(
     let attendeeRoleId = event.attendeeRoleId
     let reserveRoleId = event.reserveRoleId
     try {
-        if (event.status === "concluded") {
+        // A match created with participant roles turned off never gets them;
+        // any left over are removed the same way as after the match.
+        if (
+            event.status === "concluded" ||
+            event.createParticipantRoles === false
+        ) {
             await Promise.all(
                 [attendeeRoleId, reserveRoleId]
                     .filter((id): id is string => Boolean(id))

@@ -11,6 +11,7 @@ import {
 } from "../src/infrastructure/convex/server-read-model"
 import { filterByGameScope, type GameScope } from "../src/domain/games/game"
 import { getGuildDiscordId, getUserByDiscordId } from "./identity"
+import { withoutDrafts } from "../src/domain/events/drafts"
 import { internalAuthSecret } from "./discord_shared"
 import type { QueryCtx } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
@@ -116,7 +117,11 @@ async function buildServerContext(
             .withIndex("guildId", (q) => q.eq("guildId", serverDiscordId))
             .collect(),
     ])
-    const scopedEvents = filterByGameScope(events, options.gameScope)
+    // Unpublished match drafts are visible only to the clan's managers.
+    const scopedEvents = filterByGameScope(
+        canAdmin ? events : withoutDrafts(events),
+        options.gameScope
+    )
     const scopedSquadPresets = filterByGameScope(
         squadPresets,
         options.gameScope

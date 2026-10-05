@@ -17,6 +17,10 @@ export type EventWorkflowRecord = {
         "recruit" | "member" | "reserve_member" | "mercenary"
     >
     useGeneralSignup?: boolean
+    /** Unpublished drafts accept no sign-ups. */
+    isDraft?: boolean
+    /** Group caps by group ID; a full group gives a reserve place instead. */
+    signupGroupLimits?: Array<{ groupId: string; max: number }>
     registrationEnd: string
     meetingStart: string
     gameStart?: string

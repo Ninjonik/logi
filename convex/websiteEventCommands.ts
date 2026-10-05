@@ -188,7 +188,7 @@ async function refreshMatchTeam(
 ): Promise<{ eventId: string } | { error: "invalid_match_teams" }> {
     const id = tracked.db.normalizeId("events", command.eventId)
     const event = id ? await tracked.db.get(id) : null
-    if (!event || event.guildId !== actor.guildId)
+    if (!event || event.guildId !== actor.guildId || event.isDraft === true)
         return { error: "invalid_match_teams" }
     const refreshed = await refreshAssignedMatchTeam(
         new ConvexMatchTeamSnapshotPorts(tracked),
@@ -217,6 +217,8 @@ export const readEditor = query({
         if (
             !current ||
             current.guildId !== grant.actor.guildId ||
+            // Website commands never see unpublished drafts.
+            current.isDraft === true ||
             resolveGameScope(current.gameId) !== game.data
         )
             return error("not_found")
@@ -285,7 +287,7 @@ export const execute = mutation({
                 event: async (eventId) => {
                     const id = ctx.db.normalizeId("events", eventId)
                     const event = id ? await ctx.db.get(id) : null
-                    return event
+                    return event && event.isDraft !== true
                         ? {
                               ...event,
                               id: String(event._id),

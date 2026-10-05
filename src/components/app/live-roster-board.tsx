@@ -11,6 +11,7 @@ import type {
     AppUser,
     SquadPreset,
 } from "@/types/domain"
+import type { ReminderAudienceState } from "@/components/app/match-detail/reminder-button"
 import type { ServerUserAssignment } from "@/lib/server-user-management"
 import type { Dictionary } from "@/i18n/dictionaries"
 
@@ -33,6 +34,8 @@ type LiveRosterBoardProps = {
     initialSquadPresets: SquadPreset[]
     initialCanAdmin: boolean
     initialDiscordConfig: BoardDiscordConfig | null
+    meetingChannelName?: string
+    reminder?: ReminderAudienceState
 }
 
 type LiveRosterDetail = {
@@ -80,6 +83,8 @@ export function LiveRosterBoard(props: LiveRosterBoardProps) {
             locale={props.locale}
             timezone={discordConfig?.timezone}
             meetingChannelId={discordConfig?.meetingChannelId}
+            meetingChannelName={props.meetingChannelName}
+            reminder={props.reminder}
             defaultMode="view"
         />
     )

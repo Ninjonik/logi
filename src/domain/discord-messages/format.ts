@@ -20,15 +20,19 @@ export function parseDiscordColor(
 
 /**
  * The accent of a bot message: an event category colour wins (events with a
- * category use the category colour), then the clan colour, then Logi amber.
+ * category use the category colour), then the clan colour from the clan's
+ * message style (the Discord messages settings page), then Logi amber.
  */
 export function resolveMessageAccentColor(input: {
     categoryColor?: string | null
     clanColor?: string | null
+    /** The clan's stored message style; its colour is the clan colour. */
+    messageStyle?: { accentColor?: string } | null
 }): number {
     return (
         parseDiscordColor(input.categoryColor) ??
         parseDiscordColor(input.clanColor) ??
+        parseDiscordColor(input.messageStyle?.accentColor) ??
         DEFAULT_MESSAGE_ACCENT_COLOR
     )
 }

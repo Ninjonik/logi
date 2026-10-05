@@ -5,6 +5,8 @@ import {
     REMINDER_STATUSES,
     SIGNUP_STATUSES,
 } from "@/domain/events/match-templates"
+import { ATTENDANCE_REMINDER_OFFSETS } from "@/domain/events/scheduled-job-policy"
+import { MAX_SIGNUP_GROUP_LIMIT } from "@/domain/events/upsert-policy"
 import { GAME_IDS } from "@/domain/games/game"
 
 const id = z.string().trim().min(1).max(64)
@@ -38,6 +40,30 @@ export const matchTemplateSchema = z.strictObject({
     createForumChannel: z.boolean(),
     createSquadVoiceChannels: z.boolean(),
     topicPresetId: id.optional(),
+    signupGroupLimits: z
+        .array(
+            z.strictObject({
+                groupId: id,
+                max: z.number().int().min(1).max(MAX_SIGNUP_GROUP_LIMIT),
+            })
+        )
+        .max(50)
+        .optional(),
+    attendanceReminderHours: z
+        .array(
+            z
+                .number()
+                .int()
+                .refine((hours) =>
+                    (ATTENDANCE_REMINDER_OFFSETS as readonly number[]).includes(
+                        hours
+                    )
+                )
+        )
+        .max(ATTENDANCE_REMINDER_OFFSETS.length)
+        .optional(),
+    createParticipantRoles: z.boolean().optional(),
+    squadPresetId: id.optional(),
 })
 
 /** One save of the match templates page: the clan's full list. */

@@ -140,3 +140,43 @@ export function formatAdminDate(iso: string, locale: string): string {
         return date.toISOString()
     }
 }
+
+/** One fact on a catalogue row's second line, in display order. */
+export type CatalogueRowFact =
+    | { kind: "code"; value: string }
+    | { kind: "linked" }
+    | { kind: "competitions"; count: number }
+    | { kind: "pending" }
+
+/**
+ * What a catalogue row says about a team (design I1): its short code, that
+ * it is a clan on Logi, how many competitions it plays and a waiting change.
+ * Usage facts appear once usage has loaded.
+ */
+export function catalogueRowFacts(
+    team: Pick<TeamRecord, "shortCode" | "linkedGuildId">,
+    usage:
+        { competitionCount: number; pendingRequests: number } | null | undefined
+): CatalogueRowFact[] {
+    const facts: CatalogueRowFact[] = []
+    if (team.shortCode) facts.push({ kind: "code", value: team.shortCode })
+    if (team.linkedGuildId) facts.push({ kind: "linked" })
+    if (usage && usage.competitionCount > 0)
+        facts.push({ kind: "competitions", count: usage.competitionCount })
+    if (usage && usage.pendingRequests > 0) facts.push({ kind: "pending" })
+    return facts
+}
+
+/** A short localized day and month ("28. 9." in Czech); unparsable values are shown as stored. */
+export function formatAdminDay(iso: string, locale: string): string {
+    const date = new Date(iso)
+    if (Number.isNaN(date.getTime())) return iso
+    try {
+        return new Intl.DateTimeFormat(locale, {
+            day: "numeric",
+            month: "numeric",
+        }).format(date)
+    } catch {
+        return date.toISOString().slice(0, 10)
+    }
+}

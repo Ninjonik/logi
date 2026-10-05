@@ -1,10 +1,17 @@
+import {
+    statsFooter,
+    statsNumber,
+    statsPeriodLabel,
+    statsTitle,
+    wardogsOverviewFields,
+} from "../../../src/domain/player-stats/stats-reply"
 import type {
     StatsGame,
     StatsPeriod,
 } from "../../../src/domain/player-stats/player-stats"
 import type { PlayerStatsResult } from "../../../src/application/game-data/read-player-stats"
+import { statsCopy } from "../../../src/domain/player-stats/stats-copy"
 import { EmbedBuilder, escapeMarkdown } from "discord.js"
-import { statsCopy } from "./stats-copy"
 
 export type StatsView = "overview" | "recent" | "factions" | "weapons" | "maps"
 export const safeStatsText = (value: string) =>
@@ -23,19 +30,8 @@ export function renderStats(input: {
     const c = statsCopy(input.locale),
         r = input.result,
         view = input.view ?? "overview"
-    const n = (value: number | null | undefined) =>
-        value === null || value === undefined
-            ? "—"
-            : new Intl.NumberFormat(
-                  input.locale.startsWith("cs")
-                      ? "cs-CZ"
-                      : input.locale.startsWith("de")
-                        ? "de-DE"
-                        : "en-GB",
-                  { maximumFractionDigits: 2 }
-              ).format(value)
-    const period =
-        input.period === "all" ? c.all : `${input.period.slice(0, -1)} d`
+    const n = statsNumber(input.locale)
+    const period = statsPeriodLabel(c, input.period)
     const title =
         r.kind === "wardogs"
             ? (r.stats?.player.name ?? r.name)
@@ -44,19 +40,9 @@ export function renderStats(input: {
               : r.account.name
     const embed = new EmbedBuilder()
         .setColor(input.game === "wardogs" ? 0xd8a846 : 0x75865b)
-        .setTitle(
-            `${input.game === "wardogs" ? "WARDOGS" : "HELL LET LOOSE"} · ${safeStatsText(title ?? "Player")}`.slice(
-                0,
-                256
-            )
-        )
+        .setTitle(statsTitle(input.game, safeStatsText(title ?? "Player")))
         .setDescription(`**${period}**`)
-        .setFooter({
-            text:
-                input.game === "hll"
-                    ? `HLL Records · ${c.hllCoverage}`
-                    : `Logi / Warcon · ${c.recorded}`,
-        })
+        .setFooter({ text: statsFooter(c, input.game) })
     if (input.imageUrl) embed.setThumbnail(input.imageUrl)
     const field = (name: string, value: string, inline = false) =>
         embed.addFields({ name, value: value.slice(0, 1024) || "—", inline })
@@ -135,36 +121,9 @@ export function renderStats(input: {
                     )
                     .join("\n") || c.noItems
             )
-        else {
-            const p = stats.player,
-                m = p.metrics
-            const metric = (
-                key: "kills" | "deaths" | "cashDelta" | "seconds"
-            ) =>
-                `${n(key === "seconds" && m[key].value !== null ? m[key].value! / 3600 : m[key].value)}${m[key].knownGames < p.matches && m[key].value !== null ? "*" : ""}`
-            field(
-                `🎯 ${c.combat}`,
-                `${c.kills} **${metric("kills")}** · ${c.deaths} **${metric("deaths")}**\nK/D **${n(p.kd)}**`
-            )
-            field(
-                `🏆 ${c.record}`,
-                `${c.wins} **${p.wins}/${p.matches}** · ${c.winRate} **${n(p.winRate === null ? null : p.winRate * 100)} %**\n${c.unknownResults}: ${p.unknownResults}`
-            )
-            field(
-                `💰 ${c.economy}`,
-                `${c.cash} **${metric("cashDelta")}** · ${c.time} **${metric("seconds")} h**`
-            )
-            const incomplete = (
-                ["kills", "deaths", "cashDelta", "seconds"] as const
-            ).filter((k) => m[k].knownGames < p.matches)
-            if (incomplete.length)
-                field(
-                    c.coverage,
-                    incomplete
-                        .map((k) => `${k}: ${m[k].knownGames}/${p.matches}`)
-                        .join(" · ")
-                )
-        }
+        else
+            for (const item of wardogsOverviewFields(c, stats.player, n))
+                field(item.name, item.value)
         if (r.fetchedAt) embed.setTimestamp(new Date(r.fetchedAt))
     }
     return { embeds: [embed], allowedMentions: { parse: [] as never[] } }

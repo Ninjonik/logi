@@ -4,7 +4,7 @@ import { v } from "convex/values"
  * A clan's match or training template (design D1). It only pre-fills the
  * dashboard create form; stored events never read it.
  */
-export const matchTemplateValidator = v.object({
+const matchTemplateFields = {
     id: v.string(),
     name: v.string(),
     kind: v.union(v.literal("match"), v.literal("training")),
@@ -42,4 +42,22 @@ export const matchTemplateValidator = v.object({
     createForumChannel: v.boolean(),
     createSquadVoiceChannels: v.boolean(),
     topicPresetId: v.optional(v.string()),
+}
+
+/** The arguments of `guilds:saveMatchTemplates` (unchanged). */
+export const matchTemplateValidator = v.object(matchTemplateFields)
+
+/**
+ * A stored template: the original fields plus the group caps, attendance
+ * reminder offsets, participant roles switch and roster squad preset that
+ * `matchTemplates:save` accepts.
+ */
+export const storedMatchTemplateValidator = v.object({
+    ...matchTemplateFields,
+    signupGroupLimits: v.optional(
+        v.array(v.object({ groupId: v.string(), max: v.number() }))
+    ),
+    attendanceReminderHours: v.optional(v.array(v.number())),
+    createParticipantRoles: v.optional(v.boolean()),
+    squadPresetId: v.optional(v.string()),
 })

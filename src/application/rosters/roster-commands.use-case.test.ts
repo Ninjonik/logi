@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    DeclineRosterAttendanceUseCase,
     UpdateRosterAttendanceUseCase,
     UpsertRosterUseCase,
     type RosterCommandRepository,
@@ -222,4 +223,103 @@ test("UpdateRosterAttendanceUseCase rejects missing rosters", async () => {
             ),
         /Roster not found/
     )
+})
+
+test("DeclineRosterAttendanceUseCase writes the notice, roster and history once, in scope", async () => {
+    const roster = {
+        id: "roster-1",
+        eventId: "event-1",
+        squads: [
+            {
+                name: "Able",
+                group: "inf",
+                order: 1,
+                color: "#000",
+                players: [{ id: "user-1", ack: true, roleName: "Medic" }],
+            },
+        ],
+        reservePlayerIds: [],
+        reserveAttendances: [],
+        notAttendingPlayerIds: [],
+        published: true,
+    }
+    const event = {
+        id: "event-1",
+        guildId: "guild-1",
+        name: "VLK vs ROG",
+        kind: "match" as const,
+        registrationEnd: "2026-10-10T17:30:00.000Z",
+        meetingStart: "2026-10-11T17:30:00.000Z",
+        gameStart: "2026-10-11T18:00:00.000Z",
+        gameEnd: "2026-10-11T20:00:00.000Z",
+        absenceNotices: [] as Array<{
+            userId: string
+            reason: string
+            createdAt: string
+        }>,
+    }
+    const writes: string[] = []
+    const activities: unknown[] = []
+    const rosters = {
+        async getRosterByEventId() {
+            return roster
+        },
+        async updateRoster(_id: string, next: typeof roster) {
+            writes.push("roster")
+            Object.assign(roster, next)
+        },
+    }
+    const events = {
+        async getById() {
+            return event
+        },
+        async saveAbsenceNotices(
+            _id: string,
+            input: { absenceNotices: typeof event.absenceNotices }
+        ) {
+            writes.push("notices")
+            event.absenceNotices = input.absenceNotices
+        },
+        async appendSignupActivity(input: unknown) {
+            writes.push("activity")
+            activities.push(input)
+        },
+    }
+    const useCase = new DeclineRosterAttendanceUseCase(rosters, events, {
+        now: () => new Date("2026-10-10T18:00:00.000Z"),
+    })
+    const input = {
+        guildId: "guild-1",
+        eventId: "event-1",
+        userId: "user-1",
+        reason: "Nemoc",
+    }
+
+    assert.deepEqual(await useCase.execute(input), { ok: true, changed: true })
+    assert.deepEqual(writes, ["notices", "roster", "activity"])
+    assert.equal(roster.squads[0]?.players[0]?.ack, false)
+    assert.deepEqual(activities, [
+        {
+            guildId: "guild-1",
+            eventId: "event-1",
+            eventName: "VLK vs ROG",
+            eventKind: "match",
+            userId: "user-1",
+            action: "declined",
+            role: "Able · Medic",
+            previousRole: null,
+            occurredAt: "2026-10-10T18:00:00.000Z",
+        },
+    ])
+
+    assert.deepEqual(await useCase.execute(input), {
+        ok: true,
+        changed: false,
+    })
+    assert.equal(writes.length, 3)
+    await assert.rejects(
+        useCase.execute({ ...input, guildId: "guild-2" }),
+        /Attendance unavailable/
+    )
+    assert.equal(writes.length, 3)
 })

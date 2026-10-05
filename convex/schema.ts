@@ -25,8 +25,8 @@ import {
     discordPublications,
     discordPublicPanels,
 } from "./discordPublicationTable"
+import { storedMatchTemplateValidator } from "./matchTemplateValidators"
 import { resultPublicPayload, resultRevision } from "./resultValidators"
-import { matchTemplateValidator } from "./matchTemplateValidators"
 import { defineSchema, defineTable } from "convex/server"
 import { apiKeyReadAccess } from "./apiKeyValidators"
 import { v } from "convex/values"
@@ -218,6 +218,7 @@ const membershipCategory = v.object({
         v.literal("reserve_member"),
         v.literal("mercenary")
     ),
+    autoAssignRecruitOnApply: v.optional(v.boolean()),
 })
 
 const eventCategory = v.object({
@@ -273,6 +274,7 @@ const membershipSettings = v.object({
     applicationWelcomeMessage: v.optional(v.string()),
     collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),
+    roleSyncEnabled: v.optional(v.boolean()),
     inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(rosterScoreSettings),
     categories: v.array(membershipCategory),
@@ -287,6 +289,11 @@ const statsSettings = v.object({
 const playerStatsServer = v.object({
     token: v.string(),
     url: v.string(),
+})
+
+const messageStyle = v.object({
+    accentColor: v.optional(v.string()),
+    iconDensity: v.optional(v.union(v.literal("sparse"), v.literal("rich"))),
 })
 
 // Optional everywhere so existing Hell Let Loose data remains valid.
@@ -484,6 +491,9 @@ const eventNotice = v.object({
     userId: v.string(),
     reason: v.string(),
     createdAt: v.string(),
+    // Set when a clan admin excused the player after the match; the player's
+    // own late notice has no admin.
+    excusedBy: v.optional(v.string()),
 })
 
 const rosterSquad = v.object({
@@ -670,7 +680,7 @@ export default defineSchema({
         description: v.optional(v.string()),
         eventCategories: v.optional(v.array(eventCategory)),
         // Create-form defaults per match or training type; events never read them.
-        matchTemplates: v.optional(v.array(matchTemplateValidator)),
+        matchTemplates: v.optional(v.array(storedMatchTemplateValidator)),
         enabledGames: v.optional(v.array(gameId)),
         // The clan's own Discord invite (`https://discord.gg/<code>`) for the
         // public clan page; set by clan admins, missing means no button.
@@ -728,6 +738,9 @@ export default defineSchema({
         membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
         ticketCounter: v.optional(v.number()),
         membershipApplicationCounter: v.optional(v.number()),
+        // Clan colour and icon density of every bot message (Discord messages
+        // settings). Missing means Logi amber and the sparse look.
+        messageStyle: v.optional(messageStyle),
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),
@@ -816,6 +829,21 @@ export default defineSchema({
                 weekday: v.optional(v.number()),
             })
         ),
+        // Generated occurrences of a weekly series point at the event that
+        // carries the recurrence; missing on the series event itself.
+        recurrenceSeriesId: v.optional(v.id("events")),
+        // Signup group caps from the match template; a full group offers the
+        // player a reserve place instead. Missing means no caps.
+        signupGroupLimits: v.optional(
+            v.array(v.object({ groupId: v.string(), max: v.number() }))
+        ),
+        // Hours before the meeting when roster players who have not confirmed
+        // get an attendance DM. Missing means every offset (24, 18, 12, 6).
+        attendanceReminderHours: v.optional(v.array(v.number())),
+        // Missing means the bot creates the attendee and reserve roles.
+        createParticipantRoles: v.optional(v.boolean()),
+        // The squad preset the event's roster starts from.
+        squadPresetId: v.optional(v.id("squadPresets")),
         attendeeRoleId: v.optional(v.string()),
         reserveRoleId: v.optional(v.string()),
         server: v.optional(v.string()),
@@ -925,6 +953,8 @@ export default defineSchema({
         teamAId: v.optional(v.id("guilds")),
         teamBId: v.optional(v.id("guilds")),
         scheduledAt: v.optional(v.string()),
+        // Round number within the phase; missing on fixtures saved before rounds.
+        round: v.optional(v.number()),
         scoreA: v.optional(v.number()),
         scoreB: v.optional(v.number()),
         status: v.union(
@@ -960,6 +990,29 @@ export default defineSchema({
     })
         .index("eventId", ["eventId"])
         .index("status_dueAt", ["status", "dueAt"])
+        .index("status", ["status"]),
+    // Reminder DMs a clan admin asked for from the dashboard. The bot watches
+    // pending rows, sends the DMs and records the outcome; old rows keep the
+    // per-match cool-down.
+    eventReminderRequests: defineTable({
+        guildId: v.string(),
+        eventId: v.id("events"),
+        audience: v.union(v.literal("unanswered"), v.literal("unconfirmed")),
+        requestedBy: v.string(),
+        requestedAt: v.string(),
+        recipientIds: v.array(v.string()),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("sent"),
+            v.literal("failed")
+        ),
+        claimedAt: v.optional(v.string()),
+        completedAt: v.optional(v.string()),
+        sentCount: v.optional(v.number()),
+        error: v.optional(v.string()),
+    })
+        .index("eventId_requestedAt", ["eventId", "requestedAt"])
         .index("status", ["status"]),
     stratmaps: defineTable({
         guildId: v.string(),
@@ -1010,6 +1063,15 @@ export default defineSchema({
         notAttendingPlayerIds: v.array(v.string()),
         streamerId: v.optional(v.string()),
         published: v.boolean(),
+        // The last time attendance was read from the meeting voice channel.
+        meetingAttendance: v.optional(
+            v.object({
+                loadedAt: v.string(),
+                channelId: v.string(),
+                voiceCount: v.number(),
+                foundUserIds: v.array(v.string()),
+            })
+        ),
         createdAt: v.string(),
         updatedAt: v.string(),
     })

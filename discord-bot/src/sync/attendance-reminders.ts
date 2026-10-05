@@ -6,10 +6,10 @@ import {
     fillTemplate,
     resolveMessageAccentColor,
 } from "../../../src/domain/discord-messages/format"
+import { resolveAttendanceReminderHours } from "../../../src/domain/events/scheduled-job-policy"
+import { calendarDayOffset } from "../../../src/domain/discord-messages/calendar-day"
 import { getClanDiscordMessages } from "../../../src/lib/clan-language"
 import { buildAttendanceReminderComponents } from "../message-builders"
-import { ATTENDANCE_OFFSETS_HOURS } from "../constants"
-import { buildDiscordMessageLink } from "../utils"
 import { convex, references } from "../convex"
 import type { SyncPayload } from "../types"
 import { logInfo, logWarn } from "../log"
@@ -22,22 +22,24 @@ type RosterAssignment = {
 }
 
 /**
- * Attendance reminder DM in the clan language and accent colour: event and
- * start, meeting time, the player's squad and role, notes and a link back to
- * the event card. It never carries the server password.
+ * Attendance reminder DM in the clan language and accent colour: "You play X
+ * tomorrow" (today, or without a day when it is further away), the start,
+ * meeting time, the player's squad and role, and their roster note. It never
+ * carries the server password.
  */
 export function buildAttendanceReminderMessage(input: {
     eventName: string
     meetingStartMs: number
     gameStartMs?: number
-    eventMessageUrl?: string
     assignment?: RosterAssignment
     messages: ReturnType<typeof getClanDiscordMessages>
     accentColor?: number
+    /** When the DM is sent and the clan's time zone, for "today"/"tomorrow". */
+    now?: number
+    timeZone?: string
 }) {
     const { messages } = input
     const start = discordTimestamp(input.gameStartMs, "t")
-    const startRelative = discordTimestamp(input.gameStartMs, "R")
     const meeting = discordTimestamp(input.meetingStartMs, "t")
     const assignment = input.assignment
         ? [input.assignment.squadName, input.assignment.roleName]
@@ -46,13 +48,11 @@ export function buildAttendanceReminderMessage(input: {
               .join(" · ")
         : ""
     const summary = [
-        start
-            ? `${messages.reminders.start} ${start}${startRelative ? ` (${startRelative})` : ""}`
-            : undefined,
+        start ? `${messages.reminders.start} ${start}` : undefined,
         meeting
             ? fillTemplate(messages.embed.meetingAt, { time: meeting })
             : undefined,
-        assignment ? `**${escapeMarkdown(assignment)}**` : undefined,
+        assignment ? escapeMarkdown(assignment) : undefined,
     ].filter(Boolean)
     const summaryLine = summary.join(" · ")
     const note = input.assignment?.note?.trim()
@@ -62,21 +62,39 @@ export function buildAttendanceReminderMessage(input: {
               summaryLine.slice(1)
             : undefined,
         note ? `${messages.reminders.notes}: ${escapeMarkdown(note)}` : null,
-        input.eventMessageUrl
-            ? `${messages.reminders.eventThread}: [${messages.reminders.openInDiscord}](${input.eventMessageUrl})`
-            : null,
     ].filter((line): line is string => Boolean(line))
 
+    const day =
+        input.now === undefined
+            ? undefined
+            : calendarDayOffset(
+                  input.gameStartMs ?? input.meetingStartMs,
+                  input.now,
+                  input.timeZone ?? "UTC"
+              )
+    const titleTemplate =
+        day === 0
+            ? messages.reminders.upcomingTitleToday
+            : day === 1
+              ? messages.reminders.upcomingTitleTomorrow
+              : messages.reminders.upcomingTitle
     const embed = new EmbedBuilder()
         .setColor(input.accentColor ?? DEFAULT_MESSAGE_ACCENT_COLOR)
         .setTitle(
-            fillTemplate(messages.reminders.upcomingTitle, {
+            fillTemplate(titleTemplate, {
                 event: input.eventName,
             }).slice(0, 256)
         )
         .setFooter({ text: messages.reminders.upcomingHint })
     if (lines.length) embed.setDescription(lines.join("\n").slice(0, 4096))
     return embed
+}
+
+/** Players who already told the organisers they cannot come or are late. */
+export function playersWithAbsenceNotice(event: {
+    absenceNotices?: Array<{ userId: string }>
+}) {
+    return new Set((event.absenceNotices ?? []).map((notice) => notice.userId))
 }
 
 export async function processAttendanceReminders(
@@ -118,9 +136,6 @@ export async function processAttendanceReminders(
             continue
         }
 
-        const syncState = payload.syncStates.find(
-            (item) => item.eventId === event.id
-        )
         const meetingStartMs = new Date(event.meetingStart).getTime()
         if (!Number.isFinite(meetingStartMs)) {
             logWarn(
@@ -138,6 +153,7 @@ export async function processAttendanceReminders(
         const messages = getClanDiscordMessages(payload.config.defaultLanguage)
         const matchType = event.matchType?.trim().toLowerCase()
         const accentColor = resolveMessageAccentColor({
+            messageStyle: payload.config.messageStyle,
             categoryColor: matchType
                 ? payload.guild.eventCategories?.find(
                       (category) =>
@@ -169,7 +185,13 @@ export async function processAttendanceReminders(
                 squadName: messages.assignment.reserveTitle,
             })
         }
-        const unacknowledgedUserIds = new Set(assignmentsByUserId.keys())
+        // A player who already declined or sent a notice has answered.
+        const noticed = playersWithAbsenceNotice(event)
+        const unacknowledgedUserIds = new Set(
+            [...assignmentsByUserId.keys()].filter(
+                (userId) => !noticed.has(userId)
+            )
+        )
         if (!unacknowledgedUserIds.size) {
             logInfo(
                 "attendance-reminders",
@@ -188,27 +210,15 @@ export async function processAttendanceReminders(
             offsetHours: number
             sentAt: string
         }> = []
-        const eventMessageUrl =
-            buildDiscordMessageLink(
-                payload.config.guildId,
-                event.eventInfoChannelId ?? payload.config.eventInfoChannelId,
-                syncState?.eventInfoMessageId
-            ) ??
-            buildDiscordMessageLink(
-                payload.config.guildId,
-                syncState?.announcementChannelId,
-                syncState?.announcementMessageId
-            ) ??
-            buildDiscordMessageLink(
-                payload.config.guildId,
-                syncState?.forumChannelId,
-                syncState?.infoMessageId
-            )
         for (const userId of unacknowledgedUserIds) {
-            const dueOffsets = ATTENDANCE_OFFSETS_HOURS.filter(
-                (offsetHours) =>
-                    now >= meetingStartMs - offsetHours * 60 * 60 * 1000
+            // Only the offsets the match chose (all four on older events).
+            const dueOffsets = resolveAttendanceReminderHours(
+                event.attendanceReminderHours
             )
+                .filter(
+                    (offsetHours) =>
+                        now >= meetingStartMs - offsetHours * 60 * 60 * 1000
+                )
                 .filter(
                     (offsetHours) =>
                         !event.attendanceReminderLog.some(
@@ -230,10 +240,11 @@ export async function processAttendanceReminders(
                 eventName: event.name,
                 meetingStartMs,
                 gameStartMs: Date.parse(event.gameStart),
-                eventMessageUrl: eventMessageUrl ?? undefined,
                 assignment: assignmentsByUserId.get(userId),
                 messages,
                 accentColor,
+                now: Date.now(),
+                timeZone: payload.config.timezone,
             })
 
             try {

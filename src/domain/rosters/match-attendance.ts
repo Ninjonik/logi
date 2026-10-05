@@ -18,8 +18,10 @@ export type MatchAttendanceEntry = {
         | { kind: "reserve" }
     before: AttendanceBefore
     mark: AttendanceMark
-    /** Excused needs an absence notice, which only the player can send. */
+    /** The player said in Discord they would be late; they stay excused. */
     hasNotice: boolean
+    /** A clan admin excused the player after the match. */
+    adminExcused: boolean
 }
 
 export type MatchAttendance = {
@@ -53,12 +55,20 @@ export function buildMatchAttendance(input: {
         userId: string
         status: "attending" | "not_attending"
     }>
-    notices: Array<{ userId: string; reason: string }>
+    notices: Array<{ userId: string; reason: string; excusedBy?: string }>
     /** Members whose points change when the match closes. */
     memberIds: readonly string[]
 }): MatchAttendance {
+    // A player's own late notice; an admin's excuse has no reason to show.
     const noticeByUserId = new Map(
-        input.notices.map((notice) => [notice.userId, notice.reason])
+        input.notices
+            .filter((notice) => !notice.excusedBy)
+            .map((notice) => [notice.userId, notice.reason])
+    )
+    const excusedByAdmin = new Set(
+        input.notices
+            .filter((notice) => notice.excusedBy)
+            .map((notice) => notice.userId)
     )
     const entries: MatchAttendanceEntry[] = []
     const seen = new Set<string>()
@@ -72,7 +82,7 @@ export function buildMatchAttendance(input: {
     function markFor(userId: string, confirmed: boolean | undefined) {
         return confirmed
             ? "present"
-            : noticeByUserId.has(userId)
+            : noticeByUserId.has(userId) || excusedByAdmin.has(userId)
               ? "excused"
               : "absent"
     }
@@ -103,6 +113,7 @@ export function buildMatchAttendance(input: {
                           : { kind: "pending" },
                 mark,
                 hasNotice: reason !== undefined,
+                adminExcused: excusedByAdmin.has(player.id),
             })
         }
     }
@@ -129,6 +140,7 @@ export function buildMatchAttendance(input: {
                     : { kind: "reserve" },
             mark,
             hasNotice: reason !== undefined,
+            adminExcused: excusedByAdmin.has(userId),
         })
     }
 
@@ -173,4 +185,65 @@ export function setRosterPresence<T extends RosterLike>(
         userId,
         present ? "confirmed" : acknowledged ? "acknowledged" : "pending"
     )
+}
+
+/**
+ * What saving the attendance table changes: who is marked present on the
+ * roster, and whom an admin excuses or stops excusing. Excused counts like an
+ * absence notice when the match closes (`excusedAbsence`). A player's own
+ * late notice cannot be turned into an absence, so that choice is ignored.
+ */
+export function planAttendanceChanges(input: {
+    entries: readonly MatchAttendanceEntry[]
+    marks: ReadonlyMap<string, AttendanceMark>
+}): { presence: Map<string, boolean>; excuses: Map<string, boolean> } {
+    const presence = new Map<string, boolean>()
+    const excuses = new Map<string, boolean>()
+    for (const entry of input.entries) {
+        const mark = input.marks.get(entry.userId)
+        if (!mark || mark === entry.mark) continue
+        if (mark === "absent" && entry.hasNotice) continue
+        const present = mark === "present"
+        if (present !== (entry.mark === "present"))
+            presence.set(entry.userId, present)
+        const excused = mark === "excused" && !entry.hasNotice
+        if (excused && !entry.adminExcused) excuses.set(entry.userId, true)
+        if (!excused && entry.adminExcused) excuses.set(entry.userId, false)
+    }
+    return { presence, excuses }
+}
+
+export type AttendanceNotice = {
+    userId: string
+    reason: string
+    createdAt: string
+    excusedBy?: string
+}
+
+/**
+ * Applies admin excuses to a match's notices: an excuse is a notice without
+ * a reason that names the admin; lifting it removes only such a notice, never
+ * the player's own late notice.
+ */
+export function applyAttendanceExcuses<T extends AttendanceNotice>(input: {
+    notices: readonly T[]
+    excuses: ReadonlyMap<string, boolean>
+    actorId: string
+    now: string
+}): AttendanceNotice[] {
+    const notices: AttendanceNotice[] = input.notices.filter(
+        (notice) =>
+            !(notice.excusedBy && input.excuses.get(notice.userId) === false)
+    )
+    for (const [userId, excused] of input.excuses) {
+        if (!excused || notices.some((notice) => notice.userId === userId))
+            continue
+        notices.push({
+            userId,
+            reason: "",
+            createdAt: input.now,
+            excusedBy: input.actorId,
+        })
+    }
+    return notices
 }

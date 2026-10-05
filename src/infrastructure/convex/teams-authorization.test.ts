@@ -161,6 +161,23 @@ function platformCalls(f: Fixture, actor: DashboardActor = superadmin): Call[] {
         ],
         ["teams:adminGet", teams.adminGet, { ...as, teamId: f.teamId }],
         [
+            "teams:adminListState",
+            teams.adminListState,
+            {
+                ...as,
+                gameId: "hell_let_loose",
+                state: "archived",
+                cursor: null,
+                limit: 10,
+            },
+        ],
+        ["teams:adminUsage", teams.adminUsage, { ...as, teamIds: [f.teamId] }],
+        [
+            "teamRequests:queueContext",
+            teamRequests.queueContext,
+            { ...as, requestIds: [f.requestId] },
+        ],
+        [
             "imageAssets:reserveUpload (platform)",
             imageAssets.reserveUpload,
             { ...as, guildId: "platform", kind: "team-logo" },
