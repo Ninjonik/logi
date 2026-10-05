@@ -174,7 +174,7 @@ export function MatchList({
                     <h2 id="match-queue" className="text-sm font-semibold">
                         {text.queue.title}
                     </h2>
-                    <div className="grid gap-3 sm:grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
+                    <div className="grid gap-3 sm:grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]">
                         {queue.map((item) => {
                             const Icon =
                                 item.kind === "publishRoster" ? Users : BellRing
@@ -274,7 +274,7 @@ export function MatchList({
                             </SelectContent>
                         </Select>
                     ) : null}
-                    <label className="border-input text-muted-foreground flex h-8 w-52 max-w-full items-center gap-2 rounded-lg border px-2.5">
+                    <label className="border-input text-muted-foreground flex h-8 w-full items-center gap-2 rounded-lg border px-2.5 sm:w-52">
                         <Search
                             className="size-3.5 shrink-0"
                             aria-hidden="true"

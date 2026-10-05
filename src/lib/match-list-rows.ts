@@ -169,7 +169,7 @@ export function buildMatchListRows(input: {
         const details =
             event.kind === "training"
                 ? [
-                      dictionary.sidebar.trainings,
+                      dictionary.matchTemplates.basics.training,
                       event.recurrence
                           ? describeRecurrence(
                                 event.recurrence,

@@ -78,3 +78,22 @@ test("each requirement points at the page that fixes it", () => {
     assert.equal(settingsSectionForRequirement("clanRole"), "roles")
     assert.equal(settingsSectionForRequirement("enabledGames"), "games")
 })
+
+test("the Matches group holds templates, presets and Discord messages in menu order", () => {
+    assert.deepEqual(
+        SETTINGS_SECTIONS.filter((section) => section.group === "matches").map(
+            (section) => section.id
+        ),
+        ["match-templates", "presets", "messages"]
+    )
+    assert.ok(isSettingsSectionId("event-categories"))
+    assert.equal(
+        SETTINGS_SECTIONS.find((section) => section.id === "event-categories")
+            ?.group,
+        "clan"
+    )
+    assert.equal(
+        settingsSectionStatus("match-templates", configured).state,
+        "none"
+    )
+})

@@ -1,4 +1,5 @@
 import {
+    CalendarClock,
     CalendarSync,
     ChartColumn,
     Database,
@@ -12,6 +13,7 @@ import {
     MessageSquareText,
     Server,
     ShieldCheck,
+    Tags,
     Ticket,
     Trophy,
     UserPlus,
@@ -26,6 +28,9 @@ import type { GameId } from "@/domain/games/game"
 export const SETTINGS_SECTION_ICONS: Record<SettingsSectionId, LucideIcon> = {
     profile: IdCard,
     games: Gamepad2,
+    "event-categories": Tags,
+    "match-templates": CalendarClock,
+    presets: Users,
     messages: MessageSquareText,
     channels: Hash,
     roles: ShieldCheck,
@@ -42,7 +47,7 @@ export const SETTINGS_SECTION_ICONS: Record<SettingsSectionId, LucideIcon> = {
     "helper-data": Database,
 }
 
-/** Match setup pages that live outside settings but belong to the Matches group. */
+/** Match setup pages that live outside settings; the Presets settings page links to them. */
 export const SETTINGS_PRESET_LINKS = [
     { key: "squadPresets", path: "squad-presets", icon: Users },
     { key: "topicPresets", path: "topic-presets", icon: ListChecks },

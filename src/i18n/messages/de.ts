@@ -2450,12 +2450,26 @@ export const deMessages = {
         sections: {
             profile: {
                 title: "Clan-Profil",
-                description:
-                    "Name, Logo, Beschreibung, Event-Kategorien und Kalendereinträge.",
+                description: "Name, Logo und Beschreibung des Clans.",
             },
             games: {
                 title: "Spiele",
                 description: "Welche Spiele der Clan spielt.",
+            },
+            "event-categories": {
+                title: "Event-Kategorien",
+                description:
+                    "Bezeichnungen und Farben für Matches und Trainings, etwa Freundschaftsspiel oder Liga.",
+            },
+            "match-templates": {
+                title: "Match-Vorlagen",
+                description:
+                    "Womit ein neues Match oder Training startet: Zeiten, Anmeldungen und Discord.",
+            },
+            presets: {
+                title: "Squad- und Themen-Presets",
+                description:
+                    "Aufstellungsformen und Briefing-Themen, die Matches übernehmen.",
             },
             messages: {
                 title: "Discord-Nachrichten",
@@ -2712,6 +2726,107 @@ export const deMessages = {
         editSeries: "Serie bearbeiten",
         recurringEmptyAdmin:
             "Schalte beim Anlegen eines Matches die Wiederholung ein, um eine Serie zu starten.",
+    },
+    matchTemplates: {
+        chooserLabel: "Vorlage",
+        newName: "Neue Vorlage",
+        allGames: "alle Spiele",
+        add: "Neue Vorlage",
+        emptyTitle: "Noch keine Match-Vorlagen",
+        emptyDescription:
+            "Eine Vorlage füllt ein neues Match vor: Zeiten, wer sich anmelden darf und was der Bot in Discord macht. Im einzelnen Match kannst du alles ändern.",
+        saved: "Vorlagen gespeichert.",
+        errors: {
+            too_many: "Ein Clan kann höchstens 20 Vorlagen haben.",
+            duplicate_id:
+                "Zwei Vorlagen haben dieselbe ID. Lade die Seite neu.",
+            missing_name: "Gib der Vorlage einen Namen.",
+            invalid_times:
+                "Zeiten müssen ganze Zahlen sein und die Dauer mindestens eine Minute.",
+            missing_ping_roles: "Wähle mindestens eine Rolle zum Pingen.",
+            invalid_templates: "Einige Werte sind ungültig.",
+            forbidden:
+                "Nur Clan-Admins können Vorlagen ändern. Melde dich neu an, falls deine Sitzung abgelaufen ist.",
+            save_failed: "Die Vorlagen konnten nicht gespeichert werden.",
+        },
+        basics: {
+            title: "Vorlage",
+            name: "Name",
+            kind: "Typ",
+            match: "Match",
+            training: "Training",
+            game: "Spiel",
+            category: "Event-Kategorie",
+            categoryHint: "Farbe und Bezeichnung in Discord und im Kalender.",
+        },
+        times: {
+            title: "Zeiten",
+            announcement: "Ankündigung",
+            immediately: "Sofort",
+            scheduled: "Vor dem Start",
+            hoursBeforeStart: "h vor dem Start",
+            registrationEnd: "Anmeldeschluss",
+            hoursBeforeMeeting: "h vor dem Treffen",
+            meeting: "Treffen",
+            minutesBeforeStart: "min vor dem Start",
+            duration: "Matchdauer",
+            minutes: "min",
+            exampleCaption: "Beispiel für einen Start am Sonntag um 20:00",
+            onPublish: "bei Veröffentlichung",
+            start: "Start",
+            end: "Ende",
+        },
+        signup: {
+            title: "Anmeldungen",
+            who: "Wer sich anmelden kann",
+            whoHint: "Nach dem Status aus den Mitgliedschaftseinstellungen.",
+            groups: "Gruppen",
+            groupsHint: "Was ein Spieler bei der Anmeldung wählt.",
+            noGroups: "Dieses Spiel hat noch keine Anmeldegruppen.",
+            groupsAllGames:
+                "Eine Vorlage für alle Spiele bietet alle Anmeldegruppen des Spiels des Matches an. Wähle ein Spiel, um Gruppen auszuwählen.",
+            general: "Anmeldung ohne Gruppenwahl",
+            reminder: "Anmeldeerinnerung",
+        },
+        discord: {
+            title: "Discord",
+            ping: "Ping bei der Ankündigung",
+            create: "Automatisch erstellen",
+            forum: "Match-Forum",
+        },
+        appliesToNew:
+            "Gilt für neue Matches. Bereits angelegte Matches ändern sich nicht.",
+        remove: "Vorlage löschen",
+        removeTitle: "Vorlage {name} löschen?",
+        removeDescription:
+            "Die Vorlage verschwindet beim Speichern. Matches, die daraus entstanden sind, bleiben unverändert.",
+        discard: "Verwerfen",
+        save: "Vorlagen speichern",
+        presets: {
+            squadDescription:
+                "Die Ausgangsform einer Aufstellung: Squads, Rollen und Plätze. Neue Aufstellungen übernehmen sie.",
+            topicDescription:
+                "Briefing-Themen, die ein Match in sein Discord-Forum übernimmt.",
+            count: "Presets: {count}",
+            manage: "Verwalten",
+        },
+        picker: {
+            label: "Vorlage",
+            none: "Ohne Vorlage",
+            hint: "Eine Vorlage füllt Zeiten, Anmeldungen und Discord-Optionen. Unten kannst du weiterhin alles ändern.",
+            empty: "Noch keine Vorlagen.",
+            manage: "Vorlagen bearbeiten",
+            applied: "Vorlage {name} übernommen.",
+            registration: "Anmeldung bis {hours} h vor dem Treffen",
+        },
+        preview: {
+            title: "Vorschau in Discord",
+            hint: "Discord zeigt die Zeiten in der Zeitzone jedes Lesers.",
+            note: "Aus denselben Feldern wie die Ankündigung des Bots. Angemeldete Spieler und der Forumslink erscheinen, sobald das Match existiert.",
+            today: "Heute",
+        },
+        createDescription:
+            "Das meiste füllt eine Vorlage aus. Rechts siehst du, wie Spieler das Match in Discord sehen.",
     },
     event: {
         signupStatusSignedUpAs: "Du bist angemeldet als: {type}.",

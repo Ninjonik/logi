@@ -2373,12 +2373,26 @@ export const csMessages = {
         sections: {
             profile: {
                 title: "Profil klanu",
-                description:
-                    "Název, logo, popis, kategorie akcí a položky kalendáře.",
+                description: "Název, logo a popis klanu.",
             },
             games: {
                 title: "Hry",
                 description: "Které hry klan hraje.",
+            },
+            "event-categories": {
+                title: "Kategorie akcí",
+                description:
+                    "Štítky a barvy zápasů a tréninků, například Přátelák nebo Liga.",
+            },
+            "match-templates": {
+                title: "Šablony zápasů",
+                description:
+                    "S čím začíná nový zápas nebo trénink: časy, přihlášky a Discord.",
+            },
+            presets: {
+                title: "Předvolby čet a témat",
+                description:
+                    "Podoby soupisek a témata briefingu, které zápasy kopírují.",
             },
             messages: {
                 title: "Zprávy v Discordu",
@@ -2629,6 +2643,105 @@ export const csMessages = {
         editSeries: "Upravit sérii",
         recurringEmptyAdmin:
             "Při zakládání zápasu zapněte opakování a vznikne série.",
+    },
+    matchTemplates: {
+        chooserLabel: "Šablona",
+        newName: "Nová šablona",
+        allGames: "všechny hry",
+        add: "Nová šablona",
+        emptyTitle: "Zatím žádné šablony zápasů",
+        emptyDescription:
+            "Šablona předvyplní nový zápas: časy, kdo se může přihlásit a co udělá bot v Discordu. V konkrétním zápase to jde změnit.",
+        saved: "Šablony uloženy.",
+        errors: {
+            too_many: "Klan může mít nejvýše 20 šablon.",
+            duplicate_id: "Dvě šablony mají stejné ID. Načtěte stránku znovu.",
+            missing_name: "Pojmenujte šablonu.",
+            invalid_times:
+                "Časy musí být celá čísla a délka aspoň jedna minuta.",
+            missing_ping_roles: "Vyberte aspoň jednu roli k pingnutí.",
+            invalid_templates: "Některé hodnoty nejsou platné.",
+            forbidden:
+                "Šablony mohou měnit jen správci klanu. Pokud vám vypršelo přihlášení, přihlaste se znovu.",
+            save_failed: "Šablony se nepodařilo uložit.",
+        },
+        basics: {
+            title: "Šablona",
+            name: "Název",
+            kind: "Typ",
+            match: "Zápas",
+            training: "Trénink",
+            game: "Hra",
+            category: "Kategorie akce",
+            categoryHint: "Barva a štítek v Discordu a v kalendáři.",
+        },
+        times: {
+            title: "Časy",
+            announcement: "Ohlášení",
+            immediately: "Ihned",
+            scheduled: "Před startem",
+            hoursBeforeStart: "h před startem",
+            registrationEnd: "Konec registrace",
+            hoursBeforeMeeting: "h před srazem",
+            meeting: "Sraz",
+            minutesBeforeStart: "min před startem",
+            duration: "Délka zápasu",
+            minutes: "min",
+            exampleCaption: "Příklad pro start v neděli ve 20:00",
+            onPublish: "po zveřejnění",
+            start: "Start",
+            end: "Konec",
+        },
+        signup: {
+            title: "Přihlášky",
+            who: "Kdo se může přihlásit",
+            whoHint: "Podle stavu v Nastavení členství.",
+            groups: "Skupiny",
+            groupsHint: "Co si hráč vybírá při přihlášení.",
+            noGroups: "Tato hra zatím nemá žádné skupiny pro přihlášky.",
+            groupsAllGames:
+                "Šablona pro všechny hry nabídne všechny skupiny hry daného zápasu. Pro výběr skupin zvolte hru.",
+            general: "Přihlášení bez volby skupiny",
+            reminder: "Připomínka přihlášky",
+        },
+        discord: {
+            title: "Discord",
+            ping: "Ping při ohlášení",
+            create: "Automaticky vytvořit",
+            forum: "Fórum k zápasu",
+        },
+        appliesToNew: "Platí pro nové zápasy. Už založené zápasy se nezmění.",
+        remove: "Smazat šablonu",
+        removeTitle: "Smazat šablonu {name}?",
+        removeDescription:
+            "Šablona zmizí po uložení. Zápasy, které z ní vznikly, zůstanou beze změny.",
+        discard: "Zahodit",
+        save: "Uložit šablony",
+        presets: {
+            squadDescription:
+                "Výchozí podoba soupisky: čety, role a místa. Nové soupisky ji zkopírují.",
+            topicDescription:
+                "Témata briefingu, která zápas zkopíruje do svého fóra v Discordu.",
+            count: "Předvoleb: {count}",
+            manage: "Spravovat",
+        },
+        picker: {
+            label: "Šablona",
+            none: "Bez šablony",
+            hint: "Šablona vyplní časy, přihlášky a nastavení Discordu. Vše níže jde dál změnit.",
+            empty: "Zatím žádné šablony.",
+            manage: "Upravit šablony",
+            applied: "Použita šablona {name}.",
+            registration: "Registrace {hours} h před srazem",
+        },
+        preview: {
+            title: "Náhled v Discordu",
+            hint: "Časy uvidí každý ve svém pásmu.",
+            note: "Sestaveno ze stejných údajů jako ohlášení bota. Přihlášení hráči a odkaz na fórum se objeví po založení zápasu.",
+            today: "Dnes",
+        },
+        createDescription:
+            "Většinu vyplní šablona. Vpravo vidíte, jak zápas uvidí hráči v Discordu.",
     },
     event: {
         signupStatusSignedUpAs: "Jste přihlášeni jako: {type}.",

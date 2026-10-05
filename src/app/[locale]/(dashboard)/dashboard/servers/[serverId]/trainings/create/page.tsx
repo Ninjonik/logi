@@ -91,6 +91,7 @@ export default async function CreateTrainingPage({
                     stratmaps={stratmaps}
                     groups={groups}
                     eventCategories={context?.server.eventCategories ?? []}
+                    templates={context?.server.matchTemplates ?? []}
                     timezone={timezone}
                     canEdit={canAdmin}
                     dictionary={dictionary}

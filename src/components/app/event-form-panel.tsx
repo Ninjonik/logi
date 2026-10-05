@@ -51,6 +51,11 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import {
+    templateSchedule,
+    templatesFor,
+    type MatchTemplate,
+} from "@/domain/events/match-templates"
+import {
     DiscordEntitySelect,
     type DiscordSelectOption,
 } from "@/components/app/discord-entity-select"
@@ -71,9 +76,11 @@ import {
     matchTeamGame,
     toMatchTeamInputs,
 } from "@/lib/teams/match-team-selection"
+import { DiscordAnnouncementPreview } from "@/components/app/discord-announcement-preview"
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DiscordChannelSelect } from "@/components/app/discord-channel-select"
+import { buildAnnouncementPreview } from "@/lib/discord-announcement-preview"
 import { eventSchema, type EventInput } from "@/lib/validation/event"
 import { MatchTeamPicker } from "@/components/app/match-team-picker"
 import { HllMapSelector } from "@/components/app/hll-map-selector"
@@ -583,6 +590,7 @@ export function EventFormPanel({
     dictionary,
     createMode = false,
     discordConfig,
+    templates = [],
 }: {
     event: EventRecord
     serverId: string
@@ -596,6 +604,8 @@ export function EventFormPanel({
     dictionary: Dictionary
     createMode?: boolean
     discordConfig?: DiscordConfig | null
+    /** The clan's match templates, offered when creating an event. */
+    templates?: MatchTemplate[]
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -615,6 +625,7 @@ export function EventFormPanel({
     const [quickScheduleOpen, setQuickScheduleOpen] = useState(false)
     const [quickScheduleStep, setQuickScheduleStep] = useState(0)
     const [isResyncingTopicThread, setIsResyncingTopicThread] = useState(false)
+    const [appliedTemplateId, setAppliedTemplateId] = useState<string>()
     const eventGroups = useMemo(
         () => filterByGameScope(groups, event.gameId),
         [event.gameId, groups]
@@ -960,6 +971,107 @@ export function EventFormPanel({
         setQuickScheduleOpen(false)
     }
 
+    function applyTemplate(template: MatchTemplate) {
+        const startLocal =
+            template.kind === "training"
+                ? form.getValues("meetingStart")
+                : form.getValues("gameStart") || form.getValues("meetingStart")
+        const schedule = templateSchedule(
+            template,
+            fromDateTimeLocalInTimeZone(startLocal, timezone)
+        )
+        const options = { shouldDirty: true, shouldValidate: true }
+        if (schedule) {
+            const toLocal = (iso: string) =>
+                toDateTimeLocalInTimeZone(iso, timezone)
+            form.setValue(
+                "registrationStart",
+                schedule.registrationStart
+                    ? toLocal(schedule.registrationStart)
+                    : "",
+                options
+            )
+            form.setValue(
+                "registrationEnd",
+                toLocal(schedule.registrationEnd),
+                options
+            )
+            form.setValue(
+                "meetingStart",
+                toLocal(schedule.meetingStart),
+                options
+            )
+            form.setValue("gameStart", toLocal(schedule.gameStart), options)
+            form.setValue("gameEnd", toLocal(schedule.gameEnd), options)
+        }
+        form.setValue("durationMinutes", template.durationMinutes, options)
+        if (template.kind === "match") {
+            if (
+                template.categoryId &&
+                eventCategories.some(
+                    (category) => category.id === template.categoryId
+                )
+            )
+                form.setValue("matchType", template.categoryId, options)
+            form.setValue(
+                "allowedSignupStatuses",
+                template.allowedSignupStatuses,
+                options
+            )
+            form.setValue(
+                "signupGroupIds",
+                (
+                    template.signupGroupIds ??
+                    eventGroups.map((group) => group.id)
+                ).filter((groupId) => eventGroupIds.has(groupId)),
+                options
+            )
+            form.setValue(
+                "useGeneralSignup",
+                template.useGeneralSignup,
+                options
+            )
+            form.setValue(
+                "signupReminderStatuses",
+                template.signupReminderStatuses,
+                options
+            )
+            form.setValue(
+                "createForumChannel",
+                template.createForumChannel,
+                options
+            )
+            if (
+                template.topicPresetId &&
+                topicPresets.some(
+                    (preset) => preset.id === template.topicPresetId
+                )
+            )
+                form.setValue("topicPresetId", template.topicPresetId, options)
+        }
+        form.setValue("pingMode", template.pingMode, options)
+        form.setValue("pingRoleIds", template.pingRoleIds, options)
+        form.setValue(
+            "createSquadVoiceChannels",
+            template.createSquadVoiceChannels,
+            options
+        )
+        setQuickSchedule((current) => ({
+            ...current,
+            eventStart: startLocal,
+            registrationHours: String(template.registrationHoursBeforeMeeting),
+            meetingMinutes: String(template.meetingMinutesBeforeStart),
+            durationMinutes: String(template.durationMinutes),
+        }))
+        setAppliedTemplateId(template.id)
+        toast.success(
+            dictionary.matchTemplates.picker.applied.replace(
+                "{name}",
+                template.name
+            )
+        )
+    }
+
     async function submit(values: EventInput) {
         if (
             matchTeamsEditable &&
@@ -1100,7 +1212,8 @@ export function EventFormPanel({
         }
     }
 
-    return (
+    const offeredTemplates = templatesFor(templates, eventKind, event.gameId)
+    const formCard = (
         <Card className="border-border/60 rounded-2xl">
             <CardHeader>
                 <CardTitle className="text-2xl">
@@ -1119,6 +1232,80 @@ export function EventFormPanel({
                     className="space-y-6"
                     onSubmit={form.handleSubmit(submit)}
                 >
+                    {createMode && canEdit ? (
+                        <fieldset className="space-y-3">
+                            <legend className="mb-2 flex w-full flex-wrap items-baseline justify-between gap-2 text-sm font-medium">
+                                <span>
+                                    {dictionary.matchTemplates.picker.label}
+                                </span>
+                                <a
+                                    href={`/${locale}/dashboard/servers/${serverId}/settings/match-templates`}
+                                    className="text-primary text-xs font-medium underline-offset-4 hover:underline"
+                                >
+                                    {dictionary.matchTemplates.picker.manage}
+                                </a>
+                            </legend>
+                            {offeredTemplates.length ? (
+                                <div
+                                    role="radiogroup"
+                                    aria-label={
+                                        dictionary.matchTemplates.picker.label
+                                    }
+                                    className="grid gap-2 sm:grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]"
+                                >
+                                    {offeredTemplates.map((template) => {
+                                        const checked =
+                                            appliedTemplateId === template.id
+                                        const category = eventCategories.find(
+                                            (item) =>
+                                                item.id === template.categoryId
+                                        )
+                                        return (
+                                            <button
+                                                key={template.id}
+                                                type="button"
+                                                role="radio"
+                                                aria-checked={checked}
+                                                onClick={() =>
+                                                    applyTemplate(template)
+                                                }
+                                                className={cn(
+                                                    "flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left transition-colors",
+                                                    checked
+                                                        ? "border-foreground bg-muted"
+                                                        : "border-border hover:bg-muted/60"
+                                                )}
+                                            >
+                                                <span className="text-sm font-semibold">
+                                                    {template.name}
+                                                </span>
+                                                <span className="text-muted-foreground text-xs">
+                                                    {[
+                                                        category?.label,
+                                                        dictionary.matchTemplates.picker.registration.replace(
+                                                            "{hours}",
+                                                            String(
+                                                                template.registrationHoursBeforeMeeting
+                                                            )
+                                                        ),
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(" · ")}
+                                                </span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">
+                                    {dictionary.matchTemplates.picker.empty}
+                                </p>
+                            )}
+                            <p className="text-muted-foreground text-xs">
+                                {dictionary.matchTemplates.picker.hint}
+                            </p>
+                        </fieldset>
+                    ) : null}
                     {eventKind === "match" &&
                     pingMode !== "none" &&
                     !form.watch("announcementChannelId") ? (
@@ -1224,8 +1411,8 @@ export function EventFormPanel({
                             </div>
                         </div>
                     ) : null}
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className={"col-span-2 flex flex-row gap-4"}>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="flex flex-col gap-4 sm:flex-row md:col-span-2">
                             <div className="md:col-span-2">
                                 <FieldLabel
                                     label={dictionary.event.fields.kind}
@@ -1385,7 +1572,7 @@ export function EventFormPanel({
                             </div>
                         </div>
                         {eventKind === "match" ? (
-                            <div className="flex flex-row gap-4 space-y-3 md:col-span-2">
+                            <div className="flex min-w-0 flex-row flex-wrap gap-4 space-y-3 md:col-span-2">
                                 {canEdit ? (
                                     <HllMapSelector
                                         gameId={event.gameId}
@@ -2244,7 +2431,7 @@ export function EventFormPanel({
                                     : "UTC"}
                             </div>
                         </div>
-                        <div className={"col-span-2 flex flex-row gap-4"}>
+                        <div className="flex flex-col gap-4 sm:flex-row md:col-span-2">
                             <div className="w-1/2">
                                 {canEdit ? (
                                     <Controller
@@ -2441,7 +2628,7 @@ export function EventFormPanel({
                             </div>
                         ) : null}
                         <div className="border-border/60 rounded-xl border p-4 md:col-span-2">
-                            <div className="mb-4 grid gap-4 md:grid-cols-2">
+                            <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
                                     <FieldLabel
                                         label={dictionary.event.durationMinutes}
@@ -2513,7 +2700,7 @@ export function EventFormPanel({
                                 </div>
                             </div>
                             {canEdit && createMode ? (
-                                <div className="grid gap-4 md:grid-cols-2">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
                                         <FieldLabel
                                             label={
@@ -3405,5 +3592,71 @@ export function EventFormPanel({
                 </form>
             </CardContent>
         </Card>
+    )
+    if (!createMode) return formCard
+
+    const toIso = (value?: string) => {
+        if (!value) return undefined
+        const iso = fromDateTimeLocalInTimeZone(value, timezone)
+        return Number.isFinite(Date.parse(iso)) ? iso : undefined
+    }
+    const selectedGroupIds = new Set(form.watch("signupGroupIds") ?? [])
+    const category = eventCategories.find(
+        (item) => item.id === eventCategoryValue
+    )
+    const mentionIds =
+        pingMode === "clan"
+            ? discordConfig?.clanRoleId
+                ? [discordConfig.clanRoleId]
+                : []
+            : pingMode === "roles"
+              ? (form.watch("pingRoleIds") ?? [])
+              : []
+    const preview = buildAnnouncementPreview(
+        {
+            kind: eventKind,
+            name: eventName ?? "",
+            language: discordConfig?.defaultLanguage,
+            gameId: event.gameId,
+            registrationEnd: toIso(scheduleValues[0]),
+            meetingStart: toIso(scheduleValues[1]),
+            gameStart: toIso(scheduleValues[2]),
+            map: mapValue,
+            side: sideValue,
+            cap: form.watch("cap"),
+            server: form.watch("server"),
+            serverPassword: form.watch("serverPassword"),
+            description: form.watch("description"),
+            notes: form.watch("notes"),
+            category: category
+                ? { label: category.label, color: category.color }
+                : null,
+            signupGroups: eventGroups
+                .filter((group) => selectedGroupIds.has(group.id))
+                .map((group) => ({
+                    name: group.name,
+                    emoji: group.discordEmoji,
+                })),
+            // Until Discord's role names load, a ping shows nothing rather than a raw role ID.
+            mentions: mentionIds.flatMap((roleId) => {
+                const name = roleNameById.get(roleId)
+                return name ? [name] : []
+            }),
+            thumbnailUrl: form.watch("thumbnailUrl"),
+            imageUrl: form.watch("imageUrl"),
+        },
+        dictionary.event.previewUntitled
+    )
+    return (
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] xl:items-start">
+            {formCard}
+            <div className="xl:sticky xl:top-4">
+                <DiscordAnnouncementPreview
+                    preview={preview}
+                    locale={locale}
+                    dictionary={dictionary}
+                />
+            </div>
+        </div>
     )
 }

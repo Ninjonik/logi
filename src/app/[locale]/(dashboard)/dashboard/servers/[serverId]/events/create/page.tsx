@@ -95,6 +95,7 @@ export default async function CreateEventPage({
                     stratmaps={stratmaps}
                     groups={groups}
                     eventCategories={context?.server.eventCategories ?? []}
+                    templates={context?.server.matchTemplates ?? []}
                     timezone={timezone}
                     canEdit={canAdmin}
                     dictionary={dictionary}

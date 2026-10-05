@@ -83,8 +83,8 @@ export default async function CreateMatchPage({
     return (
         <>
             <PageHeader
-                title={dictionary.event.createTitle}
-                description={dictionary.event.createPageDescription}
+                title={dictionary.matchList.newMatch}
+                description={dictionary.matchTemplates.createDescription}
             />
             <div className="px-4 lg:px-6">
                 <EventFormPanel
@@ -95,6 +95,7 @@ export default async function CreateMatchPage({
                     stratmaps={stratmaps}
                     groups={groups}
                     eventCategories={context?.server.eventCategories ?? []}
+                    templates={context?.server.matchTemplates ?? []}
                     timezone={timezone}
                     canEdit={canAdmin}
                     dictionary={dictionary}
