@@ -105,6 +105,9 @@ export async function MatchDetailPage({
     const gameId: GameId = event.gameId ?? "hell_let_loose"
     const guildDiscordId = context.server.discordId
     const roster = context.rosters.find((item) => item.eventId === eventId)
+    const attachedStratmaps = context.stratmaps.filter((stratmap) =>
+        event.stratmapIds.includes(stratmap.id)
+    )
     // Closing a match scores every active member of the clan, whatever game.
     const allAssignments =
         gameScope === "all"
@@ -266,20 +269,43 @@ export async function MatchDetailPage({
             />
             <div className="px-4 lg:px-6">
                 {activeTab === "overview" ? (
-                    <EventFormPanel
-                        event={event}
-                        serverId={serverId}
-                        locale={locale}
-                        topicPresets={context.topicPresets}
-                        stratmaps={context.stratmaps}
-                        groups={context.groups}
-                        eventCategories={context.server.eventCategories ?? []}
-                        timezone={timeZone}
-                        canEdit={canAdmin}
-                        dictionary={dictionary}
-                        createMode={false}
-                        discordConfig={discordConfig}
-                    />
+                    <div className="space-y-3">
+                        {attachedStratmaps.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {attachedStratmaps.map((stratmap) => (
+                                    <Button
+                                        key={stratmap.id}
+                                        asChild
+                                        variant="outline"
+                                        size="sm"
+                                        className="rounded-xl"
+                                    >
+                                        <Link
+                                            href={`/${locale}/stratmaps/${stratmap.id}`}
+                                        >
+                                            {stratmap.title}
+                                        </Link>
+                                    </Button>
+                                ))}
+                            </div>
+                        ) : null}
+                        <EventFormPanel
+                            event={event}
+                            serverId={serverId}
+                            locale={locale}
+                            topicPresets={context.topicPresets}
+                            stratmaps={context.stratmaps}
+                            groups={context.groups}
+                            eventCategories={
+                                context.server.eventCategories ?? []
+                            }
+                            timezone={timeZone}
+                            canEdit={canAdmin}
+                            dictionary={dictionary}
+                            createMode={false}
+                            discordConfig={discordConfig}
+                        />
+                    </div>
                 ) : null}
                 {activeTab === "attendance" ? (
                     <MatchAttendancePanel
