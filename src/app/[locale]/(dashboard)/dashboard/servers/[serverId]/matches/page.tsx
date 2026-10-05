@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Matches | Logi",
+    title: "Matches",
     description: "Matches, trainings, results and registration.",
 }
 

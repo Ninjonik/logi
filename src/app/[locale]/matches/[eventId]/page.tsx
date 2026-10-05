@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { locale, eventId } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const preview = await getPublicPreviewMetadata("match", eventId)
-    const title = preview?.title ?? "Match result | Logi"
+    const title = preview?.title ?? "Match result"
     const description = preview?.description ?? "Recorded public match result."
     const imageVersion = getPublicImageVersion(
         preview?.imageVersion ?? "current"

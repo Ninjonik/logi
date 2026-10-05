@@ -11,7 +11,7 @@ import { TEAM_GAMES } from "@/domain/teams/team"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Teams | Logi",
+    title: "Teams",
     description:
         "Browse the Logi team catalogue and request new teams or changes.",
 }

@@ -11,7 +11,7 @@ import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Server dashboard | Logi",
+    title: "Server dashboard",
     description: "Manage your server community.",
 }
 

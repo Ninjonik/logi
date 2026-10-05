@@ -1,4 +1,5 @@
-import { ExternalLink } from "lucide-react"
+import { EmptyState } from "@/components/app/empty-state"
+import { ExternalLink, Trophy } from "lucide-react"
 import Link from "next/link"
 
 import {
@@ -12,6 +13,7 @@ import { GameBadge } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
 import { GAME_LABELS } from "@/domain/games/game"
 import { getLocalizedCanonical } from "@/lib/seo"
+import { pluralize } from "@/i18n/plural"
 import { isLocale } from "@/i18n/config"
 import type { Metadata } from "next"
 
@@ -105,13 +107,11 @@ export default async function CompetitionsPage({
                                                         ]
                                                     }{" "}
                                                     ·{" "}
-                                                    {labels.divisions.replace(
-                                                        "{count}",
-                                                        String(
-                                                            competition
-                                                                .divisions
-                                                                .length
-                                                        )
+                                                    {pluralize(
+                                                        safeLocale,
+                                                        competition.divisions
+                                                            .length,
+                                                        labels.divisions
                                                     )}
                                                 </span>
                                             </p>
@@ -140,9 +140,14 @@ export default async function CompetitionsPage({
                             ))}
                         </div>
                     ) : (
-                        <p className="text-muted-foreground">
-                            {labels.noCompetitions}
-                        </p>
+                        <EmptyState
+                            icon={Trophy}
+                            title={dictionary.publicSite.competition.emptyTitle}
+                            description={
+                                dictionary.publicSite.competition
+                                    .emptyDescription
+                            }
+                        />
                     )}
                 </div>
             </PublicPage>

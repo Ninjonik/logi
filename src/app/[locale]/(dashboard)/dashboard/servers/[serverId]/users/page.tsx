@@ -41,7 +41,7 @@ function getAssignmentStatusLabel(
 }
 
 export const metadata: Metadata = {
-    title: "Members | Logi",
+    title: "Members",
     description: "Manage server members.",
 }
 

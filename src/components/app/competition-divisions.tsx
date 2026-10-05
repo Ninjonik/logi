@@ -2,12 +2,16 @@
 
 import type { CompetitionSectionProps } from "@/components/app/competition-manager"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowDown, ArrowUp, Check, Plus, Trash2 } from "lucide-react"
+import { ArrowDown, ArrowUp, Check, Layers, Plus, Trash2 } from "lucide-react"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { DIVISION_NAME_MAX } from "@/domain/competitions/competition"
+import { EmptyState } from "@/components/app/empty-state"
 import { useId, useState, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { pluralize } from "@/i18n/plural"
+import { useLocale } from "next-intl"
 
 /** Create, rename, reorder and delete (when empty) a competition's divisions. */
 export function CompetitionDivisions({
@@ -17,6 +21,7 @@ export function CompetitionDivisions({
     pending,
 }: CompetitionSectionProps) {
     const t = dictionary.competitionAdmin
+    const locale = useLocale()
     const id = useId()
     const [name, setName] = useState("")
     const [names, setNames] = useState<Record<string, string>>({})
@@ -103,12 +108,13 @@ export function CompetitionDivisions({
                                         }}
                                     />
                                     <span className="text-muted-foreground text-xs">
-                                        {t.divisionCounts
-                                            .replace("{teams}", String(teams))
-                                            .replace(
-                                                "{fixtures}",
-                                                String(fixtures)
-                                            )}
+                                        {pluralize(locale, teams, t.countTeams)}{" "}
+                                        ·{" "}
+                                        {pluralize(
+                                            locale,
+                                            fixtures,
+                                            t.countFixtures
+                                        )}
                                     </span>
                                     {draft !== undefined &&
                                     draft !== division.name ? (
@@ -148,38 +154,48 @@ export function CompetitionDivisions({
                                     >
                                         <ArrowDown className="size-4" />
                                     </Button>
-                                    <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        aria-label={`${t.delete}: ${division.name}`}
-                                        disabled={
-                                            pending || teams > 0 || fixtures > 0
+                                    <ConfirmActionDialog
+                                        trigger={
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                aria-label={`${t.delete}: ${division.name}`}
+                                                disabled={
+                                                    pending ||
+                                                    teams > 0 ||
+                                                    fixtures > 0
+                                                }
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
                                         }
-                                        onClick={() => {
-                                            if (
-                                                window.confirm(
-                                                    t.confirmDeleteDivision.replace(
-                                                        "{name}",
-                                                        division.name
-                                                    )
-                                                )
-                                            )
-                                                void run({
-                                                    action: "deleteDivision",
-                                                    divisionId: division.id,
-                                                })
+                                        title={t.confirmDeleteDivision.replace(
+                                            "{name}",
+                                            division.name
+                                        )}
+                                        description={
+                                            t.confirmDeleteDivisionDescription
+                                        }
+                                        confirmLabel={t.delete}
+                                        cancelLabel={t.cancel}
+                                        onConfirm={async () => {
+                                            const result = await run({
+                                                action: "deleteDivision",
+                                                divisionId: division.id,
+                                            })
+                                            return result.ok
                                         }}
-                                    >
-                                        <Trash2 className="size-4" />
-                                    </Button>
+                                    />
                                 </li>
                             )
                         })}
                     </ol>
                 ) : (
-                    <p className="text-muted-foreground text-sm">
-                        {t.noDivisions}
-                    </p>
+                    <EmptyState
+                        icon={Layers}
+                        title={t.noDivisions}
+                        description={t.addDivisionFirst}
+                    />
                 )}
                 <form
                     onSubmit={add}

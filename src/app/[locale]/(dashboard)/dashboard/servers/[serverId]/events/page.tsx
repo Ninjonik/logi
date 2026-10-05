@@ -38,7 +38,7 @@ function getEventResultLabel(
 }
 
 export const metadata: Metadata = {
-    title: "Events | Logi",
+    title: "Events",
     description: "Manage server events.",
 }
 

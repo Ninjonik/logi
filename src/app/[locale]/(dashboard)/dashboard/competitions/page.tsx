@@ -9,17 +9,19 @@ import {
 import { CompetitionCreateDialog } from "@/components/app/competition-create-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getCurrentPlayer, isCurrentUserSuperadmin } from "@/lib/auth"
-import { SeedEclButton } from "@/components/app/seed-ecl-button"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { PageHeader } from "@/components/app/page-header"
+import { EmptyState } from "@/components/app/empty-state"
 import { GameBadge } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
 import { GAME_LABELS } from "@/domain/games/game"
 import { Badge } from "@/components/ui/badge"
+import { pluralize } from "@/i18n/plural"
 import { isLocale } from "@/i18n/config"
+import { Trophy } from "lucide-react"
 
 export const metadata: Metadata = {
-    title: "Competitions | Logi",
+    title: "Competitions",
     description: "Global competition management.",
 }
 
@@ -55,17 +57,10 @@ export default async function CompetitionsDashboard({
                 title={dictionary.competition.title}
                 description={t.listDescription}
                 actions={
-                    <div className="flex flex-wrap gap-2">
-                        {competitions.some(
-                            (competition) => competition.slug === "ecl-2026"
-                        ) ? null : (
-                            <SeedEclButton dictionary={dictionary} />
-                        )}
-                        <CompetitionCreateDialog
-                            dictionary={dictionary}
-                            managePath={`/${safeLocale}/dashboard/competitions/{id}${query}`}
-                        />
-                    </div>
+                    <CompetitionCreateDialog
+                        dictionary={dictionary}
+                        managePath={`/${safeLocale}/dashboard/competitions/{id}${query}`}
+                    />
                 }
             />
             <div className="space-y-4 px-4 lg:px-6">
@@ -106,22 +101,24 @@ export default async function CompetitionsDashboard({
                                         </Badge>
                                     </div>
                                     <p className="text-muted-foreground text-sm">
-                                        {GAME_LABELS[competition.gameId]} ·{" "}
-                                        {t.counts
-                                            .replace(
-                                                "{divisions}",
-                                                String(competition.divisions)
-                                            )
-                                            .replace(
-                                                "{teams}",
-                                                String(
-                                                    competition.registrations
-                                                )
-                                            )
-                                            .replace(
-                                                "{fixtures}",
-                                                String(competition.fixtures)
-                                            )}
+                                        {[
+                                            GAME_LABELS[competition.gameId],
+                                            pluralize(
+                                                safeLocale,
+                                                competition.divisions,
+                                                t.countDivisions
+                                            ),
+                                            pluralize(
+                                                safeLocale,
+                                                competition.registrations,
+                                                t.countTeams
+                                            ),
+                                            pluralize(
+                                                safeLocale,
+                                                competition.fixtures,
+                                                t.countFixtures
+                                            ),
+                                        ].join(" · ")}
                                     </p>
                                 </CardHeader>
                                 <CardContent className="flex flex-wrap items-center gap-4 text-sm">
@@ -149,11 +146,11 @@ export default async function CompetitionsDashboard({
                         ))}
                     </div>
                 ) : (
-                    <Card>
-                        <CardContent className="text-muted-foreground p-6 text-sm">
-                            {t.noCompetitions}
-                        </CardContent>
-                    </Card>
+                    <EmptyState
+                        icon={Trophy}
+                        title={t.noCompetitions}
+                        description={t.listDescription}
+                    />
                 )}
             </div>
         </div>

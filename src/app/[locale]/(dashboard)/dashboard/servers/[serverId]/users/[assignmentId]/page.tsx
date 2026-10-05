@@ -31,7 +31,7 @@ import { formatDateTime } from "@/lib/format"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Edit assignment | Logi",
+    title: "Edit assignment",
     description: "Manage a member's server assignment.",
 }
 

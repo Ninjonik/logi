@@ -2,38 +2,38 @@ import {
     isCurrentUserSuperadmin,
     getVisibleGuildsForLoggedInUser,
 } from "@/lib/auth"
+import { platformSettingsInputSchema } from "@/lib/validation/platform-settings"
+import { isSameOrigin, noStore } from "@/lib/api/superadmin-route"
 import { savePlatformSettings } from "@/lib/platform-settings"
-import { NextResponse } from "next/server"
+import { getSiteUrl } from "@/lib/env"
 
 export async function POST(request: Request) {
+    if (!isSameOrigin(request, new URL(getSiteUrl()).origin)) {
+        return noStore({ error: "Forbidden." }, 403)
+    }
     if (!(await isCurrentUserSuperadmin())) {
-        return NextResponse.json({ error: "Forbidden." }, { status: 403 })
+        return noStore({ error: "Forbidden." }, 403)
     }
-    const body = (await request.json()) as {
-        workspaceGuildId?: unknown
-        statusChannelId?: unknown
+    const parsed = platformSettingsInputSchema.safeParse(
+        await request.json().catch(() => null)
+    )
+    if (!parsed.success) {
+        return noStore({ error: "Choose a workspace." }, 400)
     }
-    const workspaceGuildId = String(body.workspaceGuildId ?? "").trim()
-    const statusChannelId = String(body.statusChannelId ?? "").trim()
-    if (!workspaceGuildId) {
-        return NextResponse.json(
-            { error: "Choose a workspace." },
-            { status: 400 }
-        )
-    }
+    const { workspaceGuildId, statusChannelId } = parsed.data
     const workspaces = await getVisibleGuildsForLoggedInUser()
     const workspace = workspaces.find(
         (item) => item.discordId === workspaceGuildId
     )
     if (!workspace?.botInside) {
-        return NextResponse.json(
+        return noStore(
             { error: "Choose a workspace with the Logi bot installed." },
-            { status: 400 }
+            400
         )
     }
     await savePlatformSettings({
         workspaceGuildId,
         statusChannelId: statusChannelId || undefined,
     })
-    return NextResponse.json({ ok: true })
+    return noStore({ ok: true })
 }

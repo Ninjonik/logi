@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
+import { Swords } from "lucide-react"
 import type { Metadata } from "next"
 import { Suspense } from "react"
 import Image from "next/image"
@@ -21,6 +22,7 @@ import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
 import { getPublicPreviewMetadata } from "@/lib/public-preview-metadata"
 import { getPublicClan } from "@/lib/read-models/public-profiles"
 import { PublicStat } from "@/components/public/public-stat"
+import { EmptyState } from "@/components/app/empty-state"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getLocalizedCanonical } from "@/lib/seo"
 import { isLocale } from "@/i18n/config"
@@ -43,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { locale, guildId } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const preview = await getPublicPreviewMetadata("clan", guildId)
-    const title = preview?.title ?? "Clan profile | Logi"
+    const title = preview?.title ?? "Clan profile"
     const description =
         preview?.description ??
         "Public clan profile and recorded match history."
@@ -167,6 +169,19 @@ export default async function PublicClanPage({ params }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
+                            {clan.recentMatches.length === 0 ? (
+                                <EmptyState
+                                    icon={Swords}
+                                    title={
+                                        dictionary.publicSite.clan
+                                            .noMatchesTitle
+                                    }
+                                    description={
+                                        dictionary.publicSite.clan
+                                            .noMatchesDescription
+                                    }
+                                />
+                            ) : null}
                             {clan.recentMatches.map((match) => (
                                 <Link
                                     key={match.eventId}

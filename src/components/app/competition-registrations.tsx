@@ -27,6 +27,7 @@ import {
 import type { CompetitionSectionProps } from "@/components/app/competition-manager"
 import type { CompetitionRegistrationView } from "@/domain/competitions/admin-view"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { TEAM_SEARCH_MAX, type TeamRecord } from "@/domain/teams/team"
 import { ChevronsUpDown, Loader2, Plus, Trash2 } from "lucide-react"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
@@ -255,28 +256,35 @@ function RegistrationRow({
             >
                 {row.withdrawn ? t.reinstate : t.withdraw}
             </Button>
-            <Button
-                size="icon"
-                variant="ghost"
-                aria-label={`${t.remove}: ${row.team.name}`}
-                disabled={pending || hasFixtures}
-                title={
-                    hasFixtures ? t.errors.registration_has_fixtures : undefined
+            <ConfirmActionDialog
+                trigger={
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={`${t.remove}: ${row.team.name}`}
+                        disabled={pending || hasFixtures}
+                        title={
+                            hasFixtures
+                                ? t.errors.registration_has_fixtures
+                                : undefined
+                        }
+                    >
+                        <Trash2 className="size-4" />
+                    </Button>
                 }
-                onClick={() => {
-                    if (
-                        window.confirm(
-                            t.confirmRemoveTeam.replace("{name}", row.team.name)
-                        )
-                    )
-                        void run({
+                title={t.confirmRemoveTeam.replace("{name}", row.team.name)}
+                description={t.confirmRemoveTeamDescription}
+                confirmLabel={t.remove}
+                cancelLabel={t.cancel}
+                onConfirm={async () =>
+                    (
+                        await run({
                             action: "removeRegistration",
                             registrationId: row.id,
                         })
-                }}
-            >
-                <Trash2 className="size-4" />
-            </Button>
+                    ).ok
+                }
+            />
         </li>
     )
 }

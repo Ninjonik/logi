@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from "next-intl"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
+import { HtmlLang } from "@/components/public/html-lang"
 import { isLocale, type Locale } from "@/i18n/config"
 import { getDictionary } from "@/i18n/dictionaries"
 
@@ -31,6 +32,7 @@ export default async function LocaleLayout({
 
     return (
         <NextIntlClientProvider messages={messages}>
+            <HtmlLang locale={locale} />
             {children}
         </NextIntlClientProvider>
     )

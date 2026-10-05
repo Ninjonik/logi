@@ -98,7 +98,11 @@ export async function PublicSiteShell({
                     </nav>
                     <div className="flex items-center gap-2">
                         <span className="hidden sm:inline-flex">
-                            <LogiStatusLink status={status} showLabel={false} />
+                            <LogiStatusLink
+                                status={status}
+                                showLabel={false}
+                                locale={locale}
+                            />
                         </span>
                         <ThemeSwitcher dictionary={dictionary} />
                         <LocaleSwitcher
@@ -145,7 +149,7 @@ export async function PublicSiteShell({
                         &copy; {new Date().getFullYear()} {dictionary.app.name}
                     </span>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                        <LogiStatusLink status={status} />
+                        <LogiStatusLink status={status} locale={locale} />
                         <a
                             href={discordSupportUrl}
                             target="_blank"
