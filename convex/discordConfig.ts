@@ -8,6 +8,7 @@ import {
     statsSettingsValidator,
     ticketSettingsValidator,
 } from "./discord_shared"
+import { discordConfigPatch } from "../src/domain/workspaces/discord-config-patch"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
 import { getGuildById, getGuildDiscordId } from "./identity"
 import { mutation, query } from "./_generated/server"
@@ -16,9 +17,11 @@ import { v } from "convex/values"
 
 export const getConfigByGuild = query({
     args: {
+        secret: v.string(),
         guildId: v.id("guilds"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const guild = await getGuildById(ctx, args.guildId)
         if (!guild) {
             return null
@@ -36,9 +39,11 @@ export const getConfigByGuild = query({
 
 export const getConfigByDiscordGuildId = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const config = await ctx.db
             .query("discordConfigs")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
@@ -48,85 +53,70 @@ export const getConfigByDiscordGuildId = query({
     },
 })
 
+const clearableId = v.optional(v.union(v.string(), v.null()))
+
+/**
+ * Saves the settings a dashboard page submits. Omitted fields keep their stored
+ * values, so pages that own different settings cannot erase each other's work;
+ * `null` clears a single Discord ID.
+ */
 export const upsertConfig = mutation({
     args: {
         secret: v.string(),
         guildId: v.id("guilds"),
-        timezone: v.string(),
-        defaultLanguage: v.union(v.literal("en"), v.literal("cs")),
-        announcementsChannelId: v.optional(v.string()),
-        eventInfoChannelId: v.optional(v.string()),
-        errorsChannelId: v.optional(v.string()),
-        calendarChannelId: v.optional(v.string()),
+        timezone: v.optional(v.string()),
+        defaultLanguage: v.optional(
+            v.union(v.literal("en"), v.literal("cs"), v.literal("de"))
+        ),
+        announcementsChannelId: clearableId,
+        eventInfoChannelId: clearableId,
+        errorsChannelId: clearableId,
+        calendarChannelId: clearableId,
         calendarCategories: v.optional(calendarCategoriesValidator),
-        forumCategoryId: v.optional(v.string()),
-        meetingChannelId: v.optional(v.string()),
-        squadVoiceCategoryId: v.optional(v.string()),
-        clanRoleId: v.optional(v.string()),
-        dashboardAdminRoleId: v.optional(v.string()),
+        forumCategoryId: clearableId,
+        meetingChannelId: clearableId,
+        squadVoiceCategoryId: clearableId,
+        clanRoleId: clearableId,
+        dashboardAdminRoleId: clearableId,
         playerStatsServers: v.optional(v.array(playerStatsServerValidator)),
         ticketSettings: v.optional(ticketSettingsValidator),
         membershipSettings: v.optional(membershipSettingsValidator),
         statsSettings: v.optional(statsSettingsValidator),
         gameOverrides: v.optional(gameOverridesValidator),
     },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
+    handler: async (ctx, { secret, guildId, ...input }) => {
+        assertInternalSecret(secret)
 
-        const guild = await getGuildById(ctx, args.guildId)
+        const guild = await getGuildById(ctx, guildId)
         if (!guild) {
             throw new Error("Server not found.")
         }
         const guildDiscordId = getGuildDiscordId(guild)
 
         const now = new Date().toISOString()
-        const payload = {
-            timezone: args.timezone,
-            defaultLanguage: args.defaultLanguage,
-            announcementsChannelId:
-                args.announcementsChannelId?.trim() || undefined,
-            eventInfoChannelId: args.eventInfoChannelId?.trim() || undefined,
-            errorsChannelId: args.errorsChannelId?.trim() || undefined,
-            calendarChannelId: args.calendarChannelId?.trim() || undefined,
-            calendarCategories: (args.calendarCategories ?? [])
-                .map((value) => value.trim())
-                .filter(Boolean),
-            forumCategoryId: args.forumCategoryId?.trim() || undefined,
-            meetingChannelId: args.meetingChannelId?.trim() || undefined,
-            squadVoiceCategoryId:
-                args.squadVoiceCategoryId?.trim() || undefined,
-            clanRoleId: args.clanRoleId?.trim() || undefined,
-            dashboardAdminRoleId:
-                args.dashboardAdminRoleId?.trim() || undefined,
-            playerStatsServers: (args.playerStatsServers ?? [])
-                .map((item) => ({
-                    token: item.token.trim(),
-                    url: item.url.trim(),
-                }))
-                .filter((item) => item.token && item.url),
-            ticketSettings: args.ticketSettings,
-            membershipSettings: args.membershipSettings,
-            statsSettings: args.statsSettings,
-            gameOverrides: args.gameOverrides,
-            updatedAt: now,
-        }
+        const updates = discordConfigPatch(input)
 
         const existing = await ctx.db
             .query("discordConfigs")
             .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
             .unique()
 
-        for (const gameId of GAME_IDS) managedRolePolicy(payload, gameId)
+        const merged = { ...existing, ...updates }
+        for (const gameId of GAME_IDS) managedRolePolicy(merged, gameId)
 
         if (existing) {
-            await ctx.db.patch(existing._id, payload)
+            await ctx.db.patch(existing._id, { ...updates, updatedAt: now })
             return String(existing._id)
         }
 
         const configId = await ctx.db.insert("discordConfigs", {
+            ...updates,
             guildId: guildDiscordId,
-            ...payload,
+            timezone: input.timezone ?? "UTC",
+            defaultLanguage: input.defaultLanguage ?? "en",
+            calendarCategories: updates.calendarCategories ?? [],
             createdAt: now,
+            updatedAt: now,
         })
 
         return String(configId)

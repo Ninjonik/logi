@@ -410,9 +410,11 @@ function toPlayer(user: {
 
 export const getById = query({
     args: {
+        secret: v.string(),
         userId: v.string(),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const user = await getUserByIdentifier(ctx, args.userId)
 
         return user ? toPlayer(user) : null
@@ -421,11 +423,13 @@ export const getById = query({
 
 export const searchClanPlayers = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         query: v.string(),
         limit: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const limit = Math.max(1, Math.min(args.limit ?? 5, 25))
         const assignments = await ctx.db
             .query("userAssignments")
@@ -501,6 +505,7 @@ export const searchClanPlayers = query({
 
 export const getClanPlayerProfile = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         userId: v.string(),
         gameId: v.optional(
@@ -512,6 +517,7 @@ export const getClanPlayerProfile = query({
         ),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const assignments = await ctx.db
             .query("userAssignments")
             .withIndex("serverId_userId", (q) =>

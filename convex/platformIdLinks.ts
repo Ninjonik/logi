@@ -52,8 +52,9 @@ export const createPlatformIdLinkToken = mutation({
 })
 
 export const getPlatformIdLinkToken = query({
-    args: { token: v.string() },
+    args: { secret: v.string(), token: v.string() },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const doc = await ctx.db
             .query("platformIdLinkTokens")
             .withIndex("token", (q) => q.eq("token", args.token))

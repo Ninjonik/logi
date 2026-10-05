@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+/** Imports moved to clan settings. */
 export default async function SystemImportsPage({
     params,
     searchParams,
@@ -10,5 +11,7 @@ export default async function SystemImportsPage({
     const { locale, serverId } = await params
     const { game } = await searchParams
     const search = game ? `?game=${encodeURIComponent(game)}` : ""
-    redirect(`/${locale}/dashboard/servers/${serverId}/system${search}#imports`)
+    redirect(
+        `/${locale}/dashboard/servers/${serverId}/settings/imports${search}`
+    )
 }

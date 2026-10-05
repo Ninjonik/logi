@@ -15,13 +15,16 @@ import {
     readHllSessionPage,
 } from "../src/infrastructure/game-data/hll-sessions"
 import { wardogsDirectoryProvider } from "../src/infrastructure/game-data/wardogs-public-directory"
+import { actionCredential } from "../src/infrastructure/game-data/credential-resolver"
 import { createProviderHttp } from "../src/infrastructure/game-data/provider-http"
 import { wardogsRconProvider } from "../src/infrastructure/game-data/wardogs-rcon"
 import { collectSnapshot } from "../src/application/game-data/collect-snapshot"
 import { collectSessions } from "../src/application/game-data/collect-sessions"
 import { hllCrconProvider } from "../src/infrastructure/game-data/hll-crcon"
+import type { ResolvedSource } from "../src/domain/game-data/credentials"
+import { internalAction, type ActionCtx } from "./_generated/server"
 import { retryDelay } from "../src/domain/game-data/policy"
-import { internalAction } from "./_generated/server"
+import type { Id } from "./_generated/dataModel"
 import { internal } from "./_generated/api"
 
 const providers: Record<ClaimedConnection["provider"], GameDataProvider> = {
@@ -29,6 +32,23 @@ const providers: Record<ClaimedConnection["provider"], GameDataProvider> = {
     wardogs_rcon: wardogsRconProvider,
     wardogs_warcon: warconProvider,
     wardogs_public_directory: wardogsDirectoryProvider,
+}
+
+/** The key for one claimed run, decrypted only while its generation is current. */
+export function runCredential(
+    ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
+    source: ResolvedSource,
+    run: { connectionId: string; generation: number }
+) {
+    return actionCredential(source, {
+        loadEnvelope: () =>
+            ctx.runQuery(internal.gameDataCredentials.envelope, run),
+        reportFailure: (category) =>
+            ctx.runMutation(internal.gameDataCredentials.reportFailure, {
+                ...run,
+                category,
+            }),
+    })
 }
 
 export const collectDue = internalAction({
@@ -47,14 +67,17 @@ export const collectDue = internalAction({
         await collectSnapshot(connection, {
             provider,
             http: createProviderHttp(connection, {
-                resolveSecret: (ref) => process.env[ref],
+                credential: runCredential(ctx, connection, {
+                    connectionId: connection.id,
+                    generation: connection.generation,
+                }),
                 now: Date.now,
             }),
             now: Date.now,
             repository: {
                 finish: async (result) =>
                     ctx.runMutation(internal.gameData.finishSnapshot, {
-                        id: connection.id as import("./_generated/dataModel").Id<"gameDataConnections">,
+                        id: connection.id as Id<"gameDataConnections">,
                         generation: connection.generation,
                         fence: connection.fence,
                         result,
@@ -85,7 +108,10 @@ export const collectHistoryDue = internalAction({
             fence: claim.fence,
         }
         const http = createProviderHttp(claim.connection, {
-            resolveSecret: (ref) => process.env[ref],
+            credential: runCredential(ctx, claim.connection, {
+                connectionId: claim.connectionId,
+                generation: claim.generation,
+            }),
             now: Date.now,
         })
         try {

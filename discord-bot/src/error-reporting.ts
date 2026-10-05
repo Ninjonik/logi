@@ -8,6 +8,7 @@ import {
 } from "discord.js"
 
 import { convex, references } from "./convex"
+import { env } from "./environment"
 import { logWarn } from "./log"
 
 type ClanErrorReportInput = {
@@ -62,6 +63,7 @@ export async function reportClanDiscordError(input: ClanErrorReportInput) {
     }
 
     const config = (await convex.query(references.getConfigByDiscordGuildId, {
+        secret: env.internalSecret,
         guildId: input.guildId,
     })) as { errorsChannelId?: string } | null
 

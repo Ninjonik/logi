@@ -8,7 +8,6 @@ import { assertSessionGateway } from "./dashboardSessionStore"
 import { authorizeRosterManager } from "./rosterWriterAccess"
 import { resolveGameScope } from "../src/domain/games/game"
 import { mutation } from "./integrationMutation"
-import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 const dashboardActor = v.object({
@@ -109,16 +108,6 @@ export const upsert = mutation({
             streamerId: args.streamerId,
             published: args.published,
         })
-    },
-})
-
-export const getByEventId = query({
-    args: { eventId: v.id("events") },
-    handler: async (ctx, args) => {
-        return await ctx.db
-            .query("rosters")
-            .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
-            .unique()
     },
 })
 

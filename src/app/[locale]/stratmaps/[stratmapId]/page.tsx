@@ -97,7 +97,6 @@ export default async function PublicStratmapPage({ params }: Props) {
         <main className="bg-background h-dvh w-dvw overflow-hidden">
             <StratmapEditor
                 locale={safeLocale}
-                userId="public"
                 stratmapId={stratmapId}
                 initialCanAdmin={false}
                 initialStratmap={stratmap}

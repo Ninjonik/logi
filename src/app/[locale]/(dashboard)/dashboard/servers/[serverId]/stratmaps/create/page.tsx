@@ -1,10 +1,13 @@
 import { StratmapCreateForm } from "@/components/app/stratmap-create-form"
 import { GameSelectionGate } from "@/components/app/game-selection-gate"
+import { clientGrantScopes } from "@/domain/identity/client-grant"
 import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
+import { issueClientGrant } from "@/lib/client-grants"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
+import { getSession } from "@/lib/auth"
 
 export default async function CreateStratmapPage({
     params,
@@ -25,6 +28,8 @@ export default async function CreateStratmapPage({
     if (!context?.canAdmin) {
         return null
     }
+    const session = await getSession()
+    if (!session) return null
     if (!isGameId(game))
         return (
             <GameSelectionGate
@@ -43,7 +48,10 @@ export default async function CreateStratmapPage({
                 <StratmapCreateForm
                     locale={locale}
                     serverId={serverId}
-                    userId={context.user.discordId}
+                    grant={issueClientGrant(
+                        { discordId: session.sub, sid: session.sid },
+                        clientGrantScopes.stratmapCreate(serverId)
+                    )}
                     dictionary={dictionary}
                     defaultTitle={dictionary.stratmaps.createTitle}
                     gameId={game}

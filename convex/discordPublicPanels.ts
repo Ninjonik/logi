@@ -7,7 +7,7 @@ import { mutation, query, type MutationCtx } from "./_generated/server"
 import { attachableAsset, syncAssetReferences } from "./imageAssets"
 import { projectSnapshot } from "../src/domain/game-data/policy"
 import { panelSettingsInput } from "./discordPublicationTable"
-import { catalogSources } from "./gameDataCatalog"
+import { connectionSource } from "./gameDataCatalog"
 import type { Id } from "./_generated/dataModel"
 import { getGuildByDiscordId } from "./identity"
 import { v } from "convex/values"
@@ -214,7 +214,6 @@ export const forGuild = query({
             .query("discordPublicPanels")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .take(20)
-        const sources = await catalogSources(ctx)
         return Promise.all(
             panels.map(async (panel) => {
                 const id = ctx.db.normalizeId(
@@ -223,13 +222,8 @@ export const forGuild = query({
                 )
                 const connection = id ? await ctx.db.get(id) : null
                 const configured =
-                    connection &&
-                    sources.some(
-                        (s) =>
-                            s.guildId === args.guildId &&
-                            s.ref === connection.sourceRef &&
-                            JSON.stringify(s) === connection.sourceFingerprint
-                    )
+                    connection?.guildId === args.guildId &&
+                    Boolean(await connectionSource(ctx, connection))
                 return {
                     ...panel,
                     snapshot:

@@ -11,8 +11,8 @@ a second operational match table.
 This contract supports Hell Let Loose and Wardogs. It does not reduce a Wardogs
 match to two teams: participant scores remain the independent N-participant
 reviewed-result read model. The native event editor contains schedule, name,
-kind, map, side and descriptive fields, plus optional workspace directory team
-assignments (see [Team directory](#team-directory)); result submission remains
+kind, map, side and descriptive fields, plus optional global catalogue team
+assignments (see [Team catalogue](#team-catalogue)); result submission remains
 outside this command contract.
 
 ## Enable access explicitly
@@ -59,7 +59,7 @@ configuration is deliberately unavailable: a service key cannot grant itself
 permission. GET on the same path with `?applicationRecordId=...` returns bounded
 nonsecret policy metadata to the current workspace administrator.
 
-The dashboard form **System → Website event commands** uses exactly these two
+The dashboard form **Settings → Clan website and API → Website event commands** uses exactly these two
 endpoints. It lists the workspace's registered SSO applications and its live
 restricted API keys (legacy unrestricted keys are not offered), shows the current
 policy and granted games per key, and saves the enabled flag with one Discord
@@ -103,8 +103,8 @@ Create:
 
 The required native kind is `match` or `training`. Optional bounded fields are
 `matchType` (80 characters), `description` (2,000), `map` (200), `side` (200) and
-`registrationStart` (UTC ISO timestamp), plus `matchTeams` for directory team
-assignments (see [Team directory](#team-directory)). `name` is 1–160 trimmed
+`registrationStart` (UTC ISO timestamp), plus `matchTeams` for catalogue team
+assignments (see [Team catalogue](#team-catalogue)). `name` is 1–160 trimmed
 characters.
 Times satisfy `registrationStart <= registrationEnd <= meetingStart <=
 gameStart < gameEnd`; meeting start must still be in the future.
@@ -146,11 +146,12 @@ GET returns `eventId`, `guildId`, `gameId`, `revision`, the bounded `event`, and
 `canEdit`/`canCancel`. It requires the same current write authorization even
 when the event can no longer be edited. All output objects are closed schemas.
 
-### Team directory
+### Team catalogue
 
-Native match events can reference workspace directory teams; the directory,
-its read grant and the consumer fixtures are described in the
-[workspace team directory handoff](v0.15/README.md). Team assignment adds one
+Native match events can reference teams of Logi's global team catalogue (one
+per game, maintained by Logi's global administrators); the catalogue, its read
+grant and the consumer fixtures are described in the
+[global team catalogue handoff](v0.15/README.md). Team assignment adds one
 optional event field, one operation and one error code. SSO actor checks,
 per-game event-write policy, `Idempotency-Key` and `expectedRevision` semantics
 are unchanged, and an API key alone is still not a writing actor: bearer-key
@@ -175,8 +176,8 @@ position and side only:
         "gameStart": "2030-01-01T18:30:00Z",
         "gameEnd": "2030-01-01T20:00:00Z",
         "matchTeams": [
-            { "teamId": "<directory-team-id>", "slot": "a", "side": "Allies" },
-            { "teamId": "<directory-team-id>", "slot": "b", "side": null }
+            { "teamId": "<catalogue-team-id>", "slot": "a", "side": "Allies" },
+            { "teamId": "<catalogue-team-id>", "slot": "b", "side": null }
         ]
     }
 }
@@ -192,9 +193,10 @@ position and side only:
   characters, or `null`). Any other key, including a snapshot, is rejected.
   The game then narrows slots and sides to the table above, and teams, slots
   and non-null sides must be unique within the event.
-- **Teams.** `teamId` is the stable directory ID of an active team in the same
-  workspace and game. A team already assigned to the event may stay even if it
-  has since been archived; only a newly assigned team must be active.
+- **Teams.** `teamId` is the stable global catalogue ID of a team. Any active
+  team of the event's game can be selected; the catalogue is not limited to the
+  workspace. A team already assigned to the event may stay even if it has since
+  been archived or merged; only a newly assigned team must be active.
 - **Omission and `[]`.** Omitting `matchTeams` on an `update` preserves the
   saved assignments, so a consumer that does not know the field never erases
   them. An empty array `[]` clears them. On `create`, omission stores no
@@ -204,33 +206,35 @@ position and side only:
   nothing.
 - **Snapshots.** Clients never send snapshots. When a team is first assigned,
   Logi captures `{name, shortCode, logo, team revision, capturedAt}` from its
-  directory entry and keeps that snapshot through slot or side edits and
-  through later directory renames, logo changes and archival of the team.
-  Assigning a different team to a slot captures that team's snapshot.
+  catalogue entry and keeps that snapshot through slot or side edits and
+  through later catalogue renames, logo changes, archival and merges of the
+  team. Assigning a different team to a slot captures that team's snapshot.
 - **Order.** Assignments are stored and returned sorted by slot. The
   idempotency digest compares them by slot, so the same assignments listed in
   another order replay the original receipt.
 
 **`refresh_match_team`.** This operation re-captures one assigned team's
-presentation from its active directory entry:
+presentation from its active catalogue entry:
 
 ```json
 {
     "operation": "refresh_match_team",
     "eventId": "<native-event-id>",
     "expectedRevision": "123",
-    "teamId": "<directory-team-id>"
+    "teamId": "<catalogue-team-id>"
 }
 ```
 
 Unlike `update`, it stays available after meeting start until the match
-concludes. It changes only that assignment's snapshot, writes a directory
-audit entry, emits the event's normal change records (advancing the
-`event-summaries`/`match-summaries` revision) and returns a `200` receipt with
-`operation: "refresh_match_team"`. Receipts and idempotency work exactly as
-for `update`: a stale `expectedRevision` returns `revision_conflict`, the same
-`Idempotency-Key` and body replay the original receipt with `replayed: true`,
-and the same key with a different body returns `idempotency_conflict`.
+concludes. It changes only that assignment's snapshot (for a merged team it
+follows the merge to the active replacement and the assignment adopts the
+replacement's ID), writes a catalogue audit entry, emits the event's normal
+change records (advancing the `event-summaries`/`match-summaries` revision)
+and returns a `200` receipt with `operation: "refresh_match_team"`. Receipts
+and idempotency work exactly as for `update`: a stale `expectedRevision`
+returns `revision_conflict`, the same `Idempotency-Key` and body replay the
+original receipt with `replayed: true`, and the same key with a different body
+returns `idempotency_conflict`.
 
 **Errors.** The checks run in this order and a rejected command writes
 nothing, including no receipt, so the key can be reused once the body is
@@ -246,7 +250,7 @@ corrected:
    `refresh_match_team` of a training or of a concluded match is
    `400 invalid_match_teams`. A match counts as concluded once it is stored as
    concluded or 15 minutes after its game end, whichever is first.
-4. Team rules: an unknown, foreign-workspace, archived or cross-game team, a
+4. Team rules: an unknown, archived (including merged) or cross-game team, a
    slot or side the game does not have, a duplicate team, slot or non-null
    side, teams on a training, or a refresh of a team that is not assigned to
    the event is `400 invalid_match_teams`.
@@ -262,7 +266,7 @@ absent. Neither carries an image asset ID. The `event-summaries` and
 `match-summaries` documents gain `matchTeams` with the same summary array or
 `null` (OpenAPI `ClanMatchTeam`); the existing revision feed invalidates those
 summaries after an assignment change or refresh. Receiving snapshots does not
-grant the `teams` directory.
+grant the `teams` catalogue.
 
 ## Retries, concurrency and errors
 
@@ -285,7 +289,7 @@ overwrite. The event, schedule, change records and receipt commit atomically.
 | Status | Error codes / consumer action                                                                     |
 | ------ | ------------------------------------------------------------------------------------------------- |
 | 400    | `invalid_request`; correct the intentional command                                                |
-| 400    | `invalid_match_teams`; correct the team assignment (see [Team directory](#team-directory))        |
+| 400    | `invalid_match_teams`; correct the team assignment (see [Team catalogue](#team-catalogue))        |
 | 401    | `unauthorized`; obtain a current central session/key                                              |
 | 403    | `insufficient_scope`, `policy_denied`, `membership_denied`; do not bypass authorization           |
 | 404    | `not_found`; event absent from this exact guild/game                                              |

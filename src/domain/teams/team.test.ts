@@ -1,10 +1,12 @@
 import {
     decideTeamArchive,
     decideTeamCreate,
+    decideTeamMerge,
     decideTeamRestore,
     decideTeamUpdate,
     normalizeTeamName,
     projectTeam,
+    TEAM_DIRECTORY_LIMIT,
     teamCreateSchema,
     teamInitials,
     teamUpdateSchema,
@@ -16,11 +18,14 @@ import test from "node:test"
 const now = "2026-10-04T12:00:00.000Z"
 const team: TeamEntity = {
     id: "team-1",
-    guildId: "guild",
     gameId: "hell_let_loose",
     name: "Valkyria",
     shortCode: "VLK",
     logoAssetId: null,
+    description: null,
+    links: [],
+    linkedGuildId: null,
+    mergedIntoTeamId: null,
     normalizedName: "valkyria",
     archivedAt: null,
     revision: 3,
@@ -78,27 +83,17 @@ test("labels are trimmed and collapsed; control characters and empty values are 
     )
 })
 
-test("creating requires an enabled game, rejects exact duplicates and respects the limit", () => {
+test("creating rejects exact duplicates per game and respects the catalogue limit", () => {
     const input = teamCreateSchema.parse({
         gameId: "wardogs",
         name: "Manticore",
         idempotencyKey: "retry-key-0001",
     })
+    assert.deepEqual(input.links, [])
+    assert.equal(input.description, null)
+    assert.equal(input.linkedGuildId, null)
     assert.deepEqual(
         decideTeamCreate({
-            guildId: "guild",
-            enabledGames: ["hell_let_loose"],
-            input,
-            existing: null,
-            count: 0,
-            now,
-        }),
-        { ok: false, error: "game_disabled" }
-    )
-    assert.deepEqual(
-        decideTeamCreate({
-            guildId: "guild",
-            enabledGames: ["wardogs"],
             input,
             existing: { id: "old", archivedAt: now },
             count: 1,
@@ -108,27 +103,100 @@ test("creating requires an enabled game, rejects exact duplicates and respects t
     )
     assert.deepEqual(
         decideTeamCreate({
-            guildId: "guild",
-            enabledGames: ["wardogs"],
             input,
             existing: null,
-            count: 500,
+            count: TEAM_DIRECTORY_LIMIT,
             now,
         }),
         { ok: false, error: "limit_reached" }
     )
-    const created = decideTeamCreate({
-        guildId: "guild",
-        enabledGames: ["hell_let_loose", "wardogs"],
-        input,
-        existing: null,
-        count: 2,
-        now,
-    })
+    const created = decideTeamCreate({ input, existing: null, count: 2, now })
     assert.ok(created.ok)
     assert.equal(created.team.revision, 1)
     assert.equal(created.team.normalizedName, "manticore")
     assert.equal(created.team.archivedAt, null)
+    assert.equal(created.team.mergedIntoTeamId, null)
+})
+
+test("descriptions, links and linked workspaces are bounded and validated", () => {
+    const base = {
+        gameId: "hell_let_loose",
+        name: "Valid",
+        idempotencyKey: "retry-key-0001",
+    }
+    const parsed = teamCreateSchema.parse({
+        ...base,
+        description: "  Line one\nLine two  ",
+        links: ["https://valkyria.example", "https://discord.gg/abc"],
+        linkedGuildId: "123456789012345678",
+    })
+    assert.equal(parsed.description, "Line one\nLine two")
+    assert.equal(parsed.links.length, 2)
+    for (const extra of [
+        { description: "x".repeat(501) },
+        { description: "bad\u0007" },
+        { links: ["http://insecure.example"] },
+        { links: ["https://user:secret@example.com"] },
+        { links: ["https://a.example", "https://a.example"] },
+        {
+            links: [
+                "https://a.example",
+                "https://b.example",
+                "https://c.example",
+                "https://d.example",
+            ],
+        },
+        { linkedGuildId: "not-a-guild" },
+    ])
+        assert.equal(
+            teamCreateSchema.safeParse({ ...base, ...extra }).success,
+            false,
+            JSON.stringify(extra)
+        )
+})
+
+test("merge needs both current revisions, the same game and an active target", () => {
+    const target: TeamEntity = {
+        ...team,
+        id: "team-2",
+        name: "Valkyria Main",
+        normalizedName: "valkyria main",
+        revision: 5,
+    }
+    const input = {
+        expectedRevision: 3,
+        targetTeamId: "team-2",
+        targetRevision: 5,
+    }
+    const merged = decideTeamMerge({ source: team, target, input, now })
+    assert.ok(merged.ok)
+    assert.equal(merged.source.mergedIntoTeamId, "team-2")
+    assert.equal(merged.source.archivedAt, now)
+    assert.equal(merged.source.revision, 4)
+    assert.equal(merged.target.revision, 6)
+    assert.deepEqual(
+        decideTeamMerge({ source: team, target: null, input, now }),
+        { ok: false, error: "not_found" }
+    )
+    assert.deepEqual(
+        decideTeamMerge({
+            source: team,
+            target,
+            input: { ...input, targetRevision: 4 },
+            now,
+        }),
+        { ok: false, error: "revision_conflict" }
+    )
+    for (const [source, other] of [
+        [team, { ...target, id: "team-1" }],
+        [team, { ...target, gameId: "wardogs" as const }],
+        [team, { ...target, archivedAt: now }],
+        [{ ...team, mergedIntoTeamId: "team-9" }, target],
+    ] as const)
+        assert.deepEqual(
+            decideTeamMerge({ source, target: other, input, now }),
+            { ok: false, error: "invalid_merge" }
+        )
 })
 
 test("updates need the current revision, an active record and a free name", () => {
@@ -220,6 +288,8 @@ test("website DTOs null absent values and never expose actors or asset identifie
             name: "Valkyria",
             shortCode: "VLK",
             logoUrl: "https://logi/x.png",
+            description: null,
+            links: [],
             revision: 3,
             updatedAt: now,
         }

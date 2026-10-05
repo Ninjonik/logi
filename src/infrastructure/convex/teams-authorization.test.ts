@@ -1,5 +1,7 @@
 import { actorFixture, seedDashboardActor } from "./testing/dashboard-actor"
 import * as integrationChanges from "../../../convex/integrationChanges"
+import type { DashboardActor } from "../../../convex/dashboardActor"
+import * as teamRequests from "../../../convex/teamRequests"
 import * as imageAssets from "../../../convex/imageAssets"
 import * as matchTeams from "../../../convex/matchTeams"
 import { invoke, testContext } from "./testing/database"
@@ -11,7 +13,7 @@ import test from "node:test"
 process.env.INTERNAL_AUTH_SECRET = "synthetic-team-authorization"
 const secret = process.env.INTERNAL_AUTH_SECRET
 const guildId = "guild-a"
-const access = { secret, guildId, actor: actorFixture }
+const superadmin: DashboardActor = { ...actorFixture, superadmin: true }
 const keyHash = "k".repeat(64)
 const schedule = {
     registrationEnd: "2030-01-01T17:00:00.000Z",
@@ -19,12 +21,22 @@ const schedule = {
     gameStart: "2030-01-01T18:30:00.000Z",
     gameEnd: "2030-01-01T20:00:00.000Z",
 }
+const recordedAsset = {
+    kind: "team-logo",
+    publicId: "e".repeat(32),
+    storageId: "storage:new",
+    contentType: "image/png",
+    width: 64,
+    height: 64,
+    bytes: 100,
+    sha256: "f".repeat(64),
+    publicUrl: "https://logi.test/x.png",
+}
 
-/** A workspace with one team assigned to one match, and one restricted reader key. */
+/** One catalogue team assigned to one match, one pending request and one reader key. */
 async function setup() {
     const ctx = testContext()
     seedDashboardActor(ctx.db, guildId)
-    ctx.db.tables.guilds[0].enabledGames = ["hell_let_loose", "wardogs"]
     ctx.db.seed("apiKeys", {
         _id: "apiKeys:site",
         guildId,
@@ -32,7 +44,8 @@ async function setup() {
         readAccess: { resources: ["teams"], gameIds: ["hell_let_loose"] },
     })
     const created = await invoke(teams.create, ctx, {
-        ...access,
+        secret,
+        actor: superadmin,
         input: {
             gameId: "hell_let_loose",
             name: "Alpha",
@@ -40,6 +53,18 @@ async function setup() {
         },
     })
     assert.equal(created.ok, true)
+    const requested = await invoke(teamRequests.submit, ctx, {
+        secret,
+        guildId,
+        actor: actorFixture,
+        input: {
+            kind: "create",
+            gameId: "hell_let_loose",
+            proposal: { name: "Charlie" },
+            idempotencyKey: "request-charlie-1",
+        },
+    })
+    assert.equal(requested.ok, true)
     ctx.db.seed("events", {
         _id: "events:match",
         guildId,
@@ -66,12 +91,18 @@ async function setup() {
             },
         ],
     })
-    return { ctx, teamId: created.teamId as string }
+    return {
+        ctx,
+        teamId: created.teamId as string,
+        requestId: requested.requestId as string,
+    }
 }
+type Fixture = Awaited<ReturnType<typeof setup>>
+type Call = readonly [string, unknown, Record<string, unknown>]
 
-/** Every session-bound directory, asset and refresh handler. */
-function dashboardCalls(teamId: string, actor = actorFixture) {
-    const as = { ...access, actor }
+/** Handlers only a global administrator may use. */
+function platformCalls(f: Fixture, actor: DashboardActor = superadmin): Call[] {
+    const as = { secret, actor }
     return [
         [
             "teams:create",
@@ -88,30 +119,97 @@ function dashboardCalls(teamId: string, actor = actorFixture) {
         [
             "teams:update",
             teams.update,
-            { ...as, teamId, input: { expectedRevision: 1, name: "Renamed" } },
+            {
+                ...as,
+                teamId: f.teamId,
+                input: { expectedRevision: 1, name: "Renamed" },
+            },
         ],
         [
             "teams:archive",
             teams.archive,
-            { ...as, teamId, input: { expectedRevision: 1 } },
+            { ...as, teamId: f.teamId, input: { expectedRevision: 1 } },
         ],
         [
             "teams:restore",
             teams.restore,
-            { ...as, teamId, input: { expectedRevision: 1 } },
+            { ...as, teamId: f.teamId, input: { expectedRevision: 1 } },
         ],
         [
-            "teams:list",
-            teams.list,
+            "teams:merge",
+            teams.merge,
+            {
+                ...as,
+                teamId: f.teamId,
+                input: {
+                    expectedRevision: 1,
+                    targetTeamId: f.teamId,
+                    targetRevision: 1,
+                },
+            },
+        ],
+        [
+            "teams:adminList",
+            teams.adminList,
             {
                 ...as,
                 gameId: "hell_let_loose",
-                archived: false,
+                archived: true,
                 cursor: null,
                 limit: 10,
             },
         ],
-        ["teams:get", teams.get, { ...as, teamId }],
+        ["teams:adminGet", teams.adminGet, { ...as, teamId: f.teamId }],
+        [
+            "imageAssets:reserveUpload (platform)",
+            imageAssets.reserveUpload,
+            { ...as, guildId: "platform", kind: "team-logo" },
+        ],
+        [
+            "imageAssets:record (platform)",
+            imageAssets.record,
+            { ...as, guildId: "platform", asset: recordedAsset },
+        ],
+        [
+            "imageAssets:list (platform)",
+            imageAssets.list,
+            { ...as, guildId: "platform", kind: "team-logo" },
+        ],
+        [
+            "teamRequests:queue",
+            teamRequests.queue,
+            { ...as, status: "pending", cursor: null, limit: 10 },
+        ],
+        [
+            "teamRequests:get",
+            teamRequests.get,
+            { ...as, requestId: f.requestId },
+        ],
+        [
+            "teamRequests:decide",
+            teamRequests.decide,
+            {
+                ...as,
+                requestId: f.requestId,
+                input: { decision: "reject", reason: "Not a team" },
+            },
+        ],
+    ]
+}
+
+/** Handlers a workspace administrator uses in that workspace's dashboard. */
+function workspaceCalls(
+    f: Fixture,
+    actor: DashboardActor = actorFixture
+): Call[] {
+    const as = { secret, guildId, actor }
+    return [
+        [
+            "teams:list",
+            teams.list,
+            { ...as, gameId: "hell_let_loose", cursor: null, limit: 10 },
+        ],
+        ["teams:get", teams.get, { ...as, teamId: f.teamId }],
         [
             "imageAssets:reserveUpload",
             imageAssets.reserveUpload,
@@ -120,20 +218,7 @@ function dashboardCalls(teamId: string, actor = actorFixture) {
         [
             "imageAssets:record",
             imageAssets.record,
-            {
-                ...as,
-                asset: {
-                    kind: "team-logo",
-                    publicId: "e".repeat(32),
-                    storageId: "storage:new",
-                    contentType: "image/png",
-                    width: 64,
-                    height: 64,
-                    bytes: 100,
-                    sha256: "f".repeat(64),
-                    publicUrl: "https://logi.test/x.png",
-                },
-            },
+            { ...as, asset: recordedAsset },
         ],
         ["imageAssets:list", imageAssets.list, { ...as, kind: "team-logo" }],
         [
@@ -143,17 +228,37 @@ function dashboardCalls(teamId: string, actor = actorFixture) {
                 secret,
                 serverId: "guilds:admin",
                 eventId: "events:match",
-                teamId,
+                teamId: f.teamId,
                 actor,
             },
         ],
-    ] as const
+        [
+            "teamRequests:submit",
+            teamRequests.submit,
+            {
+                ...as,
+                input: {
+                    kind: "update",
+                    teamId: f.teamId,
+                    proposal: { name: "Alpha" },
+                    idempotencyKey: "request-alpha-01",
+                },
+            },
+        ],
+        [
+            "teamRequests:listMine",
+            teamRequests.listMine,
+            { ...as, cursor: null, limit: 10 },
+        ],
+        [
+            "teamRequests:cancel",
+            teamRequests.cancel,
+            { ...as, requestId: f.requestId },
+        ],
+    ]
 }
 
-const denials: [
-    string,
-    (ctx: Awaited<ReturnType<typeof setup>>["ctx"]) => void,
-][] = [
+const sessionDenials: [string, (ctx: Fixture["ctx"]) => void][] = [
     [
         "a revoked dashboard session",
         (ctx) => {
@@ -172,64 +277,79 @@ const denials: [
             ctx.db.tables.users[0].sessionVersion = 1
         },
     ],
-    [
-        "removed administrator access",
-        (ctx) => {
-            Object.assign(ctx.db.tables.discordMemberAccess[0], {
-                isAdmin: false,
-                hasDashboardAccess: false,
-            })
-        },
-    ],
 ]
 
-const handlerNames = dashboardCalls("").map(([name]) => name)
-const callFor = (name: string, teamId: string) =>
-    dashboardCalls(teamId).find(([candidate]) => candidate === name)!
-
-test("every directory, asset and refresh handler succeeds for the current administrator", async () => {
-    for (const name of handlerNames) {
-        const { ctx, teamId } = await setup()
-        const [, fn, args] = callFor(name, teamId)
-        await assert.doesNotReject(invoke(fn, ctx, args), name)
+async function eachCall(
+    calls: (f: Fixture) => Call[],
+    run: (f: Fixture, call: Call) => Promise<void>
+) {
+    const names = calls(await setup()).map(([name]) => name)
+    for (const name of names) {
+        const f = await setup()
+        await run(
+            f,
+            calls(f).find(([candidate]) => candidate === name)!
+        )
     }
+}
+
+test("every global and workspace handler succeeds for its current administrator", async () => {
+    for (const calls of [platformCalls, workspaceCalls])
+        await eachCall(calls, async (f, [name, fn, args]) => {
+            await assert.doesNotReject(invoke(fn, f.ctx, args), name)
+        })
 })
 
-test("expired, revoked, invalidated and demoted actors are refused by every session-bound handler", async () => {
-    for (const [label, deny] of denials) {
-        for (const name of handlerNames) {
-            const { ctx, teamId } = await setup()
-            deny(ctx)
-            const [, fn, args] = callFor(name, teamId)
-            // A thrown handler commits nothing (the fixture rolls back like Convex).
-            await assert.rejects(
-                invoke(fn, ctx, args),
-                /Forbidden/,
-                `${name} with ${label}`
-            )
+test("expired, revoked and invalidated sessions are refused by every session-bound handler", async () => {
+    for (const [label, deny] of sessionDenials)
+        for (const calls of [platformCalls, workspaceCalls])
+            await eachCall(calls, async (f, [name, fn, args]) => {
+                deny(f.ctx)
+                // A thrown handler commits nothing (the fixture rolls back like Convex).
+                await assert.rejects(
+                    invoke(fn, f.ctx, args),
+                    /Forbidden/,
+                    `${name} with ${label}`
+                )
+            })
+})
+
+test("global handlers refuse workspace administrators; workspace handlers refuse removed access", async () => {
+    await eachCall(
+        (f) => platformCalls(f, actorFixture),
+        async (f, [name, fn, args]) => {
+            await assert.rejects(invoke(fn, f.ctx, args), /Forbidden/, name)
         }
-    }
+    )
+    await eachCall(workspaceCalls, async (f, [name, fn, args]) => {
+        Object.assign(f.ctx.db.tables.discordMemberAccess[0], {
+            isAdmin: false,
+            hasDashboardAccess: false,
+        })
+        await assert.rejects(invoke(fn, f.ctx, args), /Forbidden/, name)
+    })
 })
 
 test("a forged actor identity or a wrong gateway secret is refused", async () => {
-    const { ctx, teamId } = await setup()
-    for (const [name, fn, args] of dashboardCalls(teamId, {
-        ...actorFixture,
-        subject: "100000000000000099",
-    }))
-        await assert.rejects(invoke(fn, ctx, args), /Forbidden/, name)
-    for (const [name, fn, args] of dashboardCalls(teamId))
+    const f = await setup()
+    const forged = { ...actorFixture, subject: "100000000000000099" }
+    for (const [name, fn, args] of [
+        ...platformCalls(f, { ...forged, superadmin: true }),
+        ...workspaceCalls(f, forged),
+    ])
+        await assert.rejects(invoke(fn, f.ctx, args), /Forbidden/, name)
+    for (const [name, fn, args] of [...platformCalls(f), ...workspaceCalls(f)])
         await assert.rejects(
-            invoke(fn, ctx, { ...args, secret: "wrong" }),
+            invoke(fn, f.ctx, { ...args, secret: "wrong" }),
             /Unauthorized/,
             name
         )
 })
 
-test("foreign assets and teams are not attachable or editable from another workspace", async () => {
-    const { ctx, teamId } = await setup()
-    ctx.db.seed("imageAssets", {
-        _id: "imageAssets:foreign",
+test("logos and requests stay inside their scope", async () => {
+    const f = await setup()
+    f.ctx.db.seed("imageAssets", {
+        _id: "imageAssets:workspace",
         guildId: "guild-b",
         kind: "team-logo",
         publicId: "c".repeat(32),
@@ -244,29 +364,56 @@ test("foreign assets and teams are not attachable or editable from another works
         createdAt: "2026-10-01T00:00:00.000Z",
         createdBy: "someone",
     })
+    // A workspace upload is never a catalogue logo without an approved request.
     assert.deepEqual(
-        await invoke(teams.update, ctx, {
-            ...access,
-            teamId,
-            input: { expectedRevision: 1, logoAssetId: "imageAssets:foreign" },
+        await invoke(teams.update, f.ctx, {
+            secret,
+            actor: superadmin,
+            teamId: f.teamId,
+            input: {
+                expectedRevision: 1,
+                logoAssetId: "imageAssets:workspace",
+            },
         }),
         { error: "asset_unavailable" }
     )
-    // The same administrator of another workspace cannot reach this team.
-    seedDashboardActor(ctx.db, "guild-b")
+    // Another workspace's upload cannot travel in this workspace's request.
     assert.deepEqual(
-        await invoke(teams.update, ctx, {
-            ...access,
+        await invoke(teamRequests.submit, f.ctx, {
+            secret,
+            guildId,
+            actor: actorFixture,
+            input: {
+                kind: "create",
+                gameId: "hell_let_loose",
+                proposal: {
+                    name: "Delta",
+                    logoAssetId: "imageAssets:workspace",
+                },
+                idempotencyKey: "request-delta-01",
+            },
+        }),
+        { error: "asset_unavailable" }
+    )
+    // Another workspace's administrator cannot cancel or list this request.
+    seedDashboardActor(f.ctx.db, "guild-b")
+    assert.deepEqual(
+        await invoke(teamRequests.cancel, f.ctx, {
+            secret,
             guildId: "guild-b",
-            teamId,
-            input: { expectedRevision: 1, name: "Hijack" },
+            actor: actorFixture,
+            requestId: f.requestId,
         }),
         { error: "not_found" }
     )
-    assert.equal(
-        await invoke(teams.get, ctx, { ...access, guildId: "guild-b", teamId }),
-        null
-    )
+    const theirs = await invoke(teamRequests.listMine, f.ctx, {
+        secret,
+        guildId: "guild-b",
+        actor: actorFixture,
+        cursor: null,
+        limit: 10,
+    })
+    assert.deepEqual(theirs.items, [])
 })
 
 test("website team reads and the teams sync record refuse revoked, legacy and ungranted keys", async () => {
@@ -328,7 +475,7 @@ test("website team reads and the teams sync record refuse revoked, legacy and un
         assert.deepEqual(await reads(), [null, null, null], label)
         undo()
     }
-    // A key of another workspace never reads this directory.
+    // The key must belong to the workspace that authenticated the request.
     assert.equal(
         await invoke(teamReads.list, ctx, {
             ...credentials,

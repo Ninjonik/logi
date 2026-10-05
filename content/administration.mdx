@@ -22,6 +22,59 @@ This page is for people with elevated Logi access. Superadmin-only pages appear 
     <Cards.Card title="Set up the Discord bot" href="/wiki/discord-bot-setup" />
 </Cards>
 
+## Team catalogue and team requests
+
+Logi keeps one global team catalogue per game (Hell Let Loose and Wardogs). Only
+global administrators (superadmins) manage it, from **Team catalogue** and
+**Team requests** in the superadmin navigation group. Workspaces only read the
+catalogue: their administrators pick catalogue teams for matches and send a
+request when a team is missing or out of date.
+
+On **Team catalogue**, choose the game tab, search by name or short code and
+switch on **Show archived and merged teams** to see retired entries. Each team
+has a name (unique per game, ignoring letter case and extra spaces), an optional
+short code, logo, description (up to 500 characters) and up to three https
+links. A team can be linked to one Logi workspace to record that the team is
+that workspace's clan; the link grants no permissions. Logos uploaded here are
+normalized to a PNG no larger than 512×512 and belong to the platform, not to a workspace.
+
+- **Archive** hides a team from new selection and from connected websites;
+  saved matches keep their snapshot. **Restore** brings it back unless another
+  active team has taken the name meanwhile.
+- **Merge** retires a duplicate into the team that stays (an active team of the
+  same game). The duplicate is archived with a pointer to the kept team, and its
+  competition registrations, fixtures and pending requests move to the kept
+  team. Saved match snapshots are not rewritten. A merge cannot be undone. Two
+  teams that both take part in one competition (both registered, or a fixture
+  between them) are different teams there and cannot be merged.
+- Every save, archive, restore and merge is checked against the version you
+  loaded. If someone else changed the team first, the dialog or row shows the
+  latest version and keeps your own edits; review it and try again.
+
+On **Team requests**, pending requests are listed oldest first; the status
+filter also shows approved, merged, rejected and cancelled requests. Each
+request shows the requesting workspace, the requester's Discord ID, whether it
+is a new team or a change request, the game, the proposed fields with the logo,
+the requester's note and, for a change request, the team as it is now with the
+changed fields marked.
+
+- **Approve** opens an editable copy of the proposal. Approving a new-team
+  request creates the team; approving a change request applies the fields to
+  the current team at the version shown, so a team that changed meanwhile has to
+  be reviewed again. The requester's logo becomes a platform logo. If an active
+  team of the same game already uses the name, you are offered to merge the
+  new-team request into that team instead.
+- **Merge into existing team** (new-team requests only) records that the
+  requested team already exists: choose an active team of the same game.
+- **Reject** requires a reason of up to 500 characters.
+
+Every decision sends the requester one Discord direct message in the requesting
+workspace's language with the outcome, the requested name, the resulting team
+or the rejection reason. The bot retries a failed message a few times with
+increasing delays; when the requester's DMs stay closed the request shows
+**Could not be delivered**, and the decision itself stands. Requests a workspace
+withdraws are shown as cancelled and send no message.
+
 ## Bot dashboard and logs
 
 Logs document what the bot attempted or observed; they are not a guarantee that
@@ -41,16 +94,67 @@ Discord completed the operation.
 
 ## Competitions
 
-Competition changes can affect public standings immediately. Linking an event
-to a fixture creates or updates the association; saving a match result can mark
-that linked fixture final and copy its two scores. This is not a replacement for
-checking the official competition result, opponent, division, or forfeit rules.
+Competitions are global: Logi's global administrators (superadmins) run them
+from **Dashboard → Competitions**, and every competition belongs to one game,
+Hell Let Loose or Wardogs. Teams come from the global team catalogue; a
+workspace is never a competition team. Each write is checked against the
+administrator's current dashboard session, so a revoked session stops working
+immediately.
 
-Merging competition clan aliases is especially high impact: it transfers
-competition-team and fixture relationships to the selected primary clan and can
-delete duplicates. Confirm both clans and all current fixtures before doing it.
+- **Create and publish.** A new competition needs a game, name, season and a
+  unique address (slug: 2–64 lowercase letters, numbers and hyphens). It starts
+  **unpublished** and stays hidden from the public pages and the public API
+  until you switch on **Published**. The game cannot be changed later.
+  Changing the slug changes the public address. Competitions created before
+  the flag existed stay published.
+- **Divisions.** Add, rename and reorder divisions; the public page shows them
+  in this order. A division can be deleted only when it has no teams and no
+  fixtures.
+- **Teams.** Search the catalogue and register active teams of the
+  competition's game into a division. Archived, merged and other-game teams
+  cannot be registered, and a team can be registered once per competition. You
+  can move a team to another division only while it has no league fixtures in
+  its current division, mark it withdrawn or reinstate it, and remove it only
+  while it has no fixtures. Missing or duplicate teams are fixed in the team
+  catalogue (create, request or merge there); merging catalogue teams moves
+  their registrations and fixtures.
+- **Fixtures.** Create, edit and delete fixtures between two different
+  registered teams with a phase, optional schedule, status and score. League
+  fixtures need both teams in the fixture's division; playoff and relegation
+  fixtures may cross divisions. Final and forfeit results need both
+  whole-number scores; a scheduled fixture never keeps a score.
+- **Linking a match.** Use the link action on a fixture to connect it to one
+  native Logi match event of the same game. The dialog suggests matches from
+  the workspaces linked to either team; you can also paste an event ID. When the
+  event has assigned match teams, both fixture teams must be among them. An
+  event can belong to only one fixture. An imported Hell Let Loose result is
+  Axis versus Allies, so Logi fills the fixture only when both fixture teams
+  have an Axis or Allies side assigned in the event: each team gets its side's
+  score. If the event already has such a result, a still-scheduled fixture takes
+  it; later imports mark the fixture final. Without sides, enter the score
+  yourself. Changing a fixture's teams releases its linked match. Workspace
+  managers no longer link their own matches.
+- **ECL 2026.** **Create ECL 2026** creates (or completes) the published ECL
+  competition with its official divisions, reusing catalogue teams with the
+  same name and creating the missing ones.
 
-The dashboard competition area is distinct from the public competition pages. Elevated users may manage platform-side competition information; always verify the selected workspace and source data before modifying fixtures or links.
+Standings use the ECL cap-score rules and count only final and forfeit fixtures
+with both scores. Changes reach the public pages within a few minutes. A Logi
+result is not a replacement for checking the official competition result,
+opponent, division or forfeit rules.
+
+<Callout type="warning">
+    Competition records created before global teams referenced Logi workspaces,
+    including placeholder clans. Until the platform owner runs the one-time
+    migration they stay readable but show **Migration pending**, cannot be
+    linked, and block the ECL seed. The migration turns each referenced
+    workspace into (or matches it with) a catalogue team of the competition's
+    game, linked to the workspace when it is a real Logi workspace. Two
+    same-name clans of one competition become one team only when they share a
+    division and never played each other; otherwise the second keeps its own
+    team with a distinguishable name you can rename. Public pages may show the
+    previous state for up to five minutes after the migration.
+</Callout>
 
 ## LogiComms
 

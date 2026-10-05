@@ -56,7 +56,9 @@ export default async function ServerUserDetailPage({
     if (!context) return null
     const { server, groups = [], assignments } = context
 
-    const assignment = await getServerUserAssignment(assignmentId)
+    const found = await getServerUserAssignment(assignmentId)
+    // The ID comes from the URL: only this clan's assignments may be shown.
+    const assignment = found?.serverId === server.discordId ? found : null
     const users = assignment
         ? await getUsersByIds([assignment.userId], server.discordId)
         : []

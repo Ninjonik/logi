@@ -4,16 +4,15 @@ import {
 } from "@/lib/api/teams-dashboard-route"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
-import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { checkPublicApiRateLimit } from "@/lib/public-api"
-import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
+import { getInternalAuthSecret } from "@/lib/env"
+import { fetchQuery } from "convex/nextjs"
 
 export const runtime = "nodejs"
 type Context = { params: Promise<{ serverId: string }> }
 
 const handlers = teamsDashboardHandlers({
-    origin: new URL(getSiteUrl()).origin,
     access: async (serverId) => {
         const server = await getServerContextUncached(serverId),
             actor = await currentDashboardActor()
@@ -44,23 +43,17 @@ const handlers = teamsDashboardHandlers({
         await fetchQuery(makeFunctionReference<"query">("teams:list"), {
             ...access,
             gameId: query.gameId,
-            archived: query.archived,
             ...(query.search ? { search: query.search } : {}),
             cursor: query.cursor,
             limit: query.limit,
         }),
-    command: async (access, mutation, payload) =>
-        await fetchMutation(makeFunctionReference<"mutation">(mutation), {
-            ...access,
-            ...payload,
-        }),
 })
 
-/** `?teamId=` reads one record as `{ team }`; otherwise `?game=` pages one game's directory. */
+/**
+ * Read-only global catalogue for a workspace administrator: `?teamId=` reads
+ * one record as `{ team }`; otherwise `?game=` pages that game's active teams.
+ * Workspaces request additions and changes through `/team-requests`.
+ */
 export async function GET(request: Request, context: Context) {
     return handlers.GET(request, (await context.params).serverId)
-}
-
-export async function POST(request: Request, context: Context) {
-    return handlers.POST(request, (await context.params).serverId)
 }

@@ -1,14 +1,8 @@
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 
-import type {
-    DiscordConfig,
-    GameDiscordOverrides,
-    MembershipSettings,
-    PlayerStatsServer,
-    TicketSettings,
-} from "@/types/domain"
-import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
+import type { DiscordSettingsPatch } from "@/lib/validation/discord-settings"
+import type { DiscordConfig } from "@/types/domain"
 import { getInternalAuthSecret } from "@/lib/env"
 
 const getConfigByGuildReference = makeFunctionReference<"query">(
@@ -24,6 +18,7 @@ const upsertConfigReference = makeFunctionReference<"mutation">(
 
 export async function getDiscordConfigByGuild(guildId: string) {
     return (await fetchQuery(getConfigByGuildReference, {
+        secret: getInternalAuthSecret(),
         guildId: guildId as never,
     })) as DiscordConfig | null
 }
@@ -37,48 +32,21 @@ export async function getMembershipApplicationByAssignment(
     })) as { categoryId: string } | null
 }
 
-export async function saveDiscordConfig(input: {
-    guildId: string
-    timezone: string
-    defaultLanguage: "en" | "cs" | "de"
-    announcementsChannelId?: string
-    eventInfoChannelId?: string
-    errorsChannelId?: string
-    calendarChannelId?: string
-    calendarCategories?: string[]
-    forumCategoryId?: string
-    meetingChannelId?: string
-    squadVoiceCategoryId?: string
-    clanRoleId?: string
-    dashboardAdminRoleId?: string
-    playerStatsServers?: PlayerStatsServer[]
-    ticketSettings?: TicketSettings
-    membershipSettings?: MembershipSettings
-    statsSettings?: StatsCommandSettings
-    gameOverrides?: Partial<
-        Record<import("@/domain/games/game").GameId, GameDiscordOverrides>
-    >
-}) {
+/**
+ * Saves only the settings present in `patch`; omitted settings keep their stored
+ * values and `null` clears a single Discord ID.
+ */
+export async function saveDiscordConfig(
+    guildId: string,
+    patch: DiscordSettingsPatch
+) {
+    const present = Object.fromEntries(
+        Object.entries(patch).filter(([, value]) => value !== undefined)
+    )
     return await fetchMutation(upsertConfigReference, {
         secret: getInternalAuthSecret(),
-        guildId: input.guildId as never,
-        timezone: input.timezone,
-        defaultLanguage: input.defaultLanguage,
-        announcementsChannelId: input.announcementsChannelId,
-        eventInfoChannelId: input.eventInfoChannelId,
-        errorsChannelId: input.errorsChannelId,
-        calendarChannelId: input.calendarChannelId,
-        calendarCategories: input.calendarCategories,
-        forumCategoryId: input.forumCategoryId,
-        meetingChannelId: input.meetingChannelId,
-        squadVoiceCategoryId: input.squadVoiceCategoryId,
-        clanRoleId: input.clanRoleId,
-        dashboardAdminRoleId: input.dashboardAdminRoleId,
-        playerStatsServers: input.playerStatsServers,
-        ticketSettings: input.ticketSettings,
-        membershipSettings: input.membershipSettings,
-        statsSettings: input.statsSettings,
-        gameOverrides: input.gameOverrides,
+        guildId: guildId as never,
+        ...present,
     })
 }
 

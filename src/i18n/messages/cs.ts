@@ -222,42 +222,156 @@ export const csMessages = {
         },
     },
     gameData: {
-        sourcesTitle: "Zdroje poskytovatelů",
-        sourcesDescription:
-            "Zaregistrujte herní servery, ze kterých tento pracovní prostor sbírá data. Zdroj uvádí poskytovatele, jeho HTTPS adresu, ID serveru u poskytovatele a proměnnou prostředí Convexu, která drží token. Tokeny se tu nikdy nezadávají ani nezobrazují: operátor je uloží v Convexu a vy jen odkážete na název proměnné. Token obměníte uložením nové hodnoty pod novou proměnnou a úpravou odkazu.",
-        sourceRef: "Reference",
-        sourceProvider: "Poskytovatel",
-        sourceProviders: {
-            hll_crcon: "Hell Let Loose CRCON",
-            wardogs_warcon: "Panel Wardogs Warcon",
-            wardogs_rcon: "Wardogs RCON",
-            wardogs_public_directory: "Adresář Wardog Servers",
-        },
-        sourceServerId: "ID serveru u poskytovatele",
-        sourceOrigin: "HTTPS adresa",
-        sourceSecretRef: "Proměnná s tokenem",
-        sourceSecretRefHelp:
-            "Použijte tvar LOGI_GAME_DATA_<NAZEV>_TOKEN. Warcon a RCON vyžadují proměnnou s tokenem a Warcon potřebuje UUID serveru z panelu; adresář Wardog Servers žádnou nemá. Allowlist obsahuje volitelné IP adresy nebo hostitele, které smí kolektor kontaktovat.",
-        sourceAllowlist: "Síťový allowlist (volitelné)",
-        sourceRegister: "Zaregistrovat zdroj",
-        sourceRotate: "Upravit odkaz",
-        sourceRemove: "Odebrat",
-        sourceSaving: "Ukládání…",
-        sourceSaved: "Zdroje uloženy. Sběr spustíte zapnutím připojení níže.",
-        sourceNone:
-            "Pro tento pracovní prostor zatím není zaregistrován žádný zdroj.",
-        sourceOperatorManaged: "Katalog operátora (jen pro čtení)",
-        sourceWorkspaceManaged: "Zaregistrováno v tomto prostoru",
-        sourceErrors: {
-            invalid_source:
-                "Zkontrolujte pole: HTTPS adresa bez cesty, pravidla poskytovatele pro ID serveru a proměnnou s tokenem a reference malými písmeny.",
-            duplicate_ref: "Tato reference se už používá. Zvolte jinou.",
-            duplicate_identity:
-                "Tento server poskytovatele je v tomto prostoru už zaregistrován.",
-            limit_reached: "Tento prostor už má 20 zaregistrovaných zdrojů.",
-            not_found: "Tento zdroj už neexistuje. Obnovte seznam.",
-            unavailable:
-                "Zdroje poskytovatelů nelze načíst nebo uložit. Obnovte stránku a zkuste to znovu.",
+        servers: {
+            title: "Herní servery",
+            description:
+                "Připojte servery Hell Let Loose CRCON nebo Wardogs Warcon, ze kterých tento prostor sbírá data: HTTPS adresu serveru, jeho ID u poskytovatele a API klíč. Logi ověří připojení a klíč uloží šifrovaně. Uložený klíč nejde zobrazit ani exportovat; chcete-li ho změnit, zadejte nový.",
+            encryptionUnavailable:
+                "Šifrované ukládání klíčů zatím není v tomto nasazení Logi aktivované. Klíč můžete otestovat, ale ukládání je vypnuté, dokud ho operátor Logi neaktivuje.",
+            none: "K tomuto prostoru zatím není připojený žádný herní server.",
+            limit: "Nejvýše {limit} serverů na prostor.",
+            add: "Připojit server",
+            managed: {
+                workspace: "Spravováno v tomto prostoru",
+                operator: "Nastaveno operátorem Logi",
+            },
+            games: {
+                hell_let_loose: "Hell Let Loose",
+                wardogs: "Wardogs",
+            },
+            providers: {
+                hll_crcon: "CRCON",
+                wardogs_warcon: "Panel Warcon",
+                wardogs_rcon: "Wardogs RCON",
+                wardogs_public_directory: "Adresář Wardog Servers (veřejný)",
+            },
+            fields: {
+                displayName: "Název",
+                game: "Hra",
+                provider: "Poskytovatel",
+                origin: "HTTPS adresa",
+                serverId: "ID serveru u poskytovatele",
+                key: "API klíč",
+                newKey: "Nový API klíč",
+            },
+            hints: {
+                origin: "Jen adresa, například https://panel.example.com, bez cesty.",
+                serverId: {
+                    hll_crcon: "Číslo serveru v CRCON, obvykle 1.",
+                    wardogs_warcon: "UUID serveru z panelu Warcon.",
+                    wardogs_rcon: "ID serveru, které hlásí vaše RCON API.",
+                    wardogs_public_directory:
+                        "ID serveru v adresáři Wardog Servers.",
+                },
+                key: "Odešle se jednou, otestuje a uloží šifrovaně. Logi ho už nikdy nezobrazí.",
+                keyOptional:
+                    "U CRCON je volitelný: bez klíče Logi čte jen veřejná data. S klíčem potřebuje jeho uživatel v CRCON oprávnění zobrazit informace o připojení.",
+                keyNone: "Veřejný adresář nepotřebuje klíč.",
+            },
+            enableAfterTest: "Po úspěšném testu spustit sběr",
+            allowUnverified:
+                "Uložit i při neúspěšném testu (sběr se zastaví, dokud test neprojde)",
+            actions: {
+                test: "Otestovat připojení",
+                testing: "Testuji…",
+                save: "Uložit server",
+                saving: "Ukládání…",
+                testStored: "Otestovat uložený klíč",
+                changeKey: "Změnit klíč",
+                saveKey: "Uložit klíč",
+                cancel: "Zrušit",
+                removeKey: "Odebrat klíč",
+                rename: "Přejmenovat",
+                saveName: "Uložit název",
+                enable: "Spustit sběr",
+                disable: "Zastavit sběr",
+                remove: "Odebrat server",
+            },
+            confirm: {
+                removeKey:
+                    "Odebrat uložený klíč pro {name}? Sběr, který klíč potřebuje, se zastaví.",
+                remove: "Odebrat {name}? Sběr se zastaví a uložený klíč se smaže. Nasbíraná historie zůstane.",
+            },
+            key: {
+                set: "Klíč uložen šifrovaně",
+                missing: "Není uložen žádný klíč",
+                not_required: "Klíč není potřeba",
+                environment: "Klíč nastavil operátor Logi",
+                needs_operator:
+                    "Starý odkaz na klíč: zadejte klíč znovu, nebo požádejte operátora Logi o migraci",
+            },
+            keyChanged: "Klíč změněn {date}",
+            verified: "Klíč prošel posledním testem",
+            unverified: "Klíč není ověřený: před sběrem ho otestujte",
+            failure: {
+                key_unavailable:
+                    "Uložený klíč nejde použít, protože šifrovací klíč operátora není dostupný. Kontaktujte operátora Logi.",
+                decrypt_failed:
+                    "Uložený klíč nejde pro tento server přečíst. Zadejte klíč znovu.",
+            },
+            collection: {
+                enabled: "Sbírá se",
+                disabled: "Nesbírá se",
+                none: "Sběr není nastavený",
+                lastSuccess: "Poslední úspěšný sběr {date}",
+                never: "Zatím žádný úspěšný sběr",
+            },
+            lastTest: "Poslední test {date}: {outcome}",
+            saved: {
+                created: "Server uložen a sběr běží.",
+                draft: "Server uložen jako vypnutý koncept. Otestujte ho a sběr spusťte, až test projde.",
+                key: "Klíč uložen.",
+                keyUnverified:
+                    "Klíč uložen, ale test neprošel, takže se sběr zastavil.",
+                removedKey: "Klíč odebrán.",
+                renamed: "Název uložen.",
+                removed: "Server odebrán.",
+                enabled: "Sběr spuštěn.",
+                disabled: "Sběr zastaven.",
+            },
+            outcomes: {
+                ok: "Připojení funguje a klíč je pro tento server přijat.",
+                unauthorized: "Poskytovatel klíč odmítl.",
+                server_mismatch:
+                    "Poskytovatel odpověděl, ale ne pro toto ID serveru.",
+                rate_limited:
+                    "Poskytovatel omezuje počet požadavků. Zkuste to později.",
+                timeout: "Poskytovatel neodpověděl včas.",
+                network: "Poskytovatel není dostupný.",
+                invalid_response:
+                    "Poskytovatel poslal neočekávanou odpověď. Zkontrolujte adresu a poskytovatele.",
+                configuration:
+                    "Tato adresa není povolená (jen veřejné HTTPS adresy) nebo server není úplně nastavený.",
+                unsupported: "Poskytovatel tuto kontrolu nepodporuje.",
+                key_unavailable:
+                    "Uložený klíč nejde použít. Zadejte ho znovu nebo kontaktujte operátora Logi.",
+            },
+            errors: {
+                invalid_source:
+                    "Zkontrolujte pole: HTTPS adresa bez cesty a ID serveru ve formátu poskytovatele.",
+                invalid_key:
+                    "Klíč musí mít 8 až 4096 viditelných znaků bez mezer.",
+                duplicate_name:
+                    "Jiný server v tomto prostoru už má tento název.",
+                duplicate_identity:
+                    "Tento server je v tomto prostoru už připojený.",
+                limit_reached: "Tento prostor už má maximální počet serverů.",
+                not_found: "Tento server už neexistuje. Obnovte seznam.",
+                revision_conflict:
+                    "Server mezitím změnil někdo jiný. Obnovte stránku a zkuste to znovu.",
+                operator_managed:
+                    "Tento server nastavuje operátor Logi: nejde tu přejmenovat ani odebrat a jeho klíč jde jen nahradit.",
+                key_required: "Tento poskytovatel potřebuje API klíč.",
+                key_not_allowed: "Veřejný adresář klíč nepřijímá.",
+                verification_required:
+                    "Test připojení neprošel. Opravte problém, nebo klíč výslovně uložte jako neověřený.",
+                encryption_unavailable:
+                    "Šifrované ukládání klíčů není dostupné. Kontaktujte operátora Logi.",
+                rate_limited:
+                    "Příliš mnoho testů připojení. Zkuste to za {seconds} s.",
+                unavailable:
+                    "Herní servery nelze načíst nebo uložit. Obnovte stránku a zkuste to znovu.",
+            },
         },
         liveScoreboard: "Živý scoreboard Warconu",
         scoreboardPolling:
@@ -279,7 +393,7 @@ export const csMessages = {
         historyError: "Sběr historie",
         title: "Data herních serverů",
         description:
-            "Logi sbírá data serverů a vybrané údaje poskytuje vašemu webu. Připojení nejdříve připraví provozovatel Logi.",
+            "Sbírejte data serverů v Logi a vybraná pole sdílejte se svým webem. Server připojte výše; sběr začne, jakmile projde test připojení.",
         loading: "Načítání…",
         refresh: "Obnovit",
         saving: "Ukládání…",
@@ -287,7 +401,7 @@ export const csMessages = {
         disable: "Vypnout",
         disabled: "Vypnuto",
         error: "Připojení se nepodařilo načíst nebo uložit. Zkuste to znovu nebo kontaktujte provozovatele.",
-        empty: "Pro tento prostor zatím nejsou nastavené zdroje dat.",
+        empty: "Pro tento prostor zatím žádný herní server nesbírá data.",
         state: "Stav dat",
         players: "Hráči",
         map: "Mapa",
@@ -312,7 +426,7 @@ export const csMessages = {
             invalid_response: "Zdroj vrátil nepodporovanou odpověď.",
             unsupported: "Sběr pozastaven: požadovaná funkce není dostupná.",
             configuration:
-                "Sběr pozastaven: provozovatel musí zkontrolovat nastavení zdroje.",
+                "Sběr pozastaven: zkontrolujte adresu a klíč serveru, nebo kontaktujte operátora Logi.",
         },
     },
     apiKeys: {
@@ -811,20 +925,14 @@ export const csMessages = {
         logiComms: "LogiComms",
         signupActivity: "Historie přihlášek",
         teams: "Týmy",
+        teamCatalog: "Katalog týmů",
+        teamRequests: "Žádosti o týmy",
     },
     teams: {
         title: "Týmy",
         description:
-            "Udržujte pro každou hru adresář týmů, proti kterým hrajete zápasy. Názvy, zkratky a loga používá výběr týmů v zápase i připojené weby.",
-        add: "Přidat tým",
-        edit: "Upravit",
-        archive: "Archivovat",
-        restore: "Obnovit",
-        save: "Uložit tým",
-        saving: "Ukládání…",
+            "Procházejte katalog týmů Logi pro jednotlivé hry. Spravují ho administrátoři Logi: o chybějící tým požádejte nebo navrhněte změnu a schválené týmy vybírejte ve svých zápasech.",
         cancel: "Zrušit",
-        createTitle: "Nový tým",
-        editTitle: "Upravit tým",
         name: "Název",
         shortCode: "Zkratka",
         shortCodeHelp:
@@ -837,45 +945,36 @@ export const csMessages = {
         removeLogo: "Odebrat logo",
         search: "Hledat týmy…",
         loadMore: "Načíst další",
-        showArchived: "Zobrazit archivované",
         archivedBadge: "Archivováno",
-        empty: "V tomto adresáři zatím nejsou žádné týmy.",
+        empty: "Katalog pro tuto hru zatím neobsahuje žádné týmy.",
         emptySearch: "Tomuto hledání neodpovídá žádný tým.",
         loading: "Načítání týmů…",
-        notAvailableForGame: "Adresář týmů není pro tuto hru dostupný.",
-        gameDisabled: "Před přidáním týmů zapněte tuto hru v nastavení klanu.",
-        saved: "Tým byl uložen.",
-        archivedNotice:
-            "Tým byl archivován. Historické zápasy si jeho snímek ponechají.",
-        restoredNotice: "Tým byl obnoven.",
+        notAvailableForGame: "Katalog týmů není pro tuto hru dostupný.",
+        gameDisabled:
+            "Tato hra není v pracovním prostoru zapnutá. Týmy můžete procházet i o ně žádat, ale v zápasech je lze použít až po zapnutí hry v nastavení klanu.",
         retry: "Zkusit znovu",
-        editTeam: "Upravit tým {name}",
-        archiveTeam: "Archivovat tým {name}",
-        restoreTeam: "Obnovit tým {name}",
-        conflictReloadFailed:
-            "Tým byl mezitím změněn a nejnovější verzi se nepodařilo načíst. Zavřete dialog a zkuste to znovu.",
-        duplicateActive:
-            "Tým s tímto názvem pro tuto hru již existuje. Místo vytvoření druhého použijte tento tým.",
-        duplicateArchived:
-            "Tento název už používá archivovaný tým. Obnovte ho, abyste ho mohli znovu použít.",
-        useExisting: "Použít existující tým",
-        restoreExisting: "Obnovit a použít",
+        requestNew: "Požádat o nový tým",
+        suggestChange: "Navrhnout změnu",
+        suggestChangeTeam: "Navrhnout změnu týmu {name}",
+        teamLinks: "Odkazy týmu {name}",
         errors: {
             invalid_team: "Zkontrolujte údaje týmu a zkuste to znovu.",
             game_disabled: "Tato hra není v pracovním prostoru zapnutá.",
-            duplicate_name: "Tým s tímto názvem pro tuto hru již existuje.",
+            duplicate_name:
+                "Tým s tímto názvem už v katalogu pro tuto hru existuje.",
             revision_conflict:
-                "Tým byl mezitím změněn. Načetla se nejnovější verze; zkontrolujte ji a zkuste to znovu.",
+                "Tým byl mezitím změněn. Načtěte ho znovu a zkuste to znovu.",
             idempotency_conflict:
                 "Tento požadavek už byl použit s jinými údaji. Zavřete dialog a začněte znovu.",
             not_found: "Tým již neexistuje.",
-            archived: "Tým je archivován. Před úpravou ho obnovte.",
+            archived: "Tým je archivován.",
             not_archived: "Tým není archivován.",
             asset_unavailable:
                 "Nahrané logo již není dostupné. Nahrajte ho znovu.",
-            limit_reached: "Adresář této hry dosáhl limitu 500 týmů.",
-            forbidden: "Nemáte oprávnění zde spravovat týmy.",
-            unavailable: "Adresář týmů je dočasně nedostupný.",
+            limit_reached: "Katalog této hry dosáhl limitu 2000 týmů.",
+            invalid_merge: "Tyto týmy nelze sloučit.",
+            forbidden: "Nemáte zde přístup ke katalogu týmů.",
+            unavailable: "Katalog týmů je dočasně nedostupný.",
             rate_limited:
                 "Příliš mnoho požadavků; chvíli počkejte a zkuste to znovu.",
         },
@@ -897,7 +996,7 @@ export const csMessages = {
         picker: {
             title: "Týmy",
             description:
-                "Vyberte týmy, které tento zápas hrají. Každý tým si ponechá název a logo z doby výběru, dokud ho neobnovíte.",
+                "Vyberte z katalogu týmů Logi týmy, které tento zápas hrají. Každý tým si ponechá název a logo z doby výběru, dokud ho neobnovíte.",
             slots: { a: "Tým A", b: "Tým B", c: "Tým C" },
             team: "Tým",
             side: "Strana",
@@ -907,28 +1006,120 @@ export const csMessages = {
             noResults: "Nebyly nalezeny žádné aktivní týmy.",
             unknownTeam: "Údaje o týmu nejsou dostupné",
             savedSelections: "Uloženo u tohoto zápasu",
-            addTeam: "Přidat tým",
+            requestTeam: "Požádat o nový tým",
+            requestNamed: "Požádat o tým „{name}“",
+            requestHint:
+                "Chybí tým? Požádejte o něj; vybrat ho půjde, jakmile ho administrátor Logi schválí.",
+            requestSent:
+                "Žádost byla odeslána. Tým zde půjde vybrat, jakmile ho administrátor Logi schválí; žadatel dostane rozhodnutí soukromou zprávou na Discordu.",
             refreshSnapshot: "Obnovit snímek",
             refreshing: "Obnovování…",
-            snapshotRefreshed: "Snímek byl obnoven z adresáře.",
+            snapshotRefreshed: "Snímek byl obnoven z katalogu týmů.",
             archivedSelection:
                 "Archivovaný tým; uložený snímek u tohoto zápasu zůstává.",
+            mergedBadge: "Sloučeno",
+            mergedSelection:
+                "Tým byl sloučen s jiným týmem v katalogu. Obnovením snímku na něj tento zápas převedete.",
             duplicateTeam: "Každý tým může být zařazen jen do jednoho slotu.",
             duplicateSide: "Každou stranu lze přiřadit jen jednomu týmu.",
             errors: {
                 invalid_match_teams: "Přiřazení týmů je neplatné.",
-                team_not_found: "Tým v adresáři již neexistuje.",
-                team_archived:
-                    "Tým je archivován; vyberte jiný tým nebo ho obnovte v adresáři týmů.",
+                team_not_found: "Tým v katalogu již neexistuje.",
+                team_archived: "Tým je archivován; vyberte jiný tým.",
                 team_game_mismatch: "Tým patří k jiné hře.",
                 match_concluded:
                     "Ukončené zápasy si své snímky týmů ponechávají.",
                 training_event: "Tréninky nemají zápasové týmy.",
                 forbidden: "Nemáte oprávnění měnit týmy zápasu.",
-                unavailable: "Adresář týmů je dočasně nedostupný.",
+                unavailable: "Katalog týmů je dočasně nedostupný.",
                 rate_limited:
                     "Příliš mnoho požadavků; chvíli počkejte a zkuste to znovu.",
             },
+        },
+    },
+    teamRequests: {
+        title: "Vaše žádosti o týmy",
+        description:
+            "Žádosti odeslané z tohoto pracovního prostoru. Administrátoři Logi každou schválí, sloučí nebo zamítnou a žadatel dostane rozhodnutí soukromou zprávou na Discordu. Pracovní prostor může mít nejvýše 20 čekajících žádostí.",
+        empty: "Tento pracovní prostor zatím o žádné týmy nežádal.",
+        loading: "Načítání žádostí…",
+        loadMore: "Načíst další",
+        retry: "Zkusit znovu",
+        kinds: { create: "Nový tým", update: "Změna" },
+        statuses: {
+            pending: "Čeká",
+            approved: "Schváleno",
+            merged: "Sloučeno",
+            rejected: "Zamítnuto",
+            cancelled: "Zrušeno",
+        },
+        requestedOn: "Odesláno {date}",
+        decidedOn: "Rozhodnuto {date}",
+        note: "Vaše poznámka",
+        reason: "Důvod",
+        resultTeam: "Výsledný tým",
+        resultTeamUnavailable: "Údaje o týmu nejsou dostupné",
+        cancel: "Zrušit žádost",
+        cancelRequest: "Zrušit žádost o tým {name}",
+        cancelling: "Rušení…",
+        cancelled: "Žádost byla zrušena.",
+        submitted:
+            "Žádost byla odeslána. Administrátoři Logi ji posoudí a rozhodnutí přijde soukromou zprávou na Discordu.",
+        dialog: {
+            createTitle: "Žádost o nový tým",
+            updateTitle: "Návrh změny",
+            createDescription:
+                "{game} · Administrátoři Logi posuzují každou žádost. Po schválení půjde tým vybrat v zápasech.",
+            updateDescription:
+                "{game} · Navrhněte nové údaje týmu {name}. Administrátoři Logi změnu posoudí dříve, než se použije.",
+            description: "Popis",
+            descriptionHelp: "Nepovinné, nejvýše 500 znaků.",
+            links: "Odkazy",
+            linksHelp:
+                "Nejvýše 3 odkazy https, například web týmu nebo pozvánka na Discord.",
+            link: "Odkaz {index}",
+            addLink: "Přidat odkaz",
+            removeLink: "Odebrat odkaz {index}",
+            note: "Poznámka pro administrátory",
+            noteHelp:
+                "Nepovinné, nejvýše 500 znaků. Uveďte cokoli, co pomůže při posouzení.",
+            submit: "Odeslat žádost",
+            submitting: "Odesílání…",
+            cancel: "Zrušit",
+            unchanged: "Před odesláním změňte alespoň jeden údaj týmu.",
+            duplicate:
+                "Tým {name} už v katalogu pro tuto hru je. Vyberte ho, nebo k němu navrhněte změnu.",
+        },
+        validation: {
+            nameRequired: "Zadejte název týmu.",
+            nameInvalid: "Použijte nejvýše 120 znaků bez zalomení řádku.",
+            shortCodeInvalid: "Použijte nejvýše 16 znaků bez zalomení řádku.",
+            descriptionInvalid:
+                "Použijte nejvýše 500 znaků bez řídicích znaků.",
+            linksInvalid:
+                "Každý odkaz musí být adresa https bez uživatelského jména a hesla.",
+            linksDuplicate: "Každý odkaz lze uvést jen jednou.",
+            linksTooMany: "Uveďte nejvýše 3 odkazy.",
+            noteInvalid: "Použijte nejvýše 500 znaků bez řídicích znaků.",
+            invalid: "Zkontrolujte údaje žádosti a zkuste to znovu.",
+        },
+        errors: {
+            invalid_request: "Zkontrolujte údaje žádosti a zkuste to znovu.",
+            not_found: "Žádost nebo její tým již neexistuje.",
+            not_pending:
+                "O této žádosti už bylo rozhodnuto, nebo byla zrušena.",
+            limit_reached:
+                "Tento pracovní prostor už má 20 čekajících žádostí. Počkejte na rozhodnutí, nebo některou zrušte.",
+            idempotency_conflict:
+                "Tato žádost už byla odeslána s jinými údaji. Zavřete dialog a vytvořte novou žádost.",
+            team_archived:
+                "Tým je archivován, změny k němu už nelze navrhovat.",
+            team_game_mismatch: "Tým patří k jiné hře.",
+            invalid_decision: "Toto rozhodnutí není pro žádost možné.",
+            forbidden: "Nemáte oprávnění zde spravovat žádosti o týmy.",
+            rate_limited:
+                "Příliš mnoho požadavků; chvíli počkejte a zkuste to znovu.",
+            unavailable: "Žádosti o týmy jsou dočasně nedostupné.",
         },
     },
     signupActivity: {
@@ -943,6 +1134,244 @@ export const csMessages = {
             changed_role: "změnil(a) roli",
             unsigned: "se odhlásil(a)",
             declined: "odmítl(a)",
+        },
+    },
+    teamCatalogAdmin: {
+        title: "Katalog týmů",
+        description:
+            "Jeden globální katalog týmů Hell Let Loose a Wardogs pro všechny pracovní prostory Logi. Týmy přidávají, upravují, archivují a slučují pouze globální administrátoři; pracovní prostory z katalogu vybírají a posílají žádosti.",
+        gamesLabel: "Hra",
+        search: "Hledat týmy…",
+        showArchived: "Zobrazit archivované a sloučené týmy",
+        add: "Přidat tým",
+        loadMore: "Načíst další",
+        loading: "Načítám týmy…",
+        empty: "Pro tuto hru zatím nejsou žádné týmy.",
+        emptySearch: "Hledání neodpovídá žádný tým.",
+        retry: "Zkusit znovu",
+        archivedBadge: "Archivováno",
+        mergedBadge: "Sloučeno",
+        linkedBadge: "Propojeno: {workspace}",
+        edit: "Upravit",
+        archive: "Archivovat",
+        restore: "Obnovit",
+        merge: "Sloučit",
+        editTeam: "Upravit {name}",
+        archiveTeam: "Archivovat {name}",
+        restoreTeam: "Obnovit {name}",
+        mergeTeam: "Sloučit {name} do jiného týmu",
+        createTitle: "Nový tým v katalogu",
+        editTitle: "Upravit tým v katalogu",
+        name: "Název",
+        shortCode: "Zkratka",
+        shortCodeHelp:
+            "Nepovinné, nejvýše 16 znaků; zobrazí se tam, kde je málo místa.",
+        descriptionField: "Popis",
+        descriptionHelp: "Nepovinné, nejvýše 500 znaků.",
+        links: "Odkazy",
+        linkLabel: "Odkaz {number}",
+        linksHelp:
+            "Až tři odkazy https, například web týmu nebo pozvánka na Discord.",
+        linkedWorkspace: "Propojený pracovní prostor",
+        linkedWorkspaceNone: "Bez propojeného pracovního prostoru",
+        linkedWorkspaceUnknown: "Pracovní prostor {id}",
+        linkedWorkspaceHelp:
+            "Zaznamená, že tento tým je klanem daného pracovního prostoru Logi. Propojení neuděluje žádná oprávnění.",
+        logo: "Logo",
+        logoHelp:
+            "PNG, JPEG nebo WebP do 2 MiB, upravené na čtverec 512×512. Loga v katalogu patří platformě.",
+        upload: "Nahrát logo",
+        uploading: "Nahrávám…",
+        removeLogo: "Odebrat logo",
+        save: "Uložit tým",
+        saving: "Ukládám…",
+        cancel: "Zrušit",
+        saved: "Tým uložen.",
+        archivedNotice:
+            "Tým archivován. Uložené zápasy si ponechají svůj snímek.",
+        restoredNotice: "Tým obnoven.",
+        mergedNotice: "{source} byl sloučen do {target}.",
+        conflictReloaded:
+            "Tým se mezitím změnil. Zobrazuje se nejnovější verze a vaše úpravy zůstaly zachovány; zkontrolujte je a uložte znovu.",
+        conflictReloadFailed:
+            "Tým se mezitím změnil a nejnovější verzi se nepodařilo načíst. Zavřete dialog a zkuste to znovu.",
+        staleRow:
+            "Tým se mezitím změnil; nyní se zobrazuje nejnovější verze. Pokud je akce stále potřeba, zkuste ji znovu.",
+        mergeTitle: "Sloučit {name}",
+        mergeDescription:
+            "Vyberte tým, který zůstane. {name} bude archivován a bude na něj odkazovat.",
+        mergeTarget: "Tým, který zůstane",
+        mergeSearch: "Hledat aktivní týmy…",
+        mergeSearchHint: "Začněte psát a vyhledejte aktivní týmy této hry.",
+        mergeNoResults: "Hledání neodpovídá žádný jiný aktivní tým.",
+        mergeLoading: "Hledám…",
+        mergeChooseTarget: "Vyberte tým, který zůstane.",
+        mergeMovesTitle: "Co se stane",
+        mergeMovesRegistrations:
+            "Registrace v soutěžích a zápasy týmu {source} přejdou na {target}.",
+        mergeMovesRequests:
+            "Čekající žádosti o tým {source} přejdou na {target}.",
+        mergeMovesArchive:
+            "{source} bude archivován a zaznamená, že byl sloučen do {target}. Sloučení nelze vrátit zpět.",
+        mergeMovesSnapshots:
+            "Uložené snímky zápasů se nepřepisují; ponechají si název a logo, se kterými byly uloženy.",
+        mergeConfirm: "Sloučit týmy",
+        merging: "Slučuji…",
+        fieldErrors: {
+            name: "Zadejte název o nejvýše 120 znacích bez řídicích znaků.",
+            shortCode: "Použijte nejvýše 16 znaků bez řídicích znaků.",
+            description: "Použijte nejvýše 500 znaků.",
+            links: "Každý odkaz musí být jiná adresa URL s https.",
+            linkedGuildId: "Vyberte pracovní prostor ze seznamu.",
+        },
+        errors: {
+            invalid_team: "Zkontrolujte údaje týmu a zkuste to znovu.",
+            invalid_query: "Katalog nelze s těmito filtry načíst.",
+            game_disabled: "Tato hra není v katalogu týmů dostupná.",
+            duplicate_name:
+                "Tento název už používá jiný tým této hry. Vyhledejte ho v katalogu včetně archivovaných týmů a místo toho ho upravte, obnovte nebo slučte.",
+            revision_conflict:
+                "Tým se mezitím změnil. Načtěte ho znovu a zkuste to znovu.",
+            idempotency_conflict:
+                "Toto uložení už bylo použito pro jiné hodnoty. Zavřete dialog a zkuste to znovu.",
+            not_found: "Tento tým už neexistuje.",
+            archived: "Tento tým je archivovaný. Před úpravou ho obnovte.",
+            not_archived: "Tento tým není archivovaný.",
+            asset_unavailable: "Logo už není dostupné. Nahrajte ho znovu.",
+            limit_reached: "Katalog pro tuto hru je plný.",
+            invalid_merge:
+                "Tyto týmy nelze sloučit. Vyberte aktivní tým stejné hry, který proti tomuto týmu nikdy nehrál v soutěži; sloučený tým nelze obnovit ani znovu sloučit.",
+            forbidden:
+                "Katalog týmů mohou spravovat pouze globální administrátoři.",
+            unavailable:
+                "Katalog týmů je momentálně nedostupný. Zkuste to znovu.",
+        },
+        uploadErrors: {
+            unsupported_type: "Přijímají se pouze obrázky PNG, JPEG a WebP.",
+            type_mismatch: "Obsah souboru neodpovídá jeho typu obrázku.",
+            bad_dimensions:
+                "Obrázek musí mít alespoň 1×1 a nejvýše 4096×4096 pixelů.",
+            animated: "Animované obrázky nejsou podporovány.",
+            undecodable: "Obrázek se nepodařilo načíst.",
+            invalid_kind: "Toto nahrání není logo týmu.",
+            invalid_asset: "Nahraný obrázek se nepodařilo uložit.",
+            too_large: "Obrázek přesahuje 2 MiB.",
+            upload_limited:
+                "Příliš mnoho nahrávání. Zkuste to znovu za {seconds} s.",
+            forbidden:
+                "Loga do katalogu mohou nahrávat pouze globální administrátoři.",
+            unavailable: "Nahrávání je dočasně nedostupné.",
+        },
+    },
+    teamRequestAdmin: {
+        title: "Žádosti o týmy",
+        description:
+            "Žádosti o nový tým a o změnu od administrátorů pracovních prostorů. Žádost schvalte (případně upravenou), slučte s existujícím týmem nebo zamítněte s důvodem; žadatel dostane zprávu přes Discord DM.",
+        statusFilter: "Stav",
+        statuses: {
+            pending: "Čekající",
+            approved: "Schválené",
+            merged: "Sloučené",
+            rejected: "Zamítnuté",
+            cancelled: "Zrušené",
+        },
+        kinds: {
+            create: "Nový tým",
+            update: "Žádost o změnu",
+        },
+        loading: "Načítám žádosti…",
+        empty: "Žádné žádosti v tomto stavu.",
+        loadMore: "Načíst další",
+        retry: "Zkusit znovu",
+        requestFor: "Žádost o {name}",
+        workspace: "Pracovní prostor",
+        unknownWorkspace: "Neznámý pracovní prostor ({id})",
+        requester: "Žadatel (Discord ID)",
+        hiddenRequester: "Nezobrazeno",
+        game: "Hra",
+        kind: "Typ",
+        submitted: "Odesláno",
+        decided: "Rozhodnuto",
+        note: "Poznámka žadatele",
+        proposal: "Navrhovaný tým",
+        currentTeam: "Současný tým",
+        currentTeamLoading: "Načítám současný tým…",
+        currentTeamMissing: "Tým, který tato žádost mění, už neexistuje.",
+        currentTeamArchived:
+            "Tým, který tato žádost mění, je archivovaný. Před schválením ho obnovte v katalogu týmů.",
+        currentTeamUnavailable: "Současný tým se nepodařilo načíst.",
+        changed: "Změněno",
+        resultTeam: "Výsledný tým",
+        reason: "Důvod",
+        notification: "DM žadateli",
+        notifications: {
+            none: "Neodesláno",
+            pending: "Ve frontě",
+            sent: "Odesláno",
+            failed: "Nepodařilo se doručit",
+        },
+        none: "Žádné",
+        approve: "Schválit",
+        approveRequest: "Schválit žádost o {name}",
+        approveTitle: "Schválit žádost",
+        approveDescription:
+            "Zkontrolujte a upravte navrhované údaje. Schválením se tým vytvoří, nebo se údaje použijí na současný tým.",
+        approveConfirm: "Schválit žádost",
+        approving: "Schvaluji…",
+        merge: "Sloučit s existujícím týmem",
+        mergeRequest: "Sloučit žádost o {name} s existujícím týmem",
+        mergeTitle: "Sloučit s existujícím týmem",
+        mergeDescription:
+            "Nový tým se nevytvoří. Žadatel se dozví, který existující tým hry {game} má použít.",
+        mergeConfirm: "Sloučit žádost",
+        merging: "Slučuji…",
+        mergeInto: "Místo toho sloučit do {name}",
+        reject: "Zamítnout",
+        rejectRequest: "Zamítnout žádost o {name}",
+        rejectTitle: "Zamítnout žádost",
+        rejectDescription: "Žadatel dostane důvod v Discord DM.",
+        rejectReason: "Důvod",
+        rejectReasonHelp: "Povinné, nejvýše 500 znaků.",
+        rejectConfirm: "Zamítnout žádost",
+        rejecting: "Zamítám…",
+        cancel: "Zrušit",
+        reasonRequired: "Zadejte důvod o nejvýše 500 znacích.",
+        decidedNotice: {
+            approved: "Žádost schválena. Žadatel dostane oznámení.",
+            merged: "Žádost sloučena s existujícím týmem. Žadatel dostane oznámení.",
+            rejected: "Žádost zamítnuta. Žadatel dostane oznámení.",
+        },
+        conflictReloaded:
+            "Tým se změnil poté, co jste žádost otevřeli. Zobrazují se současné hodnoty; zkontrolujte je a schvalte znovu.",
+        duplicateFound:
+            "Tento název už používá {name}. Slučte žádost s tímto týmem, nebo změňte název.",
+        staleRequest:
+            "O této žádosti už bylo rozhodnuto nebo byla stažena; seznam byl obnoven.",
+        errors: {
+            invalid_request: "Tato žádost není platná.",
+            invalid_decision: "Zkontrolujte rozhodnutí a zkuste to znovu.",
+            invalid_query: "Frontu nelze s těmito filtry načíst.",
+            not_found: "Tato žádost nebo tým už neexistuje.",
+            not_pending: "O této žádosti už bylo rozhodnuto nebo byla stažena.",
+            limit_reached: "Katalog pro tuto hru je plný.",
+            idempotency_conflict:
+                "Toto rozhodnutí je v rozporu s dřívějším. Načtěte stránku znovu a zkuste to znovu.",
+            team_archived: "Vybraný tým je archivovaný. Vyberte aktivní tým.",
+            team_game_mismatch: "Vyberte tým stejné hry.",
+            duplicate_name: "Tento název už používá jiný tým této hry.",
+            revision_conflict:
+                "Tým se mezitím změnil. Zkontrolujte ho a zkuste to znovu.",
+            archived: "Tým je archivovaný. Před schválením ho obnovte.",
+            not_archived: "Tým není archivovaný.",
+            asset_unavailable:
+                "Logo už není dostupné. Nahrajte ho znovu nebo ho odeberte.",
+            invalid_team: "Zkontrolujte údaje týmu a zkuste to znovu.",
+            invalid_merge: "Žádost nelze sloučit s tímto týmem.",
+            game_disabled: "Tato hra není v katalogu týmů dostupná.",
+            forbidden:
+                "O žádostech o týmy mohou rozhodovat pouze globální administrátoři.",
+            unavailable:
+                "Žádosti o týmy jsou momentálně nedostupné. Zkuste to znovu.",
         },
     },
     competition: {
@@ -966,35 +1395,173 @@ export const csMessages = {
         totalMatches: "Celkem zápasů",
         team: "Tým",
         withdrawn: "(odstoupil)",
-        manageDescription:
-            "Správa globálních sezón, týmů, zápasů a odkazů na výsledky.",
-        manualResult: "Přidat ruční výsledek",
-        manualResultDescription:
-            "Použijte, když není propojena událost zápasu v Logi.",
-        division: "Divize",
-        teamA: "Tým A",
-        teamB: "Tým B",
-        chooseTeam: "Vyberte tým",
-        teamAScore: "Skóre týmu A",
-        teamBScore: "Skóre týmu B",
-        saveResult: "Uložit výsledek",
-        saving: "Ukládání…",
-        resultSaved: "Výsledek uložen.",
-        resultSaveFailed: "Výsledek se nepodařilo uložit.",
-        mergeAliases: "Sloučit aliasy klanů",
-        mergeDescription:
-            "Přesunout historii soutěže z pomocného nebo duplicitního klanu do skutečného klanu.",
-        clanToKeep: "Klan, který zůstane",
-        chooseRealClan: "Vyberte skutečný klan",
-        ghostToMerge: "Pomocný nebo duplicitní klan",
-        chooseDuplicate: "Vyberte duplicitu",
-        mergeClans: "Sloučit klany",
-        merging: "Slučování…",
-        mergeFailed: "Klany se nepodařilo sloučit.",
-        mergeSuccess: "Historie klanu sloučena.",
+        noTeams: "Zatím nejsou registrovány žádné týmy.",
+        phases: {
+            league: "Liga",
+            playoff: "Play-off",
+            relegation: "Baráž",
+        },
+        fixtureStatus: {
+            scheduled: "Naplánováno",
+            final: "Konečný",
+            forfeit: "Kontumace",
+        },
         createEcl: "Vytvořit ECL 2026",
         createFailed: "ECL se nepodařilo vytvořit.",
         createSuccess: "ECL 2026 vytvořena.",
+    },
+    competitionAdmin: {
+        listDescription:
+            "Vytvářejte a spravujte soutěže v Hell Let Loose a Wardogs s týmy z globálního katalogu.",
+        newCompetition: "Nová soutěž",
+        createTitle: "Vytvořit soutěž",
+        createDescription:
+            "Nejprve zvolte hru – později ji nelze změnit. Soutěž vznikne jako nezveřejněná.",
+        game: "Hra",
+        name: "Název",
+        season: "Sezóna",
+        slug: "Adresa (slug)",
+        slugHelp:
+            "2–64 malých písmen, číslic a pomlček; použije se ve veřejné adrese.",
+        description: "Popis",
+        published: "Zveřejněno",
+        publishedHelp:
+            "Nezveřejněné soutěže jsou skryté na veřejných stránkách i ve veřejném API.",
+        publishedBadge: "Zveřejněno",
+        draftBadge: "Nezveřejněno",
+        create: "Vytvořit",
+        creating: "Vytváření…",
+        cancel: "Zrušit",
+        save: "Uložit",
+        saving: "Ukládání…",
+        saved: "Uloženo.",
+        manage: "Spravovat",
+        openPublic: "Veřejná stránka",
+        back: "Všechny soutěže",
+        noCompetitions: "Zatím žádné soutěže.",
+        counts: "Divize: {divisions} · týmy: {teams} · zápasy: {fixtures}",
+        legacyTitle: "Čeká na migraci",
+        legacyDescription:
+            "Záznamy soutěží ({count}) stále odkazují na pracovní prostory Logi místo globálních týmů. Zůstávají viditelné, ale nelze je upravovat ani propojovat, dokud vlastník platformy nespustí jednorázovou migraci soutěží.",
+        legacyBadge: "Čeká na migraci",
+        detailsTitle: "Podrobnosti",
+        detailsDescription:
+            "Název, veřejná adresa, sezóna, popis a viditelnost. Hru nelze změnit.",
+        divisionsTitle: "Divize",
+        divisionsDescription:
+            "Divize se na veřejné stránce zobrazují v tomto pořadí. Smazat lze jen divizi bez týmů a zápasů.",
+        divisionName: "Název divize",
+        divisionCounts: "Týmy: {teams} · zápasy: {fixtures}",
+        addDivision: "Přidat divizi",
+        addDivisionFirst: "Před registrací týmů přidejte divizi.",
+        rename: "Přejmenovat",
+        moveUp: "Posunout nahoru",
+        moveDown: "Posunout dolů",
+        delete: "Smazat",
+        confirmDeleteDivision: "Smazat divizi „{name}“?",
+        noDivisions: "Zatím žádné divize.",
+        teamsTitle: "Týmy",
+        teamsDescription:
+            "Registrujte aktivní týmy hry této soutěže z globálního katalogu. Tým lze odebrat jen tehdy, když nemá žádné zápasy; jinak ho označte jako odstoupivší, aby se zachovaly jeho výsledky.",
+        team: "Tým",
+        division: "Divize",
+        unassigned: "Bez divize",
+        chooseTeam: "Vyberte tým",
+        searchTeams: "Hledat týmy…",
+        loadingTeams: "Načítání týmů…",
+        noTeamResults: "Neodpovídá žádný aktivní neregistrovaný tým.",
+        register: "Registrovat",
+        withdraw: "Odstoupit",
+        reinstate: "Obnovit účast",
+        remove: "Odebrat",
+        moveTo: "Divize",
+        confirmRemoveTeam: "Odebrat tým {name} z této soutěže?",
+        noTeams: "V této divizi nejsou žádné týmy.",
+        withdrawnBadge: "Odstoupil",
+        archivedBadge: "Archivován",
+        fixturesTitle: "Zápasy",
+        fixturesDescription:
+            "Do tabulky se počítají konečné a kontumační výsledky s oběma skóre; naplánované zápasy ne.",
+        allDivisions: "Všechny divize",
+        addFixture: "Přidat zápas",
+        editFixture: "Upravit zápas",
+        noFixtures: "Zatím žádné zápasy.",
+        fixtureHelp:
+            "Ligové zápasy hrají dva týmy vybrané divize; zápasy play-off a baráže mohou být napříč divizemi.",
+        invalidFixture:
+            "Vyberte divizi a dva různé týmy a u konečného či kontumačního výsledku zadejte obě skóre jako celá čísla.",
+        confirmDeleteFixture: "Smazat tento zápas?",
+        phase: "Fáze",
+        phases: {
+            league: "Liga",
+            playoff: "Play-off",
+            relegation: "Baráž",
+        },
+        status: "Stav",
+        statuses: {
+            scheduled: "Naplánováno",
+            final: "Konečný",
+            forfeit: "Kontumace",
+        },
+        teamA: "Tým A",
+        teamB: "Tým B",
+        scoreA: "Skóre týmu A",
+        scoreB: "Skóre týmu B",
+        score: "Skóre",
+        scheduledAt: "Termín",
+        event: "Událost zápasu",
+        actions: "Akce",
+        linkEvent: "Propojit událost zápasu",
+        linkEventTitle: "Propojit událost zápasu v Logi",
+        linkEventDescription:
+            "Výsledky importované k propojenému zápasu aktualizují tento zápas soutěže. Zápas musí být ze stejné hry, a pokud má přiřazené týmy, musí mezi nimi být oba týmy zápasu soutěže.",
+        linked: "Aktuálně propojeno s {name}.",
+        candidates: "Zápasy z pracovních prostorů propojených s týmy",
+        loadingCandidates: "Načítání zápasů…",
+        noCandidates:
+            "V pracovních prostorech propojených s týmy nebyly nalezeny žádné zápasy.",
+        teamsMatch: "Oba týmy přiřazeny",
+        teamsUnassigned: "Týmy nepřiřazeny",
+        hasResult: "Výsledek importován",
+        eventId: "ID události",
+        eventIdHelp: "Nebo vložte ID události z adresy zápasu v dashboardu.",
+        link: "Propojit",
+        unlink: "Zrušit propojení",
+        errors: {
+            invalid_competition:
+                "Zkontrolujte zadané hodnoty a zkuste to znovu.",
+            not_found: "Tento záznam soutěže už neexistuje. Obnovte stránku.",
+            duplicate_slug: "Tuto adresu už používá jiná soutěž.",
+            duplicate_division: "Tato soutěž už má divizi s tímto názvem.",
+            division_not_found: "Divize už neexistuje. Obnovte stránku.",
+            division_not_empty:
+                "Před smazáním divize přesuňte nebo odeberte její týmy a zápasy.",
+            invalid_order:
+                "Divize se mezitím změnily. Obnovte stránku a zkuste to znovu.",
+            limit_reached: "Soutěž dosáhla limitu velikosti.",
+            team_not_found: "Tým už v katalogu neexistuje.",
+            team_archived: "Archivované ani sloučené týmy nelze registrovat.",
+            team_game_mismatch: "Tým patří k jiné hře než soutěž.",
+            already_registered: "Tento tým je v soutěži už registrován.",
+            registration_has_fixtures:
+                "Tým má zápasy. Nejprve je smažte, nebo tým označte jako odstoupivší.",
+            team_not_registered:
+                "Oba týmy musí být v této soutěži registrovány.",
+            division_mismatch:
+                "Ligový zápas vyžaduje dva týmy registrované ve vybrané divizi.",
+            event_not_found: "Událost Logi s tímto ID neexistuje.",
+            event_not_match: "Propojit lze jen události zápasů, ne tréninky.",
+            event_game_mismatch: "Zápas je z jiné hry než soutěž.",
+            event_already_linked:
+                "Tento zápas je už propojen s jiným zápasem soutěže.",
+            event_team_mismatch:
+                "Přiřazené týmy zápasu nezahrnují oba týmy zápasu soutěže.",
+            migration_pending:
+                "Starší záznamy je nejprve nutné převést na globální týmy.",
+            forbidden:
+                "Soutěže mohou spravovat jen globální administrátoři Logi.",
+            unavailable: "Služba soutěží není dostupná. Zkuste to znovu.",
+        },
     },
     articles: {
         title: "Články",
@@ -1746,6 +2313,125 @@ export const csMessages = {
         allDay: "Celý den",
         manualItemAdminHint:
             "Správci mohou tuto položku kalendáře odstranit nebo upravit v jejích detailech kalendáře.",
+    },
+    settingsHub: {
+        title: "Nastavení klanu",
+        description:
+            "Vše, co Logi potřebuje vědět o vašem klanu, rozdělené podle témat. Otevřete kartu a změňte, co potřebujete.",
+        setupTitle: "První nastavení",
+        setupProgress: "Hotovo {done} z {total} povinných nastavení",
+        setupNext: "Další krok: {item}",
+        setupDone:
+            "Povinná nastavení jsou hotová. Volitelné funkce můžete zapnout kdykoli.",
+        continueSetup: "Pokračovat",
+        backToOverview: "Všechna nastavení",
+        sectionNavLabel: "Části nastavení",
+        openSection: "Otevřít",
+        clanWideFieldsNote:
+            "Časové pásmo, jazyk a kanály pro chyby a kalendář platí pro celý klan. Pro tuto hru se mohou lišit jen kanály níže.",
+        clanWideOnly: "Tato nastavení platí pro celý klan.",
+        resyncHelp:
+            "Superadministrátor může znovu načíst přístup do správy podle aktuálních členů role pro správu.",
+        saved: "Nastavení uloženo.",
+        groups: {
+            clan: "Klan",
+            matches: "Zápasy",
+            discord: "Discord",
+            gameData: "Herní data",
+            web: "Web a integrace",
+            maintenance: "Údržba",
+        },
+        status: {
+            ready: "Nastaveno",
+            attention: "Chybí nastavení",
+            off: "Vypnuto",
+        },
+        requirements: {
+            enabledGames: "Vyberte hry, které klan hraje",
+            announcements: "Vyberte kanál pro oznámení",
+            clanRole: "Vyberte roli klanu",
+        },
+        presetLinks: {
+            squadPresets: "Předvolby čet",
+            topicPresets: "Předvolby témat",
+        },
+        sections: {
+            profile: {
+                title: "Profil klanu",
+                description:
+                    "Název, logo, popis, kategorie akcí a položky kalendáře.",
+            },
+            games: {
+                title: "Hry",
+                description: "Které hry klan hraje.",
+            },
+            messages: {
+                title: "Zprávy v Discordu",
+                description: "Veřejné panely, živé skóre a vzhled zpráv bota.",
+            },
+            channels: {
+                title: "Kanály a jazyk",
+                description:
+                    "Časové pásmo, jazyk bota a kanály pro oznámení, informace o akcích, chyby a hlasové místnosti.",
+            },
+            roles: {
+                title: "Role a přístup",
+                description: "Role klanu a role, která otevírá správu v Logi.",
+            },
+            stats: {
+                title: "Příkaz /stats",
+                description:
+                    "Pro které hry /stats odpovídá, kam se výsledky sdílejí a ze kterých serverů čte statistiky.",
+            },
+            membership: {
+                title: "Členství",
+                description:
+                    "Přihlášky do klanu, kategorie, role nováčků a členů, body za soupisky.",
+            },
+            tickets: {
+                title: "Tickety",
+                description: "Panel ticketů, kategorie, role podpory a otázky.",
+            },
+            "game-servers": {
+                title: "Herní servery",
+                description:
+                    "Servery, klíče poskytovatelů a data, která z nich Logi sbírá.",
+            },
+            league: {
+                title: "Wardogs League",
+                description:
+                    "Sledované ligové zápasy a jejich propojení s vašimi akcemi.",
+            },
+            website: {
+                title: "Web klanu a API",
+                description:
+                    "API klíče, příkazy z vašeho webu a synchronizace členů.",
+            },
+            login: {
+                title: "Přihlášení",
+                description:
+                    "Přihlašovací stránka klanu a aplikace jednotného přihlášení.",
+            },
+            calendar: {
+                title: "Google Kalendář",
+                description:
+                    "Odběr kalendáře klanu v Googlu nebo jiné kalendářové aplikaci.",
+            },
+            webhooks: {
+                title: "Webhooky",
+                description: "Posílání událostí z Logi do vašich služeb.",
+            },
+            imports: {
+                title: "Importy a opravy",
+                description:
+                    "Import akcí a členů z Discordu, propojení ID a přepočet statistik.",
+            },
+            "helper-data": {
+                title: "Pomocná data",
+                description:
+                    "Referenční data, která Logi používá při importu a párování hráčů.",
+            },
+        },
     },
     configurationScope: {
         clanWide: "Nastavení pro celý klan",

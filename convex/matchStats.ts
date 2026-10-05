@@ -270,9 +270,11 @@ export const upsertForEvent = mutation({
 
 export const getByEventId = query({
     args: {
+        secret: v.string(),
         eventId: v.id("events"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const matchStats = await ctx.db
             .query("matchStats")
             .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
@@ -284,11 +286,13 @@ export const getByEventId = query({
 
 export const findByIdentity = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         sourceUrl: v.string(),
         matchId: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const normalizedSourceUrl = args.sourceUrl.trim()
         const normalizedMatchId = args.matchId?.trim()
         const docs = await ctx.db

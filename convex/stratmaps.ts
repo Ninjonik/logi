@@ -1,5 +1,8 @@
+import { clientGrantScopes } from "../src/domain/identity/client-grant"
+import { readClientGrant, verifyClientGrant } from "./clientGrants"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
+import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
 import {
@@ -18,6 +21,7 @@ import {
     buildDefaultStratmapState,
     stringifyStratmapState,
 } from "../src/lib/stratmaps"
+import { assertInternalSecret } from "./discord_shared"
 
 async function resolveGuildAccess(
     ctx: QueryCtx | MutationCtx,
@@ -70,10 +74,12 @@ async function resolveGuildAccess(
 
 export const listByGuild = query({
     args: {
+        secret: v.string(),
         userId: v.string(),
         serverId: v.id("guilds"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const guild = await getGuildById(ctx, String(args.serverId))
         if (!guild) {
             return null
@@ -101,37 +107,65 @@ export const listByGuild = query({
     },
 })
 
+async function stratmapView(
+    ctx: QueryCtx,
+    userId: string,
+    stratmapId: Id<"stratmaps">
+) {
+    const stratmap = await ctx.db.get(stratmapId)
+    if (!stratmap) {
+        return null
+    }
+
+    const access = await resolveGuildAccess(ctx, {
+        userId,
+        guildDiscordId: stratmap.guildId,
+    })
+
+    if (!access) {
+        return null
+    }
+
+    return {
+        canAdmin: access.canAdmin,
+        serverId: String(access.guild._id),
+        stratmap: normalizeStratmapDoc(stratmap),
+    }
+}
+
+/** Server-side read for the signed-in user the web server resolved. */
 export const getById = query({
     args: {
+        secret: v.string(),
         userId: v.string(),
         stratmapId: v.id("stratmaps"),
     },
     handler: async (ctx, args) => {
-        const stratmap = await ctx.db.get(args.stratmapId)
-        if (!stratmap) {
-            return null
-        }
+        assertInternalSecret(args.secret)
+        return await stratmapView(ctx, args.userId, args.stratmapId)
+    },
+})
 
-        const access = await resolveGuildAccess(ctx, {
-            userId: args.userId,
-            guildDiscordId: stratmap.guildId,
-        })
-
-        if (!access) {
-            return null
-        }
-
-        return {
-            canAdmin: access.canAdmin,
-            serverId: String(access.guild._id),
-            stratmap: normalizeStratmapDoc(stratmap),
-        }
+/** Live editor read; the viewer comes from a grant signed for this stratmap. */
+export const getLiveById = query({
+    args: {
+        grant: v.string(),
+        stratmapId: v.id("stratmaps"),
+    },
+    handler: async (ctx, args) => {
+        const userId = await readClientGrant(
+            ctx,
+            args.grant,
+            clientGrantScopes.stratmap(args.stratmapId)
+        )
+        return userId ? await stratmapView(ctx, userId, args.stratmapId) : null
     },
 })
 
 export const getPublicById = query({
-    args: { stratmapId: v.id("stratmaps") },
+    args: { secret: v.string(), stratmapId: v.id("stratmaps") },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const stratmap = await ctx.db.get(args.stratmapId)
         return stratmap ? normalizeStratmapDoc(stratmap) : null
     },
@@ -139,7 +173,7 @@ export const getPublicById = query({
 
 export const create = mutation({
     args: {
-        userId: v.string(),
+        grant: v.string(),
         serverId: v.id("guilds"),
         gameId: v.optional(
             v.union(
@@ -157,6 +191,11 @@ export const create = mutation({
         state: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
+        const userId = await verifyClientGrant(
+            ctx,
+            args.grant,
+            clientGrantScopes.stratmapCreate(args.serverId)
+        )
         const guild = await getGuildById(ctx, String(args.serverId))
         if (!guild) {
             throw new Error("Server not found.")
@@ -164,7 +203,7 @@ export const create = mutation({
 
         const guildDiscordId = getGuildDiscordId(guild)
         const access = await resolveGuildAccess(ctx, {
-            userId: args.userId,
+            userId,
             guildDiscordId,
         })
 
@@ -187,7 +226,7 @@ export const create = mutation({
                 stringifyStratmapState(
                     buildDefaultStratmapState(args.baseMapId)
                 ),
-            createdBy: args.userId,
+            createdBy: userId,
             createdAt: now,
             updatedAt: now,
         })
@@ -198,7 +237,7 @@ export const create = mutation({
 
 export const updateMeta = mutation({
     args: {
-        userId: v.string(),
+        grant: v.string(),
         stratmapId: v.id("stratmaps"),
         title: v.string(),
         description: v.optional(v.string()),
@@ -208,13 +247,18 @@ export const updateMeta = mutation({
         eventId: v.optional(v.id("events")),
     },
     handler: async (ctx, args) => {
+        const userId = await verifyClientGrant(
+            ctx,
+            args.grant,
+            clientGrantScopes.stratmap(args.stratmapId)
+        )
         const stratmap = await ctx.db.get(args.stratmapId)
         if (!stratmap) {
             throw new Error("Stratmap not found.")
         }
 
         const access = await resolveGuildAccess(ctx, {
-            userId: args.userId,
+            userId,
             guildDiscordId: stratmap.guildId,
         })
 
@@ -236,51 +280,28 @@ export const updateMeta = mutation({
 
 export const updateState = mutation({
     args: {
-        userId: v.string(),
+        grant: v.string(),
         stratmapId: v.id("stratmaps"),
         state: v.string(),
     },
     handler: async (ctx, args) => {
+        const userId = await verifyClientGrant(
+            ctx,
+            args.grant,
+            clientGrantScopes.stratmap(args.stratmapId)
+        )
         const stratmap = await ctx.db.get(args.stratmapId)
         if (!stratmap) {
             throw new Error("Stratmap not found.")
         }
 
         const access = await resolveGuildAccess(ctx, {
-            userId: args.userId,
+            userId,
             guildDiscordId: stratmap.guildId,
         })
 
         if (!access?.canAdmin) {
             throw new Error("Only admins can edit stratmaps.")
-        }
-
-        await ctx.db.patch(args.stratmapId, {
-            state: args.state,
-            updatedAt: new Date().toISOString(),
-        })
-    },
-})
-
-export const ping = mutation({
-    args: {
-        userId: v.string(),
-        stratmapId: v.id("stratmaps"),
-        state: v.string(),
-    },
-    handler: async (ctx, args) => {
-        const stratmap = await ctx.db.get(args.stratmapId)
-        if (!stratmap) {
-            throw new Error("Stratmap not found.")
-        }
-
-        const access = await resolveGuildAccess(ctx, {
-            userId: args.userId,
-            guildDiscordId: stratmap.guildId,
-        })
-
-        if (!access?.canAdmin) {
-            throw new Error("Only admins can ping the map.")
         }
 
         await ctx.db.patch(args.stratmapId, {

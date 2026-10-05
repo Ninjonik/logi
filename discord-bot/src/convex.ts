@@ -233,4 +233,10 @@ export const references = {
     getAssignmentForServerUser: makeFunctionReference<"query">(
         "userAssignments:getForServerUser"
     ),
+    claimTeamRequestNotifications: makeFunctionReference<"mutation">(
+        "teamRequests:claimNotifications"
+    ),
+    markTeamRequestNotified: makeFunctionReference<"mutation">(
+        "teamRequests:markNotified"
+    ),
 }

@@ -53,7 +53,10 @@ const dependencies: StatsRuntimeDependencies = {
     send: (request, channelId, payload) =>
         publishStats(client, request, channelId, payload),
     settings: async (guildId) => {
-        const config = (await convex.query(guildConfig, { guildId })) as {
+        const config = (await convex.query(guildConfig, {
+            secret: env.internalSecret,
+            guildId,
+        })) as {
             statsSettings?: unknown
         } | null
         const parsed = statsCommandSettingsSchema.safeParse(

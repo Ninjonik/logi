@@ -20,7 +20,11 @@ const credentials = {
     gameId: v.string(),
 }
 
-/** Key revocation, workspace and game grants are rechecked here, never only at the gateway. */
+/**
+ * Key revocation and the explicit `teams` game grant are rechecked here, never
+ * only at the gateway. The catalogue is global; the key still has to belong to
+ * the workspace that authenticated the request.
+ */
 async function grant(
     ctx: Pick<QueryCtx, "db">,
     args: { secret: string; keyHash: string; guildId: string; gameId: string }
@@ -43,14 +47,13 @@ async function grant(
     return game.data
 }
 
-/** Active directory entry as a website DTO; archived or foreign records read as absent. */
+/** Active catalogue entry of this game as a website DTO; archived or merged entries read as absent. */
 export async function readTeamDto(
     ctx: Pick<QueryCtx, "db">,
-    guildId: string,
     gameId: string,
     id: string
 ): Promise<TeamDto | null> {
-    const row = await teamById(ctx, guildId, id)
+    const row = await teamById(ctx, id)
     return row && row.gameId === gameId && !row.archivedAt
         ? await teamDtoOf(ctx, row)
         : null
@@ -74,11 +77,8 @@ export const list = query({
             throw new Error("Invalid pagination.")
         const page = await ctx.db
             .query("teamDirectory")
-            .withIndex("guildId_gameId_archivedAt_normalizedName", (q) =>
-                q
-                    .eq("guildId", args.guildId)
-                    .eq("gameId", gameId)
-                    .eq("archivedAt", null)
+            .withIndex("gameId_archivedAt_normalizedName", (q) =>
+                q.eq("gameId", gameId).eq("archivedAt", null)
             )
             .paginate({ cursor: args.cursor, numItems: args.limit })
         return {
@@ -95,6 +95,6 @@ export const get = query({
     handler: async (ctx, args) => {
         const gameId = await grant(ctx, args)
         if (!gameId) return null
-        return { team: await readTeamDto(ctx, args.guildId, gameId, args.id) }
+        return { team: await readTeamDto(ctx, gameId, args.id) }
     },
 })

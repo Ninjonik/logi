@@ -16,6 +16,7 @@ export async function generateConvexUploadUrl() {
 
 export async function getConvexFileUrl(storageId: string) {
     return await fetchQuery(getUrlReference, {
+        secret: getInternalAuthSecret(),
         storageId: storageId as never,
     })
 }

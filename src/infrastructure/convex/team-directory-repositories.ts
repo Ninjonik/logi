@@ -3,8 +3,17 @@ import type {
     TeamAuditDetails,
     TeamDirectoryRepository,
     TeamLogoPort,
+    TeamRequestLogoPort,
+    TeamRequestRepository,
     TeamWrite,
 } from "@/application/teams/ports"
+import {
+    adoptPlatformLogo,
+    adoptablePlatformLogo,
+    assetPublicUrl,
+    attachableAsset,
+    syncAssetReferences,
+} from "../../../convex/imageAssets"
 import {
     TEAM_DIRECTORY_LIMIT,
     teamSearchText,
@@ -12,29 +21,36 @@ import {
     type TeamEntity,
     type TeamGame,
 } from "@/domain/teams/team"
-import {
-    assetPublicUrl,
-    attachableAsset,
-    syncAssetReferences,
-} from "../../../convex/imageAssets"
 import type {
     DirectoryTeamLookup,
     MatchTeamAssignment,
 } from "@/domain/teams/match-teams"
+import type {
+    TeamRequestEntity,
+    TeamRequestStatus,
+} from "@/domain/teams/team-request"
 import { appendIntegrationChange } from "../../../convex/integrationChangeLog"
 import type { MutationCtx, QueryCtx } from "../../../convex/_generated/server"
+import { allowsApiKeyRead, isApiKeyReadAccess } from "@/domain/api/key-access"
 import type { Doc, Id } from "../../../convex/_generated/dataModel"
+import { PLATFORM_SCOPE } from "../../../convex/platformAdmin"
 
 type Db = Pick<QueryCtx, "db">
+const MERGE_HOPS = 5
 
 export function teamEntity(row: Doc<"teamDirectory">): TeamEntity {
     return {
         id: String(row._id),
-        guildId: row.guildId,
         gameId: row.gameId,
         name: row.name,
         shortCode: row.shortCode,
         logoAssetId: row.logoAssetId ? String(row.logoAssetId) : null,
+        description: row.description ?? null,
+        links: row.links ?? [],
+        linkedGuildId: row.linkedGuildId ?? null,
+        mergedIntoTeamId: row.mergedIntoTeamId
+            ? String(row.mergedIntoTeamId)
+            : null,
         normalizedName: row.normalizedName,
         archivedAt: row.archivedAt,
         revision: row.revision,
@@ -43,47 +59,60 @@ export function teamEntity(row: Doc<"teamDirectory">): TeamEntity {
     }
 }
 
-/** A workspace's record by ID; a foreign or unknown ID reads as absent. */
+/** A catalogue record by ID; an unknown or malformed ID reads as absent. */
 export async function teamById(
     ctx: Db,
-    guildId: string,
     teamId: string
 ): Promise<Doc<"teamDirectory"> | null> {
     const id = ctx.db.normalizeId("teamDirectory", teamId)
-    const row = id ? await ctx.db.get(id) : null
-    return row && row.guildId === guildId ? row : null
+    return id ? await ctx.db.get(id) : null
 }
 
-/** Directory facts for match-team resolution, keyed by the requested IDs. */
+/** Follows merge pointers to the team that replaced this one (bounded). */
+export async function currentTeam(
+    ctx: Db,
+    teamId: string
+): Promise<Doc<"teamDirectory"> | null> {
+    let row = await teamById(ctx, teamId)
+    for (let hop = 0; row?.mergedIntoTeamId && hop < MERGE_HOPS; hop++)
+        row = await ctx.db.get(row.mergedIntoTeamId)
+    return row?.mergedIntoTeamId ? null : row
+}
+
+async function lookupOf(
+    ctx: Db,
+    row: Doc<"teamDirectory">
+): Promise<DirectoryTeamLookup> {
+    return {
+        id: String(row._id),
+        gameId: row.gameId,
+        name: row.name,
+        shortCode: row.shortCode,
+        logoAssetId: row.logoAssetId ? String(row.logoAssetId) : null,
+        logoUrl: await assetPublicUrl(ctx, row.logoAssetId),
+        revision: row.revision,
+        archivedAt: row.archivedAt,
+    }
+}
+
+/** Catalogue facts for match-team resolution, keyed by the requested IDs. */
 export async function directoryLookup(
     ctx: Db,
     teamIds: readonly string[]
 ): Promise<Map<string, DirectoryTeamLookup>> {
     const result = new Map<string, DirectoryTeamLookup>()
     for (const teamId of new Set(teamIds)) {
-        const id = ctx.db.normalizeId("teamDirectory", teamId)
-        const row = id ? await ctx.db.get(id) : null
-        if (!row) continue
-        // Foreign teams are returned so the domain can answer team_not_found.
-        result.set(teamId, {
-            id: teamId,
-            guildId: row.guildId,
-            gameId: row.gameId,
-            name: row.name,
-            shortCode: row.shortCode,
-            logoAssetId: row.logoAssetId ? String(row.logoAssetId) : null,
-            logoUrl: await assetPublicUrl(ctx, row.logoAssetId),
-            revision: row.revision,
-            archivedAt: row.archivedAt,
-        })
+        const row = await teamById(ctx, teamId)
+        if (row)
+            result.set(teamId, { ...(await lookupOf(ctx, row)), id: teamId })
     }
     return result
 }
 
-/** Appends one directory audit entry in the caller's transaction. */
+/** Appends one catalogue audit entry in the caller's transaction. */
 export async function recordTeamAudit(
     ctx: MutationCtx,
-    team: Pick<TeamEntity, "id" | "guildId" | "gameId" | "revision">,
+    team: Pick<TeamEntity, "id" | "gameId" | "revision">,
     operation: TeamAuditOperation,
     actor: string,
     details: TeamAuditDetails = {}
@@ -91,7 +120,7 @@ export async function recordTeamAudit(
     const teamId = ctx.db.normalizeId("teamDirectory", team.id)
     if (!teamId) throw new Error("Team not found.")
     await ctx.db.insert("teamDirectoryAudit", {
-        guildId: team.guildId,
+        guildId: PLATFORM_SCOPE,
         gameId: team.gameId,
         teamId,
         operation,
@@ -102,6 +131,30 @@ export async function recordTeamAudit(
     })
 }
 
+/**
+ * Workspaces whose API keys currently hold the `teams` grant for this game.
+ * The catalogue is global, so its changes are appended to each subscribed
+ * workspace's feed; new keys bootstrap from the collection.
+ */
+export async function teamFeedSubscribers(
+    ctx: Db,
+    gameId: TeamGame
+): Promise<string[]> {
+    const keys = await ctx.db.query("apiKeys").take(2000)
+    return [
+        ...new Set(
+            keys
+                .filter(
+                    (key) =>
+                        !key.revokedAt &&
+                        isApiKeyReadAccess(key.readAccess) &&
+                        allowsApiKeyRead(key.readAccess, "teams", gameId)
+                )
+                .map((key) => key.guildId)
+        ),
+    ].sort()
+}
+
 function assetId(ctx: Db, id: string | null): Id<"imageAssets"> | null {
     if (id === null) return null
     const normalized = ctx.db.normalizeId("imageAssets", id)
@@ -110,15 +163,23 @@ function assetId(ctx: Db, id: string | null): Id<"imageAssets"> | null {
 }
 
 export class ConvexTeamDirectoryRepository implements TeamDirectoryRepository {
+    /**
+     * Per-transaction memos: a migration batch or seed that creates many teams
+     * reads the catalogue size and the feed subscribers once, not per team.
+     */
+    private readonly counts = new Map<TeamGame, number>()
+    private readonly subscribers = new Map<TeamGame, Promise<string[]>>()
     constructor(private readonly ctx: MutationCtx) {}
 
-    async findCreate(guildId: string, idempotencyKey: string) {
+    async findCreate(idempotencyKey: string) {
         const row = await this.ctx.db
             .query("teamDirectoryAudit")
             .withIndex("guildId_idempotencyKey", (q) =>
-                q.eq("guildId", guildId).eq("idempotencyKey", idempotencyKey)
+                q
+                    .eq("guildId", PLATFORM_SCOPE)
+                    .eq("idempotencyKey", idempotencyKey)
             )
-            .unique()
+            .first()
         return row
             ? {
                   teamId: String(row.teamId),
@@ -128,60 +189,84 @@ export class ConvexTeamDirectoryRepository implements TeamDirectoryRepository {
             : null
     }
 
-    async findByNormalizedName(
-        guildId: string,
-        gameId: TeamGame,
-        normalizedName: string
-    ) {
-        const row = await this.ctx.db
-            .query("teamDirectory")
-            .withIndex("guildId_gameId_normalizedName", (q) =>
-                q
-                    .eq("guildId", guildId)
-                    .eq("gameId", gameId)
-                    .eq("normalizedName", normalizedName)
-            )
-            .unique()
+    /** The entry that owns a name: never a merged record; an active one before an archived one. */
+    async findByNormalizedName(gameId: TeamGame, normalizedName: string) {
+        const rows = (
+            await this.ctx.db
+                .query("teamDirectory")
+                .withIndex("gameId_normalizedName", (q) =>
+                    q.eq("gameId", gameId).eq("normalizedName", normalizedName)
+                )
+                .take(10)
+        ).filter((row) => !row.mergedIntoTeamId)
+        const row = rows.find((entry) => !entry.archivedAt) ?? rows[0]
         return row ? teamEntity(row) : null
     }
 
-    async count(guildId: string, gameId: TeamGame) {
-        return (
+    async count(gameId: TeamGame) {
+        const known = this.counts.get(gameId)
+        if (known !== undefined) return known
+        const counted = (
             await this.ctx.db
                 .query("teamDirectory")
-                .withIndex("guildId_gameId_normalizedName", (q) =>
-                    q.eq("guildId", guildId).eq("gameId", gameId)
+                .withIndex("gameId_normalizedName", (q) =>
+                    q.eq("gameId", gameId)
                 )
                 .take(TEAM_DIRECTORY_LIMIT + 1)
         ).length
+        this.counts.set(gameId, counted)
+        return counted
     }
 
-    async get(guildId: string, teamId: string) {
-        const row = await teamById(this.ctx, guildId, teamId)
+    async get(teamId: string) {
+        const row = await teamById(this.ctx, teamId)
         return row ? teamEntity(row) : null
     }
 
     async insert(team: Omit<TeamEntity, "id">, actor: string) {
         const id = await this.ctx.db.insert("teamDirectory", {
-            ...team,
+            gameId: team.gameId,
+            name: team.name,
+            shortCode: team.shortCode,
             logoAssetId: assetId(this.ctx, team.logoAssetId),
+            description: team.description,
+            links: team.links,
+            linkedGuildId: team.linkedGuildId,
+            mergedIntoTeamId: null,
+            normalizedName: team.normalizedName,
             searchText: teamSearchText(team.name, team.shortCode),
+            archivedAt: team.archivedAt,
+            revision: team.revision,
+            createdAt: team.createdAt,
+            updatedAt: team.updatedAt,
             createdBy: actor,
             updatedBy: actor,
         })
+        const known = this.counts.get(team.gameId)
+        if (known !== undefined) this.counts.set(team.gameId, known + 1)
         return teamEntity((await this.ctx.db.get(id))!)
     }
 
     async update(team: TeamEntity, write: TeamWrite, actor: string) {
         const id = this.ctx.db.normalizeId("teamDirectory", team.id)
         if (!id) throw new Error("Team not found.")
-        const { logoAssetId, ...fields } = write
+        const { logoAssetId, mergedIntoTeamId, ...fields } = write
         const relabelled =
             write.name !== undefined || write.shortCode !== undefined
         await this.ctx.db.patch(id, {
             ...fields,
             ...(logoAssetId !== undefined
                 ? { logoAssetId: assetId(this.ctx, logoAssetId) }
+                : {}),
+            ...(mergedIntoTeamId !== undefined
+                ? {
+                      mergedIntoTeamId: mergedIntoTeamId
+                          ? this.ctx.db.normalizeId(
+                                "teamDirectory",
+                                mergedIntoTeamId
+                            )
+                          : null,
+                  }
                 : {}),
             ...(relabelled
                 ? {
@@ -208,22 +293,284 @@ export class ConvexTeamDirectoryRepository implements TeamDirectoryRepository {
     }
 
     async emit(team: TeamEntity, operation: "upsert" | "remove") {
-        await appendIntegrationChange(this.ctx, {
-            guildId: team.guildId,
-            gameId: team.gameId,
-            resource: "teams",
-            id: team.id,
-            operation,
+        let subscribers = this.subscribers.get(team.gameId)
+        if (!subscribers) {
+            subscribers = teamFeedSubscribers(this.ctx, team.gameId)
+            this.subscribers.set(team.gameId, subscribers)
+        }
+        for (const guildId of await subscribers)
+            await appendIntegrationChange(this.ctx, {
+                guildId,
+                gameId: team.gameId,
+                resource: "teams",
+                id: team.id,
+                operation,
+            })
+    }
+
+    async competedTogether(teamId: string, otherTeamId: string) {
+        const team = this.ctx.db.normalizeId("teamDirectory", teamId)
+        const other = this.ctx.db.normalizeId("teamDirectory", otherTeamId)
+        if (!team || !other) return false
+        const registrations = await this.ctx.db
+            .query("competitionTeams")
+            .withIndex("teamId", (q) => q.eq("teamId", team))
+            .collect()
+        for (const registration of registrations)
+            if (
+                await this.ctx.db
+                    .query("competitionTeams")
+                    .withIndex("competitionId_teamId", (q) =>
+                        q
+                            .eq("competitionId", registration.competitionId)
+                            .eq("teamId", other)
+                    )
+                    .first()
+            )
+                return true
+        for (const [side, opposite] of [
+            ["sideATeamId", "sideBTeamId"],
+            ["sideBTeamId", "sideATeamId"],
+        ] as const) {
+            const fixtures = await this.ctx.db
+                .query("competitionFixtures")
+                .withIndex(side, (q) => q.eq(side, team))
+                .collect()
+            if (fixtures.some((fixture) => fixture[opposite] === other))
+                return true
+        }
+        return false
+    }
+
+    async repoint(sourceTeamId: string, targetTeamId: string) {
+        const source = this.ctx.db.normalizeId("teamDirectory", sourceTeamId)
+        const target = this.ctx.db.normalizeId("teamDirectory", targetTeamId)
+        if (!source || !target) throw new Error("Team not found.")
+        const now = new Date().toISOString()
+        const touched = new Set<Id<"competitions">>()
+        const registrations = await this.ctx.db
+            .query("competitionTeams")
+            .withIndex("teamId", (q) => q.eq("teamId", source))
+            .collect()
+        for (const registration of registrations) {
+            const duplicate = await this.ctx.db
+                .query("competitionTeams")
+                .withIndex("competitionId_teamId", (q) =>
+                    q
+                        .eq("competitionId", registration.competitionId)
+                        .eq("teamId", target)
+                )
+                .first()
+            touched.add(registration.competitionId)
+            if (duplicate) await this.ctx.db.delete(registration._id)
+            else
+                await this.ctx.db.patch(registration._id, {
+                    teamId: target,
+                    updatedAt: now,
+                })
+        }
+        for (const side of ["sideATeamId", "sideBTeamId"] as const) {
+            const fixtures = await this.ctx.db
+                .query("competitionFixtures")
+                .withIndex(side, (q) => q.eq(side, source))
+                .collect()
+            for (const fixture of fixtures) {
+                touched.add(fixture.competitionId)
+                await this.ctx.db.patch(fixture._id, {
+                    [side]: target,
+                    updatedAt: now,
+                })
+            }
+        }
+        // Public pages and admin views see that the competition changed.
+        for (const competitionId of touched)
+            await this.ctx.db.patch(competitionId, { updatedAt: now })
+        const pending = await this.ctx.db
+            .query("teamRequests")
+            .withIndex("teamId_status", (q) =>
+                q.eq("teamId", source).eq("status", "pending")
+            )
+            .collect()
+        for (const request of pending)
+            await this.ctx.db.patch(request._id, {
+                teamId: target,
+                updatedAt: now,
+            })
+    }
+}
+
+/** Catalogue logos belong to the platform scope. */
+export class ConvexTeamLogoPort implements TeamLogoPort {
+    constructor(private readonly ctx: MutationCtx) {}
+
+    async attachable(id: string) {
+        const asset = await attachableAsset(this.ctx, {
+            assetId: id,
+            guildId: PLATFORM_SCOPE,
+            kind: "team-logo",
+        })
+        return asset ? String(asset._id) : null
+    }
+
+    async adoptable(id: string, fromGuildId: string) {
+        const row = await adoptablePlatformLogo(this.ctx, {
+            assetId: id,
+            fromGuildId,
+        })
+        return row ? String(row._id) : null
+    }
+
+    async adopt(id: string, fromGuildId: string) {
+        const adopted = await adoptPlatformLogo(this.ctx, {
+            assetId: id,
+            fromGuildId,
+        })
+        return adopted ? String(adopted) : null
+    }
+
+    async syncReferences(teamId: string, assetIds: readonly string[]) {
+        await syncAssetReferences(this.ctx, {
+            guildId: PLATFORM_SCOPE,
+            owner: "team",
+            ownerId: teamId,
+            assetIds: assetIds.map((id) => assetId(this.ctx, id)!),
         })
     }
 }
 
-export class ConvexTeamLogoPort implements TeamLogoPort {
+export function teamRequestEntity(row: Doc<"teamRequests">): TeamRequestEntity {
+    return {
+        id: String(row._id),
+        guildId: row.guildId,
+        requestedBy: row.requestedBy,
+        kind: row.kind,
+        gameId: row.gameId,
+        teamId: row.teamId ? String(row.teamId) : null,
+        proposal: {
+            ...row.proposal,
+            logoAssetId: row.proposal.logoAssetId
+                ? String(row.proposal.logoAssetId)
+                : null,
+        },
+        note: row.note,
+        status: row.status,
+        reason: row.reason,
+        resultTeamId: row.resultTeamId ? String(row.resultTeamId) : null,
+        decidedBy: row.decidedBy,
+        decidedAt: row.decidedAt,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+    }
+}
+
+export class ConvexTeamRequestRepository implements TeamRequestRepository {
     constructor(private readonly ctx: MutationCtx) {}
 
-    async attachable(guildId: string, assetId: string) {
+    async findSubmission(guildId: string, idempotencyKey: string) {
+        const row = await this.ctx.db
+            .query("teamRequests")
+            .withIndex("guildId_idempotencyKey", (q) =>
+                q.eq("guildId", guildId).eq("idempotencyKey", idempotencyKey)
+            )
+            .first()
+        return row
+            ? { requestId: String(row._id), fingerprint: row.fingerprint }
+            : null
+    }
+
+    async countPending(guildId: string) {
+        return (
+            await this.ctx.db
+                .query("teamRequests")
+                .withIndex("guildId_status", (q) =>
+                    q.eq("guildId", guildId).eq("status", "pending")
+                )
+                .take(100)
+        ).length
+    }
+
+    async get(requestId: string) {
+        const id = this.ctx.db.normalizeId("teamRequests", requestId)
+        const row = id ? await this.ctx.db.get(id) : null
+        return row ? teamRequestEntity(row) : null
+    }
+
+    async insert(
+        request: Parameters<TeamRequestRepository["insert"]>[0]
+    ): Promise<TeamRequestEntity> {
+        const id = await this.ctx.db.insert("teamRequests", {
+            guildId: request.guildId,
+            requestedBy: request.requestedBy,
+            kind: request.kind,
+            gameId: request.gameId,
+            teamId: request.teamId
+                ? this.ctx.db.normalizeId("teamDirectory", request.teamId)
+                : null,
+            proposal: {
+                ...request.proposal,
+                logoAssetId: assetId(this.ctx, request.proposal.logoAssetId),
+            },
+            note: request.note,
+            idempotencyKey: request.idempotencyKey,
+            fingerprint: request.fingerprint,
+            status: "pending",
+            reason: null,
+            resultTeamId: null,
+            decidedBy: null,
+            decidedAt: null,
+            notificationStatus: "none",
+            notificationAttempts: 0,
+            notificationNextAttemptAt: null,
+            notificationLeaseUntil: null,
+            notificationSentAt: null,
+            createdAt: request.createdAt,
+            updatedAt: request.createdAt,
+        })
+        return teamRequestEntity((await this.ctx.db.get(id))!)
+    }
+
+    async decide(
+        request: TeamRequestEntity,
+        outcome: {
+            status: Exclude<TeamRequestStatus, "pending">
+            reason: string | null
+            resultTeamId: string | null
+            decidedBy: string | null
+            decidedAt: string
+            notify: boolean
+        }
+    ) {
+        const id = this.ctx.db.normalizeId("teamRequests", request.id)
+        if (!id) throw new Error("Request not found.")
+        await this.ctx.db.patch(id, {
+            status: outcome.status,
+            reason: outcome.reason,
+            resultTeamId: outcome.resultTeamId
+                ? this.ctx.db.normalizeId("teamDirectory", outcome.resultTeamId)
+                : null,
+            decidedBy: outcome.decidedBy,
+            decidedAt: outcome.decidedAt,
+            updatedAt: outcome.decidedAt,
+            ...(outcome.notify
+                ? {
+                      notificationStatus: "pending" as const,
+                      notificationAttempts: 0,
+                      notificationNextAttemptAt: Date.now(),
+                      notificationLeaseUntil: null,
+                  }
+                : {}),
+        })
+        return teamRequestEntity((await this.ctx.db.get(id))!)
+    }
+}
+
+/** Request logos are uploaded in the requesting workspace's scope. */
+export class ConvexTeamRequestLogoPort implements TeamRequestLogoPort {
+    constructor(private readonly ctx: MutationCtx) {}
+
+    async attachable(guildId: string, id: string) {
         const asset = await attachableAsset(this.ctx, {
-            assetId,
+            assetId: id,
             guildId,
             kind: "team-logo",
         })
@@ -232,13 +579,13 @@ export class ConvexTeamLogoPort implements TeamLogoPort {
 
     async syncReferences(
         guildId: string,
-        teamId: string,
+        requestId: string,
         assetIds: readonly string[]
     ) {
         await syncAssetReferences(this.ctx, {
             guildId,
-            owner: "team",
-            ownerId: teamId,
+            owner: "teamRequest",
+            ownerId: requestId,
             assetIds: assetIds.map((id) => assetId(this.ctx, id)!),
         })
     }
@@ -269,7 +616,8 @@ export class ConvexMatchTeamSnapshotPorts implements MatchTeamSnapshotPorts {
     constructor(private readonly ctx: MutationCtx) {}
 
     async lookupTeam(teamId: string) {
-        return (await directoryLookup(this.ctx, [teamId])).get(teamId)
+        const row = await currentTeam(this.ctx, teamId)
+        return row ? await lookupOf(this.ctx, row) : undefined
     }
 
     async saveAssignments(
@@ -284,13 +632,8 @@ export class ConvexMatchTeamSnapshotPorts implements MatchTeamSnapshotPorts {
         await syncEventAssetReferences(this.ctx, { ...event, matchTeams })
     }
 
-    async auditRefresh(
-        guildId: string,
-        teamId: string,
-        actor: string,
-        eventId: string
-    ) {
-        const row = await teamById(this.ctx, guildId, teamId)
+    async auditRefresh(teamId: string, actor: string, eventId: string) {
+        const row = await teamById(this.ctx, teamId)
         if (row)
             await recordTeamAudit(
                 this.ctx,

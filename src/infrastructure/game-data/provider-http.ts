@@ -4,15 +4,26 @@ import {
     type DataSource,
     type ProviderHttp,
 } from "../../domain/game-data/contracts"
+import { credentialRequirement } from "../../domain/game-data/credentials"
 import { allowsWarconUrl } from "../../domain/game-data/warcon-query"
 import { lookup } from "node:dns/promises"
 import { BlockList, isIP } from "node:net"
 import { request } from "node:https"
+type Lookup = (
+    hostname: string
+) => Promise<ReadonlyArray<{ address: string; family: number }>>
 type Dependencies = {
-    resolveSecret: (ref: string) => string | undefined
+    /**
+     * Resolves the provider key immediately before a request. Absent for a
+     * keyless source; a resolver failure is a configuration error and no other
+     * key is ever tried.
+     */
+    credential?: () => Promise<string>
     now: () => number
     fetch?: typeof fetch
     timeoutMs?: number
+    /** DNS resolution, replaceable in tests; the result is pinned for the connection. */
+    lookup?: Lookup
 }
 const MAX_BYTES = 2 * 1024 * 1024
 const blocked = new BlockList()
@@ -52,12 +63,13 @@ export function isAllowedAddress(address: string, allowed: string[]) {
 async function pinnedFetch(
     source: DataSource,
     url: URL,
-    init: RequestInit
+    init: RequestInit,
+    resolve: Lookup
 ): Promise<Response> {
     const hostname = url.hostname.replace(/^\[|\]$/g, "")
     const addresses = isIP(hostname)
         ? [{ address: hostname, family: isIP(hostname) }]
-        : await lookup(hostname, { all: true })
+        : await resolve(hostname)
     if (
         !addresses.length ||
         addresses.some(
@@ -178,6 +190,7 @@ export function createProviderHttp(
         source.provider === "hll_crcon"
             ? [
                   "/api/get_public_info",
+                  "/api/get_connection_info",
                   "/api/get_live_game_stats",
                   "/api/get_scoreboard_maps",
                   "/api/get_map_scoreboard",
@@ -215,9 +228,17 @@ export function createProviderHttp(
                 accept: "application/json",
                 "user-agent": "Logi-GameData/1.0",
             })
-            if (source.secretRef) {
-                const secret = deps.resolveSecret(source.secretRef)
-                if (!secret) throw new ProviderError("configuration")
+            const requirement = credentialRequirement(source.provider)
+            if (
+                (requirement === "required" && !deps.credential) ||
+                (requirement === "forbidden" && deps.credential)
+            )
+                throw new ProviderError("configuration")
+            if (deps.credential) {
+                const secret = await deps.credential()
+                // Visible ASCII only: a key can never add or split a header.
+                if (!/^[\x21-\x7E]{1,4096}$/.test(secret))
+                    throw new ProviderError("configuration")
                 headers.set("authorization", `Bearer ${secret}`)
             }
             if (options?.etag) headers.set("if-none-match", options.etag)
@@ -242,7 +263,14 @@ export function createProviderHttp(
                         }
                         const response = deps.fetch
                             ? await deps.fetch(url, init)
-                            : await pinnedFetch(source, url, init)
+                            : await pinnedFetch(
+                                  source,
+                                  url,
+                                  init,
+                                  deps.lookup ??
+                                      ((hostname) =>
+                                          lookup(hostname, { all: true }))
+                              )
                         if (response.status === 401 || response.status === 403)
                             throw new ProviderError("unauthorized")
                         if (response.status === 429) {

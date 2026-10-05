@@ -546,7 +546,6 @@ export const mutateClanEvent = mutation({
                         )
                 }
                 const kept = await resolveEventMatchTeams(ctx, {
-                    guildId: key.guildId,
                     gameId:
                         (event as EventUpsertCommand).gameId ?? current?.gameId,
                     kind: (event as EventUpsertCommand).kind ?? current?.kind,

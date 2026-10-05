@@ -92,7 +92,11 @@ function Connections({ serverId, dictionary }: Props) {
                     {t.error}
                 </p>
             )}
-            <GameDataSources serverId={serverId} dictionary={dictionary} />
+            <GameDataSources
+                serverId={serverId}
+                dictionary={dictionary}
+                onChanged={() => void load()}
+            />
             {!loading && data && refs.length === 0 && (
                 <p className="rounded-lg border p-4 text-sm">{t.empty}</p>
             )}

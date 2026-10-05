@@ -7,7 +7,7 @@ import { Callout, Steps } from "nextra/components"
 
 # Matches
 
-A match is a competitive event with additional match details. Members can use the list to find upcoming or previous matches. Managers can create, edit, prepare, conclude, and—where eligible—link matches to competition fixtures.
+A match is a competitive event with additional match details. Members can use the list to find upcoming or previous matches. Managers can create, edit, prepare and conclude matches; Logi's global administrators link matches to competition fixtures.
 
 ## Create a match (manager)
 
@@ -40,21 +40,28 @@ After play, enter the result and conclude the event when your workflow is comple
 ## Teams
 
 Hell Let Loose and Wardogs matches have a **Teams** section next to the map and
-side details. It uses the workspace [team directory](/wiki/operations/teams).
-Hell Let Loose: Vietnam matches and trainings have no Teams section.
+side details. It uses the Logi [team catalogue](/wiki/operations/teams), which
+Logi's global administrators maintain for every workspace. Hell Let Loose:
+Vietnam matches and trainings have no Teams section.
 
 - **Hell Let Loose:** up to two teams (Team A and Team B), each with an
   optional side: **Allies** or **Axis**.
 - **Wardogs:** up to three teams (Team A, Team B and Team C), each with an
   optional faction: **Valkyra**, **Manticore** or **Lonestar**.
 
-Each slot has a searchable picker that lists the game's active teams with logo,
-name and short code. Open it with the keyboard or mouse, type to search, and
-choose with the arrow keys and Enter. **No team** empties the slot. **Add team**
-opens the team form; the new team is selected into that slot and the rest of
-the unsaved match form is kept. If the name belongs to a team that already
-exists, the form offers **Use existing team**, or **Restore and use** for an
-archived team, and selects it into the slot. **No side** leaves the side open.
+Each slot has a searchable picker that lists the game's active catalogue teams
+with logo, name and short code. Open it with the keyboard or mouse, type to
+search, and choose with the arrow keys and Enter. **No team** empties the slot.
+**No side** leaves the side open.
+
+When the team you need is missing, the last picker entry offers a request
+instead: **Request “Name”** with the name you typed, or **Request a new team**
+when nothing is typed or the typed name is already listed. It opens the
+[team request form](/wiki/operations/teams#request-a-new-team) prefilled with
+that name; the rest of the unsaved match form is kept. A requested team is not
+selected automatically: once a Logi administrator approves it (the requester
+gets a Discord direct message), it appears in the picker and can be selected
+like any other team. Until then, the match can be saved with the slot empty.
 
 A team can occupy only one slot, and a side can be given to only one team; the
 editor marks such conflicts before saving. A match can be saved with empty or
@@ -65,18 +72,22 @@ saving removes the assignments. Choosing teams does not change the match's own
 ### Saved team details
 
 Saving a newly selected team stores a snapshot of its name, short code and
-logo on the match. Later directory renames, logo changes and archiving do not
-change saved matches. Moving a team to another slot or changing its side keeps
+logo on the match. Later catalogue renames, logo changes, archiving and merging
+do not change saved matches. Moving a team to another slot or changing its side keeps
 its snapshot; replacing it with a different team captures that team's details.
 If a newly selected team is archived before you save, the save is rejected with
 a message so you can choose another team.
 
 A saved team that has since been archived stays on the match with an
 **Archived** badge until you replace it; archived teams cannot be newly
-selected. To pick up directory changes for a saved team, use **Refresh
+selected. To pick up catalogue changes for a saved team, use **Refresh
 snapshot** on a saved match. It works only while the team is active in the
-directory and the match is not concluded, and it updates the stored snapshot
+catalogue and the match is not concluded, and it updates the stored snapshot
 immediately without saving other changes in the form.
+
+When Logi administrators merge a duplicate into another team, a saved team that
+was merged shows a **Merged** badge. **Refresh snapshot** then switches that
+slot to the surviving team and captures its details, keeping the slot and side.
 
 Once a match is concluded, its teams and snapshots are frozen: the Teams
 section becomes read-only and saving other match fields leaves them unchanged.
@@ -86,23 +97,29 @@ Result corrections continue through the reviewed-result workflow below.
 
 ## Competition links
 
-Eligible matches can be connected to competition information. The match must satisfy the available matching context; select the correct event and opponent carefully. Linking a match does not replace the organiser’s official competition rules or results process.
+Competitions are run by Logi's global administrators, who link a match to a
+competition fixture from the competition's management page. The match must be
+for the competition's game and not already linked to another fixture. When
+teams are assigned to the match, both fixture teams must be among them, so
+assign the correct catalogue teams. Workspace managers cannot link matches
+themselves. Linking a match does not replace the organiser’s official
+competition rules or results process.
 
 <Callout type="info">
-    If a fixture is not offered for linking, check that the workspace, map
-    details, schedule, and competition data are correct. It may simply not be an
-    eligible match.
+    If your match should count for a competition, assign both teams and ask a
+    Logi global administrator to link it. Results imported for a linked match
+    update the fixture's score.
 </Callout>
 
 ## Teams on Discord match cards
 
-When teams from the workspace team directory are assigned to a match, its
+When teams from the team catalogue are assigned to a match, its
 Discord messages show a **Teams** line next to the side, listing each team as
 name, short code and side in slot order (for example
 `Alpha [ALP] (Allies) vs Bravo (Axis)`). The event information card also shows
 the logo of each assigned team that has one: up to two teams for Hell Let Loose
 and three for Wardogs. Teams without a logo appear only as text. Labels and
-logos come from the snapshot saved when the team was assigned; later directory
+logos come from the snapshot saved when the team was assigned; later catalogue
 edits change them only if that snapshot is refreshed before the match concludes.
 Matches without assigned teams look exactly as before, and the cards keep their
 room, sign-up buttons, map and banner.

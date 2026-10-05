@@ -79,7 +79,6 @@ export function validateMatchTeamInputs(
 /** Directory facts the write boundary looks up for each referenced team. */
 export type DirectoryTeamLookup = {
     id: string
-    guildId: string
     gameId: TeamGame
     name: string
     shortCode: string | null
@@ -103,12 +102,12 @@ export function captureSnapshot(
     }
 }
 
+/** Any active catalogue team of the event's game can be selected. */
 function selectable(
     team: DirectoryTeamLookup | undefined,
-    guildId: string,
     gameId: TeamGame
 ): MatchTeamError | null {
-    if (!team || team.guildId !== guildId) return "team_not_found"
+    if (!team) return "team_not_found"
     if (team.gameId !== gameId) return "team_game_mismatch"
     if (team.archivedAt) return "team_archived"
     return null
@@ -121,11 +120,10 @@ export type MatchTeamResolution =
 /**
  * Builds the stored assignments for a save. A team already assigned keeps its
  * snapshot (even if since archived) when only its slot or side changes, as long
- * as its directory entry still belongs to the event's game; a newly selected
- * team must be an active directory entry of the same workspace and game.
+ * as its catalogue entry still belongs to the event's game; a newly selected
+ * team must be an active catalogue entry of the same game.
  */
 export function resolveMatchTeams(input: {
-    guildId: string
     gameId: TeamGame
     inputs: readonly MatchTeamInput[]
     previous: readonly MatchTeamAssignment[] | undefined
@@ -151,7 +149,7 @@ export function resolveMatchTeams(input: {
             assignments.push({ ...entry, snapshot: existing.snapshot })
             continue
         }
-        const denied = selectable(team, input.guildId, input.gameId)
+        const denied = selectable(team, input.gameId)
         if (denied || !team)
             return { ok: false, error: denied ?? "team_not_found" }
         assignments.push({
@@ -175,26 +173,35 @@ export function validatePreservedMatchTeams(input: {
     return validateMatchTeamInputs(input.gameId, input.assignments)
 }
 
-/** An explicit refresh re-captures presentation from an active directory entry only. */
+/**
+ * An explicit refresh re-captures presentation from an active catalogue entry
+ * only. `team` is the entry after following merge pointers, so a merged team
+ * refreshes to its replacement and the assignment adopts the replacement's ID.
+ */
 export function refreshMatchTeamSnapshot(input: {
-    guildId: string
     gameId: TeamGame
     assignment: MatchTeamAssignment
+    others: readonly MatchTeamAssignment[]
     team: DirectoryTeamLookup | undefined
     now: string
 }):
     | { ok: true; assignment: MatchTeamAssignment }
     | { ok: false; error: MatchTeamError } {
-    const denied = selectable(input.team, input.guildId, input.gameId)
+    const denied = selectable(input.team, input.gameId)
     if (denied || !input.team)
         return { ok: false, error: denied ?? "team_not_found" }
-    return {
-        ok: true,
-        assignment: {
-            ...input.assignment,
-            snapshot: captureSnapshot(input.team, input.now),
-        },
+    const refreshed: MatchTeamAssignment = {
+        ...input.assignment,
+        teamId: input.team.id,
+        snapshot: captureSnapshot(input.team, input.now),
     }
+    // A replacement already assigned in another slot would duplicate the team.
+    if (
+        validateMatchTeamInputs(input.gameId, [...input.others, refreshed]) !==
+        null
+    )
+        return { ok: false, error: "invalid_match_teams" }
+    return { ok: true, assignment: refreshed }
 }
 
 /** Team assignments stay editable only for unconcluded matches. */

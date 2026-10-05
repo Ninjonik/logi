@@ -1,0 +1,25 @@
+{
+    "data": [
+        {
+            "revision": "43",
+            "guildId": "910000000000000001",
+            "gameId": "hell_let_loose",
+            "resource": "teams",
+            "id": "kh7synthetic0hll0team00000000f6",
+            "operation": "remove"
+        },
+        {
+            "revision": "44",
+            "guildId": "910000000000000001",
+            "gameId": "hell_let_loose",
+            "resource": "teams",
+            "id": "kh7synthetic0hll0team00000000a1",
+            "operation": "upsert"
+        }
+    ],
+    "page": {
+        "nextCursor": "opaque-next-cursor",
+        "hasMore": false,
+        "limit": 25
+    }
+}

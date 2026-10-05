@@ -15,6 +15,7 @@ const removeGroupReference = makeFunctionReference<"mutation">("groups:remove")
 
 export async function getServerGroups(serverId: string, gameScope?: GameScope) {
     return (await fetchQuery(listGroupsReference, {
+        secret: getInternalAuthSecret(),
         guildId: serverId as never,
         gameScope,
     })) as Group[]
@@ -26,6 +27,7 @@ export async function getServerGroup(groupId: string) {
         [appCacheTags.group(groupId)],
         async () =>
             (await fetchQuery(getGroupByIdReference, {
+                secret: getInternalAuthSecret(),
                 groupId: groupId as never,
             })) as Group | null
     )

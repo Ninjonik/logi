@@ -32,16 +32,19 @@ import { UpsertNoticeUseCase } from "../src/application/events/upsert-notice.use
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case"
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
+import { fixtureScoreFromEvent } from "../src/domain/competitions/competition"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
 import { currentEventStatus } from "../src/domain/events/status"
 import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
+import { assertInternalSecret } from "./discord_shared"
 import type { MutationCtx } from "./_generated/server"
 import { resolveEventMatchTeams } from "./matchTeams"
 import { matchTeamInput } from "./teamValidators"
 import type { Id } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
+import { eventTeamSides } from "./competitions"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
 
@@ -183,9 +186,8 @@ export const upsert = mutation({
             getGuildDiscordId,
             getEventById: async (eventId) =>
                 await ctx.db.get(eventId as Id<"events">),
-            resolveMatchTeams: async ({ guildId, existing }) => {
+            resolveMatchTeams: async ({ existing }) => {
                 const resolved = await resolveEventMatchTeams(ctx, {
-                    guildId,
                     gameId: args.gameId ?? existing?.gameId,
                     kind: args.kind ?? existing?.kind,
                     status: existing ? currentEventStatus(existing) : undefined,
@@ -219,9 +221,11 @@ export const upsert = mutation({
 
 export const getById = query({
     args: {
+        secret: v.string(),
         eventId: v.id("events"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const event = await ctx.db.get(args.eventId)
         return event
             ? { ...normalizeEventRecord(event), id: String(event._id) }
@@ -496,14 +500,28 @@ export const setResult = mutation({
                 await ctx.db.patch(eventId as Id<"events">, patch),
         })
         const event = await ctx.db.get(args.eventId)
-        if (event?.competitionFixtureId) {
-            await ctx.db.patch(event.competitionFixtureId, {
-                scoreA: args.eventResult.score.sideA,
-                scoreB: args.eventResult.score.sideB,
+        const fixture = event?.competitionFixtureId
+            ? await ctx.db.get(event.competitionFixtureId)
+            : null
+        // The imported score is Axis/Allies; each fixture team gets the score
+        // of the side it played. Unknown sides leave the fixture for an admin.
+        const score =
+            event && fixture?.sideATeamId && fixture.sideBTeamId
+                ? fixtureScoreFromEvent({
+                      fixture: {
+                          sideATeamId: String(fixture.sideATeamId),
+                          sideBTeamId: String(fixture.sideBTeamId),
+                      },
+                      eventTeams: await eventTeamSides(ctx, event),
+                      score: args.eventResult.score,
+                  })
+                : null
+        if (fixture && score)
+            await ctx.db.patch(fixture._id, {
+                ...score,
                 status: "final",
                 updatedAt: new Date().toISOString(),
             })
-        }
         await recordImportedResult(ctx, args.eventId, args.eventResult)
         return result
     },

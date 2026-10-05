@@ -7,11 +7,13 @@ import {
     normalizeUserDoc,
 } from "../src/infrastructure/convex/server-read-model"
 
-export const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
-
+/**
+ * Fails closed: without a configured secret nothing is accepted, rather than
+ * the development default that is public in this repository.
+ */
 export function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    const expected = process.env.INTERNAL_AUTH_SECRET
+    if (!expected || secret !== expected) {
         throw new Error("Unauthorized.")
     }
 }

@@ -1,30 +1,12 @@
 import { internalMutation, mutation, query } from "./_generated/server"
+import { assertInternalSecret } from "./discord_shared"
 import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
 /** The deliberately small, public-only source for link-preview metadata. */
 export const get = query({
     args: {
-        entityType: v.union(
-            v.literal("player"),
-            v.literal("clan"),
-            v.literal("match")
-        ),
-        entityId: v.string(),
-    },
-    handler: async (ctx, args) =>
-        await ctx.db
-            .query("publicPreviews")
-            .withIndex("entity", (q) =>
-                q
-                    .eq("entityType", args.entityType)
-                    .eq("entityId", args.entityId)
-            )
-            .unique(),
-})
-
-export const ensure = mutation({
-    args: {
+        secret: v.string(),
         entityType: v.union(
             v.literal("player"),
             v.literal("clan"),
@@ -33,6 +15,30 @@ export const ensure = mutation({
         entityId: v.string(),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        return await ctx.db
+            .query("publicPreviews")
+            .withIndex("entity", (q) =>
+                q
+                    .eq("entityType", args.entityType)
+                    .eq("entityId", args.entityId)
+            )
+            .unique()
+    },
+})
+
+export const ensure = mutation({
+    args: {
+        secret: v.string(),
+        entityType: v.union(
+            v.literal("player"),
+            v.literal("clan"),
+            v.literal("match")
+        ),
+        entityId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const now = new Date().toISOString()
         const expiresAt = new Date(
             Date.now() + 30 * 24 * 60 * 60 * 1000

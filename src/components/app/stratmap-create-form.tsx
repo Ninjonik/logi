@@ -28,14 +28,15 @@ const createStratmapReference =
 export function StratmapCreateForm({
     locale,
     serverId,
-    userId,
+    grant,
     dictionary,
     defaultTitle = "",
     gameId,
 }: {
     locale: string
     serverId: string
-    userId: string
+    /** Server-signed grant to create stratmaps in this workspace. */
+    grant: string
     dictionary: Dictionary
     defaultTitle?: string
     gameId: GameId
@@ -85,7 +86,7 @@ export function StratmapCreateForm({
         startTransition(async () => {
             try {
                 const stratmapId = await createStratmap({
-                    userId,
+                    grant,
                     serverId: serverId as never,
                     gameId,
                     title: title.trim(),

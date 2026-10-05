@@ -3,26 +3,31 @@
 Source audit: `20b52805b190e0152c6a91911eee88c014d6fc07`, 2026-10-04.
 This is a settings inventory, not a claim that every feature is activated in
 production or has been exercised through the browser in this acceptance run.
+The team catalogue, team request and competition rows follow the
+[global teams and competitions design](../../superpowers/specs/2026-10-04-global-teams-and-competitions-design.md).
 
 ## Available in Logi UI
 
-| Feature                                                   | Location and controls                                                                                                                                                                    | Qualification                                                                                                                                                                                                                                                                                                    |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| HLL / Wardogs public server, scoreboard and result panels | Discord settings → Public panels: feature, source, channel, enabled, refresh 30/60/300s, public leaders, private player details, map artwork, Appearance (layout, accent, banner, emoji) | Channel picker groups categories, supports search and pasted IDs. Publication status and owned-message link are shown. Results require reviewed results; they are not live scores. Appearance is per panel; panels never given one keep their look. Banners must be this workspace's uploads.                    |
-| Report Player                                             | Public panel → ticket category, or Disabled; Tickets → parent room and support roles                                                                                                     | The chosen category supplies the private destination. Available for CRCON/Warcon server/scoreboard panels, not result announcements.                                                                                                                                                                             |
-| Wardogs League discovery and cards                        | Wardogs → System → Imports → League tracking: enabled, watched team codes, human-link room, output room, manual URL preview/addition and per-match management                            | Empty output collects without publishing. Scan cadence (10/15/30/60 minutes) and detail refresh (5/10/15/30 minutes) are chosen per workspace; the shared index scan follows the fastest enabled workspace.                                                                                                      |
-| Provider source registration and credential rotation      | System → Game server data → Provider sources: reference, provider, provider server ID, HTTPS origin, token variable name, optional network allowlist; update reference/allowlist; remove | Registrations merge with the operator catalog (`LOGI_GAME_DATA_SOURCES`), which keeps precedence per reference. Token values stay in Convex environment variables and are never entered or displayed. Rotation refreshes the connection fingerprint; removal disables the connection and keeps retained history. |
-| Existing CRCON / Warcon connections                       | System → Game server data: enable, disable, refresh view, health, source snapshot and history state                                                                                      | Only operator-preconfigured sources are available. Refresh reloads the dashboard state; it is not a general forced provider refresh.                                                                                                                                                                             |
-| Retained Wardogs game history                             | System → Game server data: filters, minimum observed player minutes, rankings, faction totals and game details                                                                           | Collection follows the enabled source. **History retention** keeps games indefinitely by default or for 90/180/365/730 days; expired games are deleted nightly and the history revision advances. There is no separate history-only switch or per-game deletion UI.                                              |
-| Website read access                                       | System → Website API: create/revoke restricted keys, select resources and games                                                                                                          | Includes explicit HLL live, Warcon, retained history, League, member, roster and statistics grants. Secret keys belong in the website backend.                                                                                                                                                                   |
-| Membership/role observations for the website              | System → membership integrations: enable policy per eligible key and enter allowed Discord role IDs per game                                                                             | IDs are entered as text; this is not a visual role picker. Read permission does not itself grant website administration.                                                                                                                                                                                         |
-| Managed Discord membership roles                          | Membership settings: categories, recruitment/final/support roles and game-specific settings; operation status/audit                                                                      | Existing assignment/application workflows drive the queue. Audit refresh is manual; no permission-bypassing force/retry control exists.                                                                                                                                                                          |
-| SSO application registration                              | System → SSO: application name, website URL, callback URI, create/remove client                                                                                                          | Server-wide provider activation, signing keys and issuer remain deployment configuration.                                                                                                                                                                                                                        |
-| `/stats` command controls                                 | Clan settings → Discord → Player statistics command: command on/off, Hell Let Loose and Wardogs switches, default sharing channel                                                        | A switched-off command or game answers privately that statistics are unavailable. The default channel is used when the command has no channel option; Share still checks the member's and bot's permissions there. Discord's own command permissions remain separate.                                            |
-| Website event-write policy                                | System → Website event commands: registered SSO application, live restricted command key, enabled flag, allowed Discord role IDs per supported game                                      | Saving an enabled policy grants event-command write access for games with roles; disabling removes it. Bearer keys cannot configure policies. Role IDs are entered as text.                                                                                                                                      |
-| Workspace team directory and match teams                  | Configuration → Teams: per-game list, search, Show archived, Add/Edit (name, short code, logo upload/remove), Archive/Restore; match editor → Teams: slot pickers, sides, Add team       | HLL and Wardogs only; Add requires the game to be enabled. Names are unique per game, archived teams included. Saved matches keep team snapshots until **Refresh snapshot**; concluded matches are read-only. Websites read active teams only with the `teams` grant; League team linking is not provided.       |
-| Account links                                             | Account settings / existing platform management; verified Steam flow, with late self-declared lookup offered by `/stats`                                                                 | A self-declared statistics lookup is not proof of Steam ownership or role authority.                                                                                                                                                                                                                             |
-| Rosters, attendance and reviewed results                  | Existing event/roster/result screens manage authoritative records                                                                                                                        | Website read exposure is controlled through API grants; web writes for rosters/attendance remain outside the agreed scope.                                                                                                                                                                                       |
+| Feature                                                   | Location and controls                                                                                                                                                                                                       | Qualification                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| HLL / Wardogs public server, scoreboard and result panels | Discord settings → Public panels: feature, source, channel, enabled, refresh 30/60/300s, public leaders, private player details, map artwork, Appearance (layout, accent, banner, emoji)                                    | Channel picker groups categories, supports search and pasted IDs. Publication status and owned-message link are shown. Results require reviewed results; they are not live scores. Appearance is per panel; panels never given one keep their look. Banners must be this workspace's uploads.                                                                                                    |
+| Report Player                                             | Public panel → ticket category, or Disabled; Tickets → parent room and support roles                                                                                                                                        | The chosen category supplies the private destination. Available for CRCON/Warcon server/scoreboard panels, not result announcements.                                                                                                                                                                                                                                                             |
+| Wardogs League discovery and cards                        | Settings → Wardogs League: enabled, watched team codes, human-link room, output room, manual URL preview/addition and per-match management                                                                                  | Empty output collects without publishing. Scan cadence (10/15/30/60 minutes) and detail refresh (5/10/15/30 minutes) are chosen per workspace; the shared index scan follows the fastest enabled workspace.                                                                                                                                                                                      |
+| Game servers and API keys                                 | Settings → Game servers: name, game, provider, HTTPS address, provider server ID, API key; test connection; save (enabled only after a passing test); change, test or remove the key; rename; start/stop collection; remove | Keys are tested in the Next server and stored AES-256-GCM encrypted in `gameDataCredentials` with the operator keyring (`LOGI_CREDENTIAL_KEYRING`). They are never shown again and are not available through `/api/v1`. Operator catalog entries (`LOGI_GAME_DATA_SOURCES`) appear alongside; their key can be replaced, not removed. See [game-server credentials](game-server-credentials.md). |
+| Existing CRCON / Warcon connections                       | Settings → Game servers: enable, disable, refresh view, health, source snapshot and history state                                                                                                                           | Only operator-preconfigured sources are available. Refresh reloads the dashboard state; it is not a general forced provider refresh.                                                                                                                                                                                                                                                             |
+| Retained Wardogs game history                             | Settings → Game servers: filters, minimum observed player minutes, rankings, faction totals and game details                                                                                                                | Collection follows the enabled source. **History retention** keeps games indefinitely by default or for 90/180/365/730 days; expired games are deleted nightly and the history revision advances. There is no separate history-only switch or per-game deletion UI.                                                                                                                              |
+| Website read access                                       | Settings → Clan website and API → Website API: create/revoke restricted keys, select resources and games                                                                                                                    | Includes explicit HLL live, Warcon, retained history, League, member, roster and statistics grants. Secret keys belong in the website backend.                                                                                                                                                                                                                                                   |
+| Membership/role observations for the website              | Settings → Clan website and API → Discord membership integrations: enable policy per eligible key and enter allowed Discord role IDs per game                                                                               | IDs are entered as text; this is not a visual role picker. Read permission does not itself grant website administration.                                                                                                                                                                                                                                                                         |
+| Managed Discord membership roles                          | Membership settings: categories, recruitment/final/support roles and game-specific settings; operation status/audit                                                                                                         | Existing assignment/application workflows drive the queue. Audit refresh is manual; no permission-bypassing force/retry control exists.                                                                                                                                                                                                                                                          |
+| SSO application registration                              | Settings → Sign-in → Single sign-on applications: application name, website URL, callback URI, create/remove client                                                                                                         | Server-wide provider activation, signing keys and issuer remain deployment configuration.                                                                                                                                                                                                                                                                                                        |
+| `/stats` command controls                                 | Clan settings → Discord → Player statistics command: command on/off, Hell Let Loose and Wardogs switches, default sharing channel                                                                                           | A switched-off command or game answers privately that statistics are unavailable. The default channel is used when the command has no channel option; Share still checks the member's and bot's permissions there. Discord's own command permissions remain separate.                                                                                                                            |
+| Website event-write policy                                | Settings → Clan website and API → Website event commands: registered SSO application, live restricted command key, enabled flag, allowed Discord role IDs per supported game                                                | Saving an enabled policy grants event-command write access for games with roles; disabling removes it. Bearer keys cannot configure policies. Role IDs are entered as text.                                                                                                                                                                                                                      |
+| Global team catalogue                                     | Superadmin → Team catalogue: per-game list, search, archived filter, add/edit (name, short code, logo, description, up to 3 links, linked workspace), archive/restore, merge                                                | Global administrators only; HLL and Wardogs. Names are unique per game, archived included. Writes are revision-checked and audited. Merge archives the duplicate and moves its competition entries, fixtures and pending requests; match snapshots stay. Logos are platform-owned.                                                                                                               |
+| Team requests moderation                                  | Superadmin → Team requests: one queue across workspaces; approve (proposed fields editable), merge a new-team request into an existing team, reject with a reason                                                           | Global administrators only. Each decision queues one Discord DM to the requester in the workspace language, retried with backoff; closed DMs are marked failed without blocking. No `/api/v1` operation (internal moderation, API-parity exception).                                                                                                                                             |
+| Workspace teams, requests and match teams                 | Configuration → Teams: read-only catalogue per game, search, new-team and change requests, own requests (status, cancel); match editor → Teams: catalogue pickers, sides, request                                           | Workspace administrators cannot edit catalogue teams. At most 20 pending requests; an approved team becomes selectable. Saved matches keep snapshots until **Refresh snapshot**; concluded matches are read-only. Websites read active teams only with the `teams` grant.                                                                                                                        |
+| Competitions management                                   | Superadmin → Competitions: competition (name, slug, season, description, published), divisions, team registration per division, fixtures (phase, schedule, score, status, match link)                                       | Global administrators; see the [Administrator reference](../../../content/administration.mdx). League + playoff format with ECL cap-score standings. Teams come from the game's global catalogue. Unpublished competitions are hidden from public pages and the API.                                                                                                                             |
+| Account links                                             | Account settings / existing platform management; verified Steam flow, with late self-declared lookup offered by `/stats`                                                                                                    | A self-declared statistics lookup is not proof of Steam ownership or role authority.                                                                                                                                                                                                                                                                                                             |
+| Rosters, attendance and reviewed results                  | Existing event/roster/result screens manage authoritative records                                                                                                                                                           | Website read exposure is controlled through API grants; web writes for rosters/attendance remain outside the agreed scope.                                                                                                                                                                                                                                                                       |
 
 Restart reconciliation and duplicate prevention are automatic behavior of managed
 panels; they do not need an administrator toggle. On-demand `/stats` sharing is a
@@ -30,47 +35,52 @@ separate snapshot with an explicit Discord channel selection.
 
 ### Image assets
 
-Workspace administrators upload team logos and panel banners through the
-dashboard-session route `POST /api/servers/{serverId}/image-assets?kind=team-logo|panel-banner`
+Workspace administrators upload team request logos and panel banners through the
+dashboard-session route
+`POST /api/servers/{serverId}/image-assets?kind=team-logo|panel-banner`
 (same-origin requests with admin access only) and list the workspace's live
-assets of one kind with `GET` on the same route. The route accepts PNG, JPEG
-and WebP sources up to 2 MiB and 4096×4096 pixels, checks the declared content
-type against the magic number and the decoder, rejects animated WebP and
-animated PNG (APNG) sources, reports a source over 4096 pixels on either side
-as `bad_dimensions` without decoding its pixels, and stores only a normalized
-copy: logos fit inside 512×512 and are published as PNG, banners fit inside
-1920×1080 and are published as WebP, with EXIF orientation applied and metadata
-dropped. Each attempt counts toward a limit of 10 uploads per 10 minutes per
-actor and workspace before any body bytes are read; a limited attempt answers
-`429` with `Retry-After` and `{ "error": "upload_limited", "retryAfterMs": … }`.
-Stored images are served from the immutable public URL
+assets of one kind with `GET` on the same route. Global administrators upload
+catalogue logos into the platform scope through the same pipeline, which
+requires a current superadmin session; an approved request's logo moves from the
+requesting workspace to the platform without changing its URL. The route accepts
+PNG, JPEG and WebP sources up to 2 MiB and 4096×4096 pixels, checks the declared
+content type against the magic number and the decoder, rejects animated WebP and
+animated PNG (APNG) sources, reports a source over 4096 pixels on either side as
+`bad_dimensions` without decoding its pixels, and stores only a normalized copy:
+logos fit inside 512×512 and are published as PNG, banners fit inside 1920×1080
+and are published as WebP, with EXIF orientation applied and metadata dropped.
+Each attempt counts toward a limit of 10 uploads per 10 minutes per actor and
+workspace before any body bytes are read; a limited attempt answers `429` with
+`Retry-After` and `{ "error": "upload_limited", "retryAfterMs": … }`. Stored
+images are served from the immutable public URL
 `/api/image-assets/{publicId}.{png|webp}` with the recorded content type,
 `X-Content-Type-Options: nosniff`, a one-year immutable cache header and
-`Content-Disposition: inline`; the extension must match the recorded type.
-The reservation only counts the attempt; it issues no upload URL. The gateway
-hands the normalized bytes to one Convex action (`imageAssets:storeNormalized`)
-that checks them again (the kind's output format by magic number, at most
-2 MiB), stores them, derives size and SHA-256 from the stored bytes and records
-the asset through an internal mutation that re-checks the current workspace
-administrator in its own transaction. When recording is rejected or fails (for
+`Content-Disposition: inline`; the extension must match the recorded type. The
+reservation only counts the attempt; it issues no upload URL. The gateway hands
+the normalized bytes to one Convex action (`imageAssets:storeNormalized`) that
+checks them again (the kind's output format by magic number, at most 2 MiB),
+stores them, derives size and SHA-256 from the stored bytes and records the
+asset through an internal mutation that re-checks the current workspace (or,
+for the platform scope, global) administrator in its own transaction. When recording is rejected or fails (for
 example an invalid public URL from a misconfigured `SITE_URL`, or access revoked
 since the reservation), the action deletes exactly the file it just stored, so
 no stored upload is left without a record. An hourly Convex job removes recorded
-uploads that are still not attached to a team, event or panel 24 hours after
-they were created; each run pages through every expired asset with a cursor, so
-referenced logos and banners never block the uploads behind them, and it stops
-when the scan is complete. The route backs the **Teams** form (team logos) and
-the panel **Appearance** editor (banners). No `/api/v1` operation exposes
-uploads: that is the permanent API-parity exception recorded in the
-[v0.15 handoff](v0.15/README.md#api-parity-exception-catalogue-writes-and-logo-uploads)
+uploads that are still not attached to a team, team request, event or panel 24
+hours after they were created; each run pages through every expired asset with a
+cursor, so referenced logos and banners never block the uploads behind them, and
+it stops when the scan is complete. The route backs the workspace **Teams**
+request form (request logos) and the panel **Appearance** editor (banners). No
+`/api/v1` operation exposes uploads: that is the permanent API-parity exception
+recorded in the
+[v0.15 handoff](v0.15/README.md#api-parity-exception-catalogue-writes-logo-uploads-and-team-requests)
 and in [Discord public panels](discord-public-panels.md#api-and-activation).
 
 ## Settings gaps and deployment prerequisites
 
-- **Provider tokens:** sources can now be registered and their credential reference
-  rotated in Logi, but the token values themselves still live in Convex environment
-  variables (`LOGI_GAME_DATA_<NAME>_TOKEN`) that the operator sets. Logi never
-  stores, displays or validates a token value.
+- **Provider keys:** workspaces enter and rotate their own API keys in Logi. The
+  operator must activate encryption once (`LOGI_CREDENTIAL_KEYRING` in Convex and
+  the Next server) and migrate existing `LOGI_GAME_DATA_<NAME>_TOKEN` variables;
+  see the [game-server credentials runbook](game-server-credentials.md#operator-runbook).
 - **Per-command controls:** `/stats` has an on/off switch, per-game switches and a
   default sharing room in Clan settings → Discord. There is still no
   command-specific role policy editor; Discord's own command access controls
@@ -80,10 +90,10 @@ and in [Discord public panels](discord-public-panels.md#api-and-activation).
 - **Reading human Discord links:** the input room is selectable in Logi, but the
   operator must enable `LOGI_LEAGUE_MESSAGE_CONTENT` and Discord Message Content
   Intent, then restart the bot. Scanning and manual registration work separately.
-- **Team catalogue links:** the per-game directory and the match team picker
-  are available (see above), but external League/HLL team identities cannot be
-  linked to directory teams and a slot holds one team (no coalitions). Watched
-  League team codes remain separate from the directory.
+- **Team catalogue links:** the global per-game catalogue and the match team
+  picker are available (see above), but external League/HLL team identities
+  cannot be linked to catalogue teams and a slot holds one team (no
+  coalitions). Watched League team codes remain separate from the catalogue.
 
 These gaps are recorded for the next implementation decision; they are not
 silently counted as completed settings. Operational credentials/intents still
@@ -95,8 +105,8 @@ Primary UI sources are `src/components/app/discord-public-panels-form.tsx`,
 `discord-channel-select.tsx`, `league-tracking-form.tsx`,
 `game-data-connections.tsx`, `game-history-panel.tsx`, `api-key-manager.tsx`,
 `membership-integration-settings.tsx`, `membership-settings-form.tsx` and
-`sso-applications.tsx`. The System page wires the relevant integration sections;
-Discord settings wires the public panels form. `/stats` is registered in
+`sso-applications.tsx`. The clan settings section page
+(`settings/[section]/page.tsx`) wires each of them, including the public panels form. `/stats` is registered in
 `discord-bot/src/interactions.ts`.
 
 The [latest local acceptance](evidence/2026-10-04-discord-workflows/README.md)

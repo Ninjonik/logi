@@ -166,9 +166,19 @@ const team = {
     shortCode: "SAD",
     logoUrl:
         "https://logi.example/api/image-assets/0123456789abcdef0123456789abcdef.png",
+    description: "Synthetic armoured community.",
+    links: ["https://example.org/synthetic-armoured-division"],
     revision: 3,
     updatedAt: "2026-10-03T10:00:00.000Z",
 }
+/** The DTO of a backend that predates description and links. */
+const previousDto = Object.fromEntries(
+    Object.entries(team).filter(
+        ([key]) => key !== "description" && key !== "links"
+    )
+)
+/** A team that a global administrator merged into `team`: Convex reads it as absent. */
+const MERGED_TEAM_ID = "kh7synthetic0team0000000000002"
 
 test("team HTTP routes map Convex grant, record and failure outcomes to generic envelopes", async (t) => {
     const previous = {
@@ -189,6 +199,7 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
         granted = true,
         failing = false,
         paged = false,
+        stale = false,
         grantedGames = ["hell_let_loose"]
     const calls: Array<{ path: string; args: Record<string, unknown> }> = []
     t.mock.method(
@@ -232,7 +243,14 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
             } else if (request.path === "teamReads:get") {
                 calls.push({ path: request.path, args })
                 value = granted
-                    ? { team: args.id === team.id ? team : null }
+                    ? {
+                          team:
+                              args.id === team.id
+                                  ? stale
+                                      ? previousDto
+                                      : team
+                                  : null,
+                      }
                     : null
             } else throw new Error(`Unexpected offline call ${request.path}`)
             return Response.json({ status: "success", value })
@@ -278,12 +296,23 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
     assert.deepEqual(await record.json(), { data: team })
     assert.equal(calls.at(-1)!.args.id, team.id)
 
-    const missing = await get(
-        "kh7otherworkspace00000000000001",
-        "game=hell_let_loose"
-    )
-    assert.equal(missing.status, 404)
-    assert.deepEqual(await missing.json(), { error: { code: "not_found" } })
+    // Unknown, archived, merged and other-game catalogue IDs are all absent.
+    for (const id of ["kh7unknownteam00000000000001", MERGED_TEAM_ID]) {
+        const missing = await get(id, "game=hell_let_loose")
+        assert.equal(missing.status, 404, id)
+        assert.deepEqual(await missing.json(), {
+            error: { code: "not_found" },
+        })
+    }
+
+    // The global catalogue DTO is closed: an incomplete backend answer is never relayed.
+    stale = true
+    const incomplete = await get(team.id, "game=hell_let_loose")
+    assert.equal(incomplete.status, 503)
+    assert.deepEqual(await incomplete.json(), {
+        error: { code: "unavailable" },
+    })
+    stale = false
 
     const reads = calls.length
     // The gateway refuses collection game selections the key cannot satisfy

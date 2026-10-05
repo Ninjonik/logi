@@ -193,7 +193,6 @@ async function refreshMatchTeam(
     const refreshed = await refreshAssignedMatchTeam(
         new ConvexMatchTeamSnapshotPorts(tracked),
         {
-            guildId: actor.guildId,
             event: { ...event, id: String(event._id) },
             teamId: command.teamId,
             actor: actor.subject,
@@ -354,7 +353,6 @@ export const execute = mutation({
                             const matchTeams = await resolveEventMatchTeams(
                                 tracked,
                                 {
-                                    guildId: actor.guildId,
                                     gameId,
                                     kind: fields.kind,
                                     status: current

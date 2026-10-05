@@ -53,7 +53,8 @@ export async function GET(
             ...input,
         })
         // null means Convex refused the key, workspace or game grant; an
-        // archived or foreign record reads as a generic not-found.
+        // archived, merged or other-game catalogue record reads as a generic
+        // not-found.
         if (!result) return teamErrorResponse("insufficient_scope", headers)
         if (!result.team) return teamErrorResponse("not_found", headers)
         return Response.json(

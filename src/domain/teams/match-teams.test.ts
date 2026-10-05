@@ -17,7 +17,6 @@ const lookup = (
     overrides: Partial<DirectoryTeamLookup> = {}
 ): DirectoryTeamLookup => ({
     id,
-    guildId: "guild",
     gameId: "hell_let_loose",
     name: `Team ${id}`,
     shortCode: id.toUpperCase(),
@@ -33,7 +32,6 @@ const teams = new Map(
         lookup("b"),
         lookup("c", { gameId: "wardogs" }),
         lookup("gone", { archivedAt: now }),
-        lookup("foreign", { guildId: "other" }),
     ].map((team) => [team.id, team])
 )
 
@@ -82,7 +80,6 @@ test("slot, side and duplicate rules follow the game", () => {
 
 test("new selections need an active same-game, same-workspace team and capture a snapshot", () => {
     const resolved = resolveMatchTeams({
-        guildId: "guild",
         gameId: "hell_let_loose",
         inputs: [
             { teamId: "b", slot: "b", side: "Axis" },
@@ -107,13 +104,11 @@ test("new selections need an active same-game, same-workspace team and capture a
     })
     for (const [teamId, error] of [
         ["missing", "team_not_found"],
-        ["foreign", "team_not_found"],
         ["gone", "team_archived"],
         ["c", "team_game_mismatch"],
     ] as const)
         assert.deepEqual(
             resolveMatchTeams({
-                guildId: "guild",
                 gameId: "hell_let_loose",
                 inputs: [{ teamId, slot: "a", side: null }],
                 previous: undefined,
@@ -141,7 +136,6 @@ test("an existing assignment keeps its snapshot through slot/side edits and arch
         },
     ]
     const resolved = resolveMatchTeams({
-        guildId: "guild",
         gameId: "hell_let_loose",
         inputs: [
             { teamId: "gone", slot: "b", side: "Axis" },
@@ -178,7 +172,6 @@ test("an existing assignment keeps its snapshot through slot/side edits and arch
     )
     assert.deepEqual(
         resolveMatchTeams({
-            guildId: "guild",
             gameId: "hell_let_loose",
             inputs: [],
             previous,
@@ -207,7 +200,6 @@ test("a kept assignment is rejected when the event moves to another game", () =>
     ]
     assert.deepEqual(
         resolveMatchTeams({
-            guildId: "guild",
             gameId: "wardogs",
             inputs: [{ teamId: "a", slot: "a", side: null }],
             previous,
@@ -221,7 +213,6 @@ test("a kept assignment is rejected when the event moves to another game", () =>
     deleted.delete("a")
     assert.ok(
         resolveMatchTeams({
-            guildId: "guild",
             gameId: "wardogs",
             inputs: [{ teamId: "a", slot: "a", side: null }],
             previous,
@@ -246,9 +237,9 @@ test("refresh re-captures only from an active entry and concluded matches are fr
         },
     }
     const refreshed = refreshMatchTeamSnapshot({
-        guildId: "guild",
         gameId: "hell_let_loose",
         assignment,
+        others: [],
         team: teams.get("a"),
         now,
     })
@@ -257,9 +248,9 @@ test("refresh re-captures only from an active entry and concluded matches are fr
     assert.equal(refreshed.assignment.snapshot.teamRevision, 2)
     assert.deepEqual(
         refreshMatchTeamSnapshot({
-            guildId: "guild",
             gameId: "hell_let_loose",
             assignment,
+            others: [],
             team: teams.get("gone"),
             now,
         }),
@@ -284,4 +275,42 @@ test("refresh re-captures only from an active entry and concluded matches are fr
             capturedAt: now,
         },
     ])
+})
+
+test("a refresh of a merged team adopts the replacement and refuses a duplicate", () => {
+    const stale: MatchTeamAssignment = {
+        teamId: "old",
+        slot: "a",
+        side: "Allies",
+        snapshot: {
+            name: "Old name",
+            shortCode: null,
+            logoAssetId: null,
+            logoUrl: null,
+            teamRevision: 1,
+            capturedAt: "2026-01-01T00:00:00.000Z",
+        },
+    }
+    const replacement = lookup("b")
+    const refreshed = refreshMatchTeamSnapshot({
+        gameId: "hell_let_loose",
+        assignment: stale,
+        others: [],
+        team: replacement,
+        now,
+    })
+    assert.ok(refreshed.ok)
+    assert.equal(refreshed.assignment.teamId, "b")
+    assert.equal(refreshed.assignment.side, "Allies")
+    assert.equal(refreshed.assignment.snapshot.name, "Team b")
+    assert.deepEqual(
+        refreshMatchTeamSnapshot({
+            gameId: "hell_let_loose",
+            assignment: stale,
+            others: [{ ...stale, teamId: "b", slot: "b", side: null }],
+            team: replacement,
+            now,
+        }),
+        { ok: false, error: "invalid_match_teams" }
+    )
 })

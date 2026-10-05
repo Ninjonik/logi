@@ -369,7 +369,7 @@ test("OpenAPI documents beginner-safe API workflows", async () => {
     )
 })
 
-test("team directory reads document explicit per-game grants, archived exclusion and snapshot delivery", async () => {
+test("global team catalogue reads document explicit per-game grants, fan-out changes, archived/merged exclusion and snapshot delivery", async () => {
     const document = await (await GET()).json()
     const collection = document.paths["/clan/teams"].get,
         detail = document.paths["/clan/teams/{id}"].get
@@ -395,16 +395,37 @@ test("team directory reads document explicit per-game grants, archived exclusion
     assert.ok(detail.responses["404"])
     assert.equal(collection.responses["404"], undefined)
     for (const phrase of [
-        /key supplies the workspace/i,
+        /team catalogue is global/i,
+        /global administrators own one catalogue per game/i,
+        /no workspace owns or keeps a private team list/i,
+        /key supplies the workspace and must still belong to the workspace that authenticated the request/i,
         /exactly one supported game/i,
-        /archived entries are excluded/i,
-        /create, update and restore emit upsert, archive emits remove/i,
+        /archived and merged teams are excluded/i,
+        /fanned out to the change feed of every workspace that has an active restricted key with the teams grant/i,
+        /create, update, restore and request approval emit upsert, archive emits remove/i,
+        /merge emits remove for the merged team .* followed by upsert for the kept team/i,
         /legacy broad keys do not acquire/i,
-        /no bearer-key API/i,
+        /catalogue writes .*, logo uploads and team requests .* no bearer-key API \(documented API-parity exception\)/i,
         /matchTeams snapshots \(ClanMatchTeam\)/,
+        /archived or merged/,
     ])
         assert.match(collection.description, phrase)
-    assert.match(detail.description, /generic 404 without labels/)
+    assert.doesNotMatch(collection.description, /workspace-owned/i)
+    for (const phrase of [
+        /global catalogue team ID/,
+        /public competition/,
+        /Unknown, archived, merged and other-game IDs return a generic 404 without labels/,
+        /merge target is not disclosed/,
+    ])
+        assert.match(detail.description, phrase)
+    assert.doesNotMatch(detail.description, /other-workspace/)
+    assert.match(detail.responses["404"].description, /merged/)
+    assert.match(
+        document.tags.find(
+            (tag: { name: string }) => tag.name === "Clan API — Teams"
+        ).description,
+        /^Global team catalogue reads/
+    )
     const limit = collection.parameters.find(
         (p: { name: string }) => p.name === "limit"
     )
@@ -436,14 +457,45 @@ test("team directory reads document explicit per-game grants, archived exclusion
         document.components.schemas
     assert.equal(ClanTeam.additionalProperties, false)
     assert.deepEqual(Object.keys(ClanTeam.properties).sort(), [
+        "description",
         "gameId",
         "id",
+        "links",
         "logoUrl",
         "name",
         "revision",
         "shortCode",
         "updatedAt",
     ])
+    assert.deepEqual([...ClanTeam.required].sort(), [
+        "description",
+        "gameId",
+        "id",
+        "links",
+        "logoUrl",
+        "name",
+        "revision",
+        "shortCode",
+        "updatedAt",
+    ])
+    assert.equal(ClanTeam.properties.links.type, "array")
+    assert.equal(ClanTeam.properties.links.maxItems, 3)
+    assert.match(ClanTeam.properties.links.description, /https/)
+    assert.deepEqual(
+        ClanTeam.properties.description.anyOf.map(
+            (option: { type: string }) => option.type
+        ),
+        ["string", "null"]
+    )
+    assert.match(ClanTeam.properties.description.description, /500/)
+    for (const field of [
+        "guildId",
+        "linkedGuildId",
+        "mergedIntoTeamId",
+        "logoAssetId",
+        "archivedAt",
+    ])
+        assert.equal(field in ClanTeam.properties, false, field)
     assert.deepEqual(ClanTeam.properties.gameId.enum, [
         "hell_let_loose",
         "wardogs",
@@ -584,7 +636,7 @@ test("OpenAPI derives concrete Convex-backed success bodies", async () => {
 
 test("bearer event writes document read-only match teams and complete records their internal snapshot fields", async () => {
     const document = await (await GET()).json()
-    assert.equal(document.info.version, "1.10.0")
+    assert.equal(document.info.version, "1.11.0")
     for (const operation of [
         document.paths["/clan/events"].post,
         document.paths["/clan/events/{id}"].patch,

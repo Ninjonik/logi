@@ -230,46 +230,161 @@ export const deMessages = {
         },
     },
     gameData: {
-        sourcesTitle: "Anbieterquellen",
-        sourcesDescription:
-            "Registriere die Spielserver, von denen dieser Arbeitsbereich Daten sammelt. Eine Quelle nennt den Anbieter, seinen HTTPS-Ursprung, die Server-ID beim Anbieter und die Convex-Umgebungsvariable mit dem Token. Tokens werden hier nie eingegeben oder angezeigt: Der Betreiber speichert sie in Convex, du verweist nur auf den Variablennamen. Ein Token rotierst du, indem du den neuen Wert unter einer neuen Variablen speicherst und den Verweis änderst.",
-        sourceRef: "Referenz",
-        sourceProvider: "Anbieter",
-        sourceProviders: {
-            hll_crcon: "Hell Let Loose CRCON",
-            wardogs_warcon: "Wardogs-Warcon-Panel",
-            wardogs_rcon: "Wardogs RCON",
-            wardogs_public_directory: "Wardog-Servers-Verzeichnis",
-        },
-        sourceServerId: "Server-ID beim Anbieter",
-        sourceOrigin: "HTTPS-Ursprung",
-        sourceSecretRef: "Token-Variable",
-        sourceSecretRefHelp:
-            "Verwende die Form LOGI_GAME_DATA_<NAME>_TOKEN. Warcon und RCON benötigen eine Token-Variable, Warcon zusätzlich die Server-UUID des Panels; das Wardog-Servers-Verzeichnis braucht keine. Die Allowlist enthält optionale IP-Adressen oder Hosts, die der Collector kontaktieren darf.",
-        sourceAllowlist: "Netzwerk-Allowlist (optional)",
-        sourceRegister: "Quelle registrieren",
-        sourceRotate: "Verweis aktualisieren",
-        sourceRemove: "Entfernen",
-        sourceSaving: "Wird gespeichert…",
-        sourceSaved:
-            "Quellen gespeichert. Aktiviere unten die Verbindung, um die Erfassung zu starten.",
-        sourceNone:
-            "Für diesen Arbeitsbereich ist noch keine Anbieterquelle registriert.",
-        sourceOperatorManaged: "Betreiberkatalog (schreibgeschützt)",
-        sourceWorkspaceManaged: "In diesem Arbeitsbereich registriert",
-        sourceErrors: {
-            invalid_source:
-                "Prüfe die Felder: HTTPS-Ursprung ohne Pfad, Anbieterregeln für Server-ID und Token-Variable sowie eine Referenz in Kleinbuchstaben.",
-            duplicate_ref:
-                "Diese Referenz wird bereits verwendet. Wähle eine andere.",
-            duplicate_identity:
-                "Dieser Anbieterserver ist in diesem Arbeitsbereich bereits registriert.",
-            limit_reached:
-                "Dieser Arbeitsbereich hat bereits 20 registrierte Quellen.",
-            not_found:
-                "Diese Quelle existiert nicht mehr. Aktualisiere die Liste.",
-            unavailable:
-                "Anbieterquellen konnten nicht geladen oder gespeichert werden. Bitte aktualisieren und erneut versuchen.",
+        servers: {
+            title: "Spielserver",
+            description:
+                "Verbinde die Hell-Let-Loose-CRCON- oder Wardogs-Warcon-Server, von denen dieser Arbeitsbereich Daten sammelt: die HTTPS-Adresse des Servers, seine ID beim Anbieter und den API-Schlüssel. Logi testet die Verbindung und speichert den Schlüssel verschlüsselt. Ein gespeicherter Schlüssel kann weder angezeigt noch exportiert werden; um ihn zu ändern, gib einen neuen ein.",
+            encryptionUnavailable:
+                "Die verschlüsselte Schlüsselablage ist in dieser Logi-Installation noch nicht aktiviert. Du kannst einen Schlüssel testen, aber das Speichern ist deaktiviert, bis der Logi-Betreiber sie aktiviert.",
+            none: "Mit diesem Arbeitsbereich ist noch kein Spielserver verbunden.",
+            limit: "Höchstens {limit} Server pro Arbeitsbereich.",
+            add: "Server verbinden",
+            managed: {
+                workspace: "In diesem Arbeitsbereich verwaltet",
+                operator: "Vom Logi-Betreiber eingerichtet",
+            },
+            games: {
+                hell_let_loose: "Hell Let Loose",
+                wardogs: "Wardogs",
+            },
+            providers: {
+                hll_crcon: "CRCON",
+                wardogs_warcon: "Warcon-Panel",
+                wardogs_rcon: "Wardogs RCON",
+                wardogs_public_directory:
+                    "Wardog-Servers-Verzeichnis (öffentlich)",
+            },
+            fields: {
+                displayName: "Name",
+                game: "Spiel",
+                provider: "Anbieter",
+                origin: "HTTPS-Adresse",
+                serverId: "Server-ID beim Anbieter",
+                key: "API-Schlüssel",
+                newKey: "Neuer API-Schlüssel",
+            },
+            hints: {
+                origin: "Nur die Adresse, zum Beispiel https://panel.example.com, ohne Pfad.",
+                serverId: {
+                    hll_crcon: "Die CRCON-Servernummer, meist 1.",
+                    wardogs_warcon: "Die Server-UUID aus dem Warcon-Panel.",
+                    wardogs_rcon: "Die Server-ID, die deine RCON-API meldet.",
+                    wardogs_public_directory:
+                        "Die Server-ID im Wardog-Servers-Verzeichnis.",
+                },
+                key: "Wird einmal gesendet, getestet und verschlüsselt gespeichert. Logi zeigt ihn nie wieder an.",
+                keyOptional:
+                    "Bei CRCON optional: Ohne Schlüssel liest Logi nur öffentliche Daten. Mit Schlüssel braucht dessen CRCON-Benutzer die Berechtigung, Verbindungsinformationen anzuzeigen.",
+                keyNone:
+                    "Das öffentliche Verzeichnis braucht keinen Schlüssel.",
+            },
+            enableAfterTest: "Nach erfolgreichem Test mit dem Sammeln beginnen",
+            allowUnverified:
+                "Auch bei fehlgeschlagenem Test speichern (das Sammeln stoppt, bis ein Test besteht)",
+            actions: {
+                test: "Verbindung testen",
+                testing: "Wird getestet…",
+                save: "Server speichern",
+                saving: "Wird gespeichert…",
+                testStored: "Gespeicherten Schlüssel testen",
+                changeKey: "Schlüssel ändern",
+                saveKey: "Schlüssel speichern",
+                cancel: "Abbrechen",
+                removeKey: "Schlüssel entfernen",
+                rename: "Umbenennen",
+                saveName: "Namen speichern",
+                enable: "Sammeln starten",
+                disable: "Sammeln stoppen",
+                remove: "Server entfernen",
+            },
+            confirm: {
+                removeKey:
+                    "Den gespeicherten Schlüssel für {name} entfernen? Sammeln, das den Schlüssel braucht, stoppt.",
+                remove: "{name} entfernen? Das Sammeln stoppt und der gespeicherte Schlüssel wird gelöscht. Gesammelter Verlauf bleibt erhalten.",
+            },
+            key: {
+                set: "Schlüssel verschlüsselt gespeichert",
+                missing: "Kein Schlüssel gespeichert",
+                not_required: "Kein Schlüssel nötig",
+                environment: "Schlüssel vom Logi-Betreiber gesetzt",
+                needs_operator:
+                    "Alter Schlüsselverweis: Gib den Schlüssel hier erneut ein oder bitte den Logi-Betreiber um die Migration",
+            },
+            keyChanged: "Schlüssel geändert {date}",
+            verified: "Schlüssel hat den letzten Test bestanden",
+            unverified: "Schlüssel nicht geprüft: Teste ihn vor dem Sammeln",
+            failure: {
+                key_unavailable:
+                    "Der gespeicherte Schlüssel kann nicht verwendet werden, weil der Verschlüsselungsschlüssel des Betreibers fehlt. Wende dich an den Logi-Betreiber.",
+                decrypt_failed:
+                    "Der gespeicherte Schlüssel kann für diesen Server nicht gelesen werden. Gib den Schlüssel erneut ein.",
+            },
+            collection: {
+                enabled: "Sammelt",
+                disabled: "Sammelt nicht",
+                none: "Kein Sammeln eingerichtet",
+                lastSuccess: "Letztes erfolgreiches Sammeln {date}",
+                never: "Noch kein erfolgreiches Sammeln",
+            },
+            lastTest: "Letzter Test {date}: {outcome}",
+            saved: {
+                created: "Server gespeichert, das Sammeln läuft.",
+                draft: "Server als deaktivierter Entwurf gespeichert. Teste ihn und starte das Sammeln, sobald der Test besteht.",
+                key: "Schlüssel gespeichert.",
+                keyUnverified:
+                    "Schlüssel gespeichert, aber der Test ist fehlgeschlagen, daher wurde das Sammeln gestoppt.",
+                removedKey: "Schlüssel entfernt.",
+                renamed: "Name gespeichert.",
+                removed: "Server entfernt.",
+                enabled: "Sammeln gestartet.",
+                disabled: "Sammeln gestoppt.",
+            },
+            outcomes: {
+                ok: "Die Verbindung funktioniert und der Schlüssel wird für diesen Server akzeptiert.",
+                unauthorized: "Der Anbieter hat den Schlüssel abgelehnt.",
+                server_mismatch:
+                    "Der Anbieter hat geantwortet, aber nicht für diese Server-ID.",
+                rate_limited:
+                    "Der Anbieter drosselt Anfragen. Versuche es später erneut.",
+                timeout: "Der Anbieter hat nicht rechtzeitig geantwortet.",
+                network: "Der Anbieter ist nicht erreichbar.",
+                invalid_response:
+                    "Der Anbieter hat unerwartet geantwortet. Prüfe Adresse und Anbieter.",
+                configuration:
+                    "Diese Adresse ist nicht erlaubt (nur öffentliche HTTPS-Adressen) oder der Server ist nicht vollständig eingerichtet.",
+                unsupported: "Der Anbieter unterstützt diese Prüfung nicht.",
+                key_unavailable:
+                    "Der gespeicherte Schlüssel kann nicht verwendet werden. Gib ihn erneut ein oder wende dich an den Logi-Betreiber.",
+            },
+            errors: {
+                invalid_source:
+                    "Prüfe die Felder: eine HTTPS-Adresse ohne Pfad und eine Server-ID im Format des Anbieters.",
+                invalid_key:
+                    "Der Schlüssel muss aus 8 bis 4096 sichtbaren Zeichen ohne Leerzeichen bestehen.",
+                duplicate_name:
+                    "Ein anderer Server in diesem Arbeitsbereich hat bereits diesen Namen.",
+                duplicate_identity:
+                    "Dieser Server ist in diesem Arbeitsbereich bereits verbunden.",
+                limit_reached:
+                    "Dieser Arbeitsbereich hat bereits die maximale Anzahl an Servern.",
+                not_found:
+                    "Dieser Server existiert nicht mehr. Aktualisiere die Liste.",
+                revision_conflict:
+                    "Jemand anderes hat diesen Server geändert. Aktualisiere und versuche es erneut.",
+                operator_managed:
+                    "Diesen Server richtet der Logi-Betreiber ein: Er kann hier weder umbenannt noch entfernt werden, und sein Schlüssel kann nur ersetzt werden.",
+                key_required: "Dieser Anbieter braucht einen API-Schlüssel.",
+                key_not_allowed:
+                    "Das öffentliche Verzeichnis nimmt keinen Schlüssel an.",
+                verification_required:
+                    "Der Verbindungstest ist nicht bestanden. Behebe das Problem oder speichere den Schlüssel ausdrücklich als ungeprüft.",
+                encryption_unavailable:
+                    "Die verschlüsselte Schlüsselablage ist nicht verfügbar. Wende dich an den Logi-Betreiber.",
+                rate_limited:
+                    "Zu viele Verbindungstests. Versuche es in {seconds} s erneut.",
+                unavailable:
+                    "Spielserver konnten nicht geladen oder gespeichert werden. Bitte aktualisieren und erneut versuchen.",
+            },
         },
         liveScoreboard: "Warcon Live-Scoreboard",
         scoreboardPolling:
@@ -292,7 +407,7 @@ export const deMessages = {
         historyError: "Verlauferfassung",
         title: "Spielserver-Daten",
         description:
-            "Logi sammelt Serverdaten und stellt ausgewählte Felder Ihrer Website bereit. Der Logi-Betreiber muss die Verbindungen zuerst konfigurieren.",
+            "Sammle Serverdaten in Logi und teile ausgewählte Felder mit deiner Website. Verbinde oben einen Server; das Sammeln beginnt, sobald sein Verbindungstest besteht.",
         loading: "Wird geladen…",
         refresh: "Aktualisieren",
         saving: "Wird gespeichert…",
@@ -300,7 +415,7 @@ export const deMessages = {
         disable: "Deaktivieren",
         disabled: "Deaktiviert",
         error: "Verbindungen konnten nicht geladen oder gespeichert werden. Erneut versuchen oder den Betreiber kontaktieren.",
-        empty: "Für diesen Arbeitsbereich sind keine Datenquellen konfiguriert.",
+        empty: "Für diesen Arbeitsbereich sammelt noch kein Spielserver Daten.",
         state: "Datenstatus",
         players: "Spieler",
         map: "Karte",
@@ -329,7 +444,7 @@ export const deMessages = {
             unsupported:
                 "Erfassung pausiert: Die erforderliche Funktion ist nicht verfügbar.",
             configuration:
-                "Erfassung pausiert: Der Betreiber muss die Quelle prüfen.",
+                "Sammeln pausiert: Prüfe Adresse und Schlüssel des Servers oder wende dich an den Logi-Betreiber.",
         },
     },
     apiKeys: {
@@ -834,20 +949,14 @@ export const deMessages = {
         logiComms: "LogiComms",
         signupActivity: "Anmeldeverlauf",
         teams: "Teams",
+        teamCatalog: "Teamkatalog",
+        teamRequests: "Teamanfragen",
     },
     teams: {
         title: "Teams",
         description:
-            "Führe pro Spiel ein Verzeichnis der Teams, gegen die eure Matches gespielt werden. Namen, Kürzel und Logos werden von der Teamauswahl im Match und von verbundenen Websites wiederverwendet.",
-        add: "Team hinzufügen",
-        edit: "Bearbeiten",
-        archive: "Archivieren",
-        restore: "Wiederherstellen",
-        save: "Team speichern",
-        saving: "Wird gespeichert…",
+            "Durchsuche den Logi-Teamkatalog für jedes Spiel. Logi-Administratoren pflegen ihn: Beantrage fehlende Teams oder schlage Änderungen vor und wähle freigegebene Teams in deinen Matches aus.",
         cancel: "Abbrechen",
-        createTitle: "Neues Team",
-        editTitle: "Team bearbeiten",
         name: "Name",
         shortCode: "Kürzel",
         shortCodeHelp:
@@ -860,52 +969,39 @@ export const deMessages = {
         removeLogo: "Logo entfernen",
         search: "Teams suchen…",
         loadMore: "Mehr laden",
-        showArchived: "Archivierte anzeigen",
         archivedBadge: "Archiviert",
-        empty: "In diesem Verzeichnis gibt es noch keine Teams.",
+        empty: "Der Katalog enthält für dieses Spiel noch keine Teams.",
         emptySearch: "Keine Teams entsprechen dieser Suche.",
         loading: "Teams werden geladen…",
         notAvailableForGame:
-            "Das Teamverzeichnis ist für dieses Spiel nicht verfügbar.",
+            "Der Teamkatalog ist für dieses Spiel nicht verfügbar.",
         gameDisabled:
-            "Aktiviere dieses Spiel in den Clan-Einstellungen, bevor du Teams hinzufügst.",
-        saved: "Team gespeichert.",
-        archivedNotice:
-            "Team archiviert. Vergangene Matches behalten seinen Schnappschuss.",
-        restoredNotice: "Team wiederhergestellt.",
+            "Dieses Spiel ist in diesem Arbeitsbereich nicht aktiviert. Du kannst Teams durchsuchen und beantragen, in Matches lassen sie sich aber erst verwenden, wenn das Spiel in den Clan-Einstellungen aktiviert ist.",
         retry: "Erneut versuchen",
-        editTeam: "{name} bearbeiten",
-        archiveTeam: "{name} archivieren",
-        restoreTeam: "{name} wiederherstellen",
-        conflictReloadFailed:
-            "Dieses Team wurde zwischenzeitlich geändert, und die neueste Version konnte nicht geladen werden. Schließe den Dialog und versuche es erneut.",
-        duplicateActive:
-            "Ein Team mit diesem Namen existiert für dieses Spiel bereits. Verwende dieses Team, statt ein zweites anzulegen.",
-        duplicateArchived:
-            "Ein archiviertes Team verwendet diesen Namen bereits. Stelle es wieder her, um es erneut zu verwenden.",
-        useExisting: "Vorhandenes Team verwenden",
-        restoreExisting: "Wiederherstellen und verwenden",
+        requestNew: "Neues Team beantragen",
+        suggestChange: "Änderung vorschlagen",
+        suggestChangeTeam: "Änderung für {name} vorschlagen",
+        teamLinks: "Links von {name}",
         errors: {
             invalid_team: "Prüfe die Teamangaben und versuche es erneut.",
             game_disabled:
                 "Dieses Spiel ist für den Arbeitsbereich nicht aktiviert.",
             duplicate_name:
-                "Ein Team mit diesem Namen existiert für dieses Spiel bereits.",
+                "Ein Team mit diesem Namen ist für dieses Spiel bereits im Katalog.",
             revision_conflict:
-                "Dieses Team wurde zwischenzeitlich geändert. Die neueste Version wurde geladen; prüfe sie und versuche es erneut.",
+                "Dieses Team wurde zwischenzeitlich geändert. Lade es neu und versuche es erneut.",
             idempotency_conflict:
                 "Diese Anfrage wurde bereits mit anderen Angaben verwendet. Schließe den Dialog und beginne neu.",
             not_found: "Das Team existiert nicht mehr.",
-            archived:
-                "Das Team ist archiviert. Stelle es vor dem Bearbeiten wieder her.",
+            archived: "Das Team ist archiviert.",
             not_archived: "Das Team ist nicht archiviert.",
             asset_unavailable:
                 "Das hochgeladene Logo ist nicht mehr verfügbar. Lade es erneut hoch.",
             limit_reached:
-                "Das Verzeichnis dieses Spiels hat sein Limit von 500 Teams erreicht.",
-            forbidden: "Du darfst hier keine Teams verwalten.",
-            unavailable:
-                "Das Teamverzeichnis ist vorübergehend nicht verfügbar.",
+                "Der Katalog dieses Spiels hat sein Limit von 2000 Teams erreicht.",
+            invalid_merge: "Diese Teams können nicht zusammengeführt werden.",
+            forbidden: "Du hast hier keinen Zugriff auf den Teamkatalog.",
+            unavailable: "Der Teamkatalog ist vorübergehend nicht verfügbar.",
             rate_limited:
                 "Zu viele Anfragen; warte einen Moment und versuche es erneut.",
         },
@@ -930,7 +1026,7 @@ export const deMessages = {
         picker: {
             title: "Teams",
             description:
-                "Wähle die Teams, die dieses Match spielen. Jedes Team behält Name und Logo vom Zeitpunkt der Auswahl, bis du es aktualisierst.",
+                "Wähle die Teams, die dieses Match spielen, aus dem Logi-Teamkatalog. Jedes Team behält Name und Logo vom Zeitpunkt der Auswahl, bis du es aktualisierst.",
             slots: { a: "Team A", b: "Team B", c: "Team C" },
             team: "Team",
             side: "Seite",
@@ -940,30 +1036,126 @@ export const deMessages = {
             noResults: "Keine aktiven Teams gefunden.",
             unknownTeam: "Teamdaten nicht verfügbar",
             savedSelections: "In diesem Match gespeichert",
-            addTeam: "Team hinzufügen",
+            requestTeam: "Neues Team beantragen",
+            requestNamed: "„{name}“ beantragen",
+            requestHint:
+                "Fehlt ein Team? Beantrage es; sobald ein Logi-Administrator es freigibt, kann es ausgewählt werden.",
+            requestSent:
+                "Antrag gesendet. Sobald ein Logi-Administrator das Team freigibt, kannst du es hier auswählen; die antragstellende Person erhält die Entscheidung per Discord-DM.",
             refreshSnapshot: "Schnappschuss aktualisieren",
             refreshing: "Wird aktualisiert…",
             snapshotRefreshed:
-                "Schnappschuss aus dem Verzeichnis aktualisiert.",
+                "Schnappschuss aus dem Teamkatalog aktualisiert.",
             archivedSelection:
                 "Archiviertes Team; der gespeicherte Schnappschuss bleibt bei diesem Match.",
+            mergedBadge: "Zusammengeführt",
+            mergedSelection:
+                "Mit einem anderen Katalogteam zusammengeführt. Aktualisiere den Schnappschuss, um dieses Match auf das verbleibende Team umzustellen.",
             duplicateTeam: "Jedes Team kann nur einem Platz zugewiesen werden.",
             duplicateSide: "Jede Seite kann nur einem Team zugewiesen werden.",
             errors: {
                 invalid_match_teams: "Die Teamzuweisung ist ungültig.",
-                team_not_found: "Das Team existiert im Verzeichnis nicht mehr.",
+                team_not_found: "Das Team existiert im Katalog nicht mehr.",
                 team_archived:
-                    "Das Team ist archiviert; wähle ein anderes Team oder stelle es im Teamverzeichnis wieder her.",
+                    "Das Team ist archiviert; wähle ein anderes Team.",
                 team_game_mismatch: "Das Team gehört zu einem anderen Spiel.",
                 match_concluded:
                     "Abgeschlossene Matches behalten ihre Teamschnappschüsse.",
                 training_event: "Trainings haben keine Match-Teams.",
-                forbidden: "Du darfst die Match-Teams nicht ändern.",
+                forbidden: "Du darfst die Teams dieses Matches nicht ändern.",
                 unavailable:
-                    "Das Teamverzeichnis ist vorübergehend nicht verfügbar.",
+                    "Der Teamkatalog ist vorübergehend nicht verfügbar.",
                 rate_limited:
                     "Zu viele Anfragen; warte einen Moment und versuche es erneut.",
             },
+        },
+    },
+    teamRequests: {
+        title: "Eure Teamanträge",
+        description:
+            "Anträge aus diesem Arbeitsbereich. Logi-Administratoren geben jeden Antrag frei, führen ihn zusammen oder lehnen ihn ab; die antragstellende Person erhält die Entscheidung per Discord-DM. Ein Arbeitsbereich kann bis zu 20 offene Anträge haben.",
+        empty: "Dieser Arbeitsbereich hat noch keine Teams beantragt.",
+        loading: "Anträge werden geladen…",
+        loadMore: "Mehr laden",
+        retry: "Erneut versuchen",
+        kinds: { create: "Neues Team", update: "Änderung" },
+        statuses: {
+            pending: "Offen",
+            approved: "Freigegeben",
+            merged: "Zusammengeführt",
+            rejected: "Abgelehnt",
+            cancelled: "Zurückgezogen",
+        },
+        requestedOn: "Beantragt am {date}",
+        decidedOn: "Entschieden am {date}",
+        note: "Deine Notiz",
+        reason: "Begründung",
+        resultTeam: "Resultierendes Team",
+        resultTeamUnavailable: "Teamdaten nicht verfügbar",
+        cancel: "Antrag zurückziehen",
+        cancelRequest: "Antrag für {name} zurückziehen",
+        cancelling: "Wird zurückgezogen…",
+        cancelled: "Antrag zurückgezogen.",
+        submitted:
+            "Antrag gesendet. Logi-Administratoren prüfen ihn; die Entscheidung kommt per Discord-DM.",
+        dialog: {
+            createTitle: "Neues Team beantragen",
+            updateTitle: "Änderung vorschlagen",
+            createDescription:
+                "{game} · Logi-Administratoren prüfen jeden Antrag. Nach der Freigabe kann das Team in Matches ausgewählt werden.",
+            updateDescription:
+                "{game} · Schlage neue Angaben für {name} vor. Logi-Administratoren prüfen die Änderung, bevor sie übernommen wird.",
+            description: "Beschreibung",
+            descriptionHelp: "Optional, bis zu 500 Zeichen.",
+            links: "Links",
+            linksHelp:
+                "Bis zu 3 https-Links, zum Beispiel die Teamwebsite oder eine Discord-Einladung.",
+            link: "Link {index}",
+            addLink: "Link hinzufügen",
+            removeLink: "Link {index} entfernen",
+            note: "Notiz für die Administratoren",
+            noteHelp:
+                "Optional, bis zu 500 Zeichen. Nenne alles, was bei der Prüfung hilft.",
+            submit: "Antrag senden",
+            submitting: "Wird gesendet…",
+            cancel: "Abbrechen",
+            unchanged:
+                "Ändere vor dem Senden mindestens eine Angabe des Teams.",
+            duplicate:
+                "{name} ist für dieses Spiel bereits im Katalog. Wähle das Team aus oder schlage eine Änderung dafür vor.",
+        },
+        validation: {
+            nameRequired: "Gib den Teamnamen ein.",
+            nameInvalid: "Verwende bis zu 120 Zeichen ohne Zeilenumbrüche.",
+            shortCodeInvalid: "Verwende bis zu 16 Zeichen ohne Zeilenumbrüche.",
+            descriptionInvalid:
+                "Verwende bis zu 500 Zeichen ohne Steuerzeichen.",
+            linksInvalid:
+                "Jeder Link muss eine https-Adresse ohne Benutzername und Passwort sein.",
+            linksDuplicate: "Jeder Link darf nur einmal vorkommen.",
+            linksTooMany: "Gib höchstens 3 Links an.",
+            noteInvalid: "Verwende bis zu 500 Zeichen ohne Steuerzeichen.",
+            invalid: "Prüfe die Angaben des Antrags und versuche es erneut.",
+        },
+        errors: {
+            invalid_request:
+                "Prüfe die Angaben des Antrags und versuche es erneut.",
+            not_found: "Der Antrag oder sein Team existiert nicht mehr.",
+            not_pending:
+                "Über diesen Antrag wurde bereits entschieden, oder er wurde zurückgezogen.",
+            limit_reached:
+                "Dieser Arbeitsbereich hat bereits 20 offene Anträge. Warte auf eine Entscheidung oder ziehe einen zurück.",
+            idempotency_conflict:
+                "Dieser Antrag wurde bereits mit anderen Angaben gesendet. Schließe den Dialog und stelle einen neuen Antrag.",
+            team_archived:
+                "Das Team ist archiviert; Änderungen können nicht mehr beantragt werden.",
+            team_game_mismatch: "Das Team gehört zu einem anderen Spiel.",
+            invalid_decision:
+                "Diese Entscheidung ist für den Antrag nicht möglich.",
+            forbidden: "Du darfst hier keine Teamanträge verwalten.",
+            rate_limited:
+                "Zu viele Anfragen; warte einen Moment und versuche es erneut.",
+            unavailable: "Teamanträge sind vorübergehend nicht verfügbar.",
         },
     },
     signupActivity: {
@@ -978,6 +1170,262 @@ export const deMessages = {
             changed_role: "hat die Rolle geändert",
             unsigned: "hat sich abgemeldet",
             declined: "hat abgesagt",
+        },
+    },
+    teamCatalogAdmin: {
+        title: "Teamkatalog",
+        description:
+            "Ein globaler Katalog der Hell-Let-Loose- und Wardogs-Teams für alle Logi-Workspaces. Nur globale Administratoren fügen Teams hinzu, bearbeiten, archivieren und führen sie zusammen; Workspaces wählen daraus aus und senden Anfragen.",
+        gamesLabel: "Spiel",
+        search: "Teams suchen…",
+        showArchived: "Archivierte und zusammengeführte Teams anzeigen",
+        add: "Team hinzufügen",
+        loadMore: "Mehr laden",
+        loading: "Teams werden geladen…",
+        empty: "Für dieses Spiel gibt es noch keine Teams.",
+        emptySearch: "Keine Teams passen zu dieser Suche.",
+        retry: "Erneut versuchen",
+        archivedBadge: "Archiviert",
+        mergedBadge: "Zusammengeführt",
+        linkedBadge: "Verknüpft: {workspace}",
+        edit: "Bearbeiten",
+        archive: "Archivieren",
+        restore: "Wiederherstellen",
+        merge: "Zusammenführen",
+        editTeam: "{name} bearbeiten",
+        archiveTeam: "{name} archivieren",
+        restoreTeam: "{name} wiederherstellen",
+        mergeTeam: "{name} mit einem anderen Team zusammenführen",
+        createTitle: "Neues Katalogteam",
+        editTitle: "Katalogteam bearbeiten",
+        name: "Name",
+        shortCode: "Kürzel",
+        shortCodeHelp:
+            "Optional, höchstens 16 Zeichen; wird angezeigt, wo wenig Platz ist.",
+        descriptionField: "Beschreibung",
+        descriptionHelp: "Optional, höchstens 500 Zeichen.",
+        links: "Links",
+        linkLabel: "Link {number}",
+        linksHelp:
+            "Bis zu drei https-Links, etwa die Website des Teams oder eine Discord-Einladung.",
+        linkedWorkspace: "Verknüpfter Workspace",
+        linkedWorkspaceNone: "Kein verknüpfter Workspace",
+        linkedWorkspaceUnknown: "Workspace {id}",
+        linkedWorkspaceHelp:
+            "Hält fest, dass dieses Team der Clan dieses Logi-Workspaces ist. Die Verknüpfung gewährt keine Berechtigungen.",
+        logo: "Logo",
+        logoHelp:
+            "PNG, JPEG oder WebP bis 2 MiB, normalisiert auf ein Quadrat von 512×512. Kataloglogos gehören der Plattform.",
+        upload: "Logo hochladen",
+        uploading: "Wird hochgeladen…",
+        removeLogo: "Logo entfernen",
+        save: "Team speichern",
+        saving: "Wird gespeichert…",
+        cancel: "Abbrechen",
+        saved: "Team gespeichert.",
+        archivedNotice:
+            "Team archiviert. Gespeicherte Matches behalten ihren Snapshot.",
+        restoredNotice: "Team wiederhergestellt.",
+        mergedNotice: "{source} wurde mit {target} zusammengeführt.",
+        conflictReloaded:
+            "Dieses Team wurde zwischenzeitlich geändert. Die neueste Version wird angezeigt und deine eigenen Änderungen wurden beibehalten; prüfe sie und speichere erneut.",
+        conflictReloadFailed:
+            "Dieses Team wurde zwischenzeitlich geändert und die neueste Version konnte nicht geladen werden. Schließe den Dialog und versuche es erneut.",
+        staleRow:
+            "Dieses Team wurde zwischenzeitlich geändert; jetzt wird die neueste Version angezeigt. Versuche es erneut, falls die Aktion noch nötig ist.",
+        mergeTitle: "{name} zusammenführen",
+        mergeDescription:
+            "Wähle das Team, das bleibt. {name} wird archiviert und verweist darauf.",
+        mergeTarget: "Team, das bleibt",
+        mergeSearch: "Aktive Teams suchen…",
+        mergeSearchHint: "Tippe, um die aktiven Teams dieses Spiels zu suchen.",
+        mergeNoResults: "Kein anderes aktives Team passt zu dieser Suche.",
+        mergeLoading: "Suche läuft…",
+        mergeChooseTarget: "Wähle das Team, das bleibt.",
+        mergeMovesTitle: "Was passiert",
+        mergeMovesRegistrations:
+            "Wettbewerbsanmeldungen und Begegnungen von {source} gehen auf {target} über.",
+        mergeMovesRequests:
+            "Offene Teamanfragen zu {source} gehen auf {target} über.",
+        mergeMovesArchive:
+            "{source} wird archiviert und hält fest, dass es mit {target} zusammengeführt wurde. Das Zusammenführen kann nicht rückgängig gemacht werden.",
+        mergeMovesSnapshots:
+            "Gespeicherte Match-Snapshots werden nicht umgeschrieben; sie behalten den Namen und das Logo, mit denen sie gespeichert wurden.",
+        mergeConfirm: "Teams zusammenführen",
+        merging: "Wird zusammengeführt…",
+        fieldErrors: {
+            name: "Gib einen Namen mit höchstens 120 Zeichen ohne Steuerzeichen ein.",
+            shortCode: "Verwende höchstens 16 Zeichen ohne Steuerzeichen.",
+            description: "Verwende höchstens 500 Zeichen.",
+            links: "Jeder Link muss eine andere https-URL sein.",
+            linkedGuildId: "Wähle einen Workspace aus der Liste.",
+        },
+        errors: {
+            invalid_team: "Prüfe die Teamangaben und versuche es erneut.",
+            invalid_query:
+                "Der Katalog konnte mit diesen Filtern nicht gelesen werden.",
+            game_disabled: "Dieses Spiel ist im Teamkatalog nicht verfügbar.",
+            duplicate_name:
+                "Ein anderes Team dieses Spiels verwendet diesen Namen bereits. Suche es im Katalog, einschließlich archivierter Teams, und bearbeite, stelle es wieder her oder führe es stattdessen zusammen.",
+            revision_conflict:
+                "Dieses Team wurde zwischenzeitlich geändert. Lade es neu und versuche es erneut.",
+            idempotency_conflict:
+                "Dieses Speichern wurde bereits für andere Werte verwendet. Schließe den Dialog und versuche es erneut.",
+            not_found: "Dieses Team existiert nicht mehr.",
+            archived:
+                "Dieses Team ist archiviert. Stelle es vor dem Bearbeiten wieder her.",
+            not_archived: "Dieses Team ist nicht archiviert.",
+            asset_unavailable:
+                "Das Logo ist nicht mehr verfügbar. Lade es erneut hoch.",
+            limit_reached: "Der Katalog für dieses Spiel ist voll.",
+            invalid_merge:
+                "Diese Teams können nicht zusammengeführt werden. Wähle ein aktives Team desselben Spiels, das in keinem Wettbewerb gegen dieses Team gespielt hat; ein zusammengeführtes Team kann weder wiederhergestellt noch erneut zusammengeführt werden.",
+            forbidden:
+                "Nur globale Administratoren können den Teamkatalog verwalten.",
+            unavailable:
+                "Der Teamkatalog ist gerade nicht verfügbar. Versuche es erneut.",
+        },
+        uploadErrors: {
+            unsupported_type:
+                "Nur PNG-, JPEG- und WebP-Bilder werden akzeptiert.",
+            type_mismatch:
+                "Der Dateiinhalt passt nicht zum angegebenen Bildtyp.",
+            bad_dimensions:
+                "Das Bild muss mindestens 1×1 und höchstens 4096×4096 Pixel groß sein.",
+            animated: "Animierte Bilder werden nicht unterstützt.",
+            undecodable: "Das Bild konnte nicht gelesen werden.",
+            invalid_kind: "Dieser Upload ist kein Teamlogo.",
+            invalid_asset:
+                "Das hochgeladene Bild konnte nicht gespeichert werden.",
+            too_large: "Das Bild überschreitet 2 MiB.",
+            upload_limited:
+                "Zu viele Uploads. Versuche es in {seconds} s erneut.",
+            forbidden:
+                "Nur globale Administratoren können Kataloglogos hochladen.",
+            unavailable: "Uploads sind vorübergehend nicht verfügbar.",
+        },
+    },
+    teamRequestAdmin: {
+        title: "Teamanfragen",
+        description:
+            "Anfragen für neue Teams und Änderungsanfragen von Workspace-Administratoren. Genehmige eine Anfrage (bei Bedarf bearbeitet), führe sie mit einem bestehenden Team zusammen oder lehne sie mit Begründung ab; die anfragende Person erhält eine Discord-DM.",
+        statusFilter: "Status",
+        statuses: {
+            pending: "Offen",
+            approved: "Genehmigt",
+            merged: "Zusammengeführt",
+            rejected: "Abgelehnt",
+            cancelled: "Zurückgezogen",
+        },
+        kinds: {
+            create: "Neues Team",
+            update: "Änderungsanfrage",
+        },
+        loading: "Anfragen werden geladen…",
+        empty: "Keine Anfragen mit diesem Status.",
+        loadMore: "Mehr laden",
+        retry: "Erneut versuchen",
+        requestFor: "Anfrage für {name}",
+        workspace: "Workspace",
+        unknownWorkspace: "Unbekannter Workspace ({id})",
+        requester: "Anfragende Person (Discord-ID)",
+        hiddenRequester: "Nicht angezeigt",
+        game: "Spiel",
+        kind: "Art",
+        submitted: "Eingereicht",
+        decided: "Entschieden",
+        note: "Notiz der anfragenden Person",
+        proposal: "Vorgeschlagenes Team",
+        currentTeam: "Aktuelles Team",
+        currentTeamLoading: "Aktuelles Team wird geladen…",
+        currentTeamMissing:
+            "Das Team, das diese Anfrage ändert, existiert nicht mehr.",
+        currentTeamArchived:
+            "Das Team, das diese Anfrage ändert, ist archiviert. Stelle es im Teamkatalog wieder her, bevor du genehmigst.",
+        currentTeamUnavailable:
+            "Das aktuelle Team konnte nicht geladen werden.",
+        changed: "Geändert",
+        resultTeam: "Ergebnisteam",
+        reason: "Begründung",
+        notification: "DM an die anfragende Person",
+        notifications: {
+            none: "Nicht gesendet",
+            pending: "In der Warteschlange",
+            sent: "Gesendet",
+            failed: "Konnte nicht zugestellt werden",
+        },
+        none: "Keine",
+        approve: "Genehmigen",
+        approveRequest: "Anfrage für {name} genehmigen",
+        approveTitle: "Anfrage genehmigen",
+        approveDescription:
+            "Prüfe und passe die vorgeschlagenen Angaben an. Beim Genehmigen wird das Team erstellt oder die Angaben werden auf das aktuelle Team angewendet.",
+        approveConfirm: "Anfrage genehmigen",
+        approving: "Wird genehmigt…",
+        merge: "Mit bestehendem Team zusammenführen",
+        mergeRequest:
+            "Anfrage für {name} mit einem bestehenden Team zusammenführen",
+        mergeTitle: "Mit einem bestehenden Team zusammenführen",
+        mergeDescription:
+            "Es wird kein neues Team erstellt. Die anfragende Person erfährt, welches bestehende {game}-Team sie verwenden soll.",
+        mergeConfirm: "Anfrage zusammenführen",
+        merging: "Wird zusammengeführt…",
+        mergeInto: "Stattdessen mit {name} zusammenführen",
+        reject: "Ablehnen",
+        rejectRequest: "Anfrage für {name} ablehnen",
+        rejectTitle: "Anfrage ablehnen",
+        rejectDescription:
+            "Die anfragende Person erhält die Begründung per Discord-DM.",
+        rejectReason: "Begründung",
+        rejectReasonHelp: "Erforderlich, höchstens 500 Zeichen.",
+        rejectConfirm: "Anfrage ablehnen",
+        rejecting: "Wird abgelehnt…",
+        cancel: "Abbrechen",
+        reasonRequired: "Gib eine Begründung mit höchstens 500 Zeichen ein.",
+        decidedNotice: {
+            approved:
+                "Anfrage genehmigt. Die anfragende Person wird benachrichtigt.",
+            merged: "Anfrage mit einem bestehenden Team zusammengeführt. Die anfragende Person wird benachrichtigt.",
+            rejected:
+                "Anfrage abgelehnt. Die anfragende Person wird benachrichtigt.",
+        },
+        conflictReloaded:
+            "Das Team wurde geändert, nachdem du diese Anfrage geöffnet hast. Die aktuellen Werte werden angezeigt; prüfe sie und genehmige erneut.",
+        duplicateFound:
+            "{name} verwendet diesen Namen bereits. Führe die Anfrage damit zusammen oder ändere den Namen.",
+        staleRequest:
+            "Diese Anfrage wurde bereits entschieden oder zurückgezogen; die Liste wurde aktualisiert.",
+        errors: {
+            invalid_request: "Diese Anfrage ist ungültig.",
+            invalid_decision: "Prüfe die Entscheidung und versuche es erneut.",
+            invalid_query:
+                "Die Warteschlange konnte mit diesen Filtern nicht gelesen werden.",
+            not_found: "Diese Anfrage oder dieses Team existiert nicht mehr.",
+            not_pending:
+                "Diese Anfrage wurde bereits entschieden oder zurückgezogen.",
+            limit_reached: "Der Katalog für dieses Spiel ist voll.",
+            idempotency_conflict:
+                "Diese Entscheidung widerspricht einer früheren. Lade neu und versuche es erneut.",
+            team_archived:
+                "Das gewählte Team ist archiviert. Wähle ein aktives Team.",
+            team_game_mismatch: "Wähle ein Team desselben Spiels.",
+            duplicate_name:
+                "Ein anderes Team dieses Spiels verwendet diesen Namen bereits.",
+            revision_conflict:
+                "Das Team wurde zwischenzeitlich geändert. Prüfe es und versuche es erneut.",
+            archived:
+                "Das Team ist archiviert. Stelle es vor dem Genehmigen wieder her.",
+            not_archived: "Das Team ist nicht archiviert.",
+            asset_unavailable:
+                "Das Logo ist nicht mehr verfügbar. Lade es erneut hoch oder entferne es.",
+            invalid_team: "Prüfe die Teamangaben und versuche es erneut.",
+            invalid_merge:
+                "Die Anfrage kann nicht mit diesem Team zusammengeführt werden.",
+            game_disabled: "Dieses Spiel ist im Teamkatalog nicht verfügbar.",
+            forbidden:
+                "Nur globale Administratoren können über Teamanfragen entscheiden.",
+            unavailable:
+                "Teamanfragen sind gerade nicht verfügbar. Versuche es erneut.",
         },
     },
     competition: {
@@ -1003,35 +1451,185 @@ export const deMessages = {
         totalMatches: "Matches gesamt",
         team: "Team",
         withdrawn: "(zurückgezogen)",
-        manageDescription:
-            "Verwalte globale Saisons, Teams, Spielpläne und Ergebnis-Links.",
-        manualResult: "Manuelles Ergebnis hinzufügen",
-        manualResultDescription:
-            "Nutze dies, wenn kein Logi-Match-Event verknüpft ist.",
-        division: "Division",
-        teamA: "Team A",
-        teamB: "Team B",
-        chooseTeam: "Team wählen",
-        teamAScore: "Punkte Team A",
-        teamBScore: "Punkte Team B",
-        saveResult: "Ergebnis speichern",
-        saving: "Speichert…",
-        resultSaved: "Ergebnis gespeichert.",
-        resultSaveFailed: "Ergebnis konnte nicht gespeichert werden.",
-        mergeAliases: "Clan-Aliase zusammenführen",
-        mergeDescription:
-            "Übertrage Wettbewerbshistorie von einem Ghost- oder Alias-Clan auf den echten Clan.",
-        clanToKeep: "Zu behaltender Clan",
-        chooseRealClan: "Wähle den echten Clan",
-        ghostToMerge: "Ghost oder Duplikat zum Zusammenführen",
-        chooseDuplicate: "Wähle das Duplikat",
-        mergeClans: "Clans zusammenführen",
-        merging: "Wird zusammengeführt…",
-        mergeFailed: "Clans konnten nicht zusammengeführt werden.",
-        mergeSuccess: "Clan-Historie zusammengeführt.",
+        noTeams: "Noch keine Teams registriert.",
+        phases: {
+            league: "Liga",
+            playoff: "Playoff",
+            relegation: "Relegation",
+        },
+        fixtureStatus: {
+            scheduled: "Geplant",
+            final: "Endgültig",
+            forfeit: "Forfeit",
+        },
         createEcl: "ECL 2026 erstellen",
         createFailed: "ECL konnte nicht erstellt werden.",
         createSuccess: "ECL 2026 erstellt.",
+    },
+    competitionAdmin: {
+        listDescription:
+            "Erstelle und betreue Wettbewerbe für Hell Let Loose und Wardogs mit Teams aus dem globalen Katalog.",
+        newCompetition: "Neuer Wettbewerb",
+        createTitle: "Wettbewerb erstellen",
+        createDescription:
+            "Wähle zuerst das Spiel – es lässt sich später nicht ändern. Der Wettbewerb startet unveröffentlicht.",
+        game: "Spiel",
+        name: "Name",
+        season: "Saison",
+        slug: "Adresse (Slug)",
+        slugHelp:
+            "2–64 Kleinbuchstaben, Ziffern und Bindestriche; wird in der öffentlichen Adresse verwendet.",
+        description: "Beschreibung",
+        published: "Veröffentlicht",
+        publishedHelp:
+            "Unveröffentlichte Wettbewerbe sind auf den öffentlichen Seiten und in der öffentlichen API verborgen.",
+        publishedBadge: "Veröffentlicht",
+        draftBadge: "Unveröffentlicht",
+        create: "Erstellen",
+        creating: "Wird erstellt…",
+        cancel: "Abbrechen",
+        save: "Speichern",
+        saving: "Speichert…",
+        saved: "Gespeichert.",
+        manage: "Verwalten",
+        openPublic: "Öffentliche Seite",
+        back: "Alle Wettbewerbe",
+        noCompetitions: "Noch keine Wettbewerbe.",
+        counts: "{divisions} Divisionen · {teams} Teams · {fixtures} Spiele",
+        legacyTitle: "Migration ausstehend",
+        legacyDescription:
+            "{count} Wettbewerbsdatensätze verweisen noch auf Logi-Workspaces statt auf globale Teams. Sie bleiben sichtbar, lassen sich aber erst bearbeiten oder verknüpfen, wenn der Plattformbetreiber die einmalige Wettbewerbsmigration ausführt.",
+        legacyBadge: "Migration ausstehend",
+        detailsTitle: "Details",
+        detailsDescription:
+            "Name, öffentliche Adresse, Saison, Beschreibung und Sichtbarkeit. Das Spiel ist festgelegt.",
+        divisionsTitle: "Divisionen",
+        divisionsDescription:
+            "Divisionen erscheinen in dieser Reihenfolge auf der öffentlichen Seite. Eine Division kann nur gelöscht werden, wenn sie weder Teams noch Spiele hat.",
+        divisionName: "Name der Division",
+        divisionCounts: "{teams} Teams · {fixtures} Spiele",
+        addDivision: "Division hinzufügen",
+        addDivisionFirst:
+            "Füge eine Division hinzu, bevor du Teams registrierst.",
+        rename: "Umbenennen",
+        moveUp: "Nach oben",
+        moveDown: "Nach unten",
+        delete: "Löschen",
+        confirmDeleteDivision: "Division „{name}“ löschen?",
+        noDivisions: "Noch keine Divisionen.",
+        teamsTitle: "Teams",
+        teamsDescription:
+            "Registriere aktive Teams aus dem globalen Katalog, die zum Spiel dieses Wettbewerbs gehören. Ein Team kann nur entfernt werden, solange es keine Spiele hat; ziehe es sonst zurück, damit seine Ergebnisse erhalten bleiben.",
+        team: "Team",
+        division: "Division",
+        unassigned: "Keine Division",
+        chooseTeam: "Team wählen",
+        searchTeams: "Teams suchen…",
+        loadingTeams: "Teams werden geladen…",
+        noTeamResults: "Kein passendes aktives, noch nicht registriertes Team.",
+        register: "Registrieren",
+        withdraw: "Zurückziehen",
+        reinstate: "Wieder aufnehmen",
+        remove: "Entfernen",
+        moveTo: "Division",
+        confirmRemoveTeam: "{name} aus diesem Wettbewerb entfernen?",
+        noTeams: "Keine Teams in dieser Division.",
+        withdrawnBadge: "Zurückgezogen",
+        archivedBadge: "Archiviert",
+        fixturesTitle: "Spiele",
+        fixturesDescription:
+            "Endgültige Ergebnisse und Forfeits mit beiden Punktständen zählen für die Tabelle, geplante Spiele nicht.",
+        allDivisions: "Alle Divisionen",
+        addFixture: "Spiel hinzufügen",
+        editFixture: "Spiel bearbeiten",
+        noFixtures: "Noch keine Spiele.",
+        fixtureHelp:
+            "Ligaspiele bestreiten zwei Teams der gewählten Division; Playoff- und Relegationsspiele dürfen divisionsübergreifend sein.",
+        invalidFixture:
+            "Wähle eine Division und zwei verschiedene Teams und gib bei einem endgültigen Ergebnis oder Forfeit beide Punktstände als ganze Zahlen ein.",
+        confirmDeleteFixture: "Dieses Spiel löschen?",
+        phase: "Phase",
+        phases: {
+            league: "Liga",
+            playoff: "Playoff",
+            relegation: "Relegation",
+        },
+        status: "Status",
+        statuses: {
+            scheduled: "Geplant",
+            final: "Endgültig",
+            forfeit: "Forfeit",
+        },
+        teamA: "Team A",
+        teamB: "Team B",
+        scoreA: "Punkte Team A",
+        scoreB: "Punkte Team B",
+        score: "Ergebnis",
+        scheduledAt: "Termin",
+        event: "Match-Event",
+        actions: "Aktionen",
+        linkEvent: "Match-Event verknüpfen",
+        linkEventTitle: "Logi-Match-Event verknüpfen",
+        linkEventDescription:
+            "Für das verknüpfte Match importierte Ergebnisse aktualisieren dieses Spiel. Das Match muss zum selben Spiel gehören, und wenn ihm Teams zugeordnet sind, müssen beide Teams dieses Spiels darunter sein.",
+        linked: "Derzeit verknüpft mit {name}.",
+        candidates: "Matches aus den verknüpften Workspaces der Teams",
+        loadingCandidates: "Matches werden geladen…",
+        noCandidates:
+            "In den verknüpften Workspaces der Teams wurden keine Matches gefunden.",
+        teamsMatch: "Beide Teams zugeordnet",
+        teamsUnassigned: "Teams nicht zugeordnet",
+        hasResult: "Ergebnis importiert",
+        eventId: "Event-ID",
+        eventIdHelp:
+            "Oder füge die Event-ID aus der Dashboard-Adresse des Matches ein.",
+        link: "Verknüpfen",
+        unlink: "Verknüpfung lösen",
+        errors: {
+            invalid_competition:
+                "Prüfe die eingegebenen Werte und versuche es erneut.",
+            not_found:
+                "Dieser Wettbewerbsdatensatz existiert nicht mehr. Lade die Seite neu.",
+            duplicate_slug:
+                "Ein anderer Wettbewerb verwendet diese Adresse bereits.",
+            duplicate_division:
+                "Dieser Wettbewerb hat bereits eine Division mit diesem Namen.",
+            division_not_found:
+                "Die Division existiert nicht mehr. Lade die Seite neu.",
+            division_not_empty:
+                "Verschiebe oder entferne ihre Teams und Spiele, bevor du die Division löschst.",
+            invalid_order:
+                "Die Divisionen haben sich inzwischen geändert. Lade die Seite neu und versuche es erneut.",
+            limit_reached: "Dieser Wettbewerb hat seine Größengrenze erreicht.",
+            team_not_found: "Das Team existiert nicht mehr im Katalog.",
+            team_archived:
+                "Archivierte oder zusammengeführte Teams können nicht registriert werden.",
+            team_game_mismatch:
+                "Das Team gehört zu einem anderen Spiel als der Wettbewerb.",
+            already_registered:
+                "Dieses Team ist bereits im Wettbewerb registriert.",
+            registration_has_fixtures:
+                "Das Team hat Spiele. Lösche sie zuerst oder ziehe das Team stattdessen zurück.",
+            team_not_registered:
+                "Beide Teams müssen in diesem Wettbewerb registriert sein.",
+            division_mismatch:
+                "Ligaspiele brauchen zwei Teams, die in der gewählten Division registriert sind.",
+            event_not_found: "Es gibt kein Logi-Event mit dieser ID.",
+            event_not_match:
+                "Nur Match-Events können verknüpft werden, keine Trainings.",
+            event_game_mismatch:
+                "Das Match gehört zu einem anderen Spiel als der Wettbewerb.",
+            event_already_linked:
+                "Dieses Match ist bereits mit einem anderen Spiel verknüpft.",
+            event_team_mismatch:
+                "Die zugeordneten Teams des Matches enthalten nicht beide Teams dieses Spiels.",
+            migration_pending:
+                "Alte Datensätze müssen zuerst zu globalen Teams migriert werden.",
+            forbidden:
+                "Nur globale Logi-Administratoren können Wettbewerbe verwalten.",
+            unavailable:
+                "Der Wettbewerbsdienst ist nicht verfügbar. Versuche es erneut.",
+        },
     },
     articles: {
         title: "Artikel",
@@ -1792,6 +2390,128 @@ export const deMessages = {
         allDay: "Ganztägig",
         manualItemAdminHint:
             "Manager können diesen Kalendereintrag in seinen Kalenderdetails bearbeiten oder entfernen.",
+    },
+    settingsHub: {
+        title: "Clan-Einstellungen",
+        description:
+            "Alles, was Logi über euren Clan wissen muss, nach Themen geordnet. Öffne eine Karte, um etwas zu ändern.",
+        setupTitle: "Ersteinrichtung",
+        setupProgress: "{done} von {total} Pflichteinstellungen erledigt",
+        setupNext: "Nächster Schritt: {item}",
+        setupDone:
+            "Die Pflichteinstellungen sind erledigt. Optionale Funktionen lassen sich jederzeit einschalten.",
+        continueSetup: "Weiter",
+        backToOverview: "Alle Einstellungen",
+        sectionNavLabel: "Bereiche der Einstellungen",
+        openSection: "Öffnen",
+        clanWideFieldsNote:
+            "Zeitzone, Sprache sowie Fehler- und Kalenderkanal gelten für den ganzen Clan. Nur die Kanäle unten können für dieses Spiel abweichen.",
+        clanWideOnly: "Diese Einstellungen gelten für den ganzen Clan.",
+        resyncHelp:
+            "Ein Superadministrator kann den Dashboard-Zugriff anhand der aktuellen Mitglieder der Dashboard-Rolle neu laden.",
+        saved: "Einstellungen gespeichert.",
+        groups: {
+            clan: "Clan",
+            matches: "Matches",
+            discord: "Discord",
+            gameData: "Spieldaten",
+            web: "Website und Integrationen",
+            maintenance: "Wartung",
+        },
+        status: {
+            ready: "Eingerichtet",
+            attention: "Fehlt noch",
+            off: "Aus",
+        },
+        requirements: {
+            enabledGames: "Wähle die Spiele, die euer Clan spielt",
+            announcements: "Wähle den Ankündigungskanal",
+            clanRole: "Wähle die Clan-Rolle",
+        },
+        presetLinks: {
+            squadPresets: "Trupp-Vorlagen",
+            topicPresets: "Themen-Vorlagen",
+        },
+        sections: {
+            profile: {
+                title: "Clan-Profil",
+                description:
+                    "Name, Logo, Beschreibung, Event-Kategorien und Kalendereinträge.",
+            },
+            games: {
+                title: "Spiele",
+                description: "Welche Spiele der Clan spielt.",
+            },
+            messages: {
+                title: "Discord-Nachrichten",
+                description:
+                    "Öffentliche Panels, Live-Scoreboards und das Aussehen der Bot-Nachrichten.",
+            },
+            channels: {
+                title: "Kanäle und Sprache",
+                description:
+                    "Zeitzone, Bot-Sprache und die Kanäle für Ankündigungen, Event-Infos, Fehler und Sprachräume.",
+            },
+            roles: {
+                title: "Rollen und Zugriff",
+                description:
+                    "Die Clan-Rolle und die Rolle, die das Logi-Dashboard öffnet.",
+            },
+            stats: {
+                title: "/stats-Befehl",
+                description:
+                    "Für welche Spiele /stats antwortet, wo Ergebnisse geteilt werden und welche Statistik-Server gelesen werden.",
+            },
+            membership: {
+                title: "Mitgliedschaft",
+                description:
+                    "Clan-Bewerbungen, Kategorien, Rekruten- und Mitgliederrollen, Roster-Punkte.",
+            },
+            tickets: {
+                title: "Tickets",
+                description:
+                    "Das Ticket-Panel, Kategorien, Support-Rollen und Fragen.",
+            },
+            "game-servers": {
+                title: "Spielserver",
+                description:
+                    "Server, Anbieterschlüssel und die Daten, die Logi von ihnen sammelt.",
+            },
+            league: {
+                title: "Wardogs League",
+                description:
+                    "Verfolgte Liga-Matches und ihre Verknüpfung mit euren Events.",
+            },
+            website: {
+                title: "Clan-Website und API",
+                description:
+                    "API-Schlüssel, Event-Befehle von eurer Website und Mitglieder-Synchronisierung.",
+            },
+            login: {
+                title: "Anmeldung",
+                description:
+                    "Die Anmeldeseite eures Clans und Single-Sign-on-Anwendungen.",
+            },
+            calendar: {
+                title: "Google Kalender",
+                description:
+                    "Den Clan-Kalender in Google oder einer anderen Kalender-App abonnieren.",
+            },
+            webhooks: {
+                title: "Webhooks",
+                description: "Logi-Ereignisse an eure eigenen Dienste senden.",
+            },
+            imports: {
+                title: "Importe und Reparaturen",
+                description:
+                    "Events und Discord-Mitglieder importieren, IDs verknüpfen und Statistiken neu berechnen.",
+            },
+            "helper-data": {
+                title: "Hilfsdaten",
+                description:
+                    "Referenzdaten, die Logi beim Import und Abgleich von Spielern nutzt.",
+            },
+        },
     },
     configurationScope: {
         clanWide: "Clanweite Konfiguration",

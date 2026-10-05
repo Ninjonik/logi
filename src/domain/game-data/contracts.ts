@@ -71,20 +71,15 @@ export const sourceSchema = z
                 code: "custom",
                 message: "Invalid directory source",
             })
-        if (value.provider === "wardogs_rcon" && !value.secretRef)
-            ctx.addIssue({
-                code: "custom",
-                message: "RCON credential reference required",
-            })
+        // Whether a key is present is decided by the credential mode, not here:
+        // an encrypted key has no variable name.
         if (
             value.provider === "wardogs_warcon" &&
-            (!value.secretRef ||
-                !z.uuid().safeParse(value.providerServerId).success)
+            !z.uuid().safeParse(value.providerServerId).success
         )
             ctx.addIssue({
                 code: "custom",
-                message:
-                    "Warcon requires a credential reference and panel server UUID",
+                message: "Warcon requires a panel server UUID",
             })
     })
 export type DataSource = z.infer<typeof sourceSchema>

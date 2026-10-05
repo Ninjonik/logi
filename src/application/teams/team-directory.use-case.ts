@@ -1,12 +1,14 @@
 import {
     decideTeamArchive,
     decideTeamCreate,
+    decideTeamMerge,
     decideTeamRestore,
     decideTeamUpdate,
     normalizeTeamName,
     teamCreateFingerprint,
     teamCreateSchema,
     teamLifecycleSchema,
+    teamMergeSchema,
     teamUpdateSchema,
     type TeamCommandError,
 } from "../../domain/teams/team"
@@ -18,12 +20,8 @@ export type TeamDirectoryPorts = {
     /** ISO timestamp for this write. */
     now(): string
 }
-/** Who writes and where: the already authorized workspace administrator. */
-export type TeamDirectoryActor = {
-    guildId: string
-    actor: string
-    enabledGames: readonly string[]
-}
+/** The already authorized global administrator performing the write. */
+export type TeamDirectoryActor = { actor: string }
 export type TeamCommandFailure = {
     error: TeamCommandError
     existingId?: string
@@ -35,18 +33,17 @@ const fail = (
 
 async function resolveLogo(
     logos: TeamLogoPort,
-    guildId: string,
     assetId: string | null
 ): Promise<{ id: string | null } | TeamCommandFailure> {
     if (!assetId) return { id: null }
-    const id = await logos.attachable(guildId, assetId)
+    const id = await logos.attachable(assetId)
     return id ? { id } : fail("asset_unavailable")
 }
 
 /**
  * Idempotent create: a retried key with the same payload replays the original
  * result; the same key with another payload is a conflict. The record, its
- * logo reference, audit entry and change record are written together.
+ * logo reference, audit entry and change records are written together.
  */
 export async function createTeam(
     ports: TeamDirectoryPorts,
@@ -60,10 +57,7 @@ export async function createTeam(
     if (!parsed.success) return fail("invalid_team")
     const input = parsed.data,
         fingerprint = teamCreateFingerprint(input)
-    const replay = await ports.repository.findCreate(
-        scope.guildId,
-        input.idempotencyKey
-    )
+    const replay = await ports.repository.findCreate(input.idempotencyKey)
     if (replay)
         return replay.fingerprint === fingerprint
             ? {
@@ -74,36 +68,25 @@ export async function createTeam(
               }
             : fail("idempotency_conflict")
     const existing = await ports.repository.findByNormalizedName(
-        scope.guildId,
         input.gameId,
         normalizeTeamName(input.name)
     )
     const decision = decideTeamCreate({
-        guildId: scope.guildId,
-        enabledGames: scope.enabledGames,
         input,
         existing: existing
             ? { id: existing.id, archivedAt: existing.archivedAt }
             : null,
-        count: await ports.repository.count(scope.guildId, input.gameId),
+        count: await ports.repository.count(input.gameId),
         now: ports.now(),
     })
     if (!decision.ok) return fail(decision.error, decision.existingId)
-    const logo = await resolveLogo(
-        ports.logos,
-        scope.guildId,
-        decision.team.logoAssetId
-    )
+    const logo = await resolveLogo(ports.logos, decision.team.logoAssetId)
     if ("error" in logo) return logo
     const team = await ports.repository.insert(
         { ...decision.team, logoAssetId: logo.id },
         scope.actor
     )
-    await ports.logos.syncReferences(
-        scope.guildId,
-        team.id,
-        logo.id ? [logo.id] : []
-    )
+    await ports.logos.syncReferences(team.id, logo.id ? [logo.id] : [])
     await ports.repository.audit(team, "create", scope.actor, {
         idempotencyKey: input.idempotencyKey,
         fingerprint,
@@ -126,10 +109,9 @@ export async function updateTeam(
 ): Promise<{ ok: true; revision: number } | TeamCommandFailure> {
     const parsed = teamUpdateSchema.safeParse(raw)
     if (!parsed.success) return fail("invalid_team")
-    const team = await ports.repository.get(scope.guildId, teamId)
+    const team = await ports.repository.get(teamId)
     if (!team) return fail("not_found")
     const conflicting = await ports.repository.findByNormalizedName(
-        scope.guildId,
         team.gameId,
         normalizeTeamName(parsed.data.name ?? team.name)
     )
@@ -144,11 +126,7 @@ export async function updateTeam(
     const logo =
         decision.patch.logoAssetId === team.logoAssetId
             ? { id: team.logoAssetId }
-            : await resolveLogo(
-                  ports.logos,
-                  scope.guildId,
-                  decision.patch.logoAssetId
-              )
+            : await resolveLogo(ports.logos, decision.patch.logoAssetId)
     if ("error" in logo) return logo
     const updated = await ports.repository.update(
         team,
@@ -156,20 +134,16 @@ export async function updateTeam(
         scope.actor
     )
     // A replaced logo loses this reference; a match snapshot may still keep the asset alive.
-    await ports.logos.syncReferences(
-        scope.guildId,
-        team.id,
-        logo.id ? [logo.id] : []
-    )
+    await ports.logos.syncReferences(team.id, logo.id ? [logo.id] : [])
     await ports.repository.audit(updated, "update", scope.actor)
     await ports.repository.emit(updated, "upsert")
     return { ok: true, revision: updated.revision }
 }
 
 /**
- * Archive hides a team from new selection and the website directory (a
- * `remove` change); restore brings the same entry back (`upsert`). History
- * keeps its snapshots either way.
+ * Archive hides a team from new selection and the website catalogue (a
+ * `remove` change); restore brings the same entry back (`upsert`). A merged
+ * team cannot be restored. History keeps its snapshots either way.
  */
 export async function changeTeamLifecycle(
     ports: TeamDirectoryPorts,
@@ -180,8 +154,23 @@ export async function changeTeamLifecycle(
 ): Promise<{ ok: true; revision: number } | TeamCommandFailure> {
     const parsed = teamLifecycleSchema.safeParse(raw)
     if (!parsed.success) return fail("invalid_team")
-    const team = await ports.repository.get(scope.guildId, teamId)
+    const team = await ports.repository.get(teamId)
     if (!team) return fail("not_found")
+    if (operation === "restore" && team.mergedIntoTeamId)
+        return fail("invalid_merge")
+    if (operation === "restore") {
+        // Another active team may have taken the name while this one was archived.
+        const conflicting = await ports.repository.findByNormalizedName(
+            team.gameId,
+            team.normalizedName
+        )
+        if (
+            conflicting &&
+            conflicting.id !== team.id &&
+            !conflicting.archivedAt
+        )
+            return fail("duplicate_name", conflicting.id)
+    }
     const decide =
         operation === "archive" ? decideTeamArchive : decideTeamRestore
     const decision = decide({ team, input: parsed.data, now: ports.now() })
@@ -197,4 +186,58 @@ export async function changeTeamLifecycle(
         operation === "archive" ? "remove" : "upsert"
     )
     return { ok: true, revision: updated.revision }
+}
+
+/**
+ * Merges a duplicate into the team that stays: the source is archived with a
+ * merge pointer, and its competition registrations, fixtures and pending
+ * requests move to the target. Saved match snapshots are not rewritten.
+ */
+export async function mergeTeam(
+    ports: TeamDirectoryPorts,
+    scope: TeamDirectoryActor,
+    sourceTeamId: string,
+    raw: unknown
+): Promise<
+    { ok: true; revision: number; targetRevision: number } | TeamCommandFailure
+> {
+    const parsed = teamMergeSchema.safeParse(raw)
+    if (!parsed.success) return fail("invalid_team")
+    const source = await ports.repository.get(sourceTeamId)
+    if (!source) return fail("not_found")
+    const target = await ports.repository.get(parsed.data.targetTeamId)
+    const decision = decideTeamMerge({
+        source,
+        target,
+        input: parsed.data,
+        now: ports.now(),
+    })
+    if (!decision.ok || !target)
+        return fail(decision.ok ? "not_found" : decision.error)
+    // Teams that take part in one competition are different teams there:
+    // merging them would turn fixtures into self-matches or orphan results.
+    if (await ports.repository.competedTogether(source.id, target.id))
+        return fail("invalid_merge")
+    const wasActive = source.archivedAt === null
+    const merged = await ports.repository.update(
+        source,
+        decision.source,
+        scope.actor
+    )
+    const kept = await ports.repository.update(
+        target,
+        decision.target,
+        scope.actor
+    )
+    await ports.repository.repoint(source.id, target.id)
+    await ports.repository.audit(merged, "merge", scope.actor, {
+        mergedIntoTeamId: target.id,
+    })
+    if (wasActive) await ports.repository.emit(merged, "remove")
+    await ports.repository.emit(kept, "upsert")
+    return {
+        ok: true,
+        revision: merged.revision,
+        targetRevision: kept.revision,
+    }
 }

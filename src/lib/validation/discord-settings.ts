@@ -10,6 +10,34 @@ const discordIdField = z
     .optional()
     .transform((value) => value || undefined)
 
+/** A Discord ID a settings page may clear; blank and `null` both mean "clear". */
+const clearableDiscordIdField = z
+    .union([
+        z
+            .string()
+            .trim()
+            .regex(/^\d*$/, "Discord IDs must contain only digits."),
+        z.null(),
+    ])
+    .optional()
+    .transform((value) => (value === undefined ? undefined : value || null))
+
+const rosterScoreField = z
+    .number()
+    .int("Roster scores must be whole numbers.")
+    .min(-1000)
+    .max(1000)
+
+const rosterScoreSettingsSchema = z.object({
+    noCategory: rosterScoreField,
+    declined: rosterScoreField,
+    rosterPresent: rosterScoreField,
+    reservePresent: rosterScoreField,
+    rosterAbsent: rosterScoreField,
+    reserveAbsent: rosterScoreField,
+    excusedAbsence: rosterScoreField,
+})
+
 const imageUrlField = z
     .string()
     .trim()
@@ -226,6 +254,7 @@ const membershipSettingsSchema = z
             .transform((value) => value || undefined),
         autoAssignRecruitOnApply: z.boolean(),
         inviteSupportMembersIndividually: z.boolean().optional(),
+        rosterScoreSettings: rosterScoreSettingsSchema.optional(),
         categories: z
             .array(membershipCategorySchema)
             .max(20, "Keep membership categories to 20 or fewer buttons."),
@@ -322,26 +351,30 @@ const gameDiscordOverridesSchema = z.object({
     membershipPanelLastConfigUpdatedAt: z.string().optional(),
 })
 
-export const discordSettingsSchema = z.object({
-    timezone: z.enum(supportedTimezones),
-    defaultLanguage: z.enum(supportedClanLanguages),
-    announcementsChannelId: discordIdField,
-    eventInfoChannelId: discordIdField,
-    errorsChannelId: discordIdField,
-    calendarChannelId: discordIdField,
+/**
+ * A settings page submits only the settings it owns. Omitted fields keep their
+ * stored values; `null` or a blank Discord ID clears that one field.
+ */
+export const discordSettingsPatchSchema = z.object({
+    timezone: z.enum(supportedTimezones).optional(),
+    defaultLanguage: z.enum(supportedClanLanguages).optional(),
+    announcementsChannelId: clearableDiscordIdField,
+    eventInfoChannelId: clearableDiscordIdField,
+    errorsChannelId: clearableDiscordIdField,
+    calendarChannelId: clearableDiscordIdField,
     calendarCategories: z
         .array(z.string().trim().min(1).max(80))
         .max(20)
-        .default([]),
-    forumCategoryId: discordIdField,
-    meetingChannelId: discordIdField,
-    squadVoiceCategoryId: discordIdField,
-    clanRoleId: discordIdField,
-    dashboardAdminRoleId: discordIdField,
+        .optional(),
+    forumCategoryId: clearableDiscordIdField,
+    meetingChannelId: clearableDiscordIdField,
+    squadVoiceCategoryId: clearableDiscordIdField,
+    clanRoleId: clearableDiscordIdField,
+    dashboardAdminRoleId: clearableDiscordIdField,
     playerStatsServers: z
         .array(playerStatsServerSchema)
         .max(20, "Keep stats server connections to 20 or fewer.")
-        .default([]),
+        .optional(),
     ticketSettings: ticketSettingsSchema.optional(),
     membershipSettings: membershipSettingsSchema.optional(),
     statsSettings: statsSettingsSchema.optional(),
@@ -354,4 +387,4 @@ export const discordSettingsSchema = z.object({
         .optional(),
 })
 
-export type DiscordSettingsInput = z.infer<typeof discordSettingsSchema>
+export type DiscordSettingsPatch = z.infer<typeof discordSettingsPatchSchema>

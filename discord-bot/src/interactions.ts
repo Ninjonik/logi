@@ -572,6 +572,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 )
                 const config = (await convex
                     .query(references.getConfigByDiscordGuildId, {
+                        secret: env.internalSecret,
                         guildId: interaction.guildId!,
                     })
                     .catch(() => null)) as { defaultLanguage?: string } | null
@@ -992,6 +993,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             .trim()
         const guildConfig = (await convex
             .query(references.getConfigByDiscordGuildId, {
+                secret: env.internalSecret,
                 guildId: interaction.guildId,
             })
             .catch(() => null)) as {
@@ -1082,6 +1084,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         const matches = (await convex
             .query(references.searchClanPlayers, {
+                secret: env.internalSecret,
                 guildId: interaction.guildId,
                 query: String(query.value ?? ""),
                 limit: 5,
@@ -1110,6 +1113,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await interaction.deferReply()
         const guildConfig = (await convex
             .query(references.getConfigByDiscordGuildId, {
+                secret: env.internalSecret,
                 guildId: interaction.guildId,
             })
             .catch(() => null)) as {
@@ -1120,6 +1124,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const playerId = interaction.options.getString("player", true).trim()
         const profile = (await convex
             .query(references.getClanPlayerProfile, {
+                secret: env.internalSecret,
                 guildId: interaction.guildId,
                 userId: playerId,
             })
@@ -1267,6 +1272,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const eventId = interaction.customId.replace("notice-modal:", "")
         const guildConfig = (await convex
             .query(references.getConfigByDiscordGuildId, {
+                secret: env.internalSecret,
                 guildId: interaction.guildId,
             })
             .catch(() => null)) as {
@@ -1305,6 +1311,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         const guildConfig = (await convex
             .query(references.getConfigByDiscordGuildId, {
+                secret: env.internalSecret,
                 guildId: interaction.guildId,
             })
             .catch(() => null)) as {
@@ -1522,7 +1529,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             // The platform ID is already saved; tell the applicant why the wizard stopped.
             const config = (await convex.query(
                 references.getConfigByDiscordGuildId,
-                { guildId: interaction.guildId }
+                { secret: env.internalSecret, guildId: interaction.guildId }
             )) as { defaultLanguage?: string } | null
             await interaction
                 .reply({
@@ -1581,7 +1588,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         } catch {
             const config = (await convex.query(
                 references.getConfigByDiscordGuildId,
-                { guildId: interaction.guildId }
+                { secret: env.internalSecret, guildId: interaction.guildId }
             )) as { defaultLanguage?: string } | null
             await interaction.reply({
                 content: getMembershipFlowExpiredMessage(
@@ -1594,9 +1601,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         const config = (await convex.query(
             references.getConfigByDiscordGuildId,
-            {
-                guildId: interaction.guildId,
-            }
+            { secret: env.internalSecret, guildId: interaction.guildId }
         )) as EventInteractionContext["config"] | null
         const language = getClanDiscordMessages(
             config?.defaultLanguage
@@ -1973,7 +1978,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const membershipAction = interaction.customId.replace("membership:", "")
         const config = (await convex.query(
             references.getConfigByDiscordGuildId,
-            { guildId: interaction.guildId }
+            { secret: env.internalSecret, guildId: interaction.guildId }
         )) as EventInteractionContext["config"] | null
         const language = config?.defaultLanguage as ClanLanguage
         if (!config?.membershipSettings?.enabled) {
@@ -2769,6 +2774,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         const guildConfig = (await convex
             .query(references.getConfigByDiscordGuildId, {
+                secret: env.internalSecret,
                 guildId,
             })
             .catch(() => null)) as {
@@ -2838,6 +2844,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         const config = (await convex
             .query(references.getConfigByDiscordGuildId, {
+                secret: env.internalSecret,
                 guildId,
             })
             .catch(() => null)) as EventInteractionContext["config"] | null
@@ -2859,6 +2866,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     ): Promise<PlayerSearchResult[]> {
         const config = (await convex
             .query(references.getConfigByDiscordGuildId, {
+                secret: env.internalSecret,
                 guildId,
             })
             .catch(() => null)) as EventInteractionContext["config"] | null
@@ -3442,6 +3450,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const existingAssignment = (await convex.query(
             references.getAssignmentForServerUser,
             {
+                secret: env.internalSecret,
                 serverDiscordId: interaction.guildId,
                 userId: interaction.user.id,
                 gameId,

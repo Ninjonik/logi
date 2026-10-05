@@ -8,6 +8,7 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { isSettingsSectionId } from "@/domain/workspaces/settings-sections"
 import { usePathname, useParams } from "next/navigation"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { Guild } from "@/types/domain"
@@ -72,6 +73,11 @@ export function AppBreadcrumbs({
             label = dictionary.sidebar.users
         } else if (segment === "settings") {
             label = dictionary.sidebar.serverSettings
+        } else if (
+            breadcrumbSegments[index - 1] === "settings" &&
+            isSettingsSectionId(segment)
+        ) {
+            label = dictionary.settingsHub.sections[segment].title
         } else if (segment === "memberships") {
             label = dictionary.sidebar.memberships
         } else if (segment === "tickets") {

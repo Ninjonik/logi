@@ -33,6 +33,7 @@ export async function GET(
 ) {
     const { token } = await params
     const tokenRecord = await fetchQuery(getPlatformIdLinkTokenReference, {
+        secret: getInternalAuthSecret(),
         token,
     })
 

@@ -1,6 +1,8 @@
 import {
+    followRefreshedTeam,
     matchTeamGame,
     matchTeamSelectionIssues,
+    requestableTeamName,
     setSlotSide,
     setSlotTeam,
     toMatchTeamInputs,
@@ -81,5 +83,56 @@ test("duplicate teams and duplicate non-null sides are flagged per slot", () => 
             { teamId: "t3", slot: "c", side: "Valkyra" },
         ]),
         { a: "duplicateTeam", b: "duplicateTeam", c: "duplicateSide" }
+    )
+})
+
+test("a typed name is offered as a request unless a listed team already has it", () => {
+    const listed = [{ name: "Red Wolves" }, { name: "Alpha" }]
+    assert.equal(requestableTeamName("", listed), null)
+    assert.equal(requestableTeamName("   ", listed), null)
+    assert.equal(requestableTeamName("  Blue   Wolves ", listed), "Blue Wolves")
+    // The catalogue's name identity: case and repeated spaces do not count.
+    assert.equal(requestableTeamName("red  WOLVES", listed), null)
+    // A partial match is a different team that can still be requested.
+    assert.equal(requestableTeamName("Red Wolf", listed), "Red Wolf")
+    assert.equal(requestableTeamName("Bravo", []), "Bravo")
+    assert.equal(
+        [...(requestableTeamName("é".repeat(130), []) ?? "")].length,
+        120,
+        "the prefilled name never exceeds the catalogue limit"
+    )
+})
+
+test("a refresh that followed a merge re-points the unsaved slot at the surviving team", () => {
+    const snapshot = {
+        name: "Old",
+        shortCode: null,
+        logoAssetId: null,
+        logoUrl: null,
+        teamRevision: 1,
+        capturedAt: "2026-10-02T00:00:00.000Z",
+    }
+    const before: MatchTeamAssignment[] = [
+        { teamId: "merged", slot: "a", side: "Allies", snapshot },
+        { teamId: "other", slot: "b", side: null, snapshot },
+    ]
+    const after: MatchTeamAssignment[] = [
+        { teamId: "survivor", slot: "a", side: "Allies", snapshot },
+        { teamId: "other", slot: "b", side: null, snapshot },
+    ]
+    // The user had moved the team to slot B and changed its side locally.
+    const value = [
+        { teamId: "other", slot: "a" as const, side: null },
+        { teamId: "merged", slot: "b" as const, side: "Axis" },
+    ]
+    assert.deepEqual(followRefreshedTeam(value, "merged", before, after), [
+        { teamId: "other", slot: "a", side: null },
+        { teamId: "survivor", slot: "b", side: "Axis" },
+    ])
+    // An ordinary refresh keeps the same team and changes nothing.
+    assert.deepEqual(followRefreshedTeam(value, "other", before, after), value)
+    assert.deepEqual(
+        followRefreshedTeam(value, "unknown", before, after),
+        value
     )
 })

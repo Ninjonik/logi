@@ -10,7 +10,6 @@ import test from "node:test"
 const now = new Date("2026-10-04T12:00:00.000Z")
 const team: DirectoryTeamLookup = {
     id: "team-1",
-    guildId: "guild-a",
     gameId: "hell_let_loose",
     name: "Alpha Prime",
     shortCode: "APX",
@@ -48,7 +47,6 @@ const run = (
     teamId = "team-1"
 ) =>
     refreshAssignedMatchTeam(ports, {
-        guildId: "guild-a",
         event: { ...event, ...overrides },
         teamId,
         actor: "100000000000000001",
@@ -85,7 +83,7 @@ test("a refresh re-captures the active entry, keeps slot and side, saves and aud
     ])
 })
 
-test("frozen, unassigned, archived, foreign and cross-game refreshes write nothing", async () => {
+test("frozen, unassigned, archived and cross-game refreshes write nothing", async () => {
     const cases: [
         Map<string, DirectoryTeamLookup>,
         Partial<RefreshableEvent>,
@@ -126,12 +124,6 @@ test("frozen, unassigned, archived, foreign and cross-game refreshes write nothi
             "team_archived",
         ],
         [
-            new Map([["team-1", { ...team, guildId: "guild-b" }]]),
-            {},
-            "team-1",
-            "team_not_found",
-        ],
-        [
             new Map([["team-1", { ...team, gameId: "wardogs" }]]),
             {},
             "team-1",
@@ -153,4 +145,21 @@ test("frozen, unassigned, archived, foreign and cross-game refreshes write nothi
         assert.equal(ports.saved.size, 0)
         assert.equal(ports.audits.length, 0)
     }
+})
+
+test("a merged team refreshes to its replacement and audits the replacement", async () => {
+    const ports = new InMemoryMatchTeamSnapshots(
+        new Map([["team-1", { ...team, id: "team-2", name: "Alpha United" }]])
+    )
+    const result = await run(ports)
+    assert.ok(result.ok)
+    assert.equal(result.matchTeams[0]?.teamId, "team-2")
+    assert.equal(result.matchTeams[0]?.snapshot.name, "Alpha United")
+    assert.deepEqual(ports.audits, [
+        {
+            teamId: "team-2",
+            actor: "100000000000000001",
+            eventId: "event-1",
+        },
+    ])
 })

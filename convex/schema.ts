@@ -1,22 +1,26 @@
 import {
-    leagueTrackingSettings,
-    leagueTrackedMatches,
-    leagueIndexCache,
-    leagueMessageRefs,
-} from "./leagueDiscoveryTable"
+    gameDataError,
+    gameDataCredentialMode,
+    gameDataCredentialFailure,
+    gameDataTestOutcome,
+    gameDataObservation,
+    gameDataHistoryProgress,
+    gameDataSession,
+} from "./gameDataValidators"
 import {
     imageAssetKind,
     imageContentType,
     matchTeamAssignment,
     teamAuditOperation,
     teamGame,
+    teamProposal,
 } from "./teamValidators"
 import {
-    gameDataError,
-    gameDataObservation,
-    gameDataHistoryProgress,
-    gameDataSession,
-} from "./gameDataValidators"
+    leagueTrackingSettings,
+    leagueTrackedMatches,
+    leagueIndexCache,
+    leagueMessageRefs,
+} from "./leagueDiscoveryTable"
 import {
     discordPublications,
     discordPublicPanels,
@@ -868,6 +872,8 @@ export default defineSchema({
             kind: v.literal("league_with_playoffs"),
             standings: v.literal("ecl_cap_score"),
         }),
+        // Missing means published, preserving legacy competitions.
+        published: v.optional(v.boolean()),
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("slug", ["slug"]),
@@ -879,7 +885,11 @@ export default defineSchema({
     }).index("competitionId", ["competitionId"]),
     competitionTeams: defineTable({
         competitionId: v.id("competitions"),
-        guildId: v.id("guilds"),
+        // Global catalogue team; legacy rows are converted by
+        // competitionMigrations:adoptGlobalTeams.
+        teamId: v.optional(v.id("teamDirectory")),
+        // Legacy Logi workspace reference kept so existing rows stay valid.
+        guildId: v.optional(v.id("guilds")),
         divisionId: v.optional(v.id("competitionDivisions")),
         withdrawn: v.boolean(),
         createdAt: v.string(),
@@ -887,7 +897,9 @@ export default defineSchema({
     })
         .index("competitionId", ["competitionId"])
         .index("guildId", ["guildId"])
-        .index("competitionId_guildId", ["competitionId", "guildId"]),
+        .index("teamId", ["teamId"])
+        .index("competitionId_guildId", ["competitionId", "guildId"])
+        .index("competitionId_teamId", ["competitionId", "teamId"]),
     competitionFixtures: defineTable({
         competitionId: v.id("competitions"),
         divisionId: v.optional(v.id("competitionDivisions")),
@@ -896,8 +908,13 @@ export default defineSchema({
             v.literal("playoff"),
             v.literal("relegation")
         ),
-        teamAId: v.id("guilds"),
-        teamBId: v.id("guilds"),
+        // Global catalogue teams; legacy rows are converted by
+        // competitionMigrations:adoptGlobalTeams.
+        sideATeamId: v.optional(v.id("teamDirectory")),
+        sideBTeamId: v.optional(v.id("teamDirectory")),
+        // Legacy Logi workspace references kept so existing rows stay valid.
+        teamAId: v.optional(v.id("guilds")),
+        teamBId: v.optional(v.id("guilds")),
         scheduledAt: v.optional(v.string()),
         scoreA: v.optional(v.number()),
         scoreB: v.optional(v.number()),
@@ -911,7 +928,9 @@ export default defineSchema({
         updatedAt: v.string(),
     })
         .index("competitionId", ["competitionId"])
-        .index("eventId", ["eventId"]),
+        .index("eventId", ["eventId"])
+        .index("sideATeamId", ["sideATeamId"])
+        .index("sideBTeamId", ["sideBTeamId"]),
     eventScheduleJobs: defineTable({
         eventId: v.id("events"),
         kind: v.union(
@@ -1400,6 +1419,7 @@ export default defineSchema({
         warconReadBlockedUntil: v.optional(v.number()),
     })
         .index("guildId", ["guildId"])
+        .index("guildId_sourceRef", ["guildId", "sourceRef"])
         .index("sourceRef", ["sourceRef"])
         .index("nextAttemptAt", ["nextAttemptAt"]),
     // Workspace-registered provider sources; tokens stay in Convex environment variables.
@@ -1420,9 +1440,47 @@ export default defineSchema({
         createdAt: v.string(),
         updatedAt: v.string(),
         updatedBy: v.string(),
+        /** Administrator-chosen alias; unique within the workspace only. */
+        displayName: v.optional(v.string()),
+        /** Absent on registrations from before encrypted keys: read as legacy_env when secretRef is set. */
+        credentialMode: v.optional(gameDataCredentialMode),
+        revision: v.optional(v.number()),
+        createdBy: v.optional(v.string()),
+        lastTestAt: v.optional(v.string()),
+        lastTestOutcome: v.optional(gameDataTestOutcome),
     })
         .index("guildId", ["guildId"])
+        .index("guildId_ref", ["guildId", "ref"])
+        .index("credentialMode", ["credentialMode"])
+        .index("secretRef", ["secretRef"])
         .index("ref", ["ref"]),
+    /**
+     * One encrypted provider key per source (AES-256-GCM, operator keyring
+     * outside the database). Never returned by public functions; only
+     * collector and test actions decrypt it.
+     */
+    gameDataCredentials: defineTable({
+        guildId: v.string(),
+        sourceRef: v.string(),
+        format: v.literal(1),
+        keyId: v.string(),
+        nonce: v.string(),
+        ciphertext: v.string(),
+        tag: v.string(),
+        /** Bumped by every new key; re-encryption keeps it. */
+        version: v.number(),
+        verifiedAt: v.union(v.string(), v.null()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+        updatedBy: v.string(),
+        reencryptedAt: v.optional(v.string()),
+        failure: v.optional(gameDataCredentialFailure),
+        failureAt: v.optional(v.string()),
+        lastTestAt: v.optional(v.string()),
+        lastTestOutcome: v.optional(gameDataTestOutcome),
+    })
+        .index("guildId_sourceRef", ["guildId", "sourceRef"])
+        .index("keyId", ["keyId"]),
     leagueTrackingSettings,
     leagueTrackedMatches,
     leagueIndexCache,
@@ -1523,12 +1581,20 @@ export default defineSchema({
         revision: v.string(),
         lastCollectedAt: v.string(),
     }).index("guildId", ["guildId"]),
+    // Global team catalogue managed by Logi's global administrators.
     teamDirectory: defineTable({
-        guildId: v.string(),
+        // Legacy workspace owner of records created before the catalogue became
+        // global; provenance only. Global records have none.
+        guildId: v.optional(v.string()),
         gameId: teamGame,
         name: v.string(),
         shortCode: v.union(v.string(), v.null()),
         logoAssetId: v.union(v.id("imageAssets"), v.null()),
+        // Optional so legacy records stay valid; missing reads as null/empty.
+        description: v.optional(v.union(v.string(), v.null())),
+        links: v.optional(v.array(v.string())),
+        linkedGuildId: v.optional(v.union(v.string(), v.null())),
+        mergedIntoTeamId: v.optional(v.union(v.id("teamDirectory"), v.null())),
         normalizedName: v.string(),
         searchText: v.string(),
         archivedAt: v.union(v.string(), v.null()),
@@ -1538,20 +1604,17 @@ export default defineSchema({
         createdBy: v.string(),
         updatedBy: v.string(),
     })
-        .index("guildId_gameId_archivedAt_normalizedName", [
-            "guildId",
+        .index("gameId_archivedAt_normalizedName", [
             "gameId",
             "archivedAt",
             "normalizedName",
         ])
-        .index("guildId_gameId_normalizedName", [
-            "guildId",
-            "gameId",
-            "normalizedName",
-        ])
+        .index("gameId_normalizedName", ["gameId", "normalizedName"])
+        .index("linkedGuildId", ["linkedGuildId"])
+        .index("guildId", ["guildId"])
         .searchIndex("search", {
             searchField: "searchText",
-            filterFields: ["guildId", "gameId", "archivedAt"],
+            filterFields: ["gameId", "archivedAt"],
         }),
     teamDirectoryAudit: defineTable({
         guildId: v.string(),
@@ -1563,10 +1626,57 @@ export default defineSchema({
         idempotencyKey: v.optional(v.string()),
         fingerprint: v.optional(v.string()),
         eventId: v.optional(v.string()),
+        requestId: v.optional(v.string()),
+        mergedIntoTeamId: v.optional(v.string()),
         createdAt: v.string(),
     })
         .index("guildId_idempotencyKey", ["guildId", "idempotencyKey"])
         .index("teamId", ["teamId"]),
+    // Workspace requests to add or change a catalogue team, decided by global administrators.
+    teamRequests: defineTable({
+        guildId: v.string(),
+        requestedBy: v.string(),
+        kind: v.union(v.literal("create"), v.literal("update")),
+        gameId: teamGame,
+        teamId: v.union(v.id("teamDirectory"), v.null()),
+        proposal: teamProposal,
+        note: v.union(v.string(), v.null()),
+        idempotencyKey: v.string(),
+        fingerprint: v.string(),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("approved"),
+            v.literal("merged"),
+            v.literal("rejected"),
+            v.literal("cancelled")
+        ),
+        reason: v.union(v.string(), v.null()),
+        resultTeamId: v.union(v.id("teamDirectory"), v.null()),
+        decidedBy: v.union(v.string(), v.null()),
+        decidedAt: v.union(v.string(), v.null()),
+        // Decision DM to the requester; flat fields keep the due index simple.
+        notificationStatus: v.union(
+            v.literal("none"),
+            v.literal("pending"),
+            v.literal("sent"),
+            v.literal("failed")
+        ),
+        notificationAttempts: v.number(),
+        notificationNextAttemptAt: v.union(v.number(), v.null()),
+        notificationLeaseUntil: v.union(v.number(), v.null()),
+        notificationSentAt: v.union(v.string(), v.null()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("guildId_createdAt", ["guildId", "createdAt"])
+        .index("guildId_status", ["guildId", "status"])
+        .index("guildId_idempotencyKey", ["guildId", "idempotencyKey"])
+        .index("status_createdAt", ["status", "createdAt"])
+        .index("teamId_status", ["teamId", "status"])
+        .index("notificationStatus_notificationNextAttemptAt", [
+            "notificationStatus",
+            "notificationNextAttemptAt",
+        ]),
     imageAssets: defineTable({
         guildId: v.string(),
         kind: imageAssetKind,
@@ -1591,7 +1701,8 @@ export default defineSchema({
         owner: v.union(
             v.literal("team"),
             v.literal("event"),
-            v.literal("panel")
+            v.literal("panel"),
+            v.literal("teamRequest")
         ),
         ownerId: v.string(),
         createdAt: v.string(),

@@ -22,9 +22,11 @@ export const generateUploadUrl = mutation({
 
 export const getUrl = query({
     args: {
+        secret: v.string(),
         storageId: v.id("_storage"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         return await ctx.storage.getUrl(args.storageId)
     },
 })

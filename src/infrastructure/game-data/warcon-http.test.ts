@@ -15,11 +15,24 @@ const raw = {
     allowedAddresses: [],
 }
 
-test("Warcon requires an explicit credential and a panel UUID", () => {
+test("Warcon requires a panel UUID; the credential mode decides the key", async () => {
     assert.equal(sourceSchema.safeParse(raw).success, true)
+    // An encrypted key has no variable name.
     assert.equal(
         sourceSchema.safeParse({ ...raw, secretRef: null }).success,
-        false
+        true
+    )
+    const keyless = createProviderHttp(
+        sourceSchema.parse({ ...raw, secretRef: null }),
+        {
+            now: () => 0,
+            fetch: async () => assert.fail("no request without a key"),
+        }
+    )
+    await assert.rejects(
+        keyless.get(`/api/live?ids=${id}`),
+        (error: unknown) =>
+            error instanceof ProviderError && error.category === "configuration"
     )
     assert.equal(
         sourceSchema.safeParse({ ...raw, providerServerId: "../other" })
@@ -33,7 +46,7 @@ test("Warcon HTTP restricts the server, read action and query before resolving c
     let secrets = 0
     const http = createProviderHttp(sourceSchema.parse(raw), {
         now: () => 0,
-        resolveSecret: () => {
+        credential: async () => {
             secrets++
             return "test-only"
         },

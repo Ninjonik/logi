@@ -60,6 +60,7 @@ export async function savePlayerMatchStats(input: {
 
 export async function getPlayerStatsDocs(userId: string) {
     return (await fetchQuery(listPlayerStatsForUserReference, {
+        secret: getInternalAuthSecret(),
         userId,
     })) as PlayerStatsDoc[]
 }
@@ -70,6 +71,7 @@ export async function getPlayerStatsUserIdsForEvents(eventIds: string[]) {
     }
 
     return (await fetchQuery(listUserIdsForEventsReference, {
+        secret: getInternalAuthSecret(),
         eventIds,
     })) as string[]
 }

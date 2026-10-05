@@ -91,7 +91,9 @@ function renderNavItems(
                                 asChild
                                 tooltip={item.title}
                                 className="h-7 cursor-pointer px-1.5 text-[13px] 2xl:h-8 2xl:px-2 2xl:text-sm"
-                                isActive={pathname === item.url}
+                                isActive={
+                                    item.isActive || pathname === item.url
+                                }
                             >
                                 <Link
                                     href={url}

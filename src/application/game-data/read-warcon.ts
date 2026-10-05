@@ -5,21 +5,21 @@ import {
     type WarconRead,
 } from "../../domain/game-data/warcon-contracts"
 import {
-    ProviderError,
-    type DataSource,
-    type ErrorCategory,
-} from "../../domain/game-data/contracts"
-import {
     warconCacheMs,
     type WarconQuery,
 } from "../../domain/game-data/warcon-query"
+import {
+    ProviderError,
+    type ErrorCategory,
+} from "../../domain/game-data/contracts"
+import type { ResolvedSource } from "../../domain/game-data/credentials"
 
 export type WarconClaim = { cacheId: string; generation: number; fence: number }
 export type WarconPrepared =
     | { kind: "denied" }
     | { kind: "busy"; retryAfterMs: number }
     | { kind: "cached"; envelope: WarconEnvelope }
-    | { kind: "claimed"; claim: WarconClaim; source: DataSource }
+    | { kind: "claimed"; claim: WarconClaim; source: ResolvedSource }
 export type WarconFinish = {
     envelope?: WarconEnvelope
     errorCategory?: ErrorCategory
@@ -33,7 +33,11 @@ export type WarconServed =
 export type WarconReadPorts = {
     now(): number
     prepare(): Promise<WarconPrepared>
-    read(source: DataSource, query: WarconQuery): Promise<WarconRead>
+    read(
+        source: ResolvedSource,
+        query: WarconQuery,
+        claim: WarconClaim
+    ): Promise<WarconRead>
     finish(claim: WarconClaim, value: WarconFinish): Promise<boolean>
 }
 
@@ -78,7 +82,7 @@ export async function serveWarconRead(
         }
     let finish: WarconFinish
     try {
-        const result = await ports.read(prepared.source, query)
+        const result = await ports.read(prepared.source, query, prepared.claim)
         const now = ports.now()
         const envelope = warconEnvelopeSchema.parse({
             connectionId,

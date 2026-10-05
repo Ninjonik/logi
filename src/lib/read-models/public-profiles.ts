@@ -5,6 +5,7 @@ import type { CollectionFilter } from "@/domain/shared/collection-query"
 import type { GameId, GameSelection } from "@/domain/games/game"
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 import type { MatchRecord } from "@/types/domain"
+import { getInternalAuthSecret } from "@/lib/env"
 
 const getPublicPlayerReference = makeFunctionReference<"query">(
     "publicProfiles:getPlayer"
@@ -49,6 +50,7 @@ export async function getPublicPreview(
         [appCacheTags.publicDiscovery(), tag],
         async () =>
             (await fetchQuery(getPublicPreviewReference, {
+                secret: getInternalAuthSecret(),
                 entityType,
                 entityId,
             })) as {
@@ -69,7 +71,10 @@ export async function getPublicPlayerProfile(playerId: string) {
             appCacheTags.playerStats(playerId),
         ],
         async () =>
-            (await fetchQuery(getPublicPlayerReference, { playerId })) as {
+            (await fetchQuery(getPublicPlayerReference, {
+                secret: getInternalAuthSecret(),
+                playerId,
+            })) as {
                 id: string
                 name: string
                 avatar: string
@@ -102,6 +107,7 @@ export async function getPublicMatch(eventId: string) {
     // Player-to-account links can be added after a match is imported. Do not
     // retain an individual public match payload after those links change.
     return (await fetchQuery(getPublicMatchReference, {
+        secret: getInternalAuthSecret(),
         eventId: eventId as never,
     })) as
         | (MatchRecord & {
@@ -123,7 +129,10 @@ export async function getPublicClan(guildId: string) {
         ["public-clan", guildId],
         [appCacheTags.publicClan(guildId), appCacheTags.publicDiscovery()],
         async () =>
-            (await fetchQuery(getPublicClanReference, { guildId })) as {
+            (await fetchQuery(getPublicClanReference, {
+                secret: getInternalAuthSecret(),
+                guildId,
+            })) as {
                 id: string
                 name: string
                 avatar: string
@@ -147,6 +156,7 @@ export async function getPublicClan(guildId: string) {
 
 export async function listPublicClans(cursor: string | null, game: GameId) {
     return (await fetchQuery(listPublicClansReference, {
+        secret: getInternalAuthSecret(),
         paginationOpts: { cursor, numItems: 12 },
         game,
     })) as PublicPage<{
@@ -177,6 +187,7 @@ export async function listPublicMatches(
         [appCacheTags.publicDiscovery()],
         async () =>
             (await fetchQuery(listPublicMatchesReference, {
+                secret: getInternalAuthSecret(),
                 paginationOpts: { cursor, numItems: limit },
                 filters,
                 ...(game === "all"
@@ -209,6 +220,7 @@ export async function searchPublicPlayers(
         [appCacheTags.publicDiscovery()],
         async () =>
             (await fetchQuery(searchPublicPlayersReference, {
+                secret: getInternalAuthSecret(),
                 term,
                 paginationOpts: { cursor, numItems: 12 },
                 game,
@@ -223,6 +235,7 @@ export async function searchPublicClans(
     game: GameId
 ) {
     return (await fetchQuery(searchPublicClansReference, {
+        secret: getInternalAuthSecret(),
         term,
         paginationOpts: { cursor, numItems: 12 },
         game,
