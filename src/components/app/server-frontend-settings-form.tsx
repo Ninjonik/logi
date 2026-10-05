@@ -12,6 +12,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    saveFrontendSettings,
+    storedProfileCollections,
+} from "@/components/app/settings/save-frontend-settings"
 import type { DiscordSelectOption } from "@/components/app/discord-entity-select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { CalendarItem, EventCategory, Guild } from "@/types/domain"
@@ -237,42 +241,18 @@ export function ServerFrontendSettingsForm({
     }
 
     async function handleSave(regenerateCalendarFeedToken = false) {
-        const response = await fetch(
-            `/api/servers/${server.id}/frontend-settings`,
-            {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                    name,
-                    avatar,
-                    description,
-                    eventCategories: eventCategories.map((category) => ({
-                        id: category.id,
-                        label: category.label,
-                        color: category.color,
-                        emoji: category.emoji || undefined,
-                    })),
-                    calendarItems: toPersistedCalendarItems(calendarItems).map(
-                        (item) => ({
-                            id: item.id,
-                            title: item.title,
-                            description: item.description,
-                            color: item.color,
-                            emoji: item.emoji,
-                            label: item.label,
-                            startAt: item.startAt,
-                            endAt: item.endAt,
-                            allDay: item.allDay,
-                            recurrence: item.recurrence,
-                        })
-                    ),
-                    regenerateCalendarFeedToken,
-                }),
-            }
-        )
-        const body = await response.json()
-        if (!response.ok) {
-            toast.error(body.error ?? dictionary.common.error)
+        const result = await saveFrontendSettings(server.id, {
+            name,
+            avatar,
+            description,
+            ...storedProfileCollections({
+                eventCategories,
+                calendarItems: toPersistedCalendarItems(calendarItems),
+            }),
+            regenerateCalendarFeedToken,
+        })
+        if (!result.ok) {
+            toast.error(result.error ?? dictionary.common.error)
             return
         }
 

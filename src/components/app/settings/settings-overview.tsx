@@ -25,7 +25,11 @@ import {
     type SettingsTile,
     type SettingsTileGroup,
 } from "@/components/app/settings/settings-overview-tiles"
-import { settingsHref } from "@/components/app/settings/settings-section-meta"
+import {
+    guidedSetupHref,
+    settingsHref,
+} from "@/components/app/settings/settings-section-meta"
+import { firstUnfinishedGuidedStep } from "@/domain/workspaces/guided-setup"
 import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
@@ -291,23 +295,33 @@ export function SettingsOverview({
                         step={step}
                         text={text.setup}
                         detail={stepDetail(step)}
-                        href={step.section ? href(step.section) : undefined}
+                        // "Fix" opens the page that holds the setting; "Set up"
+                        // and the bot step open the setup guide at that step.
+                        href={
+                            step.state === "next" && step.section
+                                ? href(step.section)
+                                : guidedSetupHref(locale, serverId, step.id)
+                        }
                     />
                 ))}
             </ol>
-            {setup.next?.section ? (
-                <div className="flex flex-wrap items-center gap-3">
-                    <Button asChild className="rounded-lg">
-                        <Link href={href(setup.next.section)}>
-                            {text.setup.continue}
-                            <ArrowRight className="size-4" aria-hidden="true" />
-                        </Link>
-                    </Button>
-                    <span className="text-muted-foreground text-[13px]">
-                        {text.setup.continueHelp}
-                    </span>
-                </div>
-            ) : null}
+            <div className="flex flex-wrap items-center gap-3">
+                <Button asChild className="rounded-lg">
+                    <Link
+                        href={guidedSetupHref(
+                            locale,
+                            serverId,
+                            firstUnfinishedGuidedStep(setup.steps)
+                        )}
+                    >
+                        {text.setup.continue}
+                        <ArrowRight className="size-4" aria-hidden="true" />
+                    </Link>
+                </Button>
+                <span className="text-muted-foreground text-[13px]">
+                    {text.setup.continueHelp}
+                </span>
+            </div>
         </section>
     )
 

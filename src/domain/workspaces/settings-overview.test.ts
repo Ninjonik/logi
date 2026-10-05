@@ -66,6 +66,21 @@ test("a missing bot or an incomplete profile is unfinished", () => {
     )
 })
 
+test("the profile needs a name and a logo; the description is optional", () => {
+    const profile = (value: SettingsOverviewFacts["profile"]) =>
+        settingsSetupSteps(snapshot, { ...facts, profile: value }).steps.find(
+            (step) => step.id === "profile"
+        )?.state
+    assert.equal(
+        profile({ name: true, logo: true, description: false }),
+        "done"
+    )
+    assert.equal(
+        profile({ name: false, logo: true, description: true }),
+        "next"
+    )
+})
+
 test("tiles show counts, missing settings and on/off", () => {
     assert.deepEqual(settingsTileBadge("channels", snapshot, facts), {
         tone: "attention",

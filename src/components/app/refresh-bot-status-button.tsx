@@ -9,8 +9,14 @@ import { Button } from "@/components/ui/button"
 
 export function RefreshBotStatusButton({
     dictionary,
+    label,
+    onRefreshed,
 }: {
     dictionary: Dictionary
+    /** Replaces "Refresh", e.g. "Check again" in the setup guide. */
+    label?: string
+    /** Called after the bot status was read again from Discord. */
+    onRefreshed?: () => void
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -29,6 +35,7 @@ export function RefreshBotStatusButton({
         }
 
         toast.success(dictionary.dashboard.botStatusRefreshed)
+        onRefreshed?.()
         startTransition(() => {
             router.refresh()
         })
@@ -43,7 +50,7 @@ export function RefreshBotStatusButton({
         >
             {isPending
                 ? dictionary.dashboard.refreshingBotStatus
-                : dictionary.dashboard.refreshBotStatus}
+                : (label ?? dictionary.dashboard.refreshBotStatus)}
         </Button>
     )
 }

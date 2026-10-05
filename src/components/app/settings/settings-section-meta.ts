@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 
 import type { SettingsSectionId } from "@/domain/workspaces/settings-sections"
+import type { GuidedSetupPosition } from "@/domain/workspaces/guided-setup"
 import type { GameId } from "@/domain/games/game"
 
 export const SETTINGS_SECTION_ICONS: Record<SettingsSectionId, LucideIcon> = {
@@ -53,4 +54,14 @@ export function settingsHref(
     const base = `/${locale}/dashboard/servers/${serverId}/settings`
     const path = section ? `${base}/${section}` : base
     return gameId ? `${path}?game=${encodeURIComponent(gameId)}` : path
+}
+
+/** The setup guide (design B), open at `step` or, without one, at the first unfinished step. */
+export function guidedSetupHref(
+    locale: string,
+    serverId: string,
+    step?: GuidedSetupPosition
+) {
+    const path = `/${locale}/dashboard/servers/${serverId}/settings/setup`
+    return step ? `${path}?step=${encodeURIComponent(step)}` : path
 }

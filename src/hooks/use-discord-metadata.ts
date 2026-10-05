@@ -15,14 +15,19 @@ export type DiscordMetadataState =
     | { status: "ready"; metadata: DiscordMetadata }
     | { status: "failed"; metadata: null }
 
-/** Channels, roles and emoji of the clan's Discord server, with whether loading failed. */
+/**
+ * Channels, roles and emoji of the clan's Discord server, with whether loading
+ * failed. A new `version` reads them again, e.g. after the bot was invited.
+ */
 export function useDiscordMetadataState(
-    serverId: string
+    serverId: string,
+    version = 0
 ): DiscordMetadataState {
+    const key = `${serverId}:${version}`
     const [state, setState] = useState<{
-        serverId: string
+        key: string
         value: DiscordMetadataState
-    }>({ serverId, value: { status: "loading", metadata: null } })
+    }>({ key, value: { status: "loading", metadata: null } })
     useEffect(() => {
         let active = true
         fetch(`/api/servers/${serverId}/discord-metadata`)
@@ -37,22 +42,22 @@ export function useDiscordMetadataState(
                     throw new Error("Unable to load Discord metadata.")
                 if (active)
                     setState({
-                        serverId,
+                        key,
                         value: { status: "ready", metadata: body },
                     })
             })
             .catch(() => {
                 if (active)
                     setState({
-                        serverId,
+                        key,
                         value: { status: "failed", metadata: null },
                     })
             })
         return () => {
             active = false
         }
-    }, [serverId])
-    return state.serverId === serverId
+    }, [serverId, key])
+    return state.key === key
         ? state.value
         : { status: "loading", metadata: null }
 }

@@ -8,6 +8,7 @@ import {
 export type DiscordSelectOption = EntitySelectOption
 
 export function DiscordEntitySelect({
+    id,
     value,
     onChange,
     options,
@@ -16,6 +17,7 @@ export function DiscordEntitySelect({
     noneLabel = "None",
     emptyLabel,
 }: {
+    id?: string
     value?: string
     onChange: (value?: string) => void
     options: DiscordSelectOption[]
@@ -26,6 +28,7 @@ export function DiscordEntitySelect({
 }) {
     return (
         <EntitySelect
+            id={id}
             value={value}
             onChange={onChange}
             options={options}
