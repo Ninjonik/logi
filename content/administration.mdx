@@ -26,7 +26,13 @@ This page is for people with elevated Logi access. Superadmin-only pages appear 
 
 Logi keeps one global team catalogue per game (Hell Let Loose and Wardogs). Only
 global administrators (superadmins) manage it, from **Team catalogue** and
-**Team requests** in the superadmin navigation group. Workspaces only read the
+**Team requests**.
+
+On every global administration page (Competitions, Team catalogue, Team
+requests, Bot logs, Platform settings) the sidebar switches to the **Global
+administration** navigation: it says that these pages cover all of Logi and
+every clan, leads back to the clan you came from, groups **Competitions and
+teams** and **Operations**, and shows how many team requests are waiting. Workspaces only read the
 catalogue: their administrators pick catalogue teams for matches and send a
 request when a team is missing or out of date.
 
@@ -38,8 +44,9 @@ links. A team can be linked to one Logi workspace to record that the team is
 that workspace's clan; the link grants no permissions. Logos uploaded here are
 normalized to a PNG no larger than 512×512 and belong to the platform, not to a workspace.
 
-- **Archive** hides a team from new selection and from connected websites;
-  saved matches keep their snapshot. **Restore** brings it back unless another
+- **Archive** first asks for confirmation and lists what changes; it hides a
+  team from new selection and from connected websites, and saved matches keep
+  their snapshot. **Restore** brings it back unless another
   active team has taken the name meanwhile.
 - **Merge** retires a duplicate into the team that stays (an active team of the
   same game). The duplicate is archived with a pointer to the kept team, and its
@@ -51,14 +58,15 @@ normalized to a PNG no larger than 512×512 and belong to the platform, not to a
   loaded. If someone else changed the team first, the dialog or row shows the
   latest version and keeps your own edits; review it and try again.
 
-On **Team requests**, pending requests are listed oldest first; the status
-filter also shows approved, merged, rejected and cancelled requests. Each
-request shows the requesting workspace, the requester's Discord ID, whether it
-is a new team or a change request, the game, the proposed fields with the logo,
-the requester's note and, for a change request, the team as it is now with the
-changed fields marked.
+On **Team requests**, **Pending** lists the waiting requests oldest first and
+**Decided** the approved, merged, rejected or cancelled ones; both can be
+narrowed to one game or one clan. Choose a request in the list to see it beside
+the list: the requester's Discord ID and clan, the game, how long ago it was
+sent, the requester's note and either the proposed team (new-team requests) or,
+for a change request, a table of each field as it is now and as proposed, with
+the rows that change highlighted.
 
-- **Approve** opens an editable copy of the proposal. Approving a new-team
+- **Review and approve** opens an editable copy of the proposal. Approving a new-team
   request creates the team; approving a change request applies the fields to
   the current team at the version shown, so a team that changed meanwhile has to
   be reviewed again. The requester's logo becomes a platform logo. If an active
@@ -66,7 +74,7 @@ changed fields marked.
   new-team request into that team instead.
 - **Merge into existing team** (new-team requests only) records that the
   requested team already exists: choose an active team of the same game.
-- **Reject** requires a reason of up to 500 characters.
+- **Reject with reason** requires a reason of up to 500 characters.
 
 Every decision sends the requester one Discord direct message in the requesting
 workspace's language with the outcome, the requested name, the resulting team
@@ -109,11 +117,16 @@ Discord completed the operation.
 ## Competitions
 
 Competitions are global: Logi's global administrators (superadmins) run them
-from **Dashboard → Competitions**, and every competition belongs to one game,
+from **Global administration → Competitions**, and every competition belongs to one game,
 Hell Let Loose or Wardogs. Teams come from the global team catalogue; a
 workspace is never a competition team. Each write is checked against the
 administrator's current dashboard session, so a revoked session stops working
 immediately.
+
+A competition's page shows its game, division and team counts and, once it is
+published, a link to its public page. Its sections are tabs: **Details**,
+**Divisions**, **Teams** and **Fixtures**; a new competition opens on
+Divisions, one without teams on Teams, and a running one on Fixtures.
 
 - **Create and publish.** A new competition needs a game, name, season and a
   unique address (slug: 2–64 lowercase letters, numbers and hyphens). It starts

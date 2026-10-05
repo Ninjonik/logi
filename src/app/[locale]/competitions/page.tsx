@@ -1,4 +1,5 @@
-import { ExternalLink } from "lucide-react"
+import { EmptyState } from "@/components/app/empty-state"
+import { ExternalLink, Trophy } from "lucide-react"
 import Link from "next/link"
 
 import {
@@ -139,9 +140,14 @@ export default async function CompetitionsPage({
                             ))}
                         </div>
                     ) : (
-                        <p className="text-muted-foreground">
-                            {labels.noCompetitions}
-                        </p>
+                        <EmptyState
+                            icon={Trophy}
+                            title={dictionary.publicSite.competition.emptyTitle}
+                            description={
+                                dictionary.publicSite.competition
+                                    .emptyDescription
+                            }
+                        />
                     )}
                 </div>
             </PublicPage>

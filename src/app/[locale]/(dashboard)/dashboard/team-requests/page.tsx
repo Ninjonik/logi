@@ -36,6 +36,7 @@ export default async function TeamRequestsPage({
                         catalog: dictionary.teamCatalogAdmin,
                     }}
                     locale={safeLocale}
+                    allGamesLabel={dictionary.games.all}
                 />
             </div>
         </>

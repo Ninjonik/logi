@@ -889,7 +889,7 @@ export const deMessages = {
         platformSettingsTitle: "Plattform-Einstellungen",
         platformSettingsDescription:
             "Wähle den Logi-Workspace und Discord-Kanal für den plattformweiten Servicestatus.",
-        platformWorkspace: "Superadmin-Workspace",
+        platformWorkspace: "Workspace für den Plattformstatus",
         platformStatusChannel: "Status-Channel",
         platformStatusChannelHint:
             "Der Bot hält hier ein Status-Embed aktuell und erstellt einen Thread für Ausfälle und Wiederherstellungen.",
@@ -1223,7 +1223,7 @@ export const deMessages = {
     teamCatalogAdmin: {
         title: "Teamkatalog",
         description:
-            "Ein globaler Katalog der Hell-Let-Loose- und Wardogs-Teams für alle Logi-Workspaces. Nur globale Administratoren fügen Teams hinzu, bearbeiten, archivieren und führen sie zusammen; Workspaces wählen daraus aus und senden Anfragen.",
+            "Eine Teamliste für ganz Logi. Clans wählen daraus ihre Gegner, Wettbewerbe melden daraus Teams an.",
         gamesLabel: "Spiel",
         search: "Teams suchen…",
         showArchived: "Archivierte und zusammengeführte Teams anzeigen",
@@ -1273,6 +1273,15 @@ export const deMessages = {
         saved: "Team gespeichert.",
         archivedNotice:
             "Team archiviert. Gespeicherte Matches behalten ihren Snapshot.",
+        archiveConfirmTitle: "{name} archivieren?",
+        archiveConfirmDescription:
+            "Die Archivierung gilt sofort. Das ändert sich:",
+        archiveConsequenceSelection:
+            "{name} wird Clans und Wettbewerben nicht mehr angeboten.",
+        archiveConsequenceSnapshots:
+            "Gespeicherte Spiele behalten Name und Logo aus der Zeit des Speicherns.",
+        archiveConsequenceRestore:
+            "Du kannst das Team später wiederherstellen, sofern kein anderes aktives Team seinen Namen übernimmt.",
         restoredNotice: "Team wiederhergestellt.",
         mergedNotice: "{source} wurde mit {target} zusammengeführt.",
         conflictReloaded:
@@ -1356,7 +1365,7 @@ export const deMessages = {
     teamRequestAdmin: {
         title: "Teamanfragen",
         description:
-            "Anfragen für neue Teams und Änderungsanfragen von Workspace-Administratoren. Genehmige eine Anfrage (bei Bedarf bearbeitet), führe sie mit einem bestehenden Team zusammen oder lehne sie mit Begründung ab; die anfragende Person erhält eine Discord-DM.",
+            "Clans fragen ein neues Team oder eine Änderung an einem bestehenden an. Die anfragende Person erhält deine Entscheidung per Discord-DM.",
         statusFilter: "Status",
         statuses: {
             pending: "Offen",
@@ -1372,6 +1381,32 @@ export const deMessages = {
         loading: "Anfragen werden geladen…",
         empty: "Keine Anfragen mit diesem Status.",
         loadMore: "Mehr laden",
+        tabsLabel: "Status der Anfragen",
+        tabPending: "Offen · {count}",
+        tabPendingEmpty: "Offen",
+        tabDecided: "Entschieden",
+        gameFilter: "Spiel",
+        clanFilter: "Clan",
+        allClans: "Alle Clans",
+        listLabel: "Anfragen",
+        fromClan: "von {clan}",
+        titleCreate: "Neues Team {name}",
+        titleUpdate: "Änderung am Team {name}",
+        requestedBy: "{requester} von {clan}",
+        field: "Feld",
+        now: "Jetzt",
+        proposed: "Vorgeschlagen",
+        unchanged: "unverändert",
+        emptyValue: "leer",
+        comparisonHint:
+            "Hervorgehobene Zeilen ändern sich. Gespeicherte Spiele behalten das Team so, wie es beim Speichern war.",
+        rejectWithReason: "Mit Begründung ablehnen",
+        reviewAndApprove: "Prüfen und genehmigen",
+        selectRequest: "Wähle eine Anfrage, um ihre Details zu sehen.",
+        emptyPendingTitle: "Keine Anfrage wartet",
+        emptyPendingDescription:
+            "Clan-Admins senden Anfragen von ihrer Teamseite. Neue erscheinen hier, und die anfragende Person erhält deine Entscheidung per Discord-DM.",
+        emptyFiltered: "Keine geladene Anfrage passt zu diesen Filtern.",
         retry: "Erneut versuchen",
         requestFor: "Anfrage für {name}",
         workspace: "Workspace",
@@ -1521,6 +1556,27 @@ export const deMessages = {
             termsTitle: "Nutzungsbedingungen",
             loadFailed:
                 "Dieses Dokument konnte gerade nicht geladen werden. Versuch es später erneut oder frag auf dem Discord-Supportserver.",
+        },
+        competition: {
+            divisionsLabel: "Divisionen",
+            standings: "Tabelle",
+            standingsNote:
+                "Punkte nach den Regeln des Wettbewerbs. Clans bestätigen die Ergebnisse; Korrekturen erscheinen hier innerhalb weniger Minuten.",
+            upcoming: "Anstehend",
+            noUpcoming: "Keine Spiele geplant.",
+            noResults: "Noch keine Ergebnisse.",
+            unknownTeam: "Unbekanntes Team",
+            noDivisionsTitle: "Noch keine Divisionen",
+            noDivisionsDescription:
+                "Die Veranstalter haben für diesen Wettbewerb noch keine Divisionen angelegt. Schau später wieder vorbei.",
+            emptyTitle: "Noch keine öffentlichen Wettbewerbe",
+            emptyDescription:
+                "Wettbewerbe erscheinen hier, sobald die Logi-Administratoren sie veröffentlichen.",
+        },
+        clan: {
+            noMatchesTitle: "Noch keine erfassten Spiele",
+            noMatchesDescription:
+                "Spiele erscheinen hier, sobald der Clan Ergebnisse in Logi veröffentlicht.",
         },
     },
     competition: {

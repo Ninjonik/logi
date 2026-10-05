@@ -27,6 +27,7 @@ import {
 } from "@/domain/teams/team"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TeamCatalogueDialog } from "@/components/app/team-catalogue-dialog"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import type { TeamCatalogLabels } from "@/components/app/team-fields-editor"
 import { TeamMergeDialog } from "@/components/app/team-merge-dialog"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
@@ -338,9 +339,7 @@ function GameCatalogue({
                             pending={pendingId === team.id}
                             onEdit={() => openDialog({ kind: "edit", team })}
                             onMerge={() => openDialog({ kind: "merge", team })}
-                            onLifecycle={(action) =>
-                                void lifecycle(team, action)
-                            }
+                            onLifecycle={(action) => lifecycle(team, action)}
                         />
                     ))}
                 </ul>
@@ -416,7 +415,7 @@ function CatalogueRow({
     pending: boolean
     onEdit(): void
     onMerge(): void
-    onLifecycle(action: "archive" | "restore"): void
+    onLifecycle(action: "archive" | "restore"): Promise<void>
 }) {
     const badge = teamLifecycleBadge(team)
     const actions = teamAdminActions(team)
@@ -498,22 +497,36 @@ function CatalogueRow({
                         size="sm"
                         disabled={busy}
                         aria-label={label(labels.restoreTeam)}
-                        onClick={() => onLifecycle("restore")}
+                        onClick={() => void onLifecycle("restore")}
                     >
                         {labels.restore}
                     </Button>
                 ) : null}
                 {actions.archive ? (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={busy}
-                        aria-label={label(labels.archiveTeam)}
-                        onClick={() => onLifecycle("archive")}
+                    <ConfirmActionDialog
+                        trigger={
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={busy}
+                                aria-label={label(labels.archiveTeam)}
+                            >
+                                {labels.archive}
+                            </Button>
+                        }
+                        title={label(labels.archiveConfirmTitle)}
+                        description={labels.archiveConfirmDescription}
+                        confirmLabel={labels.archive}
+                        cancelLabel={labels.cancel}
+                        onConfirm={() => onLifecycle("archive")}
                     >
-                        {labels.archive}
-                    </Button>
+                        <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
+                            <li>{label(labels.archiveConsequenceSelection)}</li>
+                            <li>{labels.archiveConsequenceSnapshots}</li>
+                            <li>{labels.archiveConsequenceRestore}</li>
+                        </ul>
+                    </ConfirmActionDialog>
                 ) : null}
                 {actions.merge ? (
                     <Button

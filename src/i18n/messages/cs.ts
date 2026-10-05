@@ -865,7 +865,7 @@ export const csMessages = {
         platformSettingsTitle: "Nastavení platformy",
         platformSettingsDescription:
             "Vyberte workspace Logi a Discord kanál pro celoplatformní stav služeb.",
-        platformWorkspace: "Superadmin workspace",
+        platformWorkspace: "Pracovní prostor pro stav platformy",
         platformStatusChannel: "Kanál stavu",
         platformStatusChannelHint:
             "Bot zde udržuje status embed a vytvoří vlákno Aktualizace stavu pro výpadky a obnovení.",
@@ -1186,7 +1186,7 @@ export const csMessages = {
     teamCatalogAdmin: {
         title: "Katalog týmů",
         description:
-            "Jeden globální katalog týmů Hell Let Loose a Wardogs pro všechny pracovní prostory Logi. Týmy přidávají, upravují, archivují a slučují pouze globální administrátoři; pracovní prostory z katalogu vybírají a posílají žádosti.",
+            "Jeden seznam týmů pro celý Logi. Klany si z něj vybírají soupeře, soutěže z něj registrují týmy.",
         gamesLabel: "Hra",
         search: "Hledat týmy…",
         showArchived: "Zobrazit archivované a sloučené týmy",
@@ -1236,6 +1236,14 @@ export const csMessages = {
         saved: "Tým uložen.",
         archivedNotice:
             "Tým archivován. Uložené zápasy si ponechají svůj snímek.",
+        archiveConfirmTitle: "Archivovat {name}?",
+        archiveConfirmDescription: "Archivace proběhne hned. Co se změní:",
+        archiveConsequenceSelection:
+            "{name} se přestane nabízet klanům i soutěžím.",
+        archiveConsequenceSnapshots:
+            "Uložené zápasy si ponechají název a logo z doby uložení.",
+        archiveConsequenceRestore:
+            "Tým můžete později obnovit, pokud jeho název mezitím nezíská jiný aktivní tým.",
         restoredNotice: "Tým obnoven.",
         mergedNotice: "{source} byl sloučen do {target}.",
         conflictReloaded:
@@ -1313,7 +1321,7 @@ export const csMessages = {
     teamRequestAdmin: {
         title: "Žádosti o týmy",
         description:
-            "Žádosti o nový tým a o změnu od administrátorů pracovních prostorů. Žádost schvalte (případně upravenou), slučte s existujícím týmem nebo zamítněte s důvodem; žadatel dostane zprávu přes Discord DM.",
+            "Klany žádají o nový tým nebo změnu existujícího. Rozhodnutí dostane žadatel do DM.",
         statusFilter: "Stav",
         statuses: {
             pending: "Čekající",
@@ -1329,6 +1337,32 @@ export const csMessages = {
         loading: "Načítám žádosti…",
         empty: "Žádné žádosti v tomto stavu.",
         loadMore: "Načíst další",
+        tabsLabel: "Stav žádostí",
+        tabPending: "Čekají · {count}",
+        tabPendingEmpty: "Čekají",
+        tabDecided: "Vyřízené",
+        gameFilter: "Hra",
+        clanFilter: "Klan",
+        allClans: "Všechny klany",
+        listLabel: "Žádosti",
+        fromClan: "od klanu {clan}",
+        titleCreate: "Nový tým {name}",
+        titleUpdate: "Změna týmu {name}",
+        requestedBy: "{requester} z klanu {clan}",
+        field: "Pole",
+        now: "Teď",
+        proposed: "Navrženo",
+        unchanged: "beze změny",
+        emptyValue: "prázdné",
+        comparisonHint:
+            "Zvýrazněné řádky se změní. Uložené zápasy si ponechají tým tak, jak byl při uložení.",
+        rejectWithReason: "Zamítnout s důvodem",
+        reviewAndApprove: "Upravit a schválit",
+        selectRequest: "Vyberte žádost a zobrazí se její podrobnosti.",
+        emptyPendingTitle: "Žádná žádost nečeká",
+        emptyPendingDescription:
+            "Správci klanů posílají žádosti ze stránky týmů. Nové se objeví tady a žadatel dostane rozhodnutí do DM na Discordu.",
+        emptyFiltered: "Filtrům neodpovídá žádná načtená žádost.",
         retry: "Zkusit znovu",
         requestFor: "Žádost o {name}",
         workspace: "Pracovní prostor",
@@ -1466,6 +1500,27 @@ export const csMessages = {
             termsTitle: "Podmínky použití",
             loadFailed:
                 "Dokument se teď nepodařilo načíst. Zkuste to později, nebo se zeptejte na podpůrném Discord serveru.",
+        },
+        competition: {
+            divisionsLabel: "Divize",
+            standings: "Tabulka",
+            standingsNote:
+                "Body podle pravidel soutěže. Výsledky potvrzují klany, opravy se tu objeví do pár minut.",
+            upcoming: "Nadcházející",
+            noUpcoming: "Žádné naplánované zápasy.",
+            noResults: "Zatím žádné výsledky.",
+            unknownTeam: "Neznámý tým",
+            noDivisionsTitle: "Zatím žádné divize",
+            noDivisionsDescription:
+                "Pořadatelé pro tuto soutěž ještě nenastavili divize. Podívejte se sem později.",
+            emptyTitle: "Zatím žádné veřejné soutěže",
+            emptyDescription:
+                "Soutěže se tu objeví, jakmile je správci Logi zveřejní.",
+        },
+        clan: {
+            noMatchesTitle: "Zatím žádné zaznamenané zápasy",
+            noMatchesDescription:
+                "Zápasy se tu objeví, jakmile klan zveřejní výsledky v Logi.",
         },
     },
     competition: {

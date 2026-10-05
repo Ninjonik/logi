@@ -29,8 +29,10 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { globalAdminSection } from "@/lib/navigation/global-admin-routes"
 import { ServerSwitcher } from "@/components/app/server-switcher"
 import { GameSwitcher } from "@/components/app/game-switcher"
+import { AdminSidebar } from "@/components/app/admin-sidebar"
 import { getPrimaryDisplayedScore } from "@/lib/user-scores"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { AppLogo } from "@/components/app/app-logo"
@@ -62,6 +64,20 @@ export function AppSidebar({
     const searchParams = useSearchParams()
     const pathServerId = pathname?.match(/\/servers\/([^/]+)/)?.[1]
     const selectedWorkspaceId = searchParams.get("workspace") ?? undefined
+    // Global administration has its own navigation (see AdminSidebar).
+    const adminSection = isSuperadmin ? globalAdminSection(pathname) : null
+    if (adminSection)
+        return (
+            <AdminSidebar
+                locale={locale}
+                dictionary={dictionary}
+                user={user}
+                servers={servers}
+                activeSection={adminSection}
+                workspaceId={selectedWorkspaceId ?? activeServerId}
+                {...props}
+            />
+        )
     const resolvedServerId =
         pathServerId ?? selectedWorkspaceId ?? activeServerId
     const resolvedServer = resolvedServerId

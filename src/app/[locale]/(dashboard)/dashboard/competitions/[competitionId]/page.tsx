@@ -10,10 +10,12 @@ import { CompetitionManager } from "@/components/app/competition-manager"
 import { getCurrentPlayer, isCurrentUserSuperadmin } from "@/lib/auth"
 import { PageHeader } from "@/components/app/page-header"
 import { GameBadge } from "@/components/app/game-badge"
+import { ArrowLeft, ExternalLink } from "lucide-react"
 import { getDictionary } from "@/i18n/dictionaries"
+import { GAME_LABELS } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
+import { pluralize } from "@/i18n/plural"
 import { isLocale } from "@/i18n/config"
-import { ArrowLeft } from "lucide-react"
 
 export const metadata: Metadata = {
     title: "Manage competition",
@@ -44,7 +46,19 @@ export default async function CompetitionManagementPage({
         <div className="space-y-6">
             <PageHeader
                 title={`${view.competition.name} ${view.competition.season}`}
-                description={view.competition.description ?? undefined}
+                description={[
+                    GAME_LABELS[view.competition.gameId],
+                    pluralize(
+                        safeLocale,
+                        view.divisions.length,
+                        t.countDivisions
+                    ),
+                    pluralize(
+                        safeLocale,
+                        view.registrations.length,
+                        t.countTeams
+                    ),
+                ].join(" · ")}
                 badge={
                     view.competition.published ? t.publishedBadge : t.draftBadge
                 }
@@ -55,14 +69,30 @@ export default async function CompetitionManagementPage({
                     />
                 }
                 actions={
-                    <Button asChild variant="outline">
-                        <Link
-                            href={`/${safeLocale}/dashboard/competitions${query}`}
-                        >
-                            <ArrowLeft className="size-4" aria-hidden />
-                            {t.back}
-                        </Link>
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                        <Button asChild variant="outline">
+                            <Link
+                                href={`/${safeLocale}/dashboard/competitions${query}`}
+                            >
+                                <ArrowLeft className="size-4" aria-hidden />
+                                {t.back}
+                            </Link>
+                        </Button>
+                        {view.competition.published ? (
+                            <Button asChild variant="outline">
+                                <Link
+                                    href={`/${safeLocale}/competitions/${view.competition.slug}`}
+                                    target="_blank"
+                                >
+                                    {t.openPublic}
+                                    <ExternalLink
+                                        className="size-4"
+                                        aria-hidden
+                                    />
+                                </Link>
+                            </Button>
+                        ) : null}
+                    </div>
                 }
             />
             <div className="px-4 lg:px-6">
