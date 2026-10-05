@@ -3089,7 +3089,7 @@ export const enMessages = {
         title: "Stratmaps",
         createTitle: "Create Stratmap",
         pageDescription:
-            "Saved realtime tactical maps for competetive match planning.",
+            "Saved realtime tactical maps for competitive match planning.",
         createDescription:
             "Create a saved realtime tactical sketch that can later be attached to match briefings.",
         detailDescription:
@@ -3200,6 +3200,25 @@ export const enMessages = {
         color: "Color",
         size: "Size",
         noResults: "No results.",
+        variantLabel: "Variant",
+        modeLabel: "Mode",
+        importSkipped: "; {count} unsupported item(s) skipped",
+        emptyTitle: "No stratmaps yet",
+        emptyDescription:
+            "A stratmap is a shared tactical map with slides. Attach it to a match briefing so the squad sees the plan.",
+        emptyMemberDescription:
+            "Tactical maps for upcoming matches appear here once a manager creates them.",
+        deleteAction: "Delete stratmap",
+        deleteTitle: "Delete “{title}”?",
+        deleteDescription:
+            "The stratmap and all its slides disappear for everyone. Its public link stops working, also where it was already posted in Discord. This cannot be undone.",
+        deleteLinkedEvents: "It is also removed from these events:",
+        deleted: "Stratmap deleted.",
+        deleteFailed: "The stratmap could not be deleted. Try again.",
+        showLeftPanel: "Show details and slides",
+        hideLeftPanel: "Hide details and slides",
+        showRightPanel: "Show tools",
+        hideRightPanel: "Hide tools",
     },
     onboarding: {
         step: "Step {current} of {total}",

@@ -3295,6 +3295,26 @@ export const deMessages = {
         color: "Farbe",
         size: "Größe",
         noResults: "Keine Ergebnisse.",
+        variantLabel: "Variante",
+        modeLabel: "Modus",
+        importSkipped: "; {count} nicht unterstützte Elemente übersprungen",
+        emptyTitle: "Noch keine Stratmaps",
+        emptyDescription:
+            "Eine Stratmap ist eine geteilte taktische Karte mit Folien. Hänge sie an ein Match-Briefing, damit der Trupp den Plan sieht.",
+        emptyMemberDescription:
+            "Taktische Karten für kommende Matches erscheinen hier, sobald ein Manager sie erstellt.",
+        deleteAction: "Stratmap löschen",
+        deleteTitle: "„{title}“ löschen?",
+        deleteDescription:
+            "Die Stratmap und alle Folien verschwinden für alle. Der öffentliche Link funktioniert nicht mehr, auch wo er schon in Discord gepostet wurde. Das lässt sich nicht rückgängig machen.",
+        deleteLinkedEvents: "Sie wird auch aus diesen Events entfernt:",
+        deleted: "Stratmap gelöscht.",
+        deleteFailed:
+            "Die Stratmap konnte nicht gelöscht werden. Versuch es noch einmal.",
+        showLeftPanel: "Details und Folien anzeigen",
+        hideLeftPanel: "Details und Folien ausblenden",
+        showRightPanel: "Werkzeuge anzeigen",
+        hideRightPanel: "Werkzeuge ausblenden",
     },
     onboarding: {
         step: "Schritt {current} von {total}",

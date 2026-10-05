@@ -51,6 +51,7 @@ export function StratmapCreateForm({
     const [strongpointId, setStrongpointId] = useState("")
     const [importState, setImportState] = useState<string | null>(null)
     const [importSummary, setImportSummary] = useState<string | null>(null)
+    const [titleError, setTitleError] = useState(false)
 
     async function handleImport(file: File | undefined) {
         if (!file) return
@@ -67,7 +68,10 @@ export function StratmapCreateForm({
                     .replace(
                         "{skipped}",
                         imported.skippedElements
-                            ? `; ${imported.skippedElements} unsupported item${imported.skippedElements === 1 ? "" : "s"} skipped`
+                            ? dictionary.stratmaps.importSkipped.replace(
+                                  "{count}",
+                                  String(imported.skippedElements)
+                              )
                             : ""
                     )
             )
@@ -79,9 +83,10 @@ export function StratmapCreateForm({
 
     async function handleSubmit() {
         if (!title.trim()) {
-            toast.error(dictionary.stratmaps.titleRequired)
+            setTitleError(true)
             return
         }
+        setTitleError(false)
 
         startTransition(async () => {
             try {
@@ -116,12 +121,27 @@ export function StratmapCreateForm({
             </CardHeader>
             <CardContent className="space-y-4 overflow-x-hidden">
                 <div className="space-y-2">
-                    <Label>{dictionary.stratmaps.titleLabel}</Label>
+                    <Label htmlFor="stratmap-title">
+                        {dictionary.stratmaps.titleLabel}
+                    </Label>
                     <Input
+                        id="stratmap-title"
                         value={title}
                         onChange={(event) => setTitle(event.target.value)}
+                        aria-invalid={titleError}
+                        aria-describedby={
+                            titleError ? "stratmap-title-error" : undefined
+                        }
                         className="min-w-0 overflow-hidden rounded-xl"
                     />
+                    {titleError ? (
+                        <p
+                            id="stratmap-title-error"
+                            className="text-destructive text-sm"
+                        >
+                            {dictionary.stratmaps.titleRequired}
+                        </p>
+                    ) : null}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="maps-let-loose-import">
@@ -168,8 +188,8 @@ export function StratmapCreateForm({
                         labels={{
                             map: dictionary.stratmaps.baseMap,
                             mapSearch: dictionary.stratmaps.searchMap,
-                            time: "Variant",
-                            mode: "Mode",
+                            time: dictionary.stratmaps.variantLabel,
+                            mode: dictionary.stratmaps.modeLabel,
                             point: dictionary.stratmaps.point,
                             pointSearch: dictionary.stratmaps.searchPoint,
                             side: dictionary.stratmaps.side,

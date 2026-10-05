@@ -3202,6 +3202,25 @@ export const csMessages = {
         color: "Barva",
         size: "Velikost",
         noResults: "Žádné výsledky.",
+        variantLabel: "Varianta",
+        modeLabel: "Režim",
+        importSkipped: "; přeskočeno nepodporovaných položek: {count}",
+        emptyTitle: "Zatím žádná stratmapa",
+        emptyDescription:
+            "Stratmapa je sdílená taktická mapa se snímky. Připojte ji k briefingu zápasu, aby jednotka viděla plán.",
+        emptyMemberDescription:
+            "Taktické mapy pro nadcházející zápasy se tu objeví, jakmile je správce vytvoří.",
+        deleteAction: "Smazat stratmapu",
+        deleteTitle: "Smazat „{title}“?",
+        deleteDescription:
+            "Stratmapa i všechny její snímky zmizí všem. Veřejný odkaz přestane fungovat, i tam, kde už byl poslaný na Discord. Nejde to vrátit.",
+        deleteLinkedEvents: "Odebere se také z těchto akcí:",
+        deleted: "Stratmapa smazána.",
+        deleteFailed: "Stratmapu se nepovedlo smazat. Zkuste to znovu.",
+        showLeftPanel: "Zobrazit detaily a snímky",
+        hideLeftPanel: "Skrýt detaily a snímky",
+        showRightPanel: "Zobrazit nástroje",
+        hideRightPanel: "Skrýt nástroje",
     },
     onboarding: {
         step: "Krok {current} z {total}",
