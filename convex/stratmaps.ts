@@ -1,7 +1,7 @@
 import { clientGrantScopes } from "../src/domain/identity/client-grant"
+import { readClientGrant, verifyClientGrant } from "./clientGrants"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
-import { verifyClientGrant } from "./clientGrants"
 import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
@@ -153,11 +153,12 @@ export const getLiveById = query({
         stratmapId: v.id("stratmaps"),
     },
     handler: async (ctx, args) => {
-        const userId = await verifyClientGrant(
+        const userId = await readClientGrant(
+            ctx,
             args.grant,
             clientGrantScopes.stratmap(args.stratmapId)
         )
-        return await stratmapView(ctx, userId, args.stratmapId)
+        return userId ? await stratmapView(ctx, userId, args.stratmapId) : null
     },
 })
 
@@ -191,6 +192,7 @@ export const create = mutation({
     },
     handler: async (ctx, args) => {
         const userId = await verifyClientGrant(
+            ctx,
             args.grant,
             clientGrantScopes.stratmapCreate(args.serverId)
         )
@@ -246,6 +248,7 @@ export const updateMeta = mutation({
     },
     handler: async (ctx, args) => {
         const userId = await verifyClientGrant(
+            ctx,
             args.grant,
             clientGrantScopes.stratmap(args.stratmapId)
         )
@@ -283,6 +286,7 @@ export const updateState = mutation({
     },
     handler: async (ctx, args) => {
         const userId = await verifyClientGrant(
+            ctx,
             args.grant,
             clientGrantScopes.stratmap(args.stratmapId)
         )

@@ -13,6 +13,8 @@ export const CLIENT_GRANT_TTL_MS = 12 * 60 * 60 * 1000
 export type ClientGrantClaims = {
     /** Discord ID of the signed-in user the server checked. */
     sub: string
+    /** Dashboard session the grant belongs to; it stops working at logout. */
+    sid: string
     /** The single resource the grant covers, from the builders below. */
     scope: string
     /** Expiry, in milliseconds since the epoch. */
@@ -47,10 +49,12 @@ export function decodeClientGrantClaims(
     try {
         const value = JSON.parse(fromBase64Url(payload)) as unknown
         if (!value || typeof value !== "object") return null
-        const { sub, scope, exp } = value as Record<string, unknown>
+        const { sub, sid, scope, exp } = value as Record<string, unknown>
         if (
             typeof sub !== "string" ||
             !/^\d{1,32}$/.test(sub) ||
+            typeof sid !== "string" ||
+            !/^[A-Za-z0-9_-]{43}$/.test(sid) ||
             typeof scope !== "string" ||
             !scope ||
             scope.length > 200 ||
@@ -58,7 +62,7 @@ export function decodeClientGrantClaims(
             !Number.isFinite(exp)
         )
             return null
-        return { sub, scope, exp }
+        return { sub, sid, scope, exp }
     } catch {
         return null
     }

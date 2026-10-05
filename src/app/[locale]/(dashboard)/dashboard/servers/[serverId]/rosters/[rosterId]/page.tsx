@@ -10,8 +10,8 @@ import { getServerContext } from "@/lib/server-context"
 import { issueClientGrant } from "@/lib/client-grants"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isGameId } from "@/domain/games/game"
-import { getLoggedInUser } from "@/lib/auth"
 import { isLocale } from "@/i18n/config"
+import { getSession } from "@/lib/auth"
 
 export const metadata: Metadata = {
     title: "Roster | Logi",
@@ -69,11 +69,12 @@ export default async function RosterDetailPage({
         ),
         context.server.discordId
     )
-    const user = await getLoggedInUser()
-    if (!user) return null
+    const session = await getSession()
+    if (!session) return null
 
-    // Members never receive an unpublished roster, not even hidden in props.
-    if (roster && !roster.published && !canAdmin)
+    // Members never receive an unpublished roster, not even hidden in props;
+    // the clan context already leaves drafts out for them.
+    if (!canAdmin && (!roster || !roster.published))
         return (
             <>
                 <PageHeader title={event ? `${event.name} roster` : "Roster"} />
@@ -96,7 +97,7 @@ export default async function RosterDetailPage({
                     serverId={serverId}
                     locale={locale}
                     grant={issueClientGrant(
-                        user.discordId,
+                        { discordId: session.sub, sid: session.sid },
                         clientGrantScopes.roster(serverId, rosterId)
                     )}
                     dictionary={dictionary}

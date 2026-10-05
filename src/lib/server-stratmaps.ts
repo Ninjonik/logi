@@ -3,10 +3,10 @@ import { makeFunctionReference } from "convex/server"
 import { fetchQuery } from "convex/nextjs"
 
 import { clientGrantScopes } from "@/domain/identity/client-grant"
+import { getLoggedInUser, getSession } from "@/lib/auth"
 import { issueClientGrant } from "@/lib/client-grants"
 import type { GameId } from "@/domain/games/game"
 import { getInternalAuthSecret } from "@/lib/env"
-import { getLoggedInUser } from "@/lib/auth"
 
 const getStratmapByIdReference =
     makeFunctionReference<"query">("stratmaps:getById")
@@ -18,8 +18,8 @@ const listStratmapsByGuildReference = makeFunctionReference<"query">(
 )
 
 export async function getStratmapDetail(stratmapId: string) {
-    const user = await getLoggedInUser()
-    if (!user) {
+    const [user, session] = await Promise.all([getLoggedInUser(), getSession()])
+    if (!user || !session) {
         return null
     }
 
@@ -51,7 +51,7 @@ export async function getStratmapDetail(stratmapId: string) {
         ? {
               ...detail,
               grant: issueClientGrant(
-                  user.discordId,
+                  { discordId: session.sub, sid: session.sid },
                   clientGrantScopes.stratmap(stratmapId)
               ),
           }

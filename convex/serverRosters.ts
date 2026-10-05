@@ -8,7 +8,7 @@ import {
 } from "../src/infrastructure/convex/server-read-model"
 import { clientGrantScopes } from "../src/domain/identity/client-grant"
 import { getGuildDiscordId, getUserByDiscordId } from "./identity"
-import { verifyClientGrant } from "./clientGrants"
+import { readClientGrant } from "./clientGrants"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
 
@@ -23,10 +23,14 @@ export const getRosterDetail = query({
         rosterId: v.id("rosters"),
     },
     handler: async (ctx, args) => {
-        const userId = await verifyClientGrant(
+        // An expired or revoked grant reads as no live data; the page keeps
+        // its server-rendered roster until it is reloaded.
+        const userId = await readClientGrant(
+            ctx,
             args.grant,
             clientGrantScopes.roster(args.serverId, args.rosterId)
         )
+        if (!userId) return null
         const [user, server, roster] = await Promise.all([
             getUserByDiscordId(ctx, userId),
             ctx.db.get(args.serverId),

@@ -84,7 +84,8 @@ export async function getServerContextReadModel(
 
         return await cachedRead(
             [
-                "server-context:v1",
+                // v2: member entries no longer carry drafts or manager secrets.
+                "server-context:v2",
                 serverId,
                 user.discordId,
                 gameScope ?? "all",

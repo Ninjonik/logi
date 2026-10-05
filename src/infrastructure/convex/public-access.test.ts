@@ -19,6 +19,10 @@ const GUILD = "200000000000000001"
 const OTHER_GUILD = "200000000000000002"
 const ADMIN = "100000000000000001"
 const MEMBER = "100000000000000002"
+const SESSIONS: Record<string, string> = {
+    [ADMIN]: "a".repeat(43),
+    [MEMBER]: "m".repeat(43),
+}
 
 function fixture() {
     const ctx = testContext()
@@ -88,11 +92,30 @@ function fixture() {
         secondaryGroupIds: [],
         paused: false,
     })
+    for (const [userRecordId, subject] of [
+        ["users:admin", ADMIN],
+        ["users:member", MEMBER],
+    ])
+        ctx.db.seed("dashboardSessions", {
+            _id: `dashboardSessions:${subject}`,
+            sid: SESSIONS[subject],
+            subject,
+            userRecordId,
+            userSessionVersion: 0,
+            expiresAt: Date.now() + 60 * 60 * 1000,
+        })
     return ctx
 }
 
+const session = (discordId: string) => ({
+    discordId,
+    sid: SESSIONS[discordId],
+})
 const rosterGrant = (discordId: string, rosterId = "rosters:r1") =>
-    issueClientGrant(discordId, clientGrantScopes.roster("guilds:a", rosterId))
+    issueClientGrant(
+        session(discordId),
+        clientGrantScopes.roster("guilds:a", rosterId)
+    )
 
 test("server-only functions refuse callers without the internal secret", async () => {
     const ctx = fixture()
@@ -167,24 +190,66 @@ test("forged, reused, tampered and expired grants are refused", async () => {
     const [payload, signature] = grant.split(".")
     const flipped = `${payload}.${signature[0] === "A" ? "B" : "A"}${signature.slice(1)}`
     const expired = issueClientGrant(
-        ADMIN,
+        session(ADMIN),
         clientGrantScopes.roster("guilds:a", "rosters:r1"),
         Date.now() - CLIENT_GRANT_TTL_MS - 1
     )
+    const otherSession = issueClientGrant(
+        { discordId: ADMIN, sid: SESSIONS[MEMBER] },
+        clientGrantScopes.roster("guilds:a", "rosters:r1")
+    )
+    // A live query treats an unusable grant as no data instead of crashing the page.
     for (const [badGrant, rosterId] of [
         [grant, "rosters:r2"],
         [flipped, "rosters:r1"],
         [expired, "rosters:r1"],
+        [otherSession, "rosters:r1"],
         ["not-a-grant", "rosters:r1"],
     ])
-        await assert.rejects(
-            invoke(rosters.getRosterDetail, ctx, {
+        assert.equal(
+            await invoke(rosters.getRosterDetail, ctx, {
                 grant: badGrant,
                 serverId: "guilds:a",
                 rosterId,
             }),
+            null
+        )
+})
+
+test("a grant stops working when its dashboard session ends", async () => {
+    const ctx = fixture()
+    const args = {
+        grant: rosterGrant(ADMIN),
+        serverId: "guilds:a",
+        rosterId: "rosters:r1",
+    }
+    assert.ok(await invoke(rosters.getRosterDetail, ctx, args))
+    ctx.db.tables.dashboardSessions.find(
+        (row) => row.subject === ADMIN
+    )!.revokedAt = new Date().toISOString()
+    assert.equal(await invoke(rosters.getRosterDetail, ctx, args), null)
+})
+
+test("grants are refused when the internal secret is not configured", async () => {
+    const ctx = fixture()
+    const args = {
+        grant: rosterGrant(ADMIN),
+        serverId: "guilds:a",
+        rosterId: "rosters:r1",
+    }
+    delete process.env.INTERNAL_AUTH_SECRET
+    try {
+        assert.equal(await invoke(rosters.getRosterDetail, ctx, args), null)
+        await assert.rejects(
+            invoke(configuration.getConfigByGuild, ctx, {
+                secret: "dev-internal-auth-secret",
+                guildId: "guilds:a",
+            }),
             /Unauthorized/
         )
+    } finally {
+        process.env.INTERNAL_AUTH_SECRET = secret
+    }
 })
 
 test("members get the clan context without drafts or manager secrets", async () => {
@@ -216,7 +281,7 @@ test("stratmap edits need a grant for that stratmap from an administrator", asyn
     const create = (discordId: string) =>
         invoke(stratmaps.create, ctx, {
             grant: issueClientGrant(
-                discordId,
+                session(discordId),
                 clientGrantScopes.stratmapCreate("guilds:a")
             ),
             serverId: "guilds:a",
@@ -228,7 +293,7 @@ test("stratmap edits need a grant for that stratmap from an administrator", asyn
     await assert.rejects(
         invoke(stratmaps.updateState, ctx, {
             grant: issueClientGrant(
-                ADMIN,
+                session(ADMIN),
                 clientGrantScopes.stratmap("stratmaps:other")
             ),
             stratmapId,
@@ -237,7 +302,10 @@ test("stratmap edits need a grant for that stratmap from an administrator", asyn
         /Unauthorized/
     )
     await invoke(stratmaps.updateState, ctx, {
-        grant: issueClientGrant(ADMIN, clientGrantScopes.stratmap(stratmapId)),
+        grant: issueClientGrant(
+            session(ADMIN),
+            clientGrantScopes.stratmap(stratmapId)
+        ),
         stratmapId,
         state: "{}",
     })

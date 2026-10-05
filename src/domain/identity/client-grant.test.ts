@@ -11,6 +11,7 @@ import {
 test("claims round-trip through the URL-safe payload", () => {
     const claims = {
         sub: "111111111111111111",
+        sid: "s".repeat(43),
         scope: clientGrantScopes.roster("guilds:a", "rosters:b"),
         exp: 1_800_000_000_000,
     }
@@ -24,9 +25,10 @@ test("malformed claims are rejected", () => {
         btoa(JSON.stringify(value)).replace(/=+$/, "")
     for (const payload of [
         "not base64!",
-        encode({ sub: "abc", scope: "x", exp: 1 }),
-        encode({ sub: "1", scope: "", exp: 1 }),
-        encode({ sub: "1", scope: "x", exp: "soon" }),
+        encode({ sub: "abc", sid: "s".repeat(43), scope: "x", exp: 1 }),
+        encode({ sub: "1", sid: "s".repeat(43), scope: "", exp: 1 }),
+        encode({ sub: "1", sid: "s".repeat(43), scope: "x", exp: "soon" }),
+        encode({ sub: "1", sid: "short", scope: "x", exp: 1 }),
         encode(["1", "x", 1]),
     ])
         assert.equal(decodeClientGrantClaims(payload), null)

@@ -7,6 +7,7 @@ import { issueClientGrant } from "@/lib/client-grants"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
+import { getSession } from "@/lib/auth"
 
 export default async function CreateStratmapPage({
     params,
@@ -27,6 +28,8 @@ export default async function CreateStratmapPage({
     if (!context?.canAdmin) {
         return null
     }
+    const session = await getSession()
+    if (!session) return null
     if (!isGameId(game))
         return (
             <GameSelectionGate
@@ -46,7 +49,7 @@ export default async function CreateStratmapPage({
                     locale={locale}
                     serverId={serverId}
                     grant={issueClientGrant(
-                        context.user.discordId,
+                        { discordId: session.sub, sid: session.sid },
                         clientGrantScopes.stratmapCreate(serverId)
                     )}
                     dictionary={dictionary}

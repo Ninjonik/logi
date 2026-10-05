@@ -9,15 +9,16 @@ import { getInternalAuthSecret } from "@/lib/env"
 
 /**
  * Signs a grant for one resource after the caller has checked the session.
- * Convex verifies it with the same internal secret.
+ * Convex verifies it with the same internal secret and the live session.
  */
 export function issueClientGrant(
-    discordId: string,
+    session: { discordId: string; sid: string },
     scope: string,
     now = Date.now()
 ) {
     const payload = encodeClientGrantClaims({
-        sub: discordId,
+        sub: session.discordId,
+        sid: session.sid,
         scope,
         exp: now + CLIENT_GRANT_TTL_MS,
     })
