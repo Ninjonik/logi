@@ -9,11 +9,6 @@ import path from "node:path"
  */
 const APP_DIR = path.join(process.cwd(), "src", "app")
 const SUFFIX = /\|\s*(?:Logi|\$\{dictionary\.app\.name\})\s*["`]/
-/** Owned by the stratmap redesign; its metadata still needs the same fix. */
-const PENDING = new Set([
-    path.join("[locale]", "stratmaps", "[stratmapId]", "page.tsx"),
-])
-
 function pages(directory: string): string[] {
     return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
         const full = path.join(directory, entry.name)
@@ -24,7 +19,6 @@ function pages(directory: string): string[] {
 
 test("page titles leave the Logi suffix to the title template", () => {
     const offenders = pages(APP_DIR)
-        .filter((file) => !PENDING.has(path.relative(APP_DIR, file)))
         .filter((file) => path.relative(APP_DIR, file) !== "layout.tsx")
         .filter((file) => SUFFIX.test(readFileSync(file, "utf8")))
         .map((file) => path.relative(APP_DIR, file))
