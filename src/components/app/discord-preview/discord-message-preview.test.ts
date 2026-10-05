@@ -1,0 +1,175 @@
+import assert from "node:assert/strict"
+import test from "node:test"
+
+import { renderToStaticMarkup } from "react-dom/server"
+import { createElement } from "react"
+
+import {
+    errorCard,
+    panelFrame,
+    unknownErrorCard,
+} from "@/domain/discord-messages/message-view"
+import { getSystemMessages } from "@/lib/clan-language/system"
+import { enMessages } from "@/i18n/messages/en"
+import { csMessages } from "@/i18n/messages/cs"
+
+import {
+    DiscordMessagePreview,
+    type DiscordMessagePreviewProps,
+} from "./discord-message-preview"
+
+const now = Date.parse("2026-10-11T18:02:00Z")
+const render = (props: Partial<DiscordMessagePreviewProps>) =>
+    renderToStaticMarkup(
+        createElement(DiscordMessagePreview, {
+            view: unknownErrorCard({ title: "x", body: "y" }),
+            language: "cs",
+            labels: csMessages.discordPreview,
+            now,
+            timeZone: "Europe/Prague",
+            ...props,
+        })
+    )
+
+/** The visible text, without markup. */
+const textOf = (html: string) => html.replace(/<[^>]+>/g, "")
+
+const frame = panelFrame({
+    label: "Živé skóre · Hell Let Loose",
+    title: "Vlci #1",
+    state: {
+        chip: { label: "Živě", tone: "success" },
+        detail: "Foy · 36 / 100 hráčů",
+    },
+    image: { url: "https://logi.app/maps/foy.webp", description: "mapa Foy" },
+    content: [
+        {
+            kind: "text",
+            markdown:
+                "**Další:** [VLK vs ROG](https://discord.com/channels/1/2/3)",
+        },
+        { kind: "meta", lines: [{ text: "Foy", line: "details" }] },
+    ],
+    actions: [
+        [
+            { kind: "action", id: "a", label: "Hlavní akce", style: "primary" },
+            {
+                kind: "action",
+                id: "b",
+                label: "Další akce",
+                style: "secondary",
+            },
+            { kind: "link", url: "https://logi.app", label: "Odkaz ven" },
+        ],
+    ],
+    updatedAt: "2026-10-11T18:00:00Z",
+    refreshSeconds: 60,
+})
+
+test("the frame shows the accent bar, upper-case label, title, chip, image and footer", () => {
+    const html = render({ view: frame })
+    assert.match(html, /border-left-color:#e8a33d/)
+    assert.match(html, /ŽIVÉ SKÓRE · HELL LET LOOSE/)
+    assert.match(html, />Vlci #1</)
+    assert.match(html, /background:#3ba55c[^>]*><\/span>Živě/)
+    assert.match(html, /Foy · 36 \/ 100 hráčů/)
+    assert.match(
+        html,
+        /<img src="https:\/\/logi.app\/maps\/foy.webp" alt="mapa Foy"/
+    )
+    assert.match(
+        textOf(html),
+        /Aktualizováno před 2 minutami · obnovuje se každých 60 s · Spravováno v Logi/
+    )
+})
+
+test("markdown, links and buttons render with their Discord styles", () => {
+    const html = render({ view: frame })
+    assert.match(html, /<strong[^>]*><span>Další:<\/span><\/strong>/)
+    assert.match(
+        html,
+        /<a href="https:\/\/discord.com\/channels\/1\/2\/3" target="_blank" rel="noreferrer noopener"[^>]*>(<span>)?VLK vs ROG/
+    )
+    assert.match(html, /bg-\[#5865f2\][^"]*"><span>Hlavní akce/)
+    assert.match(html, /bg-\[#4e5058\][^"]*"><span>Další akce/)
+    assert.match(
+        html,
+        /Odkaz ven<\/span><svg[^>]*>.*<span class="sr-only">\(odkaz ven\)/
+    )
+    assert.match(html, /aria-label="Tlačítka zprávy"/)
+})
+
+test("a private reply shows Discord's ephemeral line and the invoking command", () => {
+    const html = render({
+        view: errorCard({
+            title: "Tento ticket můžou zavřít jen podpora a správci",
+            body: "Ticket zavírá <@&1> nebo správci Logi. Kanál <#2>, autor <@3>.",
+        }),
+        mentions: { roles: { "1": "Admini" }, channels: { "2": "tickety" } },
+        invokedBy: { user: "Hráč 17", command: "/close_ticket" },
+        author: { time: "dnes v 20:14" },
+    })
+    assert.match(
+        html,
+        /Tuto zprávu vidíte jen vy ·<\/span><span[^>]*>Zavřít zprávu/
+    )
+    assert.match(html, /Hráč 17 použil\(a\) <span[^>]*>\/close_ticket<\/span>/)
+    assert.match(html, />@Admini</)
+    assert.match(html, />#tickety</)
+    assert.match(html, />@uživatel</, "unknown mentions get a generic word")
+    assert.match(
+        html,
+        />Logi<\/span><span[^>]*>APP<\/span><span[^>]*>dnes v 20:14/
+    )
+})
+
+test("the clan language drives the bot's words; Discord's chrome follows the dashboard", () => {
+    const copy = getSystemMessages("de").errors
+    const html = render({
+        view: unknownErrorCard({
+            title: copy.unknownTitle,
+            body: copy.unknownBody,
+        }),
+        language: "de",
+        labels: enMessages.discordPreview,
+    })
+    assert.match(html, /Das hat nicht geklappt/)
+    assert.match(html, /Only you can see this/)
+})
+
+test("paused panels show the paused chip with its time; the bar keeps the clan colour", () => {
+    const html = render({
+        view: panelFrame({
+            label: "Živé skóre · Hell Let Loose",
+            title: "Vlci #1",
+            updatedAt: "2026-10-11T17:50:00Z",
+            paused: {
+                reason: "server neodpovídá",
+                since: "2026-10-11T19:02:00Z",
+            },
+        }),
+        style: { accentColor: "#4F9DE0" },
+    })
+    assert.match(html, /border-left-color:#4f9de0/)
+    assert.match(html, /background:#f0b232[^>]*><\/span>Pozastaveno/)
+    assert.match(
+        textOf(html),
+        /server neodpovídá · poslední data 11\. října 2026 v 21:02/
+    )
+})
+
+test("text from the bot is never rendered as HTML", () => {
+    const html = render({
+        view: errorCard({
+            title: "<b>x</b>",
+            body: "<img src=x onerror=alert(1)>",
+        }),
+    })
+    assert.doesNotMatch(html, /<img src=x/)
+    assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/)
+})
+
+test("without a fixed now, relative times show the absolute time so renders stay pure", () => {
+    const html = render({ view: frame, now: undefined })
+    assert.match(textOf(html), /Aktualizováno 11\. října 2026 v 20:00/)
+})

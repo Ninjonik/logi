@@ -3,7 +3,10 @@ import test from "node:test"
 
 import {
     DEFAULT_MESSAGE_ACCENT_COLOR,
+    DEFAULT_MESSAGE_ACCENT_HEX,
+    SYSTEM_MESSAGE_ACCENT_COLOR,
     discordTimestamp,
+    discordWeekdayTimestamp,
     fillTemplate,
     findSquadLeader,
     formatCount,
@@ -18,6 +21,16 @@ test("parseDiscordColor accepts six-digit hex colours only", () => {
     assert.equal(parseDiscordColor("#abc"), undefined)
     assert.equal(parseDiscordColor("red"), undefined)
     assert.equal(parseDiscordColor(null), undefined)
+})
+
+test("the default clan accent is #E8A33D and system messages are neutral grey", () => {
+    assert.equal(DEFAULT_MESSAGE_ACCENT_COLOR, 0xe8a33d)
+    assert.equal(
+        parseDiscordColor(DEFAULT_MESSAGE_ACCENT_HEX),
+        DEFAULT_MESSAGE_ACCENT_COLOR
+    )
+    assert.equal(SYSTEM_MESSAGE_ACCENT_COLOR, 0x80848e)
+    assert.equal(resolveMessageAccentColor({}), 0xe8a33d)
 })
 
 test("message accent prefers the category, then the clan colour, then Logi amber", () => {
@@ -119,4 +132,27 @@ test("squad leaders are recognised from common Hell Let Loose role names", () =>
         findSquadLeader<{ id: string; roleName?: string }>([{ id: "a" }]),
         undefined
     )
+})
+
+test("weekday timestamps read like the boards in the clan language and zone", () => {
+    const at = "2026-10-11T18:00:00.000Z"
+    assert.equal(
+        discordWeekdayTimestamp(at, "cs-CZ", "Europe/Prague"),
+        "ne <t:1791741600:d> · <t:1791741600:t>"
+    )
+    assert.equal(
+        discordWeekdayTimestamp(at, "de-DE", "Europe/Berlin"),
+        "So <t:1791741600:d> · <t:1791741600:t>"
+    )
+    // The weekday follows the clan's zone, not UTC.
+    assert.match(
+        discordWeekdayTimestamp(
+            "2026-10-11T23:30:00Z",
+            "en-GB",
+            "Europe/Prague"
+        )!,
+        /^Mon /
+    )
+    assert.match(discordWeekdayTimestamp(at, "en-GB", "Not/AZone")!, /^Sun /)
+    assert.equal(discordWeekdayTimestamp("nope", "cs-CZ", "UTC"), undefined)
 })

@@ -7,12 +7,13 @@ import {
 
 /**
  * Emblems used when no application emoji or workspace override exists: the
- * Hell Let Loose team colours (Allies blue, Axis red) and the neutral marker
- * for Wardogs factions, as on the score panels.
+ * boards' monochrome Hell Let Loose signs (Allies ★, Axis ✚) and the neutral
+ * marker for Wardogs factions. No coloured squares, so a colour never means
+ * different things in different places (L3-04).
  */
 export const FALLBACK_FACTION_EMBLEMS: Record<PanelFaction, string> = {
-    allies: "🟦",
-    axis: "🟥",
+    allies: "★",
+    axis: "✚",
     valkyra: NEUTRAL_FACTION_MARKER,
     manticore: NEUTRAL_FACTION_MARKER,
     lonestar: NEUTRAL_FACTION_MARKER,

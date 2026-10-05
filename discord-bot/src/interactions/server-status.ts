@@ -10,7 +10,8 @@ import {
     dataGameSchema,
     gameDataSettingsSchema,
 } from "../../../src/domain/game-data/contracts"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getCommandMessages } from "../../../src/lib/clan-language/commands"
+import { clanLanguageForGuild } from "../runtime/clan-language"
 import { convex, references } from "../convex"
 import { withTimeout } from "../utils"
 import { env } from "../environment"
@@ -37,13 +38,13 @@ function displayText(value: string) {
 }
 
 export function buildServerStatusCommand() {
-    const messages = getClanDiscordMessages("en").serverStatus
+    const messages = getCommandMessages("en").serverStatus
     return new SlashCommandBuilder()
         .setName("server-status")
         .setDescription(messages.description)
         .setDescriptionLocalizations({
-            cs: getClanDiscordMessages("cs").serverStatus.description,
-            de: getClanDiscordMessages("de").serverStatus.description,
+            cs: getCommandMessages("cs").serverStatus.description,
+            de: getCommandMessages("de").serverStatus.description,
         })
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .setDMPermission(false)
@@ -52,8 +53,8 @@ export function buildServerStatusCommand() {
                 .setName("game")
                 .setDescription(messages.gameOption)
                 .setDescriptionLocalizations({
-                    cs: getClanDiscordMessages("cs").serverStatus.gameOption,
-                    de: getClanDiscordMessages("de").serverStatus.gameOption,
+                    cs: getCommandMessages("cs").serverStatus.gameOption,
+                    de: getCommandMessages("de").serverStatus.gameOption,
                 })
                 .setRequired(true)
                 .addChoices(
@@ -69,7 +70,7 @@ export function buildServerStatusReply(
     game: Game,
     settings: Settings
 ) {
-    const messages = getClanDiscordMessages(language).serverStatus
+    const messages = getCommandMessages(language).serverStatus
     const connections = settings.connections.filter(
         ({ snapshot }) =>
             snapshot.guildId === guildId && snapshot.gameId === game
@@ -110,26 +111,25 @@ export function buildServerStatusReply(
 export async function handleServerStatusCommand(
     interaction: ChatInputCommandInteraction
 ) {
-    const messages = getClanDiscordMessages(interaction.locale).serverStatus
+    // Acknowledge privately first, then read the clan language: every reply
+    // is in the clan language, never the member's Discord language (M3-02).
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+    const language = interaction.guildId
+        ? await clanLanguageForGuild(interaction.guildId)
+        : undefined
+    const messages = getCommandMessages(language).serverStatus
     if (
         !interaction.guildId ||
         !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)
     ) {
-        await interaction.reply({
-            content: messages.forbidden,
-            flags: MessageFlags.Ephemeral,
-        })
+        await interaction.editReply({ content: messages.forbidden })
         return
     }
     const game = dataGameSchema.safeParse(interaction.options.getString("game"))
     if (!game.success) {
-        await interaction.reply({
-            content: messages.invalidGame,
-            flags: MessageFlags.Ephemeral,
-        })
+        await interaction.editReply({ content: messages.invalidGame })
         return
     }
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral })
     let settings: Settings
     try {
         settings = gameDataSettingsSchema.parse(
@@ -148,7 +148,7 @@ export async function handleServerStatusCommand(
     }
     await interaction.editReply(
         buildServerStatusReply(
-            interaction.locale,
+            language ?? "en",
             interaction.guildId,
             game.data,
             settings

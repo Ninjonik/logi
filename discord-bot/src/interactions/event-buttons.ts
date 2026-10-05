@@ -20,7 +20,7 @@ import {
     TRAINING_ATTEND,
 } from "../constants"
 import { getResolvedMemberStatus } from "../../../src/domain/assignments/policy"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
 import { buildRosterAssignmentReply } from "./roster-assignment"
 import type { EventInteractionContext } from "../types"
 import { convex, references } from "../convex"
@@ -77,7 +77,7 @@ function buildSignupSelectionRow(
     context: EventInteractionContext,
     member: GuildMember | null,
     userId: string,
-    messages: ReturnType<typeof getClanDiscordMessages>
+    messages: ReturnType<typeof getEventMessages>
 ) {
     const assignment = context.assignments?.find(
         (item) => item.userId === userId
@@ -149,8 +149,7 @@ export async function handleEventSignupPickerInteraction(
     if (!context) {
         await interaction.reply({
             content:
-                getClanDiscordMessages("en").interaction
-                    .unableToLoadEventContext,
+                getEventMessages("en").interaction.unableToLoadEventContext,
             ephemeral: Boolean(interaction.guildId),
         })
         return
@@ -159,7 +158,7 @@ export async function handleEventSignupPickerInteraction(
         interaction,
         context.event.guildId
     )
-    const messages = getClanDiscordMessages(context.config.defaultLanguage)
+    const messages = getEventMessages(context.config.defaultLanguage)
     const selectionRow = buildSignupSelectionRow(
         context,
         member,
@@ -192,14 +191,13 @@ export async function handleCheckSignupInteraction(
     if (!context) {
         await interaction.reply({
             content:
-                getClanDiscordMessages("en").interaction
-                    .unableToLoadEventContext,
+                getEventMessages("en").interaction.unableToLoadEventContext,
             ephemeral: Boolean(interaction.guildId),
         })
         return
     }
 
-    const messages = getClanDiscordMessages(context.config.defaultLanguage)
+    const messages = getEventMessages(context.config.defaultLanguage)
     const participant = context.event.participants.find(
         (item) => item.userId === interaction.user.id
     )
@@ -251,7 +249,7 @@ export async function handleRosterAssignmentInteraction(
         (interaction.guildId && interaction.guildId !== context.event.guildId)
     ) {
         await interaction.reply({
-            content: getClanDiscordMessages(context?.config.defaultLanguage)
+            content: getEventMessages(context?.config.defaultLanguage)
                 .interaction.unableToLoadEventContext,
             ephemeral: true,
         })
@@ -300,8 +298,7 @@ export async function handleEventButtonInteraction(
             // The reply is already deferred; a second reply would throw.
             await interaction.editReply({
                 content:
-                    getClanDiscordMessages("en").interaction
-                        .unableToLoadEventContext,
+                    getEventMessages("en").interaction.unableToLoadEventContext,
             })
             return
         }
@@ -318,8 +315,7 @@ export async function handleEventButtonInteraction(
     if (!context) {
         await interaction.reply({
             content:
-                getClanDiscordMessages("en").interaction
-                    .unableToLoadEventContext,
+                getEventMessages("en").interaction.unableToLoadEventContext,
             ephemeral: Boolean(interaction.guildId),
         })
         return
@@ -342,7 +338,7 @@ export async function handleEventButtonInteraction(
             interaction,
             context.event.guildId
         )
-        const messages = getClanDiscordMessages(context.config.defaultLanguage)
+        const messages = getEventMessages(context.config.defaultLanguage)
         const assignment = context.assignments?.find(
             (item) => item.userId === interaction.user.id
         )
@@ -506,7 +502,7 @@ async function handleAttendanceInteraction(
     context: EventInteractionContext,
     options: InteractionHandlerOptions
 ) {
-    const messages = getClanDiscordMessages(context.config.defaultLanguage)
+    const messages = getEventMessages(context.config.defaultLanguage)
 
     if (context.event.status !== "starting") {
         await interaction.editReply({

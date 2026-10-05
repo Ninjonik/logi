@@ -115,7 +115,7 @@ test("League cards follow the message style in the clan language", () => {
     const json = embed && "toJSON" in embed ? embed.toJSON() : undefined
     assert.equal(json?.author?.name, "WARDOGS LEAGUE · ZÁPAS 38")
     assert.equal(json?.title, "VLK vs ROG vs BAMC")
-    assert.equal(json?.color, 0xffb000)
+    assert.equal(json?.color, 0xe8a33d)
     assert.deepEqual(json?.description?.split("\n"), [
         "**<t:1791657000:F>**",
         "◈ **VLK** · Valkyra",

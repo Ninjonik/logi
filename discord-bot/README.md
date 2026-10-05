@@ -30,19 +30,26 @@ Faction emblems are the application emoji the bot provisions itself on start
 and re-checks hourly (`src/runtime/application-emoji.ts`, read through
 `src/runtime/faction-emoji.ts`): Logi's Allies/Axis signs and the Wardogs
 faction icons, out of the fixed set of 12 faction signs and 7 status and gauge
-pieces. Until they are installed the fixed markers apply: 🟦 Allies, 🟥 Axis
-and `◈` for a Wardogs faction (`src/domain/discord-messages/faction-emblem.ts`).
+pieces. Until they are installed the fixed monochrome markers apply: ★ Allies,
+✚ Axis and `◈` for a Wardogs faction
+(`src/domain/discord-messages/faction-emblem.ts`).
 
 ## Message style and server passwords
 
 Event announcements, the published roster card, the private **My assignment**
 reply, attendance reminder DMs, score panels, reviewed results and League cards
 use the clan's Discord language, one accent colour (the event category colour,
-else Logi amber), Discord timestamps and icons only where they carry meaning.
-Shared rules live in `src/domain/discord-messages/format.ts`; event copy is in
-`src/lib/clan-language.ts`, panel copy in `src/public-panels/copy.ts` and League
-copy in `src/league/render.ts`. Background workers read the language through
-`src/runtime/clan-language.ts` (five-minute cache).
+else Logi amber `#E8A33D`), Discord timestamps and icons only where they carry meaning.
+Shared rules live in `src/domain/discord-messages/format.ts`. Bot copy in the
+clan language lives in feature modules under `src/lib/clan-language/`:
+`events.ts` (announcements, rosters, reminders and their DMs), `panels.ts`
+(calendar panel), `membership.ts` (tickets, applications, account linking),
+`commands.ts` (slash commands and player stats) and `system.ts` (team request
+decisions and the shared message kit); `core.ts` resolves the language and its
+locale. Each workstream edits only its own module. Live panel copy is in
+`src/public-panels/copy.ts` and League copy in `src/league/render.ts`.
+Background workers read the language through `src/runtime/clan-language.ts`
+(five-minute cache).
 
 A server password is never rendered into a public surface (announcements,
 event-info and forum cards, scheduled events, the public roster image). Only

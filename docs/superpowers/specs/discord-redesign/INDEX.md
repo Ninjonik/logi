@@ -142,6 +142,7 @@ Each workstream (W) owns the files listed for it. Other workstreams touch them o
 
 ### W0 · Foundation kit (lands first)
 
+- **How to use it:** [KIT.md](KIT.md), the developer note for the message model, the bot kit, the preview, the copy modules, the interaction registry and the `/api/v1` settings slices.
 - **Delivers:**
   - The single message kit from the spec, in the new `discord-bot/src/ui/`. It includes:
     - a container with the clan accent (grey for system messages)

@@ -8,7 +8,7 @@ import {
     TextDisplayBuilder,
 } from "discord.js"
 
-import type { ClanLanguage } from "../../../src/lib/clan-language"
+import type { ClanLanguage } from "../../../src/lib/clan-language/core"
 import type { GameId } from "../../../src/domain/games/game"
 
 export type MembershipFlowStep =

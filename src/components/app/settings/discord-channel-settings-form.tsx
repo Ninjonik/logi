@@ -33,9 +33,12 @@ import {
     clearableId,
     saveDiscordSettings,
 } from "@/components/app/settings/save-discord-settings"
+import {
+    supportedClanLanguages,
+    type ClanLanguage,
+} from "@/lib/clan-language/core"
 import { remapLocalizedDefaults } from "@/components/app/settings/localized-panel-defaults"
 import { UnsavedChangesBar } from "@/components/app/settings/unsaved-changes-bar"
-import { supportedClanLanguages, type ClanLanguage } from "@/lib/clan-language"
 import type { DiscordConfig, GameDiscordOverrides } from "@/types/domain"
 import { SettingsField } from "@/components/app/settings/settings-panel"
 import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"

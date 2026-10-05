@@ -5711,6 +5711,20 @@ export const enMessages = {
         rosterPageDescription:
             "Inspired by competitive roster boards: grouped squads, visible reserves, assignment status, and a future-ready acknowledgement flow.",
     },
+    discordPreview: {
+        regionLabel: "Discord message preview",
+        appTag: "APP",
+        edited: "(edited)",
+        usedCommand: "{user} used {command}",
+        onlyYouCanSee: "Only you can see this",
+        dismissMessage: "Dismiss message",
+        buttons: "Message buttons",
+        externalLink: "external link",
+        unavailable: "unavailable",
+        unknownUser: "user",
+        unknownRole: "role",
+        unknownChannel: "channel",
+    },
 } as const
 
 export type AppMessages = typeof enMessages

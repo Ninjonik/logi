@@ -2,7 +2,7 @@ import {
     formatHllPresetLabel,
     inferHllSelection,
 } from "../../src/lib/hll-map-presets"
-import type { getClanDiscordMessages } from "../../src/lib/clan-language"
+import type { getEventMessages } from "../../src/lib/clan-language/events"
 import type { GameId } from "../../src/domain/games/game"
 
 const MARKDOWN = /([\\`*_{}[\]()#+\-.!|>~<@])/g
@@ -15,7 +15,7 @@ const MARKDOWN = /([\\`*_{}[\]()#+\-.!|>~<@])/g
 export function formatMapLabel(
     map: string | null | undefined,
     gameId: GameId | undefined,
-    messages: ReturnType<typeof getClanDiscordMessages>
+    messages: ReturnType<typeof getEventMessages>
 ) {
     const value = map?.trim()
     if (!value) return undefined

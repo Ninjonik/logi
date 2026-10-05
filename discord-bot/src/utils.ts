@@ -1,11 +1,12 @@
 import { ButtonStyle } from "discord.js"
 
 import {
-    getClanDiscordMessages,
     getIntlLocaleForClanLanguage,
     isClanLanguage,
-} from "../../src/lib/clan-language"
+} from "../../src/lib/clan-language/core"
 import { eventInfoMessageRenderVersion } from "../../src/domain/discord-sync/render-version"
+import { getPanelMessages } from "../../src/lib/clan-language/panels"
+import { getEventMessages } from "../../src/lib/clan-language/events"
 
 import type { ClanLanguage, DiscordConfig, EventRecord } from "./types"
 import { env } from "./environment"
@@ -42,7 +43,7 @@ export function generateCalendarUrl(
 ): string {
     const base = "https://calendar.google.com/calendar/render?action=TEMPLATE"
     const title = encodeURIComponent(event.name)
-    const messages = getClanDiscordMessages(language)
+    const messages = getPanelMessages(language)
     const formatTime = (isoStr: string) =>
         new Date(isoStr).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
 
@@ -74,7 +75,7 @@ export function formatEventStatus(
     status: EventRecord["status"],
     language: ClanLanguage
 ) {
-    const messages = getClanDiscordMessages(language)
+    const messages = getEventMessages(language)
     switch (status) {
         case "registration":
             return messages.statuses.registration

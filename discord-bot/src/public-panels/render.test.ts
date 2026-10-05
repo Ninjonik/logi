@@ -752,11 +752,11 @@ test("result cards show the category, teams, the clan's outcome, who confirmed a
     assert.deepEqual(texts(rendered), [
         [
             "-# VÝSLEDEK · PŘÁTELÁK",
-            "## 🟦 **VLK**  3 : 2  **DEF** 🟥",
+            "## ★ **VLK**  3 : 2  **DEF** ✚",
             "**Výhra** · Carentan · den · potvrdil Hráč \\*01\\*",
         ].join("\n"),
     ])
-    assert.equal(container(rendered).accent_color, 0xffb000)
+    assert.equal(container(rendered).accent_color, 0xe8a33d)
     const button = tree(rendered).find((n) => n.type === 2)
     assert.equal(button?.label, "Detail zápasu")
     assert.equal(button?.url, "https://logi.example.test/cs/matches/event-1")
@@ -795,7 +795,7 @@ test("result cards show the category, teams, the clan's outcome, who confirmed a
         [
             "-# VÝSLEDEK · PŘÁTELÁK",
             "**VLK vs DEF**",
-            "## 🟦 **Spojenci**  3 : 2  **Osa** 🟥",
+            "## ★ **Spojenci**  3 : 2  **Osa** ✚",
             "Carentan · den · Potvrzeno <t:1791142800:R>",
         ].join("\n"),
     ])

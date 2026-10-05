@@ -9,7 +9,7 @@ import { DEFAULT_MESSAGE_ACCENT_COLOR } from "../../../src/domain/discord-messag
 import { factionEmblem } from "../../../src/domain/discord-messages/faction-emblem"
 import { extractMatchUrls } from "../../../src/domain/wardogs-league/discovery"
 import type { LeagueFixture } from "../../../src/domain/wardogs-league/fixture"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
 const clean = (text: string | null | undefined, max = 150) =>
     (text ?? "—")
         .replace(/[@<>]/g, "")
@@ -117,7 +117,7 @@ export function humanLeagueInput(
 /** Day/night labels the League site uses, in the clan language. */
 function lightingLabel(value: string | null | undefined, language?: string) {
     const key = value?.trim().toLowerCase()
-    const times = getClanDiscordMessages(language).mapLabels.times
+    const times = getEventMessages(language).mapLabels.times
     return key && Object.prototype.hasOwnProperty.call(times, key)
         ? times[key as keyof typeof times]
         : value

@@ -21,8 +21,8 @@ import { eventSchema, eventUpdateSchema } from "@/lib/validation/event"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { importEventMatchResults } from "@/lib/server-match-results"
+import { getEventMessages } from "@/lib/clan-language/events"
 import { getUsersByIds } from "@/lib/server-user-management"
-import { getClanDiscordMessages } from "@/lib/clan-language"
 import { getSiteUrl } from "@/lib/env"
 
 /** Current server admin with a live dashboard session. */
@@ -82,7 +82,7 @@ const postHandler = createServerEventPostHandler({
             guild.discordId
         )
 
-        const messages = getClanDiscordMessages(discordConfig?.defaultLanguage)
+        const messages = getEventMessages(discordConfig?.defaultLanguage)
         const rewardRoleIds = event.rewardRoleIds ?? []
         const userByDiscordId = new Map(
             users.map((user) => [user.discordId, user])

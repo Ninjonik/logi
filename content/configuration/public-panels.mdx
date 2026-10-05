@@ -52,7 +52,7 @@ panel keeps a paused card in the selected channel.
 
 A result card shows a small `RESULT · Category` label (`CORRECTED` after a
 correction), the teams' short codes with their faction emblems around the score
-(`🟦 VLK 3 : 2 DEF 🟥`), then the clan's outcome (**Win**, **Loss** or
+(`★ VLK 3 : 2 DEF ✚`), then the clan's outcome (**Win**, **Loss** or
 **Draw**), the map and who confirmed the result. The outcome appears only when
 the match records which side the clan played; the confirming manager's server
 nickname (or account name) appears only when it is known, otherwise the review
@@ -62,9 +62,10 @@ page. Without team codes the card names the match instead.
 
 The bot retains message IDs across restarts and edits the same message. Changing
 channels waits for removal of the old message. If Discord's response to a send
-is lost, the bot searches for its exact marker. A pending recovery that cannot be
-resolved from recent history needs operator attention; repeatedly saving does
-not send a duplicate.
+is lost, the bot searches recent messages for an invisible identifier it set on
+that message; members never see a marker or an "Automatic updates" button. A
+pending recovery that cannot be resolved from recent history needs operator
+attention; repeatedly saving does not send a duplicate.
 
 **Map artwork** uses the packaged map or game image as a compact, clickable
 thumbnail. The bot uploads it once and reuses the attachment on updates and
@@ -97,7 +98,7 @@ appearance is never changed, look exactly as before.
   picker. It replaces the green color of a live panel and the color of result
   messages. Stale or paused panels keep the amber warning color. **Default
   color** restores the standard green; result messages default to the Logi
-  amber that all bot messages share.
+  amber (`#E8A33D`) that all bot messages share.
 - **Banner** uploads a PNG, JPEG or WebP image of up to 2 MiB and at most
   4096 × 4096 pixels. Logi converts it to WebP of at most 1920 × 1080 pixels and
   shows it as the main image above the panel header, in place of the map

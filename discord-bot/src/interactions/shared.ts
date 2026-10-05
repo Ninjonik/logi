@@ -8,12 +8,13 @@ import {
     type ThreadChannel,
 } from "discord.js"
 
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
-import type { ClanLanguage } from "../../../src/lib/clan-language"
+import { getMembershipMessages } from "../../../src/lib/clan-language/membership"
+import { getCommandMessages } from "../../../src/lib/clan-language/commands"
+import type { ClanLanguage } from "../../../src/lib/clan-language/core"
 import { buildDiscordMessageUrl } from "../../../src/lib/discord"
 
-import { reportClanDiscordError } from "../error-reporting"
 import type { EventInteractionContext } from "../types"
+import { reportToErrorsChannel } from "../ui/replies"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
@@ -33,7 +34,7 @@ export function getOutcomeLabel(
     language: ClanLanguage,
     outcome: "denied" | "pending" | "recruit" | "member" | "mercenary"
 ) {
-    const messages = getClanDiscordMessages(language)
+    const messages = getCommandMessages(language)
     switch (outcome) {
         case "denied":
             return messages.commands.outcomeDenied
@@ -139,14 +140,14 @@ export async function startPlatformIdLinkFlow(
         input.language,
         input.completionMode
     )
-    const messages = getClanDiscordMessages(input.language)
-
     if (input.completionMode === "membership") {
+        const messages = getMembershipMessages(input.language)
         return dmMessageUrl
             ? formatTemplate(messages.membership.dmSent, { link: dmMessageUrl })
             : formatTemplate(messages.membership.dmFailed, { link })
     }
 
+    const messages = getCommandMessages(input.language)
     return dmMessageUrl
         ? formatTemplate(messages.commands.linkDmSent, { link: dmMessageUrl })
         : formatTemplate(messages.commands.linkDmFailed, { link })
@@ -159,7 +160,7 @@ async function sendPlatformIdDmWithCopy(
     completionMode: "membership" | "link"
 ) {
     try {
-        const messages = getClanDiscordMessages(language)
+        const messages = getMembershipMessages(language)
         const dm = await interaction.user.createDM()
         const content =
             completionMode === "membership"
@@ -193,7 +194,7 @@ async function sendPlatformIdDmWithCopy(
             error,
         })
         if (interaction.guildId) {
-            void reportClanDiscordError({
+            void reportToErrorsChannel({
                 client: interaction.client,
                 guildId: interaction.guildId,
                 error,
@@ -214,7 +215,7 @@ export async function cleanupThread(thread: ThreadChannel, reason: string) {
             reason,
             error,
         })
-        void reportClanDiscordError({
+        void reportToErrorsChannel({
             client: thread.client,
             guildId: thread.guildId,
             error,

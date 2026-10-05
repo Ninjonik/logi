@@ -219,6 +219,8 @@ export async function mutateClanApiSettings(input: {
     meetingChannelId?: string | null
     clanRoleId?: string | null
     dashboardAdminRoleId?: string | null
+    /** Validated feature settings slices by key. */
+    slices?: Record<string, unknown>
 }) {
     return (await fetchMutation(mutateClanSettingsReference, {
         secret: getInternalAuthSecret(),

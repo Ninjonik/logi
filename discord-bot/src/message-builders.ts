@@ -16,6 +16,8 @@ import {
 import { buildMembershipFlowHeader } from "./interactions/membership-flow"
 
 import {
+    DEFAULT_MESSAGE_ACCENT_COLOR,
+    DEFAULT_MESSAGE_ACCENT_HEX,
     discordTimestamp,
     fillTemplate,
     formatCount,
@@ -35,9 +37,11 @@ import {
     type MessageLine,
 } from "../../src/domain/discord-messages/message-style"
 import { factionEmblem } from "../../src/domain/discord-messages/faction-emblem"
+import { getMembershipMessages } from "../../src/lib/clan-language/membership"
 import { formatDiscordMarkdown } from "../../src/lib/discord-markdown"
+import { getPanelMessages } from "../../src/lib/clan-language/panels"
+import { getEventMessages } from "../../src/lib/clan-language/events"
 import { formatHllPresetLabel } from "../../src/lib/hll-map-presets"
-import { getClanDiscordMessages } from "../../src/lib/clan-language"
 import { expandCalendarItems } from "../../src/lib/calendar-items"
 import { canAcceptSignups } from "../../src/domain/events/status"
 import { formatMapLabel } from "./map-label"
@@ -84,7 +88,7 @@ type EventEmbedOptions = {
 
 type EventLink = { label: string; url: string }
 
-type Messages = ReturnType<typeof getClanDiscordMessages>
+type Messages = ReturnType<typeof getEventMessages>
 
 export function buildAnnouncementMessage(
     payload: SyncPayload,
@@ -140,7 +144,7 @@ export function buildAnnouncementV2Message(
         matchTeamCards?: boolean
     }
 ) {
-    const messages = getClanDiscordMessages(payload.config.defaultLanguage)
+    const messages = getEventMessages(payload.config.defaultLanguage)
     const publishedRoster = payload.rosters.find(
         (item) => item.eventId === event.id && item.published
     )
@@ -372,7 +376,7 @@ export function buildRosterSummaryText(
     roster: Roster,
     userDisplayNames: Record<string, string> = {}
 ) {
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getEventMessages(config.defaultLanguage)
     const lines: string[] = []
     const meeting = discordTimestamp(event.meetingStart, "t")
     const meetingRelative = discordTimestamp(event.meetingStart, "R")
@@ -481,7 +485,10 @@ function resolveEventCategoryColor(
     categories: SyncPayload["guild"]["eventCategories"],
     event: EventRecord
 ) {
-    return findEventCategory(categories, event.matchType)?.color ?? "#FFB000"
+    return (
+        findEventCategory(categories, event.matchType)?.color ??
+        DEFAULT_MESSAGE_ACCENT_HEX
+    )
 }
 
 function resolveEventCategoryEmoji(
@@ -500,7 +507,7 @@ function toDiscordColor(color: string) {
         return Number.parseInt(normalized.slice(1), 16)
     }
 
-    return Number.parseInt("FFB000", 16)
+    return DEFAULT_MESSAGE_ACCENT_COLOR
 }
 
 /** Separates the header, notes and status blocks of a legacy embed. */
@@ -632,7 +639,7 @@ export function buildEventCardText(
     event: EventRecord,
     options?: EventEmbedOptions
 ) {
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getEventMessages(config.defaultLanguage)
     const density = config.messageStyle?.iconDensity
     const icon = (line: MessageLine) => messageLineIcon(line, density)
     const header: string[] = []
@@ -709,7 +716,7 @@ export function buildEventEmbed(
     userDisplayNames: Record<string, string> = {},
     options?: EventEmbedOptions
 ) {
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getEventMessages(config.defaultLanguage)
     const embed = new EmbedBuilder().setColor(
         resolveMessageAccentColor({
             categoryColor: findEventCategory(categories, event.matchType)
@@ -967,7 +974,7 @@ export function buildEventComponents(
     event: EventRecord,
     roster?: Roster
 ) {
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getEventMessages(config.defaultLanguage)
 
     if (isSignupOpen(event)) {
         return buildSignupButtons(config, groups, event.id, event)
@@ -1007,7 +1014,7 @@ export function buildForumInfoEmbed(
     event: EventRecord,
     stratmapLinks: string[] = []
 ) {
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getEventMessages(config.defaultLanguage)
     const embed = new EmbedBuilder()
         .setTitle(event.name)
         .setDescription(
@@ -1147,7 +1154,7 @@ export function buildAttendanceReminderComponents(
     eventId: string,
     language: ClanLanguage
 ) {
-    const messages = getClanDiscordMessages(language)
+    const messages = getEventMessages(language)
     return [
         new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
@@ -1174,7 +1181,7 @@ export function buildTicketPanelEmbed(config: DiscordConfig) {
         return null
     }
 
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getMembershipMessages(config.defaultLanguage)
     const embed = new EmbedBuilder()
         .setTitle(ticketSettings.panelTitle.slice(0, 256))
         .setDescription(
@@ -1263,7 +1270,7 @@ export function buildMembershipPanelEmbed(config: DiscordConfig) {
         return null
     }
 
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getMembershipMessages(config.defaultLanguage)
     const embed = new EmbedBuilder()
         .setTitle(membershipSettings.panelTitle.slice(0, 256))
         .setDescription(
@@ -1314,7 +1321,7 @@ export function buildMembershipPanelComponents(config: DiscordConfig) {
             new ButtonBuilder()
                 .setCustomId("membership:apply")
                 .setLabel(
-                    getClanDiscordMessages(config.defaultLanguage).panels
+                    getMembershipMessages(config.defaultLanguage).panels
                         .membershipApply
                 )
                 .setStyle(ButtonStyle.Success)
@@ -1354,7 +1361,7 @@ export function buildMembershipPanelMessage(config: DiscordConfig) {
         return null
     }
 
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getMembershipMessages(config.defaultLanguage)
     const container = new ContainerBuilder().setAccentColor(0x16a34a)
     if (membershipSettings.panelImageUrl) {
         container.addMediaGalleryComponents(
@@ -1402,7 +1409,7 @@ function buildMembershipSelectionMessage(input: {
     gameId?: MembershipCategory["gameId"]
 }) {
     const settings = input.config.membershipSettings
-    const messages = getClanDiscordMessages(input.config.defaultLanguage)
+    const messages = getMembershipMessages(input.config.defaultLanguage)
     const container = new ContainerBuilder().setAccentColor(0x5865f2)
 
     if (!input.gameId) {
@@ -1492,7 +1499,7 @@ function resolveCalendarEventLabel(
     categories: SyncPayload["guild"]["eventCategories"],
     event: EventRecord
 ) {
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getPanelMessages(config.defaultLanguage)
     if (event.kind === "training") {
         return messages.calendar.trainingLabel
     }
@@ -1547,7 +1554,7 @@ function getColorChipEmoji(color?: string) {
     const normalized = color?.trim() ?? ""
     const hex = /^#[\da-f]{6}$/i.test(normalized)
         ? normalized.slice(1)
-        : "FFB000"
+        : DEFAULT_MESSAGE_ACCENT_HEX.slice(1)
     const red = Number.parseInt(hex.slice(0, 2), 16)
     const green = Number.parseInt(hex.slice(2, 4), 16)
     const blue = Number.parseInt(hex.slice(4, 6), 16)
@@ -1598,7 +1605,7 @@ export function buildCalendarPanelEmbed(
     const resolvedCalendarItems = Array.isArray(calendarItems)
         ? calendarItems
         : []
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getPanelMessages(config.defaultLanguage)
     const now = Date.now()
     const upcomingEvents = [...resolvedEvents]
         .filter(
@@ -1657,7 +1664,7 @@ export function buildCalendarPanelEmbed(
         .setTitle(`📅 ${messages.calendar.panelTitle}`)
         .setColor(toDiscordColor(panelColor))
         .setFooter({
-            text: `${messages.embed.managedFooter} • ${config.timezone}`,
+            text: `${getEventMessages(config.defaultLanguage).embed.managedFooter} • ${config.timezone}`,
         })
 
     if (!upcomingEntries.length) {
@@ -1741,7 +1748,7 @@ export function buildTicketThreadEmbed(input: {
     answers: Array<{ label: string; value: string }>
     creatorTag: string
 }) {
-    const messages = getClanDiscordMessages(input.language)
+    const messages = getMembershipMessages(input.language)
     const embed = new EmbedBuilder()
         .setTitle(
             messages.ticket.threadTitle.replace(
@@ -1784,7 +1791,7 @@ export function buildMembershipApplicationThreadEmbed(input: {
     creatorTag: string
     assignmentStatus: "pending" | "recruit" | "active"
 }) {
-    const messages = getClanDiscordMessages(input.language)
+    const messages = getMembershipMessages(input.language)
     const resolvedStatus =
         input.assignmentStatus === "pending"
             ? messages.membership.statusPending
@@ -1835,7 +1842,7 @@ function buildSignupButtons(
     eventId: string,
     event: EventRecord
 ) {
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getEventMessages(config.defaultLanguage)
 
     if (event.kind === "training") {
         return [

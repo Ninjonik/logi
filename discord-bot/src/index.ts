@@ -14,6 +14,7 @@ import { ManualReminderRequestService } from "./manual-reminders"
 import { startPlatformStatusMonitor } from "./platform-status"
 import { DiscordSyncService } from "./runtime/sync-service"
 import { createInteractionHandler } from "./interactions"
+import { runInteraction } from "./interactions/registry"
 import { logError, logInfo, logWarn } from "./log"
 import { client } from "./discord-client"
 import { env } from "./environment"
@@ -195,8 +196,9 @@ client.once(Events.ClientReady, async (readyClient) => {
     }
 })
 
-client.on(Events.InteractionCreate, async (interaction) => {
-    try {
+client.on(Events.InteractionCreate, (interaction) =>
+    // Any failure ends in the private "Tohle se nepovedlo" card (M3-08).
+    runInteraction(interaction, async () => {
         if (interaction.isButton()) {
             if (await handlePublicPanelButton(interaction)) return
             await interactionHandler.handleButtonInteraction(interaction)
@@ -227,38 +229,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return
         }
 
-        if (interaction.isChatInputCommand()) {
+        if (interaction.isChatInputCommand())
             await interactionHandler.handleChatInputCommand(interaction)
-        }
-    } catch (error) {
-        logError("interaction", "Discord interaction failed", {
-            type: interaction.type,
-            customId:
-                "customId" in interaction ? interaction.customId : undefined,
-            commandName:
-                "commandName" in interaction
-                    ? interaction.commandName
-                    : undefined,
-            guildId: interaction.guildId,
-            channelId: interaction.channelId,
-            error,
-        })
-
-        if (interaction.isRepliable()) {
-            const message =
-                "Something went wrong while handling that interaction."
-            if (interaction.deferred || interaction.replied) {
-                await interaction
-                    .followUp({ content: message, ephemeral: true })
-                    .catch(() => null)
-            } else {
-                await interaction
-                    .reply({ content: message, ephemeral: true })
-                    .catch(() => null)
-            }
-        }
-    }
-})
+    })
+)
 
 registerMembershipInvalidationEvents(client, {
     invalidate: invalidateMembershipGuild,

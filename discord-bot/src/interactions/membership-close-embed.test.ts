@@ -1,4 +1,4 @@
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getMembershipMessages } from "../../../src/lib/clan-language/membership"
 import { buildMembershipApplicationCloseEmbed } from "../interactions"
 import { closeConvexClient } from "../convex"
 import assert from "node:assert/strict"
@@ -8,7 +8,7 @@ after(closeConvexClient)
 
 for (const language of ["en", "cs"] as const) {
     test(`membership closure preserves the decision with a reason (${language})`, () => {
-        const messages = getClanDiscordMessages(language)
+        const messages = getMembershipMessages(language)
         const embed = buildMembershipApplicationCloseEmbed({
             messages,
             applicationNumber: 42,

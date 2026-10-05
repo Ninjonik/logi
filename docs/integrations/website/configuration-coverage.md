@@ -133,6 +133,38 @@ These gaps are recorded for the next implementation decision; they are not
 silently counted as completed settings. Operational credentials/intents still
 require administrator setup even if future forms make onboarding easier.
 
+## `/api/v1` clan settings slices
+
+Feature settings of the Discord redesign (panels, graphics, seed, commands,
+messages, the application form and the roster publish default) reach
+`GET/PATCH /api/v1/clan/settings` as **settings slices**. A slice is one module
+in `src/domain/api/` built with `defineClanSettingsSlice`
+(`src/domain/api/settings-slices.ts`):
+
+- `key`: the slice's key, e.g. `seed`; GET returns it under `data.slices.seed`
+  and PATCH accepts `{ "seed": { … } }` next to the plain fields;
+- `schema` (Zod): what GET returns; `patchSchema` (Zod, strict, usually
+  `.partial()`): what PATCH accepts, where only supplied fields change;
+- `read({ discordConfig })`: the stored Discord configuration (secrets already
+  removed) mapped to the API value;
+- `toPatch(patch, { discordConfig })`: the validated patch mapped to
+  `discordConfigs` fields. Those fields must exist in `convex/schema.ts`
+  (additive, optional); a slice may not write identity, bookkeeping, secrets,
+  the plain settings fields or another slice's fields.
+
+Append the module to `CLAN_SETTINGS_SLICES`
+(`src/domain/api/clan-settings-slices.ts`). Nothing else changes: the route
+validates the body with `parseClanSettingsPatch`, `publicApi:mutateClanSettings`
+validates it again and writes it, GET and the PATCH response include it, and
+`src/lib/api/settings-openapi.ts` documents it from its Zod schemas
+(`ClanSettings<Key>Slice` and `ClanSettings<Key>Patch`) at request time, so
+`npm run generate:openapi` is not needed for a slice. A slice whose data lives
+in its own table adds that read and write path to the Convex mutation itself.
+`src/domain/api/settings-slices.test.ts` shows a complete example slice. The
+registry ships empty; each redesign workstream adds its own slice and records
+its deliberate exclusions (binary uploads, live Discord actions, application
+decisions) in this document.
+
 ## Source and runtime evidence
 
 Primary UI sources are `src/components/app/discord-public-panels-form.tsx`,

@@ -9,13 +9,11 @@ import {
 } from "discord.js"
 
 import {
-    getClanDiscordMessages,
-    type ClanLanguage,
-} from "../../../src/lib/clan-language"
-import {
     detectPlatformFromId,
     stripPlatformPrefix,
 } from "../../../src/lib/platform-ids"
+import { getMembershipMessages } from "../../../src/lib/clan-language/membership"
+import { type ClanLanguage } from "../../../src/lib/clan-language/core"
 
 type PlatformLinkMode = "membership" | "link"
 type PlatformKey = "steam" | "epic" | "xbox" | "playstation"
@@ -44,20 +42,19 @@ const PLATFORM_GUIDES: Record<PlatformKey, string> = {
 }
 
 export function getPlatformFlowMessages(language: ClanLanguage) {
-    const messages = getClanDiscordMessages(language)
+    const messages = getMembershipMessages(language)
     if (messages.platformFlow) {
         return messages.platformFlow
     }
 
     if (language === "cs") {
-        const czechFallback =
-            getClanDiscordMessages("en").platformFlowCsFallback
+        const czechFallback = getMembershipMessages("en").platformFlowCsFallback
         if (czechFallback) {
             return czechFallback
         }
     }
 
-    return getClanDiscordMessages("en").platformFlow!
+    return getMembershipMessages("en").platformFlow!
 }
 
 function formatStoredPlatformId(platformId: string) {

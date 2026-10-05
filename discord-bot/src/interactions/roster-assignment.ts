@@ -12,10 +12,10 @@ import {
     findSquadLeader,
     resolveMessageAccentColor,
 } from "../../../src/domain/discord-messages/format"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
 import type { DiscordConfig, EventRecord, Roster } from "../types"
 
-type Messages = ReturnType<typeof getClanDiscordMessages>
+type Messages = ReturnType<typeof getEventMessages>
 type RosterPlayer = Roster["squads"][number]["players"][number]
 
 export type RosterAssignmentReply = {
@@ -104,7 +104,7 @@ export function buildRosterAssignmentReply(input: {
     categoryColor?: string | null
 }): RosterAssignmentReply {
     const { config, event, roster, userId } = input
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getEventMessages(config.defaultLanguage)
     if (!roster?.published) {
         return {
             content: messages.interaction.rosterNotPublished,

@@ -92,7 +92,7 @@ test("my assignment shows squad, role, leader, meeting, server and password priv
         ].join("\n")
     )
     assert.equal(embed?.footer?.text, "Heslo vidí jen hráči na soupisce.")
-    assert.equal(embed?.color, 0xffb000)
+    assert.equal(embed?.color, 0xe8a33d)
     assert.deepEqual(reply.allowedMentions, { parse: [] })
     assert.deepEqual(
         buttons.map((button) =>
@@ -167,6 +167,6 @@ test("the private reply uses the event category colour like the event card", () 
             categoryColor,
         }).embeds?.[0]?.toJSON().color
     assert.equal(colour("#dc2626"), 0xdc2626)
-    assert.equal(colour(null), 0xffb000)
-    assert.equal(colour("not a colour"), 0xffb000)
+    assert.equal(colour(null), 0xe8a33d)
+    assert.equal(colour("not a colour"), 0xe8a33d)
 })

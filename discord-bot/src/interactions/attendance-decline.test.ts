@@ -6,10 +6,10 @@ import {
     declineRefusal,
     declineReply,
 } from "./attendance-decline"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
 import type { EventRecord, Roster } from "../types"
 
-const messages = getClanDiscordMessages("cs")
+const messages = getEventMessages("cs")
 const roster: Roster = {
     id: "roster-1",
     eventId: "event-1",
@@ -107,7 +107,7 @@ test("the decline form asks for an optional reason within Discord limits", () =>
     assert.equal(input.max_length, 500)
     assert.ok(("label" in input ? (input.label ?? "") : "").length <= 45)
     for (const language of ["en", "de"] as const) {
-        const copy = getClanDiscordMessages(language).attendanceDecline
+        const copy = getEventMessages(language).attendanceDecline
         assert.ok(copy.modalTitle.length <= 45)
         assert.ok(copy.reasonLabel.length <= 45)
     }

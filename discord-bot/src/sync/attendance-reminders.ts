@@ -8,7 +8,7 @@ import {
 } from "../../../src/domain/discord-messages/format"
 import { resolveAttendanceReminderHours } from "../../../src/domain/events/scheduled-job-policy"
 import { calendarDayOffset } from "../../../src/domain/discord-messages/calendar-day"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
 import { buildAttendanceReminderComponents } from "../message-builders"
 import { convex, references } from "../convex"
 import type { SyncPayload } from "../types"
@@ -32,7 +32,7 @@ export function buildAttendanceReminderMessage(input: {
     meetingStartMs: number
     gameStartMs?: number
     assignment?: RosterAssignment
-    messages: ReturnType<typeof getClanDiscordMessages>
+    messages: ReturnType<typeof getEventMessages>
     accentColor?: number
     /** When the DM is sent and the clan's time zone, for "today"/"tomorrow". */
     now?: number
@@ -150,7 +150,7 @@ export async function processAttendanceReminders(
             continue
         }
 
-        const messages = getClanDiscordMessages(payload.config.defaultLanguage)
+        const messages = getEventMessages(payload.config.defaultLanguage)
         const matchType = event.matchType?.trim().toLowerCase()
         const accentColor = resolveMessageAccentColor({
             messageStyle: payload.config.messageStyle,

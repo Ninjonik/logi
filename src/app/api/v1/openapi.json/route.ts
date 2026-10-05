@@ -47,6 +47,10 @@ import {
     websiteEventCommandPaths,
     websiteEventCommandSchemas,
 } from "@/lib/api/website-event-command-openapi"
+import {
+    clanSettingsOpenApiPath,
+    clanSettingsOpenApiSchemas,
+} from "@/lib/api/settings-openapi"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
 
 /** One division of a public competition, shared by the full and the paged response. */
@@ -571,15 +575,6 @@ const paths: Record<string, unknown> = {
             responses,
         },
     },
-    "/clan/settings": {
-        get: {
-            summary:
-                "Get authenticated clan and Discord configuration without runtime secrets",
-            tags: ["Clan API — Settings"],
-            security: [{ clanApiKey: [] }],
-            responses,
-        },
-    },
     "/clan/performance-history": {
         get: {
             summary:
@@ -696,21 +691,11 @@ const idempotencyParameter = {
         "Use one new visible key for each write, for example `event-create-42`. Retrying the identical method, path, and body with that key replays the original status and body for 24 hours. Reusing it with a different request returns `409 idempotency_conflict`; generate a new key for that request.",
     schema: { type: "string", maxLength: 200, example: "event-create-42" },
 }
-paths["/clan/settings"] = {
-    get: (paths["/clan/settings"] as { get: unknown }).get,
-    patch: {
-        summary: "Patch safe clan and Discord settings",
-        tags: ["Clan API — Settings"],
-        description:
-            "Only supplied fields change. Runtime secrets, player-stat connections, ticket settings, membership settings, and game overrides cannot be set through this endpoint.",
-        security: [{ clanApiKey: [] }],
-        parameters: [idempotencyParameter],
-        responses: {
-            ...responses,
-            "409": { description: "Idempotency conflict" },
-        },
-    },
-}
+// Settings fields and every feature settings slice (src/lib/api/settings-openapi.ts).
+paths["/clan/settings"] = clanSettingsOpenApiPath({
+    responses,
+    idempotencyParameter,
+})
 paths["/clan/articles"] = {
     get: (paths["/clan/articles"] as { get: unknown }).get,
     post: {
@@ -2308,6 +2293,7 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                     ...generatedOpenApiSchemas,
                     ...summaryResponseSchemas,
                     ...websiteEventCommandSchemas,
+                    ...clanSettingsOpenApiSchemas(),
                 },
                 securitySchemes: {
                     clanApiKey: {

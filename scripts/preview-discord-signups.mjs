@@ -86,7 +86,7 @@ const examples = ["en", "cs", "de"].map((defaultLanguage) => {
 })
 const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Logi · signup ordering proof</title>
-<style>body{background:#202127;color:#ececf1;font:16px/1.5 system-ui;margin:0;padding:24px}main{max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:18px;color:#f2c66d}h3{font-size:13px;color:#b4b7c5;margin:12px 0 6px}p{white-space:pre-line;margin:4px 0}section{padding:12px 20px;background:#292b32;border:1px solid #434652;border-radius:8px;margin:18px 0}.embed{display:grid;grid-template-columns:repeat(3,1fr);border-left:4px solid #ffb000;padding:10px 16px;background:#23252b;gap:12px}pre{font:inherit;white-space:pre-wrap;background:#23252b;padding:12px;border-radius:6px}header p{color:#b4b7c5}</style>
+<style>body{background:#202127;color:#ececf1;font:16px/1.5 system-ui;margin:0;padding:24px}main{max-width:950px;margin:auto}h1{font-size:24px}h2{font-size:18px;color:#f2c66d}h3{font-size:13px;color:#b4b7c5;margin:12px 0 6px}p{white-space:pre-line;margin:4px 0}section{padding:12px 20px;background:#292b32;border:1px solid #434652;border-radius:8px;margin:18px 0}.embed{display:grid;grid-template-columns:repeat(3,1fr);border-left:4px solid #e8a33d;padding:10px 16px;background:#23252b;gap:12px}pre{font:inherit;white-space:pre-wrap;background:#23252b;padding:12px;border-radius:6px}header p{color:#b4b7c5}</style>
 </head><body><main><header><h1>Logi — Discord signup ordering</h1>
 <p>Simulated render of actual builder output with synthetic names. No Discord message or provider call.</p>
 <p>Each legacy row reads left to right. The compact list preserves that order. Czech Ch sorts after H.</p>

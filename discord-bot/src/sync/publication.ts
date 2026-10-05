@@ -1,7 +1,9 @@
 import {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
+    findPublicationMessage,
+    PUBLICATION_RENDER_VERSION,
+    publicationCreatePayload,
+} from "./publication-marker"
+import {
     ChannelType,
     PermissionFlagsBits,
     type Client,
@@ -12,6 +14,8 @@ import {
     PublicationNotSent,
 } from "../../../src/application/discord-publications/publish"
 import { publicationFiles, componentAttachments } from "./publication-files"
+import { getSystemMessages } from "../../../src/lib/clan-language/system"
+import { clanLanguageForGuild } from "../runtime/clan-language"
 import { fetchOwnedPublicationMessage } from "./owned-message"
 import { makeFunctionReference } from "convex/server"
 import { createHash } from "node:crypto"
@@ -27,14 +31,20 @@ const discordCode = (error: unknown) =>
  * keep the binding so a restored channel never receives a duplicate. */
 const isUnknownChannel = (error: unknown) => discordCode(error) === 10003
 
-function hasMarker(value: unknown, marker: string): boolean {
-    if (!value || typeof value !== "object") return false
-    if ("custom_id" in value && value.custom_id === marker) return true
-    return Object.values(value).some((child) =>
-        Array.isArray(child)
-            ? child.some((v) => hasMarker(v, marker))
-            : hasMarker(child, marker)
-    )
+/**
+ * The last delivery error stored for the dashboard, in the clan language:
+ * an uncertain create (never re-sent) or a failed delivery. No internal
+ * error text reaches the clan.
+ */
+export function publicationDeliveryError(
+    language: string | null | undefined,
+    error: unknown
+) {
+    const copy = getSystemMessages(language).publication
+    return error instanceof Error &&
+        error.message.startsWith("Delivery uncertain")
+        ? copy.deliveryUncertain
+        : copy.deliveryFailed
 }
 const ref = (name: string) =>
     makeFunctionReference<"mutation">(`discordPublications:${name}`)
@@ -99,7 +109,9 @@ export async function publishManagedMessage(
         }
     }
     // Serialize builders before hashing; counts/timestamps come from observation data.
+    // The render version re-edits every message once when the payload shape changes.
     const hash = createHash("sha256")
+        .update(PUBLICATION_RENDER_VERSION)
         .update(JSON.stringify(input.message))
         .digest("hex")
     const result = await publish(
@@ -122,18 +134,17 @@ export async function publishManagedMessage(
                     secret: env.internalSecret,
                     ...state,
                 }),
-            finish: (state, error) =>
+            finish: async (state, error) =>
                 convex.mutation(ref("finish"), {
                     secret: env.internalSecret,
                     id: state.id,
                     fence: state.fence,
                     ...(error
                         ? {
-                              error:
-                                  error instanceof Error &&
-                                  error.message.startsWith("Delivery uncertain")
-                                      ? error.message
-                                      : "Discord delivery failed; check channel permissions or retry after the service recovers.",
+                              error: publicationDeliveryError(
+                                  await clanLanguageForGuild(input.guildId),
+                                  error
+                              ),
                           }
                         : {}),
                 }),
@@ -141,54 +152,26 @@ export async function publishManagedMessage(
         {
             exists: async (id, messageId) =>
                 Boolean(await previousGone(id, messageId)),
-            recover: async (id, marker) => {
-                const matches = [
-                    ...(
+            // Only an uncertain create is recovered this way; every other
+            // step uses the stored message ID.
+            recover: async (id, marker) =>
+                findPublicationMessage(
+                    (
                         await (await channel(id)).messages.fetch({ limit: 100 })
                     ).values(),
-                ].filter(
-                    (message) =>
-                        message.author.id === client.user?.id &&
-                        hasMarker(
-                            message.components.map((c) => c.toJSON()),
-                            marker
-                        )
-                )
-                if (matches.length > 1)
-                    throw new Error(
-                        "Multiple owned publication markers require operator reconciliation."
-                    )
-                return matches[0]?.id ?? null
-            },
+                    marker,
+                    client.user?.id
+                ),
             create: async (id, marker) => {
                 const destination = await channel(id).catch(() => {
                     throw new PublicationNotSent(
                         "Channel unavailable before send."
                     )
                 })
-                const markerRow =
-                    new ActionRowBuilder<ButtonBuilder>().addComponents(
-                        new ButtonBuilder()
-                            .setCustomId(marker)
-                            .setLabel("Automatic updates")
-                            .setStyle(ButtonStyle.Secondary)
-                            .setDisabled(true)
-                    )
+                // No visible marker: the first component carries an
+                // invisible id for recovering an uncertain create.
                 const sent = await destination
-                    .send({
-                        ...input.message,
-                        components: [
-                            ...(input.message.components ?? []),
-                            markerRow,
-                        ],
-                        allowedMentions: input.message.allowedMentions ?? {
-                            parse: [],
-                        },
-                        nonce: BigInt(
-                            `0x${createHash("sha256").update(marker).digest("hex").slice(0, 16)}`
-                        ).toString(),
-                        enforceNonce: true,
-                    })
+                    .send(publicationCreatePayload(input.message, marker))
                     .catch((error) => {
                         if (
                             typeof error?.status === "number" &&
