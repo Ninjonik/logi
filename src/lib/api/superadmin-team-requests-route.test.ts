@@ -49,6 +49,7 @@ function fakePorts(
         access: async () => ({ secret: "s" }),
         get: async (_access, requestId) =>
             requestId === "req-1" ? { id: "req-1" } : null,
+        context: async (_access, requestIds) => ({ items: [], requestIds }),
         queue: async (_access, query) => ({
             items: [],
             nextCursor: null,
@@ -94,6 +95,30 @@ test("GET denies non-superadmins and reads requests or the queue", async () => {
     const bad = await handlers.GET(new Request(url("?status=nope")))
     assert.equal(bad.status, 400)
     assert.deepEqual(await bad.json(), { error: "invalid_query" })
+})
+
+test("GET reads the moderation context of listed requests", async () => {
+    assert.deepEqual(parseTeamRequestQueueQuery(params("context=r1,r2,r1")), {
+        kind: "context",
+        requestIds: ["r1", "r2"],
+    })
+    for (const query of [
+        "context=",
+        "context=r1,,r2",
+        `context=${Array.from({ length: 51 }, (_, i) => `r${i}`).join(",")}`,
+    ])
+        assert.equal(parseTeamRequestQueueQuery(params(query)), null, query)
+    const denied = superadminTeamRequestsHandlers(
+        fakePorts({ access: async () => null }).ports
+    )
+    assert.equal(
+        (await denied.GET(new Request(url("?context=r1")))).status,
+        403
+    )
+    const handlers = superadminTeamRequestsHandlers(fakePorts().ports)
+    const context = await handlers.GET(new Request(url("?context=r1")))
+    assert.equal(context.status, 200)
+    assert.deepEqual(await context.json(), { items: [], requestIds: ["r1"] })
 })
 
 test("GET answers 503 when Convex throws", async () => {

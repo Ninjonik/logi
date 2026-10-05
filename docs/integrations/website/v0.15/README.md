@@ -71,7 +71,12 @@ pending requests to the kept team. Saved match snapshots are never rewritten.
 
 Team requests and their Discord DMs are a **Logi-internal moderation
 workflow**. They are not exposed through `/api/v1`, and a website never sees a
-pending request, a request note, a rejection reason or the requester. It sees
+pending request, a request note, a rejection reason or the requester. The same
+deliberate exclusion covers the global administration reads behind the
+catalogue and queue screens (`teams:adminListState`, `teams:adminUsage` with
+competition usage and the pending-request marker, and
+`teamRequests:queueContext` with requester names, look-alike teams and changed
+fields): they are superadmin-only dashboard reads with no website equivalent. It sees
 only the outcome as a catalogue change: an approved new-team request is an
 `upsert` of the new team and an approved change request is an `upsert` of the
 target. Rejecting or cancelling a request, or merging a new-team request into

@@ -74,7 +74,7 @@ export function CompetitionManager({
     const shared = { view, dictionary, run, pending }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {view.legacyRows ? (
                 <ConfigNotice title={t.legacyTitle}>
                     {t.legacyDescription.replace(
@@ -88,17 +88,28 @@ export function CompetitionManager({
                 onValueChange={(value) => {
                     if (isSection(value)) setSection(value)
                 }}
-                className="gap-4"
+                className="gap-5"
             >
-                <TabsList aria-label={t.sectionsLabel} className="max-w-full">
-                    <TabsTrigger value="details">{t.detailsTitle}</TabsTrigger>
-                    <TabsTrigger value="divisions">
-                        {t.divisionsTitle}
-                    </TabsTrigger>
-                    <TabsTrigger value="teams">{t.teamsTitle}</TabsTrigger>
-                    <TabsTrigger value="fixtures">
-                        {t.fixturesTitle}
-                    </TabsTrigger>
+                <TabsList
+                    aria-label={t.sectionsLabel}
+                    className="h-auto w-full flex-wrap justify-start gap-1 rounded-none border-b bg-transparent p-0"
+                >
+                    {(
+                        [
+                            ["details", t.detailsTitle],
+                            ["divisions", t.divisionsTitle],
+                            ["teams", t.teamsTitle],
+                            ["fixtures", t.fixturesTitle],
+                        ] as const
+                    ).map(([value, label]) => (
+                        <TabsTrigger
+                            key={value}
+                            value={value}
+                            className="text-muted-foreground data-[state=active]:border-b-foreground data-[state=active]:text-foreground dark:data-[state=active]:border-b-foreground -mb-px h-10 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-3 data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:shadow-none dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent"
+                        >
+                            {label}
+                        </TabsTrigger>
+                    ))}
                 </TabsList>
                 <TabsContent value="details">
                     <CompetitionDetailsForm {...shared} locale={locale} />

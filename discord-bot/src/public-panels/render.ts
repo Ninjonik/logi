@@ -23,12 +23,19 @@ import {
     type PanelFactionEmoji,
     type PanelPresentationCarrier,
 } from "../../../src/domain/discord-publications/panel-presentation"
+import type { ResultCardFacts } from "../../../src/domain/discord-publications/result-card"
+import { DEFAULT_MESSAGE_ACCENT_COLOR } from "../../../src/domain/discord-messages/format"
+import { resolveClanOutcome } from "../../../src/domain/discord-messages/match-result"
+import { factionEmblem } from "../../../src/domain/discord-messages/faction-emblem"
 import type { WarconRead } from "../../../src/domain/game-data/warcon-contracts"
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
 import { playerLeaders } from "../../../src/domain/game-data/player-leaders"
+import { getClanDiscordMessages } from "../../../src/lib/clan-language"
 import { hllMapArtwork } from "../../../src/domain/game-data/hll-live"
+import { isGameId } from "../../../src/domain/games/game"
 import { panelCopy, type PanelCopy } from "./copy"
 import { playerControl } from "./player-details"
+import { formatMapLabel } from "../map-label"
 export type LiveData = Extract<WarconRead, { view: "live" }>["data"]
 type Panel = PanelPresentationCarrier & {
     id: string
@@ -286,46 +293,137 @@ export function renderPlayers(
         allowedMentions: { parse: [] as never[] },
     }
 }
+/** Short team code for a participant (by side), else its localized side. */
+function participantName(
+    label: string,
+    teams: ResultCardFacts["teams"],
+    copy: PanelCopy
+) {
+    const key = label.trim().toLowerCase()
+    const team = teams.find((item) => item.side?.trim().toLowerCase() === key)
+    if (team) return clean(team.code, 30)
+    const faction = panelFactionOf(label)
+    return faction === "allies"
+        ? copy.hllAllies
+        : faction === "axis"
+          ? copy.hllAxis
+          : clean(label, 60)
+}
+/**
+ * Reviewed result card: a small "RESULT · CATEGORY" label, the teams with
+ * their faction emblems around the score, then the clan's outcome, the map and
+ * who confirmed it, and "Match details" when a public match page exists.
+ * Values the result does not record are left out, never guessed.
+ */
 export function renderResult(
     event: {
         id: string
         name: string
         map: string | null
+        gameId?: string
         result: {
             status: string
             version: number
             reviewedAt: string | null
             participants: { label: string; score: number | null }[]
         }
+        card?: ResultCardFacts | null
+        /** Public match page; only passed when the card says one exists. */
+        matchUrl?: string
     },
     icons: FactionIcons = {},
     panel?: PanelPresentationCarrier,
     language?: string
 ): MessageCreateOptions {
     const copy = panelCopy(language)
+    const messages = getClanDiscordMessages(language)
     const result = event.result
+    const card = event.card ?? null
     const look = resolvePanelPresentation(panel)
     const { layout } = look
     const marks = panelFactionIcons(look, icons)
     const container = new ContainerBuilder().setAccentColor(
-        panelAccentColor(look, 0x77b255)
+        panelAccentColor(look, DEFAULT_MESSAGE_ACCENT_COLOR)
     )
     const banner = panelBannerImage(look)
     if (banner) container.addMediaGalleryComponents(bannerGallery(banner, copy))
-    const title = copy.result(result.status === "corrected", result.version)
-    const rows = result.participants
-        .slice(0, 16)
-        .map(
-            (p) =>
-                `${factionIcon(p.label, marks)} **${clean(p.label, 60)}** · ${count(p.score)}`
-        )
+
+    const label = [
+        copy.resultLabel,
+        card?.category
+            ? clean(card.category, 60).toLocaleUpperCase(messages.locale)
+            : undefined,
+        result.status === "corrected" ? copy.correctedLabel : undefined,
+    ]
+        .filter(Boolean)
+        .join(" · ")
+    const teams = card?.teams ?? []
+    const participants = result.participants.slice(0, 16)
+    const named = (p: { label: string }) =>
+        participantName(p.label, teams, copy)
+    const emblem = (p: { label: string }) => factionEmblem(p.label, marks)
+    const [first, second] = participants
+    const scoreLine =
+        participants.length === 2 && first && second
+            ? [
+                  emblem(first),
+                  `**${named(first)}**`,
+                  ` ${count(first.score)} : ${count(second.score)} `,
+                  `**${named(second)}**`,
+                  emblem(second),
+              ]
+                  .filter(Boolean)
+                  .join(" ")
+            : participants
+                  .map((p) =>
+                      [emblem(p), `**${named(p)}**`, "·", count(p.score)]
+                          .filter(Boolean)
+                          .join(" ")
+                  )
+                  .join(layout.compact ? "  ·  " : "\n")
+    const outcome = resolveClanOutcome({
+        participants,
+        clanSide: card?.side,
+        imported: card?.imported,
+    })
+    const facts = [
+        outcome ? `**${copy.outcomes[outcome.outcome]}**` : undefined,
+        layout.showMap
+            ? formatMapLabel(
+                  event.map,
+                  isGameId(event.gameId) ? event.gameId : undefined,
+                  messages
+              )
+            : undefined,
+        card?.reviewer
+            ? copy.confirmedBy(clean(card.reviewer, 80))
+            : copy.reviewed(at(result.reviewedAt, copy)),
+    ]
+        .filter(Boolean)
+        .join(" · ")
+    // Without team codes the score alone does not say which match it was.
+    const name = teams.length ? undefined : `**${clean(event.name)}**`
     container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-            layout.compact
-                ? `**${title} · ${clean(event.name)}**${layout.showMap ? `\n-# 🗺️ ${clean(event.map)}` : ""}\n${rows.join("  ·  ")}\n-# ${copy.reviewed(at(result.reviewedAt, copy))}`
-                : `### ${title}\n**${clean(event.name)}**${layout.showMap ? `\n🗺️ ${clean(event.map)}` : ""}\n${rows.join("\n")}\n-# ${copy.reviewed(at(result.reviewedAt, copy))}`
+            (layout.compact
+                ? [`-# ${label}`, name, scoreLine, facts]
+                : [`-# ${label}`, name, `## ${scoreLine}`, facts]
+            )
+                .filter(Boolean)
+                .join("\n")
+                .slice(0, 4000)
         )
     )
+    if (event.matchUrl) {
+        container.addActionRowComponents(
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+                new ButtonBuilder()
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(event.matchUrl)
+                    .setLabel(copy.matchDetail)
+            )
+        )
+    }
     return {
         flags: MessageFlags.IsComponentsV2,
         components: [container],

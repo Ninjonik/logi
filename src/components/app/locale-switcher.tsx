@@ -24,12 +24,15 @@ export function LocaleSwitcher({
     locale,
     dictionary,
     compact = false,
+    hideFlag = false,
     id,
     className,
 }: {
     locale: Locale
     dictionary: Dictionary
     compact?: boolean
+    /** Shows only the language name, as in a settings row. */
+    hideFlag?: boolean
     id?: string
     className?: string
 }) {
@@ -63,9 +66,11 @@ export function LocaleSwitcher({
                     )}
                     aria-label={dictionary.languageSwitcher.changeLanguage}
                 >
-                    <span className="text-base leading-none">
-                        {active.flag}
-                    </span>
+                    {hideFlag ? null : (
+                        <span className="text-base leading-none">
+                            {active.flag}
+                        </span>
+                    )}
                     <span className={cn(compact && "hidden sm:inline")}>
                         {active.label}
                     </span>

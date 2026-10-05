@@ -11,7 +11,7 @@ function ListSkeleton({ rows = 3 }: { rows?: number }) {
         ["48%", "38%"],
     ]
     return (
-        <div className="bg-card flex flex-col overflow-hidden rounded-2xl border">
+        <div className="bg-card flex flex-col overflow-hidden rounded-[14px] border">
             {Array.from({ length: rows }, (_, index) => {
                 const [title, meta] = widths[index % widths.length]
                 return (

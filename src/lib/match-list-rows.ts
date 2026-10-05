@@ -5,14 +5,21 @@ import {
     matchListQueue,
     weekOffset,
     weekStartDate,
+    type MatchListResultReview,
     type MatchPhase,
 } from "@/domain/events/match-list"
+import {
+    describeRepeat,
+    formatDeadline,
+    formatListDate,
+} from "@/lib/match-list-format"
+import type { MatchCompetitionLabel } from "@/lib/read-models/competition-labels"
 import { DEFAULT_GAME_ID, GAME_LABELS, type GameId } from "@/domain/games/game"
-import { describeRecurrence, formatListDate } from "@/lib/match-list-format"
 import type { EventCategory, EventRecord, Roster } from "@/types/domain"
 import { getEventCategoryLabel } from "@/lib/event-categories"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { pluralize } from "@/i18n/plural"
 
 export type MatchBadgeTone = "info" | "attention" | "success" | "neutral"
 
@@ -29,14 +36,15 @@ export type MatchListRow = {
     time: string
     title: string
     details: string
+    /** Sign-ups, the score or the training outcome; empty when there is none. */
     metric: string
-    metricStrong: boolean
+    metricTone: "strong" | "default" | "muted"
     badge: { label: string; tone: MatchBadgeTone }
     search: string
 }
 
 export type MatchListQueueRow = {
-    kind: "publishRoster" | "confirmAttendance"
+    kind: "publishRoster" | "confirmResult" | "confirmAttendance"
     href: string
     title: string
     detail: string
@@ -49,6 +57,10 @@ function fill(template: string, values: Record<string, string | number>) {
     )
 }
 
+function scoreText(scores: readonly number[] | null) {
+    return scores ? scores.join(" : ") : ""
+}
+
 function weekLabel(
     offset: number,
     weekStart: string,
@@ -58,83 +70,147 @@ function weekLabel(
     if (offset === 0) return text.weeks.thisWeek
     if (offset === 1) return text.weeks.nextWeek
     if (offset === -1) return text.weeks.lastWeek
-    const { date } = formatListDate(weekStart, locale, "UTC")
-    return fill(text.weeks.weekOf, { date })
+    return fill(text.weeks.weekOf, {
+        date: formatListDate(weekStart, locale, "UTC").day,
+    })
+}
+
+function outcomeLabel(
+    outcome: "victory" | "defeat" | "draw",
+    dictionary: Dictionary
+) {
+    return outcome === "victory"
+        ? dictionary.event.resultVictory
+        : outcome === "defeat"
+          ? dictionary.event.resultDefeat
+          : dictionary.event.resultDraw
 }
 
 function phaseBadge(
     phase: MatchPhase,
-    text: Dictionary["matchList"],
     dictionary: Dictionary,
-    locale: string,
-    timeZone: string
+    deadline: (iso: string) => string
 ): MatchListRow["badge"] {
+    const text = dictionary.matchList.phase
     switch (phase.kind) {
-        case "registration": {
-            const closes = formatListDate(phase.closesAt, locale, timeZone)
+        case "draft":
+            return { label: text.draft, tone: "neutral" }
+        case "registration":
             return {
-                label: fill(text.phase.registration, {
-                    when: `${closes.date} ${closes.time}`,
+                label: fill(text.registration, {
+                    when: deadline(phase.closesAt),
                 }),
                 tone: "info",
             }
-        }
         case "registrationClosed":
-            return { label: text.phase.registrationClosed, tone: "neutral" }
+            return { label: text.registrationClosed, tone: "neutral" }
         case "rosterMissing":
-            return { label: text.phase.rosterMissing, tone: "attention" }
+            return { label: text.rosterMissing, tone: "attention" }
         case "rosterDraft":
-            return { label: text.phase.rosterDraft, tone: "attention" }
+            return { label: text.rosterDraft, tone: "attention" }
         case "rosterPublished":
             return phase.unconfirmed > 0
                 ? {
-                      label: fill(text.phase.unconfirmed, {
+                      label: fill(text.unconfirmed, {
                           count: phase.unconfirmed,
                       }),
                       tone: "attention",
                   }
-                : { label: text.phase.rosterPublished, tone: "success" }
+                : { label: text.rosterPublished, tone: "success" }
         case "awaitingResult":
-            return { label: text.phase.awaitingResult, tone: "attention" }
-        case "result":
+            return { label: text.awaitingResult, tone: "attention" }
+        case "resultPending":
+            return { label: text.resultPending, tone: "attention" }
+        case "result": {
+            const tone = phase.outcome === "victory" ? "success" : "neutral"
+            if (!phase.outcome)
+                return {
+                    label:
+                        phase.review === "corrected"
+                            ? text.corrected
+                            : text.confirmed,
+                    tone,
+                }
+            const outcome = outcomeLabel(phase.outcome, dictionary)
             return {
-                label:
-                    phase.outcome === "victory"
-                        ? dictionary.event.resultVictory
-                        : phase.outcome === "defeat"
-                          ? dictionary.event.resultDefeat
-                          : dictionary.event.resultDraw,
-                tone: phase.outcome === "victory" ? "success" : "neutral",
+                label: phase.review
+                    ? fill(
+                          phase.review === "corrected"
+                              ? text.resultCorrected
+                              : text.resultConfirmed,
+                          { outcome }
+                      )
+                    : outcome,
+                tone,
             }
+        }
         case "trainingCompleted":
         case "concluded":
-            return { label: text.phase.concluded, tone: "success" }
+            return { label: text.concluded, tone: "success" }
     }
 }
 
 function phaseMetric(
     phase: MatchPhase,
     signedUp: number,
-    text: Dictionary["matchList"]
-): { metric: string; strong: boolean } {
-    if (phase.kind === "result")
-        return {
-            metric: `${phase.score.sideA} : ${phase.score.sideB}`,
-            strong: true,
-        }
-    if (phase.kind === "trainingCompleted")
-        return {
-            metric: fill(text.trainingOutcome, {
-                passed: phase.passed,
-                failed: phase.failed,
-            }),
-            strong: false,
-        }
-    return { metric: fill(text.signedUp, { count: signedUp }), strong: false }
+    dictionary: Dictionary,
+    locale: string
+): { metric: string; tone: MatchListRow["metricTone"] } {
+    const text = dictionary.matchList
+    switch (phase.kind) {
+        case "draft":
+            return { metric: text.notAnnounced, tone: "muted" }
+        case "result":
+        case "resultPending":
+            return phase.scores
+                ? { metric: scoreText(phase.scores), tone: "strong" }
+                : { metric: "", tone: "default" }
+        case "trainingCompleted":
+            return {
+                metric: [
+                    pluralize(locale, phase.passed, text.trainingPassed),
+                    pluralize(locale, phase.failed, text.trainingFailed),
+                ].join(", "),
+                tone: "default",
+            }
+        default:
+            return {
+                metric: pluralize(locale, signedUp, text.signedUp),
+                tone: "default",
+            }
+    }
 }
 
-/** Rows and organiser tasks of the match list for one clan. */
-export function buildMatchListRows(input: {
+/** "Allies" → "Spojenci"; an unknown side stays as entered. */
+function sideLabel(side: string | undefined, dictionary: Dictionary) {
+    if (!side) return undefined
+    const factions: Record<string, string> =
+        dictionary.publicPanelAppearance.factions
+    return factions[side.trim().toLowerCase()] ?? side
+}
+
+function hasOpponent(event: EventRecord) {
+    return Boolean(event.matchTeams?.some((team) => team.slot !== "a"))
+}
+
+/** "competition ECL 2026, playoffs"; the season is left out when the name has it. */
+function competitionText(label: MatchCompetitionLabel, dictionary: Dictionary) {
+    const text = dictionary.matchList
+    const season = label.season.trim()
+    const name =
+        season && !label.name.includes(season)
+            ? `${label.name} ${season}`
+            : label.name
+    const phase =
+        label.phase === "league"
+            ? undefined
+            : text.competitionPhases[label.phase]
+    return [text.competition.replace("{name}", name), phase]
+        .filter(Boolean)
+        .join(", ")
+}
+
+type BuildInput = {
     events: EventRecord[]
     rosters: Roster[]
     categories: EventCategory[] | undefined
@@ -144,54 +220,102 @@ export function buildMatchListRows(input: {
     timeZone: string
     dictionary: Dictionary
     now: Date
-}) {
-    const { dictionary, locale, timeZone, now } = input
+    /** Result review state by event, read only for clan managers. */
+    reviews?: ReadonlyMap<string, MatchListResultReview>
+    /** Published competition of each linked match. */
+    competitions?: ReadonlyMap<string, MatchCompetitionLabel>
+}
+
+/**
+ * Rows, drafts and organiser tasks of the match list for one clan. Drafts are
+ * separate from the other rows and only managers get them; members never see
+ * an unpublished match.
+ */
+export function buildMatchListRows(input: BuildInput) {
+    const { dictionary, locale, timeZone, now, canAdmin } = input
     const text = dictionary.matchList
-    const base = `/${input.locale}/dashboard/servers/${input.serverId}`
+    const reviews = canAdmin
+        ? (input.reviews ?? new Map<string, MatchListResultReview>())
+        : new Map<string, MatchListResultReview>()
+    const base = `/${locale}/dashboard/servers/${input.serverId}`
+    const visibleEvents = canAdmin
+        ? input.events
+        : input.events.filter((event) => !event.isDraft)
     const rosterByEvent = new Map(
         input.rosters.map((roster) => [roster.eventId, roster])
     )
-    const eventById = new Map(input.events.map((event) => [event.id, event]))
-    const hrefFor = (event: EventRecord) =>
-        `${base}/${event.kind === "training" ? "trainings" : "matches"}/${event.id}`
+    const eventById = new Map(visibleEvents.map((event) => [event.id, event]))
+    const detailHref = (event: EventRecord, tab?: string) =>
+        `${base}/${event.kind === "training" ? "trainings" : "matches"}/${event.id}${tab ? `?tab=${tab}` : ""}`
     const startOf = (event: EventRecord) =>
         event.kind === "training" ? event.meetingStart : event.gameStart
+    const deadline = (iso: string) => formatDeadline(iso, now, locale, timeZone)
 
-    const rows: MatchListRow[] = input.events.map((event) => {
+    function rowHref(event: EventRecord, phase: MatchPhase) {
+        if (phase.kind === "draft")
+            return `${base}/matches/create?draftId=${encodeURIComponent(event.id)}`
+        if (!canAdmin || event.kind === "training") return detailHref(event)
+        // A manager lands on the part of the match that needs them.
+        if (phase.kind === "rosterMissing" || phase.kind === "rosterDraft")
+            return detailHref(event, "roster")
+        if (phase.kind === "resultPending" || phase.kind === "awaitingResult")
+            return detailHref(event, "result")
+        return detailHref(event)
+    }
+
+    function details(event: EventRecord, phase: MatchPhase, gameId: GameId) {
+        const competition = input.competitions?.get(event.id)
+        if (event.kind === "training")
+            return [
+                text.training,
+                phase.kind === "trainingCompleted" || phase.kind === "concluded"
+                    ? pluralize(
+                          locale,
+                          attendingCount(event),
+                          text.participants
+                      )
+                    : event.recurrence
+                      ? describeRepeat(event.recurrence, dictionary, locale)
+                      : GAME_LABELS[gameId],
+            ]
+        return [
+            GAME_LABELS[gameId],
+            event.map
+                ? (formatHllPresetLabel(event.map, event.gameId) ?? event.map)
+                : undefined,
+            sideLabel(event.side, dictionary),
+            phase.kind === "draft" && !hasOpponent(event)
+                ? text.noOpponent
+                : undefined,
+            competition ? competitionText(competition, dictionary) : undefined,
+        ]
+    }
+
+    const all = visibleEvents.map((event) => {
         const gameId = event.gameId ?? DEFAULT_GAME_ID
-        const roster = rosterByEvent.get(event.id)
-        const phase = matchListPhase(event, roster, now)
-        const signedUp = attendingCount(event)
+        const phase = matchListPhase(
+            event,
+            rosterByEvent.get(event.id),
+            now,
+            reviews.get(event.id)
+        )
         const start = startOf(event)
         const offset = weekOffset(start, now, timeZone)
         const { date, time } = formatListDate(start, locale, timeZone)
         const category = getEventCategoryLabel(event, input.categories)
-        const details =
-            event.kind === "training"
-                ? [
-                      dictionary.matchTemplates.basics.training,
-                      event.recurrence
-                          ? describeRecurrence(
-                                event.recurrence,
-                                dictionary,
-                                locale
-                            )
-                          : undefined,
-                  ]
-                : [
-                      GAME_LABELS[gameId],
-                      event.map
-                          ? (formatHllPresetLabel(event.map, event.gameId) ??
-                            event.map)
-                          : undefined,
-                      event.side || undefined,
-                  ]
-        const metric = phaseMetric(phase, signedUp, text)
+        const metric = phaseMetric(
+            phase,
+            attendingCount(event),
+            dictionary,
+            locale
+        )
         const title = [event.name, category].filter(Boolean).join(" · ")
-        const detailText = details.filter(Boolean).join(" · ")
-        return {
+        const detailText = details(event, phase, gameId)
+            .filter(Boolean)
+            .join(" · ")
+        const row: MatchListRow = {
             id: event.id,
-            href: hrefFor(event),
+            href: rowHref(event, phase),
             kind: event.kind,
             gameId,
             played: isPlayed(event, now),
@@ -207,60 +331,126 @@ export function buildMatchListRows(input: {
             title,
             details: detailText,
             metric: metric.metric,
-            metricStrong: metric.strong,
-            badge: phaseBadge(phase, text, dictionary, locale, timeZone),
-            search: `${title} ${detailText}`.toLocaleLowerCase(),
+            metricTone: metric.tone,
+            badge: phaseBadge(phase, dictionary, deadline),
+            search: `${title} ${detailText}`.toLocaleLowerCase(locale),
         }
+        return { row, draft: Boolean(event.isDraft), start: Date.parse(start) }
     })
-    const startById = new Map(
-        input.events.map((event) => [event.id, Date.parse(startOf(event))])
-    )
-    rows.sort(
-        (left, right) =>
-            (startById.get(left.id) ?? 0) - (startById.get(right.id) ?? 0)
-    )
+    all.sort((left, right) => left.start - right.start)
+    const rows = all.filter((item) => !item.draft).map((item) => item.row)
+    const drafts = all.filter((item) => item.draft).map((item) => item.row)
 
-    const queue: MatchListQueueRow[] = input.canAdmin
-        ? matchListQueue(input.events, input.rosters, now).flatMap((item) => {
-              const event = eventById.get(item.eventId)
-              if (!event) return []
-              const when = formatListDate(item.gameStart, locale, timeZone)
-              const whenText = `${when.date} ${when.time}`
-              return [
-                  item.kind === "publishRoster"
-                      ? {
-                            kind: item.kind,
-                            href: rosterByEvent.has(event.id)
-                                ? `${base}/rosters/${rosterByEvent.get(event.id)?.id}`
-                                : hrefFor(event),
-                            title: text.queue.publishRoster,
-                            detail: [
-                                event.name,
-                                whenText,
-                                item.openSlots
-                                    ? fill(text.queue.openSlots, {
-                                          count: item.openSlots,
-                                      })
-                                    : fill(text.signedUp, {
-                                          count: item.signedUp,
-                                      }),
-                            ].join(" · "),
-                        }
-                      : {
-                            kind: item.kind,
-                            href: hrefFor(event),
-                            title: text.queue.confirmAttendance,
-                            detail: [
-                                event.name,
-                                whenText,
-                                fill(text.queue.unconfirmed, {
-                                    count: item.unconfirmed,
-                                }),
-                            ].join(" · "),
-                        },
-              ]
-          })
+    const queue: MatchListQueueRow[] = canAdmin
+        ? matchListQueue(visibleEvents, input.rosters, now, reviews).flatMap(
+              (item): MatchListQueueRow[] => {
+                  const event = eventById.get(item.eventId)
+                  if (!event) return []
+                  switch (item.kind) {
+                      case "publishRoster":
+                          return [
+                              {
+                                  kind: item.kind,
+                                  href: detailHref(event, "roster"),
+                                  title: text.queue.publishRoster,
+                                  detail: [
+                                      event.name,
+                                      deadline(item.gameStart),
+                                      item.openSlots
+                                          ? pluralize(
+                                                locale,
+                                                item.openSlots,
+                                                text.queue.openSlots
+                                            )
+                                          : pluralize(
+                                                locale,
+                                                item.signedUp,
+                                                text.signedUp
+                                            ),
+                                  ].join(" · "),
+                              },
+                          ]
+                      case "confirmResult": {
+                          const source = text.queue.sources[item.origin]
+                          return [
+                              {
+                                  kind: item.kind,
+                                  href: detailHref(event, "result"),
+                                  title: text.queue.confirmResult,
+                                  detail: [
+                                      event.name,
+                                      item.scores
+                                          ? fill(text.queue.resultWaiting, {
+                                                source,
+                                                score: scoreText(item.scores),
+                                            })
+                                          : fill(
+                                                text.queue.resultWaitingNoScore,
+                                                { source }
+                                            ),
+                                  ].join(" · "),
+                              },
+                          ]
+                      }
+                      case "confirmAttendance":
+                          return [
+                              {
+                                  kind: item.kind,
+                                  href: detailHref(event, "attendance"),
+                                  title: text.queue.confirmAttendance,
+                                  detail: [
+                                      event.name,
+                                      item.unconfirmed
+                                          ? pluralize(
+                                                locale,
+                                                item.unconfirmed,
+                                                text.queue.unconfirmed
+                                            )
+                                          : formatListDate(
+                                                item.gameStart,
+                                                locale,
+                                                timeZone
+                                            ).date,
+                                  ].join(" · "),
+                              },
+                          ]
+                  }
+              }
+          )
         : []
 
-    return { rows, queue }
+    return { rows, drafts, queue }
+}
+
+/**
+ * Recurring match series as list rows: each row's details start with its
+ * schedule; upcoming series first, soonest first, then past ones.
+ */
+export function buildRecurringMatchRows(input: BuildInput) {
+    const series = input.events.filter(
+        (event) => event.kind === "match" && event.recurrence && !event.isDraft
+    )
+    const recurrenceById = new Map(
+        series.map((event) => [event.id, event.recurrence])
+    )
+    const { rows } = buildMatchListRows({ ...input, events: series })
+    return rows
+        .map((row) => {
+            const recurrence = recurrenceById.get(row.id)
+            if (!recurrence) return row
+            const details = [
+                describeRepeat(recurrence, input.dictionary, input.locale),
+                row.details,
+            ]
+                .filter(Boolean)
+                .join(" · ")
+            return {
+                ...row,
+                details,
+                search: `${row.title} ${details}`.toLocaleLowerCase(
+                    input.locale
+                ),
+            }
+        })
+        .sort((left, right) => Number(left.played) - Number(right.played))
 }

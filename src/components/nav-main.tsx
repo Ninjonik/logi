@@ -1,45 +1,45 @@
 "use client"
 
 import { usePathname, useSearchParams } from "next/navigation"
-import { ChevronRight, type LucideIcon } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import type { ReactNode } from "react"
 import Link from "next/link"
 
 import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarMenu,
-    SidebarMenuAction,
-    SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarMenuSub,
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 
 export type NavItem = {
     title: string
     url: string
     icon?: LucideIcon
     isActive?: boolean
+    /** Related pages, listed under the entry while its section is open. */
     items?: NavItem[]
     /** A count that needs the person's attention, such as missing settings. */
     badge?: { count: number; label: string }
+    /** A short note after the title, such as "admins only". */
+    note?: string
+}
+
+function isActiveItem(item: NavItem, pathname: string): boolean {
+    return Boolean(item.isActive) || pathname === item.url
 }
 
 function hasActiveDescendant(item: NavItem, pathname: string): boolean {
-    if (item.isActive || pathname === item.url) {
-        return true
-    }
-
     return (
-        item.items?.some((subItem) => hasActiveDescendant(subItem, pathname)) ??
-        false
+        isActiveItem(item, pathname) ||
+        (item.items?.some((subItem) =>
+            hasActiveDescendant(subItem, pathname)
+        ) ??
+            false)
     )
 }
 
@@ -51,59 +51,11 @@ function withGameQuery(url: string, gameQuery: string) {
 
 const isHeavyServerRoute = (url: string) => url.includes("/dashboard/servers/")
 
-function SubItems({
-    items,
-    pathname,
-    gameQuery,
-    expandLabel,
-}: {
-    items: NavItem[]
-    pathname: string
-    gameQuery: string
-    expandLabel: (title: string) => string
-}) {
-    return (
-        <SidebarMenuSub>
-            {items.map((item) => {
-                const url = withGameQuery(item.url, gameQuery)
-                return (
-                    <SidebarMenuSubItem key={`${item.title}-${url}`}>
-                        <SidebarMenuSubButton
-                            asChild
-                            className="h-8 cursor-pointer px-2 text-sm md:h-7"
-                            isActive={item.isActive || pathname === item.url}
-                        >
-                            <Link
-                                href={url}
-                                prefetch={!isHeavyServerRoute(url)}
-                            >
-                                <span>{item.title}</span>
-                            </Link>
-                        </SidebarMenuSubButton>
-                        {item.items?.length ? (
-                            <SubItems
-                                items={item.items}
-                                pathname={pathname}
-                                gameQuery={gameQuery}
-                                expandLabel={expandLabel}
-                            />
-                        ) : null}
-                    </SidebarMenuSubItem>
-                )
-            })}
-        </SidebarMenuSub>
-    )
-}
-
-/** Top-level entries open their page; a chevron beside them shows related pages. */
-export function NavMenuItems({
-    items,
-    expandLabel,
-}: {
-    items: NavItem[]
-    /** Accessible name of the chevron that shows an entry's related pages. */
-    expandLabel: (title: string) => string
-}) {
+/**
+ * One entry of the sidebar (design AppSidebar): icon, title and an optional
+ * attention badge or note. The current page is shaded and bold.
+ */
+export function NavMenuItems({ items }: { items: NavItem[] }) {
     const pathname = usePathname() ?? ""
     const searchParams = useSearchParams()
     const game = searchParams.get("game")
@@ -111,82 +63,107 @@ export function NavMenuItems({
 
     return items.map((item) => {
         const url = withGameQuery(item.url, gameQuery)
-        const active = item.isActive || pathname === item.url
+        const active = isActiveItem(item, pathname)
+        const showSubItems =
+            Boolean(item.items?.length) && hasActiveDescendant(item, pathname)
+        const hasBadge = Boolean(item.badge && item.badge.count > 0)
         return (
-            <Collapsible
-                key={`${item.title}-${url}`}
-                asChild
-                defaultOpen={hasActiveDescendant(item, pathname)}
-                className="group/collapsible"
-            >
-                <SidebarMenuItem>
-                    <SidebarMenuButton
-                        asChild
-                        tooltip={item.title}
-                        className="h-10 cursor-pointer px-2 text-sm data-[active=true]:font-semibold md:h-8"
-                        isActive={active}
+            <SidebarMenuItem key={`${item.title}-${url}`}>
+                <SidebarMenuButton
+                    asChild
+                    tooltip={item.title}
+                    isActive={active}
+                    className="h-10 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-8"
+                >
+                    <Link
+                        href={url}
+                        prefetch={!isHeavyServerRoute(url)}
+                        aria-current={active ? "page" : undefined}
                     >
-                        <Link href={url} prefetch={!isHeavyServerRoute(url)}>
-                            {item.icon && <item.icon />}
-                            <span>{item.title}</span>
-                            {item.badge && item.badge.count > 0 ? (
-                                <span className="sr-only">
-                                    {`, ${item.badge.label}`}
-                                </span>
-                            ) : null}
-                        </Link>
-                    </SidebarMenuButton>
-                    {item.badge && item.badge.count > 0 ? (
-                        <SidebarMenuBadge
-                            title={item.badge.label}
-                            aria-hidden="true"
-                            className="bg-status-warning-muted text-status-warning rounded-full px-1.5 font-semibold peer-data-[size=default]/menu-button:top-2.5 md:peer-data-[size=default]/menu-button:top-1.5"
-                        >
-                            {item.badge.count}
-                        </SidebarMenuBadge>
-                    ) : null}
-                    {item.items?.length ? (
-                        <>
-                            <CollapsibleTrigger asChild>
-                                <SidebarMenuAction
-                                    aria-label={expandLabel(item.title)}
-                                    className="transition-transform group-data-[state=open]/collapsible:rotate-90 peer-data-[size=default]/menu-button:top-2.5 md:peer-data-[size=default]/menu-button:top-1.5"
-                                >
-                                    <ChevronRight />
-                                </SidebarMenuAction>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <SubItems
-                                    items={item.items}
-                                    pathname={pathname}
-                                    gameQuery={gameQuery}
-                                    expandLabel={expandLabel}
-                                />
-                            </CollapsibleContent>
-                        </>
-                    ) : null}
-                </SidebarMenuItem>
-            </Collapsible>
+                        {item.icon && <item.icon aria-hidden="true" />}
+                        <span className="min-w-0 flex-1 truncate">
+                            {item.title}
+                        </span>
+                        {hasBadge && item.badge ? (
+                            <AttentionBadge label={item.badge.label}>
+                                {item.badge.count}
+                            </AttentionBadge>
+                        ) : null}
+                        {item.note ? (
+                            <span className="text-status-info shrink-0 text-[11px] font-medium">
+                                {item.note}
+                            </span>
+                        ) : null}
+                    </Link>
+                </SidebarMenuButton>
+                {showSubItems && item.items ? (
+                    <SidebarMenuSub className="mr-0 pr-0">
+                        {item.items.map((subItem) => {
+                            const subUrl = withGameQuery(subItem.url, gameQuery)
+                            const subActive = hasActiveDescendant(
+                                subItem,
+                                pathname
+                            )
+                            return (
+                                <SidebarMenuSubItem key={subUrl}>
+                                    <SidebarMenuSubButton
+                                        asChild
+                                        isActive={subActive}
+                                        className="h-9 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-7"
+                                    >
+                                        <Link
+                                            href={subUrl}
+                                            prefetch={
+                                                !isHeavyServerRoute(subUrl)
+                                            }
+                                            aria-current={
+                                                subActive ? "page" : undefined
+                                            }
+                                        >
+                                            <span>{subItem.title}</span>
+                                        </Link>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            )
+                        })}
+                    </SidebarMenuSub>
+                ) : null}
+            </SidebarMenuItem>
         )
     })
 }
 
-export function NavMain({
+/** The amber count beside an entry; screen readers hear the full label. */
+function AttentionBadge({
     label,
-    items,
-    expandLabel,
+    children,
 }: {
     label: string
-    items: NavItem[]
-    expandLabel: (title: string) => string
+    children: ReactNode
 }) {
     return (
-        <SidebarGroup className="p-2">
-            <SidebarGroupLabel className="h-8 px-2 text-xs">
+        <>
+            <span
+                aria-hidden="true"
+                title={label}
+                className="bg-status-warning-muted text-status-warning flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums"
+            >
+                {children}
+            </span>
+            <span className="sr-only">{`, ${label}`}</span>
+        </>
+    )
+}
+
+/** A labelled group of sidebar entries, such as "Operations". */
+export function NavMain({ label, items }: { label: string; items: NavItem[] }) {
+    return (
+        <SidebarGroup className="px-2 pt-2 pb-0">
+            <SidebarGroupLabel className="text-muted-foreground h-8 px-2 text-xs font-medium">
                 {label}
             </SidebarGroupLabel>
             <SidebarMenu className="gap-0.5">
-                <NavMenuItems items={items} expandLabel={expandLabel} />
+                <NavMenuItems items={items} />
             </SidebarMenu>
         </SidebarGroup>
     )

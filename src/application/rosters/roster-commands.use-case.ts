@@ -2,8 +2,12 @@ import {
     acknowledgeRosterAttendance,
     setRosterAttendanceStatus,
 } from "@/domain/rosters/attendance-policy"
+import { declineRosterAttendance } from "@/domain/rosters/attendance-decline"
+import type { EventWorkflowRepository } from "@/application/events/ports"
+import { normalizeEventRecord } from "@/domain/events/normalization"
 import { mergeRosterWithEventState } from "@/domain/rosters/sync"
 import type { AttendanceStatus } from "@/domain/rosters/types"
+import type { Clock } from "@/application/ports/clock"
 import type { GameId } from "@/domain/games/game"
 
 export type RosterCommandRecord = {
@@ -179,5 +183,81 @@ export class UpdateRosterAttendanceUseCase {
             buildPersistedRosterPayload(next)
         )
         return { ok: true as const }
+    }
+}
+
+/**
+ * A rostered player declines after the roster is published ("Can't make it"
+ * in the reminder DM): an absence notice with their reason, a withdrawn
+ * attendance confirmation and one "declined" entry in the sign-up history the
+ * organisers read. Repeating the same decline writes nothing.
+ */
+export class DeclineRosterAttendanceUseCase {
+    constructor(
+        private readonly rosters: Pick<
+            RosterCommandRepository,
+            "getRosterByEventId" | "updateRoster"
+        >,
+        private readonly events: Pick<
+            EventWorkflowRepository,
+            "getById" | "saveAbsenceNotices" | "appendSignupActivity"
+        >,
+        private readonly clock: Clock
+    ) {}
+
+    async execute(input: {
+        guildId: string
+        eventId: string
+        userId: string
+        reason: string
+    }) {
+        const event = await this.events.getById(input.eventId)
+        const roster = await this.rosters.getRosterByEventId(input.eventId)
+        if (!event || event.guildId !== input.guildId || !roster)
+            throw new Error("Attendance unavailable.")
+        const now = this.clock.now()
+        const normalized = normalizeEventRecord(event, now)
+        const decision = declineRosterAttendance({
+            roster,
+            event: {
+                gameStart: normalized.gameStart ?? normalized.meetingStart,
+                status: normalized.status,
+                absenceNotices: normalized.absenceNotices,
+            },
+            userId: input.userId,
+            reason: input.reason,
+            now,
+        })
+        if (!decision.changed) return { ok: true as const, changed: false }
+
+        const occurredAt = now.toISOString()
+        await this.events.saveAbsenceNotices(input.eventId, {
+            absenceNotices: decision.absenceNotices,
+            updatedAt: occurredAt,
+        })
+        await this.rosters.updateRoster(
+            roster.id,
+            buildPersistedRosterPayload(decision.roster)
+        )
+        await this.events.appendSignupActivity({
+            guildId: event.guildId,
+            eventId: input.eventId,
+            eventName: event.name ?? "",
+            eventKind: event.kind ?? "match",
+            userId: input.userId,
+            action: "declined",
+            role:
+                decision.placement.kind === "slot"
+                    ? [
+                          decision.placement.squadName,
+                          decision.placement.roleName,
+                      ]
+                          .filter(Boolean)
+                          .join(" · ")
+                    : null,
+            previousRole: null,
+            occurredAt,
+        })
+        return { ok: true as const, changed: true }
     }
 }

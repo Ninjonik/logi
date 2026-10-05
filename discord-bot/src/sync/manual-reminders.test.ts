@@ -118,7 +118,11 @@ test("unconfirmed players get the attendance reminder with their place and butto
     assert.match(first.embeds[0]!.toJSON().description ?? "", /Able · Medic/)
     assert.deepEqual(
         first.components[0]!.toJSON().components.map((c) => c.custom_id),
-        ["attendance:event-1:ack", "attendance-late:event-1"]
+        [
+            "attendance:event-1:ack",
+            "attendance-late:event-1",
+            "attendance-decline:event-1",
+        ]
     )
 })
 

@@ -5,7 +5,6 @@ import { getClanDiscordMessages } from "../../../src/lib/clan-language"
 import { buildAttendanceReminderMessage } from "./attendance-reminders"
 import { buildAttendanceReminderComponents } from "../message-builders"
 import { buildSignupReminderMessage } from "./signup-reminders"
-import { buildDiscordMessageLink } from "../utils"
 import type { SyncPayload } from "../types"
 import { logInfo } from "../log"
 
@@ -69,21 +68,6 @@ export async function deliverManualReminder(input: {
         if (!places.has(userId))
             places.set(userId, { squadName: messages.assignment.reserveTitle })
     }
-    const syncState = payload.syncStates.find(
-        (item) => item.eventId === event.id
-    )
-    const eventMessageUrl =
-        buildDiscordMessageLink(
-            payload.config.guildId,
-            event.eventInfoChannelId ?? payload.config.eventInfoChannelId,
-            syncState?.eventInfoMessageId
-        ) ??
-        buildDiscordMessageLink(
-            payload.config.guildId,
-            syncState?.announcementChannelId,
-            syncState?.announcementMessageId
-        ) ??
-        undefined
     const matchType = event.matchType?.trim().toLowerCase()
     const accentColor = resolveMessageAccentColor({
         categoryColor: matchType
@@ -99,10 +83,11 @@ export async function deliverManualReminder(input: {
             eventName: event.name,
             meetingStartMs,
             gameStartMs: Date.parse(event.gameStart),
-            eventMessageUrl,
             assignment: places.get(userId),
             messages,
             accentColor,
+            now: Date.now(),
+            timeZone: payload.config.timezone,
         })
         if (
             await input.send(userId, {

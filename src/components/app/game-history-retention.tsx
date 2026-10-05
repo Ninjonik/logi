@@ -12,10 +12,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { SettingsField } from "@/components/app/settings/settings-panel"
 import { useCallback, useEffect, useId, useState } from "react"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 
 type Props = { serverId: string; dictionary: Dictionary }
 const INDEFINITE = "indefinite"
@@ -26,6 +26,7 @@ export function GameHistoryRetention(props: Props) {
 
 function Retention({ serverId, dictionary }: Props) {
     const t = dictionary.gameHistory,
+        row = dictionary.gameData.servers.card,
         id = useId()
     const url = `/api/servers/${encodeURIComponent(serverId)}/game-history-retention`
     const [stored, setStored] = useState<HistoryRetentionSettings | null>(null)
@@ -99,57 +100,62 @@ function Retention({ serverId, dictionary }: Props) {
                 ? INDEFINITE
                 : String(stored.retentionDays))
     return (
-        <section
-            className="space-y-3 rounded-lg border p-4"
-            aria-labelledby={`${id}-title`}
-        >
-            <h3 id={`${id}-title`} className="font-medium">
-                {t.retentionTitle}
-            </h3>
-            <p className="text-muted-foreground text-sm">
-                {t.retentionDescription}
-            </p>
-            <div className="space-y-2">
-                <Label htmlFor={`${id}-select`}>{t.retentionWindow}</Label>
-                <Select
-                    value={choice}
-                    onValueChange={(value) => {
-                        setSaved(false)
-                        setChoice(value)
-                    }}
-                    disabled={busy}
-                >
-                    <SelectTrigger id={`${id}-select`} className="w-full">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value={INDEFINITE}>
-                            {t.retentionIndefinite}
-                        </SelectItem>
-                        {HISTORY_RETENTION_DAYS.map((days) => (
-                            <SelectItem key={days} value={String(days)}>
-                                {t.retentionDays.replace(
-                                    "{days}",
-                                    String(days)
-                                )}
+        <div className="py-4">
+            <SettingsField
+                label={<span id={`${id}-title`}>{row.retentionKeep}</span>}
+                help={row.retentionHelp}
+            >
+                <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                        value={choice}
+                        onValueChange={(value) => {
+                            setSaved(false)
+                            setChoice(value)
+                        }}
+                        disabled={busy}
+                    >
+                        <SelectTrigger
+                            id={`${id}-select`}
+                            aria-labelledby={`${id}-title`}
+                            className="min-w-0 flex-1 rounded-lg"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={INDEFINITE}>
+                                {t.retentionIndefinite}
                             </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            {error && (
-                <p role="alert" className="text-destructive text-sm">
-                    {t.retentionError}
-                </p>
-            )}
-            {saved && (
-                <p role="status" className="text-sm">
-                    {t.retentionSaved}
-                </p>
-            )}
-            <Button variant="outline" disabled={busy || !dirty} onClick={save}>
-                {pending ? t.retentionSaving : t.retentionSave}
-            </Button>
-        </section>
+                            {HISTORY_RETENTION_DAYS.map((days) => (
+                                <SelectItem key={days} value={String(days)}>
+                                    {t.retentionDays.replace(
+                                        "{days}",
+                                        String(days)
+                                    )}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {dirty || pending ? (
+                        <Button
+                            className="rounded-lg"
+                            disabled={busy || !dirty}
+                            onClick={save}
+                        >
+                            {pending ? t.retentionSaving : t.retentionSave}
+                        </Button>
+                    ) : null}
+                </div>
+                {error && (
+                    <p role="alert" className="text-destructive mt-2 text-sm">
+                        {t.retentionError}
+                    </p>
+                )}
+                {saved && (
+                    <p role="status" className="mt-2 text-sm">
+                        {t.retentionSaved}
+                    </p>
+                )}
+            </SettingsField>
+        </div>
     )
 }

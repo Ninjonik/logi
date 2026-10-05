@@ -132,6 +132,21 @@ test("unconfirmed reminders reach roster players and reserves without a confirma
     })
 })
 
+test("unconfirmed reminders skip players who sent a late or cannot-come notice", () => {
+    const result = resolveManualReminderRecipients({
+        audience: "unconfirmed",
+        event: {
+            ...event,
+            status: "starting",
+            absenceNotices: [{ userId: "slot-pending" }],
+        },
+        roster,
+        assignments,
+        now,
+    })
+    assert.deepEqual(result, { ok: true, userIds: ["reserve-pending"] })
+})
+
 test("unconfirmed reminders need a published roster before the meeting", () => {
     assert.deepEqual(
         resolveManualReminderRecipients({

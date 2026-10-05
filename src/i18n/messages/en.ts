@@ -226,6 +226,61 @@ export const enMessages = {
             emptyDescription:
                 "Connect a CRCON or Warcon server so Logi can collect results and statistics. The API key is stored encrypted and nobody sees it again.",
             closeForm: "Close",
+            card: {
+                status: {
+                    collecting: "Collecting",
+                    stopped: "Collection stopped",
+                    off: "Not collecting",
+                    none: "No collection",
+                },
+                key: {
+                    set: "saved",
+                    missing: "missing",
+                    not_required: "not needed",
+                    environment: "set by the Logi operator",
+                    needs_operator: "enter it again",
+                },
+                unverified: "not verified",
+                changed: "changed {date}",
+                testOk: "passed",
+                testFailed: "failed",
+                lastGame: "Last game",
+                noGame: "none yet",
+                serverNumber: "server {id}",
+                testKey: "Test key",
+                live: "Live score",
+                liveHide: "Hide live score",
+                fixUnauthorized: {
+                    crcon: "The server rejected the key. Create a new key in CRCON that may read server information and enter it with Change key.",
+                    other: "The server rejected the key. Create a new key with the provider and enter it with Change key.",
+                },
+                retentionKeep: "Keep played games",
+                retentionHelp:
+                    "Older games are deleted overnight and websites recalculate their totals.",
+                browseHistory: "Browse played games",
+            },
+            form: {
+                type: "Server type",
+                types: {
+                    hll_crcon: "CRCON",
+                    wardogs_warcon: "Warcon",
+                    wardogs_rcon: "RCON",
+                    wardogs_public_directory: "Public",
+                },
+                address: "Address",
+                namePlaceholder: "For example Server 2",
+                serverNumber: {
+                    hll_crcon: "Server number in CRCON",
+                    wardogs_warcon: "Server ID in Warcon",
+                    wardogs_rcon: "Server ID in RCON",
+                    wardogs_public_directory: "Server ID in the list",
+                },
+                keyPlaceholder: "Paste the key",
+                help: "The game follows from the server type. The key is tested first and only then saved.",
+                testFirst: "Saving is possible after a successful test.",
+                testPassed: "The test passed. You can save the server.",
+                saveAndCollect: "Save and start collecting",
+            },
             keyLabel: "API key",
             lastTestLabel: "Last test",
             notTested: "Not tested yet",
@@ -446,6 +501,43 @@ export const enMessages = {
     },
     apiKeys: {
         revokeTitle: "Revoke the key {name}?",
+        groupsLegend: "Areas",
+        groups: {
+            matches: {
+                label: "Matches",
+                short: "matches",
+                help: "Events, matches, their summaries and strat maps.",
+            },
+            rosters: {
+                label: "Rosters",
+                short: "rosters",
+                help: "Rosters, squads and player assignments.",
+            },
+            results: {
+                label: "Results",
+                short: "results",
+                help: "Confirmed results, player statistics and game history.",
+            },
+            members: {
+                label: "Members",
+                short: "members",
+                help: "Clan members and their status. Reading membership also has its own rules.",
+            },
+            servers: {
+                label: "Game servers",
+                short: "servers",
+                help: "Live server state, Warcon, HLL and connection health.",
+            },
+            league: {
+                label: "League and teams",
+                short: "league",
+                help: "Wardogs League matches and the team catalogue.",
+            },
+        },
+        partialGroup: "{group} (part)",
+        readOnlyShort: "read only",
+        everyGame: "every game",
+        createdOn: "created {date}",
         revokeDescription:
             "Everything that uses this key, such as your website, stops getting data from Logi immediately. This cannot be undone; to restore access, create a new key.",
         revokeConfirm: "Revoke key",
@@ -953,7 +1045,7 @@ export const enMessages = {
         matches: "Matches",
         trainings: "Trainings",
         topicPresets: "Topic presets",
-        stratmaps: "Stratmaps",
+        stratmaps: "Tactical maps",
         groups: "Groups",
         squadPresets: "Squad presets",
         rosters: "Rosters",
@@ -1221,11 +1313,58 @@ export const enMessages = {
         showAll: "Show all activity",
     },
     teamCatalogAdmin: {
+        searchLabel: "Search teams",
+        statesLabel: "Status",
+        states: {
+            active: "Active",
+            archived: "Archived",
+            merged: "Merged",
+        },
+        listLabel: "Teams",
+        detailLabel: "Team details",
+        rowLinked: "clan on Logi",
+        rowCompetitions: {
+            one: "{count} competition",
+            few: "{count} competitions",
+            many: "{count} competitions",
+            other: "{count} competitions",
+        },
+        rowPendingChange: "change pending",
+        requestBadge: "Request",
+        requestBadgeLabel: "A change request is waiting",
+        updatedOn: "{game} · updated {date}",
+        changeLogo: "Change logo",
+        requestBanner: "A clan proposes a change to this team",
+        openRequest: "Open request",
+        usageTitle: "Where the team is used",
+        usageFixtures: {
+            one: "{count} match",
+            few: "{count} matches",
+            many: "{count} matches",
+            other: "{count} matches",
+        },
+        usageWithdrawn: "withdrawn",
+        usageNone: "Not in any competition yet.",
+        usageMore: "and {count} more competitions",
+        usageSnapshots:
+            "Clan matches keep the name and logo from when they were saved.",
+        usageUnavailable: "Could not load where the team is used.",
+        moreDetails: "Description and links",
+        saveShort: "Save",
+        endTitle: "Duplicate or end of the team",
+        mergeIntoOther: "Merge into another team",
+        endHelp: "Both ask first and show what will change.",
+        selectTeam: "Choose a team in the list to see its details.",
+        archivedHelp:
+            "An archived team is not offered to clans or competitions. Restoring it makes it selectable again.",
+        mergedHelp:
+            "This team was merged into {name}. A merge cannot be undone.",
+        mergedTargetUnknown: "another team",
         title: "Team catalogue",
         description:
             "One list of teams for all of Logi. Clans pick their opponents from it and competitions register teams from it.",
         gamesLabel: "Game",
-        search: "Search teams…",
+        search: "Name or short code",
         showArchived: "Show archived and merged teams",
         add: "Add team",
         loadMore: "Load more",
@@ -1256,8 +1395,8 @@ export const enMessages = {
         linkLabel: "Link {number}",
         linksHelp:
             "Up to three https links, such as the team's website or Discord invite.",
-        linkedWorkspace: "Linked workspace",
-        linkedWorkspaceNone: "No linked workspace",
+        linkedWorkspace: "Clan on Logi",
+        linkedWorkspaceNone: "None · the team does not use Logi",
         linkedWorkspaceUnknown: "Workspace {id}",
         linkedWorkspaceHelp:
             "Records that this team is the clan of that Logi workspace. Linking grants no permissions.",
@@ -1356,6 +1495,29 @@ export const enMessages = {
         },
     },
     teamRequestAdmin: {
+        changeSummary: "Changes {fields}",
+        changeFields: {
+            logo: "logo",
+            name: "name",
+            shortCode: "short code",
+            links: "links",
+            description: "description",
+        },
+        listAnd: " and ",
+        kindBadges: {
+            create: "New",
+            update: "Change",
+        },
+        similarExists: "A similar team already exists: {name}",
+        usageIn: "The team is used in {competitions}.",
+        usageNone: "The team is not in any competition yet.",
+        snapshotsKept: "Saved matches keep the old logo.",
+        approveDirectTitle: "Approve the request for {name}?",
+        approveDirectCreate: "{name} is added to the {game} catalogue.",
+        approveDirectUpdate: "The proposed details are applied to {name}.",
+        approveDirectDm: "The requester gets the decision as a Discord DM.",
+        discordUser: "Discord {id}",
+        mergeShort: "Merge with existing",
         title: "Team requests",
         description:
             "Clans ask for a new team or a change to an existing one. The requester gets your decision by Discord DM.",
@@ -1391,8 +1553,7 @@ export const enMessages = {
         proposed: "Proposed",
         unchanged: "unchanged",
         emptyValue: "empty",
-        comparisonHint:
-            "Highlighted rows change. Saved matches keep the team as it was when they were saved.",
+        comparisonHint: "Highlighted in green is what will change.",
         rejectWithReason: "Reject with reason",
         reviewAndApprove: "Review and approve",
         selectRequest: "Select a request to see its details.",
@@ -1599,6 +1760,26 @@ export const enMessages = {
         },
     },
     competitionAdmin: {
+        breadcrumb: "Breadcrumb",
+        round: "Round",
+        roundHelp: "Optional, 1–99. Matches are grouped by round.",
+        roundHeading: "Round {round}",
+        noRound: "No round",
+        noFixturesInView: "No matches in this division and phase yet.",
+        linkWithMatch: "Link to a match",
+        clanMatch: "{clan} match",
+        clanMatchUnknown: "Linked clan match",
+        awaitingConfirmation: "Awaiting clan confirmation",
+        played: "Played",
+        editFixtureNamed: "Edit match {teams}",
+        linkPanelTitle: "Link {teams}",
+        linkPanelDescription:
+            "The result then fills in by itself once the clan confirms it. We offer the clan matches of both teams around the date.",
+        searchMatches: "Search matches by name",
+        candidateClan: "{clan} clan",
+        noCandidateResults: "No match fits the search.",
+        manualEventId: "Enter a match ID manually",
+        deleteFixture: "Delete match",
         listDescription:
             "Create and run Hell Let Loose and Wardogs competitions with teams from the global catalogue.",
         newCompetition: "New competition",
@@ -1730,8 +1911,8 @@ export const enMessages = {
         candidates: "Matches from the teams' linked workspaces",
         loadingCandidates: "Loading matches…",
         noCandidates: "No matches found in the teams' linked workspaces.",
-        teamsMatch: "Both teams assigned",
-        teamsUnassigned: "Teams not assigned",
+        teamsMatch: "both teams assigned",
+        teamsUnassigned: "sides not assigned",
         hasResult: "Result imported",
         eventId: "Event ID",
         eventIdHelp:
@@ -1954,6 +2135,7 @@ export const enMessages = {
         backToClans: "Back to your clans",
         openMenu: "Open menu",
         mainNavigation: "Main navigation",
+        backTo: "Back to {page}",
     },
     verifiedPlatformLinks: {
         title: "Verified Steam account",
@@ -2067,7 +2249,7 @@ export const enMessages = {
         downloadZip: "Download ZIP",
         deleteAccountTitle: "Delete account",
         deleteAccountDescription:
-            "Removes your profile, sign-ups and linked accounts. The Logi team processes the request and it cannot be undone. To confirm, type your name.",
+            "Removes your profile, sign-ups and linked accounts. To confirm, type your name.",
         deleteAccountConfirmLabel: "Confirm with your name",
         deleteAccountButton: "Delete account",
         deleteAccountRequested:
@@ -2197,6 +2379,9 @@ export const enMessages = {
             loginPage: "Clan sign-in page",
             ssoApps: "Single sign-on applications",
             addApplication: "Add application",
+            membersRowHelp:
+                "Through the {key} key. A member needs one of the roles.",
+            saveRoles: "Save roles",
             membersTitle: "Find out who is a member",
             membersHelp:
                 "Through a read-only key with the Discord membership grant. The website sees only members with one of the chosen roles.",
@@ -2214,6 +2399,9 @@ export const enMessages = {
                 "Add your website as an application so members can sign in to it with their Discord account through Logi.",
             redirects: "Return addresses after sign-in: {count}",
             clientId: "Client ID",
+            edit: "Edit",
+            save: "Save changes",
+            saved: "Application saved.",
             removeTitle: "Remove {name}?",
             removeDescription:
                 "Members can no longer sign in to {website} with Logi. The application's client ID and secret stop working, and website event commands bound to it stop too. This cannot be undone.",
@@ -2326,6 +2514,9 @@ export const enMessages = {
         threadChannel: "Where threads open",
         threadChannelHint:
             "The bot needs to be able to create private threads here.",
+        threadChannelOk: "The bot can open private threads here",
+        categoriesShort: "Categories",
+        categoriesEditorNote: "Each category is one button in the panel.",
         headingLabel: "Heading",
         textLabel: "Text",
         imageOptional: "optional",
@@ -2459,6 +2650,17 @@ export const enMessages = {
             "Logi adds and removes roles by member status. It is switched on and off together with join requests.",
         roleSyncOn: "On",
         roleSyncOff: "Off",
+        roleSyncSwitchDescription:
+            "Logi adds and removes roles by member status. It also works while applications are switched off.",
+        skipPendingCategoryTitle: "Skip waiting and add straight as a recruit",
+        skipPendingCategoryHelp: "Main members only.",
+        categoryDescriptionHelp:
+            "Shown in the Discord panel next to the category name.",
+        addRole: "role",
+        addRoleAria: "Add a role: {status}",
+        removeRole: "Remove role {role}",
+        roleSearch: "Search roles",
+        roleEmpty: "No other role.",
         tabsLabel: "Membership sections",
         tabs: {
             categories: "Categories",
@@ -2771,15 +2973,19 @@ export const enMessages = {
         scoreSuffix: "score",
     },
     workspace: {
-        selectWorkspace: "Select workspace",
+        selectWorkspace: "Choose a clan",
         activeWorkspace: "Active workspace",
-        noWorkspaceSelected: "No workspace selected",
-        searchWorkspace: "Search workspaces...",
+        noWorkspaceSelected: "No clan selected",
+        searchWorkspace: "Search clans…",
         missingWorkspaceHelp:
-            "Missing a workspace? Make sure you are in that Discord server or have administrator access to it.",
+            "Missing a clan? Make sure you are on its Discord server or have administrator access there.",
         allClans: "All clans",
         showAllResults: "Show all ({count})",
         allGames: "All games",
+        gameHeading: "Game",
+        clanHeading: "Clans",
+        clanStats: "Members {members} · admins {admins}",
+        botMissingBadge: "Bot missing",
     },
     languageSwitcher: {
         selectLanguage: "Select language",
@@ -2902,6 +3108,247 @@ export const enMessages = {
         continueSetup: "Continue",
         backToOverview: "All settings",
         sectionNavLabel: "Settings sections",
+        menu: "Sections",
+        breadcrumbLabel: "Breadcrumb",
+        channelsPage: {
+            missingAnnouncements: "The announcements channel is missing.",
+            missingAnnouncementsHelp:
+                "Without it the bot does not announce new events.",
+            languageTitle: "Language and time",
+            textTitle: "Text channels",
+            voiceTitle: "Voice channels",
+            timezone: "Time zone",
+            timezoneHelp: "The bot writes event times in it.",
+            language: "Bot language",
+            languageHelp: "Messages, embeds and command replies.",
+            announcements: "Announcements",
+            required: "required",
+            announcementsHelp: "New events and roster changes.",
+            eventInfo: "Event information",
+            eventInfoHelp: "Event details and sign-ups.",
+            calendar: "Calendar",
+            calendarHelp: "An overview of upcoming events.",
+            errors: "Bot errors",
+            errorsHelp: "For admins only. Optional.",
+            forum: "Category for event forums",
+            forumHelp: "Where the bot opens threads for events.",
+            squadVoice: "Category for squad voice channels",
+            squadVoiceHelp:
+                "The bot creates squad channels here before an event.",
+            meeting: "Meeting channel",
+            meetingHelp: "Where players gather before an event.",
+            addChannelException: "Different channel for a game",
+            addCategoryException: "Different category for a game",
+            selectChannel: "Choose a channel",
+            selectCategory: "Choose a category",
+            none: "None",
+        },
+        scopeLegend: {
+            clanWide: "Whole clan: one value for every game",
+            exception: "exception for one game only",
+            clanWideShort: "Whole clan",
+        },
+        overview: {
+            title: "Settings",
+            description:
+                "Clan, Discord, game data and connected websites in one place.",
+            searchLabel: "Search settings",
+            searchPlaceholder: "Search: channel, role, API key…",
+            noResults: "Nothing found",
+            noResultsDescription:
+                "Try another word, such as channel, role or key.",
+            groupHints: {
+                clan: "Applies to every game",
+                matches: "Defaults for new matches and their messages",
+                discord: "Bot, channels, roles and panels",
+                gameData: "Servers Logi collects results from",
+                web: "Optional: clan website, sign-in and other services",
+                maintenance: "One-off tools",
+            },
+            badges: {
+                done: "Done",
+                notSet: "Not set",
+                on: "On",
+                off: "Off",
+                collecting: {
+                    one: "{count} collecting",
+                    few: "{count} collecting",
+                    many: "{count} collecting",
+                    other: "{count} collecting",
+                },
+                failing: {
+                    one: "{count} failing",
+                    few: "{count} failing",
+                    many: "{count} failing",
+                    other: "{count} failing",
+                },
+                missingChannels: {
+                    one: "{count} channel missing",
+                    few: "{count} channels missing",
+                    many: "{count} channels missing",
+                    other: "{count} channels missing",
+                },
+                gamesOn: {
+                    one: "{count} on",
+                    few: "{count} on",
+                    many: "{count} on",
+                    other: "{count} on",
+                },
+                templates: {
+                    one: "{count} template",
+                    few: "{count} templates",
+                    many: "{count} templates",
+                    other: "{count} templates",
+                },
+            },
+            tiles: {
+                profile: {
+                    title: "Clan profile",
+                    description: "The clan's name, logo and description.",
+                },
+                games: {
+                    title: "Games",
+                    description:
+                        "Which games the clan plays. Logi offers further options based on them.",
+                },
+                "event-categories": {
+                    title: "Event categories",
+                    description:
+                        "Colours and emoji for the event types in the calendar.",
+                },
+                "match-templates": {
+                    title: "Match templates",
+                    description:
+                        "Default times, sign-ups, ping and roster for a new match.",
+                },
+                presets: {
+                    title: "Squad and topic presets",
+                    description:
+                        "Squad and role layouts for rosters, topics for the match forum.",
+                },
+                messages: {
+                    title: "Discord messages",
+                    description:
+                        "Announcements, rosters, reminders, live scores and results.",
+                },
+                channels: {
+                    title: "Channels and language",
+                    description:
+                        "Where the bot posts announcements, events and errors. Time zone and language.",
+                },
+                roles: {
+                    title: "Roles and access",
+                    description:
+                        "The clan role and the role that may manage Logi.",
+                },
+                stats: {
+                    title: "/stats command",
+                    description:
+                        "Player statistics in Discord: for which games and where they are shared.",
+                },
+                membership: {
+                    title: "Membership",
+                    description:
+                        "Recruit and member roles, roster score rules.",
+                },
+                tickets: {
+                    title: "Tickets",
+                    description: "Ticket panel, categories and channels.",
+                },
+                "game-servers": {
+                    title: "Game servers",
+                    description:
+                        "CRCON and Warcon servers, their API keys and data collection.",
+                },
+                history: {
+                    title: "History retention",
+                    description: "How long Logi keeps played games.",
+                },
+                league: {
+                    title: "Wardogs League",
+                    description:
+                        "League match tracking and cards in Discord. Wardogs only.",
+                },
+                apiKeys: {
+                    title: "API keys",
+                    description: "Keys for the clan website and other apps.",
+                },
+                login: {
+                    title: "Website sign-in",
+                    description:
+                        "Your own sign-in page and single sign-on (SSO) applications.",
+                },
+                webAccess: {
+                    title: "Website permissions",
+                    description:
+                        "Which roles the website may read membership for and create events with. Builds on the API key and SSO.",
+                },
+                calendar: {
+                    title: "Google Calendar",
+                    description: "A subscription link for the clan calendar.",
+                },
+                webhooks: {
+                    title: "Webhooks",
+                    description:
+                        "Notifications for other services when something changes in Logi.",
+                },
+                imports: {
+                    title: "Imports and data fixes",
+                    description:
+                        "Bulk import of events, players and Platform IDs, statistics recalculation.",
+                },
+                "helper-data": {
+                    title: "Helper data",
+                    description: "Default presets and restoring them.",
+                },
+            },
+            setup: {
+                title: "Workspace setup",
+                description:
+                    "Finish the required steps so the bot can announce events and guard access.",
+                progress: "{done} of {total} done",
+                progressLabel: "Setup progress",
+                continue: "Continue setup",
+                continueHelp: "Opens the first unfinished step.",
+                optional: "optional",
+                fix: "Fix",
+                setUp: "Set up",
+                steps: {
+                    bot: {
+                        title: "Bot on Discord",
+                        done: "The bot is on the server and sees the channels.",
+                        missing: "The bot is not on the server yet.",
+                    },
+                    games: {
+                        title: "Games",
+                        missing: "Choose what the clan plays",
+                    },
+                    profile: {
+                        title: "Clan profile",
+                        detail: "Name, logo and description",
+                    },
+                    channels: {
+                        title: "Channels",
+                        done: "The announcements channel is chosen",
+                        missing: "The announcements channel is missing",
+                    },
+                    roles: {
+                        title: "Roles and access",
+                        detail: "Who may manage Logi",
+                    },
+                    gameServers: {
+                        title: "Game servers",
+                        done: {
+                            one: "{count} server collects data",
+                            few: "{count} servers collect data",
+                            many: "{count} servers collect data",
+                            other: "{count} servers collect data",
+                        },
+                        missing: "Results and statistics from the server",
+                    },
+                },
+            },
+        },
         openSection: "Open",
         gameExceptionsNote:
             "These settings apply to the whole clan. Where one game needs a different channel, add an exception for that game under the setting.",
@@ -2971,13 +3418,29 @@ export const enMessages = {
             noResults: "No matching role.",
             rolesUnavailable:
                 "Discord roles could not be loaded. Your settings are unchanged; reload the page to try again.",
-            resyncTitle: "Access from Discord",
-            resyncHelp:
-                "Reload when the manager role changed in Discord and Logi does not know it yet.",
+            resyncHelp: "When roles changed and Logi does not know yet.",
             resyncNeedsRole: "Choose and save a manager role first.",
             resync: "Reload from Discord",
             resynced: "Manager access reloaded from Discord.",
             resyncError: "Manager access could not be reloaded.",
+            holders: {
+                one: "{count} person has this role",
+                few: "{count} people have this role",
+                many: "{count} people have this role",
+                other: "{count} people have this role",
+            },
+            accessNow: "Who has access now",
+            updated: "updated {time}",
+            accessUnavailable:
+                "The access overview could not be loaded right now. You can still change the roles.",
+            noManagers:
+                "Nobody yet. Save a manager role or give someone the Administrator permission in Discord.",
+            reasonAdministrator: "Administrator permission",
+            reasonRole: "role {role}",
+            reasonManagerRole: "manager role",
+            reasonGranted: "added in Logi",
+            unknownMember: "Member without a Logi account",
+            moreManagers: "and {count} more",
         },
         statsPage: {
             enable: "Allow /stats",
@@ -2996,12 +3459,18 @@ export const enMessages = {
             legacyHelp:
                 "Entered with a token and address in the bot settings. New connections belong in Game servers, where the key is stored encrypted and can be tested.",
             openGameServers: "Open Game servers",
+            previewTitle: "Reply preview in Discord",
+            previewExample: "Example data",
+            previewEphemeral: "Only you can see this · Dismiss",
+            previewPlayer: "Example player",
+            previewNote:
+                "The numbers are an example. The real reply shows the player's statistics from your game servers.",
+            showConnections: "Show connections",
+            hideConnections: "Hide connections",
         },
         messagesPage: {
             lookTitle: "Look of all messages",
             language: "Language",
-            languageHelp:
-                "Set in Channels and language; it applies to every bot message.",
             languages: { en: "English", cs: "Czech", de: "German" },
             languageLink: "Channels and language",
             listTitle: "Messages",
@@ -3012,19 +3481,44 @@ export const enMessages = {
             channelUnknown: "channel set",
             announcement: "Match announcement",
             announcementDetail: "with sign-up buttons",
-            eventInfo: "Match information",
-            eventInfoDetail: "a separate message next to the announcement",
+            eventInfo: "Roster and assignments",
+            eventInfoDetail: "after the roster is published",
             reminders: "Reminders",
             remindersDetail:
                 "DM · sign-up reminders daily until registration closes, attendance 24, 18, 12 and 6 h before the meeting",
-            remindersNote: "Chosen on each match",
-            panels: "Live score and results",
-            panelsDetail:
-                "Panels from your game servers; results after confirmation in Logi",
             league: "League cards",
             leagueDetail: "Wardogs League matches",
             errors: "Bot errors",
             errorsDetail: "managers only",
+            clanColor: "Clan colour",
+            clanColorHelp: "Events with a category use the category's colour.",
+            clanColorPicker: "Pick a colour",
+            clanColorInvalid: "Enter the colour as #E8A33D.",
+            clanColorDefault:
+                "Without a colour of your own, messages use Logi orange.",
+            icons: "Icons in messages",
+            iconsHelp: "Factions always keep their sign.",
+            iconsSparse: "Sparse",
+            iconsRich: "Emoji on every line",
+            languageFrom: "From",
+            languageScope: ", applies to every message",
+            channel: "Channel",
+            noChannel: "No channel",
+            gameException: "{game} has its own channel {channel}.",
+            announcementHelp:
+                "Applies to all games. New matches keep the channel they were created with.",
+            eventInfoHelp:
+                "The bot posts the roster and assignments here once the roster is published. It works only together with the announcement channel.",
+            errorsHelp:
+                "The bot reports permission and channel problems here. Only managers should see it.",
+            liveScore: "Live score",
+            liveScoreDetail: "{channel} · refreshes every {refresh}",
+            liveScoreOff: "Off · a panel from your game servers",
+            seconds: "{count} s",
+            minutes: "{count} min",
+            results: "Results",
+            resultsDetail: "after a match result is confirmed",
+            off: "Off",
         },
         panelsForm: {
             regionLabel: "Public Discord panels",
@@ -3099,7 +3593,7 @@ export const enMessages = {
             channels: {
                 title: "Channels and language",
                 description:
-                    "Time zone, bot language and the channels for announcements, event info, errors and voice.",
+                    "Where the bot posts messages and which language it writes in.",
             },
             roles: {
                 title: "Roles and access",
@@ -3114,17 +3608,17 @@ export const enMessages = {
             membership: {
                 title: "Membership",
                 description:
-                    "Clan applications, categories, recruit and member roles, roster scores.",
+                    "How people join the clan, who answers them and which roles they get.",
             },
             tickets: {
                 title: "Tickets",
                 description:
-                    "The ticket panel, categories, support roles and questions.",
+                    "The panel members use to open a private thread with the admins.",
             },
             "game-servers": {
                 title: "Game servers",
                 description:
-                    "Servers, provider keys and the data Logi collects from them.",
+                    "Where Logi collects results and statistics from. An API key is stored encrypted and nobody sees it again.",
             },
             league: {
                 title: "Wardogs League",
@@ -3146,9 +3640,9 @@ export const enMessages = {
                 description: "Send Logi events to your own services.",
             },
             imports: {
-                title: "Imports and repairs",
+                title: "Imports and data fixes",
                 description:
-                    "Import events and Discord members, link IDs and refresh statistics.",
+                    "Bulk import of events, players and Platform IDs, statistics recalculation.",
             },
             "helper-data": {
                 title: "Helper data",
@@ -3640,10 +4134,16 @@ export const enMessages = {
             "Create a training. Members sign up in Discord and afterwards you record who passed.",
         emptyTrainingsMember: "Your clan has not planned any trainings yet.",
         unknownChannel: "Channel not found",
+        trainingsTitle: "Trainings",
+        trainingsDescription:
+            "Soonest first. Each training shows who signed up and who passed.",
+        newTraining: "New training",
         tabsLabel: "Show",
         tabs: {
             upcoming: "Upcoming",
             played: "Played",
+            drafts: "Drafts",
+            draftsCount: "Drafts · {count}",
         },
         filters: {
             matches: "Matches",
@@ -3652,6 +4152,8 @@ export const enMessages = {
             allGames: "All games",
             searchLabel: "Search matches",
             searchPlaceholder: "Opponent, map…",
+            searchTrainingsLabel: "Search trainings",
+            searchTrainingsPlaceholder: "Training name…",
         },
         weeks: {
             thisWeek: "This week",
@@ -3662,9 +4164,46 @@ export const enMessages = {
         recentlyPlayed: "Recently played",
         noUpcoming: "No upcoming events match the filters.",
         noPlayed: "No played events match the filters.",
-        signedUp: "{count} signed up",
-        trainingOutcome: "{passed} passed, {failed} failed",
+        noDraftsTitle: "No drafts",
+        noDrafts:
+            "Save a match you are still working on with Save as draft in the new match form. The bot does not announce it until you publish it.",
+        noDraftsMatch: "No drafts match the filters.",
+        clearFilters: "Clear filters",
+        showMore: "Show more",
+        signedUp: {
+            one: "{count} signed up",
+            few: "{count} signed up",
+            many: "{count} signed up",
+            other: "{count} signed up",
+        },
+        notAnnounced: "not announced",
+        noOpponent: "no opponent yet",
+        competition: "competition {name}",
+        competitionPhases: {
+            playoff: "playoffs",
+            relegation: "relegation",
+        },
+        training: "Training",
+        participants: {
+            one: "{count} participant",
+            few: "{count} participants",
+            many: "{count} participants",
+            other: "{count} participants",
+        },
+        trainingPassed: {
+            one: "{count} passed",
+            few: "{count} passed",
+            many: "{count} passed",
+            other: "{count} passed",
+        },
+        trainingFailed: {
+            one: "{count} failed",
+            few: "{count} failed",
+            many: "{count} failed",
+            other: "{count} failed",
+        },
         phase: {
+            draft: "Draft",
             registration: "Sign-ups until {when}",
             registrationClosed: "Sign-ups closed",
             rosterMissing: "Roster missing",
@@ -3672,26 +4211,65 @@ export const enMessages = {
             rosterPublished: "Roster published",
             unconfirmed: "{count} not confirmed",
             awaitingResult: "No result yet",
+            resultPending: "Result awaiting confirmation",
+            resultConfirmed: "{outcome} · confirmed",
+            resultCorrected: "{outcome} · corrected",
+            confirmed: "Confirmed",
+            corrected: "Corrected",
             concluded: "Closed",
         },
         queue: {
             title: "Waiting for you",
             publishRoster: "Publish the roster",
+            confirmResult: "Confirm the result",
             confirmAttendance: "Check attendance",
-            openSlots: "{count} open slots",
-            unconfirmed: "{count} players without confirmation",
+            openSlots: {
+                one: "{count} open slot",
+                few: "{count} open slots",
+                many: "{count} open slots",
+                other: "{count} open slots",
+            },
+            unconfirmed: {
+                one: "{count} player without confirmation",
+                few: "{count} players without confirmation",
+                many: "{count} players without confirmation",
+                other: "{count} players without confirmation",
+            },
+            resultWaiting: "{source} {score} waiting",
+            resultWaitingNoScore: "{source} waiting",
+            sources: {
+                legacy_import: "import",
+                collected: "server game",
+                manual: "entered result",
+            },
         },
         recurrence: {
             weekly: "Every week: {days}",
             everyWeeks: "Every {count} weeks: {days}",
             monthlyDate: "Monthly on day {day}",
             monthlyWeekday: "Monthly, {nth}. {day}",
+            and: "and",
+            repeats: "repeats {days}",
+            every: [
+                "every Sunday",
+                "every Monday",
+                "every Tuesday",
+                "every Wednesday",
+                "every Thursday",
+                "every Friday",
+                "every Saturday",
+            ],
         },
+        recurringTitle: "Recurring matches",
+        recurringDescription: "Match series that repeat on a schedule.",
         recurringStopHint:
             "To change or stop a series, open its match and change the repeat settings.",
         editSeries: "Edit series",
+        recurringEmptyTitle: "No recurring matches yet",
         recurringEmptyAdmin:
             "Turn on repeating when you create a match to start a series.",
+        recurringEmptyMember: "Your clan has no recurring matches yet.",
+        backToMatches: "Back to matches",
     },
     matchTemplates: {
         chooserLabel: "Template",
@@ -4177,8 +4755,8 @@ export const enMessages = {
         rosterMissing: "No roster yet",
         rosterFill: "Roster {filled} of {total} places",
         rosterFillLabel: "Roster places filled",
-        signedUp: "Signed up: {count}",
-        unanswered: "No answer: {count}",
+        signedUp: "{count} signed up",
+        unanswered: "{count} without an answer",
         finishRoster: "Finish roster",
         createRoster: "Create roster",
         showRoster: "Show roster",
@@ -4197,23 +4775,62 @@ export const enMessages = {
             announcements: "Without it the bot cannot announce new events.",
             clanRole: "Logi uses it to recognise clan members.",
         },
-        applications: "Membership applications waiting: {count}",
+        applications: {
+            one: "{count} membership application waiting",
+            few: "{count} membership applications waiting",
+            many: "{count} membership applications waiting",
+            other: "{count} membership applications waiting",
+        },
         applicationsOldest: "oldest since {date}",
         nothingWaiting: "Nothing is waiting. Everything is done.",
         setupProgress: "Clan setup: {done} of {total} done",
         weekTitle: "This week",
         todayLabel: "today",
         formTitle: "Form · last 10 matches",
-        wins: "Wins: {count}",
+        wins: {
+            one: "{count} win",
+            few: "{count} wins",
+            many: "{count} wins",
+            other: "{count} wins",
+        },
         formListLabel: "Results, oldest first",
         outcomeLetters: { victory: "W", defeat: "L", draw: "D" },
         outcomes: { victory: "Win", defeat: "Loss", draw: "Draw" },
         outcomePending: "{outcome}, waiting for confirmation",
         formLegend: "W = win, L = loss, D = draw.",
-        formPendingLegend: "A dashed result is waiting for confirmation.",
+        formPendingLegend:
+            "Results with a dashed border are waiting for confirmation.",
         formEmptyTitle: "No results yet",
         formEmptyDescription:
             "Results appear here once a match score is imported or entered.",
+        formLastPendingLegend: "The latest result is waiting for confirmation.",
+        remind: {
+            button: {
+                one: "Remind {count} player",
+                few: "Remind {count} players",
+                many: "Remind {count} players",
+                other: "Remind {count} players",
+            },
+            confirmTitle: "Send a reminder?",
+            confirmDescription:
+                "The bot sends a direct message in Discord to the members who have not signed up or declined yet.",
+            confirm: "Send reminder",
+            cancel: "Cancel",
+            sent: {
+                one: "Reminder sent to {count} player.",
+                few: "Reminder sent to {count} players.",
+                many: "Reminder sent to {count} players.",
+                other: "Reminder sent to {count} players.",
+            },
+            nobody: "Everyone has already answered, so no reminder was needed.",
+            failed: "The reminder could not be sent. Try again.",
+            rateLimited: "A reminder was sent recently. Try again later.",
+            done: "Reminder sent",
+        },
+        pointsTitle: "Most attendance points · {month}",
+        pointsEmpty: "No one has earned attendance points this month yet.",
+        pointsUnknownMember: "Member without a Logi account",
+        statsTitle: "Clan statistics",
     },
     clan: {
         overviewMeta: "overview",

@@ -9,6 +9,13 @@ import {
     type TeamRecord,
 } from "../src/domain/teams/team"
 import {
+    TEAM_USAGE_COMPETITIONS_MAX,
+    TEAM_USAGE_IDS_MAX,
+    teamCatalogueState,
+    teamCatalogueStateSchema,
+    type TeamUsage,
+} from "../src/domain/teams/team-usage"
+import {
     changeTeamLifecycle,
     createTeam,
     mergeTeam,
@@ -29,7 +36,7 @@ import {
 } from "./_generated/server"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { authorizePlatformAdmin } from "./platformAdmin"
-import type { Doc } from "./_generated/dataModel"
+import type { Doc, Id } from "./_generated/dataModel"
 import { assetPublicUrl } from "./imageAssets"
 import { v } from "convex/values"
 
@@ -169,6 +176,154 @@ export const adminGet = query({
         await authorizePlatformAdmin(ctx, args)
         const row = await teamById(ctx, args.teamId)
         return row ? await teamRecordOf(ctx, row) : null
+    },
+})
+
+/**
+ * Global administration listing by lifecycle state (design I1 filters):
+ * active entries by name; archived or merged entries most recently archived
+ * first. Search is bounded and unpaged, like the plain listing.
+ */
+export const adminListState = query({
+    args: { ...platformAccess, ...listArgs, state: v.string() },
+    handler: async (ctx, args) => {
+        await authorizePlatformAdmin(ctx, args)
+        const state = teamCatalogueStateSchema.parse(args.state)
+        if (state === "active")
+            return await readCatalogue(ctx, { ...args, archived: false })
+        const gameId = parseGame(args.gameId)
+        assertPagination(args.limit, args.cursor)
+        const search = args.search?.trim().slice(0, TEAM_SEARCH_MAX)
+        const inState = (row: Doc<"teamDirectory">) =>
+            teamCatalogueState({
+                archivedAt: row.archivedAt,
+                mergedIntoTeamId: row.mergedIntoTeamId ?? null,
+            }) === state
+        if (search) {
+            const rows = await ctx.db
+                .query("teamDirectory")
+                .withSearchIndex("search", (q) =>
+                    q.search("searchText", search).eq("gameId", gameId)
+                )
+                .take(TEAM_PAGE_MAX)
+            return {
+                items: await Promise.all(
+                    rows
+                        .filter(inState)
+                        .slice(0, args.limit)
+                        .map((row) => teamRecordOf(ctx, row))
+                ),
+                nextCursor: null,
+            }
+        }
+        // Archived entries carry an ISO timestamp, which sorts after "".
+        const page = await ctx.db
+            .query("teamDirectory")
+            .withIndex("gameId_archivedAt_normalizedName", (q) =>
+                q.eq("gameId", gameId).gt("archivedAt", "")
+            )
+            .order("desc")
+            .filter((q) =>
+                state === "merged"
+                    ? q.gt(q.field("mergedIntoTeamId"), "")
+                    : q.or(
+                          q.eq(q.field("mergedIntoTeamId"), null),
+                          q.eq(q.field("mergedIntoTeamId"), undefined)
+                      )
+            )
+            .paginate({ cursor: args.cursor, numItems: args.limit })
+        return {
+            items: await Promise.all(
+                page.page.map((row) => teamRecordOf(ctx, row))
+            ),
+            nextCursor: page.isDone ? null : page.continueCursor,
+        }
+    },
+})
+
+/** Fixtures read per side for one team's detail; enough for every realistic season history. */
+const USAGE_FIXTURES_PER_SIDE = 1000
+
+/**
+ * Registrations and pending requests of one team, and with `withFixtures`
+ * its fixture count per competition; every read is indexed and bounded.
+ */
+async function teamUsageOf(
+    ctx: Db,
+    teamId: Id<"teamDirectory">,
+    withFixtures: boolean
+): Promise<TeamUsage> {
+    const registrations = await ctx.db
+        .query("competitionTeams")
+        .withIndex("teamId", (q) => q.eq("teamId", teamId))
+        .take(100)
+    const fixtures = new Map<string, number>()
+    if (withFixtures)
+        for (const side of ["sideATeamId", "sideBTeamId"] as const)
+            for (const fixture of await ctx.db
+                .query("competitionFixtures")
+                .withIndex(side, (q) => q.eq(side, teamId))
+                .take(USAGE_FIXTURES_PER_SIDE)) {
+                const key = String(fixture.competitionId)
+                fixtures.set(key, (fixtures.get(key) ?? 0) + 1)
+            }
+    const competitions = []
+    for (const registration of registrations.slice(
+        0,
+        TEAM_USAGE_COMPETITIONS_MAX
+    )) {
+        const [competition, division] = await Promise.all([
+            ctx.db.get(registration.competitionId),
+            registration.divisionId
+                ? ctx.db.get(registration.divisionId)
+                : null,
+        ])
+        if (!competition) continue
+        competitions.push({
+            id: String(competition._id),
+            name: competition.name,
+            season: competition.season,
+            division: division?.name ?? null,
+            fixtures: withFixtures
+                ? (fixtures.get(String(competition._id)) ?? 0)
+                : null,
+            withdrawn: registration.withdrawn,
+        })
+    }
+    const pending = await ctx.db
+        .query("teamRequests")
+        .withIndex("teamId_status", (q) =>
+            q.eq("teamId", teamId).eq("status", "pending")
+        )
+        .take(20)
+    return {
+        teamId: String(teamId),
+        competitions,
+        competitionCount: registrations.length,
+        pendingRequests: pending.length,
+        pendingRequestId: pending[0] ? String(pending[0]._id) : null,
+    }
+}
+
+/**
+ * Where catalogue teams are used (design I1 "Kde se tým používá" and the
+ * request marker): global administrators only. Fixture counts come only
+ * with a single team (its detail). Unknown IDs are skipped.
+ */
+export const adminUsage = query({
+    args: { ...platformAccess, teamIds: v.array(v.string()) },
+    handler: async (ctx, args): Promise<{ items: TeamUsage[] }> => {
+        await authorizePlatformAdmin(ctx, args)
+        if (args.teamIds.length > TEAM_USAGE_IDS_MAX)
+            throw new Error("Too many teams.")
+        const items: TeamUsage[] = []
+        const teamIds = new Set(args.teamIds)
+        for (const raw of teamIds) {
+            const id = ctx.db.normalizeId("teamDirectory", raw)
+            if (id && (await ctx.db.get(id)))
+                items.push(await teamUsageOf(ctx, id, teamIds.size === 1))
+        }
+        return { items }
     },
 })
 

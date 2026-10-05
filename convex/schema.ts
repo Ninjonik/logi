@@ -218,6 +218,7 @@ const membershipCategory = v.object({
         v.literal("reserve_member"),
         v.literal("mercenary")
     ),
+    autoAssignRecruitOnApply: v.optional(v.boolean()),
 })
 
 const eventCategory = v.object({
@@ -273,6 +274,7 @@ const membershipSettings = v.object({
     applicationWelcomeMessage: v.optional(v.string()),
     collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),
+    roleSyncEnabled: v.optional(v.boolean()),
     inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(rosterScoreSettings),
     categories: v.array(membershipCategory),
@@ -287,6 +289,11 @@ const statsSettings = v.object({
 const playerStatsServer = v.object({
     token: v.string(),
     url: v.string(),
+})
+
+const messageStyle = v.object({
+    accentColor: v.optional(v.string()),
+    iconDensity: v.optional(v.union(v.literal("sparse"), v.literal("rich"))),
 })
 
 // Optional everywhere so existing Hell Let Loose data remains valid.
@@ -728,6 +735,9 @@ export default defineSchema({
         membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
         ticketCounter: v.optional(v.number()),
         membershipApplicationCounter: v.optional(v.number()),
+        // Clan colour and icon density of every bot message (Discord messages
+        // settings). Missing means Logi amber and the sparse look.
+        messageStyle: v.optional(messageStyle),
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),
@@ -925,6 +935,8 @@ export default defineSchema({
         teamAId: v.optional(v.id("guilds")),
         teamBId: v.optional(v.id("guilds")),
         scheduledAt: v.optional(v.string()),
+        // Round number within the phase; missing on fixtures saved before rounds.
+        round: v.optional(v.number()),
         scoreA: v.optional(v.number()),
         scoreB: v.optional(v.number()),
         status: v.union(

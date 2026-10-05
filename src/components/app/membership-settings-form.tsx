@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, useTransition, type ReactNode } from "react"
-import { Plus, Trash2, TriangleAlert, UserPlus } from "lucide-react"
+import { Plus, Trash2, UserPlus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -13,18 +13,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    FixedRoleChip,
+    RoleChips,
+    type RoleOption,
+} from "@/components/app/settings/role-chips"
 import type {
     DiscordConfig,
     MembershipCategory,
     MembershipSettings,
 } from "@/types/domain"
 import { ModalQuestionsEditor } from "@/components/app/settings/modal-questions-editor"
-import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { SegmentedControl } from "@/components/app/settings/segmented-control"
 import { MemberRoleOperations } from "@/components/app/member-role-operations"
 import { SettingsSaveBar } from "@/components/app/settings/settings-save-bar"
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { GAME_IDS, GAME_LABELS, type GameId } from "@/domain/games/game"
 import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
 import { useDiscordMetadata } from "@/hooks/use-discord-metadata"
@@ -33,6 +37,7 @@ import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import { EmptyState } from "@/components/app/empty-state"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -324,6 +329,22 @@ export function MembershipSettingsForm({
     }
 
     async function handleSave() {
+        // New switches are sent only when they differ from the value they
+        // fall back to, so settings that do not use them stay as they were.
+        const roleSyncEnabled =
+            settings.roleSyncEnabled === undefined ||
+            settings.roleSyncEnabled === settings.enabled
+                ? undefined
+                : settings.roleSyncEnabled
+        const categoryOptions = (category: MembershipCategory) => ({
+            autoAssignRecruitOnApply:
+                category.assignmentType === "member" &&
+                category.autoAssignRecruitOnApply !== undefined &&
+                category.autoAssignRecruitOnApply !==
+                    settings.autoAssignRecruitOnApply
+                    ? category.autoAssignRecruitOnApply
+                    : undefined,
+        })
         const membershipSettings = settings.enabled
             ? {
                   enabled: true,
@@ -336,11 +357,13 @@ export function MembershipSettingsForm({
                   applicationWelcomeMessage:
                       settings.applicationWelcomeMessage?.trim() || undefined,
                   autoAssignRecruitOnApply: settings.autoAssignRecruitOnApply,
+                  roleSyncEnabled,
                   inviteSupportMembersIndividually:
                       settings.inviteSupportMembersIndividually ?? true,
                   rosterScoreSettings: settings.rosterScoreSettings,
                   categories: settings.categories.map((category) => ({
                       ...category,
+                      ...categoryOptions(category),
                       emoji: category.emoji?.trim() || undefined,
                       label: category.label?.trim() || undefined,
                       description: category.description?.trim() || undefined,
@@ -362,6 +385,11 @@ export function MembershipSettingsForm({
             : {
                   ...settings,
                   enabled: false,
+                  roleSyncEnabled,
+                  categories: settings.categories.map((category) => ({
+                      ...category,
+                      ...categoryOptions(category),
+                  })),
               }
 
         setSaving(true)
@@ -389,15 +417,13 @@ export function MembershipSettingsForm({
     }
 
     const clanRoleChip = clanRole ? (
-        <span className="bg-muted rounded-md px-2 py-1 text-xs font-medium">
-            @{clanRole.name}
-        </span>
+        <FixedRoleChip>@{clanRole.name}</FixedRoleChip>
     ) : (
-        <span className="rounded-md bg-amber-500/15 px-2 py-1 text-xs font-medium text-amber-800 dark:text-amber-300">
-            {t.clanRoleMissingChip}
-        </span>
+        <FixedRoleChip tone="attention">{t.clanRoleMissingChip}</FixedRoleChip>
     )
     const [noteBefore, noteAfter] = t.clanRoleNote.split("{role}")
+    const roleSync = settings.roleSyncEnabled ?? settings.enabled
+    const roleOptions: RoleOption[] | null = metadata ? roles : null
 
     return (
         <div className="space-y-6">
@@ -409,7 +435,7 @@ export function MembershipSettingsForm({
                     )}
                 </ConfigNotice>
             ) : null}
-            {settings.enabled &&
+            {roleSync &&
             (!config?.clanRoleId ||
                 categoriesMissingRecruitRole.length > 0 ||
                 categoriesMissingFinalRole.length > 0) ? (
@@ -431,76 +457,61 @@ export function MembershipSettingsForm({
                 </ConfigNotice>
             ) : null}
 
-            <div className="border-border/60 bg-card divide-border/60 divide-y rounded-2xl border">
-                <div className="flex items-start gap-3 p-4">
-                    <Switch
-                        id="membership-enabled"
-                        checked={settings.enabled}
-                        onCheckedChange={(checked) =>
-                            patchSettings({ enabled: checked })
-                        }
-                        className="mt-0.5"
-                    />
-                    <Label
-                        htmlFor="membership-enabled"
-                        className="block space-y-1 font-normal"
-                    >
-                        <span className="block font-semibold">
-                            {t.applicationsTitle}
-                        </span>
-                        <span className="text-muted-foreground block text-sm">
-                            {submitChannel
-                                ? t.applicationsChannel.replace(
-                                      "{channel}",
-                                      submitChannel.name
-                                  )
-                                : t.applicationsNoChannel}
-                        </span>
-                    </Label>
-                </div>
-                <div className="flex items-start gap-3 p-4">
-                    <span
-                        className={cn(
-                            "mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                            settings.enabled
-                                ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300"
-                                : "bg-muted text-muted-foreground"
-                        )}
-                    >
-                        {settings.enabled ? t.roleSyncOn : t.roleSyncOff}
-                    </span>
-                    <div className="space-y-1">
-                        <p className="font-semibold">{t.roleSyncToggleTitle}</p>
-                        <p className="text-muted-foreground text-sm">
-                            {t.roleSyncToggleDescription}
-                        </p>
-                    </div>
-                </div>
+            <div className="grid gap-3 md:grid-cols-2">
+                <SwitchCard
+                    id="membership-enabled"
+                    title={t.applicationsTitle}
+                    description={
+                        submitChannel
+                            ? t.applicationsChannel.replace(
+                                  "{channel}",
+                                  submitChannel.name
+                              )
+                            : t.applicationsNoChannel
+                    }
+                    checked={settings.enabled}
+                    onChange={(checked) => patchSettings({ enabled: checked })}
+                />
+                <SwitchCard
+                    id="membership-role-sync"
+                    title={t.roleSyncToggleTitle}
+                    description={t.roleSyncSwitchDescription}
+                    checked={roleSync}
+                    onChange={(checked) =>
+                        patchSettings({ roleSyncEnabled: checked })
+                    }
+                />
             </div>
 
             <Tabs value={tab} onValueChange={setTab}>
                 <TabsList
                     aria-label={t.tabsLabel}
-                    className="h-auto w-full flex-wrap justify-start"
+                    className="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none border-b bg-transparent p-0"
                 >
-                    <TabsTrigger value="categories" className="flex-none">
-                        {t.tabs.categories}
-                        <span className="bg-background text-muted-foreground rounded-full px-1.5 text-xs">
-                            {settings.categories.length}
-                        </span>
-                    </TabsTrigger>
-                    <TabsTrigger value="panel" className="flex-none">
-                        {t.tabs.panel}
-                    </TabsTrigger>
-                    <TabsTrigger value="scores" className="flex-none">
-                        {t.tabs.scores}
-                    </TabsTrigger>
-                    <TabsTrigger value="roleChanges" className="flex-none">
-                        {t.tabs.roleChanges}
-                    </TabsTrigger>
+                    {(
+                        [
+                            "categories",
+                            "panel",
+                            "scores",
+                            "roleChanges",
+                        ] as const
+                    ).map((value) => (
+                        <TabsTrigger
+                            key={value}
+                            value={value}
+                            className="text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground dark:data-[state=active]:border-foreground -mb-px h-10 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-3 font-normal data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
+                        >
+                            {t.tabs[value]}
+                            {value === "categories" ? (
+                                <span className="bg-muted text-muted-foreground rounded-md px-1.5 text-xs font-normal">
+                                    {settings.categories.length}
+                                </span>
+                            ) : null}
+                        </TabsTrigger>
+                    ))}
                 </TabsList>
 
-                <TabsContent value="categories" className="pt-2">
+                <TabsContent value="categories" className="pt-4">
                     {settings.categories.length === 0 ? (
                         <EmptyState
                             icon={UserPlus}
@@ -518,20 +529,21 @@ export function MembershipSettingsForm({
                             }
                         />
                     ) : (
-                        <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
+                        <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
                             <div className="space-y-2">
-                                <ul className="space-y-1">
+                                <ul className="space-y-2">
                                     {settings.categories.map((category) => {
                                         const current =
                                             category.id === selected?.id
-                                        const missing =
-                                            category.finalRoleIds.length === 0
-                                                ? t.missingFinalRole
-                                                : needsRecruitRole(category) &&
-                                                    category.recruitRoleIds
-                                                        .length === 0
-                                                  ? t.missingRecruitRole
-                                                  : null
+                                        const missing = !roleSync
+                                            ? null
+                                            : category.finalRoleIds.length === 0
+                                              ? t.missingFinalRole
+                                              : needsRecruitRole(category) &&
+                                                  category.recruitRoleIds
+                                                      .length === 0
+                                                ? t.missingRecruitRole
+                                                : null
                                         return (
                                             <li key={category.id}>
                                                 <button
@@ -547,10 +559,12 @@ export function MembershipSettingsForm({
                                                         )
                                                     }
                                                     className={cn(
-                                                        "hover:bg-accent flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition-colors",
+                                                        "bg-card hover:bg-accent/40 flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors",
                                                         current
-                                                            ? "border-primary/50 bg-accent"
-                                                            : "border-transparent"
+                                                            ? "border-foreground"
+                                                            : missing
+                                                              ? "border-amber-400/70 dark:border-amber-500/50"
+                                                              : "border-border"
                                                     )}
                                                 >
                                                     <span
@@ -567,13 +581,13 @@ export function MembershipSettingsForm({
                                                               )}
                                                     </span>
                                                     <span className="min-w-0 flex-1">
-                                                        <span className="block truncate text-sm font-medium">
+                                                        <span className="block truncate text-sm font-semibold">
                                                             {category.label?.trim() ||
                                                                 category.id}
                                                         </span>
                                                         <span
                                                             className={cn(
-                                                                "block truncate text-xs",
+                                                                "block text-xs",
                                                                 missing
                                                                     ? "text-amber-700 dark:text-amber-400"
                                                                     : "text-muted-foreground"
@@ -593,12 +607,6 @@ export function MembershipSettingsForm({
                                                                 ]}
                                                         </span>
                                                     </span>
-                                                    {missing ? (
-                                                        <TriangleAlert
-                                                            className="size-4 shrink-0 text-amber-600"
-                                                            aria-hidden="true"
-                                                        />
-                                                    ) : null}
                                                 </button>
                                             </li>
                                         )
@@ -607,32 +615,37 @@ export function MembershipSettingsForm({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="w-full rounded-xl"
+                                    className="text-muted-foreground w-full rounded-xl border-dashed font-normal"
                                     disabled={settings.categories.length >= 20}
                                     onClick={addCategory}
                                 >
                                     <Plus className="size-4" />
                                     {t.addCategory}
                                 </Button>
-                                <p className="text-muted-foreground text-xs">
-                                    {t.embedFieldUsage
-                                        .replace(
-                                            "{length}",
-                                            String(preview.length)
-                                        )
-                                        .replace(
-                                            "{max}",
-                                            String(MAX_FIELD_LENGTH)
-                                        )}{" "}
-                                    {preview.tooLong ? t.embedFieldTooLong : ""}
-                                </p>
+                                {preview.tooLong ? (
+                                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                                        {t.embedFieldUsage
+                                            .replace(
+                                                "{length}",
+                                                String(preview.length)
+                                            )
+                                            .replace(
+                                                "{max}",
+                                                String(MAX_FIELD_LENGTH)
+                                            )}{" "}
+                                        {t.embedFieldTooLong}
+                                    </p>
+                                ) : null}
                             </div>
                             {selected ? (
                                 <CategoryEditor
                                     key={selected.id}
                                     category={selected}
+                                    clanSkipsPending={
+                                        settings.autoAssignRecruitOnApply
+                                    }
                                     dictionary={dictionary}
-                                    roles={roles}
+                                    roles={roleOptions}
                                     emojiOptions={emojiOptions}
                                     assignmentLabels={assignmentLabels}
                                     clanRoleChip={clanRoleChip}
@@ -667,7 +680,7 @@ export function MembershipSettingsForm({
                     )}
                 </TabsContent>
 
-                <TabsContent value="panel" className="space-y-6 pt-2">
+                <TabsContent value="panel" className="space-y-6 pt-4">
                     <div className="grid gap-4 lg:grid-cols-2">
                         <div className="space-y-2">
                             <Label>{t.submitChannel}</Label>
@@ -757,18 +770,7 @@ export function MembershipSettingsForm({
                             buttonLabel={dictionary.common.upload}
                         />
                     </div>
-                    <div className="border-border/60 divide-border/60 divide-y rounded-2xl border">
-                        <SwitchRow
-                            id="membership-skip-pending"
-                            title={t.skipPendingTitle}
-                            description={t.skipPendingDescription}
-                            checked={settings.autoAssignRecruitOnApply}
-                            onChange={(checked) =>
-                                patchSettings({
-                                    autoAssignRecruitOnApply: checked,
-                                })
-                            }
-                        />
+                    <div className="border-border/60 rounded-2xl border">
                         <SwitchRow
                             id="membership-invite-individually"
                             title={t.inviteSupportMembersIndividuallyTitle}
@@ -788,7 +790,7 @@ export function MembershipSettingsForm({
                     </div>
                 </TabsContent>
 
-                <TabsContent value="scores" className="space-y-4 pt-2">
+                <TabsContent value="scores" className="space-y-4 pt-4">
                     <p className="text-muted-foreground text-sm">
                         {t.rosterScoreDescription}
                     </p>
@@ -823,7 +825,7 @@ export function MembershipSettingsForm({
                     </div>
                 </TabsContent>
 
-                <TabsContent value="roleChanges" className="pt-2">
+                <TabsContent value="roleChanges" className="pt-4">
                     <MemberRoleOperations
                         serverId={serverId}
                         dictionary={dictionary}
@@ -845,7 +847,7 @@ export function MembershipSettingsForm({
     )
 }
 
-function SwitchRow({
+function SwitchCard({
     id,
     title,
     description,
@@ -859,7 +861,7 @@ function SwitchRow({
     onChange(checked: boolean): void
 }) {
     return (
-        <div className="flex items-start gap-3 p-4">
+        <div className="bg-card flex items-start gap-3 rounded-2xl border p-4">
             <Switch
                 id={id}
                 checked={checked}
@@ -868,6 +870,40 @@ function SwitchRow({
             />
             <Label htmlFor={id} className="block space-y-1 font-normal">
                 <span className="block font-semibold">{title}</span>
+                <span className="text-muted-foreground block text-sm leading-5">
+                    {description}
+                </span>
+            </Label>
+        </div>
+    )
+}
+
+function SwitchRow({
+    id,
+    title,
+    description,
+    checked,
+    disabled,
+    onChange,
+}: {
+    id: string
+    title: string
+    description: string
+    checked: boolean
+    disabled?: boolean
+    onChange(checked: boolean): void
+}) {
+    return (
+        <div className="flex items-start gap-3 p-4">
+            <Switch
+                id={id}
+                checked={checked}
+                disabled={disabled}
+                onCheckedChange={onChange}
+                className="mt-0.5"
+            />
+            <Label htmlFor={id} className="block space-y-1 font-normal">
+                <span className="block">{title}</span>
                 <span className="text-muted-foreground block text-sm">
                     {description}
                 </span>
@@ -876,8 +912,20 @@ function SwitchRow({
     )
 }
 
+function SectionLabel({ id, children }: { id?: string; children: ReactNode }) {
+    return (
+        <h3
+            id={id}
+            className="text-muted-foreground text-xs font-semibold tracking-wide uppercase"
+        >
+            {children}
+        </h3>
+    )
+}
+
 function CategoryEditor({
     category,
+    clanSkipsPending,
     dictionary,
     roles,
     emojiOptions,
@@ -888,8 +936,10 @@ function CategoryEditor({
     onRemove,
 }: {
     category: MembershipCategory
+    /** The clan-wide skip switch a category without its own value follows. */
+    clanSkipsPending: boolean
     dictionary: Dictionary
-    roles: Array<{ id: string; name: string }>
+    roles: RoleOption[] | null
     emojiOptions: Array<{ id: string; name: string }>
     assignmentLabels: Record<AssignmentType, string>
     clanRoleChip: ReactNode
@@ -900,12 +950,20 @@ function CategoryEditor({
     const t = dictionary.membershipSettings
     const id = `membership-category-${category.id}`
     const finalLabel = assignmentLabels[category.assignmentType]
+    const isMember = category.assignmentType === "member"
+    const roleLabels = (status: string) => ({
+        add: t.addRole,
+        addAria: t.addRoleAria.replace("{status}", status),
+        remove: (name: string) => t.removeRole.replace("{role}", name),
+        search: t.roleSearch,
+        empty: t.roleEmpty,
+    })
     return (
         <section
             aria-labelledby={`${id}-title`}
-            className="border-border/60 bg-card min-w-0 space-y-6 rounded-2xl border p-4 sm:p-5"
+            className="bg-card min-w-0 divide-y rounded-2xl border px-5 sm:px-6"
         >
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3 py-5">
                 <h2
                     id={`${id}-title`}
                     className="min-w-0 text-lg font-semibold break-words"
@@ -924,170 +982,163 @@ function CategoryEditor({
                 </Button>
             </div>
 
-            <div className="space-y-4">
-                <h3 className="text-sm font-semibold">
-                    {t.categoryButtonTitle}
-                </h3>
-                <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="space-y-4 py-5">
+                <SectionLabel>{t.categoryButtonTitle}</SectionLabel>
+                <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                         <Label htmlFor={`${id}-label`}>{t.categoryText}</Label>
-                        <Input
-                            id={`${id}-label`}
-                            value={category.label ?? ""}
-                            maxLength={80}
-                            onChange={(event) =>
-                                onChange({ label: event.target.value })
-                            }
-                            className="rounded-xl"
-                        />
+                        <div className="flex items-center gap-2">
+                            <div className="w-16 shrink-0">
+                                <EmojiPickerInput
+                                    value={category.emoji ?? ""}
+                                    onChange={(value) =>
+                                        onChange({ emoji: value ?? "" })
+                                    }
+                                    customEmojis={emojiOptions}
+                                    placeholder="…"
+                                    labels={dictionary.emojiPicker}
+                                    hidePickerLabel
+                                />
+                            </div>
+                            <Input
+                                id={`${id}-label`}
+                                value={category.label ?? ""}
+                                maxLength={80}
+                                onChange={(event) =>
+                                    onChange({ label: event.target.value })
+                                }
+                                className="rounded-lg"
+                            />
+                        </div>
                     </div>
                     <div className="space-y-2">
-                        <Label>{dictionary.emojiPicker.pickEmoji}</Label>
-                        <EmojiPickerInput
-                            value={category.emoji ?? ""}
-                            onChange={(value) =>
-                                onChange({ emoji: value ?? "" })
-                            }
-                            customEmojis={emojiOptions}
-                            placeholder="..."
-                            labels={dictionary.emojiPicker}
-                            hidePickerLabel
-                        />
+                        <Label htmlFor={`${id}-game`}>{t.categoryGame}</Label>
+                        <Select
+                            value={category.gameId ?? "hell_let_loose"}
+                            onValueChange={(value) => {
+                                const gameId = GAME_IDS.find(
+                                    (game) => game === value
+                                )
+                                if (gameId)
+                                    onChange({ gameId: gameId as GameId })
+                            }}
+                        >
+                            <SelectTrigger
+                                id={`${id}-game`}
+                                className="w-full rounded-lg"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {GAME_IDS.map((game) => (
+                                    <SelectItem key={game} value={game}>
+                                        {GAME_LABELS[game]}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor={`${id}-game`}>{t.categoryGame}</Label>
-                    <Select
-                        value={category.gameId ?? "hell_let_loose"}
-                        onValueChange={(value) => {
-                            const gameId = GAME_IDS.find(
-                                (game) => game === value
-                            )
-                            if (gameId) onChange({ gameId: gameId as GameId })
-                        }}
-                    >
-                        <SelectTrigger
-                            id={`${id}-game`}
-                            className="w-full rounded-xl sm:max-w-xs"
-                        >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {GAME_IDS.map((game) => (
-                                <SelectItem key={game} value={game}>
-                                    {GAME_LABELS[game]}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label>{t.categoryDescriptionLabel}</Label>
-                    <DiscordMarkdownTextarea
+                    <Label htmlFor={`${id}-description`}>
+                        {t.categoryDescriptionLabel}
+                    </Label>
+                    <Textarea
+                        id={`${id}-description`}
                         value={category.description ?? ""}
-                        onChange={(value) => onChange({ description: value })}
-                        className="rounded-xl"
+                        onChange={(event) =>
+                            onChange({ description: event.target.value })
+                        }
+                        className="min-h-16 rounded-lg"
                         maxLength={240}
-                        rows={3}
-                        height={120}
-                        compactToolbar
-                        preview="edit"
+                        rows={2}
+                        aria-describedby={`${id}-description-help`}
+                    />
+                    <p
+                        id={`${id}-description-help`}
+                        className="text-muted-foreground text-xs"
+                    >
+                        {t.categoryDescriptionHelp}
+                    </p>
+                </div>
+            </div>
+
+            <div className="space-y-3 py-5">
+                <SectionLabel id={`${id}-result`}>{t.resultTitle}</SectionLabel>
+                <SegmentedControl
+                    labelledBy={`${id}-result`}
+                    value={category.assignmentType}
+                    onChange={(assignmentType) => onChange({ assignmentType })}
+                    options={ASSIGNMENT_TYPES.map((type) => ({
+                        value: type,
+                        label: assignmentLabels[type],
+                    }))}
+                />
+                <div className="-mx-4">
+                    <SwitchRow
+                        id={`${id}-skip`}
+                        title={t.skipPendingCategoryTitle}
+                        description={t.skipPendingCategoryHelp}
+                        checked={
+                            isMember &&
+                            (category.autoAssignRecruitOnApply ??
+                                clanSkipsPending)
+                        }
+                        disabled={!isMember}
+                        onChange={(checked) =>
+                            onChange({ autoAssignRecruitOnApply: checked })
+                        }
                     />
                 </div>
             </div>
 
-            <div className="space-y-3">
-                <h3 id={`${id}-result`} className="text-sm font-semibold">
-                    {t.resultTitle}
-                </h3>
-                <ToggleGroup
-                    type="single"
-                    variant="outline"
-                    aria-labelledby={`${id}-result`}
-                    className="w-full sm:w-fit"
-                    value={category.assignmentType}
-                    onValueChange={(value) => {
-                        const assignmentType = ASSIGNMENT_TYPES.find(
-                            (type) => type === value
-                        )
-                        if (assignmentType) onChange({ assignmentType })
-                    }}
-                >
-                    {ASSIGNMENT_TYPES.map((type) => (
-                        <ToggleGroupItem
-                            key={type}
-                            value={type}
-                            className="px-3"
-                        >
-                            {assignmentLabels[type]}
-                        </ToggleGroupItem>
-                    ))}
-                </ToggleGroup>
-            </div>
-
-            <div className="space-y-3">
-                <h3 className="text-sm font-semibold">{t.rolesByStatus}</h3>
-                <ol className="border-border/60 divide-border/60 divide-y rounded-xl border">
-                    <li className="grid gap-2 p-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
-                        <span className="text-sm font-medium">
-                            {t.statusPending}
-                        </span>
+            <div className="space-y-3 py-5">
+                <SectionLabel>{t.rolesByStatus}</SectionLabel>
+                <ol className="divide-y rounded-xl border">
+                    <li className="grid gap-2 px-4 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
+                        <span className="text-sm">{t.statusPending}</span>
                         <span className="text-muted-foreground text-sm">
                             {t.noRoles}
                         </span>
                     </li>
                     {needsRecruitRole(category) ? (
-                        <li className="grid gap-2 p-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
-                            <span className="text-sm font-medium">
-                                {t.statusRecruit}
-                            </span>
-                            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                {clanRoleChip}
-                                <div className="min-w-0 flex-1 basis-48">
-                                    <DiscordMultiEntitySelect
-                                        value={category.recruitRoleIds}
-                                        onChange={(value) =>
-                                            onChange({ recruitRoleIds: value })
-                                        }
-                                        options={roles}
-                                        placeholder={t.rolePlaceholder}
-                                    />
-                                </div>
-                            </div>
+                        <li className="grid gap-2 px-4 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
+                            <span className="text-sm">{t.statusRecruit}</span>
+                            <RoleChips
+                                value={category.recruitRoleIds}
+                                onChange={(value) =>
+                                    onChange({ recruitRoleIds: value })
+                                }
+                                roles={roles}
+                                leading={clanRoleChip}
+                                labels={roleLabels(t.statusRecruit)}
+                            />
                         </li>
                     ) : null}
-                    <li className="grid gap-2 p-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
-                        <span className="text-sm font-medium">
-                            {finalLabel}
-                        </span>
-                        <div className="flex min-w-0 flex-wrap items-center gap-2">
-                            {clanRoleChip}
-                            <div className="min-w-0 flex-1 basis-48">
-                                <DiscordMultiEntitySelect
-                                    value={category.finalRoleIds}
-                                    onChange={(value) =>
-                                        onChange({ finalRoleIds: value })
-                                    }
-                                    options={roles}
-                                    placeholder={t.rolePlaceholder}
-                                />
-                            </div>
-                        </div>
+                    <li className="grid gap-2 px-4 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
+                        <span className="text-sm">{finalLabel}</span>
+                        <RoleChips
+                            value={category.finalRoleIds}
+                            onChange={(value) =>
+                                onChange({ finalRoleIds: value })
+                            }
+                            roles={roles}
+                            leading={clanRoleChip}
+                            labels={roleLabels(finalLabel)}
+                        />
                     </li>
                 </ol>
-                <div className="grid gap-2 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center sm:px-3">
-                    <span className="text-sm font-medium">{t.handledBy}</span>
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <div className="min-w-0 flex-1 basis-48">
-                            <DiscordMultiEntitySelect
-                                value={category.supportRoleIds}
-                                onChange={(value) =>
-                                    onChange({ supportRoleIds: value })
-                                }
-                                options={roles}
-                                placeholder={t.rolePlaceholder}
-                            />
-                        </div>
+                <div className="grid gap-2 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
+                    <span className="text-sm">{t.handledBy}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <RoleChips
+                            value={category.supportRoleIds}
+                            onChange={(value) =>
+                                onChange({ supportRoleIds: value })
+                            }
+                            roles={roles}
+                            labels={roleLabels(t.handledBy)}
+                        />
                         <span className="text-muted-foreground text-sm">
                             {t.handledByAdmins}
                         </span>
@@ -1096,11 +1147,13 @@ function CategoryEditor({
                 <p className="text-muted-foreground text-xs">{clanRoleNote}</p>
             </div>
 
-            <ModalQuestionsEditor
-                questions={category.modalQuestions}
-                onChange={(modalQuestions) => onChange({ modalQuestions })}
-                dictionary={dictionary}
-            />
+            <div className="py-5">
+                <ModalQuestionsEditor
+                    questions={category.modalQuestions}
+                    onChange={(modalQuestions) => onChange({ modalQuestions })}
+                    dictionary={dictionary}
+                />
+            </div>
         </section>
     )
 }

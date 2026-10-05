@@ -1,233 +1,338 @@
-import { CircleCheck, CircleDashed } from "lucide-react"
+import {
+    ArrowRight,
+    CircleCheck,
+    CircleDashed,
+    ListChecks,
+    TriangleAlert,
+} from "lucide-react"
 import Link from "next/link"
 
 import {
+    settingsSetupSteps,
+    settingsTileBadge,
+    type SettingsOverviewFacts,
+    type SettingsSetupStep,
+    type SettingsTileBadge,
+} from "@/domain/workspaces/settings-overview"
+import {
     SETTINGS_GROUPS,
-    settingsSectionForRequirement,
-    settingsSectionStatus,
-    settingsSetupProgress,
     visibleSettingsSections,
-    type SettingsRequirement,
+    type SettingsSectionId,
     type SettingsSnapshot,
 } from "@/domain/workspaces/settings-sections"
 import {
-    SETTINGS_SECTION_ICONS,
-    settingsHref,
-} from "@/components/app/settings/settings-section-meta"
-import { SettingsStatusBadge } from "@/components/app/settings/settings-status-badge"
-import { PageHeader } from "@/components/app/page-header"
+    SettingsOverviewTiles,
+    type SettingsTile,
+    type SettingsTileGroup,
+} from "@/components/app/settings/settings-overview-tiles"
+import { settingsHref } from "@/components/app/settings/settings-section-meta"
+import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import type { Dictionary } from "@/i18n/dictionaries"
-import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
+import { pluralize } from "@/i18n/plural"
+import { cn } from "@/lib/utils"
 
-const REQUIREMENTS: SettingsRequirement[] = [
-    "enabledGames",
-    "announcements",
-    "clanRole",
-]
+type Text = Dictionary["settingsHub"]["overview"]
 
-const tileClass =
-    "border-border/60 bg-card hover:border-foreground/20 hover:bg-accent/40 focus-visible:ring-ring/50 flex h-full gap-3 rounded-2xl border p-4 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+function badgeLabel(
+    badge: SettingsTileBadge,
+    text: Text["badges"],
+    locale: string
+) {
+    switch (badge.kind) {
+        case "done":
+        case "notSet":
+        case "on":
+        case "off":
+            return text[badge.kind]
+        default:
+            return pluralize(locale, badge.count, text[badge.kind])
+    }
+}
 
-/** Settings overview: first-setup progress and every settings page as a card with its state. */
+/**
+ * The tiles of one settings page. The web page holds three steps, so each
+ * opens at its step. Game history lives on the game servers page and gets
+ * its own tile at the end of the game data group.
+ */
+function tilesFor(
+    section: SettingsSectionId,
+    href: (section: SettingsSectionId, anchor?: string) => string,
+    text: Text["tiles"]
+): Array<Omit<SettingsTile, "badge">> {
+    if (section === "website")
+        return (["apiKeys", "login", "webAccess"] as const).map((key) => ({
+            key,
+            icon: key,
+            href: href(section, `website-${key}`),
+            ...text[key],
+        }))
+    const tile = {
+        key: section,
+        icon: section,
+        href: href(section),
+        arrow: section === "membership" || section === "tickets",
+        ...text[section],
+    }
+    return [tile]
+}
+
+function SetupStep({
+    step,
+    text,
+    detail,
+    href,
+}: {
+    step: SettingsSetupStep
+    text: Text["setup"]
+    detail: string
+    href?: string
+}) {
+    const Icon =
+        step.state === "done"
+            ? CircleCheck
+            : step.state === "next"
+              ? TriangleAlert
+              : CircleDashed
+    return (
+        <li
+            className={cn(
+                "flex items-start gap-2.5 rounded-xl px-3 py-2.5",
+                step.state === "next"
+                    ? "bg-amber-500/10"
+                    : "bg-muted/60 dark:bg-muted/40"
+            )}
+        >
+            <Icon
+                className={cn(
+                    "mt-0.5 size-4 shrink-0",
+                    step.state === "done"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : step.state === "next"
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-muted-foreground"
+                )}
+                aria-hidden="true"
+            />
+            <div className="min-w-0 flex-1">
+                <div className="text-sm">
+                    {text.steps[step.id].title}
+                    {step.optional ? (
+                        <span className="text-muted-foreground">
+                            {" "}
+                            · {text.optional}
+                        </span>
+                    ) : null}
+                </div>
+                <div
+                    className={cn(
+                        "text-[13px] leading-5",
+                        step.state === "next"
+                            ? "text-amber-800 dark:text-amber-200"
+                            : "text-muted-foreground"
+                    )}
+                >
+                    {detail}
+                </div>
+            </div>
+            {step.state !== "done" && href ? (
+                <Link
+                    href={href}
+                    className="shrink-0 text-[13px] font-medium underline underline-offset-4"
+                >
+                    {step.state === "next" ? text.fix : text.setUp}
+                </Link>
+            ) : null}
+        </li>
+    )
+}
+
+/** Settings overview (design A1): first-setup progress and every settings page as a tile with its state. */
 export function SettingsOverview({
     locale,
     serverId,
     gameId,
     snapshot,
+    facts,
     dictionary,
 }: {
     locale: string
     serverId: string
     gameId?: GameId
     snapshot: SettingsSnapshot
+    facts: SettingsOverviewFacts
     dictionary: Dictionary
 }) {
-    const text = dictionary.settingsHub
-    const progress = settingsSetupProgress(snapshot)
+    const hub = dictionary.settingsHub
+    const text = hub.overview
+    const setup = settingsSetupSteps(snapshot, facts)
     const sections = visibleSettingsSections(snapshot.enabledGames)
-    const missing = new Set(
-        sections.flatMap(
-            (section) => settingsSectionStatus(section.id, snapshot).missing
-        )
+    const href = (section: SettingsSectionId, anchor?: string) =>
+        `${settingsHref(locale, serverId, section, gameId)}${anchor ? `#${anchor}` : ""}`
+
+    const groups: SettingsTileGroup[] = SETTINGS_GROUPS.map((group) => ({
+        id: group,
+        title: hub.groups[group],
+        hint: text.groupHints[group],
+        wide: group === "maintenance",
+        tiles: sections
+            .filter((section) => section.group === group)
+            .flatMap((section) => {
+                const badge = settingsTileBadge(section.id, snapshot, facts)
+                return tilesFor(section.id, href, text.tiles).map(
+                    (tile, index) => ({
+                        ...tile,
+                        badge:
+                            badge && index === 0
+                                ? {
+                                      tone: badge.tone,
+                                      label: badgeLabel(
+                                          badge,
+                                          text.badges,
+                                          locale
+                                      ),
+                                  }
+                                : null,
+                    })
+                )
+            })
+            .concat(
+                group === "gameData"
+                    ? [
+                          {
+                              key: "history",
+                              icon: "history",
+                              href: href("game-servers", "game-history"),
+                              badge: null,
+                              ...text.tiles.history,
+                          },
+                      ]
+                    : []
+            ),
+    })).filter((group) => group.tiles.length > 0)
+
+    const stepDetail = (step: SettingsSetupStep) => {
+        const copy = text.setup.steps
+        switch (step.id) {
+            case "bot":
+                return step.state === "done" ? copy.bot.done : copy.bot.missing
+            case "games":
+                return snapshot.enabledGames.length
+                    ? snapshot.enabledGames
+                          .map((game) => GAME_LABELS[game])
+                          .join(", ")
+                    : copy.games.missing
+            case "profile":
+                return copy.profile.detail
+            case "channels":
+                return step.state === "done"
+                    ? copy.channels.done
+                    : copy.channels.missing
+            case "roles":
+                return copy.roles.detail
+            case "gameServers":
+                return step.state === "done"
+                    ? pluralize(
+                          locale,
+                          facts.collectingServers ?? 0,
+                          copy.gameServers.done
+                      )
+                    : copy.gameServers.missing
+        }
+    }
+
+    const setupCard = setup.complete ? null : (
+        <section
+            aria-labelledby="settings-setup"
+            className="bg-card space-y-5 rounded-2xl border p-5 sm:p-6"
+        >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3">
+                    <span className="bg-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-xl">
+                        <ListChecks className="size-4" aria-hidden="true" />
+                    </span>
+                    <div className="space-y-0.5">
+                        <h2
+                            id="settings-setup"
+                            className="text-base font-semibold"
+                        >
+                            {text.setup.title}
+                        </h2>
+                        <p className="text-muted-foreground text-sm">
+                            {text.setup.description}
+                        </p>
+                    </div>
+                </div>
+                <span className="shrink-0 text-sm font-medium">
+                    {text.setup.progress
+                        .replace("{done}", String(setup.done))
+                        .replace("{total}", String(setup.total))}
+                </span>
+            </div>
+            <div
+                className="bg-muted h-1.5 overflow-hidden rounded-full"
+                role="progressbar"
+                aria-label={text.setup.progressLabel}
+                aria-valuemin={0}
+                aria-valuemax={setup.total}
+                aria-valuenow={setup.done}
+            >
+                <div
+                    className="bg-primary h-full rounded-full"
+                    style={{
+                        width: `${(setup.done / setup.total) * 100}%`,
+                    }}
+                />
+            </div>
+            <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {setup.steps.map((step) => (
+                    <SetupStep
+                        key={step.id}
+                        step={step}
+                        text={text.setup}
+                        detail={stepDetail(step)}
+                        href={step.section ? href(step.section) : undefined}
+                    />
+                ))}
+            </ol>
+            {setup.next?.section ? (
+                <div className="flex flex-wrap items-center gap-3">
+                    <Button asChild className="rounded-lg">
+                        <Link href={href(setup.next.section)}>
+                            {text.setup.continue}
+                            <ArrowRight className="size-4" aria-hidden="true" />
+                        </Link>
+                    </Button>
+                    <span className="text-muted-foreground text-[13px]">
+                        {text.setup.continueHelp}
+                    </span>
+                </div>
+            ) : null}
+        </section>
     )
 
     return (
-        <>
-            <PageHeader title={text.title} description={text.description} />
-            <div className="space-y-8 px-4 pb-8 lg:px-6">
-                {progress.next ? (
-                    <section
-                        aria-labelledby="settings-setup"
-                        className="border-border/60 bg-card space-y-4 rounded-2xl border p-5"
-                    >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="space-y-1">
-                                <h2
-                                    id="settings-setup"
-                                    className="text-base font-semibold"
-                                >
-                                    {text.setupTitle}
-                                </h2>
-                                <p className="text-muted-foreground text-sm">
-                                    {text.setupProgress
-                                        .replace(
-                                            "{done}",
-                                            String(progress.done)
-                                        )
-                                        .replace(
-                                            "{total}",
-                                            String(progress.total)
-                                        )}
-                                </p>
-                            </div>
-                            <Button asChild className="rounded-xl">
-                                <Link
-                                    href={settingsHref(
-                                        locale,
-                                        serverId,
-                                        settingsSectionForRequirement(
-                                            progress.next
-                                        ),
-                                        gameId
-                                    )}
-                                >
-                                    {text.continueSetup}
-                                </Link>
-                            </Button>
-                        </div>
-                        <div
-                            className="bg-muted h-1.5 overflow-hidden rounded-full"
-                            role="progressbar"
-                            aria-valuemin={0}
-                            aria-valuemax={progress.total}
-                            aria-valuenow={progress.done}
-                            aria-labelledby="settings-setup"
-                        >
-                            <div
-                                className="bg-primary h-full rounded-full"
-                                style={{
-                                    width: `${(progress.done / progress.total) * 100}%`,
-                                }}
-                            />
-                        </div>
-                        <ol className="grid gap-2 sm:grid-cols-3">
-                            {REQUIREMENTS.map((requirement) => {
-                                const done = !missing.has(requirement)
-                                const Icon = done ? CircleCheck : CircleDashed
-                                return (
-                                    <li key={requirement}>
-                                        <Link
-                                            href={settingsHref(
-                                                locale,
-                                                serverId,
-                                                settingsSectionForRequirement(
-                                                    requirement
-                                                ),
-                                                gameId
-                                            )}
-                                            className="hover:bg-accent flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm"
-                                        >
-                                            <Icon
-                                                className={
-                                                    done
-                                                        ? "size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-                                                        : "text-muted-foreground size-4 shrink-0"
-                                                }
-                                                aria-hidden="true"
-                                            />
-                                            <span
-                                                className={
-                                                    done
-                                                        ? "text-muted-foreground line-through"
-                                                        : "font-medium"
-                                                }
-                                            >
-                                                {text.requirements[requirement]}
-                                            </span>
-                                        </Link>
-                                    </li>
-                                )
-                            })}
-                        </ol>
-                    </section>
-                ) : null}
-
-                {SETTINGS_GROUPS.map((group) => {
-                    const items = sections.filter(
-                        (section) => section.group === group
-                    )
-                    if (!items.length) return null
-                    return (
-                        <section
-                            key={group}
-                            aria-labelledby={`settings-group-${group}`}
-                            className="space-y-3"
-                        >
-                            <h2
-                                id={`settings-group-${group}`}
-                                className="text-muted-foreground text-sm font-medium"
-                            >
-                                {text.groups[group]}
-                            </h2>
-                            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                                {items.map((section) => {
-                                    const Icon =
-                                        SETTINGS_SECTION_ICONS[section.id]
-                                    const { state } = settingsSectionStatus(
-                                        section.id,
-                                        snapshot
-                                    )
-                                    return (
-                                        <li key={section.id}>
-                                            <Link
-                                                href={settingsHref(
-                                                    locale,
-                                                    serverId,
-                                                    section.id,
-                                                    gameId
-                                                )}
-                                                className={tileClass}
-                                            >
-                                                <span className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-xl">
-                                                    <Icon
-                                                        className="size-4"
-                                                        aria-hidden="true"
-                                                    />
-                                                </span>
-                                                <span className="flex min-w-0 flex-1 flex-col gap-1">
-                                                    <span className="flex flex-wrap items-center justify-between gap-2">
-                                                        <span className="font-medium">
-                                                            {
-                                                                text.sections[
-                                                                    section.id
-                                                                ].title
-                                                            }
-                                                        </span>
-                                                        <SettingsStatusBadge
-                                                            state={state}
-                                                            dictionary={
-                                                                dictionary
-                                                            }
-                                                        />
-                                                    </span>
-                                                    <span className="text-muted-foreground text-sm leading-snug">
-                                                        {
-                                                            text.sections[
-                                                                section.id
-                                                            ].description
-                                                        }
-                                                    </span>
-                                                </span>
-                                            </Link>
-                                        </li>
-                                    )
-                                })}
-                            </ul>
-                        </section>
-                    )
-                })}
-            </div>
-        </>
+        <div className="px-4 pb-8 lg:px-6">
+            <SettingsOverviewTiles
+                heading={
+                    <div className="space-y-1">
+                        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                            {text.title}
+                        </h1>
+                        <p className="text-muted-foreground text-sm">
+                            {text.description}
+                        </p>
+                    </div>
+                }
+                setup={setupCard}
+                groups={groups}
+                labels={{
+                    search: text.searchLabel,
+                    searchPlaceholder: text.searchPlaceholder,
+                    noResults: text.noResults,
+                    noResultsDescription: text.noResultsDescription,
+                }}
+            />
+        </div>
     )
 }

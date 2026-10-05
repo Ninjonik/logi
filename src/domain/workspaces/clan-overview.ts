@@ -1,3 +1,8 @@
+import {
+    resolveRosterScoreDelta,
+    type RosterScoreSettings,
+    type ScorableRoster,
+} from "../events/score-policy"
 import { matchesGameScope, resolveGameScope, type GameId } from "../games/game"
 import { resultSummaryPayloadSchema } from "../api/result-summaries"
 import { isSignupMembershipAllowed } from "../events/signup-policy"
@@ -67,6 +72,20 @@ export function nextUpcomingMatch<T extends OverviewEvent>(
             )
             .sort((a, b) => time(a.gameStart) - time(b.gameStart))[0] ?? null
     )
+}
+
+/** Matches and trainings that have not been concluded, soonest first. */
+export function upcomingEvents<T extends OverviewEvent>(
+    events: readonly T[],
+    now: Date
+): T[] {
+    return events
+        .filter(
+            (event) =>
+                Number.isFinite(time(event.gameStart)) &&
+                currentEventStatus(event, now) !== "concluded"
+        )
+        .sort((a, b) => time(a.gameStart) - time(b.gameStart))
 }
 
 /** Filled and total roster places; null when there is no roster or it has no places. */
@@ -239,4 +258,74 @@ export function eventsByDay<T extends { gameStart: string }>(
             (a, b) => time(a.gameStart) - time(b.gameStart)
         ),
     }))
+}
+
+/** What the monthly attendance points need from an event. */
+export type ScoredEvent = {
+    id: string
+    gameStart: string
+    status?: "registration" | "closed" | "starting" | "concluded"
+    scoreResolution?: "applied" | "skipped"
+    participants: Array<{
+        userId: string
+        status: "attending" | "not_attending"
+    }>
+    absenceNotices?: Array<{ userId: string }>
+}
+
+/**
+ * Attendance points members earned in one month: for every event of that
+ * month whose points were applied when it closed, the clan's score rules
+ * (`resolveRosterScoreDelta`, the rules closing a match uses) are applied to
+ * the clan's members who are not paused. Members are ranked by points, then
+ * by user ID for a stable order; only members above zero are listed.
+ * `monthKey` is `YYYY-MM` and `monthKeyOf` gives an event's month in the
+ * clan's time zone.
+ */
+export function monthAttendanceLeaders(input: {
+    events: readonly ScoredEvent[]
+    rosters: ReadonlyArray<ScorableRoster & { eventId: string }>
+    assignments: ReadonlyArray<{ userId: string; paused: boolean }>
+    settings: RosterScoreSettings
+    monthKey: string
+    monthKeyOf: (iso: string) => string
+    limit?: number
+}) {
+    const rosterByEvent = new Map(
+        input.rosters.map((roster) => [roster.eventId, roster])
+    )
+    const members = [
+        ...new Set(
+            input.assignments
+                .filter((assignment) => !assignment.paused)
+                .map((assignment) => assignment.userId)
+        ),
+    ]
+    const scored = input.events.filter(
+        (event) =>
+            event.status === "concluded" &&
+            event.scoreResolution === "applied" &&
+            Number.isFinite(time(event.gameStart)) &&
+            input.monthKeyOf(event.gameStart) === input.monthKey
+    )
+    const points = new Map<string, number>()
+    for (const event of scored) {
+        const roster = rosterByEvent.get(event.id) ?? null
+        for (const userId of members) {
+            const delta = resolveRosterScoreDelta({
+                userId,
+                settings: input.settings,
+                participants: event.participants,
+                notices: event.absenceNotices ?? [],
+                roster,
+            })
+            if (delta) points.set(userId, (points.get(userId) ?? 0) + delta)
+        }
+    }
+    const leaders = [...points]
+        .filter(([, value]) => value > 0)
+        .map(([userId, value]) => ({ userId, points: value }))
+        .sort((a, b) => b.points - a.points || a.userId.localeCompare(b.userId))
+        .slice(0, input.limit ?? 4)
+    return { leaders, events: scored.length }
 }

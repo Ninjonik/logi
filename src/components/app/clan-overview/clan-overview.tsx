@@ -8,6 +8,7 @@ import {
     pendingApplications,
     recentForm,
     resultsAwaitingConfirmation,
+    upcomingEvents,
 } from "@/domain/workspaces/clan-overview"
 import {
     settingsSectionForRequirement,
@@ -19,13 +20,16 @@ import {
     WaitingCard,
     type WaitingItem,
 } from "@/components/app/clan-overview/waiting-card"
+import { AttendanceLeadersCard } from "@/components/app/clan-overview/attendance-leaders-card"
 import {
     fill,
     overviewFormat,
 } from "@/components/app/clan-overview/overview-format"
+import { ClanStatsSection } from "@/components/app/clan-overview/clan-stats-section"
 import { RecentFormCard } from "@/components/app/clan-overview/recent-form-card"
 import { NextMatchCard } from "@/components/app/clan-overview/next-match-card"
 import { settingsSnapshot } from "@/components/app/settings/settings-snapshot"
+import type { getClanOverviewExtras } from "@/lib/read-models/clan-overview"
 import { WeekStrip } from "@/components/app/clan-overview/week-strip"
 import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
@@ -54,14 +58,17 @@ function greeting(
 }
 
 /**
- * Clan home (design G1): greeting, the next match with roster places and
- * sign-ups, manager to-dos with setup progress, this week and recent form.
+ * Clan home (design G1): greeting, the next match with roster places,
+ * sign-ups and a reminder for members without an answer, manager to-dos with
+ * setup progress, this week, recent form and the month's attendance points,
+ * then the clan's statistics: totals, performance charts and recent results.
  */
 export function ClanOverview({
     locale,
     serverId,
     gameId,
     context,
+    extras,
     now,
 }: {
     locale: Locale
@@ -75,7 +82,11 @@ export function ClanOverview({
         | "canAdmin"
         | "assignments"
         | "discordConfig"
+        | "groups"
+        | "squadPresets"
+        | "topicPresets"
     >
+    extras: Awaited<ReturnType<typeof getClanOverviewExtras>>
     now: Date
 }) {
     const dictionary = getDictionary(locale)
@@ -87,6 +98,9 @@ export function ClanOverview({
         canAdmin,
         assignments = [],
         discordConfig,
+        groups = [],
+        squadPresets = [],
+        topicPresets = [],
     } = context
     const timezone = discordConfig?.timezone
     const format = overviewFormat(locale, timezone)
@@ -146,9 +160,10 @@ export function ClanOverview({
                   {
                       key: "applications",
                       href: `${base}/users${gameQuery}`,
-                      title: fill(text.applications, {
-                          count: applications.count,
-                      }),
+                      title: format.count(
+                          applications.count,
+                          text.applications
+                      ),
                       detail: applications.oldestAt
                           ? fill(text.applicationsOldest, {
                                 date: format.shortDate(applications.oldestAt),
@@ -160,6 +175,7 @@ export function ClanOverview({
             : []),
     ]
 
+    const upcoming = upcomingEvents(events, now)
     const category = nextMatch
         ? findEventCategory(server.eventCategories, nextMatch.matchType)
         : null
@@ -203,6 +219,7 @@ export function ClanOverview({
             </header>
             <div className="flex flex-wrap items-stretch gap-4">
                 <NextMatchCard
+                    serverId={serverId}
                     event={nextMatch}
                     roster={nextRoster}
                     assignments={assignments}
@@ -245,9 +262,38 @@ export function ClanOverview({
                 <RecentFormCard
                     form={form}
                     matchHref={matchHref}
+                    format={format}
                     dictionary={dictionary}
                 />
+                {extras.leaders ? (
+                    <AttendanceLeadersCard
+                        month={format.monthName(now.toISOString())}
+                        leaders={extras.leaders}
+                        dictionary={dictionary}
+                    />
+                ) : null}
             </div>
+            <ClanStatsSection
+                totals={{
+                    upcomingEvents: upcoming.length,
+                    nextEventName: upcoming[0]?.name,
+                    publishedRosters: rosters.filter(
+                        (roster) => roster.published
+                    ).length,
+                    rosters: rosters.length,
+                    members: server.memberIds.length,
+                    assignments: assignments.length,
+                    presets:
+                        groups.length +
+                        squadPresets.length +
+                        topicPresets.length,
+                }}
+                performance={extras.performance}
+                recent={extras.recent}
+                matchHref={matchHref}
+                playerHref={(userId) => `/${locale}/players/${userId}`}
+                dictionary={dictionary}
+            />
         </div>
     )
 }

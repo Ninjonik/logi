@@ -5,7 +5,6 @@ import {
     Bot,
     Inbox,
     Settings,
-    Shield,
     Trophy,
     UsersRound,
     type LucideIcon,
@@ -125,8 +124,11 @@ export function AdminSidebar({
         <Sidebar id="onboarding-sidebar" {...props}>
             <SidebarHeader className="border-sidebar-border/70 gap-2 border-b px-2 py-2 2xl:px-3 2xl:py-4">
                 <div className="flex items-center gap-2 p-1.5">
-                    <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-lg">
-                        <Shield className="size-4" aria-hidden />
+                    <span
+                        aria-hidden
+                        className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-indigo-700 text-[13px] font-bold text-white dark:bg-indigo-500"
+                    >
+                        L
                     </span>
                     <span className="grid min-w-0 leading-tight">
                         <span className="truncate text-sm font-semibold">
@@ -196,7 +198,7 @@ export function AdminSidebar({
                                             {item.badge ? (
                                                 <SidebarMenuBadge
                                                     title={item.badgeTitle}
-                                                    className="bg-primary/15 text-primary rounded-full"
+                                                    className="rounded-full bg-indigo-500/15 text-indigo-800 dark:bg-indigo-400/20 dark:text-indigo-100"
                                                 >
                                                     <span className="sr-only">
                                                         {item.badgeTitle}

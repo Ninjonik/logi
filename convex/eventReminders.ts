@@ -41,6 +41,7 @@ async function currentRecipients(
             meetingStart: event.meetingStart,
             allowedSignupStatuses: event.allowedSignupStatuses,
             participants: event.participants ?? [],
+            absenceNotices: event.absenceNotices ?? [],
         },
         roster,
         assignments,

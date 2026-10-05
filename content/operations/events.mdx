@@ -48,8 +48,10 @@ to configure a dedicated application/key policy and per-game role allowlist.
 
 ### Start a new event
 
-Open the workspace **Events** page and choose **Create event**. If you started
-from **All games**, first select the intended game in the game-selection panel.
+Open **Matches** and choose **New match**, or **Trainings** and **New training**.
+The old **Events** list now opens **Matches**, which lists matches and
+trainings together. If you started from **All games**, first select the
+intended game in the game-selection panel.
 Enter a descriptive name before adding optional details.
 
 ### Set the schedule
@@ -160,11 +162,16 @@ colour (Logi amber when the event has no category). Times are Discord
 timestamps, so every reader sees them in their own time zone. Icons appear only
 where they carry meaning, such as a group's own emoji.
 
-- **Match announcement:** title with the category (`Name · Category`), side and
-  teams, start, then map, cap, meeting time and when sign-ups close, the number
-  of people signed up and the status. Buttons: **Sign up**, **My sign-up**
-  (private check of your own sign-up) and **Can't make it**, plus the calendar
-  link.
+- **Match announcement:** the ping above the card, then the title with the
+  category (`Name · Category`), one line with the teams and their sides (each
+  side with its faction emblem, for example `🟦 VLK Allies vs 🟥 ROG Axis`), the
+  start, then map and time of day, cap, meeting time and when sign-ups close.
+  Below that the count line: **Signed up 23** · Infantry 15 · Tanks 6/6 ·
+  Recon 2/2. A group shows `count/limit` when the match caps it; names of the
+  people signed up are not listed (managers see them in Logi). Once
+  registration closes the status replaces the deadline. Buttons: **Sign up**,
+  **My sign-up** (private check of your own sign-up), **Can't make it** and
+  **Add to calendar**, then a small line with the event forum.
 - **Published roster** (event-info channel): `Roster · Name`, the meeting time
   and meeting channel, one line per squad with its player count (a one-player
   squad such as Command shows the name), reserves, the roster image and the
@@ -174,8 +181,14 @@ where they carry meaning, such as a group's own emoji.
   Commander, Spotter or Commander roles), the meeting time and channel, and the
   server with its password. While the event is starting it also offers **I'll be
   there** and **Running late**.
-- **Attendance reminder DM:** event, start, meeting time and the player's squad
-  and role, with the same two buttons. **Running late** also works from the DM.
+- **Attendance reminder DM:** "You're playing Name tomorrow" (or today, in the
+  server's time zone), start, meeting time and the player's squad and role, with
+  **I'll be there**, **Running late** and **Can't make it**. Both late and
+  can't-make-it work from the DM.
+
+Faction emblems are the bot's installed application emoji (Wardogs factions,
+see the public panels guide) or, without them, a fixed marker: blue for Allies,
+red for Axis and `◈` for a Wardogs faction.
 
 A server password is never posted publicly: not in announcements, the
 event-information card, forum posts, Discord scheduled events or the public
@@ -196,10 +209,21 @@ and people who are neither an attendee nor a reserve cannot submit one.
 
 For a **published** roster in **starting** status, the bot can direct-message
 unacknowledged squad players and reserves at 24, 18, 12, and 6 hours before the
-meeting time. Direct messages are skipped when unavailable, and each successful
-offset is logged so it is not sent twice. The message's acknowledge button only
-marks the person as acknowledged; a manager must mark them confirmed when that
-is appropriate.
+meeting time. Players who already sent an absence notice or declined get no
+further reminders. Direct messages are skipped when unavailable, and each
+successful offset is logged so it is not sent twice. The message's acknowledge
+button only marks the person as acknowledged; a manager must mark them confirmed
+when that is appropriate.
+
+**Can't make it** in the reminder DM is for a player on the published roster
+(squad or reserves) who has to drop out before the game starts. It opens a short
+form with an optional reason (only the organisers see it). Submitting it saves an
+absence notice with that reason (or "Can't make it"), withdraws the player's
+attendance confirmation and adds a **declined** entry with their squad and role
+to the sign-up history. The roster slot stays filled: the organisers see the
+notice on the roster board, the player counts as excused on the attendance page,
+and they decide who takes the place. Pressing it again with the same reason
+changes nothing.
 
 ### Daily match signup reminders
 

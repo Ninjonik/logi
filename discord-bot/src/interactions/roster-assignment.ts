@@ -100,6 +100,8 @@ export function buildRosterAssignmentReply(input: {
     event: EventRecord
     roster: Roster | null
     userId: string
+    /** The event category colour, so the reply matches the event card. */
+    categoryColor?: string | null
 }): RosterAssignmentReply {
     const { config, event, roster, userId } = input
     const messages = getClanDiscordMessages(config.defaultLanguage)
@@ -154,7 +156,12 @@ export function buildRosterAssignmentReply(input: {
 
     const embed = new EmbedBuilder()
         .setTitle(title.slice(0, 256) || messages.embed.myAssignment)
-        .setColor(resolveMessageAccentColor({}))
+        .setColor(
+            resolveMessageAccentColor({
+                categoryColor: input.categoryColor,
+                messageStyle: config.messageStyle,
+            })
+        )
     if (lines.length) embed.setDescription(lines.join("\n").slice(0, 4096))
     if (event.serverPassword?.trim()) {
         embed.setFooter({ text: messages.assignment.passwordNotice })

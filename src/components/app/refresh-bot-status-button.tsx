@@ -37,7 +37,7 @@ export function RefreshBotStatusButton({
     return (
         <Button
             variant="outline"
-            className="rounded-full"
+            className="h-8 rounded-lg px-3 text-[13px]"
             onClick={handleRefresh}
             disabled={isPending}
         >

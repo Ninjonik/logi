@@ -11,7 +11,7 @@ import {
     type StatsPorts,
 } from "./stats"
 import { historyRecord } from "../../../src/infrastructure/testing/game-history"
-import { statsCopy } from "./stats-copy"
+import { statsCopy } from "../../../src/domain/player-stats/stats-copy"
 import assert from "node:assert/strict"
 import test from "node:test"
 

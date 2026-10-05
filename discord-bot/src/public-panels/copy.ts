@@ -41,8 +41,13 @@ export type PanelCopy = {
     observed: (at: string) => string
     previous: string
     next: string
-    result: (corrected: boolean, version: number) => string
     reviewed: (at: string) => string
+    /** Small label above a result card: "RESULT", then the category. */
+    resultLabel: string
+    correctedLabel: string
+    outcomes: { win: string; loss: string; draw: string }
+    confirmedBy: (name: string) => string
+    matchDetail: string
     hllRemaining: (time: string) => string
     hllCurrentRound: (freshness: string) => string
     hllAllies: string
@@ -103,9 +108,12 @@ const en: PanelCopy = {
     observed: (at) => `Observed ${at}`,
     previous: "Previous",
     next: "Next",
-    result: (corrected, version) =>
-        `${corrected ? "Corrected" : "Confirmed"} result · v${version}`,
     reviewed: (at) => `Reviewed ${at}`,
+    resultLabel: "RESULT",
+    correctedLabel: "CORRECTED",
+    outcomes: { win: "Win", loss: "Loss", draw: "Draw" },
+    confirmedBy: (name) => `confirmed by ${name}`,
+    matchDetail: "Match details",
     hllRemaining: (time) => `⏱ **${time}** remaining`,
     hllCurrentRound: (freshness) => `${freshness} · current round`,
     hllAllies: "Allies",
@@ -165,9 +173,12 @@ const cs: PanelCopy = {
     observed: (at) => `Zjištěno ${at}`,
     previous: "Předchozí",
     next: "Další",
-    result: (corrected, version) =>
-        `${corrected ? "Opravený" : "Potvrzený"} výsledek · v${version}`,
     reviewed: (at) => `Potvrzeno ${at}`,
+    resultLabel: "VÝSLEDEK",
+    correctedLabel: "OPRAVENO",
+    outcomes: { win: "Výhra", loss: "Prohra", draw: "Remíza" },
+    confirmedBy: (name) => `potvrdil ${name}`,
+    matchDetail: "Detail zápasu",
     hllRemaining: (time) => `⏱ zbývá **${time}**`,
     hllCurrentRound: (freshness) => `${freshness} · aktuální kolo`,
     hllAllies: "Spojenci",
@@ -227,9 +238,12 @@ const de: PanelCopy = {
     observed: (at) => `Erfasst ${at}`,
     previous: "Zurück",
     next: "Weiter",
-    result: (corrected, version) =>
-        `${corrected ? "Korrigiertes" : "Bestätigtes"} Ergebnis · v${version}`,
     reviewed: (at) => `Bestätigt ${at}`,
+    resultLabel: "ERGEBNIS",
+    correctedLabel: "KORRIGIERT",
+    outcomes: { win: "Sieg", loss: "Niederlage", draw: "Unentschieden" },
+    confirmedBy: (name) => `bestätigt von ${name}`,
+    matchDetail: "Spieldetails",
     hllRemaining: (time) => `⏱ noch **${time}**`,
     hllCurrentRound: (freshness) => `${freshness} · aktuelle Runde`,
     hllAllies: "Alliierte",

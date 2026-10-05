@@ -54,6 +54,9 @@ export const references = {
     acknowledgeAttendance: makeFunctionReference<"mutation">(
         "rosters:acknowledgeAttendance"
     ),
+    declineAttendance: makeFunctionReference<"mutation">(
+        "rosters:declineAttendance"
+    ),
     applyEventScore: makeFunctionReference<"mutation">(
         "events:applyEventScore"
     ),

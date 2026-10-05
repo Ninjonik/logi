@@ -30,6 +30,8 @@ export type ManualReminderEvent = {
     meetingStart: string
     allowedSignupStatuses?: SignupMembershipStatus[]
     participants: Array<{ userId: string; status: ParticipantStatus }>
+    /** Late or cannot-come notices; those players are not reminded. */
+    absenceNotices?: Array<{ userId: string }>
 }
 
 export type ManualReminderRoster = {
@@ -100,12 +102,20 @@ function unansweredUserIds(
     return [...userIds]
 }
 
-function unconfirmedUserIds(roster: ManualReminderRoster | null) {
+function unconfirmedUserIds(
+    event: ManualReminderEvent,
+    roster: ManualReminderRoster | null
+) {
     const userIds = new Set<string>()
     for (const squad of roster?.squads ?? []) {
         for (const player of squad.players) {
             if (player.id && !player.ack) userIds.add(player.id)
         }
+    }
+    // Whoever already said they are late or cannot come is not reminded,
+    // as with the scheduled attendance reminders.
+    for (const notice of event.absenceNotices ?? []) {
+        userIds.delete(notice.userId)
     }
     const acknowledgedReserves = new Set(
         (roster?.reserveAttendances ?? [])
@@ -170,7 +180,7 @@ export function describeManualReminderAudience(input: {
                       input.roster,
                       input.assignments
                   )
-                : unconfirmedUserIds(input.roster),
+                : unconfirmedUserIds(input.event, input.roster),
         unavailable: unavailableReason(input),
     }
 }

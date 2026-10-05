@@ -3,11 +3,13 @@ import {
     calendarCategoriesValidator,
     membershipSettingsValidator,
     gameOverridesValidator,
+    messageStyleValidator,
     normalizeConfigDoc,
     playerStatsServerValidator,
     statsSettingsValidator,
     ticketSettingsValidator,
 } from "./discord_shared"
+import { normalizeMessageStyle } from "../src/domain/discord-messages/message-style"
 import { discordConfigPatch } from "../src/domain/workspaces/discord-config-patch"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
 import { getGuildById, getGuildDiscordId } from "./identity"
@@ -54,6 +56,50 @@ export const getConfigByDiscordGuildId = query({
 })
 
 const clearableId = v.optional(v.union(v.string(), v.null()))
+
+/**
+ * Saves the clan colour and icon density of every bot message (Discord
+ * messages settings). The style replaces the stored one; invalid values are
+ * dropped, so a missing colour means Logi amber. Its own function keeps
+ * `upsertConfig`'s arguments unchanged for older deployments.
+ */
+export const setMessageStyle = mutation({
+    args: {
+        secret: v.string(),
+        guildId: v.id("guilds"),
+        messageStyle: messageStyleValidator,
+    },
+    handler: async (ctx, { secret, guildId, messageStyle }) => {
+        assertInternalSecret(secret)
+        const guild = await getGuildById(ctx, guildId)
+        if (!guild) throw new Error("Server not found.")
+        const guildDiscordId = getGuildDiscordId(guild)
+        const style = normalizeMessageStyle(messageStyle)
+        const now = new Date().toISOString()
+        const existing = await ctx.db
+            .query("discordConfigs")
+            .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+            .unique()
+        if (existing) {
+            await ctx.db.patch(existing._id, {
+                messageStyle: style,
+                updatedAt: now,
+            })
+            return String(existing._id)
+        }
+        return String(
+            await ctx.db.insert("discordConfigs", {
+                guildId: guildDiscordId,
+                timezone: "UTC",
+                defaultLanguage: "en",
+                calendarCategories: [],
+                messageStyle: style,
+                createdAt: now,
+                updatedAt: now,
+            })
+        )
+    },
+})
 
 /**
  * Saves the settings a dashboard page submits. Omitted fields keep their stored

@@ -308,6 +308,21 @@ test("fixtures need two different teams and both scores for final and forfeit re
     )
 })
 
+test("a fixture round is optional, a whole number from 1 to 99, and null clears it", () => {
+    assert.equal(fixtureInputSchema.parse(fixture).round, undefined)
+    assert.equal(fixtureInputSchema.parse({ ...fixture, round: 3 }).round, 3)
+    assert.equal(
+        fixtureInputSchema.parse({ ...fixture, round: null }).round,
+        null
+    )
+    for (const round of [0, 100, 2.5, "3", -1])
+        assert.equal(
+            fixtureInputSchema.safeParse({ ...fixture, round }).success,
+            false,
+            String(round)
+        )
+})
+
 test("a scheduled fixture clears its scores", () => {
     assert.deepEqual(
         fixtureInputSchema.parse({

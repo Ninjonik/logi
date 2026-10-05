@@ -2,7 +2,9 @@ import { ShieldAlert } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { overviewFormat } from "@/components/app/clan-overview/overview-format"
 import { ClanOverview } from "@/components/app/clan-overview/clan-overview"
+import { getClanOverviewExtras } from "@/lib/read-models/clan-overview"
 import { EmptyState } from "@/components/app/empty-state"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -50,13 +52,23 @@ export default async function ServerOverviewPage({
             </div>
         )
     }
+    const now = new Date()
+    const format = overviewFormat(safeLocale, context.discordConfig?.timezone)
+    const extras = await getClanOverviewExtras({
+        serverId,
+        context,
+        gameScope: gameId ?? "all",
+        monthKey: format.monthKey(now.toISOString()),
+        monthKeyOf: format.monthKey,
+    })
     return (
         <ClanOverview
             locale={safeLocale}
             serverId={serverId}
             gameId={gameId}
             context={context}
-            now={new Date()}
+            extras={extras}
+            now={now}
         />
     )
 }

@@ -315,6 +315,234 @@ test("merge archives the duplicate, moves registrations, fixtures and pending re
     assert.equal(again.ok, true)
 })
 
+test("administration lists teams by state and reports where each team is used", async () => {
+    const ctx = setup()
+    const make = async (name: string) =>
+        (
+            await create(ctx, {
+                gameId: "hell_let_loose",
+                name,
+                idempotencyKey: `create-${name.toLowerCase()}-0001`,
+            })
+        ).teamId as string
+    const rog = await make("ROG")
+    const def = await make("DEF")
+    const old = await make("Old")
+    const dup = await make("Dup")
+    assert.equal(
+        (
+            await invoke(teams.archive, ctx, {
+                ...platform,
+                teamId: old,
+                input: { expectedRevision: 1 },
+            })
+        ).ok,
+        true
+    )
+    assert.equal(
+        (
+            await invoke(teams.merge, ctx, {
+                ...platform,
+                teamId: dup,
+                input: {
+                    expectedRevision: 1,
+                    targetTeamId: def,
+                    targetRevision: 1,
+                },
+            })
+        ).ok,
+        true
+    )
+    const list = async (state: string, search?: string) =>
+        (
+            await invoke(teams.adminListState, ctx, {
+                ...platform,
+                gameId: "hell_let_loose",
+                state,
+                ...(search ? { search } : {}),
+                cursor: null,
+                limit: 10,
+            })
+        ).items.map((team: { name: string }) => team.name)
+    assert.deepEqual(await list("active"), ["DEF", "ROG"])
+    assert.deepEqual(await list("archived"), ["Old"])
+    assert.deepEqual(await list("merged"), ["Dup"])
+    assert.deepEqual(await list("archived", "Dup"), [])
+    assert.deepEqual(await list("merged", "Dup"), ["Dup"])
+    await assert.rejects(list("deleted"))
+
+    ctx.db.seed("competitions", {
+        _id: "competitions:ecl",
+        gameId: "hell_let_loose",
+        name: "ECL",
+        season: "2026",
+    })
+    ctx.db.seed("competitionDivisions", {
+        _id: "competitionDivisions:d2",
+        competitionId: "competitions:ecl",
+        name: "Division 2",
+        order: 1,
+    })
+    ctx.db.seed("competitionTeams", {
+        _id: "competitionTeams:rog",
+        competitionId: "competitions:ecl",
+        divisionId: "competitionDivisions:d2",
+        teamId: rog,
+        withdrawn: false,
+    })
+    for (const [id, a, b] of [
+        ["1", rog, def],
+        ["2", def, rog],
+        ["3", def, "teamDirectory:other"],
+    ])
+        ctx.db.seed("competitionFixtures", {
+            _id: `competitionFixtures:${id}`,
+            competitionId: "competitions:ecl",
+            sideATeamId: a,
+            sideBTeamId: b,
+            status: "scheduled",
+        })
+    const pending = await invoke(teamRequests.submit, ctx, {
+        ...workspace,
+        input: {
+            kind: "update",
+            teamId: rog,
+            proposal: { name: "ROG", links: ["https://rog.example"] },
+            idempotencyKey: "change-rog-00001",
+        },
+    })
+    assert.equal(pending.ok, true)
+    const usage = await invoke(teams.adminUsage, ctx, {
+        ...platform,
+        teamIds: [rog, def, "teamDirectory:missing", rog],
+    })
+    const ecl = {
+        id: "competitions:ecl",
+        name: "ECL",
+        season: "2026",
+        division: "Division 2",
+        fixtures: null,
+        withdrawn: false,
+    }
+    assert.deepEqual(usage.items, [
+        {
+            teamId: rog,
+            competitions: [ecl],
+            competitionCount: 1,
+            pendingRequests: 1,
+            pendingRequestId: pending.requestId,
+        },
+        {
+            teamId: def,
+            competitions: [],
+            competitionCount: 0,
+            pendingRequests: 0,
+            pendingRequestId: null,
+        },
+    ])
+    // One team's detail also counts its fixtures per competition.
+    const detail = await invoke(teams.adminUsage, ctx, {
+        ...platform,
+        teamIds: [rog],
+    })
+    assert.deepEqual(detail.items[0].competitions, [{ ...ecl, fixtures: 2 }])
+    await assert.rejects(
+        invoke(teams.adminUsage, ctx, {
+            ...platform,
+            teamIds: Array.from({ length: 26 }, (_, i) => `t${i}`),
+        })
+    )
+    await assert.rejects(
+        invoke(teams.adminUsage, ctx, { ...workspace, teamIds: [rog] })
+    )
+})
+
+test("request context names the requester and active teams that look alike", async () => {
+    const ctx = setup()
+    ctx.db.tables.users[0].name = "Player 05"
+    ctx.db.tables.users[0].avatar = "https://cdn.test/avatar.png"
+    const def = await create(ctx, {
+        gameId: "hell_let_loose",
+        name: "DEF",
+        idempotencyKey: "create-def-00001",
+    })
+    const requested = await invoke(teamRequests.submit, ctx, {
+        ...workspace,
+        input: {
+            kind: "create",
+            gameId: "hell_let_loose",
+            proposal: { name: "def" },
+            idempotencyKey: "request-def-0001",
+        },
+    })
+    const other = await invoke(teamRequests.submit, ctx, {
+        ...workspace,
+        input: {
+            kind: "create",
+            gameId: "hell_let_loose",
+            proposal: { name: "Iron Wolves" },
+            idempotencyKey: "request-iron-001",
+        },
+    })
+    const context = await invoke(teamRequests.queueContext, ctx, {
+        ...platform,
+        requestIds: [requested.requestId, other.requestId, "teamRequests:x"],
+    })
+    assert.deepEqual(context.items, [
+        {
+            requestId: requested.requestId,
+            requester: {
+                name: "Player 05",
+                avatarUrl: "https://cdn.test/avatar.png",
+            },
+            similarTeams: [{ id: def.teamId, name: "DEF", shortCode: null }],
+            changes: [],
+        },
+        {
+            requestId: other.requestId,
+            requester: {
+                name: "Player 05",
+                avatarUrl: "https://cdn.test/avatar.png",
+            },
+            similarTeams: [],
+            changes: [],
+        },
+    ])
+    // A change request names the fields it changes.
+    const change = await invoke(teamRequests.submit, ctx, {
+        ...workspace,
+        input: {
+            kind: "update",
+            teamId: def.teamId,
+            proposal: {
+                name: "DEF",
+                links: ["https://def.example"],
+                description: "Since 2023.",
+            },
+            idempotencyKey: "change-def-00001",
+        },
+    })
+    const changed = await invoke(teamRequests.queueContext, ctx, {
+        ...platform,
+        requestIds: [change.requestId],
+    })
+    assert.deepEqual(changed.items[0].changes, ["links", "description"])
+    assert.deepEqual(changed.items[0].similarTeams, [])
+    // The requester's nickname in the requesting clan wins over the account name.
+    ctx.db.tables.users[0].nicknames = { [guildId]: "Hráč 05" }
+    const renamed = await invoke(teamRequests.queueContext, ctx, {
+        ...platform,
+        requestIds: [other.requestId],
+    })
+    assert.equal(renamed.items[0].requester.name, "Hráč 05")
+    await assert.rejects(
+        invoke(teamRequests.queueContext, ctx, {
+            ...workspace,
+            requestIds: [other.requestId],
+        })
+    )
+})
+
 test("website reads list the global catalogue for the granted game only", async () => {
     const ctx = setup()
     const created = await create(ctx, {

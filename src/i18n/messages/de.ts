@@ -235,6 +235,62 @@ export const deMessages = {
             emptyDescription:
                 "Verbinde einen CRCON- oder Warcon-Server, damit Logi Ergebnisse und Statistiken sammelt. Der API-Schlüssel wird verschlüsselt gespeichert und ist danach für niemanden mehr sichtbar.",
             closeForm: "Schließen",
+            card: {
+                status: {
+                    collecting: "Sammelt Daten",
+                    stopped: "Sammeln gestoppt",
+                    off: "Sammelt nicht",
+                    none: "Kein Sammeln",
+                },
+                key: {
+                    set: "gespeichert",
+                    missing: "fehlt",
+                    not_required: "nicht nötig",
+                    environment: "vom Logi-Betreiber gesetzt",
+                    needs_operator: "erneut eingeben",
+                },
+                unverified: "nicht geprüft",
+                changed: "geändert {date}",
+                testOk: "in Ordnung",
+                testFailed: "fehlgeschlagen",
+                lastGame: "Letztes Spiel",
+                noGame: "noch keins",
+                serverNumber: "Server {id}",
+                testKey: "Schlüssel testen",
+                live: "Live-Punktestand",
+                liveHide: "Live-Punktestand ausblenden",
+                fixUnauthorized: {
+                    crcon: "Der Server hat den Schlüssel abgelehnt. Erstelle in CRCON einen neuen Schlüssel, der Serverinformationen lesen darf, und gib ihn über Schlüssel ändern ein.",
+                    other: "Der Server hat den Schlüssel abgelehnt. Erstelle beim Anbieter einen neuen Schlüssel und gib ihn über Schlüssel ändern ein.",
+                },
+                retentionKeep: "Gespielte Runden aufbewahren",
+                retentionHelp:
+                    "Ältere Runden werden nachts gelöscht und Websites berechnen ihre Summen neu.",
+                browseHistory: "Gespielte Runden ansehen",
+            },
+            form: {
+                type: "Servertyp",
+                types: {
+                    hll_crcon: "CRCON",
+                    wardogs_warcon: "Warcon",
+                    wardogs_rcon: "RCON",
+                    wardogs_public_directory: "Öffentlich",
+                },
+                address: "Adresse",
+                namePlaceholder: "Zum Beispiel Server 2",
+                serverNumber: {
+                    hll_crcon: "Servernummer in CRCON",
+                    wardogs_warcon: "Server-ID in Warcon",
+                    wardogs_rcon: "Server-ID in RCON",
+                    wardogs_public_directory: "Server-ID in der Liste",
+                },
+                keyPlaceholder: "Schlüssel einfügen",
+                help: "Das Spiel ergibt sich aus dem Servertyp. Der Schlüssel wird zuerst getestet und erst dann gespeichert.",
+                testFirst: "Speichern geht nach einem erfolgreichen Test.",
+                testPassed:
+                    "Der Test war erfolgreich. Du kannst den Server speichern.",
+                saveAndCollect: "Speichern und Sammeln starten",
+            },
             keyLabel: "API-Schlüssel",
             lastTestLabel: "Letzter Test",
             notTested: "Noch nicht getestet",
@@ -462,6 +518,43 @@ export const deMessages = {
     },
     apiKeys: {
         revokeTitle: "Schlüssel {name} widerrufen?",
+        groupsLegend: "Bereiche",
+        groups: {
+            matches: {
+                label: "Matches",
+                short: "Matches",
+                help: "Events, Matches, ihre Zusammenfassungen und Strat-Maps.",
+            },
+            rosters: {
+                label: "Aufstellungen",
+                short: "Aufstellungen",
+                help: "Aufstellungen, Squads und Zuordnungen der Spieler.",
+            },
+            results: {
+                label: "Ergebnisse",
+                short: "Ergebnisse",
+                help: "Bestätigte Ergebnisse, Spielerstatistiken und Spielverlauf.",
+            },
+            members: {
+                label: "Mitglieder",
+                short: "Mitglieder",
+                help: "Clan-Mitglieder und ihr Status. Für das Lesen der Mitgliedschaft gelten zusätzlich eigene Regeln.",
+            },
+            servers: {
+                label: "Spielserver",
+                short: "Server",
+                help: "Live-Zustand der Server, Warcon, HLL und Zustand der Verbindung.",
+            },
+            league: {
+                label: "Liga und Teams",
+                short: "Liga",
+                help: "Matches der Wardogs League und der Teamkatalog.",
+            },
+        },
+        partialGroup: "{group} (teilweise)",
+        readOnlyShort: "nur lesen",
+        everyGame: "alle Spiele",
+        createdOn: "erstellt {date}",
         revokeDescription:
             "Alles, was diesen Schlüssel nutzt, etwa deine Website, bekommt sofort keine Daten mehr von Logi. Das lässt sich nicht rückgängig machen; für neuen Zugriff erstellst du einen neuen Schlüssel.",
         revokeConfirm: "Schlüssel widerrufen",
@@ -975,7 +1068,7 @@ export const deMessages = {
         matches: "Matches",
         trainings: "Trainings",
         topicPresets: "Themen-Presets",
-        stratmaps: "Stratmaps",
+        stratmaps: "Taktikkarten",
         groups: "Gruppen",
         squadPresets: "Squad-Presets",
         rosters: "Roster",
@@ -1260,11 +1353,59 @@ export const deMessages = {
         showAll: "Alle Aktivitäten anzeigen",
     },
     teamCatalogAdmin: {
+        searchLabel: "Teams suchen",
+        statesLabel: "Status",
+        states: {
+            active: "Aktiv",
+            archived: "Archiviert",
+            merged: "Zusammengeführt",
+        },
+        listLabel: "Teams",
+        detailLabel: "Teamdetails",
+        rowLinked: "Clan in Logi",
+        rowCompetitions: {
+            one: "{count} Wettbewerb",
+            few: "{count} Wettbewerbe",
+            many: "{count} Wettbewerbe",
+            other: "{count} Wettbewerbe",
+        },
+        rowPendingChange: "Änderung ausstehend",
+        requestBadge: "Anfrage",
+        requestBadgeLabel: "Eine Änderungsanfrage wartet",
+        updatedOn: "{game} · geändert am {date}",
+        changeLogo: "Logo ändern",
+        requestBanner: "Ein Clan schlägt eine Änderung dieses Teams vor",
+        openRequest: "Anfrage öffnen",
+        usageTitle: "Wo das Team verwendet wird",
+        usageFixtures: {
+            one: "{count} Spiel",
+            few: "{count} Spiele",
+            many: "{count} Spiele",
+            other: "{count} Spiele",
+        },
+        usageWithdrawn: "zurückgezogen",
+        usageNone: "Noch in keinem Wettbewerb.",
+        usageMore: "und {count} weitere Wettbewerbe",
+        usageSnapshots:
+            "Clan-Spiele behalten Namen und Logo vom Zeitpunkt des Speicherns.",
+        usageUnavailable:
+            "Die Verwendung des Teams konnte nicht geladen werden.",
+        moreDetails: "Beschreibung und Links",
+        saveShort: "Speichern",
+        endTitle: "Duplikat oder Ende des Teams",
+        mergeIntoOther: "In ein anderes Team zusammenführen",
+        endHelp: "Beides fragt zuerst nach und zeigt, was sich ändert.",
+        selectTeam: "Wähle ein Team in der Liste, um seine Daten zu sehen.",
+        archivedHelp:
+            "Ein archiviertes Team wird Clans und Wettbewerben nicht angeboten. Durch Wiederherstellen ist es wieder auswählbar.",
+        mergedHelp:
+            "Dieses Team wurde in {name} zusammengeführt. Das lässt sich nicht rückgängig machen.",
+        mergedTargetUnknown: "ein anderes Team",
         title: "Teamkatalog",
         description:
             "Eine Teamliste für ganz Logi. Clans wählen daraus ihre Gegner, Wettbewerbe melden daraus Teams an.",
         gamesLabel: "Spiel",
-        search: "Teams suchen…",
+        search: "Name oder Kürzel",
         showArchived: "Archivierte und zusammengeführte Teams anzeigen",
         add: "Team hinzufügen",
         loadMore: "Mehr laden",
@@ -1295,8 +1436,8 @@ export const deMessages = {
         linkLabel: "Link {number}",
         linksHelp:
             "Bis zu drei https-Links, etwa die Website des Teams oder eine Discord-Einladung.",
-        linkedWorkspace: "Verknüpfter Workspace",
-        linkedWorkspaceNone: "Kein verknüpfter Workspace",
+        linkedWorkspace: "Clan in Logi",
+        linkedWorkspaceNone: "Keiner · das Team nutzt Logi nicht",
         linkedWorkspaceUnknown: "Workspace {id}",
         linkedWorkspaceHelp:
             "Hält fest, dass dieses Team der Clan dieses Logi-Workspaces ist. Die Verknüpfung gewährt keine Berechtigungen.",
@@ -1402,6 +1543,32 @@ export const deMessages = {
         },
     },
     teamRequestAdmin: {
+        changeSummary: "Ändert {fields}",
+        changeFields: {
+            logo: "Logo",
+            name: "Namen",
+            shortCode: "Kürzel",
+            links: "Links",
+            description: "Beschreibung",
+        },
+        listAnd: " und ",
+        kindBadges: {
+            create: "Neu",
+            update: "Änderung",
+        },
+        similarExists: "Ein ähnliches Team gibt es schon: {name}",
+        usageIn: "Das Team wird in {competitions} verwendet.",
+        usageNone: "Das Team ist noch in keinem Wettbewerb.",
+        snapshotsKept: "Gespeicherte Spiele behalten das alte Logo.",
+        approveDirectTitle: "Anfrage für {name} genehmigen?",
+        approveDirectCreate:
+            "{name} wird in den Katalog von {game} aufgenommen.",
+        approveDirectUpdate:
+            "Die vorgeschlagenen Daten werden auf {name} übernommen.",
+        approveDirectDm:
+            "Die anfragende Person bekommt die Entscheidung per Discord-DM.",
+        discordUser: "Discord {id}",
+        mergeShort: "Mit bestehendem zusammenführen",
         title: "Teamanfragen",
         description:
             "Clans fragen ein neues Team oder eine Änderung an einem bestehenden an. Die anfragende Person erhält deine Entscheidung per Discord-DM.",
@@ -1437,8 +1604,7 @@ export const deMessages = {
         proposed: "Vorgeschlagen",
         unchanged: "unverändert",
         emptyValue: "leer",
-        comparisonHint:
-            "Hervorgehobene Zeilen ändern sich. Gespeicherte Spiele behalten das Team so, wie es beim Speichern war.",
+        comparisonHint: "Grün markiert ist, was sich ändert.",
         rejectWithReason: "Mit Begründung ablehnen",
         reviewAndApprove: "Prüfen und genehmigen",
         selectRequest: "Wähle eine Anfrage, um ihre Details zu sehen.",
@@ -1659,6 +1825,27 @@ export const deMessages = {
         },
     },
     competitionAdmin: {
+        breadcrumb: "Brotkrumennavigation",
+        round: "Runde",
+        roundHelp: "Optional, 1–99. Spiele werden nach Runde gruppiert.",
+        roundHeading: "{round}. Runde",
+        noRound: "Ohne Runde",
+        noFixturesInView:
+            "In dieser Division und Phase gibt es noch keine Spiele.",
+        linkWithMatch: "Mit Spiel verknüpfen",
+        clanMatch: "Spiel von {clan}",
+        clanMatchUnknown: "Verknüpftes Clan-Spiel",
+        awaitingConfirmation: "Wartet auf Bestätigung durch den Clan",
+        played: "Gespielt",
+        editFixtureNamed: "Spiel {teams} bearbeiten",
+        linkPanelTitle: "{teams} verknüpfen",
+        linkPanelDescription:
+            "Das Ergebnis wird dann automatisch übernommen, sobald der Clan es bestätigt. Angeboten werden die Clan-Spiele beider Teams um den Termin.",
+        searchMatches: "Spiel nach Namen suchen",
+        candidateClan: "Clan {clan}",
+        noCandidateResults: "Kein Spiel passt zur Suche.",
+        manualEventId: "Spiel-ID manuell eingeben",
+        deleteFixture: "Spiel löschen",
         listDescription:
             "Erstelle und betreue Wettbewerbe für Hell Let Loose und Wardogs mit Teams aus dem globalen Katalog.",
         newCompetition: "Neuer Wettbewerb",
@@ -1792,8 +1979,8 @@ export const deMessages = {
         loadingCandidates: "Matches werden geladen…",
         noCandidates:
             "In den verknüpften Workspaces der Teams wurden keine Matches gefunden.",
-        teamsMatch: "Beide Teams zugeordnet",
-        teamsUnassigned: "Teams nicht zugeordnet",
+        teamsMatch: "beide Teams zugeordnet",
+        teamsUnassigned: "Seiten nicht zugeordnet",
         hasResult: "Ergebnis importiert",
         eventId: "Event-ID",
         eventIdHelp:
@@ -2022,6 +2209,7 @@ export const deMessages = {
         backToClans: "Zurück zu deinen Clans",
         openMenu: "Menü öffnen",
         mainNavigation: "Hauptnavigation",
+        backTo: "Zurück zu {page}",
     },
     verifiedPlatformLinks: {
         title: "Verifiziertes Steam-Konto",
@@ -2136,7 +2324,7 @@ export const deMessages = {
         downloadZip: "ZIP herunterladen",
         deleteAccountTitle: "Konto löschen",
         deleteAccountDescription:
-            "Entfernt dein Profil, deine Anmeldungen und verknüpften Konten. Das Logi-Team bearbeitet die Anfrage, sie lässt sich nicht rückgängig machen. Gib zur Bestätigung deinen Namen ein.",
+            "Entfernt dein Profil, deine Anmeldungen und verknüpften Konten. Gib zur Bestätigung deinen Namen ein.",
         deleteAccountConfirmLabel: "Bestätigung mit deinem Namen",
         deleteAccountButton: "Konto löschen",
         deleteAccountRequested:
@@ -2268,6 +2456,9 @@ export const deMessages = {
             loginPage: "Anmeldeseite des Clans",
             ssoApps: "Anwendungen für Single Sign-on",
             addApplication: "Anwendung hinzufügen",
+            membersRowHelp:
+                "Über den Schlüssel {key}. Ein Mitglied braucht eine der Rollen.",
+            saveRoles: "Rollen speichern",
             membersTitle: "Herausfinden, wer Mitglied ist",
             membersHelp:
                 "Über einen Nur-Lese-Schlüssel mit Zugriff auf die Discord-Mitgliedschaft. Die Website sieht nur Mitglieder mit einer der gewählten Rollen.",
@@ -2285,6 +2476,9 @@ export const deMessages = {
                 "Füge deine Website als Anwendung hinzu, damit sich Mitglieder dort über Logi mit ihrem Discord-Konto anmelden können.",
             redirects: "Rücksprungadressen nach der Anmeldung: {count}",
             clientId: "Client-ID",
+            edit: "Bearbeiten",
+            save: "Änderungen speichern",
+            saved: "Anwendung gespeichert.",
             removeTitle: "{name} entfernen?",
             removeDescription:
                 "Mitglieder können sich auf {website} nicht mehr mit Logi anmelden. Client-ID und Secret der Anwendung werden ungültig, und Event-Befehle der Website über diese Anwendung funktionieren nicht mehr. Das lässt sich nicht rückgängig machen.",
@@ -2401,6 +2595,9 @@ export const deMessages = {
         threadChannel: "Wo Threads entstehen",
         threadChannelHint:
             "Der Bot muss hier private Threads erstellen können.",
+        threadChannelOk: "Der Bot kann hier private Threads anlegen",
+        categoriesShort: "Kategorien",
+        categoriesEditorNote: "Jede Kategorie ist ein Button im Panel.",
         headingLabel: "Überschrift",
         textLabel: "Text",
         imageOptional: "optional",
@@ -2534,6 +2731,18 @@ export const deMessages = {
             "Logi vergibt und entzieht Rollen nach dem Status des Mitglieds. Sie wird zusammen mit den Beitrittsanfragen ein- und ausgeschaltet.",
         roleSyncOn: "An",
         roleSyncOff: "Aus",
+        roleSyncSwitchDescription:
+            "Logi vergibt und entzieht Rollen nach dem Mitgliedsstatus. Das funktioniert auch, wenn Bewerbungen ausgeschaltet sind.",
+        skipPendingCategoryTitle:
+            "Warten überspringen und direkt als Rekrut aufnehmen",
+        skipPendingCategoryHelp: "Nur für Hauptmitglieder.",
+        categoryDescriptionHelp:
+            "Wird im Discord-Panel beim Namen der Kategorie angezeigt.",
+        addRole: "Rolle",
+        addRoleAria: "Rolle hinzufügen: {status}",
+        removeRole: "Rolle {role} entfernen",
+        roleSearch: "Rolle suchen",
+        roleEmpty: "Keine weitere Rolle.",
         tabsLabel: "Bereiche der Mitgliedschaft",
         tabs: {
             categories: "Kategorien",
@@ -2856,15 +3065,19 @@ export const deMessages = {
         scoreSuffix: "Score",
     },
     workspace: {
-        selectWorkspace: "Workspace wählen",
+        selectWorkspace: "Clan wählen",
         activeWorkspace: "Aktiver Workspace",
-        noWorkspaceSelected: "Kein Workspace gewählt",
-        searchWorkspace: "Workspaces suchen...",
+        noWorkspaceSelected: "Kein Clan gewählt",
+        searchWorkspace: "Clans suchen…",
         missingWorkspaceHelp:
-            "Fehlt ein Workspace? Stelle sicher, dass du auf diesem Discord-Server bist oder dort Administratorzugriff hast.",
+            "Fehlt ein Clan? Stelle sicher, dass du auf seinem Discord-Server bist oder dort Administratorzugriff hast.",
         allClans: "Alle Clans",
         showAllResults: "Alle anzeigen ({count})",
         allGames: "Alle Spiele",
+        gameHeading: "Spiel",
+        clanHeading: "Clans",
+        clanStats: "Mitglieder {members} · Admins {admins}",
+        botMissingBadge: "Bot fehlt",
     },
     languageSwitcher: {
         selectLanguage: "Sprache wählen",
@@ -2990,6 +3203,248 @@ export const deMessages = {
         continueSetup: "Weiter",
         backToOverview: "Alle Einstellungen",
         sectionNavLabel: "Bereiche der Einstellungen",
+        menu: "Bereiche",
+        breadcrumbLabel: "Brotkrumen-Navigation",
+        channelsPage: {
+            missingAnnouncements: "Der Ankündigungskanal fehlt.",
+            missingAnnouncementsHelp:
+                "Ohne ihn kündigt der Bot keine neuen Events an.",
+            languageTitle: "Sprache und Zeit",
+            textTitle: "Textkanäle",
+            voiceTitle: "Sprachkanäle",
+            timezone: "Zeitzone",
+            timezoneHelp: "Danach schreibt der Bot die Zeiten der Events.",
+            language: "Sprache des Bots",
+            languageHelp: "Nachrichten, Embeds und Antworten auf Befehle.",
+            announcements: "Ankündigungen",
+            required: "Pflicht",
+            announcementsHelp: "Neue Events und Änderungen an Aufstellungen.",
+            eventInfo: "Event-Informationen",
+            eventInfoHelp: "Details und Anmeldungen zum Event.",
+            calendar: "Kalender",
+            calendarHelp: "Überblick über kommende Events.",
+            errors: "Bot-Fehler",
+            errorsHelp: "Nur für Admins. Optional.",
+            forum: "Kategorie für Event-Foren",
+            forumHelp: "Wo der Bot Threads zu Events anlegt.",
+            squadVoice: "Kategorie für Squad-Sprachkanäle",
+            squadVoiceHelp:
+                "Hier legt der Bot vor einem Event die Squad-Kanäle an.",
+            meeting: "Treffpunkt-Kanal",
+            meetingHelp: "Wo sich die Spieler vor einem Event treffen.",
+            addChannelException: "Anderer Kanal für ein Spiel",
+            addCategoryException: "Andere Kategorie für ein Spiel",
+            selectChannel: "Kanal wählen",
+            selectCategory: "Kategorie wählen",
+            none: "Keiner",
+        },
+        scopeLegend: {
+            clanWide: "Ganzer Clan: ein Wert für alle Spiele",
+            exception: "Ausnahme nur für ein Spiel",
+            clanWideShort: "Ganzer Clan",
+        },
+        overview: {
+            title: "Einstellungen",
+            description:
+                "Clan, Discord, Spieldaten und verbundene Websites an einem Ort.",
+            searchLabel: "Einstellungen durchsuchen",
+            searchPlaceholder: "Suchen: Kanal, Rolle, API-Schlüssel…",
+            noResults: "Nichts gefunden",
+            noResultsDescription:
+                "Versuch ein anderes Wort, zum Beispiel Kanal, Rolle oder Schlüssel.",
+            groupHints: {
+                clan: "Gilt für alle Spiele",
+                matches: "Vorgaben für neue Matches und ihre Nachrichten",
+                discord: "Bot, Kanäle, Rollen und Panels",
+                gameData: "Server, von denen Logi Ergebnisse sammelt",
+                web: "Optional: Clan-Website, Anmeldung und weitere Dienste",
+                maintenance: "Einmalige Werkzeuge",
+            },
+            badges: {
+                done: "Erledigt",
+                notSet: "Nicht eingestellt",
+                on: "An",
+                off: "Aus",
+                collecting: {
+                    one: "{count} sammelt",
+                    few: "{count} sammeln",
+                    many: "{count} sammeln",
+                    other: "{count} sammeln",
+                },
+                failing: {
+                    one: "{count} mit Fehler",
+                    few: "{count} mit Fehler",
+                    many: "{count} mit Fehler",
+                    other: "{count} mit Fehler",
+                },
+                missingChannels: {
+                    one: "{count} Kanal fehlt",
+                    few: "{count} Kanäle fehlen",
+                    many: "{count} Kanäle fehlen",
+                    other: "{count} Kanäle fehlen",
+                },
+                gamesOn: {
+                    one: "{count} aktiv",
+                    few: "{count} aktiv",
+                    many: "{count} aktiv",
+                    other: "{count} aktiv",
+                },
+                templates: {
+                    one: "{count} Vorlage",
+                    few: "{count} Vorlagen",
+                    many: "{count} Vorlagen",
+                    other: "{count} Vorlagen",
+                },
+            },
+            tiles: {
+                profile: {
+                    title: "Clan-Profil",
+                    description: "Name, Logo und Beschreibung des Clans.",
+                },
+                games: {
+                    title: "Spiele",
+                    description:
+                        "Welche Spiele der Clan spielt. Danach bietet Logi weitere Optionen an.",
+                },
+                "event-categories": {
+                    title: "Event-Kategorien",
+                    description:
+                        "Farben und Emoji für die Event-Arten im Kalender.",
+                },
+                "match-templates": {
+                    title: "Match-Vorlagen",
+                    description:
+                        "Standardzeiten, Anmeldungen, Ping und Aufstellung für ein neues Match.",
+                },
+                presets: {
+                    title: "Squad- und Themenvorlagen",
+                    description:
+                        "Squad- und Rollenaufteilung für Aufstellungen, Themen für das Match-Forum.",
+                },
+                messages: {
+                    title: "Discord-Nachrichten",
+                    description:
+                        "Ankündigungen, Aufstellungen, Erinnerungen, Live-Punktestand und Ergebnisse.",
+                },
+                channels: {
+                    title: "Kanäle und Sprache",
+                    description:
+                        "Wohin der Bot Ankündigungen, Events und Fehler schickt. Zeitzone und Sprache.",
+                },
+                roles: {
+                    title: "Rollen und Zugriff",
+                    description:
+                        "Die Clan-Rolle und die Rolle, die Logi verwalten darf.",
+                },
+                stats: {
+                    title: "Befehl /stats",
+                    description:
+                        "Spielerstatistiken in Discord: für welche Spiele und wo sie geteilt werden.",
+                },
+                membership: {
+                    title: "Mitgliedschaft",
+                    description:
+                        "Rollen für Rekruten und Mitglieder, Regeln für den Aufstellungs-Score.",
+                },
+                tickets: {
+                    title: "Tickets",
+                    description: "Ticket-Panel, Kategorien und Kanäle.",
+                },
+                "game-servers": {
+                    title: "Spielserver",
+                    description:
+                        "CRCON- und Warcon-Server, ihre API-Schlüssel und die Datensammlung.",
+                },
+                history: {
+                    title: "Verlauf aufbewahren",
+                    description: "Wie lange Logi gespielte Runden behält.",
+                },
+                league: {
+                    title: "Wardogs League",
+                    description:
+                        "Liga-Matches verfolgen und Karten in Discord. Nur für Wardogs.",
+                },
+                apiKeys: {
+                    title: "API-Schlüssel",
+                    description:
+                        "Schlüssel für die Clan-Website und andere Apps.",
+                },
+                login: {
+                    title: "Anmeldung auf der Website",
+                    description:
+                        "Eigene Anmeldeseite und Single-Sign-on-Anwendungen (SSO).",
+                },
+                webAccess: {
+                    title: "Website-Berechtigungen",
+                    description:
+                        "Für welche Rollen die Website Mitgliedschaften lesen und Events anlegen darf. Baut auf API-Schlüssel und SSO auf.",
+                },
+                calendar: {
+                    title: "Google Kalender",
+                    description: "Ein Abo-Link für den Clan-Kalender.",
+                },
+                webhooks: {
+                    title: "Webhooks",
+                    description:
+                        "Benachrichtigungen für andere Dienste, wenn sich in Logi etwas ändert.",
+                },
+                imports: {
+                    title: "Importe und Datenkorrekturen",
+                    description:
+                        "Massenimport von Events, Spielern und Platform-IDs, Neuberechnung der Statistiken.",
+                },
+                "helper-data": {
+                    title: "Hilfsdaten",
+                    description: "Standardvorlagen und ihre Wiederherstellung.",
+                },
+            },
+            setup: {
+                title: "Einrichtung des Bereichs",
+                description:
+                    "Schließ die Pflichtschritte ab, damit der Bot Events ankündigen und den Zugriff prüfen kann.",
+                progress: "{done} von {total} erledigt",
+                progressLabel: "Fortschritt der Einrichtung",
+                continue: "Einrichtung fortsetzen",
+                continueHelp: "Öffnet den ersten offenen Schritt.",
+                optional: "optional",
+                fix: "Ergänzen",
+                setUp: "Einrichten",
+                steps: {
+                    bot: {
+                        title: "Bot auf Discord",
+                        done: "Der Bot ist auf dem Server und sieht die Kanäle.",
+                        missing: "Der Bot ist noch nicht auf dem Server.",
+                    },
+                    games: {
+                        title: "Spiele",
+                        missing: "Wähle, was der Clan spielt",
+                    },
+                    profile: {
+                        title: "Clan-Profil",
+                        detail: "Name, Logo und Beschreibung",
+                    },
+                    channels: {
+                        title: "Kanäle",
+                        done: "Der Ankündigungskanal ist gewählt",
+                        missing: "Der Ankündigungskanal fehlt",
+                    },
+                    roles: {
+                        title: "Rollen und Zugriff",
+                        detail: "Wer Logi verwalten darf",
+                    },
+                    gameServers: {
+                        title: "Spielserver",
+                        done: {
+                            one: "{count} Server sammelt Daten",
+                            few: "{count} Server sammeln Daten",
+                            many: "{count} Server sammeln Daten",
+                            other: "{count} Server sammeln Daten",
+                        },
+                        missing: "Ergebnisse und Statistiken vom Server",
+                    },
+                },
+            },
+        },
         openSection: "Öffnen",
         gameExceptionsNote:
             "Diese Einstellungen gelten für den ganzen Clan. Braucht ein Spiel einen anderen Kanal, füge unter der Einstellung eine Ausnahme für dieses Spiel hinzu.",
@@ -3059,15 +3514,32 @@ export const deMessages = {
             noResults: "Keine passende Rolle.",
             rolesUnavailable:
                 "Die Discord-Rollen konnten nicht geladen werden. Deine Einstellungen sind unverändert; lade die Seite neu, um es erneut zu versuchen.",
-            resyncTitle: "Zugriff aus Discord",
             resyncHelp:
-                "Neu laden, wenn sich die Verwaltungsrolle in Discord geändert hat und Logi es noch nicht weiß.",
+                "Wenn sich Rollen geändert haben und Logi es noch nicht weiß.",
             resyncNeedsRole:
                 "Wähle und speichere zuerst eine Verwaltungsrolle.",
             resync: "Aus Discord neu laden",
             resynced: "Verwaltungszugriff aus Discord neu geladen.",
             resyncError:
                 "Der Verwaltungszugriff konnte nicht neu geladen werden.",
+            holders: {
+                one: "{count} Person hat diese Rolle",
+                few: "{count} Personen haben diese Rolle",
+                many: "{count} Personen haben diese Rolle",
+                other: "{count} Personen haben diese Rolle",
+            },
+            accessNow: "Wer gerade Zugriff hat",
+            updated: "aktualisiert {time}",
+            accessUnavailable:
+                "Die Zugriffsübersicht konnte gerade nicht geladen werden. Du kannst die Rollen trotzdem ändern.",
+            noManagers:
+                "Noch niemand. Speichere eine Verwalterrolle oder gib jemandem in Discord die Administrator-Berechtigung.",
+            reasonAdministrator: "Administrator-Berechtigung",
+            reasonRole: "Rolle {role}",
+            reasonManagerRole: "Verwalterrolle",
+            reasonGranted: "in Logi hinzugefügt",
+            unknownMember: "Mitglied ohne Logi-Konto",
+            moreManagers: "und {count} weitere",
         },
         statsPage: {
             enable: "/stats erlauben",
@@ -3087,12 +3559,18 @@ export const deMessages = {
             legacyHelp:
                 "Mit Token und Adresse in den Bot-Einstellungen eingetragen. Neue Verbindungen gehören zu den Spielservern, wo der Schlüssel verschlüsselt gespeichert und getestet werden kann.",
             openGameServers: "Spielserver öffnen",
+            previewTitle: "Vorschau der Antwort in Discord",
+            previewExample: "Beispieldaten",
+            previewEphemeral: "Nur du kannst das sehen · Verwerfen",
+            previewPlayer: "Beispielspieler",
+            previewNote:
+                "Die Zahlen sind ein Beispiel. Die echte Antwort zeigt die Statistiken des Spielers von deinen Spielservern.",
+            showConnections: "Verbindungen anzeigen",
+            hideConnections: "Verbindungen ausblenden",
         },
         messagesPage: {
             lookTitle: "Aussehen aller Nachrichten",
             language: "Sprache",
-            languageHelp:
-                "Wird unter Kanäle und Sprache festgelegt und gilt für alle Bot-Nachrichten.",
             languages: { en: "Englisch", cs: "Tschechisch", de: "Deutsch" },
             languageLink: "Kanäle und Sprache",
             listTitle: "Nachrichten",
@@ -3103,19 +3581,45 @@ export const deMessages = {
             channelUnknown: "festgelegter Kanal",
             announcement: "Match-Ankündigung",
             announcementDetail: "mit Anmeldeschaltflächen",
-            eventInfo: "Match-Informationen",
-            eventInfoDetail: "eigene Nachricht neben der Ankündigung",
+            eventInfo: "Aufstellung und Einteilung",
+            eventInfoDetail: "nach Veröffentlichung der Aufstellung",
             reminders: "Erinnerungen",
             remindersDetail:
                 "DM · Anmeldung täglich bis Anmeldeschluss, Anwesenheit 24, 18, 12 und 6 h vor dem Treffen",
-            remindersNote: "Wird bei jedem Match gewählt",
-            panels: "Live-Ergebnis und Ergebnisse",
-            panelsDetail:
-                "Panels deiner Spielserver; Ergebnisse nach der Bestätigung in Logi",
             league: "Liga-Karten",
             leagueDetail: "Wardogs-League-Matches",
             errors: "Bot-Fehler",
             errorsDetail: "nur für die Verwaltung",
+            clanColor: "Clanfarbe",
+            clanColorHelp:
+                "Events mit Kategorie nutzen die Farbe der Kategorie.",
+            clanColorPicker: "Farbe auswählen",
+            clanColorInvalid: "Gib die Farbe als #E8A33D ein.",
+            clanColorDefault:
+                "Ohne eigene Farbe nutzen Nachrichten das Logi-Orange.",
+            icons: "Symbole in Nachrichten",
+            iconsHelp: "Fraktionen behalten immer ihr Zeichen.",
+            iconsSparse: "Sparsam",
+            iconsRich: "Emoji in jeder Zeile",
+            languageFrom: "Aus",
+            languageScope: ", gilt für alle Nachrichten",
+            channel: "Kanal",
+            noChannel: "Kein Kanal",
+            gameException: "{game} hat einen eigenen Kanal {channel}.",
+            announcementHelp:
+                "Gilt für alle Spiele. Neue Matches behalten den Kanal, mit dem sie erstellt wurden.",
+            eventInfoHelp:
+                "Hier postet der Bot Aufstellung und Einteilung, sobald die Aufstellung veröffentlicht ist. Funktioniert nur zusammen mit dem Ankündigungskanal.",
+            errorsHelp:
+                "Hier meldet der Bot Probleme mit Rechten und Kanälen. Nur Verwalter sollten ihn sehen.",
+            liveScore: "Live-Punktestand",
+            liveScoreDetail: "{channel} · aktualisiert alle {refresh}",
+            liveScoreOff: "Aus · ein Panel von deinen Spielservern",
+            seconds: "{count} s",
+            minutes: "{count} min",
+            results: "Ergebnisse",
+            resultsDetail: "nach Bestätigung eines Match-Ergebnisses",
+            off: "Aus",
         },
         panelsForm: {
             regionLabel: "Öffentliche Discord-Panels",
@@ -3190,7 +3694,7 @@ export const deMessages = {
             channels: {
                 title: "Kanäle und Sprache",
                 description:
-                    "Zeitzone, Bot-Sprache und die Kanäle für Ankündigungen, Event-Infos, Fehler und Sprachräume.",
+                    "Wohin der Bot Nachrichten schickt und in welcher Sprache er schreibt.",
             },
             roles: {
                 title: "Rollen und Zugriff",
@@ -3205,17 +3709,17 @@ export const deMessages = {
             membership: {
                 title: "Mitgliedschaft",
                 description:
-                    "Clan-Bewerbungen, Kategorien, Rekruten- und Mitgliederrollen, Roster-Punkte.",
+                    "Wie Leute dem Clan beitreten, wer ihnen antwortet und welche Rollen sie bekommen.",
             },
             tickets: {
                 title: "Tickets",
                 description:
-                    "Das Ticket-Panel, Kategorien, Support-Rollen und Fragen.",
+                    "Das Panel, über das Mitglieder einen privaten Thread mit den Admins öffnen.",
             },
             "game-servers": {
                 title: "Spielserver",
                 description:
-                    "Server, Anbieterschlüssel und die Daten, die Logi von ihnen sammelt.",
+                    "Woher Logi Ergebnisse und Statistiken sammelt. Ein API-Schlüssel wird verschlüsselt gespeichert und ist danach für niemanden mehr sichtbar.",
             },
             league: {
                 title: "Wardogs League",
@@ -3237,9 +3741,9 @@ export const deMessages = {
                 description: "Logi-Ereignisse an eure eigenen Dienste senden.",
             },
             imports: {
-                title: "Importe und Reparaturen",
+                title: "Importe und Datenkorrekturen",
                 description:
-                    "Events und Discord-Mitglieder importieren, IDs verknüpfen und Statistiken neu berechnen.",
+                    "Massenimport von Events, Spielern und Platform-IDs, Neuberechnung der Statistiken.",
             },
             "helper-data": {
                 title: "Hilfsdaten",
@@ -3740,10 +4244,16 @@ export const deMessages = {
             "Lege ein Training an. Mitglieder melden sich in Discord an, und danach trägst du ein, wer bestanden hat.",
         emptyTrainingsMember: "Dein Clan hat noch keine Trainings geplant.",
         unknownChannel: "Kanal nicht gefunden",
+        trainingsTitle: "Trainings",
+        trainingsDescription:
+            "Die nächsten zuerst. Bei jedem Training siehst du, wer angemeldet ist und wer bestanden hat.",
+        newTraining: "Neues Training",
         tabsLabel: "Anzeigen",
         tabs: {
             upcoming: "Anstehend",
             played: "Gespielt",
+            drafts: "Entwürfe",
+            draftsCount: "Entwürfe · {count}",
         },
         filters: {
             matches: "Matches",
@@ -3752,6 +4262,8 @@ export const deMessages = {
             allGames: "Alle Spiele",
             searchLabel: "Matches durchsuchen",
             searchPlaceholder: "Gegner, Karte …",
+            searchTrainingsLabel: "Trainings durchsuchen",
+            searchTrainingsPlaceholder: "Name des Trainings …",
         },
         weeks: {
             thisWeek: "Diese Woche",
@@ -3762,9 +4274,46 @@ export const deMessages = {
         recentlyPlayed: "Kürzlich gespielt",
         noUpcoming: "Keine anstehenden Events passen zu den Filtern.",
         noPlayed: "Keine gespielten Events passen zu den Filtern.",
-        signedUp: "{count} angemeldet",
-        trainingOutcome: "{passed} bestanden, {failed} nicht bestanden",
+        noDraftsTitle: "Keine Entwürfe",
+        noDrafts:
+            "Ein Match, an dem du noch arbeitest, speicherst du im neuen Match mit „Als Entwurf speichern“. Der Bot kündigt es erst an, wenn du es veröffentlichst.",
+        noDraftsMatch: "Keine Entwürfe passen zu den Filtern.",
+        clearFilters: "Filter zurücksetzen",
+        showMore: "Mehr anzeigen",
+        signedUp: {
+            one: "{count} angemeldet",
+            few: "{count} angemeldet",
+            many: "{count} angemeldet",
+            other: "{count} angemeldet",
+        },
+        notAnnounced: "nicht angekündigt",
+        noOpponent: "noch kein Gegner",
+        competition: "Wettbewerb {name}",
+        competitionPhases: {
+            playoff: "Playoffs",
+            relegation: "Relegation",
+        },
+        training: "Training",
+        participants: {
+            one: "{count} Teilnehmer",
+            few: "{count} Teilnehmer",
+            many: "{count} Teilnehmer",
+            other: "{count} Teilnehmer",
+        },
+        trainingPassed: {
+            one: "{count} bestanden",
+            few: "{count} bestanden",
+            many: "{count} bestanden",
+            other: "{count} bestanden",
+        },
+        trainingFailed: {
+            one: "{count} nicht bestanden",
+            few: "{count} nicht bestanden",
+            many: "{count} nicht bestanden",
+            other: "{count} nicht bestanden",
+        },
         phase: {
+            draft: "Entwurf",
             registration: "Anmeldung bis {when}",
             registrationClosed: "Anmeldung geschlossen",
             rosterMissing: "Aufstellung fehlt",
@@ -3772,26 +4321,67 @@ export const deMessages = {
             rosterPublished: "Aufstellung veröffentlicht",
             unconfirmed: "{count} nicht bestätigt",
             awaitingResult: "Ergebnis fehlt",
+            resultPending: "Ergebnis wartet auf Bestätigung",
+            resultConfirmed: "{outcome} · bestätigt",
+            resultCorrected: "{outcome} · korrigiert",
+            confirmed: "Bestätigt",
+            corrected: "Korrigiert",
             concluded: "Abgeschlossen",
         },
         queue: {
             title: "Wartet auf dich",
             publishRoster: "Aufstellung veröffentlichen",
+            confirmResult: "Ergebnis bestätigen",
             confirmAttendance: "Anwesenheit prüfen",
-            openSlots: "freie Plätze: {count}",
-            unconfirmed: "Spieler ohne Bestätigung: {count}",
+            openSlots: {
+                one: "{count} freier Platz",
+                few: "{count} freie Plätze",
+                many: "{count} freie Plätze",
+                other: "{count} freie Plätze",
+            },
+            unconfirmed: {
+                one: "{count} Spieler ohne Bestätigung",
+                few: "{count} Spieler ohne Bestätigung",
+                many: "{count} Spieler ohne Bestätigung",
+                other: "{count} Spieler ohne Bestätigung",
+            },
+            resultWaiting: "{source} {score} wartet",
+            resultWaitingNoScore: "{source} wartet",
+            sources: {
+                legacy_import: "Import",
+                collected: "Serverspiel",
+                manual: "eingetragenes Ergebnis",
+            },
         },
         recurrence: {
             weekly: "Jede Woche: {days}",
             everyWeeks: "Alle {count} Wochen: {days}",
             monthlyDate: "Monatlich am {day}.",
             monthlyWeekday: "Monatlich, {nth}. {day}",
+            and: "und",
+            repeats: "wiederholt sich {days}",
+            every: [
+                "jeden Sonntag",
+                "jeden Montag",
+                "jeden Dienstag",
+                "jeden Mittwoch",
+                "jeden Donnerstag",
+                "jeden Freitag",
+                "jeden Samstag",
+            ],
         },
+        recurringTitle: "Wiederkehrende Matches",
+        recurringDescription:
+            "Match-Serien, die sich nach Zeitplan wiederholen.",
         recurringStopHint:
             "Eine Serie änderst oder beendest du in ihrem Match bei den Wiederholungseinstellungen.",
         editSeries: "Serie bearbeiten",
+        recurringEmptyTitle: "Noch keine wiederkehrenden Matches",
         recurringEmptyAdmin:
             "Schalte beim Anlegen eines Matches die Wiederholung ein, um eine Serie zu starten.",
+        recurringEmptyMember:
+            "Dein Clan hat noch keine wiederkehrenden Matches.",
+        backToMatches: "Zurück zu den Matches",
     },
     matchTemplates: {
         chooserLabel: "Vorlage",
@@ -4290,8 +4880,8 @@ export const deMessages = {
         rosterMissing: "Noch keine Aufstellung",
         rosterFill: "Aufstellung {filled} von {total} Plätzen",
         rosterFillLabel: "Belegte Plätze der Aufstellung",
-        signedUp: "Angemeldet: {count}",
-        unanswered: "Ohne Antwort: {count}",
+        signedUp: "{count} angemeldet",
+        unanswered: "{count} ohne Antwort",
         finishRoster: "Aufstellung fertigstellen",
         createRoster: "Aufstellung erstellen",
         showRoster: "Aufstellung ansehen",
@@ -4313,14 +4903,24 @@ export const deMessages = {
                 "Ohne ihn kann der Bot keine neuen Events ankündigen.",
             clanRole: "Daran erkennt Logi die Clanmitglieder.",
         },
-        applications: "Offene Mitgliedsanträge: {count}",
+        applications: {
+            one: "{count} Mitgliedsantrag wartet",
+            few: "{count} Mitgliedsanträge warten",
+            many: "{count} Mitgliedsanträge warten",
+            other: "{count} Mitgliedsanträge warten",
+        },
         applicationsOldest: "der älteste seit {date}",
         nothingWaiting: "Nichts wartet. Alles ist erledigt.",
         setupProgress: "Clan-Einrichtung: {done} von {total} erledigt",
         weekTitle: "Diese Woche",
         todayLabel: "heute",
         formTitle: "Form · letzte 10 Matches",
-        wins: "Siege: {count}",
+        wins: {
+            one: "{count} Sieg",
+            few: "{count} Siege",
+            many: "{count} Siege",
+            other: "{count} Siege",
+        },
         formListLabel: "Ergebnisse, älteste zuerst",
         outcomeLetters: { victory: "S", defeat: "N", draw: "U" },
         outcomes: {
@@ -4330,10 +4930,41 @@ export const deMessages = {
         },
         outcomePending: "{outcome}, wartet auf Bestätigung",
         formLegend: "S = Sieg, N = Niederlage, U = Unentschieden.",
-        formPendingLegend: "Ein gestricheltes Ergebnis wartet auf Bestätigung.",
+        formPendingLegend:
+            "Ergebnisse mit gestricheltem Rahmen warten auf Bestätigung.",
         formEmptyTitle: "Noch keine Ergebnisse",
         formEmptyDescription:
             "Ergebnisse erscheinen hier, sobald ein Matchergebnis importiert oder eingetragen wurde.",
+        formLastPendingLegend: "Das letzte Ergebnis wartet auf Bestätigung.",
+        remind: {
+            button: {
+                one: "{count} Spieler erinnern",
+                few: "{count} Spieler erinnern",
+                many: "{count} Spieler erinnern",
+                other: "{count} Spieler erinnern",
+            },
+            confirmTitle: "Erinnerung senden?",
+            confirmDescription:
+                "Der Bot schickt allen Mitgliedern, die sich noch nicht an- oder abgemeldet haben, eine Direktnachricht in Discord.",
+            confirm: "Erinnerung senden",
+            cancel: "Abbrechen",
+            sent: {
+                one: "Erinnerung an {count} Spieler gesendet.",
+                few: "Erinnerung an {count} Spieler gesendet.",
+                many: "Erinnerung an {count} Spieler gesendet.",
+                other: "Erinnerung an {count} Spieler gesendet.",
+            },
+            nobody: "Alle haben schon geantwortet, eine Erinnerung war nicht nötig.",
+            failed: "Die Erinnerung konnte nicht gesendet werden. Versuch es noch einmal.",
+            rateLimited:
+                "Vor Kurzem wurde schon erinnert. Versuch es später noch einmal.",
+            done: "Erinnerung gesendet",
+        },
+        pointsTitle: "Meiste Anwesenheitspunkte · {month}",
+        pointsEmpty:
+            "Diesen Monat hat noch niemand Anwesenheitspunkte bekommen.",
+        pointsUnknownMember: "Mitglied ohne Logi-Konto",
+        statsTitle: "Clan-Statistiken",
     },
     clan: {
         overviewMeta: "Übersicht",

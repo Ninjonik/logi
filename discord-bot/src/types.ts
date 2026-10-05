@@ -1,3 +1,4 @@
+import type { MessageStyle } from "../../src/domain/discord-messages/message-style"
 import type { GameId } from "../../src/domain/games/game"
 
 export type ClanLanguage = "en" | "cs" | "de"
@@ -30,6 +31,8 @@ export type MembershipCategory = {
     finalRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
     assignmentType: "member" | "mercenary"
+    /** Skip "pending" for main members of this category; falls back to the clan-wide switch. */
+    autoAssignRecruitOnApply?: boolean
 }
 
 export type TicketSettings = {
@@ -52,6 +55,8 @@ export type MembershipSettings = {
     applicationWelcomeMessage?: string
     collectSpecialization?: boolean
     autoAssignRecruitOnApply: boolean
+    /** Logi adds and removes membership roles; missing values follow `enabled`. */
+    roleSyncEnabled?: boolean
     inviteSupportMembersIndividually?: boolean
     categories: MembershipCategory[]
 }
@@ -127,6 +132,8 @@ export type DiscordConfig = {
     membershipPanelLastConfigUpdatedAt?: string
     ticketCounter?: number
     membershipApplicationCounter?: number
+    /** Clan colour and icon density of every bot message. */
+    messageStyle?: MessageStyle
     updatedAt: string
 }
 
@@ -324,6 +331,12 @@ export type EventRecord = {
         offsetHours: number
         sentAt: string
     }>
+    /** Late and "can't make it" notices; older payloads may omit them. */
+    absenceNotices?: Array<{
+        userId: string
+        reason: string
+        createdAt: string
+    }>
     signUps: Array<{
         userId: string
         group?: string | null
@@ -448,4 +461,6 @@ export type EventInteractionContext = {
         status?: "pending" | "recruit" | "active"
     }>
     roster: Roster | null
+    /** Colour of the event's category; absent from older backends. */
+    categoryColor?: string | null
 }

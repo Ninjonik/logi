@@ -36,13 +36,20 @@ teams** and **Operations**, and shows how many team requests are waiting. Worksp
 catalogue: their administrators pick catalogue teams for matches and send a
 request when a team is missing or out of date.
 
-On **Team catalogue**, choose the game tab, search by name or short code and
-switch on **Show archived and merged teams** to see retired entries. Each team
-has a name (unique per game, ignoring letter case and extra spaces), an optional
-short code, logo, description (up to 500 characters) and up to three https
-links. A team can be linked to one Logi workspace to record that the team is
-that workspace's clan; the link grants no permissions. Logos uploaded here are
-normalized to a PNG no larger than 512×512 and belong to the platform, not to a workspace.
+On **Team catalogue**, choose the game tab, show **Active**, **Archived** or
+**Merged** teams and search by name or short code. Each row shows the team's
+short code, whether it is a clan on Logi and how many competitions it plays; a
+**Request** marker means a clan's change request is waiting. Choose a team to
+edit it beside the list: **Change logo**, name, short code and **Clan on Logi**,
+and under **Description and links** a description (up to 500 characters) and up
+to three https links, then **Save**. **Where the team is used** lists its
+competitions with division and fixture count; saved clan matches keep the name
+and logo they were saved with. When a request is waiting, **Open request** leads
+to it in Team requests. **Add team** creates a new team. Each team has a name
+(unique per game, ignoring letter case and extra spaces). Linking a team to one
+Logi workspace records that the team is that workspace's clan; the link grants
+no permissions. Logos uploaded here are normalized to a PNG no larger than
+512×512 and belong to the platform, not to a workspace.
 
 - **Archive** first asks for confirmation and lists what changes; it hides a
   team from new selection and from connected websites, and saved matches keep
@@ -54,19 +61,26 @@ normalized to a PNG no larger than 512×512 and belong to the platform, not to a
   team. Saved match snapshots are not rewritten. A merge cannot be undone. Two
   teams that both take part in one competition (both registered, or a fixture
   between them) are different teams there and cannot be merged.
+- Archive and **Merge into another team** are under **Duplicate or end of the
+  team** in the team's detail; an archived team offers **Restore** there.
 - Every save, archive, restore and merge is checked against the version you
-  loaded. If someone else changed the team first, the dialog or row shows the
-  latest version and keeps your own edits; review it and try again.
+  loaded. If someone else changed the team first, the detail shows the latest
+  version and keeps your own edits; review it and try again.
 
 On **Team requests**, **Pending** lists the waiting requests oldest first and
 **Decided** the approved, merged, rejected or cancelled ones; both can be
-narrowed to one game or one clan. Choose a request in the list to see it beside
-the list: the requester's Discord ID and clan, the game, how long ago it was
+narrowed to one game or one clan. A change request names the fields it
+changes; a new-team request warns **A similar team already exists** when an
+active team of the game has the same name or short code or shares all words of
+the shorter name. Choose a request in the list to see it beside the list: the
+requester's Logi name (or Discord ID) and clan, the game, how long ago it was
 sent, the requester's note and either the proposed team (new-team requests) or,
 for a change request, a table of each field as it is now and as proposed, with
-the rows that change highlighted.
+the rows that change highlighted and the competitions the team is used in.
 
-- **Review and approve** opens an editable copy of the proposal. Approving a new-team
+- **Approve** accepts the proposal as sent after a confirmation that lists what
+  changes.
+- **Edit and approve** opens an editable copy of the proposal. Approving a new-team
   request creates the team; approving a change request applies the fields to
   the current team at the version shown, so a team that changed meanwhile has to
   be reviewed again. The requester's logo becomes a platform logo. If an active
@@ -127,6 +141,11 @@ A competition's page shows its game, division and team counts and, once it is
 published, a link to its public page. Its sections are tabs: **Details**,
 **Divisions**, **Teams** and **Fixtures**; a new competition opens on
 Divisions, one without teams on Teams, and a running one on Fixtures.
+**Fixtures** shows one division (or all) and one phase (League, Playoff or
+Relegation) at a time, grouped by round with the latest round first and the
+days each round spans. Each fixture shows whether it is linked to a clan's
+match, offers **Link to a match** while it is not, and shows **Awaiting clan
+confirmation** while an imported result is not yet confirmed by the clan.
 
 - **Create and publish.** A new competition needs a game, name, season and a
   unique address (slug: 2–64 lowercase letters, numbers and hyphens). It starts
@@ -146,13 +165,16 @@ Divisions, one without teams on Teams, and a running one on Fixtures.
   catalogue (create, request or merge there); merging catalogue teams moves
   their registrations and fixtures.
 - **Fixtures.** Create, edit and delete fixtures between two different
-  registered teams with a phase, optional schedule, status and score. League
+  registered teams with a phase, optional round (1–99), schedule, status and
+  score. Fixtures saved without a round are listed under **No round**. League
   fixtures need both teams in the fixture's division; playoff and relegation
   fixtures may cross divisions. Final and forfeit results need both
   whole-number scores; a scheduled fixture never keeps a score.
-- **Linking a match.** Use the link action on a fixture to connect it to one
-  native Logi match event of the same game. The dialog suggests matches from
-  the workspaces linked to either team; you can also paste an event ID. When the
+- **Linking a match.** **Link to a match** opens a side panel to connect the
+  fixture to one native Logi match event of the same game. It offers the
+  matches of the workspaces linked to either team, both teams assigned and
+  nearest the fixture's date first, searchable by name; you can also enter an
+  event ID. When the
   event has assigned match teams, both fixture teams must be among them. An
   event can belong to only one fixture. An imported Hell Let Loose result is
   Axis versus Allies, so Logi fills the fixture only when both fixture teams
