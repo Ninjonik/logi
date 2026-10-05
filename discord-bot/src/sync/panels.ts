@@ -1,7 +1,5 @@
 import {
     buildMembershipPanelMessage,
-    buildTicketPanelComponents,
-    buildTicketPanelEmbed,
 } from "../message-builders"
 import {
     isRequestPending,
@@ -10,6 +8,7 @@ import {
 import { isPanelPaused } from "../../../src/domain/discord-publications/settings"
 import { classifyPanelError } from "../public-panels/panel-errors"
 import { buildCalendarPanelView } from "../public-panels/calendar"
+import { buildTicketPanelMessage } from "../interactions/tickets-panel"
 import { MessageFlags, type Client } from "discord.js"
 import { makeFunctionReference } from "convex/server"
 import { publishManagedMessage } from "./publication"
@@ -21,13 +20,13 @@ import { env } from "../environment"
 
 export async function syncTicketPanel(client: Client, payload: SyncPayload) {
     const settings = payload.config.ticketSettings
-    const embed = buildTicketPanelEmbed(payload.config)
+    const message = buildTicketPanelMessage(payload.config)
     if (
         !settings?.enabled ||
         !settings.submitChannelId ||
         !settings.ticketParentChannelId ||
         !settings.categories.length ||
-        !embed
+        !message
     )
         return
     const messageId = await publishManagedMessage(client, {
@@ -37,10 +36,7 @@ export async function syncTicketPanel(client: Client, payload: SyncPayload) {
         channelId: settings.submitChannelId,
         legacyChannelId: settings.submitChannelId,
         legacyMessageId: payload.config.ticketPanelMessageId,
-        message: {
-            embeds: [embed],
-            components: buildTicketPanelComponents(payload.config),
-        },
+        message,
     })
     if (
         messageId &&

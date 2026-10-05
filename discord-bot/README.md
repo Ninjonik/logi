@@ -44,7 +44,8 @@ Shared rules live in `src/domain/discord-messages/format.ts`. Bot copy in the
 clan language lives in feature modules under `src/lib/clan-language/`:
 `events.ts` (announcements, rosters, reminders and their DMs), `panels.ts`
 (live server, combined, results, calendar and competition panels, the player
-list and the report flow), `membership.ts` (tickets, applications, account linking),
+list and the report flow), `membership.ts` (applications), `tickets.ts` (tickets
+and `/close_ticket`), `game-accounts.ts` (`/link`),
 `commands.ts` (slash commands and player stats) and `system.ts` (team request
 decisions and the shared message kit); `core.ts` resolves the language and its
 locale. Each workstream edits only its own module. League copy is in
@@ -195,6 +196,11 @@ attempt instead of continuing with stale Discord permissions.
   sign-up or attendance reminder DM through `src/sync/manual-reminders.ts`;
   players who answered or confirmed in the meantime are skipped
 - `src/interactions/attendance-decline.ts` handles **Can't make it** from reminder DMs
+- `src/interactions/tickets.ts` opens tickets from the panel (button, select,
+  category window) and `tickets-panel.ts` builds the panel card;
+  `close-ticket.ts` handles `/close_ticket`; `link.ts` and `link-search.ts`
+  handle `/link` and its search on the clan's stats servers. All are routed
+  through the interaction registry (`src/interactions/features.ts`)
 - `src/forum.ts` manages forum channels and posts
 - `src/scheduled-events.ts` manages Discord scheduled events
 - `src/convex.ts`, `src/environment.ts`, `src/constants.ts`, and `src/types.ts` hold shared setup data

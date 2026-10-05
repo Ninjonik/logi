@@ -287,31 +287,6 @@ export async function sendDiscordBotDm(
     }
 }
 
-export async function editDiscordInteractionOriginalResponse(input: {
-    applicationId: string
-    interactionToken: string
-    content: string
-}) {
-    const response = await fetch(
-        `https://discord.com/api/v10/webhooks/${input.applicationId}/${input.interactionToken}/messages/@original`,
-        {
-            method: "PATCH",
-            headers: {
-                "content-type": "application/json",
-            },
-            body: JSON.stringify({
-                content: input.content,
-                components: [],
-            }),
-            cache: "no-store",
-        }
-    )
-
-    if (!response.ok) {
-        throw new Error("Failed to edit original Discord interaction response.")
-    }
-}
-
 export async function fetchDiscordGuildRoles(guildId: string) {
     return await fetchDiscordBotJson<DiscordRole[]>(`/guilds/${guildId}/roles`)
 }

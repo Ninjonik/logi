@@ -13,10 +13,8 @@ export type CommandOptionCopy = { name: string; description: string }
  * boards; bot copy says "ty" ("du").
  */
 export type CommandMessages = {
-    /** Shared with the `/link` flow and the close commands (W0 `shared.ts`). */
+    /** The outcomes of `/close_application` (W0 `shared.ts`). */
     commands: {
-        linkDmSent: string
-        linkDmFailed: string
         outcomeDenied: string
         outcomePending: string
         outcomeRecruit: string
@@ -166,10 +164,6 @@ export type CommandMessages = {
 const commandsMessages: Record<ClanLanguage, CommandMessages> = {
     en: {
         commands: {
-            linkDmSent:
-                "I sent you a DM with a direct link to submit your platform ID. Open it here: {link}. Submit it there and I will confirm when it is saved.",
-            linkDmFailed:
-                "I could not DM you. Use this one-time link to submit your platform ID: {link}",
             outcomeDenied: "Denied",
             outcomePending: "Still pending",
             outcomeRecruit: "Recruit",
@@ -412,10 +406,6 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
     },
     cs: {
         commands: {
-            linkDmSent:
-                "Poslal jsem ti DM s přímým odkazem pro zadání platform ID. Otevři ho tady: {link}. Vyplň ho tam a já potvrdím, až bude uložené.",
-            linkDmFailed:
-                "DM se mi poslat nepodařilo. Použij tenhle jednorázový odkaz pro zadání platform ID: {link}",
             outcomeDenied: "Zamítnuto",
             outcomePending: "Čeká na rozhodnutí",
             outcomeRecruit: "Rekrut",
@@ -660,10 +650,6 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
     },
     de: {
         commands: {
-            linkDmSent:
-                "Ich habe dir eine DM mit einem direkten Link zur Eingabe deiner Plattform-ID geschickt. Öffne ihn hier: {link}. Gib sie dort ein, und ich bestätige, sobald sie gespeichert ist.",
-            linkDmFailed:
-                "Ich konnte dir keine DM schicken. Nutze diesen einmaligen Link zur Eingabe deiner Plattform-ID: {link}",
             outcomeDenied: "Abgelehnt",
             outcomePending: "Weiter offen",
             outcomeRecruit: "Rekrut",

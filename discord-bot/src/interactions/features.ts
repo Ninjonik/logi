@@ -5,6 +5,9 @@ import { rosterInteractions } from "./roster-assignment"
 import { panelInteractions } from "../public-panels/interactions"
 import { commandFeatures } from "../commands/features"
 import type { InteractionFeature } from "./registry"
+import { closeTicketFeature } from "./close-ticket"
+import { ticketsFeature } from "./tickets"
+import { linkFeature } from "./link"
 
 /**
  * Feature modules that route their own interactions through the registry
@@ -21,4 +24,8 @@ export const interactionFeatures: readonly InteractionFeature[] = [
     attendanceReplyInteractions,
     matchRecapInteractions,
     panelInteractions,
+    // Tickets, /close_ticket and /link (membership workstream, W7b).
+    ticketsFeature,
+    closeTicketFeature,
+    linkFeature,
 ]

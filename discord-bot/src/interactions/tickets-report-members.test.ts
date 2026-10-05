@@ -1,4 +1,4 @@
-import { listReportMembers } from "./report-members"
+import { listReportMembers } from "./tickets-report-members"
 import assert from "node:assert/strict"
 import test from "node:test"
 test("report access checks enumerate fresh members through bounded REST pages", async () => {

@@ -218,6 +218,8 @@ const ticketCategory = v.object({
     description: v.optional(v.string()),
     supportRoleIds: v.array(v.string()),
     modalQuestions: v.array(ticketModalQuestion),
+    /** The thread card's title, e.g. "{author} nahlašuje hráče" (L4-42). */
+    threadTitle: v.optional(v.string()),
 })
 
 const membershipCategory = v.object({
@@ -285,6 +287,8 @@ const ticketSettings = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    /** The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-45). */
+    panelAccentColor: v.optional(v.string()),
     categories: v.array(ticketCategory),
 })
 

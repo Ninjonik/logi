@@ -2844,6 +2844,13 @@ export const deMessages = {
         textLabel: "Text",
         imageOptional: "optional",
         previewTitle: "Vorschau in Discord",
+        panelColor: "Panelfarbe",
+        panelColorHint: "Leer = Clanfarbe. Hex, z. B. #E8A33D.",
+        panelColorInvalid: "Die Farbe muss hex sein, z. B. #E8A33D.",
+        threadTitle: "Titel der Karte im Thread",
+        threadTitlePlaceholder: "{author} meldet einen Spieler",
+        threadTitleHint:
+            "{author} ist der Name des Autors, {category} die Kategorie. Leer ergibt „{author} · {category}“.",
         columns: {
             button: "Button",
             handledBy: "Wer antwortet",
@@ -2873,7 +2880,7 @@ export const deMessages = {
         panelDescriptionPlaceholder:
             "Erkläre, wie Mitglieder dieses Ticket-Panel nutzen sollen.",
         image: "Thumbnail-Bild",
-        embedLimitNotice: "Das Kategorie-Erklärungsfeld im Embed nutzt derzeit",
+        embedLimitNotice: "Der Paneltext in Discord nutzt derzeit",
         embedLimitExceeded:
             "(zu lang, kürze einige Kategoriebeschreibungen vor dem Speichern).",
         categoriesTitle: "Ticket-Kategorien",
@@ -2888,7 +2895,7 @@ export const deMessages = {
         typeAnyEmoji: "oder ein beliebiges Emoji tippen",
         categoryDescription: "Beschreibung",
         categoryDescriptionPlaceholder:
-            "Im Embed-Feld gezeigt, um zu erklären, wofür diese Kategorie ist.",
+            "Steht im Panel hinter dem Kategorienamen, z. B. „Verhalten auf dem Server“.",
         supportRoles: "Support-Rollen für dieses Ticket",
         modalQuestions: "Modal-Fragen",
         modalQuestionsDescription:
@@ -2905,9 +2912,9 @@ export const deMessages = {
         noQuestions:
             "Noch keine Modal-Fragen. Wenn du dies leer lässt, erstellt der Button-Klick sofort das Ticket.",
         noCategories: "Noch keine Ticket-Kategorien.",
-        defaultPanelTitle: "Ticket einreichen",
+        defaultPanelTitle: "Brauchst du Hilfe?",
         defaultPanelDescription:
-            "Wähle die Kategorie, die am besten zu deinem Anliegen passt, und wir öffnen einen privaten Support-Thread für dich.",
+            "Wähle, wobei du Hilfe brauchst. Es öffnet sich ein privater Thread, den nur du und die Admins sehen.",
         incompleteTitle: "Ticket-Panel-Setup ist unvollständig",
         incompleteDescription:
             "Das Ticket-System ist aktiviert, aber das Discord-Ticket-Panel wird nicht gepostet und Ticket-Threads können nicht geöffnet werden, bis du fertigstellst: {items}.",
@@ -3328,70 +3335,6 @@ export const deMessages = {
         themeLight: "Hell",
         themeDark: "Dunkel",
         themeSystem: "System",
-    },
-    platformIdLink: {
-        title: "Verknüpfe deine Plattform-ID",
-        description:
-            "Wähle zuerst deine Plattform. Wir zeigen dir dann genau, was du kopieren musst und wo du es findest.",
-        userPrefix: "Einreichung für",
-        expired:
-            "Dieser Link ist nicht mehr gültig. Gehe zurück zu Discord und klicke erneut auf den Clan-Bewerbungs-Button, um einen frischen Link zu erhalten.",
-        platformLabel: "Plattform",
-        platformPlaceholder: "Wähle deine Plattform",
-        submit: "Plattform-ID einreichen",
-        success:
-            "Plattform-ID gespeichert. Du kannst diese Seite jetzt schließen und zu Discord zurückkehren.",
-        closePage: "Du kannst diese Seite jetzt schließen.",
-        genericError: "Plattform-ID konnte nicht gespeichert werden.",
-        guideLabel: "Anleitung öffnen",
-        steam: {
-            label: "Steam",
-            idLabel: "Steam64-ID",
-            placeholder: "7656119...",
-            guideLabel: "Steam-Anleitung öffnen",
-            help: "Du brauchst die lange Steam-Nummer für dein Konto.",
-            steps: [
-                "Öffne die Anleitung unten.",
-                "Folge den Bildern, bis du deine Steam64-ID siehst.",
-                "Kopiere diese lange Nummer und füge sie hier ein.",
-            ],
-        },
-        epic: {
-            label: "Epic Games",
-            idLabel: "Epic-Account-ID",
-            placeholder: "Epic-Account-ID",
-            guideLabel: "Epic-Anleitung öffnen",
-            help: "Du brauchst deine Epic-Account-ID.",
-            steps: [
-                "Öffne die Anleitung unten.",
-                "Öffne deine Epic-Kontoseite.",
-                "Kopiere die angezeigte Account-ID und füge sie hier ein.",
-            ],
-        },
-        xbox: {
-            label: "Xbox",
-            idLabel: "Xbox-Gamertag / Account-ID",
-            placeholder: "Xbox-Gamertag oder Account-ID",
-            guideLabel: "Xbox-Anleitung öffnen",
-            help: "Nutze die Xbox-Identität, mit der du Spiel spielst. Meist ist das dein Gamertag.",
-            steps: [
-                "Öffne die Anleitung unten.",
-                "Öffne dein Xbox-Profil.",
-                "Kopiere den Gamertag oder Account-Wert, den du im Spiel nutzt, und füge ihn hier ein.",
-            ],
-        },
-        playstation: {
-            label: "PlayStation",
-            idLabel: "PlayStation-Online-ID",
-            placeholder: "PlayStation-Online-ID",
-            guideLabel: "PlayStation-Anleitung öffnen",
-            help: "Du brauchst deine PlayStation-Online-ID.",
-            steps: [
-                "Öffne die Anleitung unten.",
-                "Öffne deine PlayStation-Profil-Einstellungen.",
-                "Kopiere deine Online-ID und füge sie hier ein.",
-            ],
-        },
     },
     calendarPage: {
         title: "Kalender",

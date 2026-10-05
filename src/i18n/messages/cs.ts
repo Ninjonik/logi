@@ -2745,6 +2745,13 @@ export const csMessages = {
         textLabel: "Text",
         imageOptional: "volitelné",
         previewTitle: "Náhled v Discordu",
+        panelColor: "Barva panelu",
+        panelColorHint: "Prázdné = barva klanu. Hex, např. #E8A33D.",
+        panelColorInvalid: "Barva musí být hex, např. #E8A33D.",
+        threadTitle: "Nadpis karty ve vlákně",
+        threadTitlePlaceholder: "{author} nahlašuje hráče",
+        threadTitleHint:
+            "{author} je jméno autora, {category} název kategorie. Prázdné pole napíše „{author} · {category}“.",
         columns: {
             button: "Tlačítko",
             handledBy: "Kdo odpovídá",
@@ -2773,7 +2780,7 @@ export const csMessages = {
         panelDescriptionPlaceholder:
             "Vysvětlete, jak mají členové tento ticket panel používat.",
         image: "Náhledový obrázek",
-        embedLimitNotice: "Pole s vysvětlením kategorií v embedu právě používá",
+        embedLimitNotice: "Text panelu v Discordu právě používá",
         embedLimitExceeded:
             "(příliš dlouhé, před uložením zkraťte některé popisy kategorií).",
         categoriesTitle: "Kategorie ticketů",
@@ -2788,7 +2795,7 @@ export const csMessages = {
         typeAnyEmoji: "nebo napište libovolné emoji",
         categoryDescription: "Popis",
         categoryDescriptionPlaceholder:
-            "Zobrazí se v embed fieldu jako vysvětlení, k čemu tato kategorie slouží.",
+            "Zobrazí se v panelu za názvem kategorie, třeba „chování na serveru“.",
         supportRoles: "Role podpory pozvané do ticketu",
         modalQuestions: "Modal otázky",
         modalQuestionsDescription:
@@ -2805,9 +2812,9 @@ export const csMessages = {
         noQuestions:
             "Zatím tu nejsou žádné modal otázky. Když to necháte prázdné, kliknutí na tlačítko vytvoří ticket hned.",
         noCategories: "Zatím tu nejsou žádné ticket kategorie.",
-        defaultPanelTitle: "Odeslat ticket",
+        defaultPanelTitle: "Potřebuješ pomoc?",
         defaultPanelDescription:
-            "Vyberte kategorii, která nejlépe odpovídá vašemu problému, a otevřeme pro vás soukromý support thread.",
+            "Vyber, s čím potřebuješ pomoct. Otevře se soukromé vlákno, které vidíš jen ty a správci.",
         incompleteTitle: "Nastavení ticket panelu není kompletní",
         incompleteDescription:
             "Ticket systém je zapnutý, ale Discord ticket panel se nezveřejní a ticket thready nepůjde otevírat, dokud nedokončíte: {items}.",
@@ -3219,70 +3226,6 @@ export const csMessages = {
         themeLight: "Světlý",
         themeDark: "Tmavý",
         themeSystem: "Podle systému",
-    },
-    platformIdLink: {
-        title: "Propojte své platform ID",
-        description:
-            "Nejdřív vyberte platformu. Pak vám přesně ukážeme, co zkopírovat a kde to najít.",
-        userPrefix: "Odesíláte za",
-        expired:
-            "Tento odkaz už není platný. Vraťte se na Discord a klikněte znovu na tlačítko klanové přihlášky, aby se vytvořil nový odkaz.",
-        platformLabel: "Platforma",
-        platformPlaceholder: "Vyberte svou platformu",
-        submit: "Odeslat platform ID",
-        success:
-            "Platform ID bylo uloženo. Tuto stránku můžete zavřít a vrátit se na Discord.",
-        closePage: "Tuto stránku můžete nyní zavřít.",
-        genericError: "Platform ID se nepodařilo uložit.",
-        guideLabel: "Otevřít návod",
-        steam: {
-            label: "Steam",
-            idLabel: "Steam64 ID",
-            placeholder: "7656119...",
-            guideLabel: "Otevřít Steam návod",
-            help: "Potřebujete dlouhé číselné Steam ID svého účtu.",
-            steps: [
-                "Otevřete návod níže.",
-                "Postupujte podle obrázků, dokud neuvidíte své Steam64 ID.",
-                "Zkopírujte to dlouhé číslo a vložte ho sem.",
-            ],
-        },
-        epic: {
-            label: "Epic Games",
-            idLabel: "Epic Account ID",
-            placeholder: "Epic account ID",
-            guideLabel: "Otevřít Epic návod",
-            help: "Potřebujete své Epic Account ID.",
-            steps: [
-                "Otevřete návod níže.",
-                "Otevřete stránku svého Epic účtu.",
-                "Zkopírujte zobrazené Account ID a vložte ho sem.",
-            ],
-        },
-        xbox: {
-            label: "Xbox",
-            idLabel: "Xbox gamertag / account ID",
-            placeholder: "Xbox gamertag nebo account ID",
-            guideLabel: "Otevřít Xbox návod",
-            help: "Použijte Xbox identitu, pod kterou hrajete hru. Ve většině případů je to váš gamertag.",
-            steps: [
-                "Otevřete návod níže.",
-                "Otevřete svůj Xbox profil.",
-                "Zkopírujte gamertag nebo účetní hodnotu, kterou používáte ve hře, a vložte ji sem.",
-            ],
-        },
-        playstation: {
-            label: "PlayStation",
-            idLabel: "PlayStation online ID",
-            placeholder: "PlayStation online ID",
-            guideLabel: "Otevřít PlayStation návod",
-            help: "Potřebujete své PlayStation online ID.",
-            steps: [
-                "Otevřete návod níže.",
-                "Otevřete nastavení svého PlayStation profilu.",
-                "Zkopírujte své online ID a vložte ho sem.",
-            ],
-        },
     },
     calendarPage: {
         title: "Kalendář",

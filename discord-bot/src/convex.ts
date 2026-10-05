@@ -75,9 +75,6 @@ export const references = {
     closeMembershipApplicationThread: makeFunctionReference<"mutation">(
         "discordMembership:closeMembershipApplicationThread"
     ),
-    consumePlatformIdLinkToken: makeFunctionReference<"mutation">(
-        "platformIdLinks:consumePlatformIdLinkToken"
-    ),
     createMembershipApplicationThread: makeFunctionReference<"mutation">(
         "discordMembership:createMembershipApplicationThread"
     ),
@@ -92,9 +89,6 @@ export const references = {
     ),
     discardMembershipApplicationDraft: makeFunctionReference<"mutation">(
         "discordMembership:discardMembershipApplicationDraft"
-    ),
-    createPlatformIdLinkToken: makeFunctionReference<"mutation">(
-        "platformIdLinks:createPlatformIdLinkToken"
     ),
     createTicketThread: makeFunctionReference<"mutation">(
         "discordMembership:createTicketThread"
@@ -155,14 +149,14 @@ export const references = {
     getMembershipCategoryContext: makeFunctionReference<"query">(
         "discordMembership:getMembershipCategoryContext"
     ),
-    getTicketCategoryContext: makeFunctionReference<"query">(
-        "discordMembership:getTicketCategoryContext"
-    ),
     getTicketThreadContext: makeFunctionReference<"query">(
         "discordMembership:getTicketThreadContext"
     ),
     getDiscordPlatformLinkState: makeFunctionReference<"query">(
         "players:getDiscordPlatformLinkState"
+    ),
+    getLinkContext: makeFunctionReference<"query">(
+        "discordGameAccounts:getLinkContext"
     ),
     searchClanPlayers: makeFunctionReference<"query">(
         "players:searchClanPlayers"

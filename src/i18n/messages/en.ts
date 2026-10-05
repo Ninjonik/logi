@@ -2757,6 +2757,13 @@ export const enMessages = {
         textLabel: "Text",
         imageOptional: "optional",
         previewTitle: "Preview in Discord",
+        panelColor: "Panel colour",
+        panelColorHint: "Empty = the clan colour. Hex, e.g. #E8A33D.",
+        panelColorInvalid: "The colour must be hex, e.g. #E8A33D.",
+        threadTitle: "Thread card title",
+        threadTitlePlaceholder: "{author} is reporting a player",
+        threadTitleHint:
+            "{author} is the author's name, {category} the category. Empty reads “{author} · {category}”.",
         columns: {
             button: "Button",
             handledBy: "Who answers",
@@ -2785,8 +2792,7 @@ export const enMessages = {
         panelDescriptionPlaceholder:
             "Explain how members should use this ticket panel.",
         image: "Thumbnail image",
-        embedLimitNotice:
-            "The category explanation field in the embed is currently using",
+        embedLimitNotice: "The panel text in Discord is currently using",
         embedLimitExceeded:
             "(too long, trim some category descriptions before saving).",
         categoriesTitle: "Ticket categories",
@@ -2801,7 +2807,7 @@ export const enMessages = {
         typeAnyEmoji: "or type any emoji",
         categoryDescription: "Description",
         categoryDescriptionPlaceholder:
-            "Shown in the embed field to explain what this category is for.",
+            "Shown in the panel after the category name, e.g. “behaviour on the server”.",
         supportRoles: "Support roles invited to this ticket",
         modalQuestions: "Modal questions",
         modalQuestionsDescription:
@@ -2818,9 +2824,9 @@ export const enMessages = {
         noQuestions:
             "No modal questions yet. If you leave this empty, clicking the button will create the ticket immediately.",
         noCategories: "No ticket categories yet.",
-        defaultPanelTitle: "Submit a ticket",
+        defaultPanelTitle: "Need help?",
         defaultPanelDescription:
-            "Pick the category that fits your issue best and we will open a private support thread for you.",
+            "Choose what you need help with. A private thread opens that only you and the admins can see.",
         incompleteTitle: "Ticket panel setup is incomplete",
         incompleteDescription:
             "The ticket system is enabled, but the Discord ticket panel will not be posted and ticket threads cannot open until you finish: {items}.",
@@ -3230,70 +3236,6 @@ export const enMessages = {
         themeLight: "Light",
         themeDark: "Dark",
         themeSystem: "System",
-    },
-    platformIdLink: {
-        title: "Link your platform ID",
-        description:
-            "Pick your platform first. We will then show you exactly what to copy and where to find it.",
-        userPrefix: "Submitting for",
-        expired:
-            "This link is no longer valid. Go back to Discord and click the clan application button again to get a fresh link.",
-        platformLabel: "Platform",
-        platformPlaceholder: "Select your platform",
-        submit: "Submit platform ID",
-        success:
-            "Platform ID saved. You can close this page now and return to Discord.",
-        closePage: "You can close this page now.",
-        genericError: "Unable to save platform ID.",
-        guideLabel: "Open guide",
-        steam: {
-            label: "Steam",
-            idLabel: "Steam64 ID",
-            placeholder: "7656119...",
-            guideLabel: "Open Steam guide",
-            help: "You need the long Steam number for your account.",
-            steps: [
-                "Open the guide below.",
-                "Follow the pictures until you see your Steam64 ID.",
-                "Copy that long number and paste it here.",
-            ],
-        },
-        epic: {
-            label: "Epic Games",
-            idLabel: "Epic Account ID",
-            placeholder: "Epic account ID",
-            guideLabel: "Open Epic guide",
-            help: "You need your Epic Account ID.",
-            steps: [
-                "Open the guide below.",
-                "Open your Epic account page.",
-                "Copy the Account ID it shows and paste it here.",
-            ],
-        },
-        xbox: {
-            label: "Xbox",
-            idLabel: "Xbox gamertag / account ID",
-            placeholder: "Xbox gamertag or account ID",
-            guideLabel: "Open Xbox guide",
-            help: "Use the Xbox identity you play the game with. In most cases this is your gamertag.",
-            steps: [
-                "Open the guide below.",
-                "Open your Xbox profile.",
-                "Copy the gamertag or account value you use in game and paste it here.",
-            ],
-        },
-        playstation: {
-            label: "PlayStation",
-            idLabel: "PlayStation online ID",
-            placeholder: "PlayStation online ID",
-            guideLabel: "Open PlayStation guide",
-            help: "You need your PlayStation online ID.",
-            steps: [
-                "Open the guide below.",
-                "Open your PlayStation profile settings.",
-                "Copy your online ID and paste it here.",
-            ],
-        },
     },
     calendarPage: {
         title: "Calendar",

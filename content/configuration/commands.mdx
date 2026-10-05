@@ -22,7 +22,7 @@ Managers configure the commands in **Settings → Discord → Commands**.
 | `/help`                               | A private list of the commands you can use here, with the channels to use and a link to this page | Everyone; each person sees only the commands they may use |
 | `/stats`                              | Your player statistics for Hell Let Loose or Wardogs, privately, with **Share**                   | Everyone                                                  |
 | `/player`                             | A clan player's profile from the clan's imported matches, privately, with **Share**               | Everyone                                                  |
-| `/link`                               | Manage the platform IDs you claimed for Logi                                                      | Everyone, applicants included                             |
+| `/link`                               | Link or unlink your Steam, Epic, Xbox or PlayStation account, privately                           | Everyone, applicants included                             |
 | `/notice`                             | Tell the match leads you will come later, for an event you signed up to that has not started      | Everyone signed up for an upcoming event                  |
 | `/server-status`                      | The stored state of the clan's game servers for one game (at most five)                           | Logi managers                                             |
 | `/close_ticket [reason]`              | Close the ticket thread you are in                                                                | The category's support roles or Logi managers             |
@@ -50,6 +50,17 @@ Shared cards name who shared them and have no buttons. Both the person and the
 bot must be able to see the channel, send messages there (in a thread: send
 messages in threads) and embed links. If not, the private card says the channel
 cannot be used now and offers another choice.
+
+`/link` is a private guide that links your game accounts: it can find you
+among the players of the clan's stats servers, checks each ID for its
+platform (a Steam64 ID has 17 digits and starts with 7656119) and lists your
+linked accounts with **Add another account** and **Unlink account**. Linking
+there is your statement, not proof; **Verify Steam on the web** opens My
+account. Details are on [Your account](/dashboard/my-account).
+
+`/close_ticket` works only in a ticket thread: it posts the close card, DMs
+the author, renames, locks and archives the thread, and the private reply says
+whether the author got the DM. See [Tickets](/configuration/tickets).
 
 `/notice` opens a short window: **Running late** with the match name, a note
 that only the match leads see it, and **When will you arrive and why?** (up to
@@ -89,7 +100,8 @@ also from a direct message.
    in the clan language. A command only Logi managers may use gets "(managers)".
 5. **Old stats server connections**, when the clan still has some. Only the
    player search in `/link` and in the clan application uses them; `/stats`
-   does not. **Move to Game servers** copies them to **Settings → Game
+   does not. A found player shows the server's name from **Settings → Game
+   servers** when a game server there has the same address. **Move to Game servers** copies them to **Settings → Game
    servers** with the key stored encrypted, untested and stopped; test them
    there, then remove the old connections.
 

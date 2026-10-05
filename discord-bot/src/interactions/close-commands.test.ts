@@ -152,7 +152,8 @@ function command(input: {
     return { interaction, replies }
 }
 
-for (const name of ["close_ticket", "close_application"] as const) {
+// /close_ticket has its own tests in close-ticket.test.ts.
+for (const name of ["close_application"] as const) {
     test(`${name} outside its thread answers in the clan language, not English`, async (t) => {
         const guildId = newGuildId()
         backend(t, { language: "cs", guildId })
@@ -162,11 +163,7 @@ for (const name of ["close_ticket", "close_application"] as const) {
             inThread: false,
         })
         await handler().handleChatInputCommand(interaction)
-        assert.deepEqual(replies, [
-            name === "close_ticket"
-                ? cs.ticket.closeCommandThreadOnly
-                : cs.membership.closeCommandThreadOnly,
-        ])
+        assert.deepEqual(replies, [cs.membership.closeCommandThreadOnly])
         assert.doesNotMatch(replies[0]!, /Use this command/)
     })
 
@@ -175,7 +172,7 @@ for (const name of ["close_ticket", "close_application"] as const) {
         const writes = backend(t, {
             language: "cs",
             guildId,
-            application: name === "close_application",
+            application: true,
         })
         const calls: string[] = []
         const { interaction, replies } = command({
@@ -187,11 +184,7 @@ for (const name of ["close_ticket", "close_application"] as const) {
         await handler().handleChatInputCommand(interaction)
         assert.deepEqual(calls, ["guild", "roles", "member:true"])
         assert.deepEqual(writes, [])
-        assert.deepEqual(replies, [
-            name === "close_ticket"
-                ? cs.ticket.noClosePermission
-                : cs.membership.noClosePermission,
-        ])
+        assert.deepEqual(replies, [cs.membership.noClosePermission])
     })
 }
 
@@ -212,19 +205,4 @@ test("close_application allows the category's support role, like close_ticket", 
     // Without a readable server name the DM names Discord in Czech, never "this server".
     assert.match(dms[0]!, /v \*\*Discordu\*\*/)
     assert.doesNotMatch(dms.join(" "), /this server/)
-})
-
-test("close_ticket DMs the author without an English server fallback", async (t) => {
-    const guildId = newGuildId()
-    const writes = backend(t, { language: "cs", guildId })
-    const dms: string[] = []
-    const { interaction } = command({
-        name: "close_ticket",
-        guildId,
-        roles: ["support"],
-        dms,
-    })
-    await handler().handleChatInputCommand(interaction)
-    assert.ok(writes.includes("discordMembership:closeTicketThread"))
-    assert.match(dms[0]!, /Váš ticket #12 v \*\*Discordu\*\* byl uzavřen\./)
 })
