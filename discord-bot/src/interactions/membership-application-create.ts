@@ -3,8 +3,10 @@ import { ChannelType, type Guild, type TextChannel } from "discord.js"
 import {
     submitApplication,
     type SubmitApplicationResult,
+    type SubmitApplicationStep,
 } from "../../../src/application/membership/submit-application"
 import { applicationCardView } from "../../../src/domain/membership/application-views"
+import type { BotErrorSource } from "../../../src/domain/discord-messages/bot-errors"
 import { getApplicationMessages } from "../../../src/lib/clan-language/application"
 import { fillTemplate } from "../../../src/domain/discord-messages/format"
 
@@ -49,6 +51,17 @@ export function applicationThreadName(template: string, applicantName: string) {
 export const threadUrl = (guildId: string, threadId: string) =>
     `https://discord.com/channels/${guildId}/${threadId}`
 
+/** The errors-channel entry of each failed step (board L5 1.1). */
+const SUBMIT_STEP_SOURCES: Record<SubmitApplicationStep, BotErrorSource> = {
+    assignment: "applicationOpen",
+    thread: "applicationOpen",
+    record: "applicationOpen",
+    members: "applicationRecruiters",
+    intro: "applicationIntro",
+    card: "applicationIntro",
+    accounts: "general",
+}
+
 export async function createApplicationThread(input: {
     guild: Guild
     applicant: Applicant
@@ -60,16 +73,15 @@ export async function createApplicationThread(input: {
     const category = submission.category
     const copy = getApplicationMessages(config.defaultLanguage)
     const secret = env.internalSecret
-    const report = (step: string, error: unknown) =>
+    const report = (step: SubmitApplicationStep, error: unknown) =>
         void reportToErrorsChannel({
             client: guild.client,
             guildId: guild.id,
             error,
-            action: `Create a membership application (${step})`,
-            location: "Membership applications",
-            scope: "interaction",
-            target: category.label?.trim() || category.id,
-            details: { user: applicant.tag, categoryId: category.id },
+            source: SUBMIT_STEP_SOURCES[step],
+            channelId: settings?.applicationParentChannelId,
+            userId: applicant.id,
+            categoryLabel: category.label?.trim() || category.id,
         })
     let thread: Awaited<ReturnType<TextChannel["threads"]["create"]>> | null =
         null

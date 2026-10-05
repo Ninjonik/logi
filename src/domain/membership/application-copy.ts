@@ -215,6 +215,8 @@ export type ApplicationCopy = {
         roles: { one: string; other: string }
         delivered: string
         notDelivered: string
+        /** Decision DMs are switched off in "Zprávy a panely" (N1-39). */
+        dmOff: string
         wrongPlace: { title: string; body: string }
         alreadyClosed: { title: string; body: string; members: string }
         notAllowedTitle: string

@@ -24,8 +24,11 @@ export type DecideApplicationPorts = {
     writeAssignment(change: AssignmentAfterDecision): Promise<void>
     close(): Promise<void>
     showDecision(roles: DecisionRoles): Promise<void>
-    /** True when the DM arrived. */
-    sendDm(roles: DecisionRoles): Promise<boolean>
+    /**
+     * The decision DM: "sent" when it arrived, "failed" when Discord refused
+     * it, "off" when the clan switched decision DMs off (N1-39).
+     */
+    sendDm(roles: DecisionRoles): Promise<DecisionDm>
     finishThread(): Promise<void>
     report(step: "card" | "dm" | "thread", error: unknown): void
 }
@@ -38,8 +41,10 @@ export type DecideApplicationInput = {
     policy: DecisionRolePolicy
 }
 
+export type DecisionDm = "sent" | "failed" | "off"
+
 export type DecideApplicationResult =
-    | { status: "decided"; roles: DecisionRoles; dmDelivered: boolean }
+    | { status: "decided"; roles: DecisionRoles; dm: DecisionDm }
     | { status: "closed" | "busy" | "missing" }
 
 export async function decideApplication(
@@ -68,9 +73,9 @@ export async function decideApplication(
     } catch (error) {
         ports.report("card", error)
     }
-    let dmDelivered = false
+    let dm: DecisionDm = "failed"
     try {
-        dmDelivered = await ports.sendDm(roles)
+        dm = await ports.sendDm(roles)
     } catch (error) {
         ports.report("dm", error)
     }
@@ -79,5 +84,5 @@ export async function decideApplication(
     } catch (error) {
         ports.report("thread", error)
     }
-    return { status: "decided", roles, dmDelivered }
+    return { status: "decided", roles, dm }
 }

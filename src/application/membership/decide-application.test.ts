@@ -37,7 +37,7 @@ function fake(overrides: Partial<DecideApplicationPorts> = {}) {
         },
         sendDm: async () => {
             calls.push("dm")
-            return true
+            return "sent" as const
         },
         finishThread: async () => {
             calls.push("thread")
@@ -76,7 +76,7 @@ test("accepting writes the membership, closes, edits the card, DMs and locks", a
             added: ["clan", "member"],
             removed: [],
         },
-        dmDelivered: true,
+        dm: "sent",
     })
 })
 
@@ -126,7 +126,21 @@ test("an undelivered DM is reported in the result, the decision stands (L4-34)",
         policy,
     })
     assert.equal(result.status, "decided")
-    assert.equal(result.status === "decided" && result.dmDelivered, false)
+    assert.equal(result.status === "decided" && result.dm, "failed")
     assert.ok(calls.includes("report:dm"))
     assert.ok(calls.includes("thread"))
+})
+
+test("a clan that switched decision DMs off sends none, and says so (N1-39)", async () => {
+    const { ports, calls } = fake({
+        sendDm: async () => "off" as const,
+    })
+    const result = await decideApplication(ports, {
+        outcome: "member",
+        categoryType: "member",
+        before: "recruit",
+        policy,
+    })
+    assert.equal(result.status === "decided" && result.dm, "off")
+    assert.ok(!calls.includes("report:dm"))
 })

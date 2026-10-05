@@ -36,6 +36,7 @@ import {
     unknownErrorCard,
     type MessageView,
 } from "../../../src/domain/discord-messages/message-view"
+import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
 import { syncsMembershipRoles } from "../../../src/domain/membership/membership-options"
 import { getApplicationMessages } from "../../../src/lib/clan-language/application"
 import { fillTemplate } from "../../../src/domain/discord-messages/format"
@@ -240,10 +241,13 @@ async function runDecision(
                     await thread.send(messagePayload(view, options))
             },
             sendDm: async (roles) => {
+                // "DM po rozhodnutí o přihlášce" in Zprávy a panely (N1-39).
+                if (!isMessageEnabled(context.config, "applicationCloseDm"))
+                    return "off"
                 const creator = await guild.client.users
                     .fetch(application.creatorId)
                     .catch(() => null)
-                if (!creator) return false
+                if (!creator) return "failed"
                 const ticketChannel = context.ticketChannelId
                     ? guild.channels.cache.get(context.ticketChannelId)
                     : undefined
@@ -264,7 +268,7 @@ async function runDecision(
                         options
                     )
                 )
-                return true
+                return "sent"
             },
             finishThread: async () => {
                 const auditReason = reason ?? copy.card.closedFooter
@@ -283,17 +287,23 @@ async function runDecision(
                 await thread.setLocked(true, auditReason)
                 await thread.setArchived(true, auditReason)
             },
-            report: (step, error) =>
+            report: (step, error) => {
+                // A closed DM is the applicant's choice, not an admin's to fix;
+                // the decider's reply says so (L4-34).
+                if (step === "dm") return
                 void reportToErrorsChannel({
                     client: guild.client,
                     guildId: guild.id,
                     error,
-                    action: `Decide a membership application (${step})`,
-                    location: "Membership applications",
-                    scope: "interaction",
-                    target: thread.name,
-                    details: { threadId: thread.id },
-                }),
+                    source:
+                        step === "card"
+                            ? "applicationIntro"
+                            : "applicationRename",
+                    channelId: thread.parentId ?? undefined,
+                    categoryLabel: application.categoryLabel,
+                    number: application.applicationNumber,
+                })
+            },
         },
         {
             outcome,
@@ -539,10 +549,9 @@ async function safeDecision(
             client: interaction.client,
             guildId: interaction.guildId,
             error,
-            action: "Decide a membership application",
-            location: "Membership applications",
-            scope: "interaction",
-            details: { threadId: context.application.threadId },
+            source: "general",
+            categoryLabel: context.application.categoryLabel,
+            number: context.application.applicationNumber,
         })
         const copy = getSystemMessages(context.config.defaultLanguage).errors
         await interaction
@@ -605,7 +614,7 @@ async function reportDecisionResult(
     const copy = getApplicationMessages(context.config.defaultLanguage)
     const options = kitOf(context)
     if (result.status === "decided") {
-        if (!result.dmDelivered)
+        if (result.dm === "failed")
             await interaction.followUp(
                 interactionReplyPayload(
                     {
@@ -709,7 +718,7 @@ export async function handleCloseApplicationCommand(
                 outcome,
                 applicantName: applicantNameOf(context),
                 addedRoleNames: roleNames(guild, result.roles.added),
-                dmDelivered: result.dmDelivered,
+                dm: result.dm,
             }),
             options
         )

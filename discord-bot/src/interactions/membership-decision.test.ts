@@ -43,6 +43,8 @@ function backend(
         guildId: string
         status?: "open" | "closed"
         transcriptMessageId?: string
+        /** "DM po rozhodnutí o přihlášce" (N1-39); missing is on. */
+        decisionDm?: boolean
     }
 ) {
     const writes: Array<{ name: string; args: Record<string, unknown> }> = []
@@ -65,6 +67,9 @@ function backend(
                         dashboardAdminRoleId: "logi-admin",
                         clanRoleId: "clan",
                         membershipSettings: { enabled: true },
+                        ...(input.decisionDm === false
+                            ? { applicationCloseDmEnabled: false }
+                            : {}),
                     },
                     application: {
                         threadId: "444444444444444444",
@@ -437,5 +442,25 @@ test("the command lists the outcomes in the clan language (M3-38)", () => {
             "Wartet auf Entscheidung",
             "Abgelehnt",
         ]
+    )
+})
+
+test("decision DMs switched off in Zprávy a panely are not sent (N1-39)", async (t) => {
+    const guildId = newGuildId()
+    backend(t, { guildId, decisionDm: false })
+    const { base, replies, dms } = discord({
+        guildId,
+        roles: ["recruiters"],
+    })
+    await handleCloseApplicationCommand({
+        ...base,
+        options: {
+            getString: (name: string) => (name === "outcome" ? "member" : null),
+        },
+    } as unknown as ChatInputCommandInteraction)
+    assert.deepEqual(dms, [])
+    assert.match(
+        texts(replies.at(-1)),
+        /DM o rozhodnutí má klan v nastavení zpráv vypnuté\./
     )
 })

@@ -575,7 +575,7 @@ test("the /close_application reply says the roles and whether the DM arrived (M3
             outcome: "member",
             applicantName: "Hráč 17",
             addedRoleNames: ["Klan", "Člen"],
-            dmDelivered: true,
+            dm: "sent",
         })
     )
     assert.match(accepted, /### Přihláška #42 uzavřena: Člen/)
@@ -589,7 +589,7 @@ test("the /close_application reply says the roles and whether the DM arrived (M3
             outcome: "denied",
             applicantName: "Hráč 18",
             addedRoleNames: [],
-            dmDelivered: false,
+            dm: "failed",
         })
     )
     assert.match(rejected, /### Přihláška #41 zamítnuta/)

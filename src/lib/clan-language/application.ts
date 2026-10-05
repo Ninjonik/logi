@@ -346,6 +346,7 @@ const cs: Copy = {
         delivered: "Rozhodnutí je ve vlákně a uchazeč ho dostal do DM.",
         notDelivered:
             "Rozhodnutí je ve vlákně. Uchazeči nejde poslat DM, najde ho tam.",
+        dmOff: "Rozhodnutí je ve vlákně. DM o rozhodnutí má klan v nastavení zpráv vypnuté.",
         wrongPlace: {
             title: "/close_application funguje jen ve vlákně přihlášky",
             body: "Otevři vlákno přihlášky a spusť příkaz tam.",
@@ -699,6 +700,7 @@ const en: Copy = {
             "The decision is in the thread and the applicant got it by DM.",
         notDelivered:
             "The decision is in the thread. The applicant cannot receive DMs and will find it there.",
+        dmOff: "The decision is in the thread. The clan switched decision DMs off in the message settings.",
         wrongPlace: {
             title: "/close_application only works in an application thread",
             body: "Open the application thread and run the command there.",
@@ -1056,6 +1058,7 @@ const de: Copy = {
             "Die Entscheidung steht im Thread und der Bewerber hat sie per DM bekommen.",
         notDelivered:
             "Die Entscheidung steht im Thread. Dem Bewerber kann keine DM geschickt werden, er findet sie dort.",
+        dmOff: "Die Entscheidung steht im Thread. Der Clan hat Entscheidungs-DMs in den Nachrichteneinstellungen ausgeschaltet.",
         wrongPlace: {
             title: "/close_application funktioniert nur im Bewerbungsthread",
             body: "Öffne den Bewerbungsthread und starte den Befehl dort.",
