@@ -4518,6 +4518,7 @@ export const csMessages = {
             description: "Uložené změny se hned propíšou do ohlášení v Discordu.",
             breadcrumb: "Upravit",
             breadcrumbTrainings: "Tréninky",
+            savedTimes: "Uložené časy",
             noChanges: "Bez změn",
             unsaved: "Neuložené změny: {count}",
             cancel: "Zrušit",

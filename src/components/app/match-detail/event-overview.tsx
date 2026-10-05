@@ -7,10 +7,13 @@ import {
     type FlowSummaryContext,
 } from "@/components/app/new-match/flow-summary"
 import {
+    NewMatchPreview,
+    type NewMatchPreviewModel,
+} from "@/components/app/new-match/new-match-preview"
+import {
     getDiscordChannelNames,
     getDiscordRoleNames,
 } from "@/lib/read-models/discord-channel-names"
-import { NewMatchPreview } from "@/components/app/new-match/new-match-preview"
 import { flowValuesFromEvent } from "@/components/app/new-match/flow-values"
 import { eventSeriesRole, signupCounts } from "@/domain/events/event-edit"
 import { ResyncTopicThreadButton } from "./resync-topic-thread-button"
@@ -98,8 +101,52 @@ export async function EventOverview({
         signups: signupCounts(event.participants),
     })
     const isMatch = event.kind === "match"
-    const series = isMatch ? eventSeriesRole(event) : null
 
+    return (
+        <EventOverviewView
+            kind={event.kind}
+            eventId={event.id}
+            serverId={serverId}
+            dictionary={dictionary}
+            rows={rows}
+            preview={preview}
+            previewCopy={getDictionary(botLanguage).newMatch.preview}
+            editHref={editHref}
+            series={isMatch ? (eventSeriesRole(event)?.kind ?? null) : null}
+            seriesEditHref={seriesEditHref}
+            canResyncTopics={canResyncTopics}
+        />
+    )
+}
+
+/** The overview's look, fed with rows and a preview built from the event. */
+export function EventOverviewView({
+    kind,
+    eventId,
+    serverId,
+    dictionary,
+    rows,
+    preview,
+    previewCopy,
+    editHref,
+    series,
+    seriesEditHref,
+    canResyncTopics,
+}: {
+    kind: "match" | "training"
+    eventId: string
+    serverId: string
+    dictionary: Dictionary
+    rows: ReturnType<typeof flowReviewRows>
+    preview: NewMatchPreviewModel
+    previewCopy: Dictionary["newMatch"]["preview"]
+    editHref: string | null
+    series: "source" | "occurrence" | null
+    seriesEditHref: string | null
+    canResyncTopics: boolean
+}) {
+    const t = dictionary.newMatch
+    const isMatch = kind === "match"
     return (
         <div className="flex flex-wrap items-start gap-6">
             <section
@@ -163,11 +210,11 @@ export async function EventOverview({
                             aria-hidden
                         />
                         <span className="min-w-0 flex-1">
-                            {series.kind === "occurrence"
+                            {series === "occurrence"
                                 ? t.edit.series
                                 : t.edit.seriesSource}
                         </span>
-                        {series.kind === "occurrence" && seriesEditHref ? (
+                        {series === "occurrence" && seriesEditHref ? (
                             <Link
                                 href={seriesEditHref}
                                 className="text-foreground font-medium underline underline-offset-[3px]"
@@ -181,7 +228,7 @@ export async function EventOverview({
                     <div className="border-border/60 flex flex-wrap gap-2 border-t pt-[18px]">
                         <ResyncTopicThreadButton
                             serverId={serverId}
-                            eventId={event.id}
+                            eventId={eventId}
                             dictionary={dictionary}
                         />
                     </div>
@@ -192,7 +239,7 @@ export async function EventOverview({
                     model={preview}
                     step="review"
                     dictionary={dictionary}
-                    copy={getDictionary(botLanguage).newMatch.preview}
+                    copy={previewCopy}
                     hint={t.overview.previewHint}
                     note={null}
                 />

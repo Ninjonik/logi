@@ -4531,6 +4531,7 @@ export const enMessages = {
             description: "Saved changes go straight into the announcement in Discord.",
             breadcrumb: "Edit",
             breadcrumbTrainings: "Trainings",
+            savedTimes: "Saved times",
             noChanges: "No changes",
             unsaved: "Unsaved changes: {count}",
             cancel: "Cancel",

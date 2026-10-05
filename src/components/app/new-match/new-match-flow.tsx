@@ -1545,14 +1545,18 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                 {t.match.yourTeam}
                                             </span>
                                         </span>
-                                        {sideSelect(
-                                            values.ownSide,
-                                            setOwnSide,
-                                            t.match.yourSide
-                                        )}
-                                        {storedOwn
-                                            ? refreshButton(storedOwn.teamId)
-                                            : null}
+                                        <span className="flex shrink-0 items-center gap-1">
+                                            {sideSelect(
+                                                values.ownSide,
+                                                setOwnSide,
+                                                t.match.yourSide
+                                            )}
+                                            {storedOwn
+                                                ? refreshButton(
+                                                      storedOwn.teamId
+                                                  )
+                                                : null}
+                                        </span>
                                     </div>
                                     {teamGame ? (
                                         values.opponent ? (
@@ -1579,31 +1583,35 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                         }
                                                     </span>
                                                 </span>
-                                                {sideSelect(
-                                                    values.opponentSide,
-                                                    setOpponentSide,
-                                                    t.match.opponentSide
-                                                )}
-                                                {refreshButton(
-                                                    values.opponent.teamId
-                                                )}
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8"
-                                                    aria-label={
-                                                        t.match.changeOpponent
-                                                    }
-                                                    onClick={() =>
-                                                        update({
-                                                            opponent: null,
-                                                            opponentSide: null,
-                                                        })
-                                                    }
-                                                >
-                                                    <X className="size-4" />
-                                                </Button>
+                                                <span className="flex shrink-0 items-center gap-1">
+                                                    {sideSelect(
+                                                        values.opponentSide,
+                                                        setOpponentSide,
+                                                        t.match.opponentSide
+                                                    )}
+                                                    {refreshButton(
+                                                        values.opponent.teamId
+                                                    )}
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="size-8"
+                                                        aria-label={
+                                                            t.match
+                                                                .changeOpponent
+                                                        }
+                                                        onClick={() =>
+                                                            update({
+                                                                opponent: null,
+                                                                opponentSide:
+                                                                    null,
+                                                            })
+                                                        }
+                                                    >
+                                                        <X className="size-4" />
+                                                    </Button>
+                                                </span>
                                             </div>
                                         ) : (
                                             <OpponentPicker
@@ -1657,32 +1665,36 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                         {t.match.otherTeam}
                                                     </span>
                                                 </span>
-                                                {sideSelect(
-                                                    values.extraSide,
-                                                    (extraSide) =>
-                                                        update({ extraSide }),
-                                                    t.match.otherSide
-                                                )}
-                                                {refreshButton(
-                                                    values.extraTeam.teamId
-                                                )}
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8"
-                                                    aria-label={
-                                                        t.match.removeTeam
-                                                    }
-                                                    onClick={() =>
-                                                        update({
-                                                            extraTeam: null,
-                                                            extraSide: null,
-                                                        })
-                                                    }
-                                                >
-                                                    <X className="size-4" />
-                                                </Button>
+                                                <span className="flex shrink-0 items-center gap-1">
+                                                    {sideSelect(
+                                                        values.extraSide,
+                                                        (extraSide) =>
+                                                            update({
+                                                                extraSide,
+                                                            }),
+                                                        t.match.otherSide
+                                                    )}
+                                                    {refreshButton(
+                                                        values.extraTeam.teamId
+                                                    )}
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="size-8"
+                                                        aria-label={
+                                                            t.match.removeTeam
+                                                        }
+                                                        onClick={() =>
+                                                            update({
+                                                                extraTeam: null,
+                                                                extraSide: null,
+                                                            })
+                                                        }
+                                                    >
+                                                        <X className="size-4" />
+                                                    </Button>
+                                                </span>
                                             </div>
                                         ) : (
                                             <OpponentPicker
@@ -1758,7 +1770,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                         className={cn(
                                             "grid gap-3",
                                             isEdit && modeOptions.length > 1
-                                                ? "grid-cols-2 sm:grid-cols-4"
+                                                ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
                                                 : "grid-cols-[repeat(auto-fit,minmax(min(160px,100%),1fr))]"
                                         )}
                                     >
@@ -2063,6 +2075,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                         update({ description })
                                                     }
                                                     compactToolbar
+                                                    preview="edit"
+                                                    height={140}
                                                     rows={4}
                                                     maxLength={4000}
                                                     className="rounded-lg"
@@ -2081,6 +2095,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                         update({ notes })
                                                     }
                                                     compactToolbar
+                                                    preview="edit"
+                                                    height={140}
                                                     rows={4}
                                                     maxLength={4000}
                                                     className="rounded-lg"
@@ -2259,7 +2275,9 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                             ? fill(t.time.fromTemplate, {
                                                   name: template.name,
                                               })
-                                            : t.time.defaults}
+                                            : isEdit
+                                              ? t.edit.savedTimes
+                                              : t.time.defaults}
                                     </span>
                                     <button
                                         type="button"
@@ -2532,6 +2550,23 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                             )}
                                         </div>
                                     </div>
+                                    {isEdit ? (
+                                        <div className="flex flex-col gap-1.5">
+                                            <FieldLabel id="nm-required-match">
+                                                {t.signups.requiredRoles}
+                                            </FieldLabel>
+                                            <DiscordMultiEntitySelect
+                                                value={values.requiredRoleIds}
+                                                onChange={(requiredRoleIds) =>
+                                                    update({ requiredRoleIds })
+                                                }
+                                                options={metadata?.roles ?? []}
+                                                placeholder={
+                                                    t.signups.rolesPlaceholder
+                                                }
+                                            />
+                                        </div>
+                                    ) : null}
                                     {groupsOfGame.length ? (
                                         isEdit ? (
                                             <div className="flex flex-col gap-2">

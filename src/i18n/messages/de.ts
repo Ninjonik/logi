@@ -4644,6 +4644,7 @@ export const deMessages = {
             description: "Gespeicherte Änderungen landen sofort in der Ankündigung in Discord.",
             breadcrumb: "Bearbeiten",
             breadcrumbTrainings: "Trainings",
+            savedTimes: "Gespeicherte Zeiten",
             noChanges: "Keine Änderungen",
             unsaved: "Ungespeicherte Änderungen: {count}",
             cancel: "Abbrechen",
