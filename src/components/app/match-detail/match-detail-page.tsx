@@ -22,9 +22,10 @@ import {
 import { MatchDetailView } from "@/components/app/match-detail/match-detail-view"
 import { describeManualReminderAudience } from "@/domain/events/manual-reminders"
 import { getDiscordChannelNames } from "@/lib/read-models/discord-channel-names"
+import { eventEditability, eventSeriesRole } from "@/domain/events/event-edit"
+import { EventOverview } from "@/components/app/match-detail/event-overview"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { LiveRosterBoard } from "@/components/app/live-roster-board"
-import { EventFormPanel } from "@/components/app/event-form-panel"
 import { clientGrantScopes } from "@/domain/identity/client-grant"
 import { getUsersByIds } from "@/lib/server-user-management"
 import { currentEventStatus } from "@/domain/events/status"
@@ -217,6 +218,22 @@ export async function MatchDetailPage({
     )
 
     const basePath = `/${locale}/dashboard/servers/${serverId}/${section}/${event.id}`
+    // Managers edit in the new-match flow until the match concludes.
+    const editHref =
+        canAdmin && eventEditability(event, now) === "editable"
+            ? `${basePath}/edit`
+            : undefined
+    const series = eventSeriesRole(event)
+    const seriesSource =
+        series?.kind === "occurrence"
+            ? context.events.find((item) => item.id === series.sourceId)
+            : undefined
+    const seriesEditHref =
+        canAdmin &&
+        seriesSource &&
+        eventEditability(seriesSource, now) === "editable"
+            ? `/${locale}/dashboard/servers/${serverId}/matches/${seriesSource.id}/edit?step=time`
+            : null
     const tabHref = (target: MatchDetailTab) => {
         const params = new URLSearchParams()
         if (isGameId(game)) params.set("game", game)
@@ -329,21 +346,23 @@ export async function MatchDetailPage({
                     : undefined
             }
             signupHistoryHref={signupHistoryHref}
+            editHref={editHref}
             overview={
                 activeTab === "overview" ? (
-                    <EventFormPanel
+                    <EventOverview
                         event={event}
-                        serverId={serverId}
-                        locale={locale}
-                        topicPresets={context.topicPresets}
-                        stratmaps={context.stratmaps}
-                        groups={context.groups}
-                        eventCategories={context.server.eventCategories ?? []}
-                        timezone={timeZone}
-                        canEdit={canAdmin}
+                        context={context}
                         dictionary={dictionary}
-                        createMode={false}
-                        discordConfig={discordConfig}
+                        locale={locale}
+                        serverId={serverId}
+                        editHref={editHref ?? null}
+                        seriesEditHref={seriesEditHref}
+                        canResyncTopics={
+                            canAdmin &&
+                            !played &&
+                            event.createForumChannel &&
+                            Boolean(event.topicPresetId)
+                        }
                     />
                 ) : null
             }

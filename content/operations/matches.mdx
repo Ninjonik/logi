@@ -66,9 +66,12 @@ matches of the series on its own, two weeks ahead, at the same local time in
 the clan's time zone, with the same teams, map, sign-up and Discord settings
 and empty sign-ups. Each one is announced like any other match. The bot creates
 them, so they appear only while the Logi bot is running. To change or stop a
-series, open its first match with **Edit series** and change or switch off the
-repeat settings, then save; matches already created stay as they are. Monthly
-repeat settings are only labels for now: Logi does not create monthly matches.
+series, choose **Edit series**: it opens the match that carries the series in
+the [edit flow](#edit-a-match-manager) at the **Time** step. Changes there
+apply to the dates Logi creates from then on; switch off **Repeat every week**
+and save to stop the series. Matches already created stay as they are, and
+editing one of them changes only that date. Monthly repeat settings are only
+labels for now: Logi does not create monthly matches.
 
 ## Create a match (manager)
 
@@ -140,23 +143,65 @@ the match list to continue where you stopped (the address keeps
 `?draftId=…`). **Publish** turns it into the match; **Delete draft** removes it
 after a confirmation. Only drafts can be deleted this way.
 
+## Edit a match (manager)
+
+Choose **Edit match** in the **⋯** menu of a match, or **Edit** on a line of its
+**Overview**, which opens that step. Editing uses the same five steps and the
+Discord preview as creating, filled in with the match as it is saved. The page
+is titled **Edit match** under **Matches › match name › Edit**. Every step is
+open from the start; there is no autosave and no draft, and the status next to
+the title counts your unsaved changes.
+
+- **Match**: the teams and sides, map, time of day, mode (when the map has more
+  than one) and middle point, the name and the **category** (instead of a
+  template). The game cannot change. A Wardogs match can also take a third team
+  (**Add another team**). **Refresh snapshot** beside a saved team takes its
+  current name and logo from the team catalogue and saves that at once. **More
+  options** holds the description, notes, thumbnail, picture and tactical maps.
+  A map Logi cannot read is kept until you choose another one.
+- **Time**: the start and the timeline, open for editing. A weekly series is
+  described [above](#recurring-matches).
+- **Sign-ups**: who can sign up, which groups are offered and their caps,
+  sign-up without a group, who gets the sign-up reminder, the **attendance
+  reminders** (24, 18, 12 or 6 hours before the meeting) and the **squad
+  preset**. Lowering a cap signs nobody out: players who already hold a place
+  keep it, and only new sign-ups go to the reserve. New reminder times replace
+  the reminders that have not been sent yet. The squad preset is the starting
+  point of a roster created later; an existing roster keeps its squads.
+- **Discord**: the announcement and roster channels are shown but stay as they
+  were when the match was published (the bot manages its messages there). You
+  can change the ping, the forum and its **forum topics**, the squad voice
+  channels and their category, **attendee and reserve roles** (switching them
+  off makes the bot delete the roles it created), the **meeting voice channel**
+  Logi reads attendance from, and the server and password.
+- **Review**: the four summary lines and **What changes**, every changed field
+  as old → new (a new password reads **new password**, never its value).
+
+**Save changes** saves and returns to the match; the bot updates the
+announcement and the other Discord messages as after any edit, and players who
+signed up stay signed up. **Cancel** returns to the match and asks first when
+there are unsaved changes, as does leaving the page another way. A concluded
+match can no longer be edited, and opening a draft this way continues it in the
+new-match flow.
+
 ## The match page
 
 Opening a match shows its name, game, map and time (meeting and start, or when
 it was played), **View in Discord** once the bot has posted the sign-up
 announcement (until the match is played) and, for managers, a **⋯** menu with
-**Edit match**, **Open the roster page** and **Sign-up history**. On a phone
+**Edit match** (until the match is concluded), **Open the roster page** and
+**Sign-up history**. On a phone
 the top shrinks to a back arrow, the match name and the current step ("Step 3
 of 5 · Roster"), the Discord tab is left out and the ⋯ menu also holds the
 Discord link. Below is the match's progress in five steps:
 
-| Step     | Shows                                                                       |
-| -------- | --------------------------------------------------------------------------- |
-| Draft    | When the match was created, or when its sign-ups open                       |
+| Step     | Shows                                                                        |
+| -------- | ---------------------------------------------------------------------------- |
+| Draft    | When the match was created, or when its sign-ups open                        |
 | Sign-ups | Until when people can sign up, when sign-ups closed, then how many signed up |
-| Roster   | Not created yet, a draft to publish before the meeting, or the player count |
-| Match    | The meeting time, then how many players attended                            |
-| Result   | Import from the server, awaiting confirmation, confirmed or corrected       |
+| Roster   | Not created yet, a draft to publish before the meeting, or the player count  |
+| Match    | The meeting time, then how many players attended                             |
+| Result   | Import from the server, awaiting confirmation, confirmed or corrected        |
 
 The current step is highlighted; earlier steps are ticked. A match counts as
 closed 15 minutes after its game end even before Logi records it, and a match
@@ -167,7 +212,14 @@ The page has five tabs. Before the match the sign-ups tab is called
 **Sign-ups** with the number of players signed up; after it, **Sign-ups and
 attendance**.
 
-- **Overview**: the match form (details, schedule, Discord options, teams).
+- **Overview**: the match in four lines, as in the review step of the
+  new-match flow (match, time, sign-ups, Discord), beside the sign-up
+  announcement as players see it now, with the current sign-up counts.
+  Managers get **Edit** on each line, which opens that step of the
+  [edit flow](#edit-a-match-manager), and **Resync topic thread** when the
+  match has a forum with a topic preset. Members see the same lines without
+  the links. A date of a weekly series says so; managers can open the series
+  from there.
 - **Sign-ups and attendance**: see below.
 - **Roster**: the [roster board](/wiki/operations/rosters), or a prompt to
   create the roster. Members see only a published roster.
@@ -218,35 +270,34 @@ closes itself 15 minutes after its end, with the same points.
 
 ## Teams
 
-Hell Let Loose and Wardogs matches have a **Teams** section next to the map and
-side details. It uses the Logi [team catalogue](/wiki/operations/teams), which
-Logi's global administrators maintain for every workspace. Hell Let Loose:
-Vietnam matches and trainings have no Teams section.
+Hell Let Loose and Wardogs matches have **Teams** in the **Match** step of the
+new-match and edit flows. They use the Logi
+[team catalogue](/wiki/operations/teams), which Logi's global administrators
+maintain for every workspace. Hell Let Loose: Vietnam matches and trainings
+have no teams.
 
-- **Hell Let Loose:** up to two teams (Team A and Team B), each with an
-  optional side: **Allies** or **Axis**.
-- **Wardogs:** up to three teams (Team A, Team B and Team C), each with an
-  optional faction: **Valkyra**, **Manticore** or **Lonestar**.
+- **Your team** (Team A) is the clan's team linked in the catalogue, or the
+  team the match saved in that slot, with its side.
+- **The opponent** (Team B) is chosen with **Choose opponent**, a searchable
+  list of the game's active catalogue teams with logo, name and short code.
+  The cross removes it again.
+- **Wardogs** matches can take a third team (Team C) when you edit them, with
+  **Add another team**.
 
-Each slot has a searchable picker that lists the game's active catalogue teams
-with logo, name and short code. Open it with the keyboard or mouse, type to
-search, and choose with the arrow keys and Enter. **No team** empties the slot.
-**No side** leaves the side open.
+Sides are optional: **Allies** or **Axis** for Hell Let Loose, **Valkyra**,
+**Manticore** or **Lonestar** for Wardogs; **No side** leaves a side open.
+Picking a side for one of two teams gives the other team the opposite side.
 
-When the team you need is missing, the last picker entry offers a request
-instead: **Request “Name”** with the name you typed, or **Request a new team**
-when nothing is typed or the typed name is already listed. It opens the
-[team request form](/wiki/operations/teams#request-a-new-team) prefilled with
-that name; the rest of the unsaved match form is kept. A requested team is not
-selected automatically: once a Logi administrator approves it (the requester
-gets a Discord direct message), it appears in the picker and can be selected
-like any other team. Until then, the match can be saved with the slot empty.
+When the team you need is missing, **Request it** under the teams opens the
+[team request form](/wiki/operations/teams#request-a-new-team); the rest of the
+unsaved match is kept. A requested team is not selected automatically: once a
+Logi administrator approves it (the requester gets a Discord direct message),
+it can be chosen like any other team. Until then, the match can be saved
+without an opponent.
 
-A team can occupy only one slot, and a side can be given to only one team; the
-editor marks such conflicts before saving. A match can be saved with empty or
-partly filled slots while the opponent is unknown, and clearing every slot then
-saving removes the assignments. Choosing teams does not change the match's own
-**Side** field, its roster, attendance or results.
+A team can occupy only one slot, and a side can be given to only one team;
+saving a conflict is refused with a message. Choosing teams does not change the
+match's roster, attendance or results.
 
 ### Saved team details
 
@@ -257,16 +308,16 @@ its snapshot; replacing it with a different team captures that team's details.
 If a newly selected team is archived before you save, the save is rejected with
 a message so you can choose another team.
 
-A saved team that has since been archived stays on the match with an
-**Archived** badge until you replace it; archived teams cannot be newly
-selected. To pick up catalogue changes for a saved team, use **Refresh
-snapshot** on a saved match. It works only while the team is active in the
-catalogue and the match is not concluded, and it updates the stored snapshot
-immediately without saving other changes in the form.
+A saved team that has since been archived stays on the match until you replace
+it; archived teams cannot be newly selected. To pick up catalogue changes for a
+saved team, use **Refresh snapshot** beside it while editing the match. It works
+only while the team is active in the catalogue and the match is not concluded,
+and it updates the stored snapshot immediately without saving other changes in
+the flow.
 
-When Logi administrators merge a duplicate into another team, a saved team that
-was merged shows a **Merged** badge. **Refresh snapshot** then switches that
-slot to the surviving team and captures its details, keeping the slot and side.
+When Logi administrators merge a duplicate into another team, **Refresh
+snapshot** on the merged team switches that slot to the surviving team and
+captures its details, keeping the slot and side.
 
 Once a match is concluded, its teams and snapshots are frozen: the Teams
 section becomes read-only and saving other match fields leaves them unchanged.
