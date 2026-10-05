@@ -1,6 +1,11 @@
 import { z } from "zod"
 
 import {
+    applicationFormSchema,
+    validateApplicationForm,
+    type ApplicationForm,
+} from "@/domain/membership/application-form"
+import {
     MESSAGE_ICON_DENSITIES,
     normalizeAccentColor,
 } from "@/domain/discord-messages/message-style"
@@ -162,6 +167,7 @@ const membershipCategorySchema = ticketCategorySchema.extend({
         .max(25),
     assignmentType: z.enum(["member", "reserve_member", "mercenary"]),
     autoAssignRecruitOnApply: z.boolean().optional(),
+    askSpecialization: z.boolean().optional(),
 })
 
 const ticketSettingsSchema = z
@@ -287,8 +293,28 @@ const membershipSettingsSchema = z
         categories: z
             .array(membershipCategorySchema)
             .max(20, "Keep membership categories to 20 or fewer buttons."),
+        applicationForm: applicationFormSchema.optional(),
+        webFormEnabled: z.boolean().optional(),
+        mentionSupportRoles: z.boolean().optional(),
+        sendConfirmationDm: z.boolean().optional(),
     })
     .superRefine((value, ctx) => {
+        // The form's Discord limits apply even while applications are off.
+        if (value.applicationForm) {
+            const issue = validateApplicationForm(
+                value.applicationForm as ApplicationForm,
+                value.categories
+            )[0]
+            if (issue)
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["applicationForm", issue.window],
+                    message: `Application form: ${issue.code}${
+                        issue.questionId ? ` (${issue.questionId})` : ""
+                    }.`,
+                })
+        }
+
         if (!value.enabled) {
             return
         }

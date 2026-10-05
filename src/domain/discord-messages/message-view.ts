@@ -101,8 +101,18 @@ export type MessageMetaLine = {
     iconAlways?: boolean
 }
 
-/** A row of a field block: a bold title, an optional chip and a markdown line below. */
-export type MessageField = { title: string; chip?: MessageChip; text?: string }
+/**
+ * A row of a field block: a bold title, an optional chip and a markdown line
+ * below. `action` puts one button on the right of the row (a Components V2
+ * section accessory), e.g. "Upravit" next to a finished step; it counts
+ * towards the one primary action but not towards the button rows.
+ */
+export type MessageField = {
+    title: string
+    chip?: MessageChip
+    text?: string
+    action?: MessageButton
+}
 
 export type MessageBlock =
     | { kind: "text"; markdown: string }

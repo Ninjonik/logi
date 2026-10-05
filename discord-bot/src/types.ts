@@ -30,9 +30,11 @@ export type MembershipCategory = {
     recruitRoleIds: string[]
     finalRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
-    assignmentType: "member" | "mercenary"
+    assignmentType: "member" | "reserve_member" | "mercenary"
     /** Skip "pending" for main members of this category; falls back to the clan-wide switch. */
     autoAssignRecruitOnApply?: boolean
+    /** Ask "Specializace" in this category (N4-B05); missing is yes for Hell Let Loose. */
+    askSpecialization?: boolean
 }
 
 export type TicketSettings = {
@@ -59,6 +61,11 @@ export type MembershipSettings = {
     roleSyncEnabled?: boolean
     inviteSupportMembersIndividually?: boolean
     categories: MembershipCategory[]
+    /** The stored application form (N4); missing uses the default form. */
+    applicationForm?: unknown
+    webFormEnabled?: boolean
+    mentionSupportRoles?: boolean
+    sendConfirmationDm?: boolean
 }
 
 export type PlayerStatsServer = {
@@ -165,7 +172,7 @@ export type MembershipApplicationThreadRecord = {
     creatorId: string
     categoryId: string
     categoryLabel: string
-    assignmentType: "member" | "mercenary"
+    assignmentType: "member" | "reserve_member" | "mercenary"
     applicationNumber: number
     assignmentId?: string
     transcriptMessageId?: string
@@ -173,13 +180,34 @@ export type MembershipApplicationThreadRecord = {
         questionId: string
         label: string
         value: string
+        kind?: "custom" | "source" | "age" | "specialization" | "referrer"
     }>
     status: "open" | "closed"
     openedAt: string
+    source?: "discord" | "web"
+    applicantName?: string
+    games?: Array<"hell_let_loose" | "hell_let_loose_vietnam" | "wardogs">
+    inGameName?: string
+    accounts?: {
+        steam?: string
+        steamVerified: boolean
+        epic?: string
+        xbox?: string
+        playstation?: string
+    }
+    undecidedByUserId?: string
+    undecidedByName?: string
+    undecidedAt?: string
     closedAt?: string
     closedByUserId?: string
     closeReason?: string
-    closeOutcome?: "denied" | "pending" | "recruit" | "member" | "mercenary"
+    closeOutcome?:
+        | "denied"
+        | "pending"
+        | "recruit"
+        | "member"
+        | "reserve_member"
+        | "mercenary"
     createdAt: string
     updatedAt: string
 }

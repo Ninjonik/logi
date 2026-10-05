@@ -1,14 +1,12 @@
 import {
     buildCalendarPanelEmbed,
-    buildMembershipPanelMessage,
     buildTicketPanelComponents,
     buildTicketPanelEmbed,
 } from "../message-builders"
-import { MessageFlags, type Client } from "discord.js"
 import { publishManagedMessage } from "./publication"
 import { convex, references } from "../convex"
-import { revalidateAppData } from "../cache"
 import type { SyncPayload } from "../types"
+import type { Client } from "discord.js"
 import { env } from "../environment"
 
 export async function syncTicketPanel(client: Client, payload: SyncPayload) {
@@ -46,49 +44,6 @@ export async function syncTicketPanel(client: Client, payload: SyncPayload) {
             ticketPanelMessageId: messageId,
             ticketPanelLastConfigUpdatedAt: payload.config.updatedAt,
         })
-}
-
-export async function syncMembershipPanel(
-    client: Client,
-    payload: SyncPayload
-) {
-    const config = payload.config
-    const settings = config.membershipSettings
-    const message = buildMembershipPanelMessage(config)
-    if (
-        !settings?.enabled ||
-        !settings.submitChannelId ||
-        !settings.applicationParentChannelId ||
-        !settings.categories.length ||
-        !message
-    )
-        return
-    // One shared panel: the wizard asks for the game, so no per-game message.
-    const messageId = await publishManagedMessage(client, {
-        guildId: config.guildId,
-        key: "membership",
-        revision: Date.parse(config.updatedAt),
-        channelId: settings.submitChannelId,
-        legacyChannelId: settings.submitChannelId,
-        legacyMessageId: config.membershipPanelMessageId,
-        message: { ...message, flags: MessageFlags.IsComponentsV2 },
-    })
-    if (
-        messageId &&
-        (messageId !== config.membershipPanelMessageId ||
-            config.membershipPanelLastConfigUpdatedAt !== config.updatedAt)
-    ) {
-        await convex.mutation(references.updateMembershipPanelState, {
-            secret: env.internalSecret,
-            guildId: config.guildId,
-            membershipPanelMessageId: messageId,
-            membershipPanelLastConfigUpdatedAt: config.updatedAt,
-        })
-        await revalidateAppData({
-            type: "discord-config-changed",
-            serverId: config.guildId,
-        })
-    }
 }
 
 export async function syncCalendarPanel(client: Client, payload: SyncPayload) {

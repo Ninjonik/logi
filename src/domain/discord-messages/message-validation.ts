@@ -146,6 +146,17 @@ export function validateMessageView(
                     primary += 1
                 checkButton(button, ids, issues)
             }
+        } else if (block.kind === "fields") {
+            for (const field of block.items) {
+                if (!field.action) continue
+                if (
+                    field.action.kind === "action" &&
+                    (field.action.style === "primary" ||
+                        field.action.style === "success")
+                )
+                    primary += 1
+                checkButton(field.action, ids, issues)
+            }
         } else if (block.kind === "select") {
             const { select } = block
             checkCustomId(select.id, ids, issues)

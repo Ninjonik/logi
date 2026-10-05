@@ -371,6 +371,24 @@ function Field({
     field: MessageField
     context: RenderContext
 }) {
+    if (field.action)
+        return (
+            <div className="flex min-w-0 items-start justify-between gap-3">
+                <Field
+                    field={{ ...field, action: undefined }}
+                    context={context}
+                />
+                <ul
+                    aria-label={context.labels.buttons}
+                    className="m-0 flex flex-none list-none p-0"
+                >
+                    <PreviewButton
+                        button={field.action}
+                        labels={context.labels}
+                    />
+                </ul>
+            </div>
+        )
     return (
         <div className="flex min-w-0 flex-col gap-1">
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">

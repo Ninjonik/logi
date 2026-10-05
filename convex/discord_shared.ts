@@ -1,3 +1,4 @@
+import { applicationFormValidator } from "./membershipApplicationValidators"
 import { v } from "convex/values"
 
 import {
@@ -90,6 +91,7 @@ export const membershipCategoryValidator = v.object({
         v.literal("mercenary")
     ),
     autoAssignRecruitOnApply: v.optional(v.boolean()),
+    askSpecialization: v.optional(v.boolean()),
 })
 
 export const ticketSettingsValidator = v.object({
@@ -126,6 +128,10 @@ export const membershipSettingsValidator = v.object({
         })
     ),
     categories: v.array(membershipCategoryValidator),
+    applicationForm: v.optional(applicationFormValidator),
+    webFormEnabled: v.optional(v.boolean()),
+    mentionSupportRoles: v.optional(v.boolean()),
+    sendConfirmationDm: v.optional(v.boolean()),
 })
 
 export const calendarCategoriesValidator = v.array(v.string())

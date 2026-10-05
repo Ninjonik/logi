@@ -93,4 +93,14 @@ crons.interval(
     {}
 )
 
+// Unfinished clan applications are kept 24 h, then deleted (L6-08, N4-37).
+crons.interval(
+    "delete expired clan application drafts",
+    { hours: 1 },
+    makeFunctionReference<"mutation">(
+        "membershipApplications:deleteExpiredDrafts"
+    ),
+    {}
+)
+
 export default crons

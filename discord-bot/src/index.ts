@@ -150,12 +150,14 @@ import {
     startPublicPanelWorker,
     handlePublicPanelButton,
 } from "./public-panels/worker"
+import { startApplicationWebSubmissionWorker } from "./interactions/membership-web-submissions"
 import { startApplicationEmojiProvisioning } from "./runtime/application-emoji"
 import { startTeamRequestNotificationWorker } from "./sync/team-request-worker"
 import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
 client.once(Events.ClientReady, async (readyClient) => {
     startReportRecovery(client)
+    startApplicationWebSubmissionWorker(client)
     startLeagueWorker(client)
     startPublicPanelWorker(client)
     startManagedRoleWorker(client)

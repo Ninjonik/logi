@@ -1,3 +1,5 @@
+import { membershipApplicationInteractions } from "./membership-application"
+import { membershipDecisionInteractions } from "./membership-decision"
 import type { InteractionFeature } from "./registry"
 
 /**
@@ -6,4 +8,7 @@ import type { InteractionFeature } from "./registry"
  * the dispatch in `interactions.ts` stays untouched. Routes registered here
  * take precedence; anything else falls through to the existing dispatch.
  */
-export const interactionFeatures: readonly InteractionFeature[] = []
+export const interactionFeatures: readonly InteractionFeature[] = [
+    membershipApplicationInteractions,
+    membershipDecisionInteractions,
+]
