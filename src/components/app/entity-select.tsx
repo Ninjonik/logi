@@ -26,6 +26,7 @@ export type EntitySelectOption = {
 }
 
 export function EntitySelect({
+    id,
     value,
     onChange,
     options,
@@ -34,6 +35,8 @@ export function EntitySelect({
     noneLabel = "None",
     emptyLabel = "No results.",
 }: {
+    /** Lets a `<label htmlFor>` name the trigger. */
+    id?: string
     value?: string
     onChange: (value?: string) => void
     options: EntitySelectOption[]
@@ -53,6 +56,7 @@ export function EntitySelect({
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button
+                    id={id}
                     variant="outline"
                     role="combobox"
                     className="w-full justify-between rounded-xl"
@@ -65,7 +69,12 @@ export function EntitySelect({
                                 className="size-5 rounded-sm object-contain"
                             />
                         ) : null}
-                        <span className="truncate">
+                        <span
+                            className={cn(
+                                "truncate",
+                                !selected && "text-muted-foreground font-normal"
+                            )}
+                        >
                             {selected?.name ?? placeholder}
                         </span>
                     </span>

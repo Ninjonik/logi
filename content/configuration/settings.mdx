@@ -15,9 +15,11 @@ Clan settings belong to the active workspace. Only managers should change them, 
 filters the pages by name and description (for example _channel_, _role_ or
 _API key_). While a required step is unfinished, **Workspace setup** shows six
 steps with how many are done: the bot on Discord, the games, the clan profile
-(name, logo and description), the channels, roles and access, and, optionally,
-a game server that collects data. The first unfinished step is highlighted and
-**Continue setup** opens it. Below it every settings page is a tile with a
+(a name and a logo; the description is optional), the channels, roles and
+access, and, optionally, a game server that collects data. The first unfinished
+step is highlighted and **Fix** opens the page that holds it; **Set up** next to
+a later step and **Continue setup** open the [setup guide](#setup-guide) at
+that step or at the first unfinished one. Below it every settings page is a tile with a
 short description and its state, for example **Done**, **1 channel missing**,
 **Not set**, **On**/**Off**, the number of games, templates or collecting
 servers. A state that cannot be read is left out rather than guessed.
@@ -76,6 +78,42 @@ exception, or leaving it empty, returns the game to it when you save.
 Exceptions are offered when the clan plays more than one game. An exception
 stored earlier stays visible, so it can be removed, even after the clan is down
 to one game. Exceptions of a game that is switched off are kept but not shown.
+
+## Setup guide
+
+The setup guide walks a new clan through the six setup steps on one full-screen
+page (`/dashboard/servers/<clan>/settings/setup`), outside the usual menu. Like
+every settings page it is open only to clan admins. The header shows
+**Workspace setup** with the clan's name and **Exit the guide**, which returns
+to the settings overview; the bar below fills with the finished steps.
+
+On the left the steps are listed with **Required** or **Optional**. A finished
+step shows a check, the open step is highlighted, and any step, finished or
+not, can be opened again by clicking it. On a phone the list folds into one row
+with the open step and how many are done; tap it to see all steps. The card on
+the right says **Step N of 6** and holds the step's fields:
+
+| Step                | What you do                                                                                                                                   | Finished when                       |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| 1. Bot on Discord   | See whether the bot is on the clan's server and can read its channels and roles; **Invite the bot** if not, then **Check again**              | The bot is on the server            |
+| 2. Games            | Choose the games the clan plays; at least one                                                                                                 | A game is chosen                    |
+| 3. Clan profile     | Clan name, logo (PNG or JPG) and an optional description                                                                                      | The clan has a name and a logo      |
+| 4. Channels         | Announcements, event information and, optionally, bot errors; per-game exceptions stay on **Channels and language**                           | The announcements channel is chosen |
+| 5. Roles and access | The clan role and the Logi admin role                                                                                                         | The clan role is chosen             |
+| 6. Game servers     | Optional: **Connect a server** opens the same form as **Game servers**; the connection is tested before it is saved, and the key is encrypted | A connected server collects data    |
+
+**Continue** saves the step and opens the next one; nothing is saved when the
+step was not changed. **Skip** moves on without saving, and **Back** returns to
+the previous step without saving. On the last step the button reads
+**Finish** and leads to **Done. Logi is ready.**, with **Open Settings** and
+**Go through again**. On a phone **Back**, **Skip** and **Continue** sit in a
+bar at the bottom of the screen.
+
+The guide saves exactly what the matching settings pages save and decides
+which steps are finished by the same rule as **Workspace setup** on the
+settings overview, so both always agree. Opening the guide without a step
+starts at the first unfinished one; when every step is finished it opens on
+the closing screen.
 
 ## Change settings carefully
 

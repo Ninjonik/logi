@@ -59,6 +59,12 @@ type Props = {
     lastGames?: Record<string, ServerLastGame>
     /** Called after a change that affects collection, so the connection list can reload. */
     onChanged?: () => void
+    /**
+     * `setup`: the last step of the setup guide (design B). No page header,
+     * the add form stays closed until "Connect a server", and an empty list
+     * is one dashed row with that button.
+     */
+    variant?: "page" | "setup"
 }
 type Copy = Dictionary["gameData"]["servers"]
 type CollectionErrors = Dictionary["gameData"]["errors"]
@@ -97,7 +103,14 @@ export function GameDataSources(props: Props) {
     return <Servers key={props.serverId} {...props} />
 }
 
-function Servers({ serverId, dictionary, lastGames, onChanged }: Props) {
+function Servers({
+    serverId,
+    dictionary,
+    lastGames,
+    onChanged,
+    variant = "page",
+}: Props) {
+    const setup = variant === "setup"
     const t = dictionary.gameData.servers
     const section = dictionary.settingsHub.sections["game-servers"]
     const url = `/api/servers/${encodeURIComponent(serverId)}/game-data-sources`
@@ -124,7 +137,7 @@ function Servers({ serverId, dictionary, lastGames, onChanged }: Props) {
         const controller = new AbortController()
         void load(controller.signal)
             .then((value) => {
-                if (value && !controller.signal.aborted)
+                if (value && !controller.signal.aborted && !setup)
                     setFormOpen(value.sources.length === 0)
             })
             .catch(() => {
@@ -135,7 +148,7 @@ function Servers({ serverId, dictionary, lastGames, onChanged }: Props) {
                 if (!controller.signal.aborted) setLoading(false)
             })
         return () => controller.abort()
-    }, [load, t])
+    }, [load, t, setup])
 
     const post: Post = async (body) => {
         setPending(true)
@@ -182,26 +195,56 @@ function Servers({ serverId, dictionary, lastGames, onChanged }: Props) {
             formRef.current?.querySelector("input")?.focus()
         })
     }
+    const setupCopy = dictionary.settingsHub.guidedSetup.steps.gameServers
+    const connectButton = (
+        <Button
+            type="button"
+            variant="outline"
+            className="rounded-lg"
+            aria-controls="game-server-add"
+            disabled={!list}
+            onClick={openForm}
+        >
+            <Plus className="size-4" aria-hidden="true" />
+            {setupCopy.connect}
+        </Button>
+    )
     return (
-        <section className="space-y-5" aria-busy={busy}>
-            <SettingsSectionHeader
-                title={section.title}
-                description={section.description}
-                actions={
-                    <MobileActionBar>
-                        <Button
-                            type="button"
-                            className="rounded-lg"
-                            aria-controls="game-server-add"
-                            disabled={!list}
-                            onClick={openForm}
-                        >
-                            <Plus className="size-4" aria-hidden="true" />
-                            {t.add}
-                        </Button>
-                    </MobileActionBar>
-                }
-            />
+        <section className={setup ? "space-y-4" : "space-y-5"} aria-busy={busy}>
+            {setup ? null : (
+                <SettingsSectionHeader
+                    title={section.title}
+                    description={section.description}
+                    actions={
+                        <MobileActionBar>
+                            <Button
+                                type="button"
+                                className="rounded-lg"
+                                aria-controls="game-server-add"
+                                disabled={!list}
+                                onClick={openForm}
+                            >
+                                <Plus className="size-4" aria-hidden="true" />
+                                {t.add}
+                            </Button>
+                        </MobileActionBar>
+                    }
+                />
+            )}
+            {setup && !list && loading ? (
+                <div className="bg-muted/60 h-[70px] animate-pulse rounded-xl" />
+            ) : null}
+            {setup && list?.sources.length === 0 && !formOpen ? (
+                <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed p-4">
+                    <span className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-[10px]">
+                        <Server className="size-[18px]" aria-hidden="true" />
+                    </span>
+                    <p className="text-foreground/80 min-w-0 flex-[1_1_200px] text-sm leading-5">
+                        {setupCopy.empty}
+                    </p>
+                    {connectButton}
+                </div>
+            ) : null}
             {list?.encryption === "unavailable" && (
                 <p
                     role="note"
@@ -222,7 +265,7 @@ function Servers({ serverId, dictionary, lastGames, onChanged }: Props) {
                     {notice.text}
                 </p>
             ) : null}
-            {list?.sources.length === 0 && !formOpen && (
+            {!setup && list?.sources.length === 0 && !formOpen && (
                 <EmptyState
                     icon={Server}
                     title={t.emptyTitle}
@@ -243,6 +286,9 @@ function Servers({ serverId, dictionary, lastGames, onChanged }: Props) {
                     report={report}
                 />
             ))}
+            {setup && list?.sources.length && !formOpen ? (
+                <div>{connectButton}</div>
+            ) : null}
             {list && formOpen && (
                 <AddServer
                     formRef={formRef}
@@ -254,6 +300,13 @@ function Servers({ serverId, dictionary, lastGames, onChanged }: Props) {
                     encryption={list.encryption}
                     post={post}
                     report={report}
+                    // Inside the guide's card on a phone the form drops its own
+                    // frame, so the server type options still fit.
+                    className={
+                        setup
+                            ? "max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:p-0"
+                            : undefined
+                    }
                 />
             )}
         </section>
@@ -270,6 +323,7 @@ function AddServer({
     encryption,
     post,
     report,
+    className,
 }: {
     formRef: RefObject<HTMLFormElement | null>
     onClose(): void
@@ -280,6 +334,7 @@ function AddServer({
     encryption: GameServerSourceList["encryption"]
     post: Post
     report(result: CommandResult, success: string): void
+    className?: string
 }) {
     const id = useId()
     const field = (name: string) => `${id}-${name}`
@@ -313,7 +368,10 @@ function AddServer({
             id="game-server-add"
             ref={formRef}
             aria-labelledby={field("title")}
-            className="bg-card border-foreground space-y-5 rounded-2xl border p-5 sm:p-6"
+            className={cn(
+                "bg-card border-foreground space-y-5 rounded-2xl border p-5 sm:p-6",
+                className
+            )}
             onSubmit={async (event) => {
                 event.preventDefault()
                 if (!passed) return

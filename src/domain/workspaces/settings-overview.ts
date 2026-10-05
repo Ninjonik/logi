@@ -64,11 +64,8 @@ function stepDone(
         case "games":
             return snapshot.enabledGames.length > 0
         case "profile":
-            return (
-                facts.profile.name &&
-                facts.profile.logo &&
-                facts.profile.description
-            )
+            // The description is optional (design B); name and logo finish the step.
+            return facts.profile.name && facts.profile.logo
         case "channels":
             return Boolean(snapshot.announcementsChannelId)
         case "roles":
