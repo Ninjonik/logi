@@ -6,8 +6,15 @@ import {
     runFromDoc,
     seedPlayerCounts,
     seedPorts,
+    seedServerPanel,
+    seedServerSnapshot,
     seedStoreReader,
 } from "./discordSeedStore"
+import {
+    parseSeedPublicationKey,
+    seedPublicationKey,
+    type SeedMessageKind,
+} from "../src/domain/discord-seed/publication-keys"
 import {
     startResultView,
     stopResultView,
@@ -31,76 +38,101 @@ import type {
 } from "../src/application/discord-seed/ports"
 import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
 import { startSeedManually } from "../src/application/discord-seed/start-seed"
+import type { ServerSnapshot } from "../src/domain/game-data/contracts"
 import type { SeedPlanSettings } from "../src/domain/discord-seed/plan"
 import { stopSeed } from "../src/application/discord-seed/stop-seed"
 import { mutation, query, type QueryCtx } from "./_generated/server"
 import { getGuildByDiscordId, getUserByDiscordId } from "./identity"
-import { publicationState } from "./discordPublicationTable"
 import { assertInternalSecret } from "./discord_shared"
+import { panelServerInfos } from "./discordPanelStore"
 import type { Doc } from "./_generated/dataModel"
 import { seedFailure } from "./discordSeedTable"
 
 /**
- * The bot's side of the seed: everything it needs to render the call, the
- * control message and the pinned intro, the managed-message lease, and the
- * Discord buttons. Every function checks the internal secret.
+ * The bot's side of the seed (board P5): everything it needs to draw the
+ * call, the control message per server and the pinned intro, the delivery
+ * receipts, the "Zvát mě na seed" check and the control buttons. Every
+ * function checks the internal secret; the buttons also need a Logi admin.
  */
 
-const LEASE_MS = 120_000
-const RETRY_MS = 30_000
 const snowflake = /^\d{17,20}$/
 
 type Reader = Pick<QueryCtx, "db">
 
+/** A seed message's request revision and the revision the bot delivered. */
+export type SeedOutboxRef = { revision: number; deliveredRevision: number }
+/** Where the bot's managed publication of a seed message is now. */
 export type SeedMessageRef = {
-    id: string
-    kind: Doc<"discordSeedMessages">["kind"]
-    key: string
-    revision: number
-    deliveredRevision: number
     channelId: string | null
     messageId: string | null
 }
 
-const messageRef = (row: Doc<"discordSeedMessages">): SeedMessageRef => ({
-    id: String(row._id),
-    kind: row.kind,
-    key: row.key,
-    revision: row.revision,
-    deliveredRevision: row.deliveredRevision,
-    channelId: row.channelId,
-    messageId: row.messageId,
-})
-
-async function messageRows(ctx: Reader, guildId: string) {
+async function outboxRows(ctx: Reader, guildId: string) {
     return await ctx.db
         .query("discordSeedMessages")
         .withIndex("guildId", (q) => q.eq("guildId", guildId))
         .collect()
 }
 
+/** The managed publications of the seed, by `seed:<kind>:<key>`. */
+async function seedPublications(ctx: Reader, guildId: string) {
+    const rows = await ctx.db
+        .query("discordPublications")
+        .withIndex("guildId", (q) => q.eq("guildId", guildId))
+        .collect()
+    const refs = new Map<string, SeedMessageRef>()
+    for (const row of rows)
+        if (parseSeedPublicationKey(row.key))
+            refs.set(row.key, {
+                channelId: row.channelId,
+                messageId: row.messageId,
+            })
+    return refs
+}
+
+const outboxRef = (
+    row: Doc<"discordSeedMessages"> | undefined
+): SeedOutboxRef | null =>
+    row
+        ? { revision: row.revision, deliveredRevision: row.deliveredRevision }
+        : null
+
+export type SeedDeliveryServer = {
+    connectionId: string
+    settings: SeedPlanSettings
+    revision: number
+    name: string | null
+    gameId: "hell_let_loose" | "wardogs"
+    reading: SeedServerReading | null
+    /** The collected snapshot, for the map line and the map picture. */
+    snapshot: ServerSnapshot | null
+    status: SeedServerStatus
+    activeRun: StoredSeedRun | null
+    joinUrl: string | null
+    panel: { channelId: string; paused: boolean; sent: boolean } | null
+    control: { outbox: SeedOutboxRef | null; message: SeedMessageRef | null }
+}
+
 export type SeedDeliveryState = {
-    servers: Array<{
-        connectionId: string
-        settings: SeedPlanSettings
-        revision: number
-        reading: SeedServerReading | null
-        status: SeedServerStatus
-        activeRun: StoredSeedRun | null
-        control: SeedMessageRef | null
+    servers: SeedDeliveryServer[]
+    /** Calls of running seeds (redrawn every 60 s) and of ended seeds whose final state is not delivered yet. */
+    calls: Array<{
+        run: StoredSeedRun
+        outbox: SeedOutboxRef | null
+        message: SeedMessageRef | null
     }>
-    /** Calls of running seeds (refreshed every 60 s) and of ended seeds with an undelivered final state. */
-    calls: Array<{ run: StoredSeedRun; message: SeedMessageRef | null }>
-    /** Seed channels and whether their pinned intro should exist. */
+    /** Seed channels and whether their pinned intro should be there. */
     intros: Array<{
         channelId: string
         show: boolean
         roleId: string | null
+        servers: Array<{ name: string; schedule: SeedPlanSettings["schedule"] }>
+        outbox: SeedOutboxRef | null
         message: SeedMessageRef | null
     }>
 }
 
-/** Everything the bot's seed worker renders for one clan. */
+/** Everything the bot's seed worker draws for one clan. */
 export const deliveryState = query({
     args: { secret: v.string(), guildId: v.string() },
     handler: async (ctx, args): Promise<SeedDeliveryState> => {
@@ -108,20 +140,26 @@ export const deliveryState = query({
         const now = Date.now()
         const reader = seedStoreReader(ctx)
         const players = seedPlayerCounts(ctx, () => now)
-        const plans = await ctx.db
-            .query("discordSeedPlans")
-            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-            .collect()
-        const rows = await messageRows(ctx, args.guildId)
-        const find = (kind: SeedMessageRef["kind"], key: string) => {
-            const row = rows.find(
-                (entry) => entry.kind === kind && entry.key === key
-            )
-            return row ? messageRef(row) : null
-        }
-        const servers: SeedDeliveryState["servers"] = []
-        for (const doc of plans) {
-            const plan = planFromDoc(doc)
+        const plans = (
+            await ctx.db
+                .query("discordSeedPlans")
+                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+                .collect()
+        ).map(planFromDoc)
+        const [rows, publications, joinInfos] = await Promise.all([
+            outboxRows(ctx, args.guildId),
+            seedPublications(ctx, args.guildId),
+            panelServerInfos(ctx, args.guildId),
+        ])
+        const outbox = (kind: SeedMessageKind, key: string) =>
+            outboxRef(rows.find((row) => row.kind === kind && row.key === key))
+        const message = (kind: SeedMessageKind, key: string) =>
+            publications.get(seedPublicationKey(kind, key)) ?? null
+
+        const servers: SeedDeliveryServer[] = []
+        for (const plan of plans) {
+            const found = await seedServerSnapshot(ctx, plan, now)
+            if (!found) continue
             const reading = await players.read(plan)
             const activeRun = plan.state.activeRunId
                 ? await reader.run(plan.state.activeRunId)
@@ -130,7 +168,10 @@ export const deliveryState = query({
                 connectionId: plan.connectionId,
                 settings: plan.settings,
                 revision: plan.revision,
+                name: found.name,
+                gameId: found.gameId,
                 reading,
+                snapshot: found.snapshot,
                 status: seedServerStatus(
                     {
                         phase: plan.state.phase,
@@ -141,9 +182,18 @@ export const deliveryState = query({
                     plan.settings
                 ),
                 activeRun: activeRun?.status === "seeding" ? activeRun : null,
-                control: find("control", plan.connectionId),
+                joinUrl:
+                    joinInfos.find(
+                        (info) => info.connectionId === plan.connectionId
+                    )?.joinUrl ?? null,
+                panel: await seedServerPanel(ctx, plan),
+                control: {
+                    outbox: outbox("control", plan.connectionId),
+                    message: message("control", plan.connectionId),
+                },
             })
         }
+
         const calls: SeedDeliveryState["calls"] = []
         const seeding = await ctx.db
             .query("discordSeedRuns")
@@ -151,58 +201,86 @@ export const deliveryState = query({
                 q.eq("guildId", args.guildId).eq("status", "seeding")
             )
             .collect()
-        for (const run of seeding)
+        for (const doc of seeding) {
+            const run = runFromDoc(doc)
             calls.push({
-                run: runFromDoc(run),
-                message: find("call", String(run._id)),
+                run,
+                outbox: outbox("call", run.id),
+                message: message("call", run.id),
             })
+        }
         for (const row of rows) {
             if (row.kind !== "call" || row.revision <= row.deliveredRevision)
                 continue
             if (calls.some((call) => call.run.id === row.key)) continue
             const run = await reader.run(row.key)
             if (run && run.guildId === args.guildId)
-                calls.push({ run, message: messageRef(row) })
+                calls.push({
+                    run,
+                    outbox: outboxRef(row),
+                    message: message("call", run.id),
+                })
         }
-        const wanted = new Map<string, string | null>()
-        for (const doc of plans) {
-            const channelId = introChannel(doc)
-            if (channelId) wanted.set(channelId, doc.settings.seedRoleId)
+
+        const wanted = new Map<
+            string,
+            {
+                roleId: string | null
+                servers: SeedDeliveryState["intros"][number]["servers"]
+            }
+        >()
+        for (const plan of plans) {
+            const channelId = introChannel(plan)
+            if (!channelId) continue
+            const entry = wanted.get(channelId) ?? {
+                roleId: plan.settings.seedRoleId,
+                servers: [],
+            }
+            const server = servers.find(
+                (item) => item.connectionId === plan.connectionId
+            )
+            if (plan.settings.enabled && server?.name)
+                entry.servers.push({
+                    name: server.name,
+                    schedule: plan.settings.schedule,
+                })
+            wanted.set(channelId, entry)
         }
-        const introKeys = new Set([
+        const channels = new Set([
             ...wanted.keys(),
             ...rows.filter((row) => row.kind === "intro").map((row) => row.key),
         ])
         return {
             servers,
             calls,
-            intros: [...introKeys].map((channelId) => ({
+            intros: [...channels].map((channelId) => ({
                 channelId,
                 show: wanted.has(channelId),
-                roleId: wanted.get(channelId) ?? null,
-                message: find("intro", channelId),
+                roleId: wanted.get(channelId)?.roleId ?? null,
+                servers: wanted.get(channelId)?.servers ?? [],
+                outbox: outbox("intro", channelId),
+                message: message("intro", channelId),
             })),
         }
     },
 })
 
-const messageKind = v.union(
-    v.literal("call"),
-    v.literal("control"),
-    v.literal("intro")
-)
-
 /**
- * Takes the lease of one managed seed message for the revision the bot
- * rendered. A newer request, a running lease or a retry wait answers null.
+ * The bot delivered (or tried to deliver) one seed message at `revision`; a
+ * delivered revision stops the retries of an ended call.
  */
-export const claimMessage = mutation({
+export const recordDelivery = mutation({
     args: {
         secret: v.string(),
         guildId: v.string(),
-        kind: messageKind,
+        kind: v.union(
+            v.literal("call"),
+            v.literal("control"),
+            v.literal("intro")
+        ),
         key: v.string(),
         revision: v.number(),
+        error: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -217,86 +295,23 @@ export const claimMessage = mutation({
                     .eq("key", args.key)
             )
             .first()
-        const now = Date.now()
-        if (
-            !row ||
-            row.leaseUntil > now ||
-            row.retryAt > now ||
-            row.revision > args.revision
-        )
-            return null
-        const fence = row.fence + 1
-        await ctx.db.patch(row._id, {
-            fence,
-            leaseUntil: now + LEASE_MS,
-            claimedRevision: args.revision,
-        })
-        return {
-            id: String(row._id),
-            fence,
-            channelId: row.channelId,
-            messageId: row.messageId,
-            pending: row.pending,
-            hash: row.hash,
-        }
-    },
-})
-
-export const saveMessage = mutation({
-    args: {
-        secret: v.string(),
-        id: v.id("discordSeedMessages"),
-        fence: v.number(),
-        ...publicationState,
-    },
-    handler: async (ctx, { secret, id, fence, ...state }) => {
-        assertInternalSecret(secret)
-        const row = await ctx.db.get(id)
-        if (!row || row.fence !== fence || row.leaseUntil <= Date.now())
-            throw new Error("Seed message lease expired.")
-        await ctx.db.patch(id, { ...state, updatedAt: Date.now() })
-    },
-})
-
-export const finishMessage = mutation({
-    args: {
-        secret: v.string(),
-        id: v.id("discordSeedMessages"),
-        fence: v.number(),
-        error: v.optional(v.string()),
-        retryAfterMs: v.optional(v.number()),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const row = await ctx.db.get(args.id)
-        if (!row || row.fence !== args.fence) return
+        if (!row) return false
         const now = Date.now()
         await ctx.db.patch(
-            args.id,
+            row._id,
             args.error
-                ? {
-                      leaseUntil: 0,
-                      error: args.error.slice(0, 240),
-                      retryAt:
-                          now +
-                          Math.min(
-                              3_600_000,
-                              Math.max(RETRY_MS, args.retryAfterMs ?? 0)
-                          ),
-                      updatedAt: now,
-                  }
+                ? { error: args.error.slice(0, 240), updatedAt: now }
                 : {
-                      leaseUntil: 0,
-                      error: null,
-                      retryAt: 0,
-                      lastSuccessAt: now,
                       deliveredRevision: Math.max(
                           row.deliveredRevision,
-                          row.claimedRevision
+                          Math.min(args.revision, row.revision)
                       ),
+                      lastSuccessAt: now,
+                      error: null,
                       updatedAt: now,
                   }
         )
+        return true
     },
 })
 
@@ -333,6 +348,33 @@ export const reportCallFailed = mutation({
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         return (await reportSeedCallFailed(seedPorts(ctx), args)).kind
+    },
+})
+
+/**
+ * Whether a plan of the clan lets players toggle this role themselves
+ * ("Zvát mě na seed", P5-B03), and the seed channel for the reply.
+ */
+export const roleOffer = query({
+    args: { secret: v.string(), guildId: v.string(), roleId: v.string() },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        if (!snowflake.test(args.roleId))
+            return { offered: false, seedChannelId: null }
+        const plan = (
+            await ctx.db
+                .query("discordSeedPlans")
+                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+                .collect()
+        ).find(
+            (row) =>
+                row.settings.seedRoleId === args.roleId &&
+                row.settings.roleSelfService
+        )
+        return {
+            offered: Boolean(plan),
+            seedChannelId: plan?.settings.seedChannelId ?? null,
+        }
     },
 })
 
@@ -438,7 +480,7 @@ export const panelStates = query({
     args: { secret: v.string(), guildId: v.string() },
     handler: async (ctx, args): Promise<SeedPanelState[]> => {
         assertInternalSecret(args.secret)
-        const rows = await messageRows(ctx, args.guildId)
+        const publications = await seedPublications(ctx, args.guildId)
         const seeding = await ctx.db
             .query("discordSeedRuns")
             .withIndex("guild_status", (q) =>
@@ -446,8 +488,8 @@ export const panelStates = query({
             )
             .collect()
         return seeding.flatMap((doc) => {
-            const call = rows.find(
-                (row) => row.kind === "call" && row.key === String(doc._id)
+            const call = publications.get(
+                seedPublicationKey("call", String(doc._id))
             )
             const state = toSeedPanelState(
                 runFromDoc(doc),

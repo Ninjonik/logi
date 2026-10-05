@@ -45,6 +45,7 @@ import type * as discordPublicationTable from "../discordPublicationTable.js";
 import type * as discordPublications from "../discordPublications.js";
 import type * as discordRosters from "../discordRosters.js";
 import type * as discordSeed from "../discordSeed.js";
+import type * as discordSeedApiStore from "../discordSeedApiStore.js";
 import type * as discordSeedBot from "../discordSeedBot.js";
 import type * as discordSeedStore from "../discordSeedStore.js";
 import type * as discordSeedTable from "../discordSeedTable.js";
@@ -195,6 +196,7 @@ declare const fullApi: ApiFromModules<{
   discordPublications: typeof discordPublications;
   discordRosters: typeof discordRosters;
   discordSeed: typeof discordSeed;
+  discordSeedApiStore: typeof discordSeedApiStore;
   discordSeedBot: typeof discordSeedBot;
   discordSeedStore: typeof discordSeedStore;
   discordSeedTable: typeof discordSeedTable;

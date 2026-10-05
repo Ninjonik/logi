@@ -8,14 +8,16 @@ import {
     assertClanSettingsSlices,
     type AnyClanSettingsSlice,
 } from "./settings-slices"
-import { commandsSettingsSlice } from "./commands-settings-slice"
-import { matchMessagesSettingsSlice } from "./match-messages-settings-slice"
 import { panelGraphicsSettingsSlice } from "./panel-graphics-settings-slice"
+import { matchMessagesSettingsSlice } from "./match-messages-settings-slice"
+import { commandsSettingsSlice } from "./commands-settings-slice"
+import { seedSettingsSlice } from "./seed-settings-slice"
 
 export const CLAN_SETTINGS_SLICES: readonly AnyClanSettingsSlice[] = [
     panelGraphicsSettingsSlice,
     commandsSettingsSlice as AnyClanSettingsSlice,
     matchMessagesSettingsSlice,
+    seedSettingsSlice,
 ]
 
 assertClanSettingsSlices(CLAN_SETTINGS_SLICES)

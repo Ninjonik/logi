@@ -3409,6 +3409,11 @@ export const csMessages = {
                     description:
                         "Styl panelů serverů, bannery serverů a obrázky map.",
                 },
+                "discord-seed": {
+                    title: "Seed serverů",
+                    description:
+                        "Výzva k seedu, role Seed, rozvrh a historie seedů.",
+                },
                 roles: {
                     title: "Role a přístup",
                     description:
@@ -3886,6 +3891,11 @@ export const csMessages = {
                 title: "Grafika panelů",
                 description:
                     "Jak vypadají panely serverů v Discordu: styl, bannery serverů a obrázky map. Ikony frakcí a stavové ikony jsou pevné.",
+            },
+            "discord-seed": {
+                title: "Seed",
+                description:
+                    "Když je server prázdný, Logi svolá hráče: pošle výzvu, označí roli Seed a v panelu ukazuje, kolik hráčů chybí. Spustit ho smí jen Správci Logi.",
             },
             roles: {
                 title: "Role a přístup",
@@ -6178,6 +6188,237 @@ export const csMessages = {
                 "Živá data teď nejsou dostupná; panel ukazuje poslední sebraná data.",
             attach_files_missing:
                 "Bot nemá oprávnění Přikládat soubory, panel je bez obrázku.",
+        },
+    },
+    seedPage: {
+        breadcrumbParent: "Panely v Discordu",
+        back: "Panely v Discordu",
+        title: "Seed serverů",
+        description:
+            "Když je server prázdný, Logi svolá hráče: pošle výzvu, označí roli Seed a v panelu ukazuje, kolik hráčů chybí. Spustit ho smí jen Správci Logi.",
+        serversLabel: "Herní servery klanu",
+        noServers:
+            "Klan zatím nemá žádný herní server. Přidejte ho v Herních serverech, pak tu nastavíte seed.",
+        gameServersLink: "Herní servery",
+        unavailable: "Seed se teď nepodařilo načíst. Obnovte stránku.",
+        games: { hell_let_loose: "HLL", wardogs: "Wardogs" },
+        status: {
+            now: "Teď {players} / {capacity} hráčů",
+            nowNoCapacity: "Teď {players} hráčů",
+            noData: "Bez aktuálních dat ze serveru",
+            chips: {
+                live: "Živý",
+                below_start: "Pod hranicí startu",
+                filling: "Plní se",
+                offline: "Nedostupný",
+                unknown: "Bez dat",
+            },
+            running: "Seed běží",
+            idle: "Seed neběží",
+            lastData: "poslední data {time}",
+            nextSeed: "další plánovaný seed {time}",
+            lastSeed: "poslední seed {time}",
+            progress: "{players} / {liveFrom} do živé hry",
+            startNow: "Seed teď",
+            stopNow: "Ukončit seed",
+            busy: "Pracuji…",
+            started: "Seed běží. Výzva je v kanálu {channel}.",
+            stopped: "Seed je ukončený.",
+        },
+        actionErrors: {
+            cooldown: "Seed teď spustit nejde. Další jde spustit {time}.",
+            running: "Seed už běží.",
+            duplicate: "Tento seed už běží.",
+            disabled: "Plán seedu je vypnutý. Zapněte ho a uložte.",
+            not_configured: "Nejdřív vyberte kanál pro výzvu a plán uložte.",
+            offline: "Server neodpovídá. Seed spustíte, až bude online.",
+            already_live: "Server už je živý, seed není potřeba.",
+            not_running: "Žádný seed teď neběží.",
+            not_found: "Server se nepodařilo najít.",
+            forbidden: "Na tohle nemáte oprávnění.",
+            unsaved: "Nejdřív uložte změny plánu.",
+            unavailable: "Akce se nepovedla. Zkuste to znovu.",
+        },
+        time: {
+            today: "dnes v {time}",
+            yesterday: "včera v {time}",
+            tomorrow: "zítra v {time}",
+            other: "{date} v {time}",
+        },
+        plan: {
+            title: "Plán seedu · {server}",
+            enabled: "Zapnuto",
+            enabledLabel: "Plán seedu zapnutý",
+            liveFrom: "Server je živý od",
+            liveFromUnit: "hráčů",
+            liveFromHint: "Pak seed skončí.",
+            startBelow: "Seed začne pod",
+            startBelowUnit: "hráči",
+            startBelowHint: "Nad tím plán nic nepošle.",
+            when: "Kdy",
+            manual: "Ručně",
+            manualText:
+                "tlačítkem Seed teď tady nebo ve zprávě Ovládání serveru. Jde vždy.",
+            schedule: "Rozvrh",
+            scheduleHint: "Jen když je server v tu chvíli pod hranicí startu.",
+            scheduleDays: "Dny rozvrhu",
+            at: "v",
+            time: "Čas",
+            addSlot: "Přidat další čas",
+            removeSlot: "Odebrat čas",
+            weekdays: ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"],
+            auto: "Automaticky",
+            autoHint: "Když server během dne vyprázdní.",
+            autoBelow: "když klesne pod",
+            autoBetween: "hráčů mezi",
+            autoAnd: "a",
+            seedChannel: "Kanál pro výzvu",
+            seedChannelPlaceholder: "Vyberte kanál",
+            seedChannelOk: "Bot může psát a označit roli {role}.",
+            seedChannelOkNoRole: "Bot může do kanálu psát.",
+            role: "Role, kterou výzva označí",
+            rolePlaceholder: "Bez označení role",
+            roleMembers: {
+                one: "{count} člen",
+                few: "{count} členové",
+                many: "{count} členů",
+                other: "{count} členů",
+            },
+            selfService: "Hráči si roli zapínají sami tlačítkem",
+            selfServiceHint:
+                "Ve výzvě bude tlačítko Zvát mě na seed; další kliknutí roli zase odebere.",
+            protection: "Ochrana",
+            pingWindow: "Nejvýš 1 označení role za",
+            hoursUnit: "h",
+            pingWindowHint:
+                "Když se seed spustí dřív, výzva vyjde bez označení role.",
+            cooldown: "Mezi seedy aspoň",
+            cooldownHint: "Dřív další seed nespustí ani tlačítko, ani plán.",
+            template: "Text výzvy",
+            insert: "Vložit:",
+            templateHint: "Nadpis, průběh a tlačítka doplní Logi samo.",
+            templateDefault: "Prázdné pole použije výchozí text výzvy.",
+            atThreshold: "Na hranici",
+            endEdit: "Upravit zprávu na „Server je živý“ a seed ukončit",
+            endEditHint:
+                "Nikoho dalšího neoznačí. Průběh zmizí i z panelu serveru.",
+            endDelete: "Smazat zprávu a seed ukončit",
+            maxDuration: "Nejdéle",
+            maxDurationHint:
+                "Pak seed skončí, i když server hranici nedosáhne.",
+        },
+        previews: {
+            title: "Náhledy výzvy",
+            call: "Náhled výzvy v {channel} · živě podle textu vlevo",
+            live: "Na hranici {count} hráčů · stejná zpráva, upravená",
+            note: "Zpráva se obnovuje každých 60 s. Panel serveru mezitím ukazuje stejný průběh.",
+            control: "Náhled v {channel} · zpráva pro tento server",
+            noChannel: "#kanál",
+            author: "dnes v {time}",
+            deleted:
+                "Na hranici {count} hráčů Logi výzvu smaže a seed ukončí. Nikoho dalšího neoznačí.",
+        },
+        control: {
+            title: "Ovládání v Discordu",
+            channel: "Kanál pro ovládání",
+            channelPlaceholder: "Vyberte soukromý kanál",
+            private: "Kanál je soukromý ✓",
+            privateHint: "vidí ho jen správci.",
+            public: "Kanál vidí všichni",
+            publicHint: "ovládání sem bot nepošle. Vyberte soukromý kanál.",
+            checking: "Ověřuji kanály v Discordu…",
+            note: "Tlačítka Seed, Obnovit a Pozastavit smí použít jen Správci Logi. Kdo jiný klikne, dostane soukromou odpověď, že na to nemá oprávnění. Veřejné panely tlačítko Seed nemají.",
+        },
+        problems: {
+            seed_channel_unpublishable:
+                "Bot do kanálu pro výzvu nemůže psát. Dejte mu tam oprávnění Zobrazit kanál, Posílat zprávy, Vkládat odkazy, Přikládat soubory a Číst historii.",
+            seed_role_missing: "Vybraná role už v Discordu není.",
+            seed_role_not_mentionable:
+                "Bot nemůže roli označit. U role zapněte „Povolit komukoli @zmínit tuto roli“, nebo botovi dejte oprávnění Zmínit @everyone.",
+            seed_role_unmanageable:
+                "Bot nemůže roli přidávat. Dejte mu oprávnění Spravovat role a jeho roli posuňte nad vybranou roli.",
+            control_channel_unpublishable:
+                "Bot do kanálu pro ovládání nemůže psát. Dejte mu tam oprávnění Zobrazit kanál, Posílat zprávy a Číst historii.",
+            control_channel_public:
+                "Kanál pro ovládání vidí všichni. Vyberte kanál, který @everyone nevidí.",
+            verification_unavailable:
+                "Discord teď neodpovídá, kanály nejde ověřit. Zkuste to za chvíli.",
+        },
+        issues: {
+            invalid: "Zkontrolujte tuto hodnotu.",
+            start_below_not_under_live:
+                "Hranice startu musí být nižší než hranice živého serveru.",
+            auto_below_above_start:
+                "Automatický start může být nejvýš u hranice startu.",
+            auto_window_empty: "Začátek a konec okna musí být různé.",
+            schedule_without_slots: "Přidejte do rozvrhu aspoň jeden čas.",
+            duplicate_day: "Den je v rozvrhu dvakrát.",
+            duplicate_slot: "Tento den a čas už v rozvrhu je.",
+            seed_channel_required: "Zapnutý plán potřebuje kanál pro výzvu.",
+            control_channel_same_as_seed:
+                "Kanál pro ovládání musí být jiný než kanál pro výzvu.",
+            unknown_placeholder:
+                "Text obsahuje neznámé pole ve složených závorkách.",
+            live_above_capacity:
+                "Server má méně míst, než je hranice živého serveru.",
+        },
+        save: {
+            note: "Uloží plán {server} i kanál pro ovládání.",
+            unsaved: {
+                one: "{count} neuložená změna",
+                few: "{count} neuložené změny",
+                many: "{count} neuložené změny",
+                other: "{count} neuložených změn",
+            },
+            discard: "Zahodit",
+            save: "Uložit",
+            saving: "Ukládám…",
+            saved: "Plán je uložený.",
+            reload: "Načíst znovu",
+            conflict:
+                "Plán mezitím změnil někdo jiný. Obnovte stránku a změny udělejte znovu.",
+            failed: "Plán se nepodařilo uložit.",
+        },
+        history: {
+            title: "Historie seedů · {server}",
+            summary:
+                "Posledních {days} dní · {count} · průměrně {average} do živé hry",
+            summaryNoLive: "Posledních {days} dní · {count}",
+            seeds: {
+                one: "{count} seed",
+                few: "{count} seedy",
+                many: "{count} seedu",
+                other: "{count} seedů",
+            },
+            empty: "Za posledních 30 dní tu žádný seed nebyl.",
+            columns: {
+                start: "Začátek",
+                trigger: "Spustil",
+                players: "Hráči na začátku → na konci",
+                result: "Výsledek",
+                duration: "Trvání",
+                pinged: "Označeno",
+            },
+            trigger: {
+                schedule: "Plán {slot}",
+                auto: "Automaticky · pod {count}",
+                web: "{name} · ručně na webu",
+                discord: "{name} · tlačítko v {channel}",
+                discordNoChannel: "{name} · tlačítko v Discordu",
+            },
+            outcome: {
+                live: "Živý",
+                timeout: "Nedosáhl hranice",
+                admin: "Ukončen správcem",
+                failed: "Selhal",
+                running: "Běží",
+            },
+            endedSuffix: "ukončen",
+            pinged: "{count} · {role}",
+            silentWindow: "0 · ochrana {hours} h",
+            silentNoRole: "0 · bez role",
+            unknownRole: "@role",
+            units: { hours: "h", minutes: "min" },
         },
     },
 } as const

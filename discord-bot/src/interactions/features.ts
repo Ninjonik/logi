@@ -3,6 +3,7 @@ import { attendanceReplyInteractions } from "./attendance-replies"
 import { matchRecapInteractions } from "./match-recap-preference"
 import { rosterInteractions } from "./roster-assignment"
 import { panelInteractions } from "../public-panels/interactions"
+import { seedInteractions } from "../seed/interactions"
 import { commandFeatures } from "../commands/features"
 import type { InteractionFeature } from "./registry"
 import { closeTicketFeature } from "./close-ticket"
@@ -28,4 +29,6 @@ export const interactionFeatures: readonly InteractionFeature[] = [
     ticketsFeature,
     closeTicketFeature,
     linkFeature,
+    // "Zvát mě na seed" and the "Ovládání serveru" buttons (board P5).
+    seedInteractions,
 ]

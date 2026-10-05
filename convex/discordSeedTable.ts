@@ -156,11 +156,12 @@ export const discordSeedRuns = defineTable({
     .index("status", ["status"])
 
 /**
- * Managed seed messages: the call of each run (`key` = run ID), the control
- * message of each server (`key` = connection ID) and the pinned intro of each
- * seed channel (`key` = channel ID). `revision` grows with every request; the
- * bot claims a revision, delivers it with the managed-publication algorithm
- * and records it as delivered.
+ * The outbox of the seed messages: one row per call (`key` = run ID), control
+ * message (`key` = connection ID) and pinned intro (`key` = channel ID).
+ * `revision` grows with every request so the bot redraws at once; the bot
+ * delivers through the shared managed publications (`discordPublications`,
+ * keys `seed:<kind>:<key>`) and records the revision it delivered. The
+ * optional fields are unused; rows written before phase 2 may carry them.
  */
 export const discordSeedMessages = defineTable({
     guildId: v.string(),
@@ -168,14 +169,17 @@ export const discordSeedMessages = defineTable({
     key: v.string(),
     revision: v.number(),
     deliveredRevision: v.number(),
-    claimedRevision: v.number(),
-    ...publicationState,
-    fence: v.number(),
-    leaseUntil: v.number(),
-    retryAt: v.number(),
-    lastSuccessAt: nullableNumber,
-    error: nullableString,
+    lastSuccessAt: v.optional(nullableNumber),
+    error: v.optional(nullableString),
     updatedAt: v.number(),
+    claimedRevision: v.optional(v.number()),
+    channelId: v.optional(nullableString),
+    messageId: v.optional(nullableString),
+    pending: v.optional(publicationState.pending),
+    hash: v.optional(nullableString),
+    fence: v.optional(v.number()),
+    leaseUntil: v.optional(v.number()),
+    retryAt: v.optional(v.number()),
 })
     .index("guild_kind_key", ["guildId", "kind", "key"])
     .index("guildId", ["guildId"])

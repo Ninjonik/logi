@@ -8,4 +8,5 @@ export default {
     "single-sign-on": "Single sign-on",
     tickets: "Tickets",
     "panel-graphics": "Panel graphics",
+    "server-seeding": "Server seeding",
 }

@@ -1,0 +1,102 @@
+---
+title: Server seeding
+description: How Logi fills an empty game server - the seed plan, the call and the Seed role in Discord, the private control message and the seed history.
+---
+
+import { Callout } from "nextra/components"
+
+# Server seeding
+
+A game server is empty in the morning and fills up only when enough players
+join. A **seed** gathers them: Logi posts a call in the clan's seed channel,
+pings the players who asked for it with the **Seed** role, shows how many
+players are still missing and stops when the server is live.
+
+**Settings → Discord → Panely v Discordu → Seed** sets it up. Only clan
+administrators (Správci Logi) can open the page, start a seed or end one.
+
+## The page
+
+The page has one tab per game server of the clan (**Herní servery**). Each tab
+shows:
+
+- **The status row**: the current players (for example "Teď 12 / 100 hráčů"),
+  the state (**Pod hranicí startu**, **Plní se**, **Živý**, **Nedostupný**,
+  **Bez dat**), whether a seed is running, when the data came, the next planned
+  seed and the last seed. **Seed teď** starts a seed at once; during a seed the
+  button is **Ukončit seed**.
+- **Plán seedu**: the plan of this server, with **Zapnuto** to switch it on.
+- **Previews** of the call as the bot posts it and of the same message at the
+  live threshold. They change as you type and use the bot's words in the clan
+  language.
+- **Ovládání v Discordu**: the private admin channel with the control message.
+- **Historie seedů**: the seeds of the last 30 days.
+
+Every change waits for **Uložit** in the bar at the bottom. One save stores the
+plan of this server and its control channel. Before saving, Logi checks the
+channels and the role in Discord.
+
+## The plan
+
+| Setting                                   | What it does                                                                                                                                                                    |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Server je živý od** (default 40)        | The server counts as live from this many players. A running seed ends there.                                                                                                    |
+| **Seed začne pod** (default 20)           | Planned and automatic seeds start only below this many players. A server that was live counts as live until it drops below this number.                                         |
+| **Ručně**                                 | **Seed teď** on this page or **Spustit seed** in the control message. Always available, also when the plan is switched off.                                                     |
+| **Rozvrh**                                | Weekdays and a time, for example Po–Pá 17:00 (up to seven times). The seed starts only when the server is below the start threshold at that moment.                             |
+| **Automaticky**                           | Starts a seed when the server drops below the given number of players between two times of day.                                                                                 |
+| **Kanál pro výzvu**                       | Where the call goes. Logi checks that the bot can write there and mention the role.                                                                                             |
+| **Role, kterou výzva označí**             | The role the call pings, usually **@Seed**. Without a role the call goes out without a ping.                                                                                    |
+| **Hráči si roli zapínají sami tlačítkem** | Players turn the role on and off with **Zvát mě na seed**. The bot needs Manage Roles and a role above the Seed role.                                                           |
+| **Nejvýš 1 označení role za** (4 h)       | Ping protection: at most one ping of the role in this time, counted over every server that pings the same role. A seed inside this time still runs, its call just pings nobody. |
+| **Mezi seedy aspoň** (2 h)                | The shortest time between two seeds of one server. **Seed teď** and the plan both wait for it.                                                                                  |
+| **Text výzvy**                            | Your own text of the call. `{server}`, `{hráči}`, `{chybí}` and `{hranice}` are filled in. Empty uses Logi's text, which changes when few players are missing.                  |
+| **Na hranici**                            | At the live threshold the call is either changed to **Server je živý** or deleted. Nobody is pinged again.                                                                      |
+| **Nejdéle** (2 h)                         | The seed ends after this time even when the server did not reach the threshold.                                                                                                 |
+
+Times are in the clan's time zone (**Profil klanu**).
+
+## In Discord
+
+**The call** in the seed channel has the title "Seedujeme _server_", a
+ten-piece progress bar ("▰▰▰▱▱▱▱▱▱▱ 12 / 40"), who or what started it,
+**Připojit se ↗** (the server's join page) and, when players toggle the role
+themselves, **Zvát mě na seed**. The bot updates it every 60 seconds. The
+role is pinged only when the call is posted; updates ping nobody.
+
+**The pinned intro** in the seed channel explains the role and offers **Zvát mě
+na seed**. A second click removes the role. Both answers are private.
+
+**The control message "Ovládání serveru"** goes to the control channel, one
+message per server. It shows the state and the players and has **Spustit
+seed** (**Ukončit seed** during a seed), **Obnovit panel** and **Pozastavit
+panel** / **Pokračovat** for the server's public panel. The buttons work only
+for Logi administrators: the bot checks the clicking member's roles at that
+moment. Anyone else gets a private answer that they are not allowed.
+
+<Callout type="warning">
+    The control channel must be private: `@everyone` must not see it. The page
+    shows **Kanál je soukromý ✓** when it is. The bot never posts the control
+    message into a channel everyone can see; it reports that in the clan's
+    errors channel instead.
+</Callout>
+
+When a seed cannot start, the private answer says why: a seed is already
+running, the server is live or offline, the plan is not set up, or the last
+seed was too recent. In that case it tells when the next seed can start, for
+example "Seed lze znovu spustit za 1 h 20 min, ve 20:25".
+
+## History
+
+**Historie seedů** lists the seeds of the last 30 days, newest first: the
+start, who started it (the plan, the automatic start, or an administrator on
+the web or in Discord), the players at the start and at the end, the result
+(**Živý**, **Nedosáhl hranice**, **Ukončen správcem**, **Selhal**), the
+duration and whom the call pinged ("34 · @Seed", or "0 · ochrana 4 h" when
+the ping protection held it back). Older seeds stay stored.
+
+<Callout type="info">
+    The website API (`GET/PATCH /api/v1/clan/settings`, slice `seed`) reads and
+    changes the plan of each server. Starting and ending a seed are live Discord
+    actions and are available only on this page and in the control message.
+</Callout>
