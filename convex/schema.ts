@@ -760,6 +760,9 @@ export default defineSchema({
         guildId: v.string(),
         gameId: v.optional(gameId),
         kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
+        // A draft is saved from the new-match form but not published: it shows
+        // only in the dashboard and the bot does not announce it.
+        isDraft: v.optional(v.boolean()),
         matchType: v.optional(v.string()),
         name: v.string(),
         description: v.optional(v.string()),

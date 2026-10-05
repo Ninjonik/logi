@@ -290,6 +290,8 @@ export type EventRecord = {
     /** Missing means the legacy Hell Let Loose game scope. */
     gameId?: GameId
     kind: EventKind
+    /** Saved but not published: shown only in the dashboard, never announced. */
+    isDraft?: boolean
     matchType?: MatchTypeCategory
     name: string
     description?: string
