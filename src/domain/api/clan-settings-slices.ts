@@ -8,10 +8,12 @@ import {
     assertClanSettingsSlices,
     type AnyClanSettingsSlice,
 } from "./settings-slices"
+import { membershipApplicationSettingsSlice } from "./membership-application-settings-slice"
 import { panelGraphicsSettingsSlice } from "./panel-graphics-settings-slice"
 
 export const CLAN_SETTINGS_SLICES: readonly AnyClanSettingsSlice[] = [
     panelGraphicsSettingsSlice,
+    membershipApplicationSettingsSlice,
 ]
 
 assertClanSettingsSlices(CLAN_SETTINGS_SLICES)

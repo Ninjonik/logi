@@ -597,12 +597,9 @@ export const applicationQuestionSchema = z.strictObject({
     type: z.enum([...APPLICATION_QUESTION_TYPES, "member"]),
     label: trimmed(APPLICATION_LIMITS.label).min(1),
     required: z.boolean(),
-    help: trimmed(APPLICATION_LIMITS.help)
-        .optional()
-        .transform((value) => value || undefined),
-    placeholder: trimmed(APPLICATION_LIMITS.placeholder)
-        .optional()
-        .transform((value) => value || undefined),
+    // Leave out an empty help or placeholder: Discord refuses empty texts.
+    help: trimmed(APPLICATION_LIMITS.help).min(1).optional(),
+    placeholder: trimmed(APPLICATION_LIMITS.placeholder).min(1).optional(),
     options: z
         .array(
             z.strictObject({

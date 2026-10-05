@@ -153,7 +153,11 @@ in `src/domain/api/` built with `defineClanSettingsSlice`
 - `toPatch(patch, { discordConfig })`: the validated patch mapped to
   `discordConfigs` fields. Those fields must exist in `convex/schema.ts`
   (additive, optional); a slice may not write identity, bookkeeping, secrets,
-  the plain settings fields or another slice's fields.
+  the plain settings fields or another slice's fields;
+- `verify(patch, { discordConfig })` (optional): checks that need the stored
+  configuration, such as limits that depend on the clan's categories. Convex
+  runs it after the schema and answers `400 validation_error` with its
+  message.
 
 Append the module to `CLAN_SETTINGS_SLICES`
 (`src/domain/api/clan-settings-slices.ts`). Nothing else changes: the route
@@ -198,6 +202,48 @@ only); the API references existing assets by ID. The fixed faction, nation,
 status and gauge signs are not settings: the bot provisions them as application
 emoji, and their upload state is shown on the page and returned by the
 dashboard route only.
+
+### `membershipApplication` (Přihláška do klanu)
+
+`src/domain/api/membership-application-settings-slice.ts`, stored in
+`discordConfigs.membershipSettings`. GET returns `enabled`, the panel channel
+(`panelChannelId`), the thread channel (`threadChannelId`), `panelTitle`,
+`panelText`, `panelImageUrl`, `welcomeMessage`, the after-submit switches
+`mentionSupportRoles`, `autoRecruitOnApply`,
+`inviteSupportMembersIndividually` and `sendConfirmationDm`, the fixed
+`draftTtlHours` (24), the web form switch `webFormEnabled` (Variant B, off by
+default), `formSource` (`default` until the clan saves its own form), the whole
+`form` (windows `about` and `accounts` after the fixed fields, up to three
+`questionWindows`; question types `short_text`, `long_text`, `select`,
+`multi_select`, `yes_no`, `number`, plus `member` for the referrer question;
+`required`, `help`, `placeholder`, `options`, `minValues`/`maxValues`, `game`
+and `categoryIds` filters) and the categories with `askSpecialization`.
+PATCH accepts any of the writable fields; `form: null` returns to the default
+form and `askSpecialization` maps a category ID to the switch. The schema
+enforces Discord's text limits (45-character labels, 100-character help and
+placeholder, 25 options); `verify` checks the five fields per window for the
+applicant who sees the most questions with the clan's real categories, refuses
+category filters naming no category of the clan and a specialization question
+for a Wardogs category, and keeps the dashboard's rules for switching
+applications on (both channels, title, text, at least one category). The
+dashboard saves the same fields through
+`src/lib/validation/discord-settings.ts`, which runs the same
+`validateApplicationForm`.
+
+**Deliberate exclusions:** the decisions on an application (Přijmout jako
+člena/rekruta/žoldáka, Zamítnout…, Ještě nerozhodnuto) are buttons on the
+thread card in Discord and `/close_application`: they check the decider's
+Discord roles when the button is pressed and have no dashboard lifecycle, so
+there is no API operation for them. Categories, their roles and support roles
+are edited in the dashboard's membership settings (no API operation yet, like
+before this slice). The panel image is uploaded in the dashboard
+(`POST /api/servers/{serverId}/image-assets`, then
+`POST /api/servers/{serverId}/membership-application` with
+`action: "attach-image"`); the API reads its URL only. The channel permission
+check of the settings page (`action: "check-channels"`) asks Discord live and
+is not an API operation. The applicant-side web form
+(`/api/applications/{guildId}`) belongs to the signed-in applicant, not to an
+API key.
 
 ## Source and runtime evidence
 

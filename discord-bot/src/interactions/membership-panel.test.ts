@@ -22,6 +22,8 @@ const config: DiscordConfig = {
     guildId: "123456789012345678",
     timezone: "Europe/Prague",
     defaultLanguage: "cs",
+    calendarCategories: [],
+    updatedAt: "2026-10-05T10:00:00.000Z",
     membershipSettings: {
         enabled: true,
         submitChannelId: "1",
