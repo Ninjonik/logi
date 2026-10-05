@@ -147,8 +147,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
             title: "Link your platform ID",
             membershipIntro:
                 "Before we can continue your clan application, you need to link a platform ID here in Discord.",
-            linkIntro:
-                "Link your platform ID here in Discord.",
+            linkIntro: "Link your platform ID here in Discord.",
             startButton: "Link your platform ID",
             addAnotherButton: "Add another platform ID",
             unlinkButton: "Unlink a platform ID",
@@ -229,8 +228,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
             title: "Propojit platform ID",
             membershipIntro:
                 "Než budeme pokračovat s vaší klanovou přihláškou, musíte si tady v Discordu propojit platform ID.",
-            linkIntro:
-                "Propojte si platform ID přímo tady v Discordu.",
+            linkIntro: "Propojte si platform ID přímo tady v Discordu.",
             startButton: "Propojit platform ID",
             addAnotherButton: "Přidat další platform ID",
             unlinkButton: "Odpojit platform ID",
@@ -464,8 +462,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
             title: "Verknüpfen Sie Ihre Platform ID",
             membershipIntro:
                 "Bevor wir mit Ihrer Clan-Bewerbung fortfahren können, müssen Sie hier in Discord eine Platform ID verknüpfen.",
-            linkIntro:
-                "Verknüpfen Sie Ihre Platform ID hier in Discord.",
+            linkIntro: "Verknüpfen Sie Ihre Platform ID hier in Discord.",
             startButton: "Platform ID verknüpfen",
             addAnotherButton: "Weitere Platform ID hinzufügen",
             unlinkButton: "Platform ID trennen",
