@@ -2,9 +2,13 @@ import { connection } from "next/server"
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
+import { GraduationCap } from "lucide-react"
+
+import { getDiscordChannelNames } from "@/lib/read-models/discord-channel-names"
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table"
 import { TablePageLayout } from "@/components/app/table-page-layout"
 import { PageHeader } from "@/components/app/page-header"
+import { EmptyState } from "@/components/app/empty-state"
 import { getGuildMetadata } from "@/lib/server-metadata"
 import { getServerContext } from "@/lib/server-context"
 import { getEventStatusMeta } from "@/lib/event-status"
@@ -55,6 +59,10 @@ export default async function TrainingsPage({
     if (!context) return null
     const { events, canAdmin, discordConfig } = context
     const trainings = events.filter((event) => event.kind === "training")
+    const channelNames = trainings.some((event) => event.meetingChannelId)
+        ? await getDiscordChannelNames(serverId, context.server.discordId)
+        : new Map<string, string>()
+    const createHref = `/${locale}/dashboard/servers/${serverId}/trainings/create${typeof game === "string" && isGameId(game) ? `?game=${game}` : ""}`
     const paginated = getPaginatedRows({
         rows: trainings,
         searchParams: resolvedSearchParams,
@@ -74,10 +82,8 @@ export default async function TrainingsPage({
                         actions={
                             canAdmin ? (
                                 <Button asChild className="rounded-xl">
-                                    <a
-                                        href={`/${locale}/dashboard/servers/${serverId}/trainings/create${typeof game === "string" && isGameId(game) ? `?game=${game}` : ""}`}
-                                    >
-                                        {dictionary.common.createEvent}
+                                    <a href={createHref}>
+                                        {dictionary.event.createTrainingAction}
                                     </a>
                                 </Button>
                             ) : undefined
@@ -85,68 +91,97 @@ export default async function TrainingsPage({
                     />
                 }
             >
-                <ResourceTable
-                    className="h-full"
-                    dictionary={dictionary}
-                    rows={paginated.rows}
-                    page={paginated.page}
-                    pageSize={paginated.pageSize}
-                    pageCount={paginated.pageCount}
-                    totalRows={paginated.totalRows}
-                    search={paginated.search}
-                    searchPlaceholder={dictionary.shared.searchTable}
-                    gameColumn={{
-                        show: !(typeof game === "string" && isGameId(game)),
-                        getGameId: (event) => event.gameId,
-                    }}
-                    getHref={(event) =>
-                        `/${locale}/dashboard/servers/${serverId}/trainings/${event.id}`
-                    }
-                    columns={[
-                        {
-                            key: "name",
-                            title: dictionary.tables.event,
-                            render: (event) => (
-                                <div className="font-medium">{event.name}</div>
-                            ),
-                        },
-                        {
-                            key: "meetingStart",
-                            title: dictionary.tables.meeting,
-                            render: (event) =>
-                                formatDateTime(
-                                    event.meetingStart,
-                                    discordConfig?.timezone
+                {!trainings.length ? (
+                    <EmptyState
+                        icon={GraduationCap}
+                        title={dictionary.matchList.emptyTrainingsTitle}
+                        description={
+                            canAdmin
+                                ? dictionary.matchList.emptyTrainingsAdmin
+                                : dictionary.matchList.emptyTrainingsMember
+                        }
+                        actions={
+                            canAdmin ? (
+                                <Button asChild className="rounded-xl">
+                                    <a href={createHref}>
+                                        {dictionary.event.createTrainingAction}
+                                    </a>
+                                </Button>
+                            ) : undefined
+                        }
+                    />
+                ) : (
+                    <ResourceTable
+                        className="h-full"
+                        dictionary={dictionary}
+                        rows={paginated.rows}
+                        page={paginated.page}
+                        pageSize={paginated.pageSize}
+                        pageCount={paginated.pageCount}
+                        totalRows={paginated.totalRows}
+                        search={paginated.search}
+                        searchPlaceholder={dictionary.shared.searchTable}
+                        gameColumn={{
+                            show: !(typeof game === "string" && isGameId(game)),
+                            getGameId: (event) => event.gameId,
+                        }}
+                        getHref={(event) =>
+                            `/${locale}/dashboard/servers/${serverId}/trainings/${event.id}`
+                        }
+                        columns={[
+                            {
+                                key: "name",
+                                title: dictionary.tables.event,
+                                render: (event) => (
+                                    <div className="font-medium">
+                                        {event.name}
+                                    </div>
                                 ),
-                        },
-                        {
-                            key: "meetingChannelId",
-                            title:
-                                dictionary.event.fields.meetingChannelId ??
-                                "Meeting VC",
-                            render: (event) =>
-                                event.meetingChannelId ??
-                                dictionary.shared.notSet,
-                        },
-                        {
-                            key: "status",
-                            title: dictionary.tables.status,
-                            render: (event) => {
-                                const meta = getEventStatusMeta(
-                                    event.status,
-                                    dictionary
-                                )
-                                return (
-                                    <StatusBadge
-                                        active={meta?.active}
-                                        activeLabel={meta.label}
-                                        inactiveLabel={meta.label}
-                                    />
-                                )
                             },
-                        },
-                    ]}
-                />
+                            {
+                                key: "meetingStart",
+                                title: dictionary.tables.meeting,
+                                render: (event) =>
+                                    formatDateTime(
+                                        event.meetingStart,
+                                        discordConfig?.timezone
+                                    ),
+                            },
+                            {
+                                key: "meetingChannelId",
+                                title:
+                                    dictionary.event.fields.meetingChannelId ??
+                                    "Meeting VC",
+                                render: (event) =>
+                                    event.meetingChannelId
+                                        ? channelNames.has(
+                                              event.meetingChannelId
+                                          )
+                                            ? `#${channelNames.get(event.meetingChannelId)}`
+                                            : dictionary.matchList
+                                                  .unknownChannel
+                                        : dictionary.shared.notSet,
+                            },
+                            {
+                                key: "status",
+                                title: dictionary.tables.status,
+                                render: (event) => {
+                                    const meta = getEventStatusMeta(
+                                        event.status,
+                                        dictionary
+                                    )
+                                    return (
+                                        <StatusBadge
+                                            active={meta?.active}
+                                            activeLabel={meta.label}
+                                            inactiveLabel={meta.label}
+                                        />
+                                    )
+                                },
+                            },
+                        ]}
+                    />
+                )}
             </TablePageLayout>
             <DynamicMetadataMarker />
         </>

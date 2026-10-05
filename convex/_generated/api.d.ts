@@ -69,6 +69,7 @@ import type * as leagueTrackingStore from "../leagueTrackingStore.js";
 import type * as matchRecaps from "../matchRecaps.js";
 import type * as matchStats from "../matchStats.js";
 import type * as matchTeams from "../matchTeams.js";
+import type * as matchTemplateValidators from "../matchTemplateValidators.js";
 import type * as meetingAttendance from "../meetingAttendance.js";
 import type * as memberObservations from "../memberObservations.js";
 import type * as memberRoleOperations from "../memberRoleOperations.js";
@@ -188,6 +189,7 @@ declare const fullApi: ApiFromModules<{
   matchRecaps: typeof matchRecaps;
   matchStats: typeof matchStats;
   matchTeams: typeof matchTeams;
+  matchTemplateValidators: typeof matchTemplateValidators;
   meetingAttendance: typeof meetingAttendance;
   memberObservations: typeof memberObservations;
   memberRoleOperations: typeof memberRoleOperations;

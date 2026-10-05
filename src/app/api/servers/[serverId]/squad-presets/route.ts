@@ -6,12 +6,15 @@ import {
 } from "@/lib/server-route-errors"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { squadPresetSchema } from "@/lib/validation/squad-preset"
+import { clanAdminWriteDenied } from "@/lib/api/clan-admin-route"
 import { saveSquadPreset } from "@/lib/server-squad-presets"
 
 export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ serverId: string }> }
 ) {
+    const denied = await clanAdminWriteDenied(request, (await params).serverId)
+    if (denied) return denied
     try {
         const body = squadPresetSchema.parse(await request.json())
         const { serverId } = await params

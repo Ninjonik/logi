@@ -2,6 +2,7 @@ export type Timestamp = string
 
 import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
 import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
+import type { MatchTemplate } from "@/domain/events/match-templates"
 import type { GameId } from "@/domain/games/game"
 export type { GameId, GameScope } from "@/domain/games/game"
 
@@ -108,6 +109,8 @@ export type Guild = {
     avatar: string
     description?: string
     eventCategories?: EventCategory[]
+    /** Create-form defaults per match or training type (design D1). */
+    matchTemplates?: MatchTemplate[]
     enabledGames?: GameId[]
     calendarItems?: CalendarItem[]
     botInside: boolean

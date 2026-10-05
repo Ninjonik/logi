@@ -1,4 +1,5 @@
 import { DISCORD_MESSAGE_MAX_ATTACHMENTS } from "../src/domain/discord-sync/attachment-limits"
+import { eventsBlockingTopicPresetDeletion } from "../src/domain/events/preset-deletion"
 import { getGuildById, getGuildDiscordId } from "./identity"
 import { internalAuthSecret } from "./discord_shared"
 import { mutation } from "./_generated/server"
@@ -120,5 +121,54 @@ export const upsert = mutation({
         })
 
         return String(presetId)
+    },
+})
+
+/**
+ * Deletes a topic preset of this clan unless an event that is not concluded
+ * still uses it; those events copy its topics into their forum and can resync.
+ */
+export const remove = mutation({
+    args: {
+        secret: v.string(),
+        serverId: v.id("guilds"),
+        presetId: v.id("topicPresets"),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+
+        const guild = await getGuildById(ctx, args.serverId)
+        if (!guild) {
+            throw new Error("Server not found.")
+        }
+        const guildDiscordId = getGuildDiscordId(guild)
+        const existing = await ctx.db.get(args.presetId)
+        if (!existing || existing.guildId !== guildDiscordId) {
+            return { ok: false as const, error: "not_found" as const }
+        }
+
+        const events = await ctx.db
+            .query("events")
+            .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+            .collect()
+        const blocking = eventsBlockingTopicPresetDeletion(
+            events.map((event) => ({
+                ...event,
+                topicPresetId: event.topicPresetId
+                    ? String(event.topicPresetId)
+                    : undefined,
+            })),
+            String(args.presetId)
+        )
+        if (blocking.length) {
+            return {
+                ok: false as const,
+                error: "in_use" as const,
+                eventCount: blocking.length,
+            }
+        }
+
+        await ctx.db.delete(args.presetId)
+        return { ok: true as const }
     },
 })

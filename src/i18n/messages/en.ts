@@ -2897,12 +2897,26 @@ export const enMessages = {
         sections: {
             profile: {
                 title: "Clan profile",
-                description:
-                    "Name, logo, description, event categories and calendar items.",
+                description: "Name, logo and description of the clan.",
             },
             games: {
                 title: "Games",
                 description: "Which games the clan plays.",
+            },
+            "event-categories": {
+                title: "Event categories",
+                description:
+                    "Labels and colours for matches and trainings, such as Friendly or League.",
+            },
+            "match-templates": {
+                title: "Match templates",
+                description:
+                    "What a new match or training starts with: times, sign-ups and Discord.",
+            },
+            presets: {
+                title: "Squad and topic presets",
+                description:
+                    "Roster shapes and briefing topics that matches copy.",
             },
             messages: {
                 title: "Discord messages",
@@ -3378,6 +3392,175 @@ export const enMessages = {
         updateDmDeliveryFailed:
             "Roster saved, but one or more player DMs could not be delivered.",
     },
+    matchList: {
+        title: "Matches and trainings",
+        description:
+            "Soonest first. Each event shows which phase it is in and what is missing.",
+        recurring: "Recurring",
+        newMatch: "New match",
+        editTemplates: "Edit templates",
+        emptyTitle: "No matches yet",
+        emptyAdmin:
+            "Create the first match. A template pre-fills the times, sign-ups and the Discord message.",
+        emptyMember: "Your clan has not planned any matches or trainings yet.",
+        emptyTrainingsTitle: "No trainings yet",
+        emptyTrainingsAdmin:
+            "Create a training. Members sign up in Discord and afterwards you record who passed.",
+        emptyTrainingsMember: "Your clan has not planned any trainings yet.",
+        unknownChannel: "Channel not found",
+        tabsLabel: "Show",
+        tabs: {
+            upcoming: "Upcoming",
+            played: "Played",
+        },
+        filters: {
+            matches: "Matches",
+            trainings: "Trainings",
+            game: "Game",
+            allGames: "All games",
+            searchLabel: "Search matches",
+            searchPlaceholder: "Opponent, map…",
+        },
+        weeks: {
+            thisWeek: "This week",
+            nextWeek: "Next week",
+            lastWeek: "Last week",
+            weekOf: "Week of {date}",
+        },
+        recentlyPlayed: "Recently played",
+        noUpcoming: "No upcoming events match the filters.",
+        noPlayed: "No played events match the filters.",
+        signedUp: "{count} signed up",
+        trainingOutcome: "{passed} passed, {failed} failed",
+        phase: {
+            registration: "Sign-ups until {when}",
+            registrationClosed: "Sign-ups closed",
+            rosterMissing: "Roster missing",
+            rosterDraft: "Roster · draft",
+            rosterPublished: "Roster published",
+            unconfirmed: "{count} not confirmed",
+            awaitingResult: "No result yet",
+            concluded: "Closed",
+        },
+        queue: {
+            title: "Waiting for you",
+            publishRoster: "Publish the roster",
+            confirmAttendance: "Check attendance",
+            openSlots: "{count} open slots",
+            unconfirmed: "{count} players without confirmation",
+        },
+        recurrence: {
+            weekly: "Every week: {days}",
+            everyWeeks: "Every {count} weeks: {days}",
+            monthlyDate: "Monthly on day {day}",
+            monthlyWeekday: "Monthly, {nth}. {day}",
+        },
+        recurringStopHint:
+            "To change or stop a series, open its match and change the repeat settings.",
+        editSeries: "Edit series",
+        recurringEmptyAdmin:
+            "Turn on repeating when you create a match to start a series.",
+    },
+    matchTemplates: {
+        chooserLabel: "Template",
+        newName: "New template",
+        allGames: "all games",
+        add: "New template",
+        emptyTitle: "No match templates yet",
+        emptyDescription:
+            "A template pre-fills a new match: times, who may sign up and what the bot does in Discord. Each match can still change it.",
+        saved: "Templates saved.",
+        errors: {
+            too_many: "A clan can have at most 20 templates.",
+            duplicate_id: "Two templates share an id. Reload the page.",
+            missing_name: "Give the template a name.",
+            invalid_times:
+                "Times must be whole numbers and the duration at least one minute.",
+            missing_ping_roles: "Choose at least one role to ping.",
+            invalid_templates: "Some values are not valid.",
+            forbidden:
+                "Only clan admins can change templates. Sign in again if your session has expired.",
+            save_failed: "The templates could not be saved.",
+        },
+        basics: {
+            title: "Template",
+            name: "Name",
+            kind: "Type",
+            match: "Match",
+            training: "Training",
+            game: "Game",
+            category: "Event category",
+            categoryHint: "Colour and label in Discord and the calendar.",
+        },
+        times: {
+            title: "Times",
+            announcement: "Announcement",
+            immediately: "Immediately",
+            scheduled: "Before the start",
+            hoursBeforeStart: "h before the start",
+            registrationEnd: "Registration closes",
+            hoursBeforeMeeting: "h before the meeting",
+            meeting: "Meeting",
+            minutesBeforeStart: "min before the start",
+            duration: "Duration",
+            minutes: "min",
+            exampleCaption: "Example for a start on Sunday at 20:00",
+            onPublish: "on publish",
+            start: "Start",
+            end: "End",
+        },
+        signup: {
+            title: "Sign-ups",
+            who: "Who can sign up",
+            whoHint: "By the member status from Membership settings.",
+            groups: "Groups",
+            groupsHint: "What a player picks when signing up.",
+            noGroups: "This game has no signup groups yet.",
+            groupsAllGames:
+                "A template for all games offers every signup group of the match's game. Choose a game to pick groups.",
+            general: "Sign up without choosing a group",
+            reminder: "Sign-up reminder",
+        },
+        discord: {
+            title: "Discord",
+            ping: "Ping on announcement",
+            create: "Create automatically",
+            forum: "Match forum",
+        },
+        appliesToNew:
+            "Applies to new matches. Matches that already exist do not change.",
+        remove: "Delete template",
+        removeTitle: "Delete the template {name}?",
+        removeDescription:
+            "The template disappears when you save. Matches created from it stay as they are.",
+        discard: "Discard",
+        save: "Save templates",
+        presets: {
+            squadDescription:
+                "The starting shape of a roster: squads, roles and slots. New rosters copy it.",
+            topicDescription:
+                "Briefing topics a match copies into its Discord forum.",
+            count: "Presets: {count}",
+            manage: "Manage",
+        },
+        picker: {
+            label: "Template",
+            none: "No template",
+            hint: "A template fills the times, sign-ups and Discord options. You can still change everything below.",
+            empty: "No templates yet.",
+            manage: "Edit templates",
+            applied: "Template {name} applied.",
+            registration: "Registration {hours} h before the meeting",
+        },
+        preview: {
+            title: "Preview in Discord",
+            hint: "Discord shows the times in each reader's time zone.",
+            note: "Built from the same fields as the bot's announcement. Signed-up players and the forum link appear once the match exists.",
+            today: "Today",
+        },
+        createDescription:
+            "Most of it comes from a template. On the right you see how players will see the match in Discord.",
+    },
     event: {
         signupStatusSignedUpAs: "You are signed up as: {type}.",
         signupStatusGeneral: "general attendee",
@@ -3604,6 +3787,10 @@ export const enMessages = {
         discordPreview: "Discord preview",
         previewUntitled: "Untitled event",
         previewNoDescription: "Your event description will appear here.",
+        createMatchAction: "Create match",
+        createTrainingAction: "Create training",
+        recurrenceEditHelp:
+            "Turn repeating off to stop the series. Matches that already exist stay.",
     },
     presets: {
         topicTitle: "Topic presets",
@@ -3662,6 +3849,28 @@ export const enMessages = {
             topics: "Topics",
             groups: "Groups",
             roleSlots: "Role slots",
+            squads: "Squads",
+        },
+        emptySquadTitle: "No squad presets yet",
+        emptySquadAdmin:
+            "A squad preset is the starting shape of a roster: squads, roles and slots. Create one and new rosters copy it.",
+        emptyTopicTitle: "No topic presets yet",
+        emptyTopicAdmin:
+            "A topic preset holds briefing topics that a match copies into its Discord forum.",
+        emptyMember: "Your clan admins have not created any presets yet.",
+        delete: {
+            action: "Delete preset",
+            title: "Delete the preset {name}?",
+            squadConsequence:
+                "Existing rosters keep their squads. New rosters can no longer start from this preset.",
+            topicConsequence:
+                "Concluded matches keep the topics they already posted. A match that is not concluded and uses this preset blocks the deletion.",
+            confirm: "Delete",
+            done: "Preset deleted.",
+            inUse: "Open matches still using this preset: {count}. Choose another preset there first.",
+            forbidden:
+                "Only clan admins can delete presets. Sign in again if your session has expired.",
+            failed: "The preset could not be deleted.",
         },
     },
     groups: {

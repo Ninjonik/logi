@@ -177,11 +177,14 @@ export function ServerFrontendSettingsForm({
     dictionary,
     guildLoginUrl,
     showLoginLink = true,
+    part = "all",
 }: {
     server: Guild
     dictionary: Dictionary
     guildLoginUrl: string
     showLoginLink?: boolean
+    /** Settings show the profile and the event categories on separate pages; both save the whole profile. */
+    part?: "all" | "profile" | "categories"
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -286,10 +289,14 @@ export function ServerFrontendSettingsForm({
     return (
         <Card className="border-border/60 rounded-2xl">
             <CardHeader>
-                <CardTitle>{dictionary.serverSettings.clanName}</CardTitle>
+                <CardTitle>
+                    {part === "categories"
+                        ? dictionary.serverSettings.eventCategoriesTitle
+                        : dictionary.serverSettings.clanName}
+                </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="space-y-2">
+                <div className="space-y-2" hidden={part === "categories"}>
                     <Label>{dictionary.serverSettings.clanName}</Label>
                     <Input
                         value={name}
@@ -297,7 +304,7 @@ export function ServerFrontendSettingsForm({
                         className="rounded-xl"
                     />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2" hidden={part === "categories"}>
                     <AvatarPicker
                         value={avatar}
                         onChange={setAvatar}
@@ -307,7 +314,7 @@ export function ServerFrontendSettingsForm({
                         disabled={isPending}
                     />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2" hidden={part === "categories"}>
                     <Label>{dictionary.event.fields.description}</Label>
                     <Textarea
                         value={description}
@@ -316,7 +323,10 @@ export function ServerFrontendSettingsForm({
                     />
                 </div>
 
-                <div className="border-border/60 space-y-4 rounded-2xl border p-4">
+                <div
+                    className="border-border/60 space-y-4 rounded-2xl border p-4"
+                    hidden={part === "profile"}
+                >
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <h3 className="font-semibold">

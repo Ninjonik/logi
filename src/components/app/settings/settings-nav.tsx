@@ -1,15 +1,14 @@
 import Link from "next/link"
 
 import {
-    SETTINGS_PRESET_LINKS,
-    SETTINGS_SECTION_ICONS,
-    settingsHref,
-} from "@/components/app/settings/settings-section-meta"
-import {
     SETTINGS_GROUPS,
     type SettingsSectionId,
     type SettingsSectionState,
 } from "@/domain/workspaces/settings-sections"
+import {
+    SETTINGS_SECTION_ICONS,
+    settingsHref,
+} from "@/components/app/settings/settings-section-meta"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { GameId } from "@/domain/games/game"
 import { cn } from "@/lib/utils"
@@ -44,8 +43,7 @@ function NavGroups({
                 const items = sections.filter(
                     (section) => section.group === group
                 )
-                const presets = group === "matches" ? SETTINGS_PRESET_LINKS : []
-                if (!items.length && !presets.length) return null
+                if (!items.length) return null
                 return (
                     <div key={group} className="space-y-1">
                         <p className="text-muted-foreground px-2.5 text-xs font-medium">
@@ -98,25 +96,6 @@ function NavGroups({
                                     </li>
                                 )
                             })}
-                            {presets.map((preset) => (
-                                <li key={preset.key}>
-                                    <Link
-                                        href={`/${locale}/dashboard/servers/${serverId}/${preset.path}`}
-                                        className={itemClass}
-                                    >
-                                        <preset.icon
-                                            className="text-muted-foreground size-4 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                        <span className="min-w-0 flex-1">
-                                            {
-                                                dictionary.settingsHub
-                                                    .presetLinks[preset.key]
-                                            }
-                                        </span>
-                                    </Link>
-                                </li>
-                            ))}
                         </ul>
                     </div>
                 )

@@ -14,6 +14,9 @@ export type SettingsGroupId = (typeof SETTINGS_GROUPS)[number]
 export const SETTINGS_SECTIONS = [
     { id: "profile", group: "clan" },
     { id: "games", group: "clan" },
+    { id: "event-categories", group: "clan" },
+    { id: "match-templates", group: "matches" },
+    { id: "presets", group: "matches" },
     { id: "messages", group: "matches" },
     { id: "channels", group: "discord" },
     { id: "roles", group: "discord" },

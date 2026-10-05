@@ -13,6 +13,7 @@ import { StatsCommandSettingsForm } from "@/components/app/settings/stats-comman
 import { MembershipIntegrationSettings } from "@/components/app/membership-integration-settings"
 import { DiscordRoleSettingsForm } from "@/components/app/settings/discord-role-settings-form"
 import { DiscordMessagesSettings } from "@/components/app/settings/discord-messages-settings"
+import { MatchTemplatesSettings } from "@/components/app/settings/match-templates-settings"
 import { WebsiteEventPolicySettings } from "@/components/app/website-event-policy-settings"
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
 import { SettingsSectionFrame } from "@/components/app/settings/settings-section-frame"
@@ -22,6 +23,7 @@ import { settingsHref } from "@/components/app/settings/settings-section-meta"
 import { settingsSnapshot } from "@/components/app/settings/settings-snapshot"
 import { WardogsLeaguePreview } from "@/components/app/wardogs-league-preview"
 import { CalendarFeedSettings } from "@/components/app/calendar-feed-settings"
+import { PresetsOverview } from "@/components/app/settings/presets-overview"
 import { GameDataConnections } from "@/components/app/game-data-connections"
 import { TicketSettingsForm } from "@/components/app/ticket-settings-form"
 import { LeagueTrackingForm } from "@/components/app/league-tracking-form"
@@ -114,6 +116,43 @@ export default async function ServerSettingsSectionPage({
                     dictionary={dictionary}
                     guildLoginUrl={guildLoginUrl}
                     showLoginLink={false}
+                    part="profile"
+                />
+            )
+            break
+        case "event-categories":
+            content = (
+                <ServerFrontendSettingsForm
+                    server={server}
+                    dictionary={dictionary}
+                    guildLoginUrl={guildLoginUrl}
+                    showLoginLink={false}
+                    part="categories"
+                />
+            )
+            break
+        case "match-templates":
+            content = (
+                <MatchTemplatesSettings
+                    serverId={serverId}
+                    templates={server.matchTemplates ?? []}
+                    categories={server.eventCategories ?? []}
+                    groups={context.groups}
+                    topicPresets={context.topicPresets}
+                    enabledGames={snapshot.enabledGames}
+                    locale={locale}
+                    dictionary={dictionary}
+                />
+            )
+            break
+        case "presets":
+            content = (
+                <PresetsOverview
+                    locale={locale}
+                    serverId={serverId}
+                    squadPresetCount={context.squadPresets.length}
+                    topicPresetCount={context.topicPresets.length}
+                    dictionary={dictionary}
                 />
             )
             break

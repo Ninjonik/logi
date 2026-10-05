@@ -94,6 +94,17 @@ and in [Discord public panels](discord-public-panels.md#api-and-activation).
   picker are available (see above), but external League/HLL team identities
   cannot be linked to catalogue teams and a slot holds one team (no
   coalitions). Watched League team codes remain separate from the catalogue.
+- **Match templates and preset deletion (API parity):** Settings → Match
+  templates stores create-form defaults on the clan (`guilds.matchTemplates`,
+  written by `guilds:saveMatchTemplates`). They only pre-fill the dashboard
+  create form; stored events, the bot and `/api/v1` event writes never read
+  them, so there is deliberately no `/api/v1` operation for them: API clients
+  send every event field explicitly. Squad and topic presets can now be deleted
+  in the dashboard, while `/api/v1/clan/squad-presets/{id}` and
+  `/api/v1/clan/topic-presets/{id}` still offer create and update only. A v1
+  `DELETE` needs a new idempotent Convex mutation beside
+  `publicApi:mutateClanPreset` (whose arguments must not change) and is open
+  follow-up work.
 
 These gaps are recorded for the next implementation decision; they are not
 silently counted as completed settings. Operational credentials/intents still

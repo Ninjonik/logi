@@ -1,10 +1,13 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { CalendarDays } from "lucide-react"
+
 import { ResourceTable, StatusBadge } from "@/components/app/resource-table"
 import { TablePageLayout } from "@/components/app/table-page-layout"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
 import { PageHeader } from "@/components/app/page-header"
+import { EmptyState } from "@/components/app/empty-state"
 import { getGuildMetadata } from "@/lib/server-metadata"
 import { getServerContext } from "@/lib/server-context"
 import { getEventStatusMeta } from "@/lib/event-status"
@@ -56,6 +59,7 @@ export default async function EventsPage({
     )
     if (!context) return null
     const { events, canAdmin, discordConfig } = context
+    const createHref = `/${locale}/dashboard/servers/${serverId}/events/create${typeof game === "string" && isGameId(game) ? `?game=${game}` : ""}`
     const paginated = getPaginatedRows({
         rows: events,
         searchParams: resolvedSearchParams,
@@ -85,9 +89,7 @@ export default async function EventsPage({
                         canAdmin ? (
                             <div className="flex flex-wrap gap-2">
                                 <Button asChild className="rounded-xl">
-                                    <a
-                                        href={`/${locale}/dashboard/servers/${serverId}/events/create${typeof game === "string" && isGameId(game) ? `?game=${game}` : ""}`}
-                                    >
+                                    <a href={createHref}>
                                         {dictionary.common.createEvent}
                                     </a>
                                 </Button>
@@ -97,102 +99,123 @@ export default async function EventsPage({
                 />
             }
         >
-            <ResourceTable
-                className="h-full"
-                dictionary={dictionary}
-                rows={paginated.rows}
-                page={paginated.page}
-                pageSize={paginated.pageSize}
-                pageCount={paginated.pageCount}
-                totalRows={paginated.totalRows}
-                search={paginated.search}
-                searchPlaceholder={dictionary.shared.searchTable}
-                gameColumn={{
-                    show: !(typeof game === "string" && isGameId(game)),
-                    getGameId: (event) => event.gameId,
-                }}
-                getHref={(event) =>
-                    `/${locale}/dashboard/servers/${serverId}/events/${event.id}`
-                }
-                columns={[
-                    {
-                        key: "name",
-                        title: dictionary.tables.event,
-                        render: (event) => (
-                            <div className="font-medium">{event.name}</div>
-                        ),
-                    },
-                    {
-                        key: "meetingStart",
-                        title: dictionary.tables.meeting,
-                        render: (event) =>
-                            formatDateTime(
-                                event.meetingStart,
-                                discordConfig?.timezone
+            {!events.length ? (
+                <EmptyState
+                    icon={CalendarDays}
+                    title={dictionary.matchList.emptyTitle}
+                    description={
+                        canAdmin
+                            ? dictionary.matchList.emptyAdmin
+                            : dictionary.matchList.emptyMember
+                    }
+                    actions={
+                        canAdmin ? (
+                            <Button asChild className="rounded-xl">
+                                <a href={createHref}>
+                                    {dictionary.common.createEvent}
+                                </a>
+                            </Button>
+                        ) : undefined
+                    }
+                />
+            ) : (
+                <ResourceTable
+                    className="h-full"
+                    dictionary={dictionary}
+                    rows={paginated.rows}
+                    page={paginated.page}
+                    pageSize={paginated.pageSize}
+                    pageCount={paginated.pageCount}
+                    totalRows={paginated.totalRows}
+                    search={paginated.search}
+                    searchPlaceholder={dictionary.shared.searchTable}
+                    gameColumn={{
+                        show: !(typeof game === "string" && isGameId(game)),
+                        getGameId: (event) => event.gameId,
+                    }}
+                    getHref={(event) =>
+                        `/${locale}/dashboard/servers/${serverId}/events/${event.id}`
+                    }
+                    columns={[
+                        {
+                            key: "name",
+                            title: dictionary.tables.event,
+                            render: (event) => (
+                                <div className="font-medium">{event.name}</div>
                             ),
-                    },
-                    {
-                        key: "map",
-                        title: dictionary.calendarCards.map,
-                        render: (event) =>
-                            `${formatHllPresetLabel(event.map) ?? event.map ?? "TBD"} • ${event.side ?? "TBD"}`,
-                    },
-                    {
-                        key: "result",
-                        title: dictionary.event.resultColumn,
-                        render: (event) => (
-                            <div className="font-medium">
-                                {getEventResultLabel(event, dictionary)}
-                            </div>
-                        ),
-                    },
-                    {
-                        key: "match",
-                        title: dictionary.event.matchColumn,
-                        render: (event) =>
-                            event.matchId ? (
-                                <Link
-                                    href={`/${locale}/dashboard/servers/${serverId}/events/${event.id}/match`}
-                                    className="text-primary font-medium underline-offset-4 hover:underline"
-                                >
-                                    #{event.matchId.slice(-6)}
-                                </Link>
-                            ) : (
-                                <span className="text-muted-foreground">
-                                    {dictionary.shared.notSet}
-                                </span>
-                            ),
-                    },
-                    {
-                        key: "status",
-                        title: dictionary.tables.status,
-                        render: (event) => {
-                            const meta = getEventStatusMeta(
-                                event.status,
-                                dictionary
-                            )
-                            return (
-                                <StatusBadge
-                                    active={meta?.active}
-                                    activeLabel={meta.label}
-                                    inactiveLabel={meta.label}
-                                />
-                            )
                         },
-                    },
-                    {
-                        key: "pingClan",
-                        title: dictionary.event.fields.pingClan,
-                        render: (event) => (
-                            <StatusBadge
-                                active={event.pingClan}
-                                activeLabel={dictionary.tables.enabled}
-                                inactiveLabel={dictionary.tables.disabled}
-                            />
-                        ),
-                    },
-                ]}
-            />
+                        {
+                            key: "meetingStart",
+                            title: dictionary.tables.meeting,
+                            render: (event) =>
+                                formatDateTime(
+                                    event.meetingStart,
+                                    discordConfig?.timezone
+                                ),
+                        },
+                        {
+                            key: "map",
+                            title: dictionary.calendarCards.map,
+                            render: (event) =>
+                                `${formatHllPresetLabel(event.map) ?? event.map ?? "TBD"} • ${event.side ?? "TBD"}`,
+                        },
+                        {
+                            key: "result",
+                            title: dictionary.event.resultColumn,
+                            render: (event) => (
+                                <div className="font-medium">
+                                    {getEventResultLabel(event, dictionary)}
+                                </div>
+                            ),
+                        },
+                        {
+                            key: "match",
+                            title: dictionary.event.matchColumn,
+                            render: (event) =>
+                                event.matchId ? (
+                                    <Link
+                                        href={`/${locale}/dashboard/servers/${serverId}/events/${event.id}/match`}
+                                        className="text-primary font-medium underline-offset-4 hover:underline"
+                                    >
+                                        {dictionary.event.openMatch}
+                                    </Link>
+                                ) : (
+                                    <span className="text-muted-foreground">
+                                        {dictionary.shared.notSet}
+                                    </span>
+                                ),
+                        },
+                        {
+                            key: "status",
+                            title: dictionary.tables.status,
+                            render: (event) => {
+                                const meta = getEventStatusMeta(
+                                    event.status,
+                                    dictionary
+                                )
+                                return (
+                                    <StatusBadge
+                                        active={meta?.active}
+                                        activeLabel={meta.label}
+                                        inactiveLabel={meta.label}
+                                    />
+                                )
+                            },
+                        },
+                        {
+                            key: "pingClan",
+                            title: dictionary.event.fields.pingClan,
+                            render: (event) => (
+                                <StatusBadge
+                                    active={event.pingClan}
+                                    activeLabel={dictionary.tables.enabled}
+                                    inactiveLabel={dictionary.tables.disabled}
+                                />
+                            ),
+                        },
+                    ]}
+                />
+            )}
         </TablePageLayout>
     )
 }
