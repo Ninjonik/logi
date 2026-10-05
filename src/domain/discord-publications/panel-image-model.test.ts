@@ -182,6 +182,13 @@ test("all image languages define the same copy", () => {
     )
 })
 
+test("nation names: short legend labels (P7) and full names (P8)", () => {
+    assert.equal(panelImageCopy("cs").nationShort.gb, "Británie")
+    assert.equal(panelImageCopy("cs").nationShort.sov, "SSSR")
+    assert.equal(panelImageCopy("cs").nation.gb, "Velká Británie")
+    assert.equal(panelImageCopy("cs").nation.sov, "Sovětský svaz")
+})
+
 test("a status icon always comes with its word", () => {
     assert.equal(
         panelStateText("live", "cs", "<:logi_live_1:2>"),

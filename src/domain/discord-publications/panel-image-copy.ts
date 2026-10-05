@@ -35,7 +35,10 @@ export type PanelImageCopy = {
     stamp(time: string): string
     mode: Record<HllMode, string>
     lighting: Record<HllLighting, string>
+    /** Full nation names (P8-21 "Velká Británie"). */
     nation: Record<HllNation, string>
+    /** Short legend labels (P7-28 "Británie", "SSSR"). */
+    nationShort: Record<HllNation, string>
     wardogs: Record<WardogsSign, string>
     alt: {
         score(parts: string[]): string
@@ -117,6 +120,16 @@ const cs: PanelImageCopy = {
         rain: "Déšť",
         overcast: "Zataženo",
     },
+    nationShort: {
+        us: "USA",
+        gb: "Británie",
+        sov: "SSSR",
+        cw: "Commonwealth",
+        ger: "Německo",
+        dak: "Afrikakorps",
+        allies: "Spojenci",
+        axis: "Osa",
+    },
     nation: {
         us: "USA",
         gb: "Velká Británie",
@@ -180,6 +193,16 @@ const en: PanelImageCopy = {
         rain: "Rain",
         overcast: "Overcast",
     },
+    nationShort: {
+        us: "USA",
+        gb: "Britain",
+        sov: "USSR",
+        cw: "Commonwealth",
+        ger: "Germany",
+        dak: "Afrikakorps",
+        allies: "Allies",
+        axis: "Axis",
+    },
     nation: {
         us: "USA",
         gb: "Great Britain",
@@ -241,6 +264,16 @@ const de: PanelImageCopy = {
         evening: "Abend",
         rain: "Regen",
         overcast: "Bewölkt",
+    },
+    nationShort: {
+        us: "USA",
+        gb: "Britannien",
+        sov: "UdSSR",
+        cw: "Commonwealth",
+        ger: "Deutschland",
+        dak: "Afrikakorps",
+        allies: "Alliierte",
+        axis: "Achse",
     },
     nation: {
         us: "USA",
