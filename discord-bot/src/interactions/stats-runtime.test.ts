@@ -72,8 +72,7 @@ function setup() {
             fetchedAt: null,
             reason: "blocked",
         }),
-        send: async () => {},
-        artwork: async () => null,
+        send: async () => ({ messageId: "message" }),
     }
     return {
         dependencies,

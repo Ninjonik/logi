@@ -28,6 +28,7 @@ test("publication checks fresh actor/bot permissions and the channel guild befor
             send: async (payload: { allowedMentions: { parse: string[] } }) => {
                 assert.deepEqual(payload.allowedMentions.parse, [])
                 sent++
+                return { id: "message-1" }
             },
         }
         const client = {
@@ -36,6 +37,7 @@ test("publication checks fresh actor/bot permissions and the channel guild befor
                     [
                         "guild-a",
                         {
+                            id: "guild-a",
                             channels: {
                                 fetch: async (
                                     _id: string,
