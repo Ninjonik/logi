@@ -135,3 +135,17 @@ test("preview timestamps follow the clan language", () => {
         "2 minutes ago"
     )
 })
+
+test("underscores inside names never start italics, as in Discord", () => {
+    assert.deepEqual(parseInlineMarkdown("Rex_CZ · 31 · Hans_88 · 28"), [
+        { type: "text", text: "Rex_CZ · 31 · Hans_88 · 28" },
+    ])
+    assert.deepEqual(parseInlineMarkdown("a _b_ c"), [
+        { type: "text", text: "a " },
+        { type: "em", children: [{ type: "text", text: "b" }] },
+        { type: "text", text: " c" },
+    ])
+    assert.deepEqual(parseInlineMarkdown("_x_y z_"), [
+        { type: "em", children: [{ type: "text", text: "x_y z" }] },
+    ])
+})

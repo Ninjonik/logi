@@ -29,6 +29,7 @@ export type MarkdownBlock = {
 const ESCAPABLE = /[\\*_~`|[\]()<>#\-.:>!@&]/
 const ANGLE =
     /^<(?:t:(-?\d{1,13})(?::([tTdDfFR]))?|@!?(\d{1,20})|@&(\d{1,20})|#(\d{1,20})|(a?):(\w{2,32}):(\d{1,20}))>/
+const WORD = /[\p{L}\p{N}_]/u
 const URL = /^https?:\/\/[^\s<>()]+[^\s<>().,:;!?'"]/
 const EMPHASIS: Array<[string, "strong" | "underline" | "strike" | "em"]> = [
     ["**", "strong"],
@@ -153,8 +154,17 @@ export function parseInlineMarkdown(src: string): MarkdownInline[] {
         }
         for (const [delimiter, type] of EMPHASIS) {
             if (!src.startsWith(delimiter, index)) continue
+            // Like Discord, "_" never starts or ends inside a word (Rex_CZ).
+            const underscore = delimiter.startsWith("_")
+            if (underscore && WORD.test(src[index - 1] ?? "")) continue
             const start = index + delimiter.length
-            const end = closing(src, delimiter, start)
+            let end = closing(src, delimiter, start)
+            while (
+                underscore &&
+                end > start &&
+                WORD.test(src[end + delimiter.length] ?? "")
+            )
+                end = closing(src, delimiter, end + 1)
             if (end > start) {
                 flush()
                 out.push({

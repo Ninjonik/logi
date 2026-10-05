@@ -158,7 +158,6 @@ function Inline({
                     <time
                         key={index}
                         dateTime={new Date(node.unix * 1000).toISOString()}
-                        className="rounded-[3px] bg-white/[0.06] px-0.5"
                     >
                         {text}
                     </time>
