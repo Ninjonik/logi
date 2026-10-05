@@ -228,6 +228,21 @@ test("a closed DM is reported in the reply, not hidden (M3-31, M3-B06)", async (
     )
 })
 
+test("with the ticket-closed DM switched off the author gets no DM and the reply says so (N1-42)", async () => {
+    const base = context()
+    const fake = command({ roles: [SUPPORT] })
+    await handleCloseTicketCommand(fake.interaction, {
+        ...ports({}),
+        thread: async () => ({
+            ...base,
+            config: { ...base.config, ticketCloseDmEnabled: false },
+        }),
+    })
+    assert.equal(fake.text("dm"), "[]")
+    assert.match(fake.text("reply"), /DM o uzavření ticketu má klan vypnutou/)
+    assert.ok(fake.calls.includes("archived"))
+})
+
 test("without a reason the close card has no quote and no 'Nebyl uveden důvod' (L4-34)", async () => {
     const fake = command({ roles: [SUPPORT], reason: null })
     await handleCloseTicketCommand(fake.interaction, ports({}))

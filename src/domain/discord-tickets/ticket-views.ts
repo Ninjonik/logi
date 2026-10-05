@@ -447,7 +447,8 @@ export function ticketClosedDmView(input: {
 export function ticketClosedReplyView(input: {
     copy: TicketCopy
     ticketNumber: number
-    dmDelivered: boolean
+    /** `"off"`: the clan switched the ticket-closed DM off (N1-42). */
+    dmDelivered: boolean | "off"
 }): MessageView {
     const { copy } = input
     return {
@@ -461,9 +462,12 @@ export function ticketClosedReplyView(input: {
         blocks: [
             {
                 kind: "text",
-                markdown: input.dmDelivered
-                    ? copy.close.successBody
-                    : copy.close.dmFailedBody,
+                markdown:
+                    input.dmDelivered === "off"
+                        ? copy.close.dmOffBody
+                        : input.dmDelivered
+                          ? copy.close.successBody
+                          : copy.close.dmFailedBody,
             },
         ],
     }

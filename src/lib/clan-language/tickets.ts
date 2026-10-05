@@ -62,6 +62,8 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
             successBody:
                 "Shrnutí je ve vlákně a autor ho dostal do DM. Vlákno je zamčené a archivované.",
             dmFailedBody: "Autorovi nejde poslat DM, shrnutí najde ve vlákně.",
+            dmOffBody:
+                "Shrnutí je ve vlákně. DM o uzavření ticketu má klan vypnutou. Vlákno je zamčené a archivované.",
             notAllowedTitle: "Tento ticket můžou zavřít jen podpora a správci",
             notAllowedBody:
                 "Ticket z kategorie {category} zavírá {roles} nebo správci Logi. Když je vyřešený, napiš to sem do vlákna.",
@@ -130,6 +132,8 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
                 "The summary is in the thread and the author got it by DM. The thread is locked and archived.",
             dmFailedBody:
                 "The author can't receive DMs; they'll find the summary in the thread.",
+            dmOffBody:
+                "The summary is in the thread. The clan has switched off the ticket-closed DM. The thread is locked and archived.",
             notAllowedTitle: "Only support and admins can close this ticket",
             notAllowedBody:
                 "Tickets in the {category} category are closed by {roles} or Logi's admins. If it's resolved, say so here in the thread.",
@@ -198,6 +202,8 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
                 "Die Zusammenfassung steht im Thread und der Autor hat sie per DM bekommen. Der Thread ist gesperrt und archiviert.",
             dmFailedBody:
                 "Dem Autor kann keine DM geschickt werden; die Zusammenfassung findet er im Thread.",
+            dmOffBody:
+                "Die Zusammenfassung steht im Thread. Der Clan hat die DM zum geschlossenen Ticket ausgeschaltet. Der Thread ist gesperrt und archiviert.",
             notAllowedTitle:
                 "Dieses Ticket können nur der Support und die Admins schließen",
             notAllowedBody:

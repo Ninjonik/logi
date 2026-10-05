@@ -63,6 +63,8 @@ export type TicketCopy = {
         successTitle: string
         successBody: string
         dmFailedBody: string
+        /** The clan switched the ticket-closed DM off (N1-42). */
+        dmOffBody: string
         notAllowedTitle: string
         /** "Ticket z kategorie {category} zavírá {roles} nebo správci Logi. …" */
         notAllowedBody: string

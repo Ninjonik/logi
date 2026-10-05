@@ -8,6 +8,7 @@
  * language, never English.
  */
 
+import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
 import { MessageFlags, type ChatInputCommandInteraction } from "discord.js"
 
 import {
@@ -158,28 +159,31 @@ export async function handleCloseTicketCommand(
     })
 
     const threadUrl = `https://discord.com/channels/${interaction.guildId}/${interaction.channelId}`
-    const dmDelivered = await interaction.client.users
-        .fetch(ticket.creatorId)
-        .then(async (author) => {
-            await author.send(
-                messagePayload(
-                    ticketClosedDmView({
-                        copy,
-                        clanName: await clanName(interaction),
-                        ticketNumber: ticket.ticketNumber,
-                        category: ticket.categoryLabel,
-                        closerName: displayName(interaction),
-                        reason,
-                        threadUrl,
-                        settingsUrl: ports.settingsUrl(language),
-                    }),
-                    options
-                )
-            )
-            return true
-        })
-        // Closed DMs are reported to the closer, not to the errors channel (L2-63).
-        .catch(() => false)
+    // The "DM o uzavření ticketu" switch on the messages page (N1-42).
+    const dmDelivered = !isMessageEnabled(context.config, "ticketCloseDm")
+        ? ("off" as const)
+        : await interaction.client.users
+              .fetch(ticket.creatorId)
+              .then(async (author) => {
+                  await author.send(
+                      messagePayload(
+                          ticketClosedDmView({
+                              copy,
+                              clanName: await clanName(interaction),
+                              ticketNumber: ticket.ticketNumber,
+                              category: ticket.categoryLabel,
+                              closerName: displayName(interaction),
+                              reason,
+                              threadUrl,
+                              settingsUrl: ports.settingsUrl(language),
+                          }),
+                          options
+                      )
+                  )
+                  return true
+              })
+              // Closed DMs are reported to the closer, not to the errors channel (L2-63).
+              .catch(() => false)
 
     const locale = getIntlLocaleForClanLanguage(language)
     const timeZone = context.config.timezone || "UTC"
