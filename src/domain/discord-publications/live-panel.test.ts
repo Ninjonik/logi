@@ -340,12 +340,22 @@ test("style A puts the score image first and keeps a short text; without it the 
     assert.match(fallback.text, /NEJVÍC ZABITÍ/)
 })
 
-test("style C is compact and has no refresh footer", () => {
+test("style C is compact, without images and without a refresh footer", () => {
     const view = renderedView(
-        liveServerPanelView(input({ panel: { style: "c" } }))
+        liveServerPanelView(
+            input({
+                panel: { style: "c" },
+                images: {
+                    score: null,
+                    banner: null,
+                    thumbnail: { url: "attachment://mapa-foy-0a.webp" },
+                },
+            })
+        )
     )
     assert.deepEqual(view.validation, { ok: true, issues: [] })
     assert.doesNotMatch(view.text, /NEJVÍC ZABITÍ|obnovuje se/)
+    assert.deepEqual(view.media, [])
 })
 
 test("a new map adds the Nová mapa chip", () => {

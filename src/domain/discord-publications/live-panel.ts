@@ -829,8 +829,10 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
             })
     }
 
+    // Style C is the shortest message, without images (P7-12).
     const thumbnail =
         panel.layout.showMap &&
+        style !== "c" &&
         !(style === "a" && input.images.score) &&
         state !== "offline"
             ? (input.images.thumbnail ?? undefined)

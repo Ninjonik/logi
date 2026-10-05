@@ -572,6 +572,7 @@ async function runLive(
     if (
         look.layout.showMap &&
         panel.artwork &&
+        style !== "c" &&
         state !== "offline" &&
         !(style === "a" && score)
     ) {
