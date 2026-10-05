@@ -197,7 +197,7 @@ export function MatchDetailHeader({
             </header>
             <ol
                 aria-label={t.progressLabel}
-                className="grid grid-cols-1 gap-2 sm:grid-cols-5"
+                className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0 sm:pb-0"
             >
                 {phases.map((phase) => (
                     <li
@@ -206,7 +206,7 @@ export function MatchDetailHeader({
                             phase.state === "current" ? "step" : undefined
                         }
                         className={cn(
-                            "flex items-start gap-2 rounded-xl border px-3 py-2",
+                            "relative flex min-w-36 shrink-0 items-start gap-2 rounded-xl border px-3 py-2 sm:min-w-0",
                             phase.state === "current"
                                 ? "border-primary bg-primary/5"
                                 : "border-border/60",

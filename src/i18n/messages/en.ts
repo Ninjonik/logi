@@ -2692,6 +2692,9 @@ export const enMessages = {
             openStats: "Open statistics",
             importTitle: "Import from a link",
             membersOnly: "Only clan admins see and review the result.",
+            notYetTitle: "No result yet",
+            notYetDescription:
+                "The result is reviewed here once the match has been played.",
         },
         stats: {
             killTypes: {

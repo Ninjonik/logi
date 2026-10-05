@@ -2770,6 +2770,9 @@ export const deMessages = {
             openStats: "Statistiken öffnen",
             importTitle: "Aus Link importieren",
             membersOnly: "Nur Clan-Admins sehen und prüfen das Ergebnis.",
+            notYetTitle: "Noch kein Ergebnis",
+            notYetDescription:
+                "Das Ergebnis wird hier geprüft, sobald das Match gespielt ist.",
         },
         stats: {
             killTypes: {

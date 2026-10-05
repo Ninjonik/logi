@@ -57,6 +57,7 @@ export function MatchAttendancePanel({
     closeSummary,
     canAdmin,
     meetingChannelConfigured,
+    closeAvailable,
     signupHistoryHref,
     createRosterHref,
     dictionary,
@@ -70,6 +71,8 @@ export function MatchAttendancePanel({
     closeSummary: RosterScoreChangeSummary
     canAdmin: boolean
     meetingChannelConfigured: boolean
+    /** Closing is possible once the meeting has started. */
+    closeAvailable: boolean
     signupHistoryHref: string
     createRosterHref?: string
     dictionary: Dictionary
@@ -158,6 +161,14 @@ export function MatchAttendancePanel({
                 roster: board,
             })
         ]
+    }
+
+    function placeOf(entry: MatchAttendanceEntry) {
+        return entry.placement.kind === "slot"
+            ? [entry.placement.squadName, entry.placement.roleName]
+                  .filter(Boolean)
+                  .join(" · ")
+            : t.reserve
     }
 
     function nameOf(userId: string) {
@@ -356,7 +367,9 @@ export function MatchAttendancePanel({
                         <ConcludeEventButton
                             serverId={serverId}
                             eventId={event.id}
-                            disabled={changes.size > 0 || isSaving}
+                            disabled={
+                                !closeAvailable || changes.size > 0 || isSaving
+                            }
                             dictionary={dictionary}
                             summary={closeSummary}
                             label={t.closeMatch}
@@ -422,10 +435,16 @@ export function MatchAttendancePanel({
                                 <TableHead scope="col">
                                     {t.columns.player}
                                 </TableHead>
-                                <TableHead scope="col">
+                                <TableHead
+                                    scope="col"
+                                    className="hidden md:table-cell"
+                                >
                                     {t.columns.place}
                                 </TableHead>
-                                <TableHead scope="col">
+                                <TableHead
+                                    scope="col"
+                                    className="hidden lg:table-cell"
+                                >
                                     {t.columns.before}
                                 </TableHead>
                                 <TableHead scope="col">
@@ -451,7 +470,7 @@ export function MatchAttendancePanel({
                                     <TableRow key={entry.userId}>
                                         <TableHead
                                             scope="row"
-                                            className="font-medium"
+                                            className="max-w-32 font-medium sm:max-w-none"
                                         >
                                             <PlayerName
                                                 user={usersById.get(
@@ -459,18 +478,14 @@ export function MatchAttendancePanel({
                                                 )}
                                                 fallback={nameOf(entry.userId)}
                                             />
+                                            <span className="text-muted-foreground mt-0.5 block text-xs font-normal md:hidden">
+                                                {placeOf(entry)}
+                                            </span>
                                         </TableHead>
-                                        <TableCell className="text-muted-foreground">
-                                            {entry.placement.kind === "slot"
-                                                ? [
-                                                      entry.placement.squadName,
-                                                      entry.placement.roleName,
-                                                  ]
-                                                      .filter(Boolean)
-                                                      .join(" · ")
-                                                : t.reserve}
+                                        <TableCell className="text-muted-foreground hidden md:table-cell">
+                                            {placeOf(entry)}
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground max-w-56 truncate">
+                                        <TableCell className="text-muted-foreground hidden max-w-56 truncate lg:table-cell">
                                             {entry.before.kind === "notice"
                                                 ? t.before.notice.replace(
                                                       "{reason}",
@@ -563,7 +578,7 @@ function PlayerName({
 }) {
     return (
         <span className="flex min-w-0 items-center gap-2">
-            <Avatar className="size-6 rounded-md">
+            <Avatar className="hidden size-6 rounded-md sm:flex">
                 {user?.avatar ? <AvatarImage src={user.avatar} alt="" /> : null}
                 <AvatarFallback className="rounded-md text-[10px]">
                     {fallback.slice(0, 2).toUpperCase()}
@@ -612,12 +627,12 @@ function MarkGroup({
                         title={mark === "excused" ? excusedHelp : undefined}
                         onClick={() => onChange(mark)}
                         className={cn(
-                            "rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed",
+                            "rounded-md px-1.5 py-1 text-xs font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed sm:px-2.5",
                             checked
                                 ? mark === "present"
                                     ? "bg-primary text-primary-foreground"
                                     : mark === "absent"
-                                      ? "bg-destructive text-white"
+                                      ? "bg-destructive/15 text-destructive"
                                       : "bg-secondary text-secondary-foreground"
                                 : "text-muted-foreground hover:text-foreground disabled:opacity-40"
                         )}

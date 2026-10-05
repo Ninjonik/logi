@@ -1,4 +1,4 @@
-import { ClipboardList, SearchX } from "lucide-react"
+import { ClipboardList, SearchX, Trophy } from "lucide-react"
 import Link from "next/link"
 
 import {
@@ -28,6 +28,7 @@ import { EventFormPanel } from "@/components/app/event-form-panel"
 import { clientGrantScopes } from "@/domain/identity/client-grant"
 import { ResultReview } from "@/components/app/result-review"
 import { getUsersByIds } from "@/lib/server-user-management"
+import { currentEventStatus } from "@/domain/events/status"
 import { isGameId, type GameId } from "@/domain/games/game"
 import { EmptyState } from "@/components/app/empty-state"
 import { getServerContext } from "@/lib/server-context"
@@ -92,6 +93,13 @@ export async function MatchDetailPage({
     }
 
     const activeTab: MatchDetailTab = isMatchDetailTab(tab) ? tab : "overview"
+    // The result is reviewed once the match has been played; the schedule
+    // decides this before the bot records the conclusion.
+    const now = new Date()
+    const played = currentEventStatus(event, now) === "concluded"
+    // Logi refuses to close a match before its meeting starts.
+    const closeAvailable =
+        now.getTime() >= new Date(event.meetingStart).getTime()
     const { canAdmin, discordConfig } = context
     const timeZone = discordConfig?.timezone ?? "UTC"
     const gameId: GameId = event.gameId ?? "hell_let_loose"
@@ -169,7 +177,7 @@ export async function MatchDetailPage({
             presentCount,
             result: resultState,
         },
-        new Date()
+        now
     )
 
     const basePath = `/${locale}/dashboard/servers/${serverId}/${section}/${event.id}`
@@ -249,7 +257,7 @@ export async function MatchDetailPage({
                         <ConcludeEventButton
                             serverId={serverId}
                             eventId={event.id}
-                            disabled={false}
+                            disabled={!closeAvailable}
                             dictionary={dictionary}
                             summary={closeSummary}
                         />
@@ -283,6 +291,7 @@ export async function MatchDetailPage({
                         scoreSettings={scoreSettings}
                         closeSummary={closeSummary}
                         canAdmin={canAdmin}
+                        closeAvailable={closeAvailable}
                         meetingChannelConfigured={Boolean(
                             discordConfig?.meetingChannelId
                         )}
@@ -366,7 +375,18 @@ export async function MatchDetailPage({
                 ) : null}
                 {activeTab === "result" ? (
                     <div className="space-y-4">
-                        {canAdmin ? (
+                        {canAdmin && !played && !review?.current ? (
+                            <EmptyState
+                                icon={Trophy}
+                                title={
+                                    dictionary.matchDetail.result.notYetTitle
+                                }
+                                description={
+                                    dictionary.matchDetail.result
+                                        .notYetDescription
+                                }
+                            />
+                        ) : canAdmin ? (
                             <ResultReview
                                 serverId={serverId}
                                 eventId={event.id}

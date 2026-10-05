@@ -2685,6 +2685,9 @@ export const csMessages = {
             openStats: "Otevřít statistiky",
             importTitle: "Import z odkazu",
             membersOnly: "Výsledek vidí a kontrolují jen správci klanu.",
+            notYetTitle: "Výsledek zatím není",
+            notYetDescription:
+                "Výsledek se tu zkontroluje, až se zápas odehraje.",
         },
         stats: {
             killTypes: {
