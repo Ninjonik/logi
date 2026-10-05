@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { getRosterPublishContext } from "@/lib/read-models/roster-publish-context"
 import { LiveRosterBoard } from "@/components/app/live-roster-board"
 import { clientGrantScopes } from "@/domain/identity/client-grant"
 import { getUsersByIds } from "@/lib/server-user-management"
@@ -98,6 +99,17 @@ export default async function RosterDetailPage({
             </>
         )
 
+    const publishContext =
+        canAdmin && event
+            ? await getRosterPublishContext({
+                  serverId,
+                  locale,
+                  server: context.server,
+                  event,
+                  discordConfig,
+              })
+            : undefined
+
     return (
         <>
             <PageHeader
@@ -142,6 +154,7 @@ export default async function RosterDetailPage({
                               }
                             : null
                     }
+                    publishContext={publishContext}
                 />
             </div>
         </>

@@ -8,15 +8,29 @@ import {
     type ModalSubmitInteraction,
 } from "discord.js"
 
+import {
+    attendanceModalCopy,
+    declineSavedReply,
+    matchStartedReply,
+    simpleReply,
+    type DmFrame,
+} from "../../../src/domain/discord-messages/direct-message-views"
 import { DECLINE_REASON_MAX_LENGTH } from "../../../src/domain/rosters/attendance-decline"
-import { getEventMessages } from "../../../src/lib/clan-language/events"
+import { attendanceAnswerWindow } from "../../../src/domain/rosters/attendance-window"
+import type { MessageView } from "../../../src/domain/discord-messages/message-view"
+import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
+import { matchTitle } from "../../../src/domain/discord-messages/match-text"
 import type { EventInteractionContext } from "../types"
+import { replyFrame } from "./attendance-replies"
+import { replyUnknownError } from "../ui/replies"
+import { replyCard } from "./roster-assignment"
+import { postAttendanceNotice } from "../forum"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
 import { logInfo } from "../log"
 
-type Messages = ReturnType<typeof getEventMessages>
+type Copy = ReturnType<typeof getDirectMessages>
 type Options = {
     enqueueEventSync: (eventId: string) => void
     triggerPollSoon: () => void
@@ -35,77 +49,102 @@ export type DeclineResult = {
 export const ATTENDANCE_DECLINE_PREFIX = "attendance-decline:"
 export const ATTENDANCE_DECLINE_MODAL_PREFIX = "attendance-decline-modal:"
 
-/** The optional reason form behind "Can't make it". */
+/** The optional reason form behind "Nemůžu", titled with the match (L2-33). */
 export function buildAttendanceDeclineModal(
-    eventId: string,
-    messages: Messages
+    context: Pick<EventInteractionContext, "config" | "event">
 ) {
+    const copy = attendanceModalCopy(
+        "decline",
+        matchTitle(context.event),
+        getDirectMessages(context.config.defaultLanguage)
+    )
     return new ModalBuilder()
-        .setCustomId(`${ATTENDANCE_DECLINE_MODAL_PREFIX}${eventId}`)
-        .setTitle(messages.attendanceDecline.modalTitle.slice(0, 45))
+        .setCustomId(`${ATTENDANCE_DECLINE_MODAL_PREFIX}${context.event.id}`)
+        .setTitle(copy.title.slice(0, 45))
         .addComponents(
             new ActionRowBuilder<TextInputBuilder>().addComponents(
                 new TextInputBuilder()
                     .setCustomId("reason")
-                    .setLabel(
-                        messages.attendanceDecline.reasonLabel.slice(0, 45)
-                    )
-                    .setPlaceholder(
-                        messages.attendanceDecline.reasonPlaceholder.slice(
-                            0,
-                            100
-                        )
-                    )
+                    .setLabel(copy.label.slice(0, 45))
+                    .setPlaceholder(copy.placeholder.slice(0, 100))
                     .setStyle(TextInputStyle.Paragraph)
-                    .setRequired(false)
+                    .setRequired(copy.required)
                     .setMaxLength(DECLINE_REASON_MAX_LENGTH)
             )
         )
 }
 
+type Where = { dm: boolean; frame?: DmFrame }
+
 /**
  * Why a player cannot decline right now, checked before the form opens; null
  * when they can. Players on the published roster (squads or reserves) may
- * decline until the game starts.
+ * decline until the game starts (L2-B07).
  */
 export function declineRefusal(
     context: Pick<EventInteractionContext, "event" | "roster">,
     userId: string,
-    messages: Messages,
+    copy: Copy,
+    where: Where,
     now = Date.now()
-) {
+): MessageView | null {
     const roster = context.roster
-    if (!roster?.published) return messages.interaction.rosterNotPublished
+    if (!roster?.published)
+        return simpleReply({
+            title: copy.replies.notPublishedTitle,
+            body: copy.replies.notPublishedBody,
+            ...where,
+        })
     const onRoster =
         roster.squads.some((squad) =>
             squad.players.some((player) => player.id === userId)
         ) || roster.reservePlayerIds.includes(userId)
-    if (!onRoster) return messages.interaction.notOnRoster
-    const gameStart = Date.parse(context.event.gameStart)
-    if (
-        context.event.status === "concluded" ||
-        !Number.isFinite(gameStart) ||
-        now >= gameStart
-    )
-        return messages.attendanceDecline.tooLate
+    if (!onRoster)
+        return simpleReply({
+            title: copy.replies.notOnRosterTitle,
+            body: copy.replies.notOnRosterBody,
+            ...where,
+        })
+    if (attendanceAnswerWindow(context.event, now) === "started")
+        return matchStartedReply({ copy, ...where })
     return null
 }
 
-/** Reply text for the backend's answer. */
-export function declineReply(result: DeclineResult, messages: Messages) {
+/** The reply card for the backend's answer (L2-34). */
+export function declineReply(
+    result: DeclineResult,
+    copy: Copy,
+    where: Where & { squad?: string }
+): MessageView {
     switch (result.rejected) {
         case "roster_not_published":
-            return messages.interaction.rosterNotPublished
+            return simpleReply({
+                title: copy.replies.notPublishedTitle,
+                body: copy.replies.notPublishedBody,
+                ...where,
+            })
         case "not_on_roster":
-            return messages.interaction.notOnRoster
+            return simpleReply({
+                title: copy.replies.notOnRosterTitle,
+                body: copy.replies.notOnRosterBody,
+                ...where,
+            })
         case "too_late":
-            return messages.attendanceDecline.tooLate
+            return matchStartedReply({ copy, ...where })
         case "invalid_reason":
-            return messages.interaction.unableToLoadEventContext
+            return simpleReply({
+                title: copy.replies.unavailableTitle,
+                body: copy.replies.unavailableBody,
+                ...where,
+            })
     }
-    return result.changed
-        ? messages.attendanceDecline.saved
-        : messages.attendanceDecline.alreadySaved
+    return declineSavedReply({
+        squad: where.squad,
+        alreadySaved: !result.changed,
+        copy,
+        dm: where.dm,
+        frame: where.frame,
+    })
 }
 
 async function loadContext(eventId: string) {
@@ -125,55 +164,71 @@ function belongsHere(
     return !interaction.guildId || interaction.guildId === context.event.guildId
 }
 
+function kitOptions(context: EventInteractionContext) {
+    return {
+        language: context.config.defaultLanguage,
+        style: context.config.messageStyle,
+    }
+}
+
 export async function handleAttendanceDeclineButton(
     interaction: ButtonInteraction
 ) {
     const eventId = interaction.customId.slice(ATTENDANCE_DECLINE_PREFIX.length)
     const context = await loadContext(eventId)
     if (!context || !belongsHere(interaction, context)) {
-        await interaction.reply({
-            content: getEventMessages(context?.config.defaultLanguage)
-                .interaction.unableToLoadEventContext,
-            flags: interaction.guildId ? MessageFlags.Ephemeral : undefined,
-        })
+        const copy = getDirectMessages(context?.config.defaultLanguage)
+        await replyCard(
+            interaction,
+            simpleReply({
+                title: copy.replies.unavailableTitle,
+                body: copy.replies.unavailableBody,
+                dm: !interaction.guildId,
+            }),
+            { language: context?.config.defaultLanguage }
+        )
         return
     }
-    const messages = getEventMessages(context.config.defaultLanguage)
-    const refusal = declineRefusal(context, interaction.user.id, messages)
+    const copy = getDirectMessages(context.config.defaultLanguage)
+    const refusal = declineRefusal(context, interaction.user.id, copy, {
+        dm: !interaction.guildId,
+        frame: await replyFrame(interaction, context),
+    })
     if (refusal) {
-        await interaction.reply({
-            content: refusal,
-            flags: interaction.guildId ? MessageFlags.Ephemeral : undefined,
-        })
+        await replyCard(interaction, refusal, kitOptions(context))
         return
     }
-    await interaction.showModal(buildAttendanceDeclineModal(eventId, messages))
+    await interaction.showModal(buildAttendanceDeclineModal(context))
 }
 
 export async function handleAttendanceDeclineModalSubmit(
     interaction: ModalSubmitInteraction,
     options: Options
 ) {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+    await interaction.deferReply(
+        interaction.guildId ? { flags: MessageFlags.Ephemeral } : {}
+    )
     const eventId = interaction.customId.slice(
         ATTENDANCE_DECLINE_MODAL_PREFIX.length
     )
     const context = await loadContext(eventId)
     if (!context || !belongsHere(interaction, context)) {
-        await interaction.editReply({
-            content: getEventMessages(context?.config.defaultLanguage)
-                .interaction.unableToLoadEventContext,
+        await replyUnknownError(interaction, {
+            language: context?.config.defaultLanguage,
         })
         return
     }
-    const messages = getEventMessages(context.config.defaultLanguage)
+    const copy = getDirectMessages(context.config.defaultLanguage)
     const typed = interaction.fields.getTextInputValue("reason").trim()
+    const squad = context.roster?.squads.find((item) =>
+        item.players.some((player) => player.id === interaction.user.id)
+    )
     const result = (await convex.mutation(references.declineAttendance, {
         secret: env.internalSecret,
         guildId: context.event.guildId,
         eventId: context.event.id as never,
         userId: interaction.user.id,
-        reason: typed || messages.attendanceDecline.defaultReason,
+        reason: typed || copy.replies.defaultDeclineReason,
     })) as DeclineResult
     if (result.changed) {
         await revalidateAppData(
@@ -197,6 +252,19 @@ export async function handleAttendanceDeclineModalSubmit(
             guildId: context.event.guildId,
             userId: interaction.user.id,
         })
+        await postAttendanceNotice(interaction.client, {
+            context,
+            userId: interaction.user.id,
+            kind: "absent",
+        })
     }
-    await interaction.editReply({ content: declineReply(result, messages) })
+    await replyCard(
+        interaction,
+        declineReply(result, copy, {
+            dm: !interaction.guildId,
+            frame: await replyFrame(interaction, context),
+            squad: squad?.name,
+        }),
+        kitOptions(context)
+    )
 }

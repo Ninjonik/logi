@@ -1,4 +1,7 @@
 import { commandFeatures } from "../commands/features"
+import { attendanceReplyInteractions } from "./attendance-replies"
+import { matchRecapInteractions } from "./match-recap-preference"
+import { rosterInteractions } from "./roster-assignment"
 import type { InteractionFeature } from "./registry"
 
 /**
@@ -10,4 +13,7 @@ import type { InteractionFeature } from "./registry"
 export const interactionFeatures: readonly InteractionFeature[] = [
     // /help, /stats, /player, /notice, /server-status (commands workstream).
     ...commandFeatures,
+    rosterInteractions,
+    attendanceReplyInteractions,
+    matchRecapInteractions,
 ]

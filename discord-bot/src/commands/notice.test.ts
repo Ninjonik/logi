@@ -2,7 +2,6 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
-    handleLateNoticeButton,
     handleNoticeAutocomplete,
     handleNoticeCommand,
     handleNoticeModalSubmit,
@@ -192,27 +191,6 @@ test("an event that started meanwhile gets its own card; the rule's refusal is m
     assert.doesNotMatch(refused.text(), /before game start/)
 })
 
-test("the DM reminder button opens the window in the clan language from the event (M3-14)", async () => {
-    const modals: Modal[] = []
-    await handleLateNoticeButton(
-        {
-            customId: `attendance-late:${EVENT_ID}`,
-            guildId: null,
-            showModal: async (modal: Modal) => {
-                modals.push(modal)
-            },
-        } as never,
-        ports({
-            configs: configsOf(null),
-            event: async () => ({ ...event, language: "de" }),
-        }).ports
-    )
-    const modal = modals[0]!.toJSON()
-    assert.equal(modal.custom_id, `notice-modal:${EVENT_ID}`)
-    assert.match(modal.title, /VLK vs ROG/)
-    assert.doesNotMatch(JSON.stringify(modal), /Přijdu později/)
-})
-
 test("a modal from a DM saves with the event's server and language", async () => {
     const fake = ports({ configs: configsOf(null) })
     const f = submit("Kolem 20:30", EVENT_ID, null)
@@ -221,7 +199,7 @@ test("a modal from a DM saves with the event's server and language", async () =>
     assert.match(f.text(), /Velení ví, že přijdeš později/)
 })
 
-test("/notice, its autocomplete, the window and the reminder button are registered", () => {
+test("/notice, its autocomplete and the window are registered; the reminder button belongs to the attendance replies", () => {
     const context: InteractionFeatureContext = {
         enqueueEventSync: () => {},
         triggerPollSoon: () => {},
@@ -232,7 +210,6 @@ test("/notice, its autocomplete, the window and the reminder button are register
     )
     assert.deepEqual(registry.routes().sort(), [
         "autocomplete:notice",
-        "button:attendance-late:",
         "command:notice",
         "modal:notice-modal:",
     ])

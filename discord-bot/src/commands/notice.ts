@@ -6,7 +6,6 @@ import {
     TextInputBuilder,
     TextInputStyle,
     type AutocompleteInteraction,
-    type ButtonInteraction,
     type ChatInputCommandInteraction,
     type ModalSubmitInteraction,
 } from "discord.js"
@@ -33,8 +32,6 @@ import { replyError, replyPrivately } from "../ui/replies"
 import { fallbackGuildLanguage } from "./definitions"
 
 export const NOTICE_MODAL_PREFIX = "notice-modal:"
-/** The "Přijdu později" button on attendance reminders (L1, L2). */
-export const LATE_NOTICE_BUTTON_PREFIX = "attendance-late:"
 const EVENT_ID = /^[A-Za-z0-9_-]{1,64}$/
 
 /** An eligible event as `events:findNoticeTarget` returns it. */
@@ -195,28 +192,6 @@ export async function handleNoticeCommand(
     )
 }
 
-/**
- * The reminder's "Přijdu později" button (M3-14): the same window as
- * `/notice`. Reminders also arrive as DMs, so the event supplies the clan
- * language and its name.
- */
-export async function handleLateNoticeButton(
-    interaction: Pick<ButtonInteraction, "customId" | "showModal" | "guildId">,
-    ports: NoticePorts
-) {
-    const eventId = interaction.customId.slice(LATE_NOTICE_BUTTON_PREFIX.length)
-    const event = EVENT_ID.test(eventId)
-        ? await ports.event(eventId).catch(() => null)
-        : null
-    const language =
-        event?.language ??
-        (await ports.configs.get(interaction.guildId))?.language ??
-        "en"
-    await interaction.showModal(
-        buildNoticeModal({ eventId, eventName: event?.name, language })
-    )
-}
-
 type ModalInteraction = Pick<
     ModalSubmitInteraction,
     "customId" | "deferReply" | "guildId"
@@ -340,9 +315,6 @@ export function noticeInteractions(
                 )
                 .modal(NOTICE_MODAL_PREFIX, (interaction) =>
                     handleNoticeModalSubmit(interaction, current())
-                )
-                .button(LATE_NOTICE_BUTTON_PREFIX, (interaction) =>
-                    handleLateNoticeButton(interaction, current())
                 )
         },
     }

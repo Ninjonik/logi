@@ -1,8 +1,15 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { MessageFlags } from "discord.js"
+
+import {
+    buildFullRosterView,
+    buildRosterAssignmentReply,
+    buildSquadView,
+} from "./roster-assignment"
 import type { DiscordConfig, EventRecord, Roster } from "../types"
-import { buildRosterAssignmentReply } from "./roster-assignment"
+import { interactionReplyPayload } from "../ui/message-kit"
 
 const config: DiscordConfig = {
     id: "config-1",
@@ -10,7 +17,7 @@ const config: DiscordConfig = {
     timezone: "Europe/Prague",
     defaultLanguage: "cs",
     calendarCategories: [],
-    meetingChannelId: "meeting-channel",
+    meetingChannelId: "200000000000000001",
     updatedAt: "2026-10-01T10:00:00.000Z",
 }
 
@@ -37,12 +44,16 @@ const event: EventRecord = {
     updatedAt: "2026-10-11T16:00:00.000Z",
 }
 
+const leader = "100000000000000001"
+const player = "100000000000000002"
+const reserve = "100000000000000003"
+
 const roster: Roster = {
     id: "roster-1",
     eventId: "event-1",
     published: true,
-    reservePlayerIds: ["reserve-1"],
-    reserveAttendances: [{ userId: "reserve-1", ack: true }],
+    reservePlayerIds: [reserve],
+    reserveAttendances: [{ userId: reserve, ack: true }],
     updatedAt: "2026-10-11T15:00:00.000Z",
     squads: [
         {
@@ -51,122 +62,143 @@ const roster: Roster = {
             color: "#16a34a",
             order: 1,
             players: [
-                { id: "leader-1", ack: true, roleName: "Officer" },
+                { id: leader, ack: true, roleName: "Officer" },
                 {
-                    id: "player-1",
+                    id: player,
                     ack: false,
                     roleName: "Medic",
                     note: "Bring *smokes*",
                 },
+                { ack: false, roleName: "Rifleman" },
             ],
         },
     ],
 }
 
-function render(userId: string, patch: Partial<EventRecord> = {}) {
+const names = { [leader]: "Rex_CZ", [player]: "Medvěd", [reserve]: "Fík" }
+const duringMeeting = Date.parse("2026-10-11T17:40:00.000Z")
+
+function render(
+    userId: string,
+    patch: Partial<EventRecord> = {},
+    now = duringMeeting
+) {
     const reply = buildRosterAssignmentReply({
         config,
         event: { ...event, ...patch },
         roster,
         userId,
+        names,
+        now,
     })
-    return {
-        reply,
-        embed: reply.embeds?.[0]?.toJSON(),
-        buttons: (reply.components ?? []).flatMap(
-            (row) => row.toJSON().components
-        ),
-    }
+    const json = JSON.stringify(reply.components.map((item) => item.toJSON()))
+    const buttons = reply.components
+        .flatMap((item) => item.toJSON().components)
+        .flatMap((child) =>
+            "components" in child && child.type === 1 ? child.components : []
+        )
+    return { reply, json, buttons }
 }
 
-test("my assignment shows squad, role, leader, meeting, server and password privately", () => {
-    const { reply, embed, buttons } = render("player-1")
-
-    assert.equal(embed?.title, "Able · Medic")
+test("my assignment is a private card with squad, role, leader, note, server and password", () => {
+    const { reply, json, buttons } = render(player)
     assert.equal(
-        embed?.description,
-        [
-            "Velitel čety: <@leader-1> · sraz <t:1791739800:t> (<t:1791739800:R>) v kanálu <#meeting-channel>",
-            "Bring \\*smokes\\*",
-            "Server: VLK Scrim · heslo `synthetic-private`",
-        ].join("\n")
+        reply.flags,
+        MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
     )
-    assert.equal(embed?.footer?.text, "Heslo vidí jen hráči na soupisce.")
-    assert.equal(embed?.color, 0xe8a33d)
+    assert.match(json, /MOJE ZAŘAZENÍ · VLK VS ROG/)
+    assert.match(json, /### \+ Able · Medic/)
+    assert.match(
+        json,
+        /Velitel čety Rex\\\\_CZ · sraz běží v kanálu <#200000000000000001>/
+    )
+    assert.match(json, /> Velení: Bring \\\\\*smokes\\\\\*/)
+    assert.match(json, /Server \*\*VLK Scrim\*\* · heslo `synthetic-private`/)
+    assert.match(json, /Heslo vidí jen hráči na soupisce\. Nesdílej ho dál\./)
     assert.deepEqual(reply.allowedMentions, { parse: [] })
     assert.deepEqual(
         buttons.map((button) =>
-            "custom_id" in button ? button.custom_id : undefined
+            "custom_id" in button ? button.custom_id : ""
         ),
-        ["attendance:event-1:ack", "attendance-late:event-1"]
-    )
-    assert.deepEqual(
-        buttons.map((button) => ("label" in button ? button.label : "")),
-        ["Potvrdím účast", "Přijdu později"]
+        ["attendance-confirm:event-1", "attendance-late:event-1"]
     )
 })
 
 test("the squad leader sees no leader line and an acknowledged player gets no confirm button", () => {
-    const { embed, buttons } = render("leader-1")
-
-    assert.equal(embed?.title, "Able · Officer")
-    assert.doesNotMatch(embed?.description ?? "", /Velitel čety/)
-    assert.match(embed?.description ?? "", /^Sraz <t:/)
+    const { json, buttons } = render(leader)
+    assert.match(json, /### ≡ Able · Officer/)
+    assert.doesNotMatch(json, /Velitel čety/)
     assert.deepEqual(
         buttons.map((button) =>
-            "custom_id" in button ? button.custom_id : undefined
+            "custom_id" in button ? button.custom_id : ""
         ),
         ["attendance-late:event-1"]
     )
 })
 
-test("reserves see the server and password with the reserve notice", () => {
-    const { embed } = render("reserve-1")
+test("before the meeting only Přijdu později is offered; after the start nothing", () => {
+    const early = render(player, {}, Date.parse("2026-10-11T12:00:00.000Z"))
+    assert.deepEqual(
+        early.buttons.map((button) => ("label" in button ? button.label : "")),
+        ["Přijdu později"]
+    )
+    const started = render(player, {}, Date.parse("2026-10-11T18:05:00.000Z"))
+    assert.deepEqual(started.buttons, [])
+})
 
-    assert.equal(embed?.title, "Záloha")
-    assert.match(embed?.description ?? "", /^Pro tuto akci jste náhradník\./)
-    assert.match(embed?.description ?? "", /heslo `synthetic-private`/)
+test("reserves see the reserve card with server and password", () => {
+    const { json } = render(reserve)
+    assert.match(json, /### Záloha/)
+    assert.match(
+        json,
+        /Když se uvolní místo, velení tě přesune a pošle ti DM\./
+    )
+    assert.match(json, /heslo `synthetic-private`/)
 })
 
 test("players off the roster or before publication never see the password", () => {
-    const outsider = render("someone-else").reply
-    assert.equal(outsider.embeds, undefined)
-    assert.equal(outsider.content, "Zatím nemáte zařazení do soupisky.")
-
+    const outsider = render("100000000000000009").json
+    assert.match(outsider, /Na soupisce nejsi/)
     const draft = buildRosterAssignmentReply({
         config,
         event,
         roster: { ...roster, published: false },
-        userId: "player-1",
+        userId: player,
     })
-    assert.equal(draft.embeds, undefined)
-    assert.equal(
-        draft.content,
-        "Soupiska pro tuto akci ještě není publikovaná."
+    const draftJson = JSON.stringify(
+        draft.components.map((item) => item.toJSON())
     )
-    assert.doesNotMatch(JSON.stringify([outsider, draft]), /synthetic-private/)
+    assert.match(draftJson, /Soupiska ještě není zveřejněná/)
+    assert.doesNotMatch(outsider + draftJson, /synthetic-private/)
 })
 
-test("attendance buttons appear only while the event is starting", () => {
-    const { buttons, embed } = render("player-1", {
-        status: "closed",
-        serverPassword: "with`tick",
+test("passwords with backticks stay inline code", () => {
+    const { json } = render(player, { serverPassword: "with`tick" })
+    assert.match(json, /heslo `` with`tick ``/)
+})
+
+test("the squad view lists the slots with ticks and a select of every squad", () => {
+    const view = buildSquadView({
+        context: { config, event, roster },
+        names,
+        now: duringMeeting,
     })
-
-    assert.deepEqual(buttons, [])
-    assert.match(embed?.description ?? "", /heslo `` with`tick ``/)
+    const payload = interactionReplyPayload(view, { language: "cs" })
+    const json = JSON.stringify(payload.components.map((item) => item.toJSON()))
+    assert.match(json, /### Able · Infantry · 2 z 3/)
+    assert.match(json, /Officer · \*\*Rex\\\\_CZ\*\* ✓ potvrzeno/)
+    assert.match(json, /Medic · \*\*Medvěd\*\* ⏳ zatím ne/)
+    assert.match(json, /Rifleman · volné místo/)
+    assert.match(json, /roster-squads-select:event-1/)
+    assert.equal(payload.flags & MessageFlags.Ephemeral, MessageFlags.Ephemeral)
 })
 
-test("the private reply uses the event category colour like the event card", () => {
-    const colour = (categoryColor?: string | null) =>
-        buildRosterAssignmentReply({
-            config,
-            event,
-            roster,
-            userId: "player-1",
-            categoryColor,
-        }).embeds?.[0]?.toJSON().color
-    assert.equal(colour("#dc2626"), 0xdc2626)
-    assert.equal(colour(null), 0xe8a33d)
-    assert.equal(colour("not a colour"), 0xe8a33d)
+test("the whole roster is a private paged reply", () => {
+    const view = buildFullRosterView({
+        context: { config, event, roster },
+        page: 1,
+        names,
+    })
+    assert.equal(view.ephemeral, true)
+    assert.equal(view.header?.title, "Celá soupiska")
 })

@@ -4624,9 +4624,6 @@ export const deMessages = {
             "Vorlage ändern und Zuweisungen zurücksetzen",
         squadTemplateChanged:
             "Squad-Vorlage geändert. Speichere das Roster, um sie anzuwenden.",
-        publishConfirmTitle: "Roster veröffentlichen?",
-        publishConfirmDescription:
-            "Mitglieder sehen die veröffentlichte Version sofort.",
         setupRoster: "Roster einrichten",
         selectEvent: "Event wählen",
         selectEventPlaceholder: "Wähle ein Event",
@@ -4684,21 +4681,6 @@ export const deMessages = {
         saved: "Roster gespeichert",
         published: "Roster veröffentlicht",
         attendanceUpdated: "Anwesenheit aktualisiert",
-        updatePublishedPromptTitle: "Auch ein Roster-Update posten?",
-        updatePublishedPromptDescription:
-            "Dieses Roster ist bereits live. Wähle, ob ein frisches Update im Football-Stil in denselben Ankündigungs-Channel gesendet wird, während betroffene Spieler so oder so per DM informiert werden.",
-        updatePublishedPromptAnnounce: "Speichern und Update posten",
-        updatePublishedPromptSkip: "Speichern ohne Post",
-        updatePublishedPromptCancel: "Weiter bearbeiten",
-        updatePublishedPromptHint:
-            "⚽ Wir können hervorheben, wer reinkam, wer rausflog, Squad-Wechsel und Rollenänderungen.",
-        notifyRosterChanges: "Betroffene Spieler per DM benachrichtigen",
-        postRosterChanges: "Dieses Roster-Update im Event-Info-Channel posten",
-        updatePosted: "Roster gespeichert und Update gepostet.",
-        updateSavedWithoutPost:
-            "Roster gespeichert. Spieler-DMs wurden gesendet.",
-        updateDmDeliveryFailed:
-            "Roster gespeichert, aber eine oder mehrere Spieler-DMs konnten nicht zugestellt werden.",
     },
     newMatch: {
         title: "Neues Match",
@@ -6168,6 +6150,94 @@ export const deMessages = {
             "Roster-Board mit Reserven, Rollen-Slots, Veröffentlichungsstatus und Bestätigungen.",
         rosterPageDescription:
             "Inspiriert von kompetitiven Roster-Boards: gruppierte Squads, sichtbare Reserven, Zuweisungsstatus und zukunftsfähiger Bestätigungs-Flow.",
+    },
+    rosterPublish: {
+        publishTitle: "Aufstellung veröffentlichen",
+        republishTitle: "Erneut veröffentlichen",
+        publishedAt: "veröffentlicht {time}",
+        close: "Schließen",
+        contentLabel: "Was an Discord geht",
+        variantPhotoText: "Foto und Aufstellung als Text",
+        variantPhotoTextDescription:
+            "Das Aufstellungsbild und darunter die Squads als Text. Durchsuchbar und auch am Handy lesbar.",
+        variantPhoto: "Nur Foto",
+        variantPhotoDescription:
+            "Nur das Aufstellungsbild, wie es der alte Bot geschickt hat.",
+        defaultChip: "Standard",
+        defaultNote: "Die Standardansicht legen Sie fest unter",
+        defaultNoteLink: "Nachrichten und Panels → Aufstellung",
+        channelLabel: "Kanal",
+        channelFrom: "aus",
+        channelFromLink: "Kanäle und Sprache",
+        channelMissing: "kein Kanal festgelegt",
+        mentionLabel: "Eingeteilte Spieler erwähnen",
+        mentionFirstHint: {
+            one: "Die Nachricht erwähnt den {count} Spieler der Aufstellung.",
+            few: "Die Nachricht erwähnt alle {count} Spieler der Aufstellung.",
+            many: "Die Nachricht erwähnt alle {count} Spieler der Aufstellung.",
+            other: "Die Nachricht erwähnt alle {count} Spieler der Aufstellung.",
+        },
+        mentionRepeatHint: "Beim Wiederholen stört es nur; die DMs genügen.",
+        laterNote:
+            "DMs zu Änderungen und die Änderungsübersicht gibt es ab der nächsten Veröffentlichung.",
+        dmLabel: "Spieler per DM über Änderungen informieren",
+        dmHint: {
+            one: "Nur {count} Spieler, den die Änderung betrifft.",
+            few: "Nur {count} Spieler, die die Änderung betrifft.",
+            many: "Nur {count} Spieler, die die Änderung betrifft.",
+            other: "Nur {count} Spieler, die die Änderung betrifft.",
+        },
+        postLabel: "Änderungsübersicht in den Kanal posten",
+        postHint: "Eine kurze Nachricht unter der Aufstellung.",
+        rostered: "in der Aufstellung",
+        reserves: {
+            one: "Reserve",
+            few: "Reserve",
+            many: "Reserve",
+            other: "Reserve",
+        },
+        notAttending: "nicht dabei",
+        changesTitle: "Änderungen seit der letzten Version",
+        changesMoved: "{count} verschoben",
+        changesAgainst: "Gegenüber der Version, veröffentlicht {time}.",
+        noChanges: "Seit der letzten Version hat sich kein Spieler geändert.",
+        toReserves: "in die Reserve",
+        previewTitle: "Vorschau in {channel}",
+        previewCaption: "Vereinfachte Vorschau der Nachricht.",
+        republishCaption:
+            "Die Nachricht in {channel} wird bearbeitet, es entsteht keine neue. Die Änderungsübersicht folgt darunter.",
+        photoPlaceholder: "Aufstellungsfoto (PNG)",
+        cancel: "Abbrechen",
+        publish: "Aufstellung veröffentlichen",
+        republish: "Erneut veröffentlichen",
+        published: "Aufstellung veröffentlicht",
+        republished: "Aufstellung erneut veröffentlicht",
+        dmFailed: {
+            one: "Die DM hat {count} Spieler nicht erreicht: {names}. Direktnachrichten von Servermitgliedern sind ausgeschaltet.",
+            few: "Die DM hat {count} Spieler nicht erreicht: {names}. Direktnachrichten von Servermitgliedern sind ausgeschaltet.",
+            many: "Die DM hat {count} Spieler nicht erreicht: {names}. Direktnachrichten von Servermitgliedern sind ausgeschaltet.",
+            other: "Die DM hat {count} Spieler nicht erreicht: {names}. Direktnachrichten von Servermitgliedern sind ausgeschaltet.",
+        },
+        requestFailed:
+            "Die Aufstellung ist gespeichert, aber die Änderungen wurden nicht an Discord gesendet. Bitte versuchen Sie es erneut.",
+    },
+    reminderDelivery: {
+        title: "Die Erinnerung hat {sent} von {total} Spielern erreicht",
+        body: "{names} haben in Discord Direktnachrichten von Servermitgliedern ausgeschaltet. Erreiche sie auf anderem Weg oder bitte sie, Nachrichten vom Server {clan} zu erlauben.",
+        bodyOne:
+            "{names} hat in Discord Direktnachrichten von Servermitgliedern ausgeschaltet. Erreiche ihn auf anderem Weg oder bitte ihn, Nachrichten vom Server {clan} zu erlauben.",
+        failedAll:
+            "Die Erinnerung konnte nicht gesendet werden. Bitte versuchen Sie es gleich erneut.",
+        copyNames: "Namen kopieren",
+        copied: "Namen kopiert",
+        howTo: "Nachrichten von einem Server erlauben",
+        meta: "{kind} · gesendet {time} · von {name}",
+        kindUnanswered: "Anmeldeerinnerung",
+        kindUnconfirmed: "Anwesenheitserinnerung",
+        unknownSender: "einem Admin",
+        and: "und",
+        sentAt: "{date} um {time}",
+        unknownPlayer: "ein unbekannter Spieler",
     },
     discordPreview: {
         regionLabel: "Vorschau der Discord-Nachricht",

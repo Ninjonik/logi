@@ -135,6 +135,22 @@ and in [Discord public panels](discord-public-panels.md#api-and-activation).
   `upcomingMatches`, `clanResults` and `competitions`). Like the clan name,
   logo and description it has no keyed `/api/v1` write: the clan profile is a
   dashboard-only lifecycle (deliberate exclusion).
+- **Roster publish options (deliberate API exclusion):** the dashboard publish
+  dialog (board D5) chooses, for that one publish, the Discord message look
+  (`photo_text` photo with the text roster, or `photo` photo only), whether
+  rostered players are mentioned, whether players whose place changed get a
+  DM and whether the change digest is posted. These are a live Discord action
+  of a clan admin, not settings: they travel as `discordPublish` on the
+  dashboard roster write (`/api/servers/{serverId}/rosters`, stored on the
+  roster as `discordMessageVariant`, `discordMentionPlayers` and
+  `publishedAt`) and as the change request of
+  `POST /api/servers/{serverId}/rosters/{rosterId}/update-notifications`, which
+  queues `rosterChangeRequests` for the bot (status read back through `GET`
+  with `?requestId=`). There is deliberately no `/api/v1` operation for them:
+  `/api/v1` roster writes publish with the clan defaults (the `matchMessages`
+  slice below), without mentions, change DMs or a digest. The defaults
+  themselves are in the API, and `/api/v1` roster reads return the stored
+  `discordMessageVariant`, `discordMentionPlayers` and `publishedAt`.
 
 These gaps are recorded for the next implementation decision; they are not
 silently counted as completed settings. Operational credentials/intents still
@@ -224,6 +240,14 @@ Deliberate exclusions:
   never leave the dashboard and the keyring; it has no `/api/v1` operation.
 - `/close_ticket` and `/close_application` are not in the slice: they follow
   the ticket and application settings.
+
+### `matchMessages` slice
+
+Registered slices:
+
+| Key             | Fields                                                                                                                                                                                                                                                                                                                    | Stored in `discordConfigs`                                                                                | Exclusions                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `matchMessages` | `rosterMessageVariant` (`photo_text` default, or `photo`): the roster message's default look; `rosterChangesPost`, `rosterChangesDm` (default `true`): what the publish dialog pre-selects on re-publish; `attendanceNoticesInThread` (default `false`): late and absence notices in the match thread, without the reason | `rosterMessageVariant`, `rosterChangesPostDefault`, `rosterChangesDmDefault`, `attendanceNoticesInThread` | Per-publish choices (see "Roster publish options" above). The dashboard form belongs to page N1. |
 
 ## Source and runtime evidence
 

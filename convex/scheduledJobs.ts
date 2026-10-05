@@ -228,7 +228,8 @@ export const backfillMissing = mutation({
                         event.createdAt,
                         event.registrationEnd,
                         nowDate,
-                        true
+                        true,
+                        event.registrationStart
                     )
                     return event.kind === "match" &&
                         resolveSignupReminderStatuses(

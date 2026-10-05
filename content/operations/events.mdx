@@ -172,19 +172,24 @@ where they carry meaning, such as a group's own emoji.
   registration closes the status replaces the deadline. Buttons: **Sign up**,
   **My sign-up** (private check of your own sign-up), **Can't make it** and
   **Add to calendar**, then a small line with the event forum.
-- **Published roster** (event-info channel): `Roster · Name`, the meeting time
-  and meeting channel, one line per squad with its player count (a one-player
-  squad such as Command shows the name), reserves, the roster image and the
-  **My assignment** and **Full roster on the web** buttons.
+- **Published roster** (event-info channel): the roster image, by default with
+  every squad written out under it, and the **My assignment**, **Show roster**
+  and **Open roster** buttons. See
+  [publish to Discord](/wiki/operations/rosters#publish-to-discord).
 - **My assignment** (visible only to the player who presses it): squad and role,
   the squad leader when the roster marks one (Officer, Squad Leader, SL, Tank
-  Commander, Spotter or Commander roles), the meeting time and channel, and the
-  server with its password. While the event is starting it also offers **I'll be
-  there** and **Running late**.
+  Commander, Spotter or Commander roles), the leader's note, the meeting time
+  and channel, and the server with its password. From the day before the
+  meeting it offers **Confirm attendance**; until the game starts **Running
+  late**.
 - **Attendance reminder DM:** "You're playing Name tomorrow" (or today, in the
-  server's time zone), start, meeting time and the player's squad and role, with
-  **I'll be there**, **Running late** and **Can't make it**. Both late and
+  clan's time zone), start, meeting time and the player's squad and role, with
+  **Confirm attendance**, **Running late** and **Can't make it**. Both late and
   can't-make-it work from the DM.
+
+Direct messages from the bot use the clan language and address the player
+informally. Each ends with the clan name and a **Message settings** link to the
+player's own Logi settings.
 
 Faction emblems are the bot's installed application emoji (Wardogs factions,
 see the public panels guide) or, without them, a fixed monochrome marker: ★ for
@@ -230,8 +235,9 @@ changes nothing.
 For matches, managers can choose which membership categories receive a direct
 message reminder to sign up. The default is active regular members only;
 recruits and reserve members can be added, while mercenaries are never included.
-The bot sends a compact registration summary and controls 24 hours after
-creation, then every 24 hours while registration remains open. It does not
+The bot sends a compact registration summary and controls 24 hours after the
+announcement (or after creation when the match has no announcement start), then
+every 24 hours while registration remains open. It does not
 show the signup list because that list is only live in the event registration
 message; when available, the DM links to the registration channel and event
 forum. Its controls let the recipient sign up, change their signup, or decline
